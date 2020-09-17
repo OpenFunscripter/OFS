@@ -1,0 +1,4 @@
+// libmpv windows builds: https://sourceforge.net/projects/mpv-player-windows/files/libmpv/
+// generate mpv.lib for msvc by executing these commands 
+vcvarsall.bat x64
+lib /def:mpv.def /name:mpv-1.dll /out:mpv.lib /MACHINE:X64

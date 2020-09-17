@@ -1,0 +1,34 @@
+#include "EventSystem.h"
+
+int32_t EventSystem::FunscriptActionsChangedEvent = 0;
+int32_t EventSystem::FunscriptActionClickedEvent = 0;
+
+int32_t EventSystem::WakeupOnMpvEvents = 0; 
+int32_t EventSystem::WakeupOnMpvRenderUpdate = 0;
+
+int32_t EventSystem::FileDialogOpenEvent = 0;
+int32_t EventSystem::FileDialogSaveEvent = 0;
+
+
+void EventSystem::setup()
+{
+	FunscriptActionsChangedEvent = SDL_RegisterEvents(1);
+	FunscriptActionClickedEvent = SDL_RegisterEvents(1);
+	WakeupOnMpvEvents = SDL_RegisterEvents(1);
+	WakeupOnMpvRenderUpdate = SDL_RegisterEvents(1);
+	FileDialogOpenEvent = SDL_RegisterEvents(1);
+	FileDialogSaveEvent = SDL_RegisterEvents(1);
+}
+
+void EventSystem::PushEvent(SDL_Event& event)
+{
+	for (auto& handler : handlers) {
+		if (handler.eventType == event.type)
+			handler.func(event);
+	}
+}
+
+void EventSystem::Subscribe(int32_t eventType, EventHandlerFunc handler)
+{
+	handlers.emplace_back(eventType, handler);
+}

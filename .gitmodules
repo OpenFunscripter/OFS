@@ -1,0 +1,15 @@
+[submodule "lib/imgui"]
+	path = lib/imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "lib/SDL2"]
+	path = lib/SDL2
+	url = https://github.com/spurious/SDL-mirror.git
+[submodule "lib/json"]
+	path = lib/json
+	url = https://github.com/nlohmann/json.git
+[submodule "lib/portable-file-dialogs"]
+	path = lib/portable-file-dialogs
+	url = https://github.com/samhocevar/portable-file-dialogs.git
+[submodule "lib/minimp3"]
+	path = lib/minimp3
+	url = https://github.com/lieff/minimp3.git
