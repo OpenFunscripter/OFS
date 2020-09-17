@@ -1,3 +1,5 @@
 .vs
 out
 bin
+*.zip
+*.7z
