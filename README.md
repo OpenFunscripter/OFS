@@ -1,6 +1,9 @@
 # OpenFunscripter
+I swear this is a C++ project despite what the statistic on this repo says 😅
 
-![Image of Yaktocat](https://github.com/gagax1234/OpenFunscripter/raw/master/OpenFunscripter.jpg)
+The project is based on OpenGL, SDL2 & libmpv ( and I'm kind of proud of it ).
+
+![OpenFunscripter Screenshot](https://github.com/gagax1234/OpenFunscripter/raw/master/OpenFunscripter.jpg)
 
 ### How to build ( for people who want to contribute or fork )
 1. clone the repository
