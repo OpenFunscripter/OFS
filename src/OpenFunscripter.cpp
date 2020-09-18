@@ -11,8 +11,7 @@
 
 // TODO: Improve playback control ui ( buttons are fugly )
 // TODO: Undo Window make snapshots clickable to return to a state immediately
-// TODO: Rolling backup (only when alerts are a thing)
-
+// TODO: Rolling backup
 // TODO: QoL make keybindings groupable just a visual improvement
 
 // TODO: consider bundling/replacing of snapshots for certain actions like moving which generates a lot of snapshots
@@ -20,7 +19,6 @@
 //		 this way undoing the moving would be a single click this may not always be desired though
 
 // TODO: [MAJOR FEATURE] working with raw actions and controller input
-// TODO: [MAJOR FEATURE] vr mode like
 
 OpenFunscripter* OpenFunscripter::ptr = nullptr;
 

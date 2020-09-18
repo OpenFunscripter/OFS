@@ -248,9 +248,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 
 		if (LoadedFunscript->HasSelection()) {
 			constexpr auto selectedDots = IM_COL32(11, 252, 3, 255);
-			
-			constexpr auto selectedLinesRaw = IM_COL32(11, 252, 3, 255);
-			constexpr auto selectedLines = IM_COL32(255, 125, 240, 255);
+			constexpr auto selectedLines = IM_COL32(3, 194, 252, 255);
 
 			const FunscriptAction* prev_action = nullptr;
 			for (int i = 0; i < LoadedFunscript->Selection().size(); i++) {
@@ -260,7 +258,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 
 				if (prev_action != nullptr) {
 					// draw highlight line
-					draw_list->AddLine(getPointForAction(*prev_action), point, selectedLinesRaw, 3.0f);
+					draw_list->AddLine(getPointForAction(*prev_action), point, selectedLines, 3.0f);
 				}
 				// draw highlight point
 				draw_list->AddCircleFilled(point, 5.0, selectedDots, 12);
@@ -298,8 +296,13 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				auto video_path = OpenFunscripter::ptr->player.getVideoPath();
 				auto base = SDL_GetBasePath();
 				auto output_path = std::filesystem::path(base) / "audio.mp3";
-				OutputAudioFile(ffmpeg_path.c_str(), video_path,  output_path.string().c_str());
+				bool succ = OutputAudioFile(ffmpeg_path.c_str(), video_path,  output_path.string().c_str());
 				SDL_free(base);
+
+				if (!succ) {
+					LOGF_ERROR("Failed to output mp3 from video. (ffmpeg_path: \"%s\")", ffmpeg_path.c_str());
+					ShowAudioWaveform = false;
+				}
 				
 				mp3dec_t mp3d;
 				mp3dec_file_info_t info;

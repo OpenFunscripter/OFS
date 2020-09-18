@@ -331,7 +331,6 @@ void OpenFunscripterVideoplayerWindow::mouse_scroll(SDL_Event& ev)
 		if (activeMode == VideoMode::VR_MODE) {
 			vr_zoom *= ((1+(zoom_multi * -scroll.y)));
 			vr_zoom = Util::Clamp(vr_zoom, 0.30f, 4.f);
-			LOGF_DEBUG("zoom: %f", vr_zoom);
 			return;
 		}
 
@@ -385,8 +384,9 @@ void OpenFunscripterVideoplayerWindow::setup_vr_mode()
 		out vec4 Out_Color;
 		#define PI 3.1415926535
 		#define DEG2RAD 0.01745329251994329576923690768489
+		
 		float hfovDegrees = -120.0;
-		float vfovDegrees = 60.0;
+		float vfovDegrees = 45.0;
 
 		vec3 rotateXY(vec3 p, vec2 angle) {
 			vec2 c = cos(angle), s = sin(angle);
@@ -396,6 +396,7 @@ void OpenFunscripterVideoplayerWindow::setup_vr_mode()
 
 		void main()
 		{
+			hfovDegrees = aspect_ratio * -vfovDegrees;
 			vec2 uv = vec2(Frag_UV.s - 0.5, Frag_UV.t);
 
 			//to spherical
