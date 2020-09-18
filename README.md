@@ -17,3 +17,7 @@ The project is based on OpenGL, SDL2, ImGui, & libmpv ( and I'm kind of proud of
 ### Windows libmpv binaries used
 Currently using: [mpv-dev-x86_64-20200816-git-7f67c52.7z (it's part of the repository)](https://sourceforge.net/projects/mpv-player-windows/files/libmpv/)
 
+
+### Platforms
+I have built this successfully for Linux & Windows in theory OSX should work as well but I can't test that.  
+I will probably only provide binaries for Windows.
