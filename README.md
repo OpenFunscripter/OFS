@@ -9,7 +9,8 @@ The project is based on OpenGL, SDL2, ImGui, & libmpv ( and I'm kind of proud of
 1. clone the repository
 2. run `git submodule update --init --recursive`
 3. Run cmake and compile ( on windows just use visual studio 2019 with cmake support )
-4. On Linux you'll need pkg-config & libmpv installed
+4. - On Windows make sure to copy the mpv-1.dll into the same directory as the executable. 
+   - On Linux you'll need pkg-config & libmpv installed
 
 
 ### Windows libmpv binaries used
