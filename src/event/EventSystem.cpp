@@ -9,6 +9,7 @@ int32_t EventSystem::WakeupOnMpvRenderUpdate = 0;
 int32_t EventSystem::FileDialogOpenEvent = 0;
 int32_t EventSystem::FileDialogSaveEvent = 0;
 
+int32_t EventSystem::FfmpegAudioProcessingFinished = 0;
 
 void EventSystem::setup()
 {
@@ -18,6 +19,7 @@ void EventSystem::setup()
 	WakeupOnMpvRenderUpdate = SDL_RegisterEvents(1);
 	FileDialogOpenEvent = SDL_RegisterEvents(1);
 	FileDialogSaveEvent = SDL_RegisterEvents(1);
+	FfmpegAudioProcessingFinished = SDL_RegisterEvents(1);
 }
 
 void EventSystem::PushEvent(SDL_Event& event)

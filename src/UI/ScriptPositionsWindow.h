@@ -20,7 +20,9 @@ class ScriptPositionsWindow
 	ImGradient speedGradient;
 	// used for calculating stroke color with speedGradient
 	const float max_speed_per_seconds = 530.f; // arbitrarily choosen maximum tuned for coloring
+	
 	std::vector<float> audio_waveform_avg;
+	bool ffmpegInProgress = false;
 
 	ImVec2 canvas_pos;
 	ImVec2 canvas_size;
@@ -49,12 +51,14 @@ class ScriptPositionsWindow
 	std::vector<FunscriptAction> ActionPositionWindow;
 	std::vector<ImVec2> ActionScreenCoordinates;
 	
-public:
+	void FfmpegAudioProcessingFinished(SDL_Event& ev);
+
 	bool ShowRawActions = true;
 	bool ShowRegularActions = true;
 	bool ShowAudioWaveform = false;
 	float ScaleAudio = 1.f;
 	float WindowSizeSeconds = 5.f;
+public:
 
 	const float MAX_WINDOW_SIZE = 60.f; // this limit is arbitrary and not enforced
 	const float MIN_WINDOW_SIZE = 5.f; // this limit is also arbitrary and not enforced

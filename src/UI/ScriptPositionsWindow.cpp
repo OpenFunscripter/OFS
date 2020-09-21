@@ -27,13 +27,20 @@ void ScriptPositionsWindow::updateSelection(bool clear)
 	OpenFunscripter::script().SelectTime(selection_start_ms, selection_end_ms, clear);
 }
 
+void ScriptPositionsWindow::FfmpegAudioProcessingFinished(SDL_Event& ev)
+{
+	ShowAudioWaveform = true;
+	ffmpegInProgress = false;
+	LOG_INFO("Audio processing complete.");
+}
+
 void ScriptPositionsWindow::setup()
 {
 	OpenFunscripter::ptr->events.Subscribe(SDL_MOUSEBUTTONDOWN, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_pressed));
 	OpenFunscripter::ptr->events.Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_scroll));
 	OpenFunscripter::ptr->events.Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_drag));
 	OpenFunscripter::ptr->events.Subscribe(SDL_MOUSEBUTTONUP, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_released));
-	
+	OpenFunscripter::ptr->events.Subscribe(EventSystem::FfmpegAudioProcessingFinished, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::FfmpegAudioProcessingFinished));
 	/*std::array<ImColor, 6> heatColor{
 		IM_COL32(0xFF, 0xFF, 0xFF, 0xFF),
 		IM_COL32(0x1E, 0x90, 0xFF, 0xFF),
@@ -182,8 +189,6 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		}
 	}
 
-
-
 	if (OpenFunscripter::script().Actions().size() > 0) {
 		// render raw actions
 		const FunscriptAction* prevAction = nullptr;
@@ -290,73 +295,87 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		ImGui::MenuItem("Draw actions", NULL, &ShowRegularActions);
 		ImGui::MenuItem("Draw raw actions", NULL, &ShowRawActions);
 		ImGui::SliderFloat("Waveform scale", &ScaleAudio, 0.25f, 10.f);
-		if (ImGui::MenuItem("Audio waveform", NULL, &ShowAudioWaveform)) {
-			if (ShowAudioWaveform) {
-				auto& ffmpeg_path = OpenFunscripter::ptr->settings->data().ffmpeg_path;
-				auto video_path = OpenFunscripter::ptr->player.getVideoPath();
-				auto base = SDL_GetBasePath();
-				auto output_path = std::filesystem::path(base) / "audio.mp3";
-				bool succ = OutputAudioFile(ffmpeg_path.c_str(), video_path,  output_path.string().c_str());
-				SDL_free(base);
+		if (ImGui::MenuItem("Audio waveform", NULL, &ShowAudioWaveform, !ffmpegInProgress)) {}
+		if (ImGui::MenuItem(ffmpegInProgress ? "Processing audio..." : "Update waveform", NULL, false, !ffmpegInProgress)) {
+			if (!ffmpegInProgress) {
+				ShowAudioWaveform = false; // gets switched true after processing
+				ffmpegInProgress = true;
 
-				if (!succ) {
-					LOGF_ERROR("Failed to output mp3 from video. (ffmpeg_path: \"%s\")", ffmpeg_path.c_str());
-					ShowAudioWaveform = false;
-				}
+				auto ffmpegThread = [](void* userData) {
+					auto& ctx = *((ScriptPositionsWindow*)userData);
+
+					auto& ffmpeg_path = OpenFunscripter::ptr->settings->data().ffmpeg_path;
+					auto video_path = OpenFunscripter::ptr->player.getVideoPath();
+					auto base = SDL_GetBasePath();
+					auto output_path = std::filesystem::path(base) / "audio.mp3";
+					SDL_free(base);
+					bool succ = OutputAudioFile(ffmpeg_path.c_str(), video_path,  output_path.string().c_str());
+					if (!succ) {
+						LOGF_ERROR("Failed to output mp3 from video. (ffmpeg_path: \"%s\")", ffmpeg_path.c_str());
+						ctx.ShowAudioWaveform = false;
+					}
 				
-				mp3dec_t mp3d;
-				mp3dec_file_info_t info;
-				if (mp3dec_load(&mp3d, output_path.string().c_str(), &info, NULL, NULL))
-				{
-					/* error */
-					LOGF_ERROR("failed to load \"%s\"", output_path.string().c_str());
-				}
-
-				const int samples_per_line = info.hz / 256.f; // controls the resolution
-
-				FUN_ASSERT(info.channels == 1, "expected one audio channels");
-				// create one vector of floats for each requested channel
-				audio_waveform_avg.clear();
-				audio_waveform_avg.reserve((info.samples / samples_per_line) + 1);
-
-				// for each requested channel
-				for (size_t offset = 0; offset < info.samples; offset += samples_per_line)
-				{
-					int sample_count = (info.samples - offset >= samples_per_line) 
-						? samples_per_line
-						: info.samples - offset;
-
-					float average(0);
-					for (int i = offset; i < offset+sample_count; i++) 
+					mp3dec_t mp3d;
+					mp3dec_file_info_t info;
+					if (mp3dec_load(&mp3d, output_path.string().c_str(), &info, NULL, NULL))
 					{
-						float sample = info.buffer[i];
-						float abs_sample = std::abs(sample);
-						average += abs_sample;
+						/* error */
+						LOGF_ERROR("failed to load \"%s\"", output_path.string().c_str());
 					}
-					average /= sample_count;
-					audio_waveform_avg.push_back(average);
-				}
 
-				auto map2range = [](float x, float in_min, float in_max, float out_min, float out_max)
-				{
-					return Util::Clamp<float>(
-						out_min + (out_max - out_min) * (x - in_min) / (in_max - in_min),
-						out_min,
-						out_max
-						);
+					const int samples_per_line = info.hz / 256.f; // controls the resolution
+
+					FUN_ASSERT(info.channels == 1, "expected one audio channels");
+					// create one vector of floats for each requested channel
+					ctx.audio_waveform_avg.clear();
+					ctx.audio_waveform_avg.reserve((info.samples / samples_per_line) + 1);
+
+					// for each requested channel
+					for (size_t offset = 0; offset < info.samples; offset += samples_per_line)
+					{
+						int sample_count = (info.samples - offset >= samples_per_line) 
+							? samples_per_line
+							: info.samples - offset;
+
+						float average(0);
+						for (int i = offset; i < offset+sample_count; i++) 
+						{
+							float sample = info.buffer[i];
+							float abs_sample = std::abs(sample);
+							average += abs_sample;
+						}
+						average /= sample_count;
+						ctx.audio_waveform_avg.push_back(average);
+					}
+
+					auto map2range = [](float x, float in_min, float in_max, float out_min, float out_max)
+					{
+						return Util::Clamp<float>(
+							out_min + (out_max - out_min) * (x - in_min) / (in_max - in_min),
+							out_min,
+							out_max
+							);
+					};
+
+					auto min = std::min_element(ctx.audio_waveform_avg.begin(), ctx.audio_waveform_avg.end());
+					auto max = std::max_element(ctx.audio_waveform_avg.begin(), ctx.audio_waveform_avg.end());
+					if (*min != 0.f || *max != 1.f) {
+						for (auto& val : ctx.audio_waveform_avg)
+						{
+							val = map2range(val, *min, *max, 0.f, 1.f);
+						}
+					}
+					free(info.buffer);
+					SDL_Event ev;
+					ev.type = EventSystem::FfmpegAudioProcessingFinished;
+					SDL_PushEvent(&ev);
+					return 0;
 				};
-
-				auto min = std::min_element(audio_waveform_avg.begin(), audio_waveform_avg.end());
-				auto max = std::max_element(audio_waveform_avg.begin(), audio_waveform_avg.end());
-				if (*min != 0.f || *max != 1.f) {
-					for (auto& val : audio_waveform_avg)
-					{
-						val = map2range(val, *min, *max, 0.f, 1.f);
-					}
-				}
-				free(info.buffer);
+				auto handle = SDL_CreateThread(ffmpegThread, "OpenFunscripterFfmpegThread", this);
+				SDL_DetachThread(handle);
 			}
 		}
+
 		ImGui::EndPopup();
 	}
 

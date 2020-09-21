@@ -32,6 +32,8 @@ public:
 	static int32_t FileDialogOpenEvent;
 	static int32_t FileDialogSaveEvent;
 
+	static int32_t FfmpegAudioProcessingFinished;
+
 	void setup();
 
 	void PushEvent(SDL_Event& event);
