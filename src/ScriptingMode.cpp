@@ -6,12 +6,14 @@
 
 ScripingModeBaseImpl::ScripingModeBaseImpl()
 {
-    ctx = &OpenFunscripter::script(); // :/
+}
+
+Funscript& ScripingModeBaseImpl::ctx() {
+    return OpenFunscripter::script();
 }
 
 void ScriptingMode::setup()
 {
-	ctx = OpenFunscripter::ptr;
     setMode(DEFAULT_MODE);
 }
 
@@ -99,39 +101,39 @@ void DynamicInjectionImpl::DrawModeSettings()
 // dynamic injection
 void DynamicInjectionImpl::addAction(const FunscriptAction& action)
 {
-    auto previous = ctx->GetPreviousActionBehind(action.at);
+    auto previous = ctx().GetPreviousActionBehind(action.at);
     if (previous != nullptr) {
         int32_t inject_at = previous->at + ((action.at - previous->at) / 2) + (((action.at - previous->at) / 2) * direction_bias);
 
         int32_t inject_duration = inject_at - previous->at;
-        int32_t inject_pos = Util::Clamp(previous->pos + (top_bottom_direction * (inject_duration / 1000.0) * target_speed), 0.0, 100.0);
-        ctx->AddAction(FunscriptAction(inject_at, inject_pos));
+        int32_t inject_pos = Util::Clamp<int32_t>(previous->pos + (top_bottom_direction * (inject_duration / 1000.0) * target_speed), 0.0, 100.0);
+        ctx().AddAction(FunscriptAction(inject_at, inject_pos));
     }
-    ctx->AddAction(action);
+    ctx().AddAction(action);
 }
 
 // alternating
 void AlternatingImpl::addAction(const FunscriptAction& action)
 {
-    auto previous = ctx->GetPreviousActionBehind(action.at);
+    auto previous = ctx().GetPreviousActionBehind(action.at);
     if (previous != nullptr) {
         if (action.pos >= 50) {
             if (previous->pos - action.pos >= 0) {
-                ctx->AddAction(FunscriptAction(action.at, 100 - action.pos));
+                ctx().AddAction(FunscriptAction(action.at, 100 - action.pos));
             }
             else {
-                ctx->AddAction(action);
+                ctx().AddAction(action);
             }
         }
         else {
             if (action.pos - previous->pos >= 0) {
-                ctx->AddAction(FunscriptAction(action.at, 100 - action.pos));
+                ctx().AddAction(FunscriptAction(action.at, 100 - action.pos));
             }
             else {
-                ctx->AddAction(action);
+                ctx().AddAction(action);
             }
         }
         return;
     }
-    ctx->AddAction(action);
+    ctx().AddAction(action);
 }

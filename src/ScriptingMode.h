@@ -15,7 +15,7 @@ enum ScriptingModeEnum {
 class ScripingModeBaseImpl 
 {
 protected:
-	Funscript* ctx;
+	Funscript& ctx();
 public:
 	ScripingModeBaseImpl();
 	virtual void DrawModeSettings() = 0;
@@ -27,7 +27,7 @@ class DefaultModeImpl : public ScripingModeBaseImpl
 public:
 	virtual void DrawModeSettings() override {}
 	virtual void addAction(const FunscriptAction& action) override {
-		ctx->AddAction(action);
+		ctx().AddAction(action);
 	}
 };
 
