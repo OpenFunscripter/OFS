@@ -17,10 +17,10 @@ enum class VideoMode {
 	VR_MODE
 };
 
-class OpenFunscripterVideoplayerWindow
+class VideoplayerWindow
 {
 public:
-	~OpenFunscripterVideoplayerWindow();
+	~VideoplayerWindow();
 private:
 	mpv_handle* mpv;
 	mpv_render_context* mpv_gl;
@@ -89,7 +89,7 @@ private:
 
 	void setup_vr_mode();
 public:
-	OpenFunscripterVideoplayerWindow()
+	VideoplayerWindow()
 		: prev_translation(0.f, 0.f), current_translation(0.f, 0.f), activeMode(VideoMode::FULL)
 	{}
 

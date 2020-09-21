@@ -158,10 +158,7 @@ bool OpenFunscripter::setup()
 
     scriptPositions.setup();
 
-    // TODO: make funscript a public unique_ptr 
-    LoadedFunscript = std::make_shared<Funscript>();
-    scriptPositions.LoadedFunscript = LoadedFunscript;
-    undoRedoSystem.LoadedFunscript = LoadedFunscript;
+    LoadedFunscript = std::make_unique<Funscript>();
 
     scripting.setup();
     if (!player.setup()) {
@@ -791,9 +788,7 @@ bool OpenFunscripter::openFile(const std::string& file)
 }
 
 bool OpenFunscripter::openFunscript(const std::string& file) {
-    // destroy existing script & creates a new one in it's place
-    // this avoids having to update the scriptPositions.LoadedFunscript pointer & all other shared_ptr/weak_ptr that might exist
-    overwrite_shared_ptr_content(LoadedFunscript);
+    LoadedFunscript = std::make_unique<Funscript>();
     undoRedoSystem.ClearHistory();
     if (!Util::FileExists(file)) {
         return false;

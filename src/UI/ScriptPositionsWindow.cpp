@@ -24,7 +24,7 @@ void ScriptPositionsWindow::updateSelection(bool clear)
 
 	int selection_start_ms = offset_ms + (frameSizeMs * min);
 	int selection_end_ms = offset_ms + (frameSizeMs * max);
-	LoadedFunscript->SelectTime(selection_start_ms, selection_end_ms, clear);
+	OpenFunscripter::script().SelectTime(selection_start_ms, selection_end_ms, clear);
 }
 
 void ScriptPositionsWindow::setup()
@@ -87,7 +87,7 @@ void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
 		rel_x2 = rel_x1;
 	}
 	else if (button.button == SDL_BUTTON_MIDDLE) {
-		LoadedFunscript->ClearSelection();
+		OpenFunscripter::script().ClearSelection();
 	}
 }
 
@@ -184,11 +184,11 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 
 
 
-	if (LoadedFunscript->Actions().size() > 0) {
+	if (OpenFunscripter::script().Actions().size() > 0) {
 		// render raw actions
 		const FunscriptAction* prevAction = nullptr;
 		if (ShowRawActions) {
-			for (auto& action : LoadedFunscript->Actions()) {
+			for (auto& action : OpenFunscripter::script().Actions()) {
 				if (action.at < offset_ms)
 					continue;
 
@@ -211,7 +211,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		// render normal actions
 		prevAction = nullptr;
 		if (ShowRegularActions) {
-			for (auto& action : LoadedFunscript->Actions()) {
+			for (auto& action : OpenFunscripter::script().Actions()) {
 				if (action.at < (offset_ms - frameSizeMs))
 					continue;
 
@@ -246,13 +246,13 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		}
 
 
-		if (LoadedFunscript->HasSelection()) {
+		if (OpenFunscripter::script().HasSelection()) {
 			constexpr auto selectedDots = IM_COL32(11, 252, 3, 255);
 			constexpr auto selectedLines = IM_COL32(3, 194, 252, 255);
 
 			const FunscriptAction* prev_action = nullptr;
-			for (int i = 0; i < LoadedFunscript->Selection().size(); i++) {
-				auto& action = LoadedFunscript->Selection()[i];
+			for (int i = 0; i < OpenFunscripter::script().Selection().size(); i++) {
+				auto& action = OpenFunscripter::script().Selection()[i];
 				
 				auto point = getPointForAction(action);
 

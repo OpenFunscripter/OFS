@@ -48,10 +48,8 @@ class ScriptPositionsWindow
 
 	std::vector<FunscriptAction> ActionPositionWindow;
 	std::vector<ImVec2> ActionScreenCoordinates;
-
 	
 public:
-	std::shared_ptr<Funscript> LoadedFunscript;
 	bool ShowRawActions = true;
 	bool ShowRegularActions = true;
 	bool ShowAudioWaveform = false;

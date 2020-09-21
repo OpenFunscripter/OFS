@@ -22,7 +22,6 @@ class UndoSystem
 {
 	void SnapshotRedo(const std::string& msg) noexcept;
 public:
-	std::shared_ptr<Funscript> LoadedFunscript;
 	// using vector as a stack...
 	// because std::stack can't be iterated
 	std::vector<ScriptState> UndoStack;

@@ -6,7 +6,7 @@
 
 ScripingModeBaseImpl::ScripingModeBaseImpl()
 {
-    ctx = OpenFunscripter::ptr->LoadedFunscript;
+    ctx = &OpenFunscripter::script(); // :/
 }
 
 void ScriptingMode::setup()

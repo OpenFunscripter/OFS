@@ -33,7 +33,7 @@ static void on_mpv_render_update(void* ctx)
 	SDL_PushEvent(&event);
 }
 
-void OpenFunscripterVideoplayerWindow::MpvEvents(SDL_Event& ev)
+void VideoplayerWindow::MpvEvents(SDL_Event& ev)
 {
 	while (1) {
 		mpv_event* mp_event = mpv_wait_event(mpv, 0);
@@ -149,7 +149,7 @@ void OpenFunscripterVideoplayerWindow::MpvEvents(SDL_Event& ev)
 	}
 }
 
-void OpenFunscripterVideoplayerWindow::MpvRenderUpdate(SDL_Event& ev)
+void VideoplayerWindow::MpvRenderUpdate(SDL_Event& ev)
 {
 	uint64_t flags = mpv_render_context_update(mpv_gl);
 	if (flags & MPV_RENDER_UPDATE_FRAME) {
@@ -158,7 +158,7 @@ void OpenFunscripterVideoplayerWindow::MpvRenderUpdate(SDL_Event& ev)
 	}
 }
 
-void OpenFunscripterVideoplayerWindow::observeProperties()
+void VideoplayerWindow::observeProperties()
 {
 	mpv_observe_property(mpv, MpvVideoHeight, "height", MPV_FORMAT_INT64);
 	mpv_observe_property(mpv, MpvVideoWidth, "width", MPV_FORMAT_INT64);
@@ -170,7 +170,7 @@ void OpenFunscripterVideoplayerWindow::observeProperties()
 	mpv_observe_property(mpv, MpvFilePath, "path", MPV_FORMAT_STRING);
 }
 
-void OpenFunscripterVideoplayerWindow::renderToTexture()
+void VideoplayerWindow::renderToTexture()
 {
 	redraw_video = false;
 	mpv_opengl_fbo fbo{ 0 };
@@ -187,7 +187,7 @@ void OpenFunscripterVideoplayerWindow::renderToTexture()
 	mpv_render_context_render(mpv_gl, params);
 }
 
-void OpenFunscripterVideoplayerWindow::updateRenderTexture()
+void VideoplayerWindow::updateRenderTexture()
 {
 	if (framebuffer_obj == 0) {
 		glGenFramebuffers(1, &framebuffer_obj);
@@ -220,11 +220,11 @@ void OpenFunscripterVideoplayerWindow::updateRenderTexture()
 	}
 }
 
-bool OpenFunscripterVideoplayerWindow::setup()
+bool VideoplayerWindow::setup()
 {
-	OpenFunscripter::ptr->events.Subscribe(EventSystem::WakeupOnMpvEvents, EVENT_SYSTEM_BIND(this, &OpenFunscripterVideoplayerWindow::MpvEvents));
-	OpenFunscripter::ptr->events.Subscribe(EventSystem::WakeupOnMpvRenderUpdate, EVENT_SYSTEM_BIND(this, &OpenFunscripterVideoplayerWindow::MpvRenderUpdate));
-	OpenFunscripter::ptr->events.Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &OpenFunscripterVideoplayerWindow::mouse_scroll));
+	OpenFunscripter::ptr->events.Subscribe(EventSystem::WakeupOnMpvEvents, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvEvents));
+	OpenFunscripter::ptr->events.Subscribe(EventSystem::WakeupOnMpvRenderUpdate, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvRenderUpdate));
+	OpenFunscripter::ptr->events.Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::mouse_scroll));
 	
 	updateRenderTexture();
 
@@ -294,7 +294,7 @@ bool OpenFunscripterVideoplayerWindow::setup()
 	return true;
 }
 
-OpenFunscripterVideoplayerWindow::~OpenFunscripterVideoplayerWindow()
+VideoplayerWindow::~VideoplayerWindow()
 {
 	mpv_render_context_free(mpv_gl);
 	mpv_detach_destroy(mpv);
@@ -302,7 +302,7 @@ OpenFunscripterVideoplayerWindow::~OpenFunscripterVideoplayerWindow()
 	// TODO: free gl resources
 }
 
-void OpenFunscripterVideoplayerWindow::mouse_scroll(SDL_Event& ev)
+void VideoplayerWindow::mouse_scroll(SDL_Event& ev)
 {
 	auto scroll = ev.wheel;
 	if (videoHovered) {
@@ -350,7 +350,7 @@ void OpenFunscripterVideoplayerWindow::mouse_scroll(SDL_Event& ev)
 	}
 }
 
-void OpenFunscripterVideoplayerWindow::setup_vr_mode()
+void VideoplayerWindow::setup_vr_mode()
 {
 	// VR MODE
 	// setup shader
@@ -465,7 +465,7 @@ void OpenFunscripterVideoplayerWindow::setup_vr_mode()
 }
 
 
-void OpenFunscripterVideoplayerWindow::DrawVideoPlayer(bool* open)
+void VideoplayerWindow::DrawVideoPlayer(bool* open)
 {
 	if (MpvData.video_loaded) {
 		ImGui::Begin("Player", open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
@@ -527,7 +527,7 @@ void OpenFunscripterVideoplayerWindow::DrawVideoPlayer(bool* open)
 				player_viewport = ImGui::GetCurrentWindowRead()->Viewport;
 				ImGui::GetWindowDrawList()->AddCallback(
 					[](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
-						auto& ctx = *(OpenFunscripterVideoplayerWindow*)cmd->UserCallbackData;
+						auto& ctx = *(VideoplayerWindow*)cmd->UserCallbackData;
 
 						auto draw_data = ctx.player_viewport->DrawData;
 						glUseProgram(ctx.vr_shader);
@@ -588,7 +588,7 @@ void OpenFunscripterVideoplayerWindow::DrawVideoPlayer(bool* open)
 	}
 }
 
-void OpenFunscripterVideoplayerWindow::setSpeed(float speed)
+void VideoplayerWindow::setSpeed(float speed)
 {
 	playbackSpeed = speed;
 	playbackSpeed = Util::Clamp<float>(playbackSpeed, minPlaybackSpeed, maxPlaybackSpeed);
@@ -597,7 +597,7 @@ void OpenFunscripterVideoplayerWindow::setSpeed(float speed)
 	mpv_command_async(mpv, 0, cmd);
 }
 
-void OpenFunscripterVideoplayerWindow::addSpeed(float speed)
+void VideoplayerWindow::addSpeed(float speed)
 {
 	playbackSpeed += speed;
 	playbackSpeed = Util::Clamp<float>(playbackSpeed, minPlaybackSpeed, maxPlaybackSpeed);
@@ -606,7 +606,7 @@ void OpenFunscripterVideoplayerWindow::addSpeed(float speed)
 	mpv_command_async(mpv, 0, cmd);
 }
 
-bool OpenFunscripterVideoplayerWindow::openVideo(const std::string& file)
+bool VideoplayerWindow::openVideo(const std::string& file)
 {
 	LOGF_INFO("Opening video: \"%s\"", file.c_str());
 	MpvData.video_loaded = false;
@@ -625,14 +625,14 @@ bool OpenFunscripterVideoplayerWindow::openVideo(const std::string& file)
 	return success;
 }
 
-void OpenFunscripterVideoplayerWindow::setVolume(float volume)
+void VideoplayerWindow::setVolume(float volume)
 {
 	stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.2f", volume*100.f);
 	const char* cmd[]{"set", "volume", tmp_buf, NULL};
 	mpv_command_async(mpv, 0, cmd);
 }
 
-void OpenFunscripterVideoplayerWindow::setPosition(float pos)
+void VideoplayerWindow::setPosition(float pos)
 {
 	stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f%", pos * 100.0f);
 	const char* cmd[]{ "seek", tmp_buf, "absolute-percent+exact", NULL };
@@ -640,13 +640,13 @@ void OpenFunscripterVideoplayerWindow::setPosition(float pos)
 
 }
 
-void OpenFunscripterVideoplayerWindow::setPaused(bool paused)
+void VideoplayerWindow::setPaused(bool paused)
 {
 	MpvData.paused = paused;
 	mpv_set_property_async(mpv, 0, "pause", MPV_FORMAT_FLAG, &MpvData.paused);
 }
 
-void OpenFunscripterVideoplayerWindow::nextFrame()
+void VideoplayerWindow::nextFrame()
 {
 	if (isPaused()) {
 		const char* cmd[]{ "frame-step", NULL };
@@ -654,7 +654,7 @@ void OpenFunscripterVideoplayerWindow::nextFrame()
 	}
 }
 
-void OpenFunscripterVideoplayerWindow::previousFrame()
+void VideoplayerWindow::previousFrame()
 {
 	if (isPaused()) {
 		const char* cmd[]{ "frame-back-step", NULL };
@@ -662,13 +662,13 @@ void OpenFunscripterVideoplayerWindow::previousFrame()
 	}
 }
 
-void OpenFunscripterVideoplayerWindow::togglePlay()
+void VideoplayerWindow::togglePlay()
 {
 	const char* cmd[]{ "cycle", "pause", NULL };
 	mpv_command_async(mpv, 0, cmd);
 }
 
-void OpenFunscripterVideoplayerWindow::closeVideo()
+void VideoplayerWindow::closeVideo()
 {
 	const char* cmd[] = { "stop", NULL };
 	mpv_command_async(mpv, 0, cmd);

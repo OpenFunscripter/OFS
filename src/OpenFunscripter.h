@@ -107,9 +107,9 @@ public:
 	static OpenFunscripter* ptr;
 
 	EventSystem events;
+	VideoplayerWindow player;
 	std::unique_ptr<OpenFunscripterSettings> settings;
-	OpenFunscripterVideoplayerWindow player;
-	std::shared_ptr<Funscript> LoadedFunscript;
+	std::unique_ptr<Funscript> LoadedFunscript;
 
 	const std::array<const char*, 6> SupportedVideoExtensions{
 	".mp4",
@@ -123,4 +123,6 @@ public:
 	bool setup();
 	int run();
 	void shutdown();
+
+	static Funscript& script() { return *OpenFunscripter::ptr->LoadedFunscript; }
 };

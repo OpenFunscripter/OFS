@@ -15,7 +15,7 @@ enum ScriptingModeEnum {
 class ScripingModeBaseImpl 
 {
 protected:
-	std::shared_ptr<Funscript> ctx;
+	Funscript* ctx;
 public:
 	ScripingModeBaseImpl();
 	virtual void DrawModeSettings() = 0;
