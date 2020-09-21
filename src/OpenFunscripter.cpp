@@ -418,6 +418,14 @@ void OpenFunscripter::register_bindings()
     ));
 }
 
+static void Tooltip(const char* tip) {
+    if (ImGui::IsItemHovered()) {
+        ImGui::BeginTooltip();
+        ImGui::Text("%s", tip);
+        ImGui::EndTooltip();
+    }
+}
+
 void OpenFunscripter::new_frame()
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -639,28 +647,34 @@ int OpenFunscripter::run()
 
                 ImGui::Columns(5, 0, false);
                 ImGui::Text(" %s.%03i (x%.03f)", tmp_buf, ms, actualPlaybackSpeed); ImGui::NextColumn();
-                if (ImGui::SliderFloat("Speed", &player.playbackSpeed, player.minPlaybackSpeed, player.maxPlaybackSpeed)) {
+
+                if (ImGui::Button("1x", ImVec2(0, 0))) {
+                    player.setSpeed(1.f);
+                }
+                ImGui::SetColumnWidth(1, ImGui::GetItemRectSize().x+10);
+                ImGui::NextColumn();
+
+                if (ImGui::Button("-25%", ImVec2(0, 0))) {
+                    player.addSpeed(-0.25);
+                }
+                ImGui::SetColumnWidth(2, ImGui::GetItemRectSize().x+10);
+                ImGui::NextColumn();
+
+                if (ImGui::Button("+25%", ImVec2(0, 0))) {
+                    player.addSpeed(0.25);
+                }
+                ImGui::SetColumnWidth(3, ImGui::GetItemRectSize().x+10);
+                ImGui::NextColumn();
+
+                ImGui::SetNextItemWidth(-1.f);
+                if (ImGui::SliderFloat("##Speed", &player.playbackSpeed, player.minPlaybackSpeed, player.maxPlaybackSpeed)) {
                     player.playbackSpeed = (int)(player.playbackSpeed / 0.05f) * 0.05f;
                     if (player.playbackSpeed != player.getSpeed()) {
                         player.setSpeed(player.playbackSpeed);
                     }
                 }
-                ImGui::NextColumn();
-
-                if (ImGui::Button("1x", ImVec2(-1, 0))) {
-                    player.setSpeed(1.f);
-                }
-                ImGui::NextColumn();
-
-                if (ImGui::Button("-25%", ImVec2(-1, 0))) {
-                    player.addSpeed(-0.25);
-                }
-                ImGui::NextColumn();
-
-                if (ImGui::Button("+25%", ImVec2(-1, 0))) {
-                    player.addSpeed(0.25);
-                }
-
+                Tooltip("Speed");
+                //ImGui::SetColumnWidth(4, ImGui::GetItemRectSize().x);
 
                 ImGui::Columns(1, 0, false);
 
