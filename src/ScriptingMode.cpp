@@ -14,6 +14,7 @@ Funscript& ScripingModeBaseImpl::ctx() {
 
 void ScriptingMode::setup()
 {
+    ctx = OpenFunscripter::ptr;
     setMode(DEFAULT_MODE);
 }
 
