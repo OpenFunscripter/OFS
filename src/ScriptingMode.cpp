@@ -8,7 +8,7 @@ ScripingModeBaseImpl::ScripingModeBaseImpl()
 {
 }
 
-Funscript& ScripingModeBaseImpl::ctx() {
+inline Funscript& ScripingModeBaseImpl::ctx() {
     return OpenFunscripter::script();
 }
 

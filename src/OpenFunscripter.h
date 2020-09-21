@@ -124,5 +124,5 @@ public:
 	int run();
 	void shutdown();
 
-	static Funscript& script() { return *OpenFunscripter::ptr->LoadedFunscript; }
+	static inline Funscript& script() { return *OpenFunscripter::ptr->LoadedFunscript; }
 };
