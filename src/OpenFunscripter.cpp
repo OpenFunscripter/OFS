@@ -648,22 +648,24 @@ int OpenFunscripter::run()
                 ImGui::Columns(5, 0, false);
                 ImGui::Text(" %s.%03i (x%.03f)", tmp_buf, ms, actualPlaybackSpeed); ImGui::NextColumn();
 
+                auto& style = ImGui::GetStyle();
+
                 if (ImGui::Button("1x", ImVec2(0, 0))) {
                     player.setSpeed(1.f);
                 }
-                ImGui::SetColumnWidth(1, ImGui::GetItemRectSize().x+10);
+                ImGui::SetColumnWidth(1, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
                 ImGui::NextColumn();
 
                 if (ImGui::Button("-25%", ImVec2(0, 0))) {
                     player.addSpeed(-0.25);
                 }
-                ImGui::SetColumnWidth(2, ImGui::GetItemRectSize().x+10);
+                ImGui::SetColumnWidth(2, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
                 ImGui::NextColumn();
 
                 if (ImGui::Button("+25%", ImVec2(0, 0))) {
                     player.addSpeed(0.25);
                 }
-                ImGui::SetColumnWidth(3, ImGui::GetItemRectSize().x+10);
+                ImGui::SetColumnWidth(3, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
                 ImGui::NextColumn();
 
                 ImGui::SetNextItemWidth(-1.f);
@@ -674,7 +676,6 @@ int OpenFunscripter::run()
                     }
                 }
                 Tooltip("Speed");
-                //ImGui::SetColumnWidth(4, ImGui::GetItemRectSize().x);
 
                 ImGui::Columns(1, 0, false);
 
