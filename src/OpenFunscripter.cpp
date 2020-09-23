@@ -889,7 +889,7 @@ void OpenFunscripter::removeAction()
         LoadedFunscript->RemoveSelectedActions();
     }
     else {
-        auto action = LoadedFunscript->GetActionAtTime(player.getCurrentPositionMs(), player.getFrameTimeMs());
+        auto action = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
         if (action != nullptr) {
             removeAction(*action); // snapshoted in here
         }
