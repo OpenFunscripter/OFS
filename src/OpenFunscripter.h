@@ -22,6 +22,7 @@
 
 #include <memory>
 #include <array>
+#include <chrono>
 
 class OpenFunscripter {
 private:
@@ -35,7 +36,10 @@ private:
 	bool Fullscreen = false;
 	bool DebugMetrics = false;
 	bool DebugDemo = false;
+	
 	std::vector<FunscriptAction> CopiedSelection;
+
+	std::chrono::system_clock::time_point last_save_time;
 
 	ScriptingMode scripting;
 	KeybindingSystem keybinds;
@@ -87,8 +91,7 @@ private:
 	void showOpenFileDialog();
 	void showSaveFileDialog();
 	bool openFile(const std::string& file);
-	bool openFunscript(const std::string& file);
-	void updateTitle(const std::string& title);
+	void updateTitle();
 
 	void fireAlert(const std::string& msg);
 	

@@ -828,33 +828,35 @@ bool OpenFunscripter::openFile(const std::string& file)
     else
         bool result = player.openVideo(video_path);
 
+    auto openFunscript = [this](const std::string& file) -> bool {
+        LoadedFunscript = std::make_unique<Funscript>();
+        undoRedoSystem.ClearHistory();
+        if (!Util::FileExists(file)) {
+            return false;
+        }
+        return LoadedFunscript->open(file);
+    };
+
     // try load funscript
     bool result = openFunscript(funscript_path);
     if (!result) {
         LOGF_WARN("Couldn't find funscript. \"%s\"", funscript_path.c_str());
     }
     LoadedFunscript->current_path = funscript_path;
-    updateTitle(funscript_path);
+    updateTitle();
     settings->data().last_opened_file = file;
     settings->saveSettings();
+
+    last_save_time = std::chrono::system_clock::now();
 
     return result;
 }
 
-bool OpenFunscripter::openFunscript(const std::string& file) {
-    LoadedFunscript = std::make_unique<Funscript>();
-    undoRedoSystem.ClearHistory();
-    if (!Util::FileExists(file)) {
-        return false;
-    }
-    return LoadedFunscript->open(file);
-}
-
-
-void OpenFunscripter::updateTitle(const std::string& title)
+void OpenFunscripter::updateTitle()
 {
     std::stringstream ss;
-    ss << "OpenFunscripter - \"" << title << "\"";
+    ss.str(std::string());
+    ss << "OpenFunscripter - \"" << LoadedFunscript->current_path << "\"";
     SDL_SetWindowTitle(window, ss.str().c_str());
 }
 
@@ -871,9 +873,10 @@ void OpenFunscripter::saveScript(const char* path)
     }
     else {
         LoadedFunscript->save(path);
-        updateTitle(LoadedFunscript->current_path);
+        updateTitle();
     }
     fireAlert("Script saved!");
+    last_save_time = std::chrono::system_clock::now();
 }
 
 void OpenFunscripter::removeAction(const FunscriptAction& action)
@@ -998,6 +1001,8 @@ void OpenFunscripter::ShowMainMenuBar()
     // TODO: either remove the shortcuts or dynamically retrieve them
     if (ImGui::BeginMenuBar())
     {
+        ImVec2 region = ImGui::GetContentRegionAvail();
+
         if (ImGui::BeginMenu("File"))
         {
             if (ImGui::MenuItem(ICON_FOLDER_OPEN" Open video / script")) {
@@ -1091,6 +1096,13 @@ void OpenFunscripter::ShowMainMenuBar()
             }
             ImGui::EndMenu();
         }
+        ImGui::SameLine(region.x - ImGui::GetFontSize()*12);
+        std::chrono::duration<float> duration = std::chrono::system_clock::now() - last_save_time;
+        ImColor col(IM_COL32(215, 215, 215, 255));
+        if (duration.count() > (60.f*5.f)) {
+            col = IM_COL32(215, 0, 0, 255);
+        }
+        ImGui::TextColored(col,"last saved %d minutes ago", (int)(duration.count() / 60.f));
         ImGui::EndMenuBar();
     }
 #undef BINDING_STRING
