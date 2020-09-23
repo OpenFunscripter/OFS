@@ -215,6 +215,7 @@ bool Funscript::EditAction(const FunscriptAction& oldAction, const FunscriptActi
 	// update action
 	auto act = getAction(oldAction);
 	if (act != nullptr) {
+		act->at = newAction.at;
 		act->pos = newAction.pos;
 		checkForInvalidatedActions();
 		NotifyActionsChanged();

@@ -66,6 +66,7 @@ public:
 	inline const FunscriptAction* GetActionAtTime(int32_t time_ms, uint32_t error_ms) noexcept { return getActionAtTime(time_ms, error_ms); }
 	inline const FunscriptAction* GetNextActionAhead(int32_t time_ms) noexcept { return getNextActionAhead(time_ms); }
 	inline const FunscriptAction* GetPreviousActionBehind(int32_t time_ms) noexcept { return getPreviousActionBehind(time_ms); }
+	inline const FunscriptAction* GetClosestAction(int32_t time_ms) noexcept { return getActionAtTime(time_ms, std::numeric_limits<uint32_t>::max()); }
 
 	int GetPositionAtTime(int32_t time_ms) noexcept;
 	

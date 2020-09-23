@@ -232,55 +232,94 @@ void OpenFunscripter::register_bindings()
         true,
         [&](void*) { LoadedFunscript->SelectAll(); }
     ));
-    // MOVE SELECTION LEFT/RIGHT
+    // MOVE LEFT/RIGHT
     keybinds.registerBinding(Keybinding(
-        "move_selection_left",
-        "Move selection left",
+        "move_actions_left",
+        "Move actions left",
         SDLK_LEFT,
         KMOD_LSHIFT,
         false,
         [&](void*) {
-            undoRedoSystem.Snapshot("Selection moved");
-            LoadedFunscript->MoveSelectionTime(-player.getFrameTimeMs());
+            if (LoadedFunscript->HasSelection()) {
+                undoRedoSystem.Snapshot("Actions moved");
+                LoadedFunscript->MoveSelectionTime(-player.getFrameTimeMs());
+            }
+            else {
+                auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
+                if (closest != nullptr) {
+                    undoRedoSystem.Snapshot("Actions moved");
+                    FunscriptAction moved(closest->at - player.getFrameTimeMs(), closest->pos);
+                    LoadedFunscript->EditAction(*closest, moved);
+                }
+            }
         }
     ));
 
     keybinds.registerBinding(Keybinding(
-        "move_selection_right",
-        "Move selection right",
+        "move_actions_right",
+        "Move actions right",
         SDLK_RIGHT,
         KMOD_LSHIFT,
         false,
         [&](void*) {
-            undoRedoSystem.Snapshot("Selection moved");
-            LoadedFunscript->MoveSelectionTime(player.getFrameTimeMs());
+            if (LoadedFunscript->HasSelection()) {
+                undoRedoSystem.Snapshot("Actions moved");
+                LoadedFunscript->MoveSelectionTime(player.getFrameTimeMs());
+            }
+            else {
+                auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
+                if (closest != nullptr) {
+                    undoRedoSystem.Snapshot("Actions moved");
+                    FunscriptAction moved(closest->at + player.getFrameTimeMs(), closest->pos);
+                    LoadedFunscript->EditAction(*closest, moved);
+                }
+            }
         }
     ));
 
     // MOVE SELECTION UP/DOWN
     keybinds.registerBinding(Keybinding(
-        "move_selection_up",
-        "Move selection up",
+        "move_actions_up",
+        "Move actions up",
         SDLK_UP,
         KMOD_LSHIFT,
         false,
         [&](void*) {
-            undoRedoSystem.Snapshot("Selection moved");
-            LoadedFunscript->MoveSelectionPosition(1);
+            if (LoadedFunscript->HasSelection()) {
+                undoRedoSystem.Snapshot("Actions moved");
+                LoadedFunscript->MoveSelectionPosition(1);
+            }
+            else {
+                auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
+                if (closest != nullptr) {
+                    undoRedoSystem.Snapshot("Actions moved");
+                    FunscriptAction moved(closest->at, closest->pos + 1);
+                    LoadedFunscript->EditAction(*closest, moved);
+                }
+            }
         }
     ));
     keybinds.registerBinding(Keybinding(
-        "move_selection_down",
-        "Move selection down",
+        "move_actions_down",
+        "Move actions down",
         SDLK_DOWN,
         KMOD_LSHIFT,
         false,
         [&](void*) {
-            undoRedoSystem.Snapshot("Selection moved");
-            LoadedFunscript->MoveSelectionPosition(-1);
+            undoRedoSystem.Snapshot("Actions moved");
+            if (LoadedFunscript->HasSelection()) {
+                LoadedFunscript->MoveSelectionPosition(-1);
+            }
+            else {
+                auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
+                if (closest != nullptr) {
+                    undoRedoSystem.Snapshot("Actions moved");
+                    FunscriptAction moved(closest->at, closest->pos - 1);
+                    LoadedFunscript->EditAction(*closest, moved);
+                }
+            }
         }
     ));
-
 
     // SAVE
     keybinds.registerBinding(Keybinding(
