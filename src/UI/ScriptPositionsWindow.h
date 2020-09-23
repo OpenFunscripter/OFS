@@ -61,7 +61,7 @@ class ScriptPositionsWindow
 public:
 
 	const float MAX_WINDOW_SIZE = 60.f; // this limit is arbitrary and not enforced
-	const float MIN_WINDOW_SIZE = 5.f; // this limit is also arbitrary and not enforced
+	const float MIN_WINDOW_SIZE = 1.f; // this limit is also arbitrary and not enforced
 	void setup();
 
 	void ShowScriptPositions(bool* open, float currentPositionMs);
