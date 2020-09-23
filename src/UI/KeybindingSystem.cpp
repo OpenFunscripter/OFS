@@ -53,7 +53,7 @@ void KeybindingSystem::pressed(SDL_Event& ev)
         currentlyChanging->key = key.keysym.sym;
         currentlyChanging->key_str = currentlyHeldKeys.str();
         binding_string_cache[currentlyChanging->identifier] = currentlyChanging->key_str;
-        currentlyChanging->modifiers = key.keysym.mod;
+        currentlyChanging->modifiers = modstate;
         currentlyChanging = nullptr;
         return;
     }

@@ -150,7 +150,7 @@ bool OpenFunscripter::setup()
     // register custom events with sdl
     events.setup();
 
-    settings = std::make_unique<OpenFunscripterSettings>("keybinds.json", "config.json");
+    settings = std::make_unique<OpenFunscripterSettings>("data/keybinds.json", "data/config.json");
 
     keybinds.setup();
     register_bindings(); // needs to happen before setBindings

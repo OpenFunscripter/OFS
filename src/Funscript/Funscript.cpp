@@ -226,7 +226,7 @@ bool Funscript::EditAction(const FunscriptAction& oldAction, const FunscriptActi
 void Funscript::PasteAction(const FunscriptAction& paste, int32_t error_ms) noexcept
 {
 	auto act = GetActionAtTime(paste.at, error_ms);
-	if (act != nullptr && act->at == paste.at) {
+	if (act != nullptr) {
 		RemoveAction(*act);
 	}
 	AddAction(paste);

@@ -75,7 +75,7 @@ void OpenFunscripterSettings::saveKeybinds(const std::vector<Keybinding>& bindin
 		else {
 			nlohmann::json bindingObj;
 			keybinds.push_back(bindingObj);
-			ptr = &bindingObj;
+			ptr = &keybinds.back();
 		}
 		(*ptr)["identifier"] = binding.identifier;
 		(*ptr)["ignore_repeats"] = binding.ignore_repeats;
