@@ -131,12 +131,7 @@ int Funscript::GetPositionAtTime(int32_t time_ms) noexcept
 	for (int i = 0; i < data.Actions.size()-1; i++) {
 		auto& action = data.Actions[i];
 		auto& next = data.Actions[i + 1];
-
-		// last action
-		if (i+1 == data.Actions.size()-1)
-			return next.pos;
-
-
+		
 		if (time_ms > action.at && time_ms < next.at) {
 			// interpolate position
 			int32_t last_pos = action.pos;
@@ -151,7 +146,7 @@ int Funscript::GetPositionAtTime(int32_t time_ms) noexcept
 
 	}
 
-	return 0;
+	return data.Actions.back().pos;
 }
 
 FunscriptAction* Funscript::getAction(const FunscriptAction& action) noexcept

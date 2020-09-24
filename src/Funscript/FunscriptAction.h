@@ -2,11 +2,6 @@
 
 #include <cstdint>
 
-//enum FunscriptActionFlag {
-//	None = 0,
-//	RawAction = 0x1
-//};
-
 class FunscriptAction
 {
 public:
