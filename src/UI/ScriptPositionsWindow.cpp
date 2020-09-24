@@ -207,8 +207,11 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		// render normal actions
 		prevAction = nullptr;
 		if (ShowRegularActions) {
-			for (auto& action : OpenFunscripter::script().Actions()) {
-				if (action.at < (offset_ms - frameSizeMs))
+			for (size_t i = 0; i < OpenFunscripter::script().Actions().size() - 1; i++) {
+				auto& action = OpenFunscripter::script().Actions()[i];
+				auto& next = OpenFunscripter::script().Actions()[i+1l];
+
+				if (next.at < offset_ms)
 					continue;
 
 				auto p1 = getPointForAction(action);
