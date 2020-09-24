@@ -208,12 +208,12 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 
 		// render normal actions
 		if (ShowRegularActions) {
-			std::vector<FunscriptAction>::const_iterator& startIt = std::find_if(script.Actions().begin(), script.Actions().end(),
+			auto& startIt = std::find_if(script.Actions().begin(), script.Actions().end(),
 				[&](auto& act) { return act.at >= offset_ms; });
 			if (startIt != script.Actions().begin())
 				startIt -= 1;
 
-			std::vector<FunscriptAction>::const_iterator& endIt = std::find_if(startIt, script.Actions().end(),
+			auto& endIt = std::find_if(startIt, script.Actions().end(),
 				[&](auto& act) { return act.at >= offset_ms + frameSizeMs; });
 			if (endIt != script.Actions().end())
 				endIt += 1;

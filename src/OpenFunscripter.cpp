@@ -683,14 +683,22 @@ int OpenFunscripter::run()
                     }
                 }
 
-                double time_seconds = player.getCurrentPositionSeconds();
-                formatTime(tmp_buf[0], sizeof(tmp_buf[0]), player.getCurrentPositionSeconds());
-                int ms = (time_seconds - (int)time_seconds) * 1000.0;
-
                 ImGui::Columns(5, 0, false);
-                ImGui::Text(" %s.%03i (x%.03f)", tmp_buf, ms, actualPlaybackSpeed); ImGui::NextColumn();
+                {               
+                    // format total duration
+                    // this doesn't need to be done every frame
+                    formatTime(tmp_buf[1], sizeof(tmp_buf[1]), player.getDuration());
+                    int durationMs = (player.getDuration() - (int)player.getDuration()) * 1000.0;
+
+                    double time_seconds = player.getCurrentPositionSeconds();
+                    formatTime(tmp_buf[0], sizeof(tmp_buf[0]), time_seconds);
+                    int ms = (time_seconds - (int)time_seconds) * 1000.0;
+                    ImGui::Text(" %s.%03i / %s.%03i (x%.03f)", tmp_buf[0], ms,  tmp_buf[1], durationMs, actualPlaybackSpeed); 
+                    ImGui::NextColumn();
+                }
 
                 auto& style = ImGui::GetStyle();
+                ImGui::SetColumnWidth(0, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
 
                 if (ImGui::Button("1x", ImVec2(0, 0))) {
                     player.setSpeed(1.f);
@@ -1330,7 +1338,7 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position)
     auto mouse = ImGui::GetMousePos();
     float rel_timeline_pos = ((mouse.x - frame_bb.Min.x) / frame_bb.GetWidth());
 
-    if (frame_bb.Contains(mouse)) {
+    if (ImGui::IsItemHovered()) {
         window->DrawList->AddLine(ImVec2(mouse.x, frame_bb.Min.y), ImVec2(mouse.x, frame_bb.Max.y), timeline_cursor_back, timeline_pos_cursor_w);
         window->DrawList->AddLine(ImVec2(mouse.x, frame_bb.Min.y), ImVec2(mouse.x, frame_bb.Max.y), timeline_cursor_front, timeline_pos_cursor_w / 2.f);
 
