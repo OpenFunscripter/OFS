@@ -550,7 +550,7 @@ void OpenFunscripter::FileDialogOpenEvent(SDL_Event& ev)
         if (Util::FileExists(file))
         {
             openFile(file);
-            settings->data().last_path = (std::filesystem::path(file).replace_filename("") / "").string();
+
         }
     }
 }
@@ -844,6 +844,11 @@ bool OpenFunscripter::openFile(const std::string& file)
     }
     LoadedFunscript->current_path = funscript_path;
     updateTitle();
+
+    auto last_path = std::filesystem::path(file);
+    last_path.replace_filename("");
+    last_path /= "";
+    settings->data().last_path = last_path.string();
     settings->data().last_opened_file = file;
     settings->saveSettings();
 
