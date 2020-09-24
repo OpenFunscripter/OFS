@@ -386,7 +386,7 @@ void OpenFunscripter::register_bindings()
     keybinds.registerBinding(Keybinding(
         "decrement_speed",
         "Playbackspeed -25%",
-        '-',
+        SDLK_KP_MINUS,
         0,
         true,
         [&](void*) { player.addSpeed(-0.25); }
@@ -394,7 +394,7 @@ void OpenFunscripter::register_bindings()
     keybinds.registerBinding(Keybinding(
         "increment_speed",
         "Playbackspeed +25%",
-        '+',
+        SDLK_KP_PLUS,
         0,
         true,
         [&](void*) { player.addSpeed(0.25); }
