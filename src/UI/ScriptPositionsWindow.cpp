@@ -120,6 +120,8 @@ void ScriptPositionsWindow::mouse_scroll(SDL_Event& ev)
 
 void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositionMs)
 {
+	auto& script = OpenFunscripter::script();
+
 	frameSizeMs = WindowSizeSeconds * 1000.0;
 	offset_ms = std::round(currentPositionMs) - (frameSizeMs / 2.0);
 
@@ -180,11 +182,11 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		}
 	}
 
-	if (OpenFunscripter::script().Actions().size() > 0) {
+	if (script.Actions().size() > 0) {
 		// render raw actions
 		const FunscriptAction* prevAction = nullptr;
 		if (ShowRawActions) {
-			for (auto& action : OpenFunscripter::script().RawActions()) {
+			for (auto& action : script.RawActions()) {
 				if (action.at < offset_ms)
 					continue;
 
@@ -205,14 +207,20 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		}
 
 		// render normal actions
-		prevAction = nullptr;
 		if (ShowRegularActions) {
-			for (size_t i = 0; i < OpenFunscripter::script().Actions().size() - 1; i++) {
-				auto& action = OpenFunscripter::script().Actions()[i];
-				auto& next = OpenFunscripter::script().Actions()[i+1l];
+			std::vector<FunscriptAction>::const_iterator& startIt = std::find_if(script.Actions().begin(), script.Actions().end(),
+				[&](auto& act) { return act.at >= offset_ms; });
+			if (startIt != script.Actions().begin())
+				startIt -= 1;
 
-				if (next.at < offset_ms)
-					continue;
+			std::vector<FunscriptAction>::const_iterator& endIt = std::find_if(startIt, script.Actions().end(),
+				[&](auto& act) { return act.at >= offset_ms + frameSizeMs; });
+			if (endIt != script.Actions().end())
+				endIt += 1;
+
+			prevAction = nullptr;
+			for (; startIt != endIt; startIt++) {
+				auto& action = *startIt;
 
 				auto p1 = getPointForAction(action);
 				ActionScreenCoordinates.emplace_back(p1);
@@ -222,16 +230,12 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 					// draw line
 					auto p2 = getPointForAction(*prevAction);
 					// calculate speed relative to maximum speed
-					float rel_speed = Util::Clamp((std::abs(action.pos - prevAction->pos) / ((action.at - prevAction->at) / 1000.0f)) / max_speed_per_seconds, 0.f, 1.f);
+					float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.at - prevAction->at) / 1000.0f)) / max_speed_per_seconds, 0.f, 1.f);
 					ImColor speed_color;
 					speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
 					speed_color.Value.w = 1.f;
 					draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
 					draw_list->AddLine(p1, p2, speed_color, 3.0f);
-				}
-
-				if (action.at > offset_ms + (int)(frameSizeMs)) {
-					break;
 				}
 
 				prevAction = &action;
@@ -244,15 +248,13 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 			draw_list->AddCircleFilled(p, 5.0, IM_COL32(255, 0, 0, 255), 12);
 		}
 
-
-		if (OpenFunscripter::script().HasSelection()) {
+		if (script.HasSelection()) {
 			constexpr auto selectedDots = IM_COL32(11, 252, 3, 255);
 			constexpr auto selectedLines = IM_COL32(3, 194, 252, 255);
 
 			const FunscriptAction* prev_action = nullptr;
-			for (int i = 0; i < OpenFunscripter::script().Selection().size(); i++) {
-				auto& action = OpenFunscripter::script().Selection()[i];
-				
+			for (int i = 0; i < script.Selection().size(); i++) {
+				auto& action = script.Selection()[i];
 				auto point = getPointForAction(action);
 
 				if (prev_action != nullptr) {
@@ -261,11 +263,11 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				}
 				// draw highlight point
 				draw_list->AddCircleFilled(point, 5.0, selectedDots, 12);
-
 				prev_action = &action;
 			}
 		}
 	}
+
 	// current position indicator -> |
 	draw_list->AddLine(
 		canvas_pos + ImVec2(canvas_size.x / 2.f, 0),
@@ -369,7 +371,6 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				SDL_DetachThread(handle);
 			}
 		}
-
 		ImGui::EndPopup();
 	}
 
