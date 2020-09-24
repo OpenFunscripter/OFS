@@ -601,9 +601,10 @@ void VideoplayerWindow::addSpeed(float speed)
 {
 	playbackSpeed += speed;
 	playbackSpeed = Util::Clamp<float>(playbackSpeed, minPlaybackSpeed, maxPlaybackSpeed);
-	stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.3f", speed);
-	const char* cmd[]{ "add", "speed", tmp_buf, NULL };
-	mpv_command_async(mpv, 0, cmd);
+	setSpeed(playbackSpeed);
+	//stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.3f", speed);
+	//const char* cmd[]{ "add", "speed", tmp_buf, NULL };
+	//mpv_command_async(mpv, 0, cmd);
 }
 
 bool VideoplayerWindow::openVideo(const std::string& file)
