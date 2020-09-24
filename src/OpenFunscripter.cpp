@@ -1217,7 +1217,6 @@ void OpenFunscripter::ShowStatisticsWindow(bool* open)
             else {                                     
                 ImGui::Text("%3d " ICON_LONG_ARROW_RIGHT " %3d" " = %3d " ICON_LONG_ARROW_DOWN, behind->pos, front->pos, -length);
             }
-            //ImGui::Text("%d"ICON_LONG_ARROW_RIGHT"%d", behind->pos, front->pos);
         }
     }
 

@@ -5,14 +5,15 @@
 #include <vector>
 #include <string>
 
-struct FunscriptData {
-	std::vector<FunscriptAction> Actions;
-	std::vector<FunscriptAction> selection;
-	std::vector<FunscriptAction> RawActions; // TODO: change undosystem to not copy this all the time
-};
 
 class Funscript
 {
+public:
+	struct FunscriptData {
+		std::vector<FunscriptAction> Actions;
+		std::vector<FunscriptAction> selection;
+		std::vector<FunscriptAction> RawActions;
+	};
 private:
 	nlohmann::json Json;
 	bool scriptOpened = false;

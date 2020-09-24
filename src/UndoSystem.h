@@ -12,9 +12,9 @@
 // while this is not memory efficient this turns out to be incredibly robust and flexible
 struct ScriptState {
 	std::string Message;
-	FunscriptData Data;
+	Funscript::FunscriptData Data;
 
-	ScriptState(const std::string& msg, const FunscriptData& data)
+	ScriptState(const std::string& msg, const Funscript::FunscriptData& data)
 		: Message(msg), Data(data) {}
 };
 
