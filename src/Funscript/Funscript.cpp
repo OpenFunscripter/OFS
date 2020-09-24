@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <set>
 
 void Funscript::setScriptTemplate()
 {
@@ -48,33 +49,36 @@ bool Funscript::open(const std::string& file)
 	Json = json;
 	auto actions = Json["actions"];
 	auto raw_actions = Json["rawActions"];
-	data.Actions.clear();
-	data.Actions.reserve(actions.size());
 
+	data.Actions.clear();
 	data.RawActions.clear();
-	data.RawActions.reserve(raw_actions.size());
 
 	scriptOpened = true;
 
-
+	std::set<FunscriptAction> actionSet;
 	if (raw_actions.is_array()) {
 		for (auto& action : raw_actions) {
 			int32_t time_ms = action["at"];
 			int32_t pos = action["pos"];
-			data.RawActions.emplace_back(time_ms, pos);
+			actionSet.emplace(time_ms, pos);
 		}
 	}
+	data.RawActions.assign(actionSet.begin(), actionSet.end());
 
+	actionSet.clear();
 	if (actions.is_array()) {
 		for (auto& action : actions) {
 			int32_t time_ms = action["at"];
 			int32_t pos = action["pos"];
-			data.Actions.emplace_back(time_ms, pos);
+			actionSet.emplace(time_ms, pos);
 		}
 	}
+	data.Actions.assign(actionSet.begin(), actionSet.end());
 
-	sortActions(data.Actions); // make sure it's ordered by time
-	sortActions(data.RawActions);
+	// sorting is ensured by the std::set
+
+	//sortActions(data.Actions); // make sure it's ordered by time
+	//sortActions(data.RawActions);
 
 	NotifyActionsChanged();
 	return true;
