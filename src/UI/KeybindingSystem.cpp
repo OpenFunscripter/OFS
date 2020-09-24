@@ -146,8 +146,8 @@ bool KeybindingSystem::ShowBindingWindow()
 
     if (ImGui::BeginPopupModal("Keybindings", &ShowWindow, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysVerticalScrollbar))
     {
-        const bool disable_indent = true;
-        if (disable_indent)
+        constexpr bool disable_indent = true;
+        if constexpr (disable_indent)
             ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 0.0f);
 
         ImGui::Text("You can use CTRL, SHIFT & ALT as modifiers.");
@@ -195,8 +195,9 @@ bool KeybindingSystem::ShowBindingWindow()
 
         /*save = ImGui::Button("Save", ImVec2(-1, 0));*/
 
-        if (disable_indent)
+        if constexpr (disable_indent)
             ImGui::PopStyleVar();
+
         ImGui::EndPopup();
     }
     return save;

@@ -38,6 +38,10 @@ target_compile_definitions(imgui PUBLIC "IMGUI_DEFINE_MATH_OPERATORS")
 target_compile_definitions(imgui PUBLIC "IMGUI_DISABLE_OBSOLETE_FUNCTIONS")
 #target_compile_definitions(imgui PUBLIC "IMGUI_DEBUG_PARANOID")
 
+add_library(imgui_stdlib STATIC "imgui/misc/cpp/imgui_stdlib.cpp" "imgui/misc/cpp/imgui_stdlib.h")
+target_include_directories(imgui_stdlib PUBLIC "imgui/misc/cpp")
+target_link_libraries(imgui_stdlib PUBLIC imgui)
+
 # ========
 # = SDL2 =
 # ========

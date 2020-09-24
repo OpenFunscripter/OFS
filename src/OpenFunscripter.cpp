@@ -550,7 +550,6 @@ void OpenFunscripter::FileDialogOpenEvent(SDL_Event& ev)
         if (Util::FileExists(file))
         {
             openFile(file);
-
         }
     }
 }
@@ -594,6 +593,10 @@ int OpenFunscripter::run()
 
             if (keybinds.ShowBindingWindow()) {
                 settings->saveKeybinds(keybinds.getBindings());
+            }
+
+            if (settings->ShowPreferenceWindow()) {
+                settings->saveSettings();
             }
 
             if (player.isLoaded()) {
@@ -1098,6 +1101,9 @@ void OpenFunscripter::ShowMainMenuBar()
             }
             if (ImGui::MenuItem("Fullscreen", BINDING_STRING("fullscreen_toggle"), &Fullscreen)) {
                 SetFullscreen(Fullscreen);
+            }
+            if (ImGui::MenuItem("Preferences")) {
+                settings->ShowWindow = true;
             }
             ImGui::EndMenu();
         }

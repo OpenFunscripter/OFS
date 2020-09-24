@@ -36,4 +36,7 @@ public:
 	void saveSettings();
 	void saveKeybinds(const std::vector<Keybinding>& binding);
 	std::vector<Keybinding> getKeybindings();
+
+	bool ShowWindow = false;
+	bool ShowPreferenceWindow();
 };

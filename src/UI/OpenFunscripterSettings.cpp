@@ -1,5 +1,9 @@
 #include "OpenFunscripterSettings.h"
 #include "OpenFunscripterUtil.h"
+
+#include "imgui.h"
+#include "imgui_stdlib.h"
+
 #include <algorithm>
 
 
@@ -106,4 +110,23 @@ std::vector<Keybinding> OpenFunscripterSettings::getKeybindings()
 	}
 
 	return bindings;
+}
+
+bool OpenFunscripterSettings::ShowPreferenceWindow()
+{
+	bool save = false;
+	if (ShowWindow)
+		ImGui::OpenPopup("Preferences");
+
+
+	if (ImGui::BeginPopupModal("Preferences", &ShowWindow, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysVerticalScrollbar))
+	{
+		ImGui::Text("%s", "ffmpeg is only used for the audio waveform display");
+		if (ImGui::InputText("ffmpeg path", &scripterSettings.ffmpeg_path))
+			save = true;
+
+		ImGui::EndPopup();
+	}
+
+	return save;
 }

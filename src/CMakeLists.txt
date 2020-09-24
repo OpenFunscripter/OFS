@@ -7,11 +7,11 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "UndoSystem.cpp"
   "Funscript/FunscriptAction.cpp"
   "Funscript/Funscript.cpp"
-  "OpenFunscripterSettings.cpp"
   "RawInput.cpp"
   "ScriptingMode.cpp"
   "OpenFunscripterUtil.cpp"
 
+  "UI/OpenFunscripterSettings.cpp"
   "UI/KeybindingSystem.cpp"
   "UI/GradientBar.cpp"
   "UI/ScriptPositionsWindow.cpp"
@@ -29,6 +29,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
 target_link_libraries(${PROJECT_NAME} PUBLIC
   nlohmann_json
   imgui
+  imgui_stdlib
   glad
   SDL2-static
   SDL2main
