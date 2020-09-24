@@ -1382,8 +1382,6 @@ void OpenFunscripter::UpdateTimelineGradient(ImGradient& grad)
         return;
     }
 
-    auto start = std::chrono::high_resolution_clock::now();
-
     std::array<ImColor, 6> heatColor{
         IM_COL32(0x00, 0x00, 0x00, 0xFF),
         IM_COL32(0x1E, 0x90, 0xFF, 0xFF),
@@ -1431,9 +1429,4 @@ void OpenFunscripter::UpdateTimelineGradient(ImGradient& grad)
         grad.addMark(markPos, color);
     } while (kernel_offset < durationMs);
     grad.refreshCache();
-
-    auto finish = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = finish - start;
-    LOGF_DEBUG("timeline update time: %lf", elapsed.count());
-
 }

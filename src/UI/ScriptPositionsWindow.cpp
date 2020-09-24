@@ -6,8 +6,6 @@
 #include "SDL.h"
 #include "stb_sprintf.h"
 
-//#include "AudioFile.h"
-
 //#define MINIMP3_ONLY_MP3
 //#define MINIMP3_ONLY_SIMD
 //#define MINIMP3_NO_SIMD
@@ -41,14 +39,7 @@ void ScriptPositionsWindow::setup()
 	OpenFunscripter::ptr->events.Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_drag));
 	OpenFunscripter::ptr->events.Subscribe(SDL_MOUSEBUTTONUP, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_released));
 	OpenFunscripter::ptr->events.Subscribe(EventSystem::FfmpegAudioProcessingFinished, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::FfmpegAudioProcessingFinished));
-	/*std::array<ImColor, 6> heatColor{
-		IM_COL32(0xFF, 0xFF, 0xFF, 0xFF),
-		IM_COL32(0x1E, 0x90, 0xFF, 0xFF),
-		IM_COL32(0x00, 0xFF, 0xFF, 0xFF),
-		IM_COL32(0x00, 0xFF, 0x00, 0xFF),
-		IM_COL32(0xFF, 0xFF, 0x00, 0xFF),
-		IM_COL32(0xFF, 0x00, 0x00, 0xFF),
-	};*/
+
 	std::array<ImColor, 4> heatColor{
 		IM_COL32(0xFF, 0xFF, 0xFF, 0xFF),
 		IM_COL32(0x66, 0xff, 0x00, 0xFF),
@@ -271,12 +262,12 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				prev_action = &action;
 			}
 		}
-		// current position indicator -> |
-		draw_list->AddLine(
-			canvas_pos + ImVec2(canvas_size.x / 2.f, 0),
-			canvas_pos + ImVec2(canvas_size.x / 2.f, canvas_size.y),
-			IM_COL32(255, 255, 255, 255), 3.0f);
 	}
+	// current position indicator -> |
+	draw_list->AddLine(
+		canvas_pos + ImVec2(canvas_size.x / 2.f, 0),
+		canvas_pos + ImVec2(canvas_size.x / 2.f, canvas_size.y),
+		IM_COL32(255, 255, 255, 255), 3.0f);
 
 	// selection box
 	if (selection) {
@@ -384,7 +375,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 
 bool OutputAudioFile(const char* ffmpeg_path, const char* video_path, const char* output_path) {
 	char buffer[1024];
-	int num = stbsp_snprintf(buffer, 1024, "%s -i \"%s\" -b:a 320k -ac 1 -y \"%s\"" /*"%s -i \"%s\" -acodec pcm_u8 -ac 1 -ar 22050 -y \"%s\""*/,
+	int num = stbsp_snprintf(buffer, sizeof(buffer), "%s -i \"%s\" -b:a 320k -ac 1 -y \"%s\"",
 		ffmpeg_path,
 		video_path,
 		output_path);
