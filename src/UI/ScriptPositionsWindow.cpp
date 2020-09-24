@@ -193,7 +193,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		// render raw actions
 		const FunscriptAction* prevAction = nullptr;
 		if (ShowRawActions) {
-			for (auto& action : OpenFunscripter::script().Actions()) {
+			for (auto& action : OpenFunscripter::script().RawActions()) {
 				if (action.at < offset_ms)
 					continue;
 

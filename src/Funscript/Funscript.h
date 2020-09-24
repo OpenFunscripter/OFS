@@ -61,6 +61,7 @@ public:
 	const FunscriptData& Data() const noexcept { return data; }
 	const std::vector<FunscriptAction>& Selection() const noexcept { return data.selection; }
 	const std::vector<FunscriptAction>& Actions() const noexcept { return data.Actions; }
+	const std::vector<FunscriptAction>& RawActions() const noexcept { return data.RawActions; }
 
 	inline const FunscriptAction* GetAction(const FunscriptAction& action) noexcept { return getAction(action); }
 	inline const FunscriptAction* GetActionAtTime(int32_t time_ms, uint32_t error_ms) noexcept { return getActionAtTime(time_ms, error_ms); }
