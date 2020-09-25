@@ -96,8 +96,12 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev)
 				break;
 			}
 #endif
-
 			switch (mp_event->reply_userdata) {
+			case MpvHwDecoder:
+			{
+				LOGF_INFO("Active hardware decoder: %s", *(char**)prop->data);
+				break;
+			}
 			case MpvVideoWidth:
 			{
 				MpvData.video_width = *(int64_t*)prop->data;
@@ -136,16 +140,12 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev)
 			case MpvFilePath:
 				// I'm not sure if I own this memory :/
 				// But I can't free it so I will assume I don't
-				//if (MpvData.file_path != nullptr) { 
-				//	mpv_free(MpvData.file_path); 
-				//}
 				MpvData.file_path = *((const char**)(prop->data));
 				break;
 			}
 			continue;
 		}
 		}
-		/*LOGF_DEBUG("event: %s\n", mpv_event_name(mp_event->event_id));*/
 	}
 }
 
@@ -153,7 +153,6 @@ void VideoplayerWindow::MpvRenderUpdate(SDL_Event& ev)
 {
 	uint64_t flags = mpv_render_context_update(mpv_gl);
 	if (flags & MPV_RENDER_UPDATE_FRAME) {
-		//renderToTexture();
 		redraw_video = true;
 	}
 }

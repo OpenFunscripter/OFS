@@ -121,7 +121,7 @@ bool OpenFunscripterSettings::ShowPreferenceWindow()
 
 	if (ImGui::BeginPopupModal("Preferences", &ShowWindow, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysVerticalScrollbar))
 	{
-		if (ImGui::Checkbox("Force hardware decoding", &scripterSettings.force_hw_decoding))
+		if (ImGui::Checkbox("Force hardware decoding (Requires program restart)", &scripterSettings.force_hw_decoding))
 			save = true;
 		Util::Tooltip("Use this for really high resolution video 4K+ VR videos for example.");
 		ImGui::EndPopup();
