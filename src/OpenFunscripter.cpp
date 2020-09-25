@@ -519,7 +519,6 @@ void OpenFunscripter::process_events()
 
 void OpenFunscripter::FunscriptChanged(SDL_Event& ev)
 {
-    LOG_DEBUG("Funscript changed!");
     updateTimelineGradient = true;
 }
 
@@ -1034,7 +1033,7 @@ void OpenFunscripter::ShowMainMenuBar()
         }
         if (ImGui::BeginMenu("Edit"))
         {
-            if (ImGui::MenuItem("Manual Snapshot")) { undoRedoSystem.Snapshot("Manual snapshot"); }
+            if (ImGui::MenuItem("Manual snapshot")) { undoRedoSystem.Snapshot("Manual snapshot"); }
             ImGui::Separator();
             if (ImGui::MenuItem("Undo", BINDING_STRING("undo"), false, !undoRedoSystem.UndoStack.empty())) {
                 undoRedoSystem.Undo();
