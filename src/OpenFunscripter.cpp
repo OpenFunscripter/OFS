@@ -1114,10 +1114,15 @@ void OpenFunscripter::ShowMainMenuBar()
             }
 
             if (ImGui::BeginMenu("Goto...")) {
-                for (auto& mark : LoadedFunscript->Bookmarks()) {
-                    if (ImGui::MenuItem(mark.name.c_str())) {
-                        float newPos = Util::Clamp<float>(mark.at / (player.getDuration() * 1000.0), 0.0f, 1.0f);
-                        player.setPosition(newPos);
+                if (LoadedFunscript->Bookmarks().size() == 0) {
+                    ImGui::TextDisabled("No bookmarks");
+                }
+                else {
+                    for (auto& mark : LoadedFunscript->Bookmarks()) {
+                        if (ImGui::MenuItem(mark.name.c_str())) {
+                            float newPos = Util::Clamp<float>(mark.at / (player.getDuration() * 1000.0), 0.0f, 1.0f);
+                            player.setPosition(newPos);
+                        }
                     }
                 }
                 ImGui::EndMenu();
