@@ -168,6 +168,7 @@ void VideoplayerWindow::observeProperties()
 	mpv_observe_property(mpv, MpvSpeed, "speed", MPV_FORMAT_DOUBLE);
 	mpv_observe_property(mpv, MpvPauseState, "pause", MPV_FORMAT_FLAG);
 	mpv_observe_property(mpv, MpvFilePath, "path", MPV_FORMAT_STRING);
+	mpv_observe_property(mpv, MpvHwDecoder, "hwdec-current", MPV_FORMAT_STRING);
 }
 
 void VideoplayerWindow::renderToTexture()
@@ -234,10 +235,13 @@ bool VideoplayerWindow::setup()
 		return false;
 	}
 
+	bool suc;
 	// hardware decoding. only important when running 5k vr footage
-	bool suc = mpv_set_property_string(mpv, "hwdec", "auto-safe") == 0;
-	if (!suc)
-		LOG_WARN("failed to set mpv hardware decoding to \"auto-safe\"");
+	if (OpenFunscripter::ptr->settings->data().force_hw_decoding) {
+		suc = mpv_set_property_string(mpv, "hwdec", "auto-safe") == 0;
+		if (!suc)
+			LOG_WARN("failed to set mpv hardware decoding to \"auto-safe\"");
+	}
 	
 	// without this the file gets closed when the end is reached
 	suc = mpv_set_property_string(mpv, "keep-open", "yes") == 0;

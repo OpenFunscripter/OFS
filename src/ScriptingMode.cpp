@@ -18,14 +18,6 @@ void ScriptingMode::setup()
     setMode(DEFAULT_MODE);
 }
 
-static void Tooltip(const char* tip) {
-    if (ImGui::IsItemHovered()) {
-        ImGui::BeginTooltip();
-        ImGui::Text("%s", tip);
-        ImGui::EndTooltip();
-    }
-}
-
 void ScriptingMode::DrawScriptingMode(bool* open)
 {
 	ImGui::Begin("Scripting Mode", open);
@@ -38,7 +30,7 @@ void ScriptingMode::DrawScriptingMode(bool* open)
         "\0")) {
         setMode(active_mode);
     }
-    Tooltip("Scripting mode");
+    Util::Tooltip("Scripting mode");
     impl->DrawModeSettings();
     ImGui::PopItemWidth();
 	ImGui::End();
@@ -81,11 +73,11 @@ void ScriptingMode::addEditAction(const FunscriptAction& action)
 void DynamicInjectionImpl::DrawModeSettings()
 {
     ImGui::SliderFloat("##Target speed (units/s)", &target_speed, min_speed, max_speed);
-    Tooltip("Target speed (units/s)");
+    Util::Tooltip("Target speed (units/s)");
     target_speed = std::round(Util::Clamp(target_speed, min_speed, max_speed));
 
     ImGui::SliderFloat("##Up/Down speed bias", &direction_bias, -0.50f, 0.50f);
-    Tooltip("Up/Down speed bias");
+    Util::Tooltip("Up/Down speed bias");
 
     ImGui::Columns(2, 0, false);
     if (ImGui::RadioButton("Top", top_bottom_direction == 1)) {

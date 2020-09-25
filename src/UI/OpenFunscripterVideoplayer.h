@@ -51,6 +51,7 @@ private:
 		MpvVideoHeight,
 		MpvPauseState,
 		MpvFilePath,
+		MpvHwDecoder,
 	};
 
 	struct MpvDataCache {

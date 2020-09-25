@@ -459,13 +459,7 @@ void OpenFunscripter::register_bindings()
     ));
 }
 
-static void Tooltip(const char* tip) {
-    if (ImGui::IsItemHovered()) {
-        ImGui::BeginTooltip();
-        ImGui::Text("%s", tip);
-        ImGui::EndTooltip();
-    }
-}
+
 
 void OpenFunscripter::new_frame()
 {
@@ -727,7 +721,7 @@ int OpenFunscripter::run()
                         player.setSpeed(player.playbackSpeed);
                     }
                 }
-                Tooltip("Speed");
+                Util::Tooltip("Speed");
 
                 ImGui::Columns(1, 0, false);
 

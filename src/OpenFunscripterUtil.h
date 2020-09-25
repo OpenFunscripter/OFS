@@ -65,6 +65,8 @@ public:
 		return std::filesystem::exists(file_path) && std::filesystem::is_regular_file(file_path);
 	}
 
+	static void Tooltip(const char* tip);
+
 };
 
 //#ifndef NDEBUG

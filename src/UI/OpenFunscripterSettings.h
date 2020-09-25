@@ -15,6 +15,7 @@ class OpenFunscripterSettings
 		std::string last_opened_file;
 		bool draw_video= true;
 		bool show_simulator = false;
+		bool force_hw_decoding = false;
 	} scripterSettings;
 
 	std::string keybinds_path;

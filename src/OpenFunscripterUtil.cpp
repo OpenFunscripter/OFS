@@ -5,6 +5,8 @@
 
 #include "glad/glad.h"
 
+#include "imgui.h"
+
 bool Util::LoadTextureFromFile(const char* filename, unsigned int* out_texture, int* out_width, int* out_height)
 {
 	// Load from file
@@ -33,4 +35,13 @@ bool Util::LoadTextureFromFile(const char* filename, unsigned int* out_texture, 
 	*out_height = image_height;
 
 	return true;
+}
+
+void Util::Tooltip(const char* tip)
+{
+	if (ImGui::IsItemHovered()) {
+		ImGui::BeginTooltip();
+		ImGui::Text("%s", tip);
+		ImGui::EndTooltip();
+	}
 }

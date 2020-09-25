@@ -47,6 +47,7 @@ void OpenFunscripterSettings::load_config()
 	LOAD_CONFIG(last_opened_file)
 	LOAD_CONFIG(draw_video)
 	LOAD_CONFIG(show_simulator)
+	LOAD_CONFIG(force_hw_decoding)
 }
 #undef LOAD_CONFIG
 
@@ -57,6 +58,7 @@ void OpenFunscripterSettings::saveSettings()
 	SAVE_CONFIG(last_opened_file)
 	SAVE_CONFIG(draw_video)
 	SAVE_CONFIG(show_simulator)
+	SAVE_CONFIG(force_hw_decoding)
 	save_config();
 }
 #undef SAVE_CONFIG
@@ -119,8 +121,9 @@ bool OpenFunscripterSettings::ShowPreferenceWindow()
 
 	if (ImGui::BeginPopupModal("Preferences", &ShowWindow, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysVerticalScrollbar))
 	{
-		ImGui::Text("%s", "this is empty right now :^)");
-
+		if (ImGui::Checkbox("Force hardware decoding", &scripterSettings.force_hw_decoding))
+			save = true;
+		Util::Tooltip("Use this for really high resolution video 4K+ VR videos for example.");
 		ImGui::EndPopup();
 	}
 
