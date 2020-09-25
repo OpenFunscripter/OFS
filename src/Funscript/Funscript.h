@@ -14,6 +14,16 @@ public:
 		std::vector<FunscriptAction> selection;
 		std::vector<FunscriptAction> RawActions;
 	};
+
+	struct Bookmark {
+		int32_t at;
+		std::string name;
+	};
+
+	struct Settings {
+		std::vector<Bookmark> Bookmarks;
+	};
+	Funscript::Settings ScriptSettings;
 private:
 	nlohmann::json Json;
 	bool scriptOpened = false;
@@ -46,12 +56,13 @@ private:
 	}
 
 	void NotifyActionsChanged();
-
+	void loadSettings();
+	void saveSettings();
 public:
 	Funscript() { NotifyActionsChanged(); }
 	std::string current_path;
 
-	inline void rollback(const FunscriptData& data) noexcept { this->data = data; NotifyActionsChanged();}
+	inline void rollback(const FunscriptData& data) noexcept { this->data = data; NotifyActionsChanged(); }
 
 	void update() noexcept;
 
@@ -78,6 +89,14 @@ public:
 	void RemoveAction(const FunscriptAction& action, bool checkInvalidSelection = true) noexcept;
 	void RemoveActions(const std::vector<FunscriptAction>& actions) noexcept;
 
+	// bookmarks
+	inline const std::vector<Funscript::Bookmark>& Bookmarks() const { return ScriptSettings.Bookmarks; }
+	inline void AddBookmark(const Funscript::Bookmark& bookmark) { 
+		ScriptSettings.Bookmarks.push_back(bookmark); 
+		std::sort(ScriptSettings.Bookmarks.begin(), ScriptSettings.Bookmarks.end(),
+			[](auto& a, auto& b) { return a.at < b.at; }
+		);
+	}
 
 	// selection api
 	bool ToggleSelection(const FunscriptAction& action) noexcept;

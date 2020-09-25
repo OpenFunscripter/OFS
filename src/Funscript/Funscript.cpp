@@ -16,7 +16,8 @@ void Funscript::setScriptTemplate()
 	Json["rawActions"] = nlohmann::json().array();
 	Json["version"] = "1.0";
 	Json["inverted"] = false;
-	Json["range"] = 90;
+	Json["range"] = 90; // I think this is mostly ignored anyway
+	Json["OpenFunscripter"] = nlohmann::json().object();
 }
 
 void Funscript::NotifyActionsChanged()
@@ -24,6 +25,43 @@ void Funscript::NotifyActionsChanged()
 	if (!funscript_changed) {
 		funscript_changed = true;
 	}
+}
+
+void Funscript::loadSettings()
+{
+	if (Json.contains("OpenFunscripter")) {
+		auto& settings = Json["OpenFunscripter"];
+		if (settings.is_object()) {
+			auto& bookmarks = settings["bookmarks"];
+			if (bookmarks.is_array()) {
+				for (auto& mark : bookmarks) {
+					if (mark.contains("at") && mark.contains("name")) {
+						Funscript::Bookmark bookmark;
+						bookmark.at = mark["at"];
+						bookmark.name = mark["name"];
+						ScriptSettings.Bookmarks.push_back(bookmark);
+					}
+				}
+			}
+		}
+	}
+}
+
+void Funscript::saveSettings()
+{
+	auto settings = nlohmann::json().object();
+	auto bookmarks = nlohmann::json().array();
+
+	for (auto& mark : Bookmarks()) {
+		auto bookmark = nlohmann::json().object();
+		bookmark["at"] = mark.at;
+		bookmark["name"] = mark.name;
+
+		bookmarks.push_back(bookmark);
+	}
+
+	settings["bookmarks"] = bookmarks;
+	Json["OpenFunscripter"] = settings;
 }
 
 void Funscript::update() noexcept
@@ -75,8 +113,9 @@ bool Funscript::open(const std::string& file)
 	}
 	data.Actions.assign(actionSet.begin(), actionSet.end());
 
-	// sorting is ensured by the std::set
+	loadSettings();
 
+	// sorting is ensured by the std::set
 	//sortActions(data.Actions); // make sure it's ordered by time
 	//sortActions(data.RawActions);
 
@@ -90,10 +129,12 @@ void Funscript::save(const std::string& path)
 	if (!scriptOpened) {
 		setScriptTemplate();
 	}
+	saveSettings();
 
 	auto& actions = Json["actions"];
 	auto& raw_actions = Json["rawActions"];
 	actions.clear();
+	raw_actions.clear();
 
 	// make sure actions are sorted
 	sortActions(data.Actions);
@@ -105,7 +146,7 @@ void Funscript::save(const std::string& path)
 
 		nlohmann::json actionObj;
 		actionObj["at"] = action.at;
-		actionObj["pos"] = Util::Clamp(action.pos, 0, 100);  action.pos;
+		actionObj["pos"] = Util::Clamp(action.pos, 0, 100);
 		actions.push_back(actionObj);
 	}
 
@@ -116,7 +157,7 @@ void Funscript::save(const std::string& path)
 
 		nlohmann::json actionObj;
 		actionObj["at"] = action.at;
-		actionObj["pos"] = Util::Clamp(action.pos, 0, 100);  action.pos;
+		actionObj["pos"] = Util::Clamp(action.pos, 0, 100);
 		raw_actions.push_back(actionObj);
 	}
 
@@ -262,7 +303,6 @@ void Funscript::RemoveActions(const std::vector<FunscriptAction>& removeActions)
 		RemoveAction(action, false);
 	NotifyActionsChanged();
 }
-
 
 bool Funscript::ToggleSelection(const FunscriptAction& action) noexcept
 {

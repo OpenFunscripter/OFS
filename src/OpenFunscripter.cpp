@@ -9,6 +9,8 @@
 #include "portable-file-dialogs.h"
 #include "stb_sprintf.h"
 
+#include "imgui_stdlib.h"
+
 // TODO: Improve playback control ui ( buttons are fugly )
 // TODO: Undo Window make snapshots clickable to return to a state immediately
 // TODO: Rolling backup
@@ -1079,6 +1081,50 @@ void OpenFunscripter::ShowMainMenuBar()
             }
             ImGui::EndMenu();
         }
+        if (ImGui::BeginMenu("Bookmarks")) {
+            static std::string bookmarkName;
+            auto& bookmarks = LoadedFunscript->ScriptSettings.Bookmarks;
+            auto editBookmark = std::find_if(bookmarks.begin(), bookmarks.end(),
+                [&](auto& mark) {
+                    constexpr int threshold = 15000;
+                    int32_t current = player.getCurrentPositionMs();
+                    return std::abs(mark.at - current) <= threshold;
+                });
+            if (editBookmark != bookmarks.end()) {
+                ImGui::InputText("Name", &(*editBookmark).name);
+                if (ImGui::MenuItem("Delete")) {
+                    bookmarks.erase(editBookmark);
+                }
+            }
+            else {
+                ImGui::InputText("Name", &bookmarkName);
+                if (ImGui::MenuItem("Add Bookmark")) {
+                    Funscript::Bookmark bookmark;
+                    bookmark.at = player.getCurrentPositionMs();
+                    if (bookmarkName.empty())
+                    {
+                        std::stringstream ss;
+                        ss << LoadedFunscript->Bookmarks().size() + 1 << '#';
+                        bookmarkName = ss.str();
+                    }
+                    bookmark.name = bookmarkName;
+                    bookmarkName = "";
+                    LoadedFunscript->AddBookmark(bookmark);
+                }
+            }
+
+            if (ImGui::BeginMenu("Goto...")) {
+                for (auto& mark : LoadedFunscript->Bookmarks()) {
+                    if (ImGui::MenuItem(mark.name.c_str())) {
+                        float newPos = Util::Clamp<float>(mark.at / (player.getDuration() * 1000.0), 0.0f, 1.0f);
+                        player.setPosition(newPos);
+                    }
+                }
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMenu();
+        }
         if (ImGui::BeginMenu("View")) {
             if (ImGui::MenuItem("Statistics", NULL, &ShowStatistics)) {}
             if (ImGui::MenuItem("Undo/Redo History", NULL, &ShowHistory)) {}
@@ -1306,6 +1352,8 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position)
     bool change = false;
 
     ImGuiWindow* window = ImGui::GetCurrentWindow();
+    auto draw_list = window->DrawList;
+
     if (window->SkipItems)
         return false;
 
@@ -1328,6 +1376,30 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position)
         UpdateTimelineGradient(grad);
     }
 
+    bool item_hovered = ImGui::IsItemHovered();
+
+    // bookmarks
+    for (auto& bookmark : LoadedFunscript->ScriptSettings.Bookmarks) {
+        const float rectWidth = 7.f;
+
+        ImVec2 p1((frame_bb.Min.x + (frame_bb.GetWidth() * (bookmark.at / (player.getDuration() * 1000.0)))) - (rectWidth/2.f), frame_bb.Min.y);       
+        ImVec2 p2(p1.x + rectWidth, frame_bb.Min.y + frame_bb.GetHeight() + (style.ItemSpacing.y * 2.0f));
+
+        //ImRect rect(p1, p2);
+        //ImGui::ItemSize(rect);
+        //auto bookmarkId = ImGui::GetID(bookmark.name.c_str());
+        //ImGui::ItemAdd(rect, bookmarkId);
+
+        draw_list->AddRectFilled(p1, p2, IM_COL32(255, 0, 0, 255), 8.f);
+
+        if (item_hovered) {
+            auto size = ImGui::CalcTextSize(bookmark.name.c_str());
+            size.x /= 2.f;
+            size.y /= 8.f;
+            draw_list->AddText(p2 - size, ImColor(style.Colors[ImGuiCol_Text]), bookmark.name.c_str());
+        }
+    }
+
     ImGradient::DrawGradientBar(&grad, frame_bb.Min, frame_bb.GetWidth(), frame_bb.GetHeight());
 
     const float timeline_pos_cursor_w = 5.f;
@@ -1337,9 +1409,9 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position)
     auto mouse = ImGui::GetMousePos();
     float rel_timeline_pos = ((mouse.x - frame_bb.Min.x) / frame_bb.GetWidth());
 
-    if (ImGui::IsItemHovered()) {
-        window->DrawList->AddLine(ImVec2(mouse.x, frame_bb.Min.y), ImVec2(mouse.x, frame_bb.Max.y), timeline_cursor_back, timeline_pos_cursor_w);
-        window->DrawList->AddLine(ImVec2(mouse.x, frame_bb.Min.y), ImVec2(mouse.x, frame_bb.Max.y), timeline_cursor_front, timeline_pos_cursor_w / 2.f);
+    if (item_hovered) {
+        draw_list->AddLine(ImVec2(mouse.x, frame_bb.Min.y), ImVec2(mouse.x, frame_bb.Max.y), timeline_cursor_back, timeline_pos_cursor_w);
+        draw_list->AddLine(ImVec2(mouse.x, frame_bb.Min.y), ImVec2(mouse.x, frame_bb.Max.y), timeline_cursor_front, timeline_pos_cursor_w / 2.f);
 
         ImGui::BeginTooltip();
         {
@@ -1370,12 +1442,14 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position)
     }
 
     const float current_pos_x = frame_bb.Min.x + frame_bb.GetWidth() * (*position);
-    window->DrawList->AddLine(ImVec2(current_pos_x, frame_bb.Min.y), ImVec2(current_pos_x, frame_bb.Max.y), timeline_cursor_back, timeline_pos_cursor_w);
-    window->DrawList->AddLine(ImVec2(current_pos_x, frame_bb.Min.y), ImVec2(current_pos_x, frame_bb.Max.y), timeline_cursor_front, timeline_pos_cursor_w / 2.f);
+    draw_list->AddLine(ImVec2(current_pos_x, frame_bb.Min.y), ImVec2(current_pos_x, frame_bb.Max.y), timeline_cursor_back, timeline_pos_cursor_w);
+    draw_list->AddLine(ImVec2(current_pos_x, frame_bb.Min.y), ImVec2(current_pos_x, frame_bb.Max.y), timeline_cursor_front, timeline_pos_cursor_w / 2.f);
 
     const float min_val = 0.f;
     const float max_val = 1.f;
     if (change) { *position = Util::Clamp(*position, min_val, max_val); }
+
+
     return change;
 }
 
