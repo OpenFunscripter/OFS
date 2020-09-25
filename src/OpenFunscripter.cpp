@@ -1107,7 +1107,7 @@ void OpenFunscripter::ShowMainMenuBar()
                 }
             }
 
-            if (ImGui::BeginMenu("Goto...")) {
+            if (ImGui::BeginMenu("Go to...")) {
                 if (LoadedFunscript->Bookmarks().size() == 0) {
                     ImGui::TextDisabled("No bookmarks");
                 }
@@ -1120,6 +1120,10 @@ void OpenFunscripter::ShowMainMenuBar()
                     }
                 }
                 ImGui::EndMenu();
+            }
+
+            if (ImGui::Checkbox("Always show labels", &settings->data().always_show_bookmark_labels)) {
+                settings->saveSettings();
             }
 
             ImGui::EndMenu();
@@ -1382,16 +1386,16 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position)
         const float rectWidth = 7.f;
 
         ImVec2 p1((frame_bb.Min.x + (frame_bb.GetWidth() * (bookmark.at / (player.getDuration() * 1000.0)))) - (rectWidth/2.f), frame_bb.Min.y);       
-        ImVec2 p2(p1.x + rectWidth, frame_bb.Min.y + frame_bb.GetHeight() + (style.ItemSpacing.y * 2.0f));
+        ImVec2 p2(p1.x + rectWidth, frame_bb.Min.y + frame_bb.GetHeight() + (style.ItemSpacing.y * 3.0f));
 
         //ImRect rect(p1, p2);
         //ImGui::ItemSize(rect);
         //auto bookmarkId = ImGui::GetID(bookmark.name.c_str());
         //ImGui::ItemAdd(rect, bookmarkId);
 
-        draw_list->AddRectFilled(p1, p2, IM_COL32(255, 0, 0, 255), 8.f);
+        draw_list->AddRectFilled(p1, p2, ImColor(style.Colors[ImGuiCol_PlotHistogram]), 8.f);
 
-        if (item_hovered) {
+        if (item_hovered || settings->data().always_show_bookmark_labels) {
             auto size = ImGui::CalcTextSize(bookmark.name.c_str());
             size.x /= 2.f;
             size.y /= 8.f;

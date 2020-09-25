@@ -48,6 +48,7 @@ void OpenFunscripterSettings::load_config()
 	LOAD_CONFIG(draw_video)
 	LOAD_CONFIG(show_simulator)
 	LOAD_CONFIG(force_hw_decoding)
+	LOAD_CONFIG(always_show_bookmark_labels)
 }
 #undef LOAD_CONFIG
 
@@ -59,6 +60,7 @@ void OpenFunscripterSettings::saveSettings()
 	SAVE_CONFIG(draw_video)
 	SAVE_CONFIG(show_simulator)
 	SAVE_CONFIG(force_hw_decoding)
+	SAVE_CONFIG(always_show_bookmark_labels)
 	save_config();
 }
 #undef SAVE_CONFIG
