@@ -45,7 +45,6 @@ void OpenFunscripterSettings::load_config()
 {
 	LOAD_CONFIG(last_path)
 	LOAD_CONFIG(last_opened_file)
-	LOAD_CONFIG(ffmpeg_path)
 	LOAD_CONFIG(draw_video)
 	LOAD_CONFIG(show_simulator)
 }
@@ -56,7 +55,6 @@ void OpenFunscripterSettings::saveSettings()
 {
 	SAVE_CONFIG(last_path)
 	SAVE_CONFIG(last_opened_file)
-	SAVE_CONFIG(ffmpeg_path)
 	SAVE_CONFIG(draw_video)
 	SAVE_CONFIG(show_simulator)
 	save_config();
@@ -121,9 +119,7 @@ bool OpenFunscripterSettings::ShowPreferenceWindow()
 
 	if (ImGui::BeginPopupModal("Preferences", &ShowWindow, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysVerticalScrollbar))
 	{
-		ImGui::Text("%s", "ffmpeg is only used for the audio waveform display");
-		if (ImGui::InputText("ffmpeg path", &scripterSettings.ffmpeg_path))
-			save = true;
+		ImGui::Text("%s", "this is empty right now :^)");
 
 		ImGui::EndPopup();
 	}

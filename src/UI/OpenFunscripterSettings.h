@@ -13,7 +13,6 @@ class OpenFunscripterSettings
 	struct ScripterSettingsData {
 		std::string last_path;
 		std::string last_opened_file;
-		std::string ffmpeg_path;
 		bool draw_video= true;
 		bool show_simulator = false;
 	} scripterSettings;

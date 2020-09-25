@@ -300,12 +300,17 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				auto ffmpegThread = [](void* userData) {
 					auto& ctx = *((ScriptPositionsWindow*)userData);
 
-					auto& ffmpeg_path = OpenFunscripter::ptr->settings->data().ffmpeg_path;
-					auto video_path = OpenFunscripter::ptr->player.getVideoPath();
 					auto base = SDL_GetBasePath();
-					auto output_path = std::filesystem::path(base) / "audio.mp3";
+					auto base_path = std::filesystem::path(base);
 					SDL_free(base);
-					bool succ = OutputAudioFile(ffmpeg_path.c_str(), video_path,  output_path.string().c_str());
+
+					auto& ffmpeg_path = base_path / "ffmpeg.exe";
+					auto output_path = base_path / "tmp";
+					std::filesystem::create_directories(output_path);
+					output_path /= "audio.mp3";
+					auto video_path = OpenFunscripter::ptr->player.getVideoPath();
+
+					bool succ = OutputAudioFile(ffmpeg_path.string().c_str(), video_path,  output_path.string().c_str());
 					if (!succ) {
 						LOGF_ERROR("Failed to output mp3 from video. (ffmpeg_path: \"%s\")", ffmpeg_path.c_str());
 						ctx.ShowAudioWaveform = false;
