@@ -333,7 +333,7 @@ void VideoplayerWindow::mouse_scroll(SDL_Event& ev)
 		// apply zoom
 		if (activeMode == VideoMode::VR_MODE) {
 			vr_zoom *= ((1+(zoom_multi * -scroll.y)));
-			vr_zoom = Util::Clamp(vr_zoom, 0.30f, 4.f);
+			vr_zoom = Util::Clamp(vr_zoom, 0.30f, 3.f);
 			return;
 		}
 
@@ -375,6 +375,7 @@ void VideoplayerWindow::setup_vr_mode()
 
 	// shader from https://www.shadertoy.com/view/4lK3DK
 	const char* frag_shader = R"(
+
 		#version 330 core
 		uniform sampler2D Texture;
 		uniform vec2 rotation;
@@ -388,8 +389,8 @@ void VideoplayerWindow::setup_vr_mode()
 		#define PI 3.1415926535
 		#define DEG2RAD 0.01745329251994329576923690768489
 		
-		float hfovDegrees = -120.0;
-		float vfovDegrees = 45.0;
+		float hfovDegrees = 130.0;
+		float vfovDegrees = 59.0;
 
 		vec3 rotateXY(vec3 p, vec2 angle) {
 			vec2 c = cos(angle), s = sin(angle);
@@ -399,12 +400,14 @@ void VideoplayerWindow::setup_vr_mode()
 
 		void main()
 		{
-			hfovDegrees = aspect_ratio * -vfovDegrees;
+			float inverse_aspect = 1.f / aspect_ratio;
+			float hfovRad = hfovDegrees * DEG2RAD;
+			float vfovRad = 2.f * atan(tan(hfovRad/2.f)*inverse_aspect);
+
 			vec2 uv = vec2(Frag_UV.s - 0.5, Frag_UV.t);
 
 			//to spherical
-			vec3 camDir = normalize(vec3(uv.xy * vec2(tan(0.5 * hfovDegrees * DEG2RAD), tan(0.5 * vfovDegrees * DEG2RAD))*zoom, 1.0));
-
+			vec3 camDir = normalize(vec3(uv.xy * vec2(tan(0.5 * hfovRad), tan(0.5 * vfovRad)) * zoom, 1.0));
 			//camRot is angle vec in rad
 			vec3 camRot = vec3( (rotation - 0.5) * vec2(2.0 * PI,  PI), 0.);
 
