@@ -35,7 +35,7 @@ private:
 	FunscriptData data;
 	
 	FunscriptAction* getAction(const FunscriptAction& action) noexcept;
-	FunscriptAction* getActionAtTime(int32_t time_ms, uint32_t error_ms) noexcept;
+	FunscriptAction* getActionAtTime(std::vector<FunscriptAction>& actions, int32_t time_ms, uint32_t error_ms) noexcept;
 	FunscriptAction* getNextActionAhead(int32_t time_ms) noexcept;
 	FunscriptAction* getPreviousActionBehind(int32_t time_ms) noexcept;
 
@@ -76,10 +76,10 @@ public:
 	const std::vector<FunscriptAction>& RawActions() const noexcept { return data.RawActions; }
 
 	inline const FunscriptAction* GetAction(const FunscriptAction& action) noexcept { return getAction(action); }
-	inline const FunscriptAction* GetActionAtTime(int32_t time_ms, uint32_t error_ms) noexcept { return getActionAtTime(time_ms, error_ms); }
+	inline const FunscriptAction* GetActionAtTime(int32_t time_ms, uint32_t error_ms) noexcept { return getActionAtTime(data.Actions, time_ms, error_ms); }
 	inline const FunscriptAction* GetNextActionAhead(int32_t time_ms) noexcept { return getNextActionAhead(time_ms); }
 	inline const FunscriptAction* GetPreviousActionBehind(int32_t time_ms) noexcept { return getPreviousActionBehind(time_ms); }
-	inline const FunscriptAction* GetClosestAction(int32_t time_ms) noexcept { return getActionAtTime(time_ms, std::numeric_limits<uint32_t>::max()); }
+	inline const FunscriptAction* GetClosestAction(int32_t time_ms) noexcept { return getActionAtTime(data.Actions, time_ms, std::numeric_limits<uint32_t>::max()); }
 
 	int GetPositionAtTime(int32_t time_ms) noexcept;
 	
@@ -113,5 +113,6 @@ public:
 	inline bool HasSelection() const noexcept { return data.selection.size() > 0; }
 	inline int32_t SelectionSize() const noexcept { return data.selection.size(); }
 	inline void ClearSelection() noexcept { data.selection.clear(); }
+	inline const FunscriptAction* GetClosestActionSelection(int32_t time_ms) noexcept { return getActionAtTime(data.selection, time_ms, std::numeric_limits<int32_t>::max()); }
 };
 

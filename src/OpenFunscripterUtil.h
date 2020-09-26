@@ -19,9 +19,6 @@
 #define ICON_PLAY "\xef\x81\x8b"
 #define ICON_PAUSE "\xef\x81\x8c"
 
-
-
-
 // this functionality seems to be available in c++20
 template<class T, class... Args>
 void overwrite_shared_ptr_content(std::shared_ptr<T>& ptr, Args&&... args) {

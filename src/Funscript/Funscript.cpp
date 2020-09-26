@@ -198,14 +198,14 @@ FunscriptAction* Funscript::getAction(const FunscriptAction& action) noexcept
 	return nullptr;
 }
 
-FunscriptAction* Funscript::getActionAtTime(int32_t time_ms, uint32_t max_error_ms) noexcept
+FunscriptAction* Funscript::getActionAtTime(std::vector<FunscriptAction>& actions, int32_t time_ms, uint32_t max_error_ms) noexcept
 {
 	// gets an action at a time with a margin of error
 	int32_t smallest_error = std::numeric_limits<int32_t>::max();
 	FunscriptAction* smallest_error_action = nullptr;
 
-	for (int i = 0; i < data.Actions.size(); i++) {
-		auto& action = data.Actions[i];
+	for (int i = 0; i < actions.size(); i++) {
+		auto& action = actions[i];
 		
 		if (action.at > (time_ms + (max_error_ms/2)))
 			break;

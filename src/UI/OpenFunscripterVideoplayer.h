@@ -113,7 +113,8 @@ public:
 	inline double getCurrentPositionSeconds() const { return MpvData.percent_pos * MpvData.duration; }
 
 	void setVolume(float volume);
-	void setPosition(float pos);
+	inline void setPosition(int32_t time_ms) { float rel_pos = ((float)time_ms) / (getDuration() * 1000.f); setPosition(rel_pos); }
+	void setPosition(float rel_pos);
 	void setPaused(bool paused);
 	void nextFrame();
 	void previousFrame();

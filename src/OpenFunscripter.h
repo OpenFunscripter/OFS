@@ -78,7 +78,6 @@ private:
 	void cutSelection();
 	void copySelection();
 	void pasteSelection();
-	void setPosition(float ms);
 
 	void saveScript(const char* path = nullptr);
 

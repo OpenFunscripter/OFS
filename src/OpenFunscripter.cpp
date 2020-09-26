@@ -234,7 +234,63 @@ void OpenFunscripter::register_bindings()
         true,
         [&](void*) { LoadedFunscript->SelectAll(); }
     ));
+
     // MOVE LEFT/RIGHT
+    auto move_actions_horizontal = [](int32_t time_ms) {
+        auto ptr = OpenFunscripter::ptr;
+        if (ptr->LoadedFunscript->HasSelection()) {
+            ptr->undoRedoSystem.Snapshot("Actions moved");
+            ptr->LoadedFunscript->MoveSelectionTime(time_ms);
+        }
+        else {
+            auto closest = ptr->LoadedFunscript->GetClosestAction(ptr->player.getCurrentPositionMs());
+            if (closest != nullptr) {
+                ptr->undoRedoSystem.Snapshot("Actions moved");
+                FunscriptAction moved(closest->at + time_ms, closest->pos);
+                ptr->LoadedFunscript->EditAction(*closest, moved);
+            }
+        }
+    };
+    auto move_actions_horizontal_with_video = [](int32_t time_ms) {
+        auto ptr = OpenFunscripter::ptr;
+        if (ptr->LoadedFunscript->HasSelection()) {
+            ptr->undoRedoSystem.Snapshot("Actions moved");
+            ptr->LoadedFunscript->MoveSelectionTime(time_ms);
+            auto closest = ptr->LoadedFunscript->GetClosestActionSelection(ptr->player.getCurrentPositionMs());
+            if (closest != nullptr) { ptr->player.setPosition(closest->at); }
+            else { ptr->player.setPosition(ptr->LoadedFunscript->Selection().front().at); }
+        }
+        else {
+            auto closest = ptr->LoadedFunscript->GetClosestAction(ptr->player.getCurrentPositionMs());
+            if (closest != nullptr) {
+                ptr->undoRedoSystem.Snapshot("Actions moved");
+                FunscriptAction moved(closest->at + time_ms, closest->pos);
+                ptr->LoadedFunscript->EditAction(*closest, moved);
+                ptr->player.setPosition(moved.at);
+            }
+        }
+    };
+    keybinds.registerBinding(Keybinding(
+        "move_actions_left_video",
+        "Move actions left with video",
+        SDLK_LEFT,
+        KMOD_CTRL | KMOD_SHIFT,
+        false,
+        [&](void*) {
+            move_actions_horizontal_with_video(-player.getFrameTimeMs());
+        }
+    ));
+    keybinds.registerBinding(Keybinding(
+        "move_actions_right_video",
+        "Move actions right with video",
+        SDLK_RIGHT,
+        KMOD_CTRL | KMOD_SHIFT,
+        false,
+        [&](void*) {
+            move_actions_horizontal_with_video(player.getFrameTimeMs());
+        }
+    ));
+
     keybinds.registerBinding(Keybinding(
         "move_actions_left",
         "Move actions left",
@@ -242,18 +298,7 @@ void OpenFunscripter::register_bindings()
         KMOD_SHIFT,
         false,
         [&](void*) {
-            if (LoadedFunscript->HasSelection()) {
-                undoRedoSystem.Snapshot("Actions moved");
-                LoadedFunscript->MoveSelectionTime(-player.getFrameTimeMs());
-            }
-            else {
-                auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
-                if (closest != nullptr) {
-                    undoRedoSystem.Snapshot("Actions moved");
-                    FunscriptAction moved(closest->at - player.getFrameTimeMs(), closest->pos);
-                    LoadedFunscript->EditAction(*closest, moved);
-                }
-            }
+            move_actions_horizontal(-player.getFrameTimeMs());
         }
     ));
 
@@ -264,18 +309,7 @@ void OpenFunscripter::register_bindings()
         KMOD_SHIFT,
         false,
         [&](void*) {
-            if (LoadedFunscript->HasSelection()) {
-                undoRedoSystem.Snapshot("Actions moved");
-                LoadedFunscript->MoveSelectionTime(player.getFrameTimeMs());
-            }
-            else {
-                auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
-                if (closest != nullptr) {
-                    undoRedoSystem.Snapshot("Actions moved");
-                    FunscriptAction moved(closest->at + player.getFrameTimeMs(), closest->pos);
-                    LoadedFunscript->EditAction(*closest, moved);
-                }
-            }
+            move_actions_horizontal(player.getFrameTimeMs());
         }
     ));
 
@@ -360,7 +394,7 @@ void OpenFunscripter::register_bindings()
         false,
         [&](void*) {
             auto action = LoadedFunscript->GetPreviousActionBehind(player.getCurrentPositionMs() - player.getFrameTimeMs());
-            if (action != nullptr) setPosition(action->at);
+            if (action != nullptr) player.setPosition(action->at);
         }
     ));
     keybinds.registerBinding(Keybinding(
@@ -371,7 +405,7 @@ void OpenFunscripter::register_bindings()
         false,
         [&](void*) {
             auto action = LoadedFunscript->GetNextActionAhead(player.getCurrentPositionMs() + player.getFrameTimeMs());
-            if (action != nullptr) setPosition(action->at);
+            if (action != nullptr) player.setPosition(action->at);
         }
     ));
 
@@ -531,7 +565,7 @@ void OpenFunscripter::FunscriptActionClicked(SDL_Event& ev)
         LoadedFunscript->SelectAction(action);
     }
     else {
-        setPosition(action.at);
+        player.setPosition(action.at);
     }
 
     LOG_DEBUG("Action clicked!");
@@ -608,7 +642,7 @@ int OpenFunscripter::run()
                         int seek_to = player.getCurrentPositionMs() - seek_ms;
                         if (seek_to < 0)
                             seek_to = 0;
-                        player.setPosition(seek_to / (player.getDuration() * 1000.0));
+                        player.setPosition(seek_to);
                     }
                     ImGui::NextColumn();
 
@@ -621,7 +655,7 @@ int OpenFunscripter::run()
                         int seek_to = player.getCurrentPositionMs() + seek_ms;
                         if (seek_to > player.getDuration() * 1000.0)
                             seek_to = player.getDuration() * 1000.0;
-                        player.setPosition(seek_to / (player.getDuration() * 1000.0));
+                        player.setPosition(seek_to);
                     }
                     ImGui::NextColumn();
 
@@ -946,12 +980,7 @@ void OpenFunscripter::pasteSelection()
     for (auto& action : CopiedSelection) {
         LoadedFunscript->PasteAction(FunscriptAction(action.at + offset_ms, action.pos), player.getFrameTimeMs());
     }
-    setPosition((CopiedSelection.end() - 1)->at + offset_ms);
-}
-
-void OpenFunscripter::setPosition(float ms)
-{
-    player.setPosition(ms / (player.getDuration() * 1000.0));
+    player.setPosition((CopiedSelection.end() - 1)->at + offset_ms);
 }
 
 void OpenFunscripter::showOpenFileDialog()
