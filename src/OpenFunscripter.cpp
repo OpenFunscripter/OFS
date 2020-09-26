@@ -188,7 +188,7 @@ void OpenFunscripter::register_bindings()
         "undo",
         "Undo",
         SDLK_z,
-        KMOD_LCTRL,
+        KMOD_CTRL,
         false,
         [&](void*) { undoRedoSystem.Undo(); }
     ));
@@ -196,7 +196,7 @@ void OpenFunscripter::register_bindings()
         "redo",
         "Redo",
         SDLK_y, 
-        KMOD_LCTRL,
+        KMOD_CTRL,
         false,
         [&](void*) { undoRedoSystem.Redo(); }
     ));
@@ -206,7 +206,7 @@ void OpenFunscripter::register_bindings()
         "copy",
         "Copy",
         SDLK_c, 
-        KMOD_LCTRL,
+        KMOD_CTRL,
         true,
         [&](void*) { copySelection(); }
     ));
@@ -214,7 +214,7 @@ void OpenFunscripter::register_bindings()
         "paste",
         "Paste",
         SDLK_v, 
-        KMOD_LCTRL,
+        KMOD_CTRL,
         true,
         [&](void*) { pasteSelection(); }
     ));
@@ -222,7 +222,7 @@ void OpenFunscripter::register_bindings()
         "cut",
         "Cut",
         SDLK_x,
-        KMOD_LCTRL,
+        KMOD_CTRL,
         true,
         [&](void*) { cutSelection(); }
     ));
@@ -230,7 +230,7 @@ void OpenFunscripter::register_bindings()
         "select_all",
         "Select all",
         SDLK_a, 
-        KMOD_LCTRL,
+        KMOD_CTRL,
         true,
         [&](void*) { LoadedFunscript->SelectAll(); }
     ));
@@ -239,7 +239,7 @@ void OpenFunscripter::register_bindings()
         "move_actions_left",
         "Move actions left",
         SDLK_LEFT,
-        KMOD_LSHIFT,
+        KMOD_SHIFT,
         false,
         [&](void*) {
             if (LoadedFunscript->HasSelection()) {
@@ -261,7 +261,7 @@ void OpenFunscripter::register_bindings()
         "move_actions_right",
         "Move actions right",
         SDLK_RIGHT,
-        KMOD_LSHIFT,
+        KMOD_SHIFT,
         false,
         [&](void*) {
             if (LoadedFunscript->HasSelection()) {
@@ -284,7 +284,7 @@ void OpenFunscripter::register_bindings()
         "move_actions_up",
         "Move actions up",
         SDLK_UP,
-        KMOD_LSHIFT,
+        KMOD_SHIFT,
         false,
         [&](void*) {
             if (LoadedFunscript->HasSelection()) {
@@ -305,7 +305,7 @@ void OpenFunscripter::register_bindings()
         "move_actions_down",
         "Move actions down",
         SDLK_DOWN,
-        KMOD_LSHIFT,
+        KMOD_SHIFT,
         false,
         [&](void*) {
             undoRedoSystem.Snapshot("Actions moved");
@@ -328,7 +328,7 @@ void OpenFunscripter::register_bindings()
         "save",
         "Save",
         SDLK_s,
-        KMOD_LCTRL,
+        KMOD_CTRL,
         true,
         [&](void*) { saveScript(); }
     ));

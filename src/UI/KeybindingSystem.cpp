@@ -13,17 +13,34 @@ void KeybindingSystem::setup()
 void KeybindingSystem::pressed(SDL_Event& ev)
 {
     auto key = ev.key;
-
     auto modstate = key.keysym.mod;
+    
+    std::array<uint16_t, 3> possibleModifiers{
+        KMOD_SHIFT,
+        KMOD_CTRL,
+        KMOD_ALT
+    };
     // filter out modifiers which shouldn't affect bindings
     modstate &= ~(KMOD_NUM | KMOD_CAPS | KMOD_GUI | KMOD_MODE);
 
+    // convert KMOD_LSHIFT / KMOD_RSHIFT -> KMOD_SHIFT etc.
+    uint16_t genericModifiers = 0;
+    for (auto possibleModifier : possibleModifiers) {
+        if (modstate & possibleModifier)
+            genericModifiers |= possibleModifier;
+    }
+    modstate = genericModifiers;
+
     if (currentlyChanging != nullptr) {
         if (key.repeat) return;
+        if (key.keysym.sym == SDLK_ESCAPE) {
+            currentlyChanging = nullptr;
+            return;
+        }
         currentlyHeldKeys.str("");
         
         if(modstate & KMOD_CTRL) {
-            addKeyString("CTRL");
+            addKeyString("Ctrl");
             switch (key.keysym.sym) {
             case SDLK_LCTRL:
             case SDLK_RCTRL:
@@ -32,7 +49,7 @@ void KeybindingSystem::pressed(SDL_Event& ev)
         }
 
         if (modstate & KMOD_ALT) {
-            addKeyString("ALT");
+            addKeyString("Alt");
             switch (key.keysym.sym) {
             case SDLK_LALT:
             case SDLK_RALT:
@@ -41,7 +58,7 @@ void KeybindingSystem::pressed(SDL_Event& ev)
         }
 
         if (modstate & KMOD_SHIFT) {
-            addKeyString("SHIFT");
+            addKeyString("Shift");
             switch (key.keysym.sym) {
             case SDLK_LSHIFT:
             case SDLK_RSHIFT:
@@ -53,6 +70,8 @@ void KeybindingSystem::pressed(SDL_Event& ev)
         currentlyChanging->key = key.keysym.sym;
         currentlyChanging->key_str = currentlyHeldKeys.str();
         binding_string_cache[currentlyChanging->identifier] = currentlyChanging->key_str;
+
+
         currentlyChanging->modifiers = modstate;
         currentlyChanging = nullptr;
         return;
@@ -65,8 +84,23 @@ void KeybindingSystem::pressed(SDL_Event& ev)
     for (auto& binding : ActiveBindings) {
         if (key.repeat && binding.ignore_repeats) continue;
 
-        if (key.keysym.sym == binding.key && modstate == binding.modifiers)
-            binding.action(0);
+        if (key.keysym.sym == binding.key) {
+            bool modifierMismatch = false;
+            for (auto possibleModifier : possibleModifiers) {
+                if ((modstate & possibleModifier) != (binding.modifiers & possibleModifier)) {
+                    modifierMismatch = true;
+                    break;
+                }
+            }
+            if (modifierMismatch) continue;
+        }
+        else {
+            continue;
+        }
+
+        // execute binding
+        binding.action(0);
+        break;
     }
 }
 
@@ -90,15 +124,15 @@ std::string KeybindingSystem::loadKeyString(SDL_Keycode key, int mod)
 {
     currentlyHeldKeys.str("");
     if (mod & KMOD_CTRL) {
-        addKeyString("CTRL");
+        addKeyString("Ctrl");
     }
 
     if (mod & KMOD_ALT) {
-        addKeyString("ALT");
+        addKeyString("Alt");
     }
 
     if (mod & KMOD_SHIFT) {
-        addKeyString("SHIFT");
+        addKeyString("Shift");
     }
     addKeyString(SDL_GetKeyName(key));
 
@@ -178,7 +212,7 @@ bool KeybindingSystem::ShowBindingWindow()
             if (ImGui::BeginPopupModal("Change Binding", 0, ImGuiWindowFlags_AlwaysAutoResize)) 
             {
                 if (currentlyHeldKeys.tellp() == 0)
-                    ImGui::Text("Press any key...");
+                    ImGui::Text("Press any key...\nEscape to cancel.");
                 else
                     ImGui::Text(currentlyHeldKeys.str().c_str());
                 if (!currentlyChanging) {
