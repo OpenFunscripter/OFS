@@ -9,8 +9,14 @@
 #include <mpv/render_gl.h>
 
 #include <cstdlib>
+#include <filesystem>
+
+#include "SDL.h"
 
 #include "stb_sprintf.h"
+#include "stb_image_write.h"
+
+#include "portable-file-dialogs.h"
 
 static void* get_proc_address_mpv(void* fn_ctx, const char* name)
 {
@@ -629,6 +635,64 @@ bool VideoplayerWindow::openVideo(const std::string& file)
 	resetTranslationAndZoom();
 	
 	return success;
+}
+
+void VideoplayerWindow::saveFrameToImage(const std::string& directory)
+{
+	static ScreenshotSavingThreadData threadData{0};
+	if (threadData.dataBuffer != nullptr) return; // saving in progress
+
+	std::filesystem::create_directories(directory);
+
+	std::stringstream ss;
+	std::filesystem::path currentFile(getVideoPath());
+	std::string filename = currentFile.filename().replace_extension("").string();
+	std::array<char, 15> tmp;
+	double time = getCurrentPositionSeconds();
+	int32_t ms = (time - (int32_t)time)*1000.f;
+	Util::FormatTime(tmp.data(), tmp.size(), time);
+	std::replace(tmp.begin(), tmp.end(), ':', '_');
+	ss << filename << '_' << tmp.data() << '-' << ms << ".png";
+	
+
+
+	GLint drawFboId = 0, readFboId = 0;
+	glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
+
+	int rowPack;
+	glGetIntegerv(GL_PACK_ALIGNMENT, &rowPack);
+	glPixelStorei(GL_PACK_ALIGNMENT, 1);
+
+	threadData.dataBuffer = new uint8_t[MpvData.video_width * MpvData.video_height * 3];
+	threadData.w = MpvData.video_width;
+	threadData.h = MpvData.video_height;
+	threadData.filename = (std::filesystem::path(directory) / ss.str()).string();
+
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_obj);
+	glReadPixels(0, 0, MpvData.video_width, MpvData.video_height, GL_RGB, GL_UNSIGNED_BYTE, threadData.dataBuffer);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, drawFboId);
+
+	glPixelStorei(GL_PACK_ALIGNMENT, rowPack);
+
+	auto saveThread = [](void* user) -> int {
+		auto ctx = (ScreenshotSavingThreadData*)user;
+		pfd::notify alert("OpenFunscripter", "Screenshot " + ctx->filename, pfd::icon::info);
+		alert.ready(20);
+		stbi_flip_vertically_on_write(true);
+		stbi_write_png(ctx->filename.c_str(),
+			ctx->w, ctx->h,
+			3, ctx->dataBuffer, 0
+		);
+
+		delete[] ctx->dataBuffer;
+		ctx->dataBuffer = nullptr;
+		return 0;
+	};
+
+
+	auto handle = SDL_CreateThread(saveThread, "SaveVideoFrameThread", &threadData);
+	SDL_DetachThread(handle);
 }
 
 void VideoplayerWindow::setVolume(float volume)

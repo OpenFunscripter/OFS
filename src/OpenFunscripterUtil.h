@@ -56,6 +56,16 @@ public:
 		o << json << std::endl;
 	}
 
+	static inline size_t FormatTime(char* buffer, size_t buf_size, float time_seconds) {
+		if (std::isinf(time_seconds) || std::isnan(time_seconds)) time_seconds = 0.f;
+		auto duration = std::chrono::duration<double>(time_seconds);
+		std::time_t t = duration.count();
+		std::tm timestamp = *std::gmtime(&t);
+
+		int ms = (time_seconds - (int)time_seconds) * 1000.0;
+		return std::strftime(buffer, buf_size, "%H:%M:%S", &timestamp);
+	}
+
 	inline static bool FileExists(const std::string& file) { return FileExists(file.c_str()); }
 	inline static bool FileExists(const char* file) {
 		std::filesystem::path file_path(file);

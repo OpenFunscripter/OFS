@@ -49,6 +49,7 @@ void OpenFunscripterSettings::load_config()
 	LOAD_CONFIG(show_simulator)
 	LOAD_CONFIG(force_hw_decoding)
 	LOAD_CONFIG(always_show_bookmark_labels)
+	LOAD_CONFIG(screenshot_dir)
 }
 #undef LOAD_CONFIG
 
@@ -61,6 +62,7 @@ void OpenFunscripterSettings::saveSettings()
 	SAVE_CONFIG(show_simulator)
 	SAVE_CONFIG(force_hw_decoding)
 	SAVE_CONFIG(always_show_bookmark_labels)
+	SAVE_CONFIG(screenshot_dir)
 	save_config();
 }
 #undef SAVE_CONFIG

@@ -27,6 +27,13 @@ private:
 	bool redraw_video = false;
 	uint32_t framebuffer_obj = 0;
 	uint32_t render_texture = 0;
+	
+	struct ScreenshotSavingThreadData {
+		int w;
+		int h;
+		uint8_t* dataBuffer = nullptr;
+		std::string filename;
+	};
 
 	unsigned int vr_shader;
 	ImGuiViewport* player_viewport;
@@ -108,6 +115,7 @@ public:
 	void addSpeed(float speed);
 
 	bool openVideo(const std::string& file);
+	void saveFrameToImage(const std::string& file);
 
 	inline double getCurrentPositionMs() const { return getCurrentPositionSeconds() * 1000.0; }
 	inline double getCurrentPositionSeconds() const { return MpvData.percent_pos * MpvData.duration; }

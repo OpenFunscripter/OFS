@@ -66,15 +66,7 @@ private:
 	void FileDialogSaveEvent(SDL_Event& ev);
 	void DragNDrop(SDL_Event& ev);
 
-	inline void formatTime(char* buffer, size_t buf_size, float time_seconds) {
-		if (std::isinf(time_seconds) || std::isnan(time_seconds)) time_seconds = 0.f;
-		auto duration = std::chrono::duration<double>(time_seconds);
-		std::time_t t = duration.count();
-		std::tm timestamp = *std::gmtime(&t);
 
-		int ms = (time_seconds - (int)time_seconds) * 1000.0;
-		std::strftime(buffer, buf_size, "%H:%M:%S", &timestamp);
-	}
 
 	void cutSelection();
 	void copySelection();

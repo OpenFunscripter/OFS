@@ -196,7 +196,7 @@ void OpenFunscripter::register_bindings()
     keybinds.registerBinding(Keybinding(
         "redo",
         "Redo",
-        SDLK_y, 
+        SDLK_y,
         KMOD_CTRL,
         false,
         [&](void*) { undoRedoSystem.Redo(); }
@@ -206,7 +206,7 @@ void OpenFunscripter::register_bindings()
     keybinds.registerBinding(Keybinding(
         "copy",
         "Copy",
-        SDLK_c, 
+        SDLK_c,
         KMOD_CTRL,
         true,
         [&](void*) { copySelection(); }
@@ -214,7 +214,7 @@ void OpenFunscripter::register_bindings()
     keybinds.registerBinding(Keybinding(
         "paste",
         "Paste",
-        SDLK_v, 
+        SDLK_v,
         KMOD_CTRL,
         true,
         [&](void*) { pasteSelection(); }
@@ -230,7 +230,7 @@ void OpenFunscripter::register_bindings()
     keybinds.registerBinding(Keybinding(
         "select_all",
         "Select all",
-        SDLK_a, 
+        SDLK_a,
         KMOD_CTRL,
         true,
         [&](void*) { LoadedFunscript->SelectAll(); }
@@ -466,7 +466,7 @@ void OpenFunscripter::register_bindings()
     keybinds.registerBinding(Keybinding(
         "action 0",
         "Action at 0",
-        SDLK_KP_0, 
+        SDLK_KP_0,
         0,
         true,
         [&](void*) { addEditAction(0); }
@@ -482,7 +482,7 @@ void OpenFunscripter::register_bindings()
         keybinds.registerBinding(Keybinding(
             id,
             ss.str(),
-            SDLK_KP_1 + i - 1, 
+            SDLK_KP_1 + i - 1,
             0,
             true,
             [&, i](void*) { addEditAction(i * 10); }
@@ -505,6 +505,16 @@ void OpenFunscripter::register_bindings()
         0,
         true,
         [&](void*) { Fullscreen = !Fullscreen; SetFullscreen(Fullscreen); }
+    ));
+
+    // SCREENSHOT VIDEO
+    keybinds.registerBinding(Keybinding(
+        "save_frame_as_image",
+        "Save frame as image",
+        SDLK_F2,
+        0,
+        true,
+        [&](void*) { player.saveFrameToImage(settings->data().screenshot_dir); }
     ));
 }
 
@@ -731,11 +741,11 @@ int OpenFunscripter::run()
                 {               
                     // format total duration
                     // this doesn't need to be done every frame
-                    formatTime(tmp_buf[1], sizeof(tmp_buf[1]), player.getDuration());
+                    Util::FormatTime(tmp_buf[1], sizeof(tmp_buf[1]), player.getDuration());
                     int durationMs = (player.getDuration() - (int)player.getDuration()) * 1000.0;
 
                     double time_seconds = player.getCurrentPositionSeconds();
-                    formatTime(tmp_buf[0], sizeof(tmp_buf[0]), time_seconds);
+                    Util::FormatTime(tmp_buf[0], sizeof(tmp_buf[0]), time_seconds);
                     int ms = (time_seconds - (int)time_seconds) * 1000.0;
                     ImGui::Text(" %s.%03i / %s.%03i (x%.03f)", tmp_buf[0], ms,  tmp_buf[1], durationMs, actualPlaybackSpeed); 
                     ImGui::NextColumn();
@@ -1077,7 +1087,25 @@ void OpenFunscripter::ShowMainMenuBar()
         }
         if (ImGui::BeginMenu("Edit"))
         {
-            if (ImGui::MenuItem("Manual snapshot")) { undoRedoSystem.Snapshot("Manual snapshot"); }
+            if (ImGui::MenuItem("Save frame as image", BINDING_STRING("save_frame_as_image")))
+            { 
+                player.saveFrameToImage(settings->data().screenshot_dir);
+            }
+            // this is awkward
+            if (ImGui::MenuItem("Open screenshot directory", NULL, false,
+#ifdef WIN32
+                true
+#else 
+                false
+#endif 
+                )) {
+                std::filesystem::path dir(settings->data().screenshot_dir);
+                dir = std::filesystem::absolute(dir);
+                char tmp_buf[1024];
+                stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "explorer %s", dir.string().c_str());
+                std::system(tmp_buf);
+            }
+            //if (ImGui::MenuItem("Manual snapshot")) { undoRedoSystem.Snapshot("Manual snapshot"); }
             ImGui::Separator();
             if (ImGui::MenuItem("Undo", BINDING_STRING("undo"), false, !undoRedoSystem.UndoStack.empty())) {
                 undoRedoSystem.Undo();
@@ -1432,8 +1460,8 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position)
         {
             double time_seconds = player.getDuration() * rel_timeline_pos;
             double time_delta = time_seconds - player.getCurrentPositionSeconds();
-            formatTime(tmp_buf[0], sizeof(tmp_buf[0]), time_seconds);
-            formatTime(tmp_buf[1], sizeof(tmp_buf[1]), (time_delta > 0) ? time_delta : -time_delta);
+            Util::FormatTime(tmp_buf[0], sizeof(tmp_buf[0]), time_seconds);
+            Util::FormatTime(tmp_buf[1], sizeof(tmp_buf[1]), (time_delta > 0) ? time_delta : -time_delta);
             if (time_delta > 0)
                 ImGui::Text("%s (+%s)", tmp_buf[0], tmp_buf[1]);
             else                                            
