@@ -134,8 +134,12 @@ std::string KeybindingSystem::loadKeyString(SDL_Keycode key, int mod)
     if (mod & KMOD_SHIFT) {
         addKeyString("Shift");
     }
-    addKeyString(SDL_GetKeyName(key));
-
+    if (key != SDLK_UNKNOWN) {
+        addKeyString(SDL_GetKeyName(key));
+    }
+    else {
+        addKeyString("-- Not set --");
+    }
     return currentlyHeldKeys.str();
 }
 
