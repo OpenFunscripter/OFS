@@ -357,6 +357,20 @@ void OpenFunscripter::register_bindings()
         }
     ));
 
+    keybinds.registerBinding(Keybinding(
+        "equalize_selection",
+        "Equalize selection",
+        SDLK_UNKNOWN,
+        0,
+        true,
+        [&](void*) {
+            if (LoadedFunscript->Selection().size() >= 3) {
+                undoRedoSystem.Snapshot("Equalize selection");
+                LoadedFunscript->EqualizeSelection();
+            }
+        }
+    ));
+
     // SAVE
     keybinds.registerBinding(Keybinding(
         "save",
@@ -1102,7 +1116,7 @@ void OpenFunscripter::ShowMainMenuBar()
                 }
             }
             ImGui::Separator();
-            if (ImGui::MenuItem("Equalize selection", NULL, false, LoadedFunscript->Selection().size() >= 3)) {
+            if (ImGui::MenuItem("Equalize selection", BINDING_STRING("equalize_selection"), false, LoadedFunscript->Selection().size() >= 3)) {
                 undoRedoSystem.Snapshot("Equalize selection");
                 LoadedFunscript->EqualizeSelection();
             }
