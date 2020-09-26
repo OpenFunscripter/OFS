@@ -333,7 +333,7 @@ void VideoplayerWindow::mouse_scroll(SDL_Event& ev)
 		// apply zoom
 		if (activeMode == VideoMode::VR_MODE) {
 			vr_zoom *= ((1+(zoom_multi * -scroll.y)));
-			vr_zoom = Util::Clamp(vr_zoom, 0.30f, 3.f);
+			vr_zoom = Util::Clamp(vr_zoom, 0.30f, 1.5f);
 			return;
 		}
 
@@ -402,7 +402,7 @@ void VideoplayerWindow::setup_vr_mode()
 		{
 			float inverse_aspect = 1.f / aspect_ratio;
 			float hfovRad = hfovDegrees * DEG2RAD;
-			float vfovRad = 2.f * atan(tan(hfovRad/2.f)*inverse_aspect);
+			float vfovRad = -2.f * atan(tan(hfovRad/2.f)*inverse_aspect);
 
 			vec2 uv = vec2(Frag_UV.s - 0.5, Frag_UV.t);
 
@@ -515,11 +515,6 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 				break;
 			}
 
-
-			videoSize = videoSize * ImVec2(zoom_factor, zoom_factor);
-			video_pos = (ImGui::GetWindowSize() - videoSize) * 0.5f + current_translation;
-			ImGui::SetCursorPos(video_pos);
-
 			if (activeMode == VideoMode::VR_MODE) {
 				if (videoHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !dragStarted) {
 					dragStarted = true;
@@ -552,12 +547,16 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 						glUniformMatrix4fv(glGetUniformLocation(ctx.vr_shader, "ProjMtx"), 1, GL_FALSE, &ortho_projection[0][0]);
 						glUniform2fv(glGetUniformLocation(ctx.vr_shader, "rotation"), 1, &ctx.current_vr_rotation.x);
 						glUniform1f(glGetUniformLocation(ctx.vr_shader, "zoom"), ctx.vr_zoom);
-						glUniform1f(glGetUniformLocation(ctx.vr_shader, "aspect_ratio"), (cmd->ClipRect.z - L) / (cmd->ClipRect.w - T));
+						glUniform1f(glGetUniformLocation(ctx.vr_shader, "aspect_ratio"), ctx.video_draw_size.x / ctx.video_draw_size.y);
 					}, this);
-				ImGui::Image((void*)(intptr_t)render_texture, videoSize, uv0, uv1);
+				ImGui::Image((void*)(intptr_t)render_texture, ImGui::GetContentRegionAvail(), uv0, uv1);
+				video_draw_size = ImGui::GetItemRectSize();
 				ImGui::GetWindowDrawList()->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
 			}
 			else {
+				videoSize = videoSize * ImVec2(zoom_factor, zoom_factor);
+				video_pos = (ImGui::GetWindowSize() - videoSize) * 0.5f + current_translation;
+				ImGui::SetCursorPos(video_pos);
 				// the videoHovered is one frame old but moving this up prevents flicker while dragging and zooming at the same time
 				// start video dragging
 				if (videoHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !dragStarted) {
