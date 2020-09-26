@@ -1101,6 +1101,11 @@ void OpenFunscripter::ShowMainMenuBar()
                     LoadedFunscript->SelectBottomActions();
                 }
             }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Equalize selection", NULL, false, LoadedFunscript->Selection().size() >= 3)) {
+                undoRedoSystem.Snapshot("Equalize selection");
+                LoadedFunscript->EqualizeSelection();
+            }
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Bookmarks")) {
