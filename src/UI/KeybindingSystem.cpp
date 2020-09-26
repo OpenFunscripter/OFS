@@ -201,7 +201,7 @@ bool KeybindingSystem::ShowBindingWindow()
         {
             ImGui::PushID(id++);
             ImGui::Text("%s", binding.description.c_str()); ImGui::NextColumn();
-            if(ImGui::Button(binding.key_str.c_str(), ImVec2(-1, 0))) {
+            if(ImGui::Button(!binding.key_str.empty() ? binding.key_str.c_str() : "-- Not set --", ImVec2(-1, 0))) {
                 currentlyChanging = &binding;
                 currentlyHeldKeys.str("");
                 ImGui::OpenPopup("Change Binding");
