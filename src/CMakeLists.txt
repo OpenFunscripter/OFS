@@ -16,6 +16,7 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "UI/GradientBar.cpp"
   "UI/ScriptPositionsWindow.cpp"
   "UI/OpenFunscripterVideoplayer.cpp"
+  "UI/ScriptSimulator.cpp"
 
   "event/EventSystem.cpp"
 

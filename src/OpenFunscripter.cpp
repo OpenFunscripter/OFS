@@ -10,6 +10,7 @@
 #include "stb_sprintf.h"
 
 #include "imgui_stdlib.h"
+#include "imgui_internal.h"
 
 // TODO: Improve playback control ui ( buttons are fugly )
 // TODO: Undo Window make snapshots clickable to return to a state immediately
@@ -629,7 +630,7 @@ int OpenFunscripter::run()
             // IMGUI HERE
             CreateDockspace();
             ShowUndoRedoHistory(&ShowHistory);
-            ShowSimulatorWindow(&settings->data().show_simulator);
+            simulator.ShowSimulator(&settings->data().show_simulator);
             ShowStatisticsWindow(&ShowStatistics);
             player.DrawVideoPlayer(NULL);
             scripting.DrawScriptingMode(NULL);
@@ -1350,48 +1351,6 @@ void OpenFunscripter::ShowUndoRedoHistory(bool* open)
 
             ImGui::BulletText("%s (%d)", (*it).Message.c_str(), count);
 
-        }
-        ImGui::End();
-    }
-}
-
-void OpenFunscripter::ShowSimulatorWindow(bool* open)
-{
-    if (*open) {
-        // this behaves weird when docked
-        ImGui::Begin("Simulator", open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDocking);
-        const FunscriptAction* scriptAction = nullptr;
-        if (!player.isPaused()
-            || !(scriptAction = scriptAction = LoadedFunscript->GetActionAtTime(player.getCurrentPositionMs(), player.getFrameTimeMs()))) {
-            int pos = LoadedFunscript->GetPositionAtTime(player.getCurrentPositionMs());
-            ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-            ImGui::VSliderInt("", ImGui::GetContentRegionAvail(), &pos, 0, 100);
-            ImGui::PopItemFlag();
-        }
-        else {
-            if (scriptAction != nullptr)
-            {
-                static bool draggingPosition = false;
-                static int dummyPos;
-                if (!draggingPosition)
-                    dummyPos = scriptAction->pos;
-
-                if (ImGui::VSliderInt("", ImGui::GetContentRegionAvail(), &dummyPos, 0, 100.0))
-                {
-                    if (!draggingPosition && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-                        // start dragging
-                        draggingPosition = true;
-                    }
-                }
-
-                if (draggingPosition && ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
-                    // commit change
-                    if (dummyPos != scriptAction->pos) {
-                        addEditAction(dummyPos);
-                    }
-                    draggingPosition = false;
-                }
-            }
         }
         ImGui::End();
     }

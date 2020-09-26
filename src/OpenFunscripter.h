@@ -4,7 +4,6 @@
 #include "glad/glad.h"
 
 #include "imgui.h"
-#include "imgui_internal.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
 
@@ -15,8 +14,8 @@
 #include "OpenFunscripterVideoplayer.h"
 #include "UndoSystem.h"
 #include "event/EventSystem.h"
-#include "UI/GradientBar.h"
-
+#include "GradientBar.h"
+#include "ScriptSimulator.h"
 #include "Funscript.h"
 #include "RawInput.h"
 
@@ -46,6 +45,8 @@ private:
 	UndoSystem undoRedoSystem;
 	ScriptPositionsWindow scriptPositions;
 	RawInput rawInput;
+	ScriptSimulator simulator;
+
 	bool updateTimelineGradient = false;
 	char tmp_buf[2][32];
 
@@ -102,7 +103,6 @@ private:
 	void CreateDockspace();
 	void ShowStatisticsWindow(bool* open);
 	void ShowUndoRedoHistory(bool* open);
-	void ShowSimulatorWindow(bool* open);
 	bool DrawTimelineWidget(const char* label, float* position);
 	void ShowMainMenuBar();
 public:
