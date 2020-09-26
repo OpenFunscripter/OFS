@@ -103,6 +103,7 @@ public:
 	void SetSelection(const FunscriptAction& action, bool selected) noexcept;
 	void SelectTopActions();
 	void SelectBottomActions();
+	void SelectMidActions();
 	void SelectTime(int32_t from_ms, int32_t to_ms, bool clear=true) noexcept;
 	void SelectAction(const FunscriptAction& select) noexcept;
 	void DeselectAction(const FunscriptAction& deselect) noexcept;

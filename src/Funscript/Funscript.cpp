@@ -370,6 +370,20 @@ void Funscript::SelectBottomActions()
 		SetSelection(act, false);
 }
 
+void Funscript::SelectMidActions()
+{
+	if (data.selection.size() < 3) return;
+	auto [maxIt, minIt] = std::minmax_element(data.selection.begin(), data.selection.end(),
+		[](auto a, auto b) { return a.pos > b.pos; });
+	auto maxPos = (*maxIt).pos;
+	auto minPos = (*minIt).pos;
+
+	data.selection.erase(std::remove_if(data.selection.begin(), data.selection.end(),
+		[&](auto val) {
+			return val.pos >= maxPos || val.pos <= minPos;
+		}), data.selection.end());
+}
+
 void Funscript::SelectTime(int32_t from_ms, int32_t to_ms, bool clear) noexcept
 {
 	if(clear)

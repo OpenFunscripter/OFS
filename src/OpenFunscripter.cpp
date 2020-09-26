@@ -1110,6 +1110,12 @@ void OpenFunscripter::ShowMainMenuBar()
                     LoadedFunscript->SelectTopActions();
                 }
             }
+            if (ImGui::MenuItem("Mid points only", NULL, false)) {
+                if (LoadedFunscript->HasSelection()) {
+                    undoRedoSystem.Snapshot("Mid points only");
+                    LoadedFunscript->SelectMidActions();
+                }
+            }
             if (ImGui::MenuItem("Bottom points only", NULL, false)) {
                 if (LoadedFunscript->HasSelection()) {
                     undoRedoSystem.Snapshot("Bottom points only");
