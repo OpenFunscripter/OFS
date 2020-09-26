@@ -271,8 +271,8 @@ void OpenFunscripter::register_bindings()
         }
     };
     keybinds.registerBinding(Keybinding(
-        "move_actions_left_video",
-        "Move actions left with video",
+        "move_actions_left_snapped",
+        "Move actions left with snapping",
         SDLK_LEFT,
         KMOD_CTRL | KMOD_SHIFT,
         false,
@@ -281,8 +281,8 @@ void OpenFunscripter::register_bindings()
         }
     ));
     keybinds.registerBinding(Keybinding(
-        "move_actions_right_video",
-        "Move actions right with video",
+        "move_actions_right_snapped",
+        "Move actions right with snapping",
         SDLK_RIGHT,
         KMOD_CTRL | KMOD_SHIFT,
         false,
