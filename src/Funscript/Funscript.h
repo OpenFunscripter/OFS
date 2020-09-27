@@ -116,5 +116,6 @@ public:
 	inline void ClearSelection() noexcept { data.selection.clear(); }
 	inline const FunscriptAction* GetClosestActionSelection(int32_t time_ms) noexcept { return getActionAtTime(data.selection, time_ms, std::numeric_limits<int32_t>::max()); }
 	void EqualizeSelection() noexcept;
+	void InvertSelection() noexcept;
 };
 

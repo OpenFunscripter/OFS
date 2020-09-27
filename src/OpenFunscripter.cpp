@@ -358,6 +358,7 @@ void OpenFunscripter::register_bindings()
         }
     ));
 
+    // FUNCTIONS
     keybinds.registerBinding(Keybinding(
         "equalize_actions",
         "Equalize actions",
@@ -366,6 +367,16 @@ void OpenFunscripter::register_bindings()
         true,
         [&](void*) {
             equalizeSelection();
+        }
+    ));
+    keybinds.registerBinding(Keybinding(
+        "invert_actions",
+        "Invert actions",
+        SDLK_UNKNOWN,
+        0,
+        true,
+        [&](void*) {
+            invertSelection();
         }
     ));
 
@@ -1026,8 +1037,34 @@ void OpenFunscripter::equalizeSelection()
         }
     }
     else if(LoadedFunscript->Selection().size() >= 3) {
-        undoRedoSystem.Snapshot("Equalize selection");
+        undoRedoSystem.Snapshot("Equalize actions");
         LoadedFunscript->EqualizeSelection();
+    }
+}
+
+void OpenFunscripter::invertSelection()
+{
+    if (!LoadedFunscript->HasSelection()) {
+        undoRedoSystem.Snapshot("Invert actions");
+        // same hack as above 
+        auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
+        if (closest != nullptr) {
+            auto behind = LoadedFunscript->GetPreviousActionBehind(closest->at);
+            if (behind != nullptr) {
+                auto front = LoadedFunscript->GetNextActionAhead(closest->at);
+                if (front != nullptr) {
+                    LoadedFunscript->SelectAction(*behind);
+                    LoadedFunscript->SelectAction(*closest);
+                    LoadedFunscript->SelectAction(*front);
+                    LoadedFunscript->InvertSelection();
+                    LoadedFunscript->ClearSelection();
+                }
+            }
+        }
+    }
+    else if (LoadedFunscript->Selection().size() >= 3) {
+        undoRedoSystem.Snapshot("Invert actions");
+        LoadedFunscript->InvertSelection();
     }
 }
 
@@ -1154,6 +1191,35 @@ void OpenFunscripter::ShowMainMenuBar()
             if (ImGui::MenuItem("Select all", BINDING_STRING("select_all"), false)) {
                 LoadedFunscript->SelectAll();
             }
+            if (ImGui::BeginMenu("Special")) {
+                if (ImGui::MenuItem("Select all left")) {
+                    LoadedFunscript->SelectTime(0, player.getCurrentPositionMs());
+                }
+                if (ImGui::MenuItem("Select all right")) {
+                    LoadedFunscript->SelectTime(player.getCurrentPositionMs(), player.getDuration()*1000.f);
+                }
+                ImGui::Separator();
+                static int32_t selectionPoint = -1;
+                if (ImGui::MenuItem("Set selection start")) {
+                    if (selectionPoint == -1) {
+                        selectionPoint = player.getCurrentPositionMs();
+                    }
+                    else {
+                        LoadedFunscript->SelectTime(player.getCurrentPositionMs(), selectionPoint);
+                        selectionPoint = -1;
+                    }
+                }
+                if (ImGui::MenuItem("Set selection end")) {
+                    if (selectionPoint == -1) {
+                        selectionPoint = player.getCurrentPositionMs();
+                    }
+                    else {
+                        LoadedFunscript->SelectTime(selectionPoint, player.getCurrentPositionMs());
+                        selectionPoint = -1;
+                    }
+                }
+                ImGui::EndMenu();
+            }
             ImGui::Separator();
             if (ImGui::MenuItem("Top points only", NULL, false)) {
                 if (LoadedFunscript->HasSelection()) {
@@ -1174,8 +1240,11 @@ void OpenFunscripter::ShowMainMenuBar()
                 }
             }
             ImGui::Separator();
-            if (ImGui::MenuItem("Equalize", BINDING_STRING("equalize_action"), false)) {
+            if (ImGui::MenuItem("Equalize", BINDING_STRING("equalize_actions"), false)) {
                 equalizeSelection();
+            }
+            if (ImGui::MenuItem("Invert", BINDING_STRING("invert_actions"), false)) {
+                invertSelection();
             }
             ImGui::EndMenu();
         }

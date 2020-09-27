@@ -72,6 +72,7 @@ private:
 	void copySelection();
 	void pasteSelection();
 	void equalizeSelection();
+	void invertSelection();
 
 	void saveScript(const char* path = nullptr);
 

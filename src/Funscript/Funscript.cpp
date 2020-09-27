@@ -516,24 +516,36 @@ void Funscript::MoveSelectionPosition(int32_t pos_offset) noexcept
 
 void Funscript::EqualizeSelection() noexcept
 {
-	if (data.selection.size() >= 3) {
-		sortSelection(); // might be unnecessary
-		auto first = data.selection.front();
-		auto last = data.selection.back();
-		float duration = last.at - first.at;
-		int32_t step_ms = std::round(duration / (float)(data.selection.size()-1));
+	if (data.selection.size() < 3) return;
+	sortSelection(); // might be unnecessary
+	auto first = data.selection.front();
+	auto last = data.selection.back();
+	float duration = last.at - first.at;
+	int32_t step_ms = std::round(duration / (float)(data.selection.size()-1));
 		
-		auto copySelection = data.selection;
-		RemoveSelectedActions(); // clears selection
+	auto copySelection = data.selection;
+	RemoveSelectedActions(); // clears selection
 
-		for (int i = 1; i < copySelection.size()-1; i++) {
-			auto& newAction = copySelection[i];
-			newAction.at = first.at + (i * step_ms);
-		}
-
-		for (auto& action : copySelection)
-			AddAction(action);
-
-		data.selection = std::move(copySelection);
+	for (int i = 1; i < copySelection.size()-1; i++) {
+		auto& newAction = copySelection[i];
+		newAction.at = first.at + (i * step_ms);
 	}
+
+	for (auto& action : copySelection)
+		AddAction(action);
+
+	data.selection = std::move(copySelection);
+}
+
+void Funscript::InvertSelection() noexcept
+{
+	if (data.selection.size() == 0) return;
+	auto copySelection = data.selection;
+	RemoveSelectedActions();
+	for (auto& act : copySelection)
+	{
+		act.pos = std::abs(act.pos - 100);
+		AddAction(act);
+	}
+	data.selection = copySelection;
 }
