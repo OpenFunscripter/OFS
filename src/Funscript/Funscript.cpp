@@ -373,15 +373,20 @@ void Funscript::SelectBottomActions()
 void Funscript::SelectMidActions()
 {
 	if (data.selection.size() < 3) return;
-	auto [maxIt, minIt] = std::minmax_element(data.selection.begin(), data.selection.end(),
-		[](auto a, auto b) { return a.pos > b.pos; });
-	auto maxPos = (*maxIt).pos;
-	auto minPos = (*minIt).pos;
+	auto selectionCopy = data.selection;
+	SelectTopActions();
+	auto topPoints = data.selection;
+	data.selection = selectionCopy;
+	SelectBottomActions();
+	auto bottomPoints = data.selection;
 
-	data.selection.erase(std::remove_if(data.selection.begin(), data.selection.end(),
+	selectionCopy.erase(std::remove_if(selectionCopy.begin(), selectionCopy.end(),
 		[&](auto val) {
-			return val.pos >= maxPos || val.pos <= minPos;
-		}), data.selection.end());
+			return std::any_of(topPoints.begin(), topPoints.end(), [&](auto a) { return a == val; })
+				|| std::any_of(bottomPoints.begin(), bottomPoints.end(), [&](auto a) { return a == val; });
+		}), selectionCopy.end());
+	data.selection = selectionCopy;
+	sortSelection();
 }
 
 void Funscript::SelectTime(int32_t from_ms, int32_t to_ms, bool clear) noexcept
