@@ -782,7 +782,6 @@ int OpenFunscripter::run()
 
                 ImGui::SetNextItemWidth(-1.f);
                 if (ImGui::SliderFloat("##Speed", &player.playbackSpeed, player.minPlaybackSpeed, player.maxPlaybackSpeed)) {
-                    player.playbackSpeed = (int)(player.playbackSpeed / 0.05f) * 0.05f;
                     if (player.playbackSpeed != player.getSpeed()) {
                         player.setSpeed(player.playbackSpeed);
                     }
