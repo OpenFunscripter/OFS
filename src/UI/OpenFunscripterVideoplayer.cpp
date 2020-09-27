@@ -661,13 +661,14 @@ void VideoplayerWindow::saveFrameToImage(const std::string& directory)
 	glGetIntegerv(GL_PACK_ALIGNMENT, &rowPack);
 	glPixelStorei(GL_PACK_ALIGNMENT, 1);
 
-	threadData.dataBuffer = new uint8_t[MpvData.video_width * MpvData.video_height * 3];
+	const size_t buff_size = MpvData.video_width * MpvData.video_height * 3;
+	threadData.dataBuffer = new uint8_t[buff_size];
 	threadData.w = MpvData.video_width;
 	threadData.h = MpvData.video_height;
 	threadData.filename = (std::filesystem::path(directory) / ss.str()).string();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_obj);
-	glReadPixels(0, 0, MpvData.video_width, MpvData.video_height, GL_RGB, GL_UNSIGNED_BYTE, threadData.dataBuffer);
+	glReadnPixels(0, 0, MpvData.video_width, MpvData.video_height, GL_RGB, GL_UNSIGNED_BYTE, buff_size, threadData.dataBuffer);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, drawFboId);
 
