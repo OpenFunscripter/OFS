@@ -359,16 +359,13 @@ void OpenFunscripter::register_bindings()
     ));
 
     keybinds.registerBinding(Keybinding(
-        "equalize_selection",
-        "Equalize selection",
+        "equalize_actions",
+        "Equalize actions",
         SDLK_UNKNOWN,
         0,
         true,
         [&](void*) {
-            if (LoadedFunscript->Selection().size() >= 3) {
-                undoRedoSystem.Snapshot("Equalize selection");
-                LoadedFunscript->EqualizeSelection();
-            }
+            equalizeSelection();
         }
     ));
 
@@ -1008,6 +1005,32 @@ void OpenFunscripter::pasteSelection()
     player.setPosition((CopiedSelection.end() - 1)->at + offset_ms);
 }
 
+void OpenFunscripter::equalizeSelection()
+{
+    if (!LoadedFunscript->HasSelection()) {
+        undoRedoSystem.Snapshot("Equalize actions");
+        // this is a small hack
+        auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
+        if (closest != nullptr) {
+            auto behind = LoadedFunscript->GetPreviousActionBehind(closest->at);
+            if (behind != nullptr) {
+                auto front = LoadedFunscript->GetNextActionAhead(closest->at);
+                if (front != nullptr) {
+                    LoadedFunscript->SelectAction(*behind);
+                    LoadedFunscript->SelectAction(*closest);
+                    LoadedFunscript->SelectAction(*front);
+                    LoadedFunscript->EqualizeSelection();
+                    LoadedFunscript->ClearSelection();
+                }
+            }
+        }
+    }
+    else if(LoadedFunscript->Selection().size() >= 3) {
+        undoRedoSystem.Snapshot("Equalize selection");
+        LoadedFunscript->EqualizeSelection();
+    }
+}
+
 void OpenFunscripter::showOpenFileDialog()
 {
     // we run this in a seperate thread so we don't block the main thread
@@ -1151,9 +1174,8 @@ void OpenFunscripter::ShowMainMenuBar()
                 }
             }
             ImGui::Separator();
-            if (ImGui::MenuItem("Equalize selection", BINDING_STRING("equalize_selection"), false, LoadedFunscript->Selection().size() >= 3)) {
-                undoRedoSystem.Snapshot("Equalize selection");
-                LoadedFunscript->EqualizeSelection();
+            if (ImGui::MenuItem("Equalize", BINDING_STRING("equalize_action"), false)) {
+                equalizeSelection();
             }
             ImGui::EndMenu();
         }
@@ -1248,9 +1270,9 @@ void OpenFunscripter::ShowMainMenuBar()
         }
         ImGui::SameLine(region.x - ImGui::GetFontSize()*12);
         std::chrono::duration<float> duration = std::chrono::system_clock::now() - last_save_time;
-        ImColor col(IM_COL32(215, 215, 215, 255));
+        ImColor col(ImGui::GetStyle().Colors[ImGuiCol_Text]);
         if (duration.count() > (60.f*5.f)) {
-            col = IM_COL32(215, 0, 0, 255);
+            col = IM_COL32(255, 0, 0, 255);
         }
         ImGui::TextColored(col,"last saved %d minutes ago", (int)(duration.count() / 60.f));
         ImGui::EndMenuBar();

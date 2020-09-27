@@ -654,8 +654,6 @@ void VideoplayerWindow::saveFrameToImage(const std::string& directory)
 	std::replace(tmp.begin(), tmp.end(), ':', '_');
 	ss << filename << '_' << tmp.data() << '-' << ms << ".png";
 	
-
-
 	GLint drawFboId = 0, readFboId = 0;
 	glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
 

@@ -71,6 +71,7 @@ private:
 	void cutSelection();
 	void copySelection();
 	void pasteSelection();
+	void equalizeSelection();
 
 	void saveScript(const char* path = nullptr);
 
