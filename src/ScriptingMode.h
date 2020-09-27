@@ -47,8 +47,11 @@ public:
 
 class AlternatingImpl : public ScripingModeBaseImpl
 {
+	int32_t fixed_bottom = 0;
+	int32_t fixed_top = 100;
+	bool fixed_range_enabled = false;
 public:
-	virtual void DrawModeSettings() override {};
+	virtual void DrawModeSettings() override;
 	virtual void addAction(const FunscriptAction& action) override;
 };
 

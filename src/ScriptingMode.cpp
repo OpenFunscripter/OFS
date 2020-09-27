@@ -106,10 +106,57 @@ void DynamicInjectionImpl::addAction(const FunscriptAction& action)
 }
 
 // alternating
+void AlternatingImpl::DrawModeSettings()
+{
+    ImGui::Checkbox("Fixed range", &fixed_range_enabled);
+    if (fixed_range_enabled) {
+        bool input_active = false;
+        
+        ImGui::LabelText("BottomLabel", "%s", "Fixed bottom");
+        ImGui::InputInt("Fixed bottom", &fixed_bottom, 1, 100);
+        input_active = input_active || ImGui::IsItemActive();
+        
+        ImGui::LabelText("TopLabel", "%s", "Fixed top");
+        ImGui::InputInt("Fixed top", &fixed_top);
+        input_active = input_active || ImGui::IsItemActive();
+
+        fixed_bottom = Util::Clamp<int>(fixed_bottom, 0, 100);
+        fixed_top = Util::Clamp<int>(fixed_top, 0, 100);
+        
+        if (fixed_bottom > fixed_top && !input_active)
+        {
+            // correct user error :^)
+            auto tmp = fixed_bottom;
+            fixed_bottom = fixed_top;
+            fixed_top = tmp;
+        }
+    }
+}
+
 void AlternatingImpl::addAction(const FunscriptAction& action)
 {
     auto previous = ctx().GetPreviousActionBehind(action.at);
+    if (fixed_range_enabled) {
+        if (previous != nullptr) {
+            if (previous->pos >= fixed_top)
+            {
+                ctx().AddAction(FunscriptAction(action.at, fixed_bottom));
+            }
+            else {
+                ctx().AddAction(FunscriptAction(action.at, fixed_top));
+            }
+        }
+        else {
+            if (std::abs(action.pos - fixed_bottom) > std::abs(action.pos - fixed_top))
+                ctx().AddAction(FunscriptAction(action.at, fixed_top));
+            else
+                ctx().AddAction(FunscriptAction(action.at, fixed_bottom));
+        }
+        return;
+    }
+
     if (previous != nullptr) {
+
         if (action.pos >= 50) {
             if (previous->pos - action.pos >= 0) {
                 ctx().AddAction(FunscriptAction(action.at, 100 - action.pos));
