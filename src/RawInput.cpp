@@ -52,7 +52,7 @@ int RawInput::GetControllerIndex(SDL_JoystickID instance)
 	return -1;
 }
 
-void RawInput::AxisMotion(SDL_Event& ev)
+void RawInput::ControllerAxisMotion(SDL_Event& ev)
 {
 	auto& axis = ev.caxis;
 	const float range = (float)std::numeric_limits<int16_t>::max() - ControllerDeadzone;
@@ -91,7 +91,14 @@ void RawInput::AxisMotion(SDL_Event& ev)
 
 void RawInput::ControllerButtonDown(SDL_Event& ev)
 {
+	auto& cbutton = ev.cbutton;
+	LOGF_DEBUG("down cbutton: %d", cbutton.button);
+}
 
+void RawInput::ControllerButtonUp(SDL_Event& ev)
+{
+	auto& cbutton = ev.cbutton;
+	LOGF_DEBUG("up cbutton: %d", cbutton.button);
 }
 
 void RawInput::ControllerDeviceAdded(SDL_Event& ev)
@@ -114,7 +121,8 @@ void RawInput::setup()
 {
 	SDL_JoystickEventState(SDL_ENABLE);
 	SDL_GameControllerEventState(SDL_ENABLE);
-	OpenFunscripter::ptr->events.Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &RawInput::AxisMotion));
+	OpenFunscripter::ptr->events.Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &RawInput::ControllerAxisMotion));
+	OpenFunscripter::ptr->events.Subscribe(SDL_CONTROLLERBUTTONUP, EVENT_SYSTEM_BIND(this, &RawInput::ControllerButtonUp));
 	OpenFunscripter::ptr->events.Subscribe(SDL_CONTROLLERBUTTONDOWN, EVENT_SYSTEM_BIND(this, &RawInput::ControllerButtonDown));
 	OpenFunscripter::ptr->events.Subscribe(SDL_CONTROLLERDEVICEADDED, EVENT_SYSTEM_BIND(this, &RawInput::ControllerDeviceAdded));
 	OpenFunscripter::ptr->events.Subscribe(SDL_CONTROLLERDEVICEREMOVED, EVENT_SYSTEM_BIND(this, &RawInput::ControllerDeviceRemoved));

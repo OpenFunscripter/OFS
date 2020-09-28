@@ -25,8 +25,9 @@ private:
 	static RawInput controllers[MAX_CONTROLLERS];
 	static int GetControllerIndex(SDL_JoystickID instance);
 
-	void AxisMotion(SDL_Event& ev);
+	void ControllerAxisMotion(SDL_Event& ev);
 	void ControllerButtonDown(SDL_Event& ev);
+	void ControllerButtonUp(SDL_Event& ev);
 	void ControllerDeviceAdded(SDL_Event& ev);
 	void ControllerDeviceRemoved(SDL_Event& ev);
 public:
