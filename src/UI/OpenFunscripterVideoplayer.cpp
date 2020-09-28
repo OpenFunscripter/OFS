@@ -639,6 +639,8 @@ bool VideoplayerWindow::openVideo(const std::string& file)
 
 void VideoplayerWindow::saveFrameToImage(const std::string& directory)
 {
+	// there's probably a builtin screenshot function in libmpv 
+	// I should probably use that instead
 	static ScreenshotSavingThreadData threadData{0};
 	if (threadData.dataBuffer != nullptr) return; // saving in progress
 
