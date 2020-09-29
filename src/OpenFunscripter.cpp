@@ -185,6 +185,7 @@ bool OpenFunscripter::setup()
 
 
     rawInput.setup();
+    simulator.setup();
     return true;
 }
 
