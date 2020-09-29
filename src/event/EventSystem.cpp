@@ -11,6 +11,8 @@ int32_t EventSystem::FileDialogSaveEvent = 0;
 
 int32_t EventSystem::FfmpegAudioProcessingFinished = 0;
 
+int32_t EventSystem::MpvVideoLoaded = 0;
+
 void EventSystem::setup()
 {
 	FunscriptActionsChangedEvent = SDL_RegisterEvents(1);
@@ -20,6 +22,7 @@ void EventSystem::setup()
 	FileDialogOpenEvent = SDL_RegisterEvents(1);
 	FileDialogSaveEvent = SDL_RegisterEvents(1);
 	FfmpegAudioProcessingFinished = SDL_RegisterEvents(1);
+	MpvVideoLoaded = SDL_RegisterEvents(1);
 }
 
 void EventSystem::PushEvent(SDL_Event& event)

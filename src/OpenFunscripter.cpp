@@ -174,7 +174,7 @@ bool OpenFunscripter::setup()
     events.Subscribe(EventSystem::FileDialogOpenEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FileDialogOpenEvent));
     events.Subscribe(EventSystem::FileDialogSaveEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FileDialogSaveEvent));
     events.Subscribe(SDL_DROPFILE, EVENT_SYSTEM_BIND(this, &OpenFunscripter::DragNDrop));
-
+    events.Subscribe(EventSystem::MpvVideoLoaded, EVENT_SYSTEM_BIND(this, &OpenFunscripter::MpvVideoLoaded));
     // cache these here because openFile overrides them
     std::string last_video = settings->data().last_opened_video;
     std::string last_script = settings->data().last_opened_script;  
@@ -637,6 +637,11 @@ void OpenFunscripter::DragNDrop(SDL_Event& ev)
 {
     openFile(ev.drop.file);
     SDL_free(ev.drop.file);
+}
+
+void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev)
+{
+    LoadedFunscript->metadata.original_total_duration_ms = player.getDuration() * 1000.0;
 }
 
 void OpenFunscripter::update() {
@@ -1376,17 +1381,82 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open)
 {
     if (!*open) return false;
     bool save = false;
-    ImGui::Begin("Metadata Editor", open, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::InputText("Creator", &LoadedFunscript->metadata.creator);
-    ImGui::LabelText("Original name", "%s", LoadedFunscript->metadata.original_name.c_str());
-    ImGui::InputText("Url", &LoadedFunscript->metadata.url);
-    ImGui::InputText("Video url", &LoadedFunscript->metadata.url_video);
-    ImGui::InputTextMultiline("Comment", &LoadedFunscript->metadata.comment);
-    ImGui::Checkbox("Paid", &LoadedFunscript->metadata.paid);
-    
-    Util::FormatTime(tmp_buf[0], sizeof(tmp_buf), LoadedFunscript->metadata.original_total_duration_ms / 1000.f, true);
+    auto& metadata = LoadedFunscript->metadata;
+    ImGui::Begin("Metadata Editor", open, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking);
+    ImGui::LabelText("Original name", "%s", metadata.original_name.c_str());
+    Util::FormatTime(tmp_buf[0], sizeof(tmp_buf), metadata.original_total_duration_ms / 1000.f, true);
     ImGui::LabelText("Original duration", "%s", tmp_buf[0]);
-    if (ImGui::Button("Save", ImVec2(-1, 0))) { save = true; }
+
+    ImGui::InputText("Creator", &metadata.creator);
+    ImGui::InputText("Url", &metadata.url);
+    ImGui::InputText("Video url", &metadata.url_video);
+    ImGui::InputTextMultiline("Comment", &metadata.comment);
+    ImGui::Checkbox("Paid", &metadata.paid);
+    
+    static std::string newTag;
+    ImGui::InputText("Tag", &newTag); ImGui::SameLine(); 
+    if (ImGui::Button("Add", ImVec2(-1.f, 0.f))) { 
+        metadata.tags.emplace_back(newTag); //newTag.clear(); 
+    }
+    
+    auto& style = ImGui::GetStyle();
+
+    auto availableWidth = ImGui::GetContentRegionAvail().x;
+    ImGui::Text("%s", "Tags"); ImGui::SameLine();
+
+    int removeIndex = -1;
+    for (int i = 0; i < metadata.tags.size(); i++) {
+        ImGui::PushID(i);
+        auto& tag = metadata.tags[i];
+        
+        if (ImGui::Button(tag.c_str())) {
+            removeIndex = i;
+        }
+        auto nextLineCursor = ImGui::GetCursorPos();
+        ImGui::SameLine();
+        if (ImGui::GetCursorPosX() + ImGui::GetItemRectSize().x >= availableWidth) {
+            ImGui::SetCursorPos(nextLineCursor);
+        }
+
+        ImGui::PopID();
+    }
+    ImGui::NewLine();
+    if (removeIndex != -1) {
+        metadata.tags.erase(metadata.tags.begin() + removeIndex);
+        removeIndex = -1;
+    }
+
+    static std::string newPerformer;
+    ImGui::InputText("Performer", &newPerformer); ImGui::SameLine();
+    if (ImGui::Button("Add##Performer", ImVec2(-1.f, 0.f))) {
+        metadata.performers.emplace_back(newPerformer); //newPerformer.clear(); 
+    }
+
+    availableWidth = ImGui::GetContentRegionAvail().x;
+    ImGui::Text("%s", "Performers"); ImGui::SameLine();
+
+    for (int i = 0; i < metadata.performers.size(); i++) {
+        ImGui::PushID(i);
+        auto& performer = metadata.performers[i];
+
+        if (ImGui::Button(performer.c_str())) {
+            removeIndex = i;
+        }
+
+        auto nextLineCursor = ImGui::GetCursorPos();
+        ImGui::SameLine();
+        if (ImGui::GetCursorPosX() + ImGui::GetItemRectSize().x >= availableWidth) {
+            ImGui::SetCursorPos(nextLineCursor);
+        }
+        ImGui::PopID();
+    }
+    ImGui::NewLine();
+    if (removeIndex != -1) {
+        metadata.performers.erase(metadata.performers.begin() + removeIndex);
+        removeIndex = -1;
+    }
+    
+    if (ImGui::Button("Save", ImVec2(-1.f, 0.f))) { save = true; }
     ImGui::End();
     return save;
 }

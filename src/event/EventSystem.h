@@ -34,6 +34,8 @@ public:
 
 	static int32_t FfmpegAudioProcessingFinished;
 
+	static int32_t MpvVideoLoaded;
+
 	void setup();
 
 	void PushEvent(SDL_Event& event);

@@ -114,6 +114,7 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev)
 				if (MpvData.video_height > 0) {
 					updateRenderTexture();
 					MpvData.video_loaded = true;
+					notifyVideoLoaded();
 				}
 				break;
 			}
@@ -123,6 +124,7 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev)
 				if (MpvData.video_width > 0) {
 					updateRenderTexture();
 					MpvData.video_loaded = true;
+					notifyVideoLoaded();
 				}
 				break;
 			}
@@ -474,6 +476,13 @@ void VideoplayerWindow::setup_vr_mode()
 	// delete the shaders as they're linked into our program now and no longer necessary
 	glDeleteShader(vertex);
 	glDeleteShader(fragment);
+}
+
+void VideoplayerWindow::notifyVideoLoaded()
+{
+	SDL_Event ev;
+	ev.type = EventSystem::MpvVideoLoaded;
+	SDL_PushEvent(&ev);
 }
 
 

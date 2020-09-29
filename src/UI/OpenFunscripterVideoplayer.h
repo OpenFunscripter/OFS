@@ -96,6 +96,8 @@ private:
 	void mouse_scroll(SDL_Event& ev);
 
 	void setup_vr_mode();
+
+	void notifyVideoLoaded();
 public:
 	VideoplayerWindow()
 		: prev_translation(0.f, 0.f), current_translation(0.f, 0.f), activeMode(VideoMode::FULL)

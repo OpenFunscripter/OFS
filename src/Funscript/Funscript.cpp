@@ -60,7 +60,7 @@ void Funscript::loadMetadata()
 				if (performers.is_array()) {
 					for (auto& performer : performers) {
 						if (performer.is_string()) {
-							metadata.performers.push_back(performers.get_ref <const std::string&>());
+							metadata.performers.push_back(performer.get_ref<const std::string&>());
 						}
 					}
 				}
