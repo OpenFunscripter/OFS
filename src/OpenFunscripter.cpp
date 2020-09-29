@@ -656,6 +656,7 @@ int OpenFunscripter::run()
             ShowUndoRedoHistory(&ShowHistory);
             simulator.ShowSimulator(&settings->data().show_simulator);
             ShowStatisticsWindow(&ShowStatistics);
+            if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { saveScript(); }
             player.DrawVideoPlayer(NULL);
             scripting.DrawScriptingMode(NULL);
 
@@ -755,13 +756,11 @@ int OpenFunscripter::run()
                 {               
                     // format total duration
                     // this doesn't need to be done every frame
-                    Util::FormatTime(tmp_buf[1], sizeof(tmp_buf[1]), player.getDuration());
-                    int durationMs = (player.getDuration() - (int)player.getDuration()) * 1000.0;
+                    Util::FormatTime(tmp_buf[1], sizeof(tmp_buf[1]), player.getDuration(), true);
 
                     double time_seconds = player.getCurrentPositionSeconds();
-                    Util::FormatTime(tmp_buf[0], sizeof(tmp_buf[0]), time_seconds);
-                    int ms = (time_seconds - (int)time_seconds) * 1000.0;
-                    ImGui::Text(" %s.%03i / %s.%03i (x%.03f)", tmp_buf[0], ms,  tmp_buf[1], durationMs, actualPlaybackSpeed); 
+                    Util::FormatTime(tmp_buf[0], sizeof(tmp_buf[0]), time_seconds, true);
+                    ImGui::Text(" %s / %s (x%.03f)", tmp_buf[0], tmp_buf[1], actualPlaybackSpeed); 
                     ImGui::NextColumn();
                 }
 
@@ -896,11 +895,11 @@ bool OpenFunscripter::openFile(const std::string& file)
     }
     else {
         video_path = file;
-        if (Util::FileNamesMatch(video_path, LoadedFunscript->current_path)) {
-            funscript_path = LoadedFunscript->current_path;
+        if (!Util::FileNamesMatch(video_path, LoadedFunscript->current_path)) {
+            funscript_path = base_path.string() + ".funscript";
         }
         else {
-            funscript_path = base_path.string() + ".funscript";
+            funscript_path = LoadedFunscript->current_path;
         }
     }
 
@@ -930,6 +929,7 @@ bool OpenFunscripter::openFile(const std::string& file)
         LOGF_WARN("Couldn't find funscript. \"%s\"", funscript_path.c_str());
     }
     LoadedFunscript->current_path = funscript_path;
+
     updateTitle();
 
     auto last_path = std::filesystem::path(file);
@@ -961,6 +961,11 @@ void OpenFunscripter::fireAlert(const std::string& msg)
 
 void OpenFunscripter::saveScript(const char* path)
 {
+    LoadedFunscript->metadata.original_name = std::filesystem::path(LoadedFunscript->current_path)
+        .replace_extension("")
+        .filename()
+        .string();
+    LoadedFunscript->metadata.original_total_duration_ms = player.getDuration() * 1000.0;
     if (path == nullptr) {
         LoadedFunscript->save();
     }
@@ -1265,7 +1270,7 @@ void OpenFunscripter::ShowMainMenuBar()
         }
         if (ImGui::BeginMenu("Bookmarks")) {
             static std::string bookmarkName;
-            auto& bookmarks = LoadedFunscript->ScriptSettings.Bookmarks;
+            auto& bookmarks = LoadedFunscript->scriptSettings.Bookmarks;
             auto editBookmark = std::find_if(bookmarks.begin(), bookmarks.end(),
                 [&](auto& mark) {
                     constexpr int threshold = 15000;
@@ -1320,6 +1325,7 @@ void OpenFunscripter::ShowMainMenuBar()
             if (ImGui::MenuItem("Statistics", NULL, &ShowStatistics)) {}
             if (ImGui::MenuItem("Undo/Redo History", NULL, &ShowHistory)) {}
             if (ImGui::MenuItem("Simulator", NULL, &settings->data().show_simulator)) { settings->saveSettings(); }
+            if (ImGui::MenuItem("Metadata", NULL, &ShowMetadataEditor)) {}
             ImGui::Separator();
 
             if (ImGui::MenuItem("Draw Video", NULL, &settings->data().draw_video)) { settings->saveSettings(); }
@@ -1364,6 +1370,25 @@ void OpenFunscripter::ShowMainMenuBar()
         ImGui::EndMenuBar();
     }
 #undef BINDING_STRING
+}
+
+bool OpenFunscripter::ShowMetadataEditorWindow(bool* open)
+{
+    if (!*open) return false;
+    bool save = false;
+    ImGui::Begin("Metadata Editor", open, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::InputText("Creator", &LoadedFunscript->metadata.creator);
+    ImGui::LabelText("Original name", "%s", LoadedFunscript->metadata.original_name.c_str());
+    ImGui::InputText("Url", &LoadedFunscript->metadata.url);
+    ImGui::InputText("Video url", &LoadedFunscript->metadata.url_video);
+    ImGui::InputTextMultiline("Comment", &LoadedFunscript->metadata.comment);
+    ImGui::Checkbox("Paid", &LoadedFunscript->metadata.paid);
+    
+    Util::FormatTime(tmp_buf[0], sizeof(tmp_buf), LoadedFunscript->metadata.original_total_duration_ms / 1000.f, true);
+    ImGui::LabelText("Original duration", "%s", tmp_buf[0]);
+    if (ImGui::Button("Save", ImVec2(-1, 0))) { save = true; }
+    ImGui::End();
+    return save;
 }
 
 void OpenFunscripter::SetFullscreen(bool fullscreen) {
@@ -1530,7 +1555,7 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position)
     bool item_hovered = ImGui::IsItemHovered();
 
     // bookmarks
-    for (auto& bookmark : LoadedFunscript->ScriptSettings.Bookmarks) {
+    for (auto& bookmark : LoadedFunscript->scriptSettings.Bookmarks) {
         const float rectWidth = 7.f;
 
         ImVec2 p1((frame_bb.Min.x + (frame_bb.GetWidth() * (bookmark.at / (player.getDuration() * 1000.0)))) - (rectWidth/2.f), frame_bb.Min.y);       
@@ -1568,8 +1593,8 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position)
         {
             double time_seconds = player.getDuration() * rel_timeline_pos;
             double time_delta = time_seconds - player.getCurrentPositionSeconds();
-            Util::FormatTime(tmp_buf[0], sizeof(tmp_buf[0]), time_seconds);
-            Util::FormatTime(tmp_buf[1], sizeof(tmp_buf[1]), (time_delta > 0) ? time_delta : -time_delta);
+            Util::FormatTime(tmp_buf[0], sizeof(tmp_buf[0]), time_seconds, false);
+            Util::FormatTime(tmp_buf[1], sizeof(tmp_buf[1]), (time_delta > 0) ? time_delta : -time_delta, false);
             if (time_delta > 0)
                 ImGui::Text("%s (+%s)", tmp_buf[0], tmp_buf[1]);
             else                                            

@@ -29,6 +29,7 @@ private:
 	SDL_GLContext gl_context;
 	bool exit_app = false;
 
+	bool ShowMetadataEditor = false;
 	bool ShowStatistics = true;
 	bool ShowHistory = true;
 	bool RollingBackup = false;
@@ -97,6 +98,7 @@ private:
 	void ShowUndoRedoHistory(bool* open);
 	bool DrawTimelineWidget(const char* label, float* position);
 	void ShowMainMenuBar();
+	bool ShowMetadataEditorWindow(bool* open);
 public:
 	static OpenFunscripter* ptr;
 
@@ -106,12 +108,12 @@ public:
 	std::unique_ptr<Funscript> LoadedFunscript;
 
 	const std::array<const char*, 6> SupportedVideoExtensions{
-	".mp4",
-	".avi",
-	".m4v",
-	".webm",
-	".mkv",
-	".wmv",
+		".mp4",
+		".avi",
+		".m4v",
+		".webm",
+		".mkv",
+		".wmv",
 	};
 
 	bool setup();

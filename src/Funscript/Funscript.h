@@ -22,8 +22,20 @@ public:
 
 	struct Settings {
 		std::vector<Bookmark> Bookmarks;
-	};
-	Funscript::Settings ScriptSettings;
+	} scriptSettings;
+
+	struct Metadata {
+		std::string creator;
+		std::string original_name;
+		std::string url;
+		std::string url_video;
+		std::vector<std::string> tags;
+		std::vector<std::string> performers;
+		std::string comment;
+		bool paid = false;
+		int64_t original_total_duration_ms = 0;
+	} metadata;
+
 private:
 	nlohmann::json Json;
 	bool scriptOpened = false;
@@ -56,6 +68,9 @@ private:
 	}
 
 	void NotifyActionsChanged();
+
+	void loadMetadata();
+	void saveMetadata();
 	void loadSettings();
 	void saveSettings();
 public:
@@ -90,10 +105,10 @@ public:
 	void RemoveActions(const std::vector<FunscriptAction>& actions) noexcept;
 
 	// bookmarks
-	inline const std::vector<Funscript::Bookmark>& Bookmarks() const { return ScriptSettings.Bookmarks; }
+	inline const std::vector<Funscript::Bookmark>& Bookmarks() const { return scriptSettings.Bookmarks; }
 	inline void AddBookmark(const Funscript::Bookmark& bookmark) { 
-		ScriptSettings.Bookmarks.push_back(bookmark); 
-		std::sort(ScriptSettings.Bookmarks.begin(), ScriptSettings.Bookmarks.end(),
+		scriptSettings.Bookmarks.push_back(bookmark); 
+		std::sort(scriptSettings.Bookmarks.begin(), scriptSettings.Bookmarks.end(),
 			[](auto& a, auto& b) { return a.at < b.at; }
 		);
 	}

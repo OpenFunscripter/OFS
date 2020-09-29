@@ -263,7 +263,7 @@ bool VideoplayerWindow::setup()
 	mpv_opengl_init_params init_params{ 0 };
 	init_params.get_proc_address = get_proc_address_mpv;
 
-	int enable = 1;
+	const int enable = 1;
 	mpv_render_param params[] = {
 		mpv_render_param{MPV_RENDER_PARAM_API_TYPE, (void*)MPV_RENDER_API_TYPE_OPENGL},
 		mpv_render_param{MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &init_params},
@@ -277,7 +277,7 @@ bool VideoplayerWindow::setup()
 		// If you want to use synchronous calls, either make them on a separate
 		// thread, or remove the option below (this will disable features like
 		// DR and is not recommended anyway).
-		mpv_render_param{MPV_RENDER_PARAM_ADVANCED_CONTROL, &enable },
+		mpv_render_param{MPV_RENDER_PARAM_ADVANCED_CONTROL, (void*)&enable },
 		mpv_render_param{}
 	};
 
@@ -651,10 +651,9 @@ void VideoplayerWindow::saveFrameToImage(const std::string& directory)
 	std::string filename = currentFile.filename().replace_extension("").string();
 	std::array<char, 15> tmp;
 	double time = getCurrentPositionSeconds();
-	int32_t ms = (time - (int32_t)time)*1000.f;
-	Util::FormatTime(tmp.data(), tmp.size(), time);
+	Util::FormatTime(tmp.data(), tmp.size(), time, true);
 	std::replace(tmp.begin(), tmp.end(), ':', '_');
-	ss << filename << '_' << tmp.data() << '-' << ms << ".png";
+	ss << filename << '_' << tmp.data() << '-' << ".png";
 	
 	GLint drawFboId = 0, readFboId = 0;
 	glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);

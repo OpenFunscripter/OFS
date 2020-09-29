@@ -8,6 +8,8 @@
 #include <iomanip>
 #include <filesystem>
 
+#include "stb_sprintf.h"
+
 
 // helper for FontAwesome. Version 4.7.0 2016 ttf
 #define ICON_FOLDER_OPEN "\xef\x81\xbc"
@@ -56,14 +58,19 @@ public:
 		o << json << std::endl;
 	}
 
-	static inline size_t FormatTime(char* buffer, size_t buf_size, float time_seconds) {
+	static inline size_t FormatTime(char* buffer, size_t buf_size, float time_seconds, bool with_ms) {
 		if (std::isinf(time_seconds) || std::isnan(time_seconds)) time_seconds = 0.f;
 		auto duration = std::chrono::duration<double>(time_seconds);
 		std::time_t t = duration.count();
 		std::tm timestamp = *std::gmtime(&t);
 
-		int ms = (time_seconds - (int)time_seconds) * 1000.0;
-		return std::strftime(buffer, buf_size, "%H:%M:%S", &timestamp);
+		size_t size = std::strftime(buffer, buf_size, "%H:%M:%S", &timestamp);
+		if (!with_ms)
+			return size;
+		else {
+			int32_t ms = (time_seconds - (int)time_seconds) * 1000.0;
+			return stbsp_snprintf(buffer, buf_size, "%s.%03i", buffer, ms);
+		}
 	}
 
 	inline static bool FileExists(const std::string& file) { return FileExists(file.c_str()); }
