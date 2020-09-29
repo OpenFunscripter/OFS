@@ -68,7 +68,7 @@ public:
 
 	inline static bool FileExists(const std::string& file) { return FileExists(file.c_str()); }
 	inline static bool FileExists(const char* file) {
-		std::filesystem::path file_path(file);
+		std::filesystem::path file_path = std::filesystem::u8path(file);
 		return std::filesystem::exists(file_path) && std::filesystem::is_regular_file(file_path);
 	}
 	inline static bool FileNamesMatch(std::filesystem::path path1, std::filesystem::path path2) {

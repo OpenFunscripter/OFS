@@ -876,7 +876,7 @@ bool OpenFunscripter::openFile(const std::string& file)
     if (!Util::FileExists(file)) return false;
     
     std::filesystem::path file_path(file);
-    std::filesystem::path base_path(file);
+    std::filesystem::path base_path = file_path;
     base_path.replace_extension("");
     std::string video_path;
     std::string funscript_path;
@@ -912,7 +912,7 @@ bool OpenFunscripter::openFile(const std::string& file)
     }
     else {
         bool succ = player.openVideo(video_path);
-        if(!succ) LOGF_ERROR("Failed to open video: \"%s\"", video_path);
+        if (!succ) { LOGF_ERROR("Failed to open video: \"%s\"", video_path.c_str()); }
     }
 
     auto openFunscript = [this](const std::string& file) -> bool {
