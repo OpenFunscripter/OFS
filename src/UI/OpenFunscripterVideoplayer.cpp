@@ -265,7 +265,7 @@ bool VideoplayerWindow::setup()
 
 	int enable = 1;
 	mpv_render_param params[] = {
-		mpv_render_param{MPV_RENDER_PARAM_API_TYPE, MPV_RENDER_API_TYPE_OPENGL},
+		mpv_render_param{MPV_RENDER_PARAM_API_TYPE, (void*)MPV_RENDER_API_TYPE_OPENGL},
 		mpv_render_param{MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &init_params},
 
 		// Tell libmpv that you will call mpv_render_context_update() on render

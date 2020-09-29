@@ -208,12 +208,12 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 
 		// render normal actions
 		if (ShowRegularActions) {
-			auto& startIt = std::find_if(script.Actions().begin(), script.Actions().end(),
+			auto startIt = std::find_if(script.Actions().begin(), script.Actions().end(),
 				[&](auto& act) { return act.at >= offset_ms; });
 			if (startIt != script.Actions().begin())
 				startIt -= 1;
 
-			auto& endIt = std::find_if(startIt, script.Actions().end(),
+			auto endIt = std::find_if(startIt, script.Actions().end(),
 				[&](auto& act) { return act.at >= offset_ms + frameSizeMs; });
 			if (endIt != script.Actions().end())
 				endIt += 1;
@@ -304,7 +304,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 					auto base_path = std::filesystem::path(base);
 					SDL_free(base);
 
-					auto& ffmpeg_path = base_path / "ffmpeg.exe";
+					auto ffmpeg_path = base_path / "ffmpeg.exe";
 					auto output_path = base_path / "tmp";
 					std::filesystem::create_directories(output_path);
 					output_path /= "audio.mp3";
