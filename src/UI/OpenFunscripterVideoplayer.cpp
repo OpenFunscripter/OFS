@@ -743,4 +743,5 @@ void VideoplayerWindow::closeVideo()
 {
 	const char* cmd[] = { "stop", NULL };
 	mpv_command_async(mpv, 0, cmd);
+	MpvData.video_loaded = false;
 }

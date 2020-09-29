@@ -66,8 +66,6 @@ private:
 	void FileDialogSaveEvent(SDL_Event& ev);
 	void DragNDrop(SDL_Event& ev);
 
-
-
 	void cutSelection();
 	void copySelection();
 	void pasteSelection();

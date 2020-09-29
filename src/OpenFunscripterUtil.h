@@ -71,9 +71,12 @@ public:
 		std::filesystem::path file_path(file);
 		return std::filesystem::exists(file_path) && std::filesystem::is_regular_file(file_path);
 	}
+	inline static bool FileNamesMatch(std::filesystem::path path1, std::filesystem::path path2) {
+		path1.replace_extension(""); path2.replace_extension();
+		return path1.filename() == path2.filename();
+	}
 
 	static void Tooltip(const char* tip);
-
 };
 
 //#ifndef NDEBUG

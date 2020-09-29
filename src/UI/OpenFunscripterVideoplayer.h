@@ -138,7 +138,7 @@ public:
 	inline bool isLoaded() const { return MpvData.video_loaded; }
 	void closeVideo();
 
-	inline const char* getVideoPath() const { return MpvData.file_path; }
+	inline const char* getVideoPath() const { return (MpvData.file_path == nullptr) ? "" : MpvData.file_path; }
 };
 
 

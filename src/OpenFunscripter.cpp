@@ -175,8 +175,14 @@ bool OpenFunscripter::setup()
     events.Subscribe(EventSystem::FileDialogSaveEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FileDialogSaveEvent));
     events.Subscribe(SDL_DROPFILE, EVENT_SYSTEM_BIND(this, &OpenFunscripter::DragNDrop));
 
-    if (!settings->data().last_opened_file.empty())
-        openFile(settings->data().last_opened_file);
+    // cache these here because openFile overrides them
+    std::string last_video = settings->data().last_opened_video;
+    std::string last_script = settings->data().last_opened_script;  
+    if (!last_script.empty())
+        openFile(last_script);
+    if (!last_video.empty())
+        openFile(last_video);
+
 
     rawInput.setup();
     return true;
@@ -867,7 +873,7 @@ void OpenFunscripter::shutdown()
 
 bool OpenFunscripter::openFile(const std::string& file)
 {
-    if (!std::filesystem::exists(file) || !std::filesystem::is_regular_file(file)) return false;
+    if (!Util::FileExists(file)) return false;
     
     std::filesystem::path file_path(file);
     std::filesystem::path base_path(file);
@@ -890,15 +896,16 @@ bool OpenFunscripter::openFile(const std::string& file)
     }
     else {
         video_path = file;
-        funscript_path = base_path.string() + ".funscript";
+        if (Util::FileNamesMatch(video_path, LoadedFunscript->current_path)) {
+            funscript_path = LoadedFunscript->current_path;
+        }
+        else {
+            funscript_path = base_path.string() + ".funscript";
+        }
     }
 
     if (video_path.empty()) {
-        std::filesystem::path currentVideo(player.getVideoPath());
-        std::filesystem::path scriptPath(funscript_path);
-        currentVideo.replace_extension("");
-        scriptPath.replace_extension("");
-        if (currentVideo.filename() != scriptPath.filename()) {
+        if (!Util::FileNamesMatch(player.getVideoPath(), funscript_path)) {
             LOG_WARN("No video found.\nLoading scripts without a video is not supported.");
             player.closeVideo();
         }
@@ -927,7 +934,8 @@ bool OpenFunscripter::openFile(const std::string& file)
     last_path.replace_filename("");
     last_path /= "";
     settings->data().last_path = last_path.string();
-    settings->data().last_opened_file = file;
+    settings->data().last_opened_video = video_path;
+    settings->data().last_opened_script = funscript_path;
     settings->saveSettings();
 
     last_save_time = std::chrono::system_clock::now();
@@ -1108,7 +1116,7 @@ void OpenFunscripter::showSaveFileDialog()
     // the result gets passed to the main thread via an event
     auto thread = [](void* ctx) {
         auto app = (OpenFunscripter*)ctx;
-        auto path = std::filesystem::path(app->settings->data().last_opened_file);
+        auto path = std::filesystem::path(app->settings->data().last_opened_script);
         path.replace_extension(".funscript");
 
         pfd::save_file saveDialog("Save", path.string(), { "Funscript", "*.funscript" });
@@ -1342,13 +1350,15 @@ void OpenFunscripter::ShowMainMenuBar()
             }
             ImGui::EndMenu();
         }
-        ImGui::SameLine(region.x - ImGui::GetFontSize()*12);
-        std::chrono::duration<float> duration = std::chrono::system_clock::now() - last_save_time;
-        ImColor col(ImGui::GetStyle().Colors[ImGuiCol_Text]);
-        if (duration.count() > (60.f*5.f)) {
-            col = IM_COL32(255, 0, 0, 255);
+        if (player.isLoaded()) {
+            ImGui::SameLine(region.x - ImGui::GetFontSize()*12);
+            std::chrono::duration<float> duration = std::chrono::system_clock::now() - last_save_time;
+            ImColor col(ImGui::GetStyle().Colors[ImGuiCol_Text]);
+            if (duration.count() > (60.f*5.f)) {
+                col = IM_COL32(255, 0, 0, 255);
+            }
+            ImGui::TextColored(col,"last saved %d minutes ago", (int)(duration.count() / 60.f));
         }
-        ImGui::TextColored(col,"last saved %d minutes ago", (int)(duration.count() / 60.f));
         ImGui::EndMenuBar();
     }
 #undef BINDING_STRING
