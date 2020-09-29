@@ -894,8 +894,14 @@ bool OpenFunscripter::openFile(const std::string& file)
     }
 
     if (video_path.empty()) {
-        LOG_WARN("No video found.\nLoading scripts without a video is not supported.");
-        player.closeVideo();
+        std::filesystem::path currentVideo(player.getVideoPath());
+        std::filesystem::path scriptPath(funscript_path);
+        currentVideo.replace_extension("");
+        scriptPath.replace_extension("");
+        if (currentVideo.filename() != scriptPath.filename()) {
+            LOG_WARN("No video found.\nLoading scripts without a video is not supported.");
+            player.closeVideo();
+        }
     }
     else
         bool result = player.openVideo(video_path);
