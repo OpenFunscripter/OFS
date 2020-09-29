@@ -1396,7 +1396,10 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open)
     static std::string newTag;
     ImGui::InputText("Tag", &newTag); ImGui::SameLine(); 
     if (ImGui::Button("Add", ImVec2(-1.f, 0.f))) { 
-        metadata.tags.emplace_back(newTag); newTag.clear(); 
+        Util::trim(newTag);
+        if (!newTag.empty()) {
+            metadata.tags.emplace_back(newTag); newTag.clear();
+        }
     }
     
     auto& style = ImGui::GetStyle();
@@ -1429,7 +1432,10 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open)
     static std::string newPerformer;
     ImGui::InputText("Performer", &newPerformer); ImGui::SameLine();
     if (ImGui::Button("Add##Performer", ImVec2(-1.f, 0.f))) {
-        metadata.performers.emplace_back(newPerformer); newPerformer.clear(); 
+        Util::trim(newPerformer);
+        if (!newPerformer.empty()) {
+            metadata.performers.emplace_back(newPerformer); newPerformer.clear(); 
+        }
     }
 
     availableWidth = ImGui::GetContentRegionAvail().x;
