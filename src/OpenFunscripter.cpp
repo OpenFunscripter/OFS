@@ -910,8 +910,10 @@ bool OpenFunscripter::openFile(const std::string& file)
             player.closeVideo();
         }
     }
-    else
-        bool result = player.openVideo(video_path);
+    else {
+        bool succ = player.openVideo(video_path);
+        if(!succ) LOGF_ERROR("Failed to open video: \"%s\"", video_path);
+    }
 
     auto openFunscript = [this](const std::string& file) -> bool {
         LoadedFunscript = std::make_unique<Funscript>();
