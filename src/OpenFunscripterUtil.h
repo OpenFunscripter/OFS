@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "SDL_rwops.h"
 #include "SDL_log.h"
 #include "nlohmann/json.hpp"
 
@@ -21,88 +22,6 @@
 #define ICON_PLAY "\xef\x81\x8b"
 #define ICON_PAUSE "\xef\x81\x8c"
 
-// this functionality seems to be available in c++20
-template<class T, class... Args>
-void overwrite_shared_ptr_content(std::shared_ptr<T>& ptr, Args&&... args) {
-	if (ptr) { // nullptr check
-		ptr->~T(); // destroy object held by pointer
-		new(ptr.get()) T(std::forward<Args>(args)...); // construct new object in place 
-	}
-}
-
-
-class Util {
-public:
-	static bool LoadTextureFromFile(const char* filename, unsigned int* out_texture, int* out_width, int* out_height);
-
-	template<typename T>
-	inline static T Clamp(T val, T min, T max) noexcept {
-		return std::max(std::min(val, max), min);
-	}
-
-	inline static auto LoadJson(const std::string& file) { return LoadJson(file.c_str()); }
-	inline static nlohmann::json LoadJson(const char* file) {
-		std::ifstream i(file);
-		nlohmann::json j;
-		i >> j;
-		return j;
-	}
-
-	inline static void WriteJson(const nlohmann::json& json, const std::string& file, bool pretty = false) {
-		return WriteJson(json, file.c_str(), pretty);
-	}
-	inline static void WriteJson(const nlohmann::json& json, const char* file, bool pretty = false) {
-		std::ofstream o(file);
-		if(pretty)
-			o << std::setw(4);
-		o << json << std::endl;
-	}
-
-	static inline size_t FormatTime(char* buffer, size_t buf_size, float time_seconds, bool with_ms) {
-		if (std::isinf(time_seconds) || std::isnan(time_seconds)) time_seconds = 0.f;
-		auto duration = std::chrono::duration<double>(time_seconds);
-		std::time_t t = duration.count();
-		std::tm timestamp = *std::gmtime(&t);
-
-		size_t size = std::strftime(buffer, buf_size, "%H:%M:%S", &timestamp);
-		if (!with_ms)
-			return size;
-		else {
-			int32_t ms = (time_seconds - (int)time_seconds) * 1000.0;
-			return stbsp_snprintf(buffer, buf_size, "%s.%03i", buffer, ms);
-		}
-	}
-
-	inline static bool FileExists(const std::string& file) { return FileExists(file.c_str()); }
-	inline static bool FileExists(const char* file) {
-		std::filesystem::path file_path = std::filesystem::u8path(file);
-		return std::filesystem::exists(file_path) && std::filesystem::is_regular_file(file_path);
-	}
-	inline static bool FileNamesMatch(std::filesystem::path path1, std::filesystem::path path2) {
-		path1.replace_extension(""); path2.replace_extension();
-		return path1.filename() == path2.filename();
-	}
-
-	static void Tooltip(const char* tip);
-
-	// http://www.martinbroadhurst.com/how-to-trim-a-stdstring.html
-	static std::string& ltrim(std::string& str, const std::string& chars = "\t\n\v\f\r ")
-	{
-		str.erase(0, str.find_first_not_of(chars));
-		return str;
-	}
-
-	static std::string& rtrim(std::string& str, const std::string& chars = "\t\n\v\f\r ")
-	{
-		str.erase(str.find_last_not_of(chars) + 1);
-		return str;
-	}
-
-	static std::string& trim(std::string& str, const std::string& chars = "\t\n\v\f\r ")
-	{
-		return ltrim(rtrim(str, chars), chars);
-	}
-};
 
 //#ifndef NDEBUG
 #define LOG_INFO(msg)  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, msg)
@@ -160,3 +79,104 @@ public:
 #define FUN_ASSERT(expr, msg)
 
 #endif
+
+
+class Util {
+public:
+	static bool LoadTextureFromFile(const char* filename, unsigned int* out_texture, int* out_width, int* out_height);
+
+	template<typename T>
+	inline static T Clamp(T val, T min, T max) noexcept {
+		return std::max(std::min(val, max), min);
+	}
+
+	inline static auto LoadJson(const std::string& file) { return LoadJson(file.c_str()); }
+	inline static nlohmann::json LoadJson(const char* file) {
+		auto handle = SDL_RWFromFile(file, "rb");
+		nlohmann::json j;
+		if (handle != nullptr) {
+			size_t size = handle->size(handle);
+			char* buffer = new char[size+1];
+			SDL_RWread(handle, buffer, sizeof(char), size);
+			buffer[size] = '\0';
+			j = nlohmann::json::parse(std::string(buffer, size));
+			SDL_RWclose(handle);
+			delete[] buffer;
+		}
+		else {
+			LOGF_ERROR("Failed to load json: \"%s\"", file);
+		}
+		
+		return j;
+	}
+
+	inline static void WriteJson(const nlohmann::json& json, const std::string& file, bool pretty = false) {
+		return WriteJson(json, file.c_str(), pretty);
+	}
+	inline static void WriteJson(const nlohmann::json& json, const char* file, bool pretty = false) {
+		std::ofstream o(file);
+		if (pretty)
+			o << std::setw(4);
+		o << json << std::endl;
+	}
+
+	static inline size_t FormatTime(char* buffer, size_t buf_size, float time_seconds, bool with_ms) {
+		if (std::isinf(time_seconds) || std::isnan(time_seconds)) time_seconds = 0.f;
+		auto duration = std::chrono::duration<double>(time_seconds);
+		std::time_t t = duration.count();
+		std::tm timestamp = *std::gmtime(&t);
+
+		size_t size = std::strftime(buffer, buf_size, "%H:%M:%S", &timestamp);
+		if (!with_ms)
+			return size;
+		else {
+			int32_t ms = (time_seconds - (int)time_seconds) * 1000.0;
+			return stbsp_snprintf(buffer, buf_size, "%s.%03i", buffer, ms);
+		}
+	}
+
+	inline static bool FileExists(const std::string& file) { return FileExists(file.c_str()); }
+	inline static bool FileExists(const char* file) {
+		//std::filesystem::path file_path(file);
+		//bool exists = std::filesystem::exists(file_path) && std::filesystem::is_regular_file(file_path);
+		
+		// this sucks but unlike the code above works with unicode 
+		// and std::filesystem::u8path keeps throwing ...
+		// SDL2 uses utf-8 strings
+		bool exists = false;
+		auto handle = SDL_RWFromFile(file, "r");
+		if (handle != nullptr) {
+			SDL_RWclose(handle);
+			exists = true;
+		}
+		else {
+			LOGF_WARN("\"%s\" doesn't exist", file);
+		}
+
+		return exists;
+	}
+	inline static bool FileNamesMatch(std::filesystem::path path1, std::filesystem::path path2) {
+		path1.replace_extension(""); path2.replace_extension();
+		return path1.filename() == path2.filename();
+	}
+
+	static void Tooltip(const char* tip);
+
+	// http://www.martinbroadhurst.com/how-to-trim-a-stdstring.html
+	static std::string& ltrim(std::string& str, const std::string& chars = "\t\n\v\f\r ")
+	{
+		str.erase(0, str.find_first_not_of(chars));
+		return str;
+	}
+
+	static std::string& rtrim(std::string& str, const std::string& chars = "\t\n\v\f\r ")
+	{
+		str.erase(str.find_last_not_of(chars) + 1);
+		return str;
+	}
+
+	static std::string& trim(std::string& str, const std::string& chars = "\t\n\v\f\r ")
+	{
+		return ltrim(rtrim(str, chars), chars);
+	}
+};

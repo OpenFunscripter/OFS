@@ -643,6 +643,7 @@ void OpenFunscripter::DragNDrop(SDL_Event& ev)
 void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev)
 {
     LoadedFunscript->metadata.original_total_duration_ms = player.getDuration() * 1000.0;
+    simulator.CenterSimulator();
 }
 
 void OpenFunscripter::update() {
@@ -893,7 +894,7 @@ bool OpenFunscripter::openFile(const std::string& file)
         std::string videoPath;
         for (auto extension : SupportedVideoExtensions) {
             videoPath = base_path.string() + extension;
-            if (std::filesystem::exists(videoPath) && std::filesystem::is_regular_file(videoPath)) {
+            if (Util::FileExists(videoPath)) {
                 video_path = videoPath;
                 break;
             }
