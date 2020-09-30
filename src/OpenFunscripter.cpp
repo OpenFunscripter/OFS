@@ -24,6 +24,7 @@
 // TODO: [MAJOR FEATURE] working with raw actions and controller input
 
 OpenFunscripter* OpenFunscripter::ptr = nullptr;
+ImFont* OpenFunscripter::BiggerFont = nullptr;
 
 const char* glsl_version = "#version 150";
 
@@ -89,6 +90,9 @@ bool OpenFunscripter::imgui_setup()
         font = io.Fonts->AddFontFromFileTTF(fontawesome, 18.0f, &config, icons_ranges);
         if (font == nullptr) return false;
     }
+
+    config.MergeMode = false;
+    BiggerFont = io.Fonts->AddFontFromFileTTF(roboto, 36.f, &config);
     io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
     // Upload texture to graphics system
