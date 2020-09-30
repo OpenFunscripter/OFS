@@ -114,10 +114,15 @@ public:
 		return WriteJson(json, file.c_str(), pretty);
 	}
 	inline static void WriteJson(const nlohmann::json& json, const char* file, bool pretty = false) {
-		std::ofstream o(file);
-		if (pretty)
-			o << std::setw(4);
-		o << json << std::endl;
+		auto handle = SDL_RWFromFile(file, "wb");
+		if (handle != nullptr) {
+			auto jsonText = json.dump((pretty) ? 4 : -1, ' ');
+			SDL_RWwrite(handle, jsonText.data(), sizeof(char), jsonText.size());
+			SDL_RWclose(handle);
+		}
+		else {
+			LOGF_ERROR("Failed to save: \"%s\"", file);
+		}
 	}
 
 	static inline size_t FormatTime(char* buffer, size_t buf_size, float time_seconds, bool with_ms) {
