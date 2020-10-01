@@ -193,6 +193,13 @@ bool Funscript::open(const std::string& file)
 	loadSettings();
 	loadMetadata();
 
+	if (metadata.original_name.empty()) {
+		metadata.original_name = std::filesystem::path(current_path)
+			.replace_extension("")
+			.filename()
+			.string();
+	}
+
 	// sorting is ensured by the std::set
 	//sortActions(data.Actions); // make sure it's ordered by time
 	//sortActions(data.RawActions);
