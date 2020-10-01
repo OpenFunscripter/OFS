@@ -109,8 +109,16 @@ void ScriptSimulator::ShowSimulator(bool* open)
 
             if (previousAction != nullptr) {
                 if (previousAction->pos > 0 && previousAction->pos < 100) {
-                    auto indicator1 = barP2 + (direction * distance * (previousAction->pos / 100.f)) - (perpendicular * (simulator.Width / 2.f));
-                    auto indicator2 = barP2 + (direction * distance * (previousAction->pos / 100.f)) + (perpendicular * (simulator.Width / 2.f));
+                    auto indicator1 =
+                        barP2
+                        + (direction * distance * (previousAction->pos / 100.f))
+                        - (perpendicular * (simulator.Width / 2.f))
+                        + ImVec2(simulator.BorderWidth / 2.f, 0.f);
+                    auto indicator2 =
+                        barP2
+                        + (direction * distance * (previousAction->pos / 100.f))
+                        + (perpendicular * (simulator.Width / 2.f))
+                        - ImVec2(simulator.BorderWidth / 2.f, 0.f);
                     auto indicatorCenter = barP2 + (direction * distance * (previousAction->pos / 100.f));
                     front_draw->AddLine(
                         indicator1,
@@ -127,9 +135,15 @@ void ScriptSimulator::ShowSimulator(bool* open)
             if (nextAction != nullptr) {
                 if (nextAction->pos > 0 && nextAction->pos < 100) {
                     auto indicator1 = 
-                        barP2 + (direction * distance * (nextAction->pos / 100.f)) - (perpendicular * (simulator.Width / 2.f));
+                        barP2 
+                        + (direction * distance * (nextAction->pos / 100.f)) 
+                        - (perpendicular * (simulator.Width / 2.f))
+                        + ImVec2(simulator.BorderWidth / 2.f, 0.f);
                     auto indicator2 = 
-                        barP2 + (direction * distance * (nextAction->pos / 100.f)) + (perpendicular * (simulator.Width / 2.f));
+                        barP2 
+                        + (direction * distance * (nextAction->pos / 100.f)) 
+                        + (perpendicular * (simulator.Width / 2.f))
+                        - ImVec2(simulator.BorderWidth / 2.f, 0.f);
                     auto indicatorCenter = barP2 + (direction * distance * (nextAction->pos / 100.f));
                     front_draw->AddLine(
                         indicator1,
