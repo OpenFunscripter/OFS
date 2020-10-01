@@ -103,7 +103,7 @@ private:
 	bool ShowMetadataEditorWindow(bool* open);
 public:
 	static OpenFunscripter* ptr;
-	static ImFont* BiggerFont;
+	static ImFont* DefaultFont2; // x2 size of default
 
 	EventSystem events;
 	VideoplayerWindow player;

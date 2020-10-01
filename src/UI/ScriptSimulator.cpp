@@ -38,7 +38,6 @@ void ScriptSimulator::ShowSimulator(bool* open)
         ImGui::Begin("Simulator", open, ImGuiWindowFlags_None 
             /*| ImGuiWindowFlags_NoBackground */
             /*| ImGuiWindowFlags_NoDecoration*/);
-        
         char tmp[4];
         auto draw_list = ImGui::GetWindowDrawList();
         auto front_draw = ImGui::GetForegroundDrawList();
@@ -49,6 +48,27 @@ void ScriptSimulator::ShowSimulator(bool* open)
         auto& style = ImGui::GetStyle();
         const ImGuiID itemID = ImGui::GetID("##Simulator");
         
+
+        if (ImGui::Button("Center simulator", ImVec2(-1.f, 0.f))) { CenterSimulator(); }
+        if (ImGui::Button("Invert", ImVec2(-1.f, 0.f))) { auto tmp = p1; p1 = p2; p2 = tmp; }
+        ImGui::ColorEdit4("Border", &borderColor.Value.x);
+        ImGui::ColorEdit4("Front", &frontColor.Value.x);
+        ImGui::ColorEdit4("Indicator", &indicatorColor.Value.x);
+        ImGui::DragFloat("Width", &width);
+        ImGui::DragFloat("Border", &borderSize);
+        ImGui::Checkbox("Indicators", &EnableIndicators);
+
+        borderSize = Util::Clamp<float>(borderSize, 0.f, 1000.f);
+        width = Util::Clamp<float>(width, 0.f, 1000.f);
+
+        // Because the simulator is always drawn on top
+        // we don't draw if there is a popup modal
+        // as that would be irritating
+        if (ImGui::GetTopMostPopupModal() != nullptr) {
+            ImGui::End();
+            return;
+        }
+
         int currentPos = ptr->LoadedFunscript->GetPositionAtTime(ptr->player.getCurrentPositionMs());
 
         auto offset = window->ViewportPos; 
@@ -131,7 +151,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
 
         // TEXT
         stbsp_snprintf(tmp, sizeof(tmp), "%d", currentPos);
-        ImGui::PushFont(OpenFunscripter::BiggerFont);
+        ImGui::PushFont(OpenFunscripter::DefaultFont2);
         auto textOffset = ImGui::CalcTextSize(tmp);
         textOffset /= 2.f;
         front_draw->AddText(
@@ -195,17 +215,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
             if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) { movingBar = false; }
         }
 
-        if (ImGui::Button("Center simulator", ImVec2(-1.f, 0.f))) { CenterSimulator(); }
-        if (ImGui::Button("Invert", ImVec2(-1.f, 0.f))) { auto tmp = p1; p1 = p2; p2 = tmp; }
-        ImGui::ColorEdit4("Border", &borderColor.Value.x);
-        ImGui::ColorEdit4("Front", &frontColor.Value.x);
-        ImGui::ColorEdit4("Indicator", &indicatorColor.Value.x);
-        ImGui::DragFloat("Width", &width);
-        ImGui::DragFloat("Border", &borderSize);
-        ImGui::Checkbox("Indicators", &EnableIndicators);
-        
-        borderSize = Util::Clamp<float>(borderSize, 0.f, 1000.f);
-        width = Util::Clamp<float>(width, 0.f, 1000.f);
+
         ImGui::End();
     }
 }

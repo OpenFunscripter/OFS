@@ -18,6 +18,7 @@ class OpenFunscripterSettings
 		bool always_show_bookmark_labels = false;
 		bool draw_video= true;
 		bool show_simulator = false;
+		int64_t default_font_size = 18;
 		bool force_hw_decoding = false;
 	} scripterSettings;
 

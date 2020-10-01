@@ -51,6 +51,7 @@ void OpenFunscripterSettings::load_config()
 	LOAD_CONFIG(force_hw_decoding)
 	LOAD_CONFIG(always_show_bookmark_labels)
 	LOAD_CONFIG(screenshot_dir)
+	LOAD_CONFIG(default_font_size)
 }
 #undef LOAD_CONFIG
 
@@ -65,6 +66,7 @@ void OpenFunscripterSettings::saveSettings()
 	SAVE_CONFIG(force_hw_decoding)
 	SAVE_CONFIG(always_show_bookmark_labels)
 	SAVE_CONFIG(screenshot_dir)
+	SAVE_CONFIG(default_font_size)
 	save_config();
 }
 #undef SAVE_CONFIG
@@ -124,9 +126,11 @@ bool OpenFunscripterSettings::ShowPreferenceWindow()
 	if (ShowWindow)
 		ImGui::OpenPopup("Preferences");
 
-
-	if (ImGui::BeginPopupModal("Preferences", &ShowWindow, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysVerticalScrollbar))
+	if (ImGui::BeginPopupModal("Preferences", &ShowWindow, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysAutoResize))
 	{
+		if (ImGui::InputInt("Font size", (int*)&scripterSettings.default_font_size, 1, 1))
+			save = true;
+		Util::Tooltip("Requires program restart to take effect");
 		if (ImGui::Checkbox("Force hardware decoding (Requires program restart)", &scripterSettings.force_hw_decoding))
 			save = true;
 		Util::Tooltip("Use this for really high resolution video 4K+ VR videos for example.");

@@ -24,7 +24,7 @@
 // TODO: [MAJOR FEATURE] working with raw actions and controller input
 
 OpenFunscripter* OpenFunscripter::ptr = nullptr;
-ImFont* OpenFunscripter::BiggerFont = nullptr;
+ImFont* OpenFunscripter::DefaultFont2 = nullptr;
 
 const char* glsl_version = "#version 150";
 
@@ -77,7 +77,7 @@ bool OpenFunscripter::imgui_setup()
         LOGF_WARN("\"%s\" font is missing.", roboto);
     }
     else {
-        font = io.Fonts->AddFontFromFileTTF(roboto, 18.f, &config);
+        font = io.Fonts->AddFontFromFileTTF(roboto, settings->data().default_font_size, &config);
         if (font == nullptr) return false;
         io.FontDefault = font;
     }
@@ -87,12 +87,12 @@ bool OpenFunscripter::imgui_setup()
     }
     else {
         config.MergeMode = true;
-        font = io.Fonts->AddFontFromFileTTF(fontawesome, 18.0f, &config, icons_ranges);
+        font = io.Fonts->AddFontFromFileTTF(fontawesome, settings->data().default_font_size, &config, icons_ranges);
         if (font == nullptr) return false;
     }
 
     config.MergeMode = false;
-    BiggerFont = io.Fonts->AddFontFromFileTTF(roboto, 36.f, &config);
+    DefaultFont2 = io.Fonts->AddFontFromFileTTF(roboto, settings->data().default_font_size * 2.0f, &config);
     io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
     // Upload texture to graphics system
@@ -149,6 +149,8 @@ bool OpenFunscripter::setup()
         return false;
     }
 
+    
+    settings = std::make_unique<OpenFunscripterSettings>("data/keybinds.json", "data/config.json");
     if (!imgui_setup()) {
         LOG_ERROR("Failed to setup ImGui");
         return false;
@@ -156,8 +158,6 @@ bool OpenFunscripter::setup()
 
     // register custom events with sdl
     events.setup();
-
-    settings = std::make_unique<OpenFunscripterSettings>("data/keybinds.json", "data/config.json");
 
     keybinds.setup();
     register_bindings(); // needs to happen before setBindings
@@ -611,8 +611,6 @@ void OpenFunscripter::FunscriptActionClicked(SDL_Event& ev)
     else {
         player.setPosition(action.at);
     }
-
-    LOG_DEBUG("Action clicked!");
 }
 
 void OpenFunscripter::FileDialogOpenEvent(SDL_Event& ev)
