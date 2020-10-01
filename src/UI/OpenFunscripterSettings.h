@@ -8,6 +8,9 @@
 #include <vector>
 #include <string>
 
+#include "ScriptSimulator.h"
+#include "imgui.h"
+
 class OpenFunscripterSettings
 {
 	struct ScripterSettingsData {
@@ -20,6 +23,8 @@ class OpenFunscripterSettings
 		bool show_simulator = false;
 		int64_t default_font_size = 18;
 		bool force_hw_decoding = false;
+
+		ScriptSimulator::SimulatorSettings* simulator;
 	} scripterSettings;
 
 	std::string keybinds_path;

@@ -108,6 +108,11 @@ bool OpenFunscripter::imgui_setup()
     return true;
 }
 
+OpenFunscripter::~OpenFunscripter()
+{
+    settings->saveSettings();
+}
+
 bool OpenFunscripter::setup()
 {
     FUN_ASSERT(ptr == nullptr, "there can only be one instance");
@@ -164,7 +169,6 @@ bool OpenFunscripter::setup()
     keybinds.setBindings(settings->getKeybindings()); // override with user bindings
 
     scriptPositions.setup();
-
     LoadedFunscript = std::make_unique<Funscript>();
 
     scripting.setup();
@@ -645,7 +649,6 @@ void OpenFunscripter::DragNDrop(SDL_Event& ev)
 void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev)
 {
     LoadedFunscript->metadata.original_total_duration_ms = player.getDuration() * 1000.0;
-    simulator.CenterSimulator();
 }
 
 void OpenFunscripter::update() {

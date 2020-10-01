@@ -46,7 +46,6 @@ private:
 	UndoSystem undoRedoSystem;
 	ScriptPositionsWindow scriptPositions;
 	RawInput rawInput;
-	ScriptSimulator simulator;
 
 	bool updateTimelineGradient = false;
 	char tmp_buf[2][32];
@@ -105,8 +104,11 @@ public:
 	static OpenFunscripter* ptr;
 	static ImFont* DefaultFont2; // x2 size of default
 
+	~OpenFunscripter();
+
 	EventSystem events;
 	VideoplayerWindow player;
+	ScriptSimulator simulator;
 	std::unique_ptr<OpenFunscripterSettings> settings;
 	std::unique_ptr<Funscript> LoadedFunscript;
 
@@ -118,6 +120,7 @@ public:
 		".mkv",
 		".wmv",
 	};
+
 
 	bool setup();
 	int run();

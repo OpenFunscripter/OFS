@@ -17,17 +17,16 @@ inline static ImVec2 Normalize(const ImVec2& p) {
 
 void ScriptSimulator::setup()
 {
-    CenterSimulator();
 }
 
 void ScriptSimulator::CenterSimulator()
 {
-    const float default_len = Util::Clamp(width * 3.f, width, 1000.f);
+    const float default_len = Util::Clamp(simulator.Width * 3.f, simulator.Width, 1000.f);
     auto Size = ImGui::GetMainViewport()->Size;
-    p1 = (Size / 2.f);
-    p1.y -= default_len/2.f;
-    p1.x -=  (width / 2.f);
-    p2 = p1 + ImVec2(0.f, default_len);
+    simulator.P1 = (Size / 2.f);
+    simulator.P1.y -= default_len/2.f;
+    simulator.P1.x -=  (simulator.Width / 2.f);
+    simulator.P2 = simulator.P1 + ImVec2(0.f, default_len);
 }
 
 void ScriptSimulator::ShowSimulator(bool* open)
@@ -50,16 +49,20 @@ void ScriptSimulator::ShowSimulator(bool* open)
         
 
         if (ImGui::Button("Center simulator", ImVec2(-1.f, 0.f))) { CenterSimulator(); }
-        if (ImGui::Button("Invert", ImVec2(-1.f, 0.f))) { auto tmp = p1; p1 = p2; p2 = tmp; }
-        ImGui::ColorEdit4("Border", &borderColor.Value.x);
-        ImGui::ColorEdit4("Front", &frontColor.Value.x);
-        ImGui::ColorEdit4("Indicator", &indicatorColor.Value.x);
-        ImGui::DragFloat("Width", &width);
-        ImGui::DragFloat("Border", &borderSize);
+        if (ImGui::Button("Invert", ImVec2(-1.f, 0.f))) { 
+            auto tmp = simulator.P1;
+            simulator.P1 = simulator.P2;
+            simulator.P2 = tmp; 
+        }
+        ImGui::ColorEdit4("Border", &simulator.Border.Value.x);
+        ImGui::ColorEdit4("Front", &simulator.Front.Value.x);
+        ImGui::ColorEdit4("Indicator", &simulator.Indicator.Value.x);
+        ImGui::DragFloat("Width", &simulator.Width);
+        ImGui::DragFloat("Border", &simulator.BorderWidth);
         ImGui::Checkbox("Indicators", &EnableIndicators);
 
-        borderSize = Util::Clamp<float>(borderSize, 0.f, 1000.f);
-        width = Util::Clamp<float>(width, 0.f, 1000.f);
+        simulator.BorderWidth = Util::Clamp<float>(simulator.BorderWidth, 0.f, 1000.f);
+        simulator.Width = Util::Clamp<float>(simulator.Width, 0.f, 1000.f);
 
         // Because the simulator is always drawn on top
         // we don't draw if there is a popup modal
@@ -73,12 +76,12 @@ void ScriptSimulator::ShowSimulator(bool* open)
 
         auto offset = window->ViewportPos; 
         
-        ImVec2 direction = p1 - p2;
+        ImVec2 direction = simulator.P1 - simulator.P2;
         direction = Normalize(direction);
-        ImVec2 barP1 = offset + p1 - (direction * (borderSize / 2.f));
-        ImVec2 barP2 = offset + p2 + (direction * (borderSize / 2.f));
+        ImVec2 barP1 = offset + simulator.P1 - (direction * (simulator.BorderWidth / 2.f));
+        ImVec2 barP2 = offset + simulator.P2 + (direction * (simulator.BorderWidth / 2.f));
         float distance = Distance(barP1, barP2);
-        auto perpendicular = Normalize(p1 -  p2);
+        auto perpendicular = Normalize(simulator.P1 - simulator.P2);
         perpendicular = ImVec2(-perpendicular.y, perpendicular.x);
 
         // FRONT BAR
@@ -86,8 +89,8 @@ void ScriptSimulator::ShowSimulator(bool* open)
         front_draw->AddLine(
             barP2 + ((direction * distance)*percent),
             barP2,
-            frontColor,
-            width - borderSize
+            simulator.Front,
+            simulator.Width - simulator.BorderWidth
         );
 
         // INDICATORS
@@ -105,14 +108,14 @@ void ScriptSimulator::ShowSimulator(bool* open)
 
             if (previousAction != nullptr) {
                 if (previousAction->pos > 0 && previousAction->pos < 100) {
-                    auto indicator1 = barP2 + (direction * distance * (previousAction->pos / 100.f)) - (perpendicular * (width / 2.f));
-                    auto indicator2 = barP2 + (direction * distance * (previousAction->pos / 100.f)) + (perpendicular * (width / 2.f));
+                    auto indicator1 = barP2 + (direction * distance * (previousAction->pos / 100.f)) - (perpendicular * (simulator.Width / 2.f));
+                    auto indicator2 = barP2 + (direction * distance * (previousAction->pos / 100.f)) + (perpendicular * (simulator.Width / 2.f));
                     auto indicatorCenter = barP2 + (direction * distance * (previousAction->pos / 100.f));
                     front_draw->AddLine(
                         indicator1,
                         indicator2,
-                        ImGui::ColorConvertFloat4ToU32(indicatorColor),
-                        borderSize/2.f
+                        ImGui::ColorConvertFloat4ToU32(simulator.Indicator),
+                        simulator.BorderWidth/2.f
                     );
                     stbsp_snprintf(tmp, sizeof(tmp), "%d", previousAction->pos);
                     auto textOffset = ImGui::CalcTextSize(tmp);
@@ -122,14 +125,16 @@ void ScriptSimulator::ShowSimulator(bool* open)
             }
             if (nextAction != nullptr) {
                 if (nextAction->pos > 0 && nextAction->pos < 100) {
-                    auto indicator1 = barP2 + (direction * distance * (nextAction->pos / 100.f)) - (perpendicular * (width / 2.f));
-                    auto indicator2 = barP2 + (direction * distance * (nextAction->pos / 100.f)) + (perpendicular * (width / 2.f));
+                    auto indicator1 = 
+                        barP2 + (direction * distance * (nextAction->pos / 100.f)) - (perpendicular * (simulator.Width / 2.f));
+                    auto indicator2 = 
+                        barP2 + (direction * distance * (nextAction->pos / 100.f)) + (perpendicular * (simulator.Width / 2.f));
                     auto indicatorCenter = barP2 + (direction * distance * (nextAction->pos / 100.f));
                     front_draw->AddLine(
                         indicator1,
                         indicator2,
-                        ImGui::ColorConvertFloat4ToU32(indicatorColor),
-                        borderSize / 2.f
+                        ImGui::ColorConvertFloat4ToU32(simulator.Indicator),
+                        simulator.BorderWidth / 2.f
                     );
                     stbsp_snprintf(tmp, sizeof(tmp), "%d", nextAction->pos);
                     auto textOffset = ImGui::CalcTextSize(tmp);
@@ -140,12 +145,12 @@ void ScriptSimulator::ShowSimulator(bool* open)
         }
 
         // BORDER
-        auto borderOffset = perpendicular * (width / 2.f);
+        auto borderOffset = perpendicular * (simulator.Width / 2.f);
         front_draw->AddQuad(
-            offset + p1 - borderOffset, offset + p1 + borderOffset,
-            offset + p2 + borderOffset, offset + p2 - borderOffset,
-            ImGui::ColorConvertFloat4ToU32(borderColor),
-            borderSize
+            offset + simulator.P1 - borderOffset, offset + simulator.P1 + borderOffset,
+            offset + simulator.P2 + borderOffset, offset + simulator.P2 - borderOffset,
+            ImGui::ColorConvertFloat4ToU32(simulator.Border),
+            simulator.BorderWidth
         );
 
 
@@ -164,9 +169,9 @@ void ScriptSimulator::ShowSimulator(bool* open)
         auto barCenter = barP2 + (direction * (distance / 2.f));
 
         if (ShowMovementHandle) {
-            front_draw->AddCircle(barP1, width/2.f, IM_COL32(255, 0, 0, 255), 0, 5.f);
-            front_draw->AddCircle(barP2, width/2.f, IM_COL32(255, 0, 0, 255), 0, 5.f);
-            front_draw->AddCircle(barCenter, width / 2.f, IM_COL32(255, 0, 0, 255), 0, 5.f);
+            front_draw->AddCircle(barP1, simulator.Width/2.f, IM_COL32(255, 0, 0, 255), 0, 5.f);
+            front_draw->AddCircle(barP2, simulator.Width/2.f, IM_COL32(255, 0, 0, 255), 0, 5.f);
+            front_draw->AddCircle(barCenter, simulator.Width / 2.f, IM_COL32(255, 0, 0, 255), 0, 5.f);
         }
 
         auto mouse = ImGui::GetMousePos();
@@ -174,28 +179,28 @@ void ScriptSimulator::ShowSimulator(bool* open)
         float p2Distance = Distance(mouse, barP2);
         float barCenterDistance = Distance(mouse, barCenter);
 
-        if (p1Distance <= (width / 2.f)) {
+        if (p1Distance <= (simulator.Width / 2.f)) {
             g->HoveredWindow = window;
             g->HoveredDockNode = window->DockNode;
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-                startDragP1 = p1;
-                dragging = &p1;
+                startDragP1 = simulator.P1;
+                dragging = &simulator.P1;
             }
         }
-        else if (p2Distance <= (width/2.f)) {
+        else if (p2Distance <= (simulator.Width/2.f)) {
             g->HoveredWindow = window;
             g->HoveredDockNode = window->DockNode;
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-                startDragP1 = p2;
-                dragging = &p2;
+                startDragP1 = simulator.P2;
+                dragging = &simulator.P2;
             }
         }
-        else if (barCenterDistance <= (width / 2.f)) {
+        else if (barCenterDistance <= (simulator.Width / 2.f)) {
             g->HoveredWindow = window;
             g->HoveredDockNode = window->DockNode;
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-                startDragP1 = p1;
-                startDragP2 = p2;
+                startDragP1 = simulator.P1;
+                startDragP2 = simulator.P2;
                 movingBar = true;
             }
         }
@@ -209,8 +214,8 @@ void ScriptSimulator::ShowSimulator(bool* open)
         else if (movingBar) {
             if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
                 auto delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
-                p1 = startDragP1 + delta;
-                p2 = startDragP2 + delta;
+                simulator.P1 = startDragP1 + delta;
+                simulator.P2 = startDragP2 + delta;
             }
             if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) { movingBar = false; }
         }

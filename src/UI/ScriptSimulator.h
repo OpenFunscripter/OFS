@@ -3,14 +3,6 @@
 #include "imgui.h"
 class ScriptSimulator {
 private:
-	ImVec2 p1;
-	ImVec2 p2;
-	float width = 120.f;
-	ImColor borderColor;
-	ImColor frontColor;
-	ImColor indicatorColor;
-	float borderSize = 12.f;
-	
 	ImVec2 startDragP1;
 	ImVec2 startDragP2;
 	ImVec2* dragging = nullptr;
@@ -18,11 +10,17 @@ private:
 	bool EnableIndicators = true;
 	const bool ShowMovementHandle = false;
 public:
-	ScriptSimulator() {
-		borderColor = IM_COL32(0x0B, 0x4F, 0x6C, 180);
-		frontColor = IM_COL32(0x01, 0xBA, 0xEF, 180);
-		indicatorColor = IM_COL32(0xFF, 0x4F, 0x6C, 220);
-	}
+	struct SimulatorSettings {
+		ImVec2 P1;
+		ImVec2 P2;
+		float Width = 120.f;
+		float BorderWidth = 12.f;
+		ImColor Front = IM_COL32(0x01, 0xBA, 0xEF, 180);
+		ImColor Border = IM_COL32(0x0B, 0x4F, 0x6C, 180);
+		ImColor Indicator = IM_COL32(0xFF, 0x4F, 0x6C, 220);
+	} simulator;
+
+	ScriptSimulator() {}
 	void setup();
 	void CenterSimulator();
 	void ShowSimulator(bool* open);
