@@ -989,6 +989,41 @@ void OpenFunscripter::saveScript(const char* path)
     last_save_time = std::chrono::system_clock::now();
 }
 
+void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
+{
+    SDL_Surface* surface;
+    Uint32 rmask, gmask, bmask, amask;
+
+    rmask = 0x000000ff;
+    gmask = 0x0000ff00;
+    bmask = 0x00ff0000;
+    amask = 0xff000000;
+
+    surface = SDL_CreateRGBSurface(0, width, height, 32, rmask, gmask, bmask, amask);
+    if (surface == NULL) {
+        LOGF_ERROR("SDL_CreateRGBSurface() failed: %s", SDL_GetError());
+        return;
+    }
+
+    SDL_Rect rect{ 0 };
+    rect.h = height;
+
+    const float relStep = 1.f / width;
+    rect.w = 1;
+    float relPos = 0.f;
+    
+    ImColor color;
+    color.Value.w = 1.f;
+    while (relPos <= 1.f) {
+        rect.x = std::round(relPos * width);
+        TimelineGradient.computeColorAt(relPos, &color.Value.x);
+        SDL_FillRect(surface, &rect, ImGui::ColorConvertFloat4ToU32(color));
+        relPos += relStep;
+    }
+    SDL_SaveBMP(surface, path);
+    SDL_FreeSurface(surface);
+}
+
 void OpenFunscripter::removeAction(const FunscriptAction& action)
 {
     undoRedoSystem.Snapshot("Remove action");
@@ -1197,6 +1232,15 @@ void OpenFunscripter::ShowMainMenuBar()
                 stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "explorer %s", dir.string().c_str());
                 std::system(tmp_buf);
             }
+            ImGui::Separator();
+            static int heatmapWidth = 2000;
+            static int heatmapHeight = 200;
+            ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.f);
+            ImGui::InputInt("##width", &heatmapWidth); ImGui::SameLine();
+            ImGui::Text("%s", "x"); ImGui::SameLine();
+            ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.f);
+            ImGui::InputInt("##heiht", &heatmapHeight); /*ImGui::SameLine();*/
+            if (ImGui::MenuItem("Save heatmap")) { saveHeatmap("screenshot/Heatmap.bmp", heatmapWidth, heatmapHeight); }
             //if (ImGui::MenuItem("Manual snapshot")) { undoRedoSystem.Snapshot("Manual snapshot"); }
             ImGui::Separator();
             if (ImGui::MenuItem("Undo", BINDING_STRING("undo"), false, !undoRedoSystem.UndoStack.empty())) {
@@ -1629,10 +1673,9 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position)
     if (!ImGui::ItemAdd(total_bb, id, &frame_bb))
         return false;
 
-    static ImGradient grad;
     if (updateTimelineGradient) {
         updateTimelineGradient = false;
-        UpdateTimelineGradient(grad);
+        UpdateTimelineGradient(TimelineGradient);
     }
 
     bool item_hovered = ImGui::IsItemHovered();
@@ -1659,7 +1702,7 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position)
         }
     }
 
-    ImGradient::DrawGradientBar(&grad, frame_bb.Min, frame_bb.GetWidth(), frame_bb.GetHeight());
+    ImGradient::DrawGradientBar(&TimelineGradient, frame_bb.Min, frame_bb.GetWidth(), frame_bb.GetHeight());
 
     const float timeline_pos_cursor_w = 5.f;
     const ImColor timeline_cursor_back = IM_COL32(255, 255, 255, 255);

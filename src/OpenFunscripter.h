@@ -18,6 +18,7 @@
 #include "ScriptSimulator.h"
 #include "Funscript.h"
 #include "RawInput.h"
+#include "GradientBar.h"
 
 #include <memory>
 #include <array>
@@ -40,6 +41,8 @@ private:
 	std::vector<FunscriptAction> CopiedSelection;
 
 	std::chrono::system_clock::time_point last_save_time;
+
+	ImGradient TimelineGradient;
 
 	ScriptingMode scripting;
 	KeybindingSystem keybinds;
@@ -75,6 +78,8 @@ private:
 	void invertSelection();
 
 	void saveScript(const char* path = nullptr);
+
+	void saveHeatmap(const char* path, int width, int height);
 
 
 	void removeAction(const FunscriptAction& action);
