@@ -12,7 +12,6 @@
 #include "imgui_stdlib.h"
 #include "imgui_internal.h"
 
-// TODO: Improve playback control ui ( buttons are fugly )
 // TODO: Undo Window make snapshots clickable to return to a state immediately
 // TODO: Rolling backup
 // TODO: QoL make keybindings groupable just a visual improvement
@@ -21,7 +20,10 @@
 //		 everytime the action is snapshoted matches the previous one we don't snapshot anything 
 //		 this way undoing the moving would be a single click this may not always be desired though
 
+// TODO: Buffer snapshots to disk to save memory after a certain threshold (500+)
+
 // TODO: [MAJOR FEATURE] working with raw actions and controller input
+
 
 OpenFunscripter* OpenFunscripter::ptr = nullptr;
 ImFont* OpenFunscripter::DefaultFont2 = nullptr;
@@ -1232,6 +1234,7 @@ void OpenFunscripter::ShowMainMenuBar()
                 stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "explorer %s", dir.string().c_str());
                 std::system(tmp_buf);
             }
+
             ImGui::Separator();
             static int heatmapWidth = 2000;
             static int heatmapHeight = 200;
@@ -1239,9 +1242,14 @@ void OpenFunscripter::ShowMainMenuBar()
             ImGui::InputInt("##width", &heatmapWidth); ImGui::SameLine();
             ImGui::Text("%s", "x"); ImGui::SameLine();
             ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.f);
-            ImGui::InputInt("##heiht", &heatmapHeight); /*ImGui::SameLine();*/
-            if (ImGui::MenuItem("Save heatmap")) { saveHeatmap("screenshot/Heatmap.bmp", heatmapWidth, heatmapHeight); }
-            //if (ImGui::MenuItem("Manual snapshot")) { undoRedoSystem.Snapshot("Manual snapshot"); }
+            ImGui::InputInt("##heiht", &heatmapHeight);
+            if (ImGui::MenuItem("Save heatmap")) { 
+                char buf[1024];
+                stbsp_snprintf(buf, sizeof(buf), "%s_Heatmap.bmp", LoadedFunscript->metadata.original_name.c_str());
+                std::filesystem::path heatmapPath(settings->data().screenshot_dir);
+                heatmapPath /= buf;
+                saveHeatmap(heatmapPath.string().c_str(), heatmapWidth, heatmapHeight); 
+            }
             ImGui::Separator();
             if (ImGui::MenuItem("Undo", BINDING_STRING("undo"), false, !undoRedoSystem.UndoStack.empty())) {
                 undoRedoSystem.Undo();

@@ -25,7 +25,6 @@ static void* get_proc_address_mpv(void* fn_ctx, const char* name)
 
 static void on_mpv_events(void* ctx)
 {
-	//SDL_Event event = {.type = wakeup_on_mpv_events};
 	SDL_Event event{ 0 };
 	event.type = EventSystem::WakeupOnMpvEvents;
 	SDL_PushEvent(&event);
@@ -33,7 +32,6 @@ static void on_mpv_events(void* ctx)
 
 static void on_mpv_render_update(void* ctx)
 {
-	//SDL_Event event = {.type = EventSystem::WakeupOnMpvRenderUpdate };
 	SDL_Event event{ 0 };
 	event.type = EventSystem::WakeupOnMpvRenderUpdate;
 	SDL_PushEvent(&event);
@@ -77,8 +75,7 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev)
 		case MPV_EVENT_FILE_LOADED:
 			// this is kind of useless because no frame has been decoded yet and we don't know the size
 			// which is why I'm setting video_loaded = true when height & width have been updated
-			//MpvData.video_loaded = true; 
-			
+			//MpvData.video_loaded = true; 		
 			continue;
 		case MPV_EVENT_PROPERTY_CHANGE:
 		{
@@ -599,7 +596,7 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 				resetTranslationAndZoom();
 		}
 		else {
-			if (ImGui::Button("Click to enable Video")) {
+			if (ImGui::Button("Click to enable video")) {
 				OpenFunscripter::ptr->settings->data().draw_video = true;
 				OpenFunscripter::ptr->settings->saveSettings();
 			}
