@@ -54,6 +54,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
             simulator.P1 = simulator.P2;
             simulator.P2 = tmp; 
         }
+        ImGui::ColorEdit4("Text", &simulator.Text.Value.x);
         ImGui::ColorEdit4("Border", &simulator.Border.Value.x);
         ImGui::ColorEdit4("Front", &simulator.Front.Value.x);
         ImGui::ColorEdit4("Indicator", &simulator.Indicator.Value.x);
@@ -120,7 +121,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
                     stbsp_snprintf(tmp, sizeof(tmp), "%d", previousAction->pos);
                     auto textOffset = ImGui::CalcTextSize(tmp);
                     textOffset /= 2.f;
-                    front_draw->AddText(indicatorCenter - textOffset, ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]), tmp);
+                    front_draw->AddText(indicatorCenter - textOffset, ImGui::ColorConvertFloat4ToU32(simulator.Text), tmp);
                 }
             }
             if (nextAction != nullptr) {
@@ -139,7 +140,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
                     stbsp_snprintf(tmp, sizeof(tmp), "%d", nextAction->pos);
                     auto textOffset = ImGui::CalcTextSize(tmp);
                     textOffset /= 2.f;
-                    front_draw->AddText(indicatorCenter - textOffset, ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]), tmp);
+                    front_draw->AddText(indicatorCenter - textOffset, ImGui::ColorConvertFloat4ToU32(simulator.Text), tmp);
                 }
             }
         }
@@ -161,7 +162,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
         textOffset /= 2.f;
         front_draw->AddText(
             barP2 + direction * distance * 0.5f - textOffset,
-            ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]),
+            ImGui::ColorConvertFloat4ToU32(simulator.Text),
             tmp
         );
         ImGui::PopFont();
