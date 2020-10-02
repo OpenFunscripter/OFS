@@ -33,10 +33,23 @@ void ScriptSimulator::ShowSimulator(bool* open)
 {
     if (*open) {
         auto ptr = OpenFunscripter::ptr;
+        if (EnableVanilla) {
+            ImGui::Begin("Simulator", open, 
+                ImGuiWindowFlags_NoBackground
+                | ImGuiWindowFlags_NoDocking);
+            int pos = ptr->LoadedFunscript->GetPositionAtTime(ptr->player.getCurrentPositionMs());
+            ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+            ImGui::VSliderInt("", ImGui::GetContentRegionAvail(), &pos, 0, 100);
+            ImGui::PopItemFlag();
+            ImGui::End();
+            if (!*open) {
+                EnableVanilla = false;
+                *open = true;
+            }
+            return;
+        }
 
-        ImGui::Begin("Simulator", open, ImGuiWindowFlags_None 
-            /*| ImGuiWindowFlags_NoBackground */
-            /*| ImGuiWindowFlags_NoDecoration*/);
+        ImGui::Begin("Simulator", open, ImGuiWindowFlags_None);
         char tmp[4];
         auto draw_list = ImGui::GetWindowDrawList();
         auto front_draw = ImGui::GetForegroundDrawList();
@@ -61,7 +74,8 @@ void ScriptSimulator::ShowSimulator(bool* open)
         ImGui::DragFloat("Width", &simulator.Width);
         ImGui::DragFloat("Border", &simulator.BorderWidth);
         ImGui::Checkbox("Indicators", &EnableIndicators);
-
+        ImGui::SameLine(); ImGui::Checkbox("Vanilla", &EnableVanilla);
+        Util::Tooltip("Close window to go back");
         simulator.BorderWidth = Util::Clamp<float>(simulator.BorderWidth, 0.f, 1000.f);
         simulator.Width = Util::Clamp<float>(simulator.Width, 0.f, 1000.f);
 

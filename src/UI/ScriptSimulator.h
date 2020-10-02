@@ -8,6 +8,7 @@ private:
 	ImVec2* dragging = nullptr;
 	bool movingBar = false;
 	bool EnableIndicators = true;
+	bool EnableVanilla = false;
 	const bool ShowMovementHandle = false;
 public:
 	struct SimulatorSettings {
