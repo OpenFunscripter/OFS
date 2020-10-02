@@ -4,6 +4,7 @@
 #include "imgui.h"
 
 #include <string>
+#include <chrono>
 
 struct mpv_handle;
 struct mpv_render_context;
@@ -73,6 +74,7 @@ private:
 		int64_t video_width = 0;
 		int64_t video_height = 0;
 
+
 		bool video_loaded = false;
 
 		const char* file_path = nullptr;
@@ -83,6 +85,8 @@ private:
 	float base_scale_factor = 1.f;
 	float zoom_factor = 1.f;
 	const float zoom_multi = 0.15f;
+	
+	std::chrono::high_resolution_clock::time_point smooth_time;
 
 	bool videoHovered = false;
 	bool dragStarted = false;
@@ -107,6 +111,7 @@ public:
 	const float maxPlaybackSpeed = 5.0f;
 	float playbackSpeed = 1.f;
 	float volume = 0.5f;
+	bool smooth_scrolling = false;
 	VideoMode activeMode;
 	bool setup();
 	void DrawVideoPlayer(bool* open);
@@ -120,7 +125,15 @@ public:
 	void saveFrameToImage(const std::string& file);
 
 	inline double getCurrentPositionMs() const { return getCurrentPositionSeconds() * 1000.0; }
-	inline double getCurrentPositionSeconds() const { return MpvData.percent_pos * MpvData.duration; }
+	inline double getCurrentPositionSeconds() const { 
+		if (!smooth_scrolling || MpvData.paused) {
+			return MpvData.percent_pos * MpvData.duration; 
+		}
+		else {
+			std::chrono::duration<double> duration = std::chrono::high_resolution_clock::now() - smooth_time;
+			return (MpvData.percent_pos * MpvData.duration) + (duration.count() * MpvData.current_speed);
+		}
+	}
 
 	void setVolume(float volume);
 	inline void setPosition(int32_t time_ms) { float rel_pos = ((float)time_ms) / (getDuration() * 1000.f); setPosition(rel_pos); }

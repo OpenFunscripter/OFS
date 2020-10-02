@@ -135,12 +135,14 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev)
 				break;
 			case MpvPosition:
 				MpvData.percent_pos = (*(double*)prop->data) / 100.0;
+				smooth_time = std::chrono::high_resolution_clock::now();
 				break;
 			case MpvSpeed:
 				MpvData.current_speed = *(double*)prop->data;
 				break;
 			case MpvPauseState:
 				MpvData.paused = *(int64_t*)prop->data;
+				smooth_time = std::chrono::high_resolution_clock::now();
 				break;
 			case MpvFilePath:
 				// I'm not sure if I own this memory :/

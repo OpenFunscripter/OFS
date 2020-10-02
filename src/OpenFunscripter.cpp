@@ -766,7 +766,7 @@ int OpenFunscripter::run()
                     }
                 }
 
-                ImGui::Columns(5, 0, false);
+                ImGui::Columns(6, 0, false);
                 {               
                     // format total duration
                     // this doesn't need to be done every frame
@@ -780,23 +780,29 @@ int OpenFunscripter::run()
 
                 auto& style = ImGui::GetStyle();
                 ImGui::SetColumnWidth(0, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
+                
+                ImGui::Checkbox("Smooth", &player.smooth_scrolling);
+                Util::Tooltip("Smooths out the scrolling of the script timeline.\nEspecially at low playback speed.");
+                
+                ImGui::SetColumnWidth(1, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
+                ImGui::NextColumn();
 
                 if (ImGui::Button("1x", ImVec2(0, 0))) {
                     player.setSpeed(1.f);
                 }
-                ImGui::SetColumnWidth(1, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
+                ImGui::SetColumnWidth(2, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
                 ImGui::NextColumn();
 
                 if (ImGui::Button("-25%", ImVec2(0, 0))) {
                     player.addSpeed(-0.25);
                 }
-                ImGui::SetColumnWidth(2, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
+                ImGui::SetColumnWidth(3, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
                 ImGui::NextColumn();
 
                 if (ImGui::Button("+25%", ImVec2(0, 0))) {
                     player.addSpeed(0.25);
                 }
-                ImGui::SetColumnWidth(3, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
+                ImGui::SetColumnWidth(4, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
                 ImGui::NextColumn();
 
                 ImGui::SetNextItemWidth(-1.f);
