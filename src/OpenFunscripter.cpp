@@ -1247,6 +1247,7 @@ void OpenFunscripter::ShowMainMenuBar()
                 char buf[1024];
                 stbsp_snprintf(buf, sizeof(buf), "%s_Heatmap.bmp", LoadedFunscript->metadata.original_name.c_str());
                 std::filesystem::path heatmapPath(settings->data().screenshot_dir);
+                std::filesystem::create_directories(heatmapPath);
                 heatmapPath /= buf;
                 saveHeatmap(heatmapPath.string().c_str(), heatmapWidth, heatmapHeight); 
             }
