@@ -70,6 +70,17 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	"${CMAKE_SOURCE_DIR}/lib/minimp3/"
 )
 
+find_package(Git)
+execute_process(
+    COMMAND ${GIT_EXECUTABLE} describe --abbrev=0 --tags
+    RESULT_VARIABLE result
+    OUTPUT_VARIABLE LATEST_GIT_TAG)
+
+string(REGEX REPLACE "\n$" "" LATEST_GIT_TAG "${LATEST_GIT_TAG}")
+set(LATEST_GIT_TAG "\"${LATEST_GIT_TAG}\"")
+message("Compiling with git tag: ${LATEST_GIT_TAG}")
+target_compile_definitions(${PROJECT_NAME} PUBLIC "FUN_LATEST_GIT_TAG=${LATEST_GIT_TAG}")
+
 
 # c++17
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)

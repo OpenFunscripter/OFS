@@ -18,6 +18,7 @@ public:
 		float BorderWidth = 12.f;
 		ImColor Text = IM_COL32(0xFF, 0xFF, 0xFF, 0xFF);
 		ImColor Front = IM_COL32(0x01, 0xBA, 0xEF, 180);
+		ImColor Back = IM_COL32(0x10, 0x10, 0x10, 150);
 		ImColor Border = IM_COL32(0x0B, 0x4F, 0x6C, 180);
 		ImColor Indicator = IM_COL32(0xFF, 0x4F, 0x6C, 220);
 	} simulator;

@@ -111,7 +111,7 @@ public:
 	const float maxPlaybackSpeed = 5.0f;
 	float playbackSpeed = 1.f;
 	float volume = 0.5f;
-	bool smooth_scrolling = false;
+	bool smooth_scrolling = true;
 	VideoMode activeMode;
 	bool setup();
 	void DrawVideoPlayer(bool* open);

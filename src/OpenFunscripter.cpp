@@ -782,7 +782,7 @@ int OpenFunscripter::run()
                 ImGui::SetColumnWidth(0, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
                 
                 ImGui::Checkbox("Smooth", &player.smooth_scrolling);
-                Util::Tooltip("Smooths out the scrolling of the script timeline.\nEspecially at low playback speed.");
+                Util::Tooltip("Smooths out the scrolling of the script timeline.\nEspecially at low playback speeds or higher refresh rates than the video.");
                 
                 ImGui::SetColumnWidth(1, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
                 ImGui::NextColumn();
@@ -969,7 +969,8 @@ void OpenFunscripter::updateTitle()
 {
     std::stringstream ss;
     ss.str(std::string());
-    ss << "OpenFunscripter - \"" << LoadedFunscript->current_path << "\"";
+    
+    ss << "OpenFunscripter " FUN_LATEST_GIT_TAG " - \"" << LoadedFunscript->current_path << "\"";
     SDL_SetWindowTitle(window, ss.str().c_str());
 }
 

@@ -70,6 +70,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
         ImGui::ColorEdit4("Text", &simulator.Text.Value.x);
         ImGui::ColorEdit4("Border", &simulator.Border.Value.x);
         ImGui::ColorEdit4("Front", &simulator.Front.Value.x);
+        ImGui::ColorEdit4("Back", &simulator.Back.Value.x);
         ImGui::ColorEdit4("Indicator", &simulator.Indicator.Value.x);
         ImGui::DragFloat("Width", &simulator.Width);
         ImGui::DragFloat("Border", &simulator.BorderWidth);
@@ -98,6 +99,14 @@ void ScriptSimulator::ShowSimulator(bool* open)
         float distance = Distance(barP1, barP2);
         auto perpendicular = Normalize(simulator.P1 - simulator.P2);
         perpendicular = ImVec2(-perpendicular.y, perpendicular.x);
+
+        // BACKGROUND
+        front_draw->AddLine(
+            barP1 + direction,
+            barP2 - direction,
+            simulator.Back,
+            simulator.Width - simulator.BorderWidth + 1.f
+        );
 
         // FRONT BAR
         float percent = currentPos / 100.f;

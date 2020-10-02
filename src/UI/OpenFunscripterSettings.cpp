@@ -81,24 +81,32 @@ void OpenFunscripterSettings::load_config()
 		}
 
 
-		auto& front = simulator["Front"];
-		if (!front.empty()) {
+		if (!simulator["Front"].empty()) {
+			auto& front = simulator["Front"];
 			if (front["r"].is_number_float()) { scripterSettings.simulator->Front.Value.x = front["r"].get<float>(); }
 			if (front["g"].is_number_float()) { scripterSettings.simulator->Front.Value.y = front["g"].get<float>(); }
 			if (front["b"].is_number_float()) { scripterSettings.simulator->Front.Value.z = front["b"].get<float>(); }
 			if (front["a"].is_number_float()) { scripterSettings.simulator->Front.Value.w = front["a"].get<float>(); }
 		}
 
-		auto& border = simulator["Border"];
-		if (!border.empty()) {
+		if (!simulator["Back"].empty()) {
+			auto& back = simulator["Back"];
+			if (back["r"].is_number_float()) { scripterSettings.simulator->Back.Value.x = back["r"].get<float>(); }
+			if (back["g"].is_number_float()) { scripterSettings.simulator->Back.Value.y = back["g"].get<float>(); }
+			if (back["b"].is_number_float()) { scripterSettings.simulator->Back.Value.z = back["b"].get<float>(); }
+			if (back["a"].is_number_float()) { scripterSettings.simulator->Back.Value.w = back["a"].get<float>(); }
+		}
+
+		if (!simulator["Border"].empty()) {
+			auto& border = simulator["Border"];
 			if (border["r"].is_number_float()) { scripterSettings.simulator->Border.Value.x = border["r"].get<float>(); }
 			if (border["g"].is_number_float()) { scripterSettings.simulator->Border.Value.y = border["g"].get<float>(); }
 			if (border["b"].is_number_float()) { scripterSettings.simulator->Border.Value.z = border["b"].get<float>(); }
 			if (border["a"].is_number_float()) { scripterSettings.simulator->Border.Value.w = border["a"].get<float>(); }
 		}
 
-		auto& indicator = simulator["Indicator"];
-		if (!front.empty()) {
+		if (!simulator["Indicator"].empty()) {
+			auto& indicator = simulator["Indicator"];
 			if (indicator["r"].is_number_float()) { scripterSettings.simulator->Indicator.Value.x = indicator["r"].get<float>(); }
 			if (indicator["g"].is_number_float()) { scripterSettings.simulator->Indicator.Value.y = indicator["g"].get<float>(); }
 			if (indicator["b"].is_number_float()) { scripterSettings.simulator->Indicator.Value.z = indicator["b"].get<float>(); }
@@ -140,6 +148,12 @@ void OpenFunscripterSettings::saveSettings()
 	front["g"] = scripterSettings.simulator->Front.Value.y;
 	front["b"] = scripterSettings.simulator->Front.Value.z;
 	front["a"] = scripterSettings.simulator->Front.Value.w;
+
+	auto& back = simulator["Back"];
+	back["r"] = scripterSettings.simulator->Back.Value.x;
+	back["g"] = scripterSettings.simulator->Back.Value.y;
+	back["b"] = scripterSettings.simulator->Back.Value.z;
+	back["a"] = scripterSettings.simulator->Back.Value.w;
 	
 	auto& border = simulator["Border"];
 	border["r"] = scripterSettings.simulator->Border.Value.x;
