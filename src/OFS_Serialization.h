@@ -113,7 +113,6 @@ namespace OFS
 			else {
 				(*node) = *pair.value;
 				break;
-				//(*node).push_back(*pair.value);
 			}
 		}
 		return *this;
@@ -166,7 +165,7 @@ namespace OFS
 						LOGF_WARN("Failed to reflect \"%s\"", pair.name);
 					}
 					else {
-						pair.value->push_back(item.template get<T>());
+						pair.value->emplace_back(std::move(item.template get<T>()));
 					}
 				}
 			}
