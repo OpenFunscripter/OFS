@@ -2,6 +2,8 @@
 
 #include "imgui.h"
 
+#include <memory>
+
 template<typename T>
 struct reflect_member {
 	reflect_member(const char* name, T* ptr) {
