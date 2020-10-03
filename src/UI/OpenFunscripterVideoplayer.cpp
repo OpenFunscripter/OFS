@@ -637,7 +637,7 @@ void VideoplayerWindow::openVideo(const std::string& file)
 	closeVideo();
 
 	const char* cmd[] = { "loadfile", file.c_str(), NULL };
-	mpv_command_async(mpv, 0, cmd) == 0;
+	mpv_command_async(mpv, 0, cmd);
 	MpvData.video_width = 0;
 	MpvData.video_height = 0;
 

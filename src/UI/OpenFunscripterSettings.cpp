@@ -53,28 +53,8 @@ void OpenFunscripterSettings::saveSettings()
 
 void OpenFunscripterSettings::saveKeybinds(const std::vector<Keybinding>& bindings)
 {
-	auto& keybinds = keybindsObj[KeybindsStr];
-	for (auto& binding : bindings) {
-		auto it = std::find_if(keybinds.begin(), keybinds.end(), 
-			[&](auto& obj) { return obj["identifier"] == binding.identifier; }
-		);
-		nlohmann::json* ptr = nullptr;
-		if (it != keybinds.end()) {
-			auto& ref = *it;
-			ref.clear();
-			ptr = &ref;
-		}
-		else {
-			nlohmann::json bindingObj;
-			keybinds.push_back(bindingObj);
-			ptr = &keybinds.back();
-		}
-		(*ptr)["identifier"] = binding.identifier;
-		(*ptr)["ignore_repeats"] = binding.ignore_repeats;
-		(*ptr)["key"] = binding.key;
-		(*ptr)["modifiers"] = binding.modifiers;
-	}
-		
+	OFS::archiver ar(&keybindsObj);
+	ar << reflect_member(KeybindsStr, (std::vector<Keybinding>*)&bindings);	
 	save_keybinds();
 }
 
@@ -82,21 +62,8 @@ std::vector<Keybinding> OpenFunscripterSettings::getKeybindings()
 {
 	auto& keybinds = keybindsObj[KeybindsStr];
 	std::vector<Keybinding> bindings;
-	bindings.reserve(keybinds.size());
-	for (auto& bind : keybinds) {
-		Keybinding b;
-		if (bind.contains("ignore_repeats")
-			&& bind.contains("identifier")
-			&& bind.contains("key")
-			&& bind.contains("modifiers")) {
-			b.ignore_repeats = bind["ignore_repeats"];
-			b.identifier = bind["identifier"].get<std::string>();
-			b.key = bind["key"];
-			b.modifiers = bind["modifiers"];
-			bindings.push_back(b);
-		}
-	}
-
+	OFS::unpacker upkg(&keybindsObj);
+	upkg << reflect_member(KeybindsStr, &bindings);
 	return bindings;
 }
 

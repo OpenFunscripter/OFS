@@ -1,6 +1,8 @@
 #pragma once
 
 
+#include "OFS_Reflection.h"
+
 #include "SDL.h"
 
 #include <string>
@@ -27,6 +29,16 @@ struct Keybinding
 	Keybinding(const std::string& id, const std::string& description, SDL_Keycode key, Uint16 mod, bool ignore_repeat, KeybindingAction action)
 		: identifier(id), description(description), key(key), modifiers(mod), ignore_repeats(ignore_repeat), action(action)
 	{}
+
+	template <class Archive>
+	inline void reflect(Archive& ar) {
+		OFS_REFLECT(identifier, ar);
+		OFS_REFLECT(description, ar);
+		OFS_REFLECT(key_str, ar);
+		OFS_REFLECT(key, ar);
+		OFS_REFLECT(modifiers, ar);
+		OFS_REFLECT(ignore_repeats, ar);
+	}
 };
 
 class KeybindingSystem 
@@ -35,7 +47,6 @@ class KeybindingSystem
 	Keybinding* currentlyChanging = nullptr;
 	std::unordered_map<std::string, std::string> binding_string_cache;
 
-	//void addNonPrintable(int key, int mod);
 	void addKeyString(const char* name);
 	void addKeyString(char name);
 	std::vector<Keybinding> ActiveBindings;
