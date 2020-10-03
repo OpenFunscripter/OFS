@@ -21,11 +21,11 @@ OpenFunscripterSettings::OpenFunscripterSettings(const std::string& keybinds, co
 	}
 
 	scripterSettings.simulator = &OpenFunscripter::ptr->simulator.simulator;
-	if(!keybindsObj[KeybindsStr].is_array())
-		keybindsObj[KeybindsStr] = nlohmann::json().array();
+	if (!keybindsObj[KeybindsStr].is_array())
+		keybindsObj[KeybindsStr] = nlohmann::json::array();
 	
 	if (!configObj[ConfigStr].is_object())
-		configObj[ConfigStr] = nlohmann::json().object();
+		configObj[ConfigStr] = nlohmann::json::object();
 	else
 		load_config();
 }

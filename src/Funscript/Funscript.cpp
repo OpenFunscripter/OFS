@@ -13,12 +13,12 @@ void Funscript::setScriptTemplate()
 {
 	// setup a base funscript template
 	// if no funscript was loaded from disk
-	Json["actions"] = nlohmann::json().array();
-	Json["rawActions"] = nlohmann::json().array();
+	Json["actions"] = nlohmann::json::array();
+	Json["rawActions"] = nlohmann::json::array();
 	Json["version"] = "1.0";
 	Json["inverted"] = false;
 	Json["range"] = 90; // I think this is mostly ignored anyway
-	Json["OpenFunscripter"] = nlohmann::json().object();
+	Json["OpenFunscripter"] = nlohmann::json::object();
 }
 
 void Funscript::NotifyActionsChanged()
