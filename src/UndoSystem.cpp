@@ -46,6 +46,7 @@ void UndoSystem::ClearHistory() noexcept
 {
 	UndoStack.clear();
 	RedoStack.clear();
+	SystemDiskPointer = 0;
 }
 
 void UndoSystem::ClearRedo() noexcept
