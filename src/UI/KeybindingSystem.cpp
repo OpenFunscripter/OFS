@@ -207,7 +207,7 @@ bool KeybindingSystem::ShowBindingWindow()
                 ImGui::OpenPopup("Change Binding");
             }
             ImGui::NextColumn();
-            ImGui::Checkbox("", &binding.ignore_repeats); ImGui::NextColumn();
+            if (ImGui::Checkbox("", &binding.ignore_repeats)) { save = true; } ImGui::NextColumn();
 
             if (ImGui::BeginPopupModal("Change Binding", 0, ImGuiWindowFlags_AlwaysAutoResize)) 
             {
