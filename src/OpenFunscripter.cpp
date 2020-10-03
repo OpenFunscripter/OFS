@@ -12,6 +12,7 @@
 #include "imgui_stdlib.h"
 #include "imgui_internal.h"
 
+
 // TODO: Rolling backup
 // TODO: QoL make keybindings groupable just a visual improvement
 // TODO: make heatmap generation more sophisticated
@@ -143,17 +144,43 @@ bool OpenFunscripter::setup()
     SDL_GL_MakeCurrent(window, gl_context);
     SDL_GL_SetSwapInterval(1); // Enable vsync
     
+
     if (gladLoadGL() == 0) {
         LOG_ERROR("Failed to load glad.");
         return false;
     }
-
     
     settings = std::make_unique<OpenFunscripterSettings>("data/keybinds.json", "data/config.json");
     if (!imgui_setup()) {
         LOG_ERROR("Failed to setup ImGui");
         return false;
     }
+
+    SDL_Surface* surface;
+    int image_width = 0;
+    int image_height = 0;
+    int channels;
+    unsigned char* image_data = stbi_load("data/logo.png", &image_width, &image_height, &channels, 3);
+    if (image_data != nullptr) {
+        std::array<uint16_t, 16 * 16> pixels;
+        for (int i = 0; i < (image_width * image_height * 3); i += 3) {
+            pixels[i / 3] = 0;
+            pixels[i / 3] |= 0xf << 12;
+            pixels[i / 3] |= (image_data[i] / 16) << 8;
+            pixels[i / 3] |= (image_data[i + 1] / 16) << 4;
+            pixels[i / 3] |= (image_data[i + 2] / 16) << 0;
+        }
+        surface = SDL_CreateRGBSurfaceFrom(pixels.data(), 16, 16, 16, 16 * 2, 0x0f00, 0x00f0, 0x000f, 0xf000);
+        // The icon is attached to the window pointer
+        SDL_SetWindowIcon(window, surface);
+
+        // ...and the surface containing the icon pixel data is no longer required.
+        SDL_FreeSurface(surface);
+        stbi_image_free(image_data);
+    }
+
+
+
 
     // register custom events with sdl
     events.setup();

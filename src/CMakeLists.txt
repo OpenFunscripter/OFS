@@ -21,8 +21,12 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "event/EventSystem.cpp"
 
   "imgui_impl/imgui_impl_opengl3.cpp"
-  "imgui_impl/imgui_impl_sdl.cpp"
+  "imgui_impl/imgui_impl_sdl.cpp" 
 )
+
+if(WIN32)
+	set(OPEN_FUNSCRIPTER_SOURCES ${OPEN_FUNSCRIPTER_SOURCES} "${CMAKE_SOURCE_DIR}/icon.rc")
+endif()
 
 add_executable(${PROJECT_NAME} ${OPEN_FUNSCRIPTER_SOURCES})
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})

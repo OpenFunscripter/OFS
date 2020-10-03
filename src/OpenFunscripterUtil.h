@@ -10,7 +10,7 @@
 #include <filesystem>
 
 #include "stb_sprintf.h"
-
+#include "stb_image.h"
 
 // helper for FontAwesome. Version 4.7.0 2016 ttf
 #define ICON_FOLDER_OPEN "\xef\x81\xbc"

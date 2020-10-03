@@ -1,0 +1,2 @@
+#include "IconResource.h"
+ICON_OPENFUNSCRIPTER ICON "OpenFunscripter.ico"
