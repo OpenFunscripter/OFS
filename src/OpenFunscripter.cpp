@@ -668,6 +668,7 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev)
 {
     LoadedFunscript->metadata.original_total_duration_ms = player.getDuration() * 1000.0;
     player.setPosition(LoadedFunscript->scriptSettings.last_pos_ms);
+    settings->addRecentFile(OpenFunscripterSettings::RecentFile{ LoadedFunscript->metadata.original_name, std::string(player.getVideoPath()), LoadedFunscript->current_path });
 }
 
 void OpenFunscripter::update() {
@@ -948,8 +949,7 @@ bool OpenFunscripter::openFile(const std::string& file)
         }
     }
     else {
-        bool succ = player.openVideo(video_path);
-        if (!succ) { LOGF_ERROR("Failed to open video: \"%s\"", video_path.c_str()); }
+        player.openVideo(video_path);
     }
 
     auto openFunscript = [this](const std::string& file) -> bool {
@@ -1236,6 +1236,21 @@ void OpenFunscripter::ShowMainMenuBar()
             if (ImGui::MenuItem(ICON_FOLDER_OPEN" Open video / script")) {
                 showOpenFileDialog();
             }
+            if (ImGui::BeginMenu("Recent files")) {
+                if (settings->data().recentFiles.size() == 0) {
+                    ImGui::TextDisabled("%s", "No recent files");
+                }
+                for (auto& recent : settings->data().recentFiles) {
+                    if (ImGui::MenuItem(recent.name.c_str())) {
+                        if (!recent.script_path.empty())
+                            openFile(recent.script_path);
+                        if (!recent.video_path.empty())
+                            openFile(recent.video_path);
+                    }
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::Separator();
 
             if (ImGui::MenuItem("Save", BINDING_STRING("save"))) {
                 saveScript();

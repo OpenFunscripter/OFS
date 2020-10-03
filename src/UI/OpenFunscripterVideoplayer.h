@@ -121,7 +121,7 @@ public:
 	void setSpeed(float speed);
 	void addSpeed(float speed);
 
-	bool openVideo(const std::string& file);
+	void openVideo(const std::string& file);
 	void saveFrameToImage(const std::string& file);
 
 	inline double getCurrentPositionMsInterp() const { return getCurrentPositionSecondsInterp() * 1000.0; }

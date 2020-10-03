@@ -629,7 +629,7 @@ void VideoplayerWindow::addSpeed(float speed)
 	//mpv_command_async(mpv, 0, cmd);
 }
 
-bool VideoplayerWindow::openVideo(const std::string& file)
+void VideoplayerWindow::openVideo(const std::string& file)
 {
 	LOGF_INFO("Opening video: \"%s\"", file.c_str());
 	MpvData.video_loaded = false;
@@ -637,15 +637,13 @@ bool VideoplayerWindow::openVideo(const std::string& file)
 	closeVideo();
 
 	const char* cmd[] = { "loadfile", file.c_str(), NULL };
-	bool success = mpv_command_async(mpv, 0, cmd) == 0;
+	mpv_command_async(mpv, 0, cmd) == 0;
 	MpvData.video_width = 0;
 	MpvData.video_height = 0;
 
 	setPaused(true);
 	setVolume(volume);
 	resetTranslationAndZoom();
-	
-	return success;
 }
 
 void VideoplayerWindow::saveFrameToImage(const std::string& directory)
