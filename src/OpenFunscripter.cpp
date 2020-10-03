@@ -142,7 +142,7 @@ bool OpenFunscripter::setup()
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
     window = SDL_CreateWindow(
-        "OpenFunscripter",
+        "OpenFunscripter " FUN_LATEST_GIT_TAG,
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         1920, 1080,
         SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI
