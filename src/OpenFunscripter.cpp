@@ -765,7 +765,7 @@ int OpenFunscripter::run()
                     // this doesn't need to be done every frame
                     Util::FormatTime(tmp_buf[1], sizeof(tmp_buf[1]), player.getDuration(), true);
 
-                    double time_seconds = player.getCurrentPositionSeconds();
+                    double time_seconds = player.getCurrentPositionSecondsInterp();
                     Util::FormatTime(tmp_buf[0], sizeof(tmp_buf[0]), time_seconds, true);
                     ImGui::Text(" %s / %s (x%.03f)", tmp_buf[0], tmp_buf[1], actualPlaybackSpeed); 
                     ImGui::NextColumn();
@@ -813,7 +813,7 @@ int OpenFunscripter::run()
                     player.setPosition(position);
                 }
 
-                scriptPositions.ShowScriptPositions(NULL, player.getCurrentPositionMs());
+                scriptPositions.ShowScriptPositions(NULL, player.getCurrentPositionMsInterp());
                 ImGui::End();
 
 
@@ -1713,7 +1713,7 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position)
         ImGui::BeginTooltip();
         {
             double time_seconds = player.getDuration() * rel_timeline_pos;
-            double time_delta = time_seconds - player.getCurrentPositionSeconds();
+            double time_delta = time_seconds - player.getCurrentPositionSecondsInterp();
             Util::FormatTime(tmp_buf[0], sizeof(tmp_buf[0]), time_seconds, false);
             Util::FormatTime(tmp_buf[1], sizeof(tmp_buf[1]), (time_delta > 0) ? time_delta : -time_delta, false);
             if (time_delta > 0)

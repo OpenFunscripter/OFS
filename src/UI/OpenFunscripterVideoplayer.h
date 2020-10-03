@@ -124,16 +124,19 @@ public:
 	bool openVideo(const std::string& file);
 	void saveFrameToImage(const std::string& file);
 
-	inline double getCurrentPositionMs() const { return getCurrentPositionSeconds() * 1000.0; }
-	inline double getCurrentPositionSeconds() const { 
+	inline double getCurrentPositionMsInterp() const { return getCurrentPositionSecondsInterp() * 1000.0; }
+	inline double getCurrentPositionSecondsInterp() const { 
 		if (!smooth_scrolling || MpvData.paused) {
-			return MpvData.percent_pos * MpvData.duration; 
+			return getCurrentPositionSeconds();
 		}
 		else {
 			std::chrono::duration<double> duration = std::chrono::high_resolution_clock::now() - smooth_time;
 			return (MpvData.percent_pos * MpvData.duration) + (duration.count() * MpvData.current_speed);
 		}
 	}
+
+	inline double getCurrentPositionMs() const { return getCurrentPositionSeconds() * 1000.0; }
+	inline double getCurrentPositionSeconds() const { return MpvData.percent_pos * MpvData.duration; }
 
 	void setVolume(float volume);
 	inline void setPosition(int32_t time_ms) { float rel_pos = ((float)time_ms) / (getDuration() * 1000.f); setPosition(rel_pos); }
