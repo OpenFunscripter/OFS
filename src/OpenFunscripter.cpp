@@ -667,6 +667,7 @@ int OpenFunscripter::run()
         {
             // IMGUI HERE
             CreateDockspace();
+            ShowAboutWindow(&ShowAbout);
             ShowUndoRedoHistory(&ShowHistory);
             simulator.ShowSimulator(&settings->data().show_simulator);
             ShowStatisticsWindow(&ShowStatistics);
@@ -1430,6 +1431,7 @@ void OpenFunscripter::ShowMainMenuBar()
             }
             ImGui::EndMenu();
         }
+        if(ImGui::MenuItem("About", NULL, &ShowAbout)) {}
         if (player.isLoaded()) {
             ImGui::SameLine(region.x - ImGui::GetFontSize()*12);
             std::chrono::duration<float> duration = std::chrono::system_clock::now() - last_save_time;
@@ -1593,6 +1595,22 @@ void OpenFunscripter::CreateDockspace()
     }
 
     ShowMainMenuBar();
+
+    ImGui::End();
+}
+
+void OpenFunscripter::ShowAboutWindow(bool* open)
+{
+    if (!*open) return;
+    static struct CheckUpdateThreadData {
+
+    } CheckThreadData;
+    ImGui::Begin("About", open, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Text("%s", "OpenFunscripter " FUN_LATEST_GIT_TAG);
+    if (ImGui::Button("Latest release", ImVec2(-1.f, 0.f))) {
+        // windows only
+        std::system("start https://github.com/gagax1234/OpenFunscripter/releases/latest");
+    }
 
     ImGui::End();
 }

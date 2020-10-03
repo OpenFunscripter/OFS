@@ -37,6 +37,7 @@ private:
 	bool Fullscreen = false;
 	bool DebugMetrics = false;
 	bool DebugDemo = false;
+	bool ShowAbout = false;
 	
 	std::vector<FunscriptAction> CopiedSelection;
 
@@ -100,6 +101,7 @@ private:
 
 	// UI
 	void CreateDockspace();
+	void ShowAboutWindow(bool* open);
 	void ShowStatisticsWindow(bool* open);
 	void ShowUndoRedoHistory(bool* open);
 	bool DrawTimelineWidget(const char* label, float* position);
