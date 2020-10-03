@@ -39,7 +39,7 @@ private:
 	unsigned int vr_shader;
 	ImGuiViewport* player_viewport;
 
-	float vr_zoom = 1.f;
+	float vr_zoom = 0.5f;
 	ImVec2 prev_vr_rotation;
 	ImVec2 current_vr_rotation;
 
@@ -104,7 +104,7 @@ private:
 	void notifyVideoLoaded();
 public:
 	VideoplayerWindow()
-		: prev_translation(0.f, 0.f), current_translation(0.f, 0.f), activeMode(VideoMode::FULL)
+		: prev_translation(0.f, 0.f), current_translation(0.f, 0.f), activeMode(VideoMode::FULL), current_vr_rotation(0.5f, -0.5f)
 	{}
 
 	const float minPlaybackSpeed = 0.05f;
@@ -116,7 +116,7 @@ public:
 	bool setup();
 	void DrawVideoPlayer(bool* open);
 
-	inline void resetTranslationAndZoom() { vr_zoom = 1.f; zoom_factor = 1.f; prev_translation = ImVec2(0.f, 0.f); current_translation = ImVec2(0.f, 0.f); }
+	inline void resetTranslationAndZoom() { vr_zoom = 0.5f; zoom_factor = 1.f; prev_translation = ImVec2(0.f, 0.f); current_translation = ImVec2(0.f, 0.f); }
 
 	void setSpeed(float speed);
 	void addSpeed(float speed);

@@ -339,8 +339,8 @@ void VideoplayerWindow::mouse_scroll(SDL_Event& ev)
 		const float old_scale = zoom_factor;
 		// apply zoom
 		if (activeMode == VideoMode::VR_MODE) {
-			vr_zoom *= ((1+(zoom_multi * -scroll.y)));
-			vr_zoom = Util::Clamp(vr_zoom, 0.30f, 1.5f);
+			vr_zoom *= ((1+(zoom_multi * scroll.y)));
+			vr_zoom = Util::Clamp(vr_zoom, 0.2f, 2.0f);
 			return;
 		}
 
@@ -411,10 +411,10 @@ void VideoplayerWindow::setup_vr_mode()
 			float hfovRad = hfovDegrees * DEG2RAD;
 			float vfovRad = -2.f * atan(tan(hfovRad/2.f)*inverse_aspect);
 
-			vec2 uv = vec2(Frag_UV.s - 0.5, Frag_UV.t);
+			vec2 uv = vec2(Frag_UV.s - 0.5, Frag_UV.t - 0.5);
 
 			//to spherical
-			vec3 camDir = normalize(vec3(uv.xy * vec2(tan(0.5 * hfovRad), tan(0.5 * vfovRad)) * zoom, 1.0));
+			vec3 camDir = normalize(vec3(uv.xy * vec2(tan(0.5 * hfovRad), tan(0.5 * vfovRad)), zoom));
 			//camRot is angle vec in rad
 			vec3 camRot = vec3( (rotation - 0.5) * vec2(2.0 * PI,  PI), 0.);
 
@@ -536,7 +536,7 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 				// apply drag to translation
 				else if (dragStarted && videoHovered)
 				{
-					current_vr_rotation = prev_vr_rotation + (ImGui::GetMouseDragDelta(ImGuiMouseButton_Left)/(1500.f * Util::Clamp((4.f - vr_zoom), 1.f, 4.f)));
+					current_vr_rotation = prev_vr_rotation + (ImGui::GetMouseDragDelta(ImGuiMouseButton_Left)/(2000.f * vr_zoom));
 				}
 
 				player_viewport = ImGui::GetCurrentWindowRead()->Viewport;

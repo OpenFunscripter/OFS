@@ -1426,7 +1426,7 @@ void OpenFunscripter::ShowMainMenuBar()
                 "Right Pane\0"
                 "Top Pane\0"
                 "Bottom Pane\0"
-                "VR Mode\0"
+                "VR\0"
                 "\0");
             ImGui::Separator();
             if (ImGui::BeginMenu("DEBUG ONLY")) {
