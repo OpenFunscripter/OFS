@@ -1598,7 +1598,11 @@ void OpenFunscripter::ShowAboutWindow(bool* open)
     static struct CheckUpdateThreadData {
 
     } CheckThreadData;
-    ImGui::Begin("About", open, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin("About", open, ImGuiWindowFlags_None 
+        | ImGuiWindowFlags_AlwaysAutoResize
+        | ImGuiWindowFlags_NoDocking
+        | ImGuiWindowFlags_NoCollapse
+    );
     ImGui::Text("%s", "OpenFunscripter " FUN_LATEST_GIT_TAG);
     if (ImGui::Button("Latest release", ImVec2(-1.f, 0.f))) {
         Util::OpenUrl("https://github.com/gagax1234/OpenFunscripter/releases/latest");
