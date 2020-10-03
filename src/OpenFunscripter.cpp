@@ -667,6 +667,7 @@ void OpenFunscripter::DragNDrop(SDL_Event& ev)
 void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev)
 {
     LoadedFunscript->metadata.original_total_duration_ms = player.getDuration() * 1000.0;
+    player.setPosition(LoadedFunscript->scriptSettings.last_pos_ms);
 }
 
 void OpenFunscripter::update() {
@@ -1004,6 +1005,7 @@ void OpenFunscripter::saveScript(const char* path)
         .filename()
         .string();
     LoadedFunscript->metadata.original_total_duration_ms = player.getDuration() * 1000.0;
+    LoadedFunscript->scriptSettings.last_pos_ms = player.getCurrentPositionMs();
     if (path == nullptr) {
         LoadedFunscript->save();
     }

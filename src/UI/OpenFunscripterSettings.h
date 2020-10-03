@@ -21,10 +21,10 @@ class OpenFunscripterSettings
 		std::string last_opened_video;
 		std::string last_opened_script;
 		std::string screenshot_dir = "screenshot";
+		int32_t default_font_size = 18;
 		bool always_show_bookmark_labels = false;
 		bool draw_video= true;
 		bool show_simulator = false;
-		int64_t default_font_size = 18;
 		bool force_hw_decoding = false;
 
 		ScriptSimulator::SimulatorSettings* simulator;

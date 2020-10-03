@@ -2,6 +2,7 @@
 
 #include "nlohmann/json.hpp"
 #include "FunscriptAction.h"
+#include "OFS_Reflection.h"
 #include <vector>
 #include <string>
 
@@ -18,10 +19,23 @@ public:
 	struct Bookmark {
 		int32_t at;
 		std::string name;
+
+		template <class Archive>
+		inline void reflect(Archive& ar) {
+			OFS_REFLECT(at, ar);
+			OFS_REFLECT(name, ar);
+		}
 	};
 
 	struct Settings {
 		std::vector<Bookmark> Bookmarks;
+		int32_t last_pos_ms = 0;
+
+		template <class Archive>
+		inline void reflect(Archive& ar) {
+			OFS_REFLECT(Bookmarks, ar);
+			OFS_REFLECT(last_pos_ms, ar);
+		}
 	} scriptSettings;
 
 	struct Metadata {
@@ -34,6 +48,19 @@ public:
 		std::string comment;
 		bool paid = false;
 		int64_t original_total_duration_ms = 0;
+
+		template <class Archive>
+		inline void reflect(Archive& ar) {
+			OFS_REFLECT(creator, ar);
+			OFS_REFLECT(original_name, ar);
+			OFS_REFLECT(url, ar);
+			OFS_REFLECT(url_video, ar);
+			OFS_REFLECT(tags, ar);
+			OFS_REFLECT(performers, ar);
+			OFS_REFLECT(paid, ar);
+			OFS_REFLECT(original_total_duration_ms, ar);
+		}
+
 	} metadata;
 
 private:

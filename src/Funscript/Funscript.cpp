@@ -3,6 +3,7 @@
 #include "SDL.h"
 #include "OpenFunscripterUtil.h"
 #include "EventSystem.h"
+#include "OFS_Serialization.h"
 
 #include <algorithm>
 #include <limits>
@@ -36,36 +37,7 @@ void Funscript::loadMetadata()
 {
 	if (Json.contains("metadata")) {
 		auto& meta = Json["metadata"];
-		if (meta.is_object()) {
-			LOAD_METADATA(creator)
-			LOAD_METADATA(original_name)
-			LOAD_METADATA(url)
-			LOAD_METADATA(url_video)
-			LOAD_METADATA(comment)
-			LOAD_METADATA(paid)
-			LOAD_METADATA(original_total_duration_ms)
-
-			if (meta.contains("tags")) {
-				auto& tags = meta["tags"];
-				if (tags.is_array()) {
-					for (auto& tag : tags) {
-						if (tag.is_string()) {
-							metadata.tags.push_back(tag.get_ref<const std::string&>());
-						}
-					}
-				}
-			}
-			if (meta.contains("performers")) {
-				auto& performers = meta["performers"];
-				if (performers.is_array()) {
-					for (auto& performer : performers) {
-						if (performer.is_string()) {
-							metadata.performers.push_back(performer.get_ref<const std::string&>());
-						}
-					}
-				}
-			}
-		}
+		OFS::serializer::load(&metadata, &meta);
 	}
 }
 #undef LOAD_METADATA
@@ -76,30 +48,7 @@ void Funscript::saveMetadata()
 	if (!Json.contains("metadata")) {
 		Json["metadata"] = nlohmann::json::object();
 	}
-
-	auto& meta = Json["metadata"];
-	SAVE_METADATA(creator)
-	SAVE_METADATA(original_name)
-	SAVE_METADATA(url)
-	SAVE_METADATA(url_video)
-	SAVE_METADATA(comment)
-	SAVE_METADATA(paid)
-	SAVE_METADATA(original_total_duration_ms)
-
-	if (!meta.contains("tags"))
-		meta["tags"] = nlohmann::json::array();
-	auto& tags = meta["tags"];
-	tags.clear();
-	for (auto& tag : metadata.tags)
-		tags.push_back(tag);
-
-	if (!meta.contains("performers"))
-		meta["performers"] = nlohmann::json::array();
-	auto& performers = meta["performers"];
-	performers.clear();
-	for (auto& performer : metadata.performers)
-		performers.push_back(performer);
-
+	OFS::serializer::save(&metadata, &Json["metadata"]);
 }
 #undef SAVE_METADATA
 
@@ -107,36 +56,14 @@ void Funscript::loadSettings()
 {
 	if (Json.contains("OpenFunscripter")) {
 		auto& settings = Json["OpenFunscripter"];
-		if (settings.is_object()) {
-			auto& bookmarks = settings["bookmarks"];
-			if (bookmarks.is_array()) {
-				for (auto& mark : bookmarks) {
-					if (mark.contains("at") && mark.contains("name")) {
-						Funscript::Bookmark bookmark;
-						bookmark.at = mark["at"];
-						bookmark.name = mark["name"];
-						scriptSettings.Bookmarks.push_back(bookmark);
-					}
-				}
-			}
-		}
+		OFS::serializer::load(&scriptSettings, &settings);
 	}
 }
 
 void Funscript::saveSettings()
 {
-	auto settings = nlohmann::json().object();
-	auto bookmarks = nlohmann::json().array();
-
-	for (auto& mark : Bookmarks()) {
-		auto bookmark = nlohmann::json().object();
-		bookmark["at"] = mark.at;
-		bookmark["name"] = mark.name;
-
-		bookmarks.push_back(bookmark);
-	}
-
-	settings["bookmarks"] = bookmarks;
+	auto settings = nlohmann::json::object();
+	OFS::serializer::save(&scriptSettings, &settings);
 	Json["OpenFunscripter"] = settings;
 }
 
