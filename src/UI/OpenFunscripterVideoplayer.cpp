@@ -340,7 +340,8 @@ void VideoplayerWindow::mouse_scroll(SDL_Event& ev)
 		// apply zoom
 		if (activeMode == VideoMode::VR_MODE) {
 			vr_zoom *= ((1+(zoom_multi * scroll.y)));
-			vr_zoom = Util::Clamp(vr_zoom, 0.2f, 2.0f);
+			vr_zoom = Util::Clamp(vr_zoom, 0.05f, 2.0f);
+			LOGF_INFO("vr zoom: %f", vr_zoom);
 			return;
 		}
 
@@ -396,7 +397,7 @@ void VideoplayerWindow::setup_vr_mode()
 		#define PI 3.1415926535
 		#define DEG2RAD 0.01745329251994329576923690768489
 		
-		float hfovDegrees = 130.0;
+		float hfovDegrees = 75.0;
 		float vfovDegrees = 59.0;
 
 		vec3 rotateXY(vec3 p, vec2 angle) {
@@ -536,7 +537,10 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 				// apply drag to translation
 				else if (dragStarted && videoHovered)
 				{
-					current_vr_rotation = prev_vr_rotation + (ImGui::GetMouseDragDelta(ImGuiMouseButton_Left)/(2000.f * vr_zoom));
+					current_vr_rotation = 
+						prev_vr_rotation 
+						+ (ImGui::GetMouseDragDelta(ImGuiMouseButton_Left) 
+							/ ImVec2((10000.f * vr_zoom), (video_draw_size.y / video_draw_size.x) * 10000.f * vr_zoom));
 				}
 
 				player_viewport = ImGui::GetCurrentWindowRead()->Viewport;
