@@ -3,7 +3,7 @@
 #include "OFS_Reflection.h"
 #include "nlohmann/json.hpp"
 
-namespace Internal {
+namespace BlackMagic {
 
 	template <typename T, typename A>
 	struct has_reflect {
@@ -71,12 +71,12 @@ namespace OFS
 	inline archiver& archiver::operator<<(reflect_member<T>& pair)
 	{
 		auto* node = &(*ctx)[pair.name];
-		if constexpr (Internal::has_reflect<T, archiver>::value) {
+		if constexpr (BlackMagic::has_reflect<T, archiver>::value) {
 			archiver ar(node);
 			pair.value->template reflect<archiver>(ar);
 			(*ctx)[pair.name] = *ar.ctx;
 		}
-		else if constexpr (Internal::has_reflect_function<T, archiver>::value) {
+		else if constexpr (BlackMagic::has_reflect_function<T, archiver>::value) {
 			archiver ar(node);
 			reflect_function<T, archiver>().reflect(*pair.value, ar);
 			(*ctx)[pair.name] = *ar.ctx;
@@ -94,11 +94,11 @@ namespace OFS
 	{
 		auto* node = &(*ctx)[pair.name];
 		if (node == nullptr) return *this;
-		if constexpr (Internal::has_reflect<T, unpacker>::value) {
+		if constexpr (BlackMagic::has_reflect<T, unpacker>::value) {
 			unpacker des(node);
 			pair.value->template reflect<unpacker>(des);
 		}
-		else if constexpr (Internal::has_reflect_function<T, unpacker>::value) {
+		else if constexpr (BlackMagic::has_reflect_function<T, unpacker>::value) {
 			unpacker des(node);
 			reflect_function<T, unpacker>().reflect(*pair.value, des);
 		}
