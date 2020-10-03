@@ -31,8 +31,7 @@ public:
 private:
 	struct ScripterSettingsData {
 		std::string last_path;
-		std::string last_opened_video;
-		std::string last_opened_script;
+		RecentFile most_recent_file;
 		std::string screenshot_dir = "screenshot";
 		int32_t default_font_size = 18;
 		bool always_show_bookmark_labels = false;
@@ -49,8 +48,7 @@ private:
 		inline void reflect(Archive& ar)
 		{
 			OFS_REFLECT(last_path, ar);
-			OFS_REFLECT(last_opened_video, ar);
-			OFS_REFLECT(last_opened_script, ar);
+			OFS_REFLECT(most_recent_file, ar);
 			OFS_REFLECT(screenshot_dir, ar);
 			OFS_REFLECT(always_show_bookmark_labels, ar);
 			OFS_REFLECT(draw_video, ar);

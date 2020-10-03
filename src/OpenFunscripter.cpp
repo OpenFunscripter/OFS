@@ -202,8 +202,8 @@ bool OpenFunscripter::setup()
     events.Subscribe(SDL_DROPFILE, EVENT_SYSTEM_BIND(this, &OpenFunscripter::DragNDrop));
     events.Subscribe(EventSystem::MpvVideoLoaded, EVENT_SYSTEM_BIND(this, &OpenFunscripter::MpvVideoLoaded));
     // cache these here because openFile overrides them
-    std::string last_video = settings->data().last_opened_video;
-    std::string last_script = settings->data().last_opened_script;  
+    std::string last_video = settings->data().most_recent_file.video_path;
+    std::string last_script = settings->data().most_recent_file.script_path;
     if (!last_script.empty())
         openFile(last_script);
     if (!last_video.empty())
@@ -974,8 +974,8 @@ bool OpenFunscripter::openFile(const std::string& file)
     last_path.replace_filename("");
     last_path /= "";
     settings->data().last_path = last_path.string();
-    settings->data().last_opened_video = video_path;
-    settings->data().last_opened_script = funscript_path;
+    settings->data().most_recent_file.video_path = video_path;
+    settings->data().most_recent_file.script_path = funscript_path;
     settings->saveSettings();
 
     last_save_time = std::chrono::system_clock::now();
@@ -1206,7 +1206,7 @@ void OpenFunscripter::showSaveFileDialog()
     // the result gets passed to the main thread via an event
     auto thread = [](void* ctx) {
         auto app = (OpenFunscripter*)ctx;
-        auto path = std::filesystem::path(app->settings->data().last_opened_script);
+        auto path = std::filesystem::path(app->settings->data().most_recent_file.script_path);
         path.replace_extension(".funscript");
 
         pfd::save_file saveDialog("Save", path.string(), { "Funscript", "*.funscript" });
