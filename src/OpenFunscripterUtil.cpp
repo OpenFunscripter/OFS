@@ -42,16 +42,16 @@ bool Util::LoadTextureFromFile(const char* filename, unsigned int* out_texture, 
 
 int Util::OpenFileExplorer(const char* path)
 {
-	char tmp[1024];
 #if WIN32
+	char tmp[1024];
 	stbsp_snprintf(tmp, sizeof(tmp), "explorer %s", path);
-	std::system(tmp);
+	return std::system(tmp);
 #elif __APPLE__
 	LOG_ERROR("Not implemented for this platform.");
 #else
-	OpenUrl(path);
+	return OpenUrl(path);
 #endif
-	return 0;
+	return 1;
 }
 
 int Util::OpenUrl(const char* url)
@@ -59,14 +59,14 @@ int Util::OpenUrl(const char* url)
 	char tmp[1024];
 #if WIN32
 	stbsp_snprintf(tmp, sizeof(tmp), "start %s", url);
-	std::system(tmp);
+	return std::system(tmp);
 #elif __APPLE__
 	LOG_ERROR("Not implemented for this platform.");
 #else
 	stbsp_snprintf(tmp, sizeof(tmp), "xdg-open %s", url);
-	std::system(tmp);
+	return std::system(tmp);
 #endif
-	return 0;
+	return 1;
 }
 
 void Util::Tooltip(const char* tip)
