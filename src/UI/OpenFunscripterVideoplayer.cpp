@@ -341,7 +341,6 @@ void VideoplayerWindow::mouse_scroll(SDL_Event& ev)
 		if (activeMode == VideoMode::VR_MODE) {
 			vr_zoom *= ((1+(zoom_multi * scroll.y)));
 			vr_zoom = Util::Clamp(vr_zoom, 0.05f, 2.0f);
-			LOGF_INFO("vr zoom: %f", vr_zoom);
 			return;
 		}
 

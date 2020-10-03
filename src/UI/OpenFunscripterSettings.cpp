@@ -2,6 +2,8 @@
 #include "OpenFunscripterUtil.h"
 #include "OpenFunscripter.h"
 
+#include "OFS_Serialization.h"
+
 #include "imgui.h"
 #include "imgui_stdlib.h"
 
@@ -38,138 +40,16 @@ void OpenFunscripterSettings::save_config()
 	Util::WriteJson(configObj, config_path, true);
 }
 
-#define LOAD_CONFIG(member) if (config().contains( #member ))\
- {\
-	auto ptr = config()[ #member ].get_ptr<decltype( ScripterSettingsData::member )*>();\
-	if(ptr != nullptr) scripterSettings.member = *ptr;\
- }
 void OpenFunscripterSettings::load_config()
 {
-	LOAD_CONFIG(last_path)
-	LOAD_CONFIG(last_opened_video)
-	LOAD_CONFIG(last_opened_script)
-	LOAD_CONFIG(draw_video)
-	LOAD_CONFIG(show_simulator)
-	LOAD_CONFIG(force_hw_decoding)
-	LOAD_CONFIG(always_show_bookmark_labels)
-	LOAD_CONFIG(screenshot_dir)
-	LOAD_CONFIG(default_font_size)
-
-	auto& simulator = config()["simulator"];
-	if (!simulator.empty()) {
-		
-		if (!simulator["Width"].empty()) {
-			scripterSettings.simulator->Width = simulator["Width"].get<float>();
-		}
-		if (!simulator["BorderWidth"].empty()) {
-			scripterSettings.simulator->BorderWidth = simulator["BorderWidth"].get<float>();
-		}
-
-		if (!simulator["P1"].empty()) {
-			auto& p1 = simulator["P1"];
-			if (p1["x"].is_number_float())
-				scripterSettings.simulator->P1.x = p1["x"].get<float>();
-			if (p1["y"].is_number_float())
-				scripterSettings.simulator->P1.y = p1["y"].get<float>();
-		}
-		if (!simulator["P2"].empty()) {
-			auto& p2 = simulator["P2"];
-			if (p2["x"].is_number_float())
-				scripterSettings.simulator->P2.x = p2["x"].get<float>();
-			if (p2["y"].is_number_float())
-				scripterSettings.simulator->P2.y = p2["y"].get<float>();
-		}
-
-
-		if (!simulator["Front"].empty()) {
-			auto& front = simulator["Front"];
-			if (front["r"].is_number_float()) { scripterSettings.simulator->Front.Value.x = front["r"].get<float>(); }
-			if (front["g"].is_number_float()) { scripterSettings.simulator->Front.Value.y = front["g"].get<float>(); }
-			if (front["b"].is_number_float()) { scripterSettings.simulator->Front.Value.z = front["b"].get<float>(); }
-			if (front["a"].is_number_float()) { scripterSettings.simulator->Front.Value.w = front["a"].get<float>(); }
-		}
-
-		if (!simulator["Back"].empty()) {
-			auto& back = simulator["Back"];
-			if (back["r"].is_number_float()) { scripterSettings.simulator->Back.Value.x = back["r"].get<float>(); }
-			if (back["g"].is_number_float()) { scripterSettings.simulator->Back.Value.y = back["g"].get<float>(); }
-			if (back["b"].is_number_float()) { scripterSettings.simulator->Back.Value.z = back["b"].get<float>(); }
-			if (back["a"].is_number_float()) { scripterSettings.simulator->Back.Value.w = back["a"].get<float>(); }
-		}
-
-		if (!simulator["Border"].empty()) {
-			auto& border = simulator["Border"];
-			if (border["r"].is_number_float()) { scripterSettings.simulator->Border.Value.x = border["r"].get<float>(); }
-			if (border["g"].is_number_float()) { scripterSettings.simulator->Border.Value.y = border["g"].get<float>(); }
-			if (border["b"].is_number_float()) { scripterSettings.simulator->Border.Value.z = border["b"].get<float>(); }
-			if (border["a"].is_number_float()) { scripterSettings.simulator->Border.Value.w = border["a"].get<float>(); }
-		}
-
-		if (!simulator["Indicator"].empty()) {
-			auto& indicator = simulator["Indicator"];
-			if (indicator["r"].is_number_float()) { scripterSettings.simulator->Indicator.Value.x = indicator["r"].get<float>(); }
-			if (indicator["g"].is_number_float()) { scripterSettings.simulator->Indicator.Value.y = indicator["g"].get<float>(); }
-			if (indicator["b"].is_number_float()) { scripterSettings.simulator->Indicator.Value.z = indicator["b"].get<float>(); }
-			if (indicator["a"].is_number_float()) { scripterSettings.simulator->Indicator.Value.w = indicator["a"].get<float>(); }
-		}
-
-	}
+	OFS::serializer::load(&scripterSettings, &config());
 }
-#undef LOAD_CONFIG
 
-#define SAVE_CONFIG(member) config()[ #member ] = scripterSettings.member;
 void OpenFunscripterSettings::saveSettings()
 {
-	SAVE_CONFIG(last_path)
-	SAVE_CONFIG(last_opened_video)
-	SAVE_CONFIG(last_opened_script)
-	SAVE_CONFIG(draw_video)
-	SAVE_CONFIG(show_simulator)
-	SAVE_CONFIG(force_hw_decoding)
-	SAVE_CONFIG(always_show_bookmark_labels)
-	SAVE_CONFIG(screenshot_dir)
-	SAVE_CONFIG(default_font_size)
-
-	auto& simulator = config()["simulator"];
-
-	auto& p1 = simulator["P1"];
-	p1["x"] = scripterSettings.simulator->P1.x;
-	p1["y"] = scripterSettings.simulator->P1.y;
-
-	auto& p2 = simulator["P2"];
-	p2["x"] = scripterSettings.simulator->P2.x;
-	p2["y"] = scripterSettings.simulator->P2.y;
-
-	simulator["Width"] = scripterSettings.simulator->Width;
-	simulator["BorderWidth"] = scripterSettings.simulator->BorderWidth;
-
-	auto& front = simulator["Front"];
-	front["r"] = scripterSettings.simulator->Front.Value.x;
-	front["g"] = scripterSettings.simulator->Front.Value.y;
-	front["b"] = scripterSettings.simulator->Front.Value.z;
-	front["a"] = scripterSettings.simulator->Front.Value.w;
-
-	auto& back = simulator["Back"];
-	back["r"] = scripterSettings.simulator->Back.Value.x;
-	back["g"] = scripterSettings.simulator->Back.Value.y;
-	back["b"] = scripterSettings.simulator->Back.Value.z;
-	back["a"] = scripterSettings.simulator->Back.Value.w;
-	
-	auto& border = simulator["Border"];
-	border["r"] = scripterSettings.simulator->Border.Value.x;
-	border["g"] = scripterSettings.simulator->Border.Value.y;
-	border["b"] = scripterSettings.simulator->Border.Value.z;
-	border["a"] = scripterSettings.simulator->Border.Value.w;
-
-	auto& indicator = simulator["Indicator"];
-	indicator["r"] = scripterSettings.simulator->Indicator.Value.x;
-	indicator["g"] = scripterSettings.simulator->Indicator.Value.y;
-	indicator["b"] = scripterSettings.simulator->Indicator.Value.z;
-	indicator["a"] = scripterSettings.simulator->Indicator.Value.w;
-
+	OFS::serializer::save(&scripterSettings, &config());
 	save_config();
 }
-#undef SAVE_CONFIG
 
 void OpenFunscripterSettings::saveKeybinds(const std::vector<Keybinding>& bindings)
 {

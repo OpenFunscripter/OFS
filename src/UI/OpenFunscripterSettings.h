@@ -9,6 +9,9 @@
 #include <string>
 
 #include "ScriptSimulator.h"
+
+#include "OFS_Reflection.h"
+
 #include "imgui.h"
 
 class OpenFunscripterSettings
@@ -25,6 +28,21 @@ class OpenFunscripterSettings
 		bool force_hw_decoding = false;
 
 		ScriptSimulator::SimulatorSettings* simulator;
+
+		template <class Archive>
+		inline void reflect(Archive& ar)
+		{
+			OFS_REFLECT(last_path, ar);
+			OFS_REFLECT(last_opened_video, ar);
+			OFS_REFLECT(last_opened_script, ar);
+			OFS_REFLECT(screenshot_dir, ar);
+			OFS_REFLECT(always_show_bookmark_labels, ar);
+			OFS_REFLECT(draw_video, ar);
+			OFS_REFLECT(show_simulator, ar);
+			OFS_REFLECT(default_font_size, ar);
+			OFS_REFLECT(force_hw_decoding, ar);
+			OFS_REFLECT_PTR(simulator, ar);
+		}
 	} scripterSettings;
 
 	std::string keybinds_path;

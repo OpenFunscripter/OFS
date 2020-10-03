@@ -10,6 +10,7 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "RawInput.cpp"
   "ScriptingMode.cpp"
   "OpenFunscripterUtil.cpp"
+  "OFS_Serialization.cpp"
 
   "UI/OpenFunscripterSettings.cpp"
   "UI/KeybindingSystem.cpp"
