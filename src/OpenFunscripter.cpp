@@ -1229,18 +1229,11 @@ void OpenFunscripter::ShowMainMenuBar()
                 player.saveFrameToImage(settings->data().screenshot_dir);
             }
             // this is awkward
-            if (ImGui::MenuItem("Open screenshot directory", NULL, false,
-#ifdef WIN32
-                true
-#else 
-                false
-#endif 
-                )) {
+            if (ImGui::MenuItem("Open screenshot directory")) {
                 std::filesystem::path dir(settings->data().screenshot_dir);
                 dir = std::filesystem::absolute(dir);
-                char tmp_buf[1024];
-                stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "explorer %s", dir.string().c_str());
-                std::system(tmp_buf);
+                std::filesystem::create_directories(dir);
+                Util::OpenFileExplorer(dir.string().c_str());
             }
 
             ImGui::Separator();
@@ -1608,8 +1601,7 @@ void OpenFunscripter::ShowAboutWindow(bool* open)
     ImGui::Begin("About", open, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::Text("%s", "OpenFunscripter " FUN_LATEST_GIT_TAG);
     if (ImGui::Button("Latest release", ImVec2(-1.f, 0.f))) {
-        // windows only
-        std::system("start https://github.com/gagax1234/OpenFunscripter/releases/latest");
+        Util::OpenUrl("https://github.com/gagax1234/OpenFunscripter/releases/latest");
     }
 
     ImGui::End();

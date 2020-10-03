@@ -40,6 +40,35 @@ bool Util::LoadTextureFromFile(const char* filename, unsigned int* out_texture, 
 	return true;
 }
 
+int Util::OpenFileExplorer(const char* path)
+{
+	char tmp[1024];
+#if WIN32
+	stbsp_snprintf(tmp, sizeof(tmp), "explorer %s", path);
+	std::system(tmp);
+#elif UNIX
+	OpenUrl(path);
+#else
+	LOG_ERROR("Not implemented for this platform.");
+#endif
+	return 0;
+}
+
+int Util::OpenUrl(const char* url)
+{
+	char tmp[1024];
+#if WIN32
+	stbsp_snprintf(tmp, sizeof(tmp), "start %s", url);
+	std::system(tmp);
+#elif UNIX
+	stbsp_snprintf(tmp, sizeof(tmp), "xdg-open %s", url);
+	std::system(tmp);
+#else
+	LOG_ERROR("Not implemented for this platform.");
+#endif
+	return 0;
+}
+
 void Util::Tooltip(const char* tip)
 {
 	if (ImGui::IsItemHovered()) {

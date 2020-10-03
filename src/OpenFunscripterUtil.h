@@ -140,6 +140,9 @@ public:
 		}
 	}
 
+	static int OpenFileExplorer(const char* path);
+	static int OpenUrl(const char* url);
+
 	inline static bool FileExists(const std::string& file) { return FileExists(file.c_str()); }
 	inline static bool FileExists(const char* file) {
 		//std::filesystem::path file_path(file);
