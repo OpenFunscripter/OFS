@@ -12,18 +12,10 @@
 #include "imgui_stdlib.h"
 #include "imgui_internal.h"
 
-// TODO: Undo Window make snapshots clickable to return to a state immediately
 // TODO: Rolling backup
 // TODO: QoL make keybindings groupable just a visual improvement
-
-// TODO: consider bundling/replacing of snapshots for certain actions like moving which generates a lot of snapshots
-//		 everytime the action is snapshoted matches the previous one we don't snapshot anything 
-//		 this way undoing the moving would be a single click this may not always be desired though
-
 // TODO: make heatmap generation more sophisticated
-
 // TODO: [MAJOR FEATURE] working with raw actions and controller input
-
 
 OpenFunscripter* OpenFunscripter::ptr = nullptr;
 ImFont* OpenFunscripter::DefaultFont2 = nullptr;

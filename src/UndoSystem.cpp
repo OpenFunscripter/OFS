@@ -36,7 +36,6 @@ void UndoSystem::ShowUndoRedoHistory(bool* open)
 			it = copy_it - 1;
 
 			ImGui::BulletText("%s (%d)", (*it).Message.c_str(), count);
-
 		}
 		ImGui::End();
 	}
@@ -82,6 +81,7 @@ void UndoSystem::ClearHistory() noexcept
 	UndoStack.clear();
 	RedoStack.clear();
 	SystemDiskPointer = 0;
+	std::filesystem::remove_all("tmp/undo_state");
 }
 
 void UndoSystem::ClearRedo() noexcept
@@ -92,8 +92,8 @@ void UndoSystem::ClearRedo() noexcept
 void ScriptState::WriteToDisk(int32_t diskPointer)
 {
 	char tmp[512];
-	stbsp_snprintf(tmp, sizeof(tmp), "tmp/%d", diskPointer);
-	std::filesystem::create_directory("tmp");
+	stbsp_snprintf(tmp, sizeof(tmp), "tmp/undo_state/%d", diskPointer);
+	std::filesystem::create_directory("tmp/undo_state");
 	auto handle = SDL_RWFromFile(tmp, "wb");
 	if (handle != nullptr) {
 		DiskPointer = diskPointer;
@@ -127,7 +127,7 @@ Funscript::FunscriptData& ScriptState::Data()
 	if (IsOnDisk()) {
 		// load back from disk
 		char tmp[512];
-		stbsp_snprintf(tmp, sizeof(tmp), "tmp/%d", DiskPointer);
+		stbsp_snprintf(tmp, sizeof(tmp), "tmp/undo_state/%d", DiskPointer);
 		auto handle = SDL_RWFromFile(tmp, "rb");
 		if (handle != nullptr) {
 			ScriptStateHeader header;
