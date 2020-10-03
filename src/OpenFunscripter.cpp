@@ -160,9 +160,9 @@ bool OpenFunscripter::setup()
     int image_width = 0;
     int image_height = 0;
     int channels;
-    unsigned char* image_data = stbi_load("data/logo.png", &image_width, &image_height, &channels, 3);
+    unsigned char* image_data = stbi_load("data/logo64.png", &image_width, &image_height, &channels, 3);
     if (image_data != nullptr) {
-        std::array<uint16_t, 16 * 16> pixels;
+        std::array<uint16_t, 64 * 64> pixels;
         for (int i = 0; i < (image_width * image_height * 3); i += 3) {
             pixels[i / 3] = 0;
             pixels[i / 3] |= 0xf << 12;
@@ -170,7 +170,7 @@ bool OpenFunscripter::setup()
             pixels[i / 3] |= (image_data[i + 1] / 16) << 4;
             pixels[i / 3] |= (image_data[i + 2] / 16) << 0;
         }
-        surface = SDL_CreateRGBSurfaceFrom(pixels.data(), 16, 16, 16, 16 * 2, 0x0f00, 0x00f0, 0x000f, 0xf000);
+        surface = SDL_CreateRGBSurfaceFrom(pixels.data(), 64, 64, 64, 16 * 2, 0x0f00, 0x00f0, 0x000f, 0xf000);
         // The icon is attached to the window pointer
         SDL_SetWindowIcon(window, surface);
 
