@@ -20,8 +20,6 @@
 //		 everytime the action is snapshoted matches the previous one we don't snapshot anything 
 //		 this way undoing the moving would be a single click this may not always be desired though
 
-// TODO: Buffer snapshots to disk to save memory after a certain threshold (500+)
-
 // TODO: make heatmap generation more sophisticated
 
 // TODO: [MAJOR FEATURE] working with raw actions and controller input

@@ -49,7 +49,7 @@ public:
 	std::vector<ScriptState> UndoStack;
 	std::vector<ScriptState> RedoStack;
 	int32_t SystemDiskPointer = 0;
-	const int32_t MaxScriptStateInMemory = 100;
+	const int32_t MaxScriptStateInMemory = 500;
 
 	void Snapshot(const std::string& msg, bool clearRedo = true) noexcept;
 	void Undo() noexcept;
