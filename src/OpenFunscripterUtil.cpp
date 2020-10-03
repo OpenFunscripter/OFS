@@ -46,10 +46,10 @@ int Util::OpenFileExplorer(const char* path)
 #if WIN32
 	stbsp_snprintf(tmp, sizeof(tmp), "explorer %s", path);
 	std::system(tmp);
-#elif UNIX
-	OpenUrl(path);
-#else
+#elif __APPLE__
 	LOG_ERROR("Not implemented for this platform.");
+#else
+	OpenUrl(path);
 #endif
 	return 0;
 }
@@ -60,11 +60,11 @@ int Util::OpenUrl(const char* url)
 #if WIN32
 	stbsp_snprintf(tmp, sizeof(tmp), "start %s", url);
 	std::system(tmp);
-#elif UNIX
+#elif __APPLE__
+	LOG_ERROR("Not implemented for this platform.");
+#else
 	stbsp_snprintf(tmp, sizeof(tmp), "xdg-open %s", url);
 	std::system(tmp);
-#else
-	LOG_ERROR("Not implemented for this platform.");
 #endif
 	return 0;
 }
