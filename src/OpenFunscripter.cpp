@@ -22,6 +22,8 @@
 
 // TODO: Buffer snapshots to disk to save memory after a certain threshold (500+)
 
+// TODO: make heatmap generation more sophisticated
+
 // TODO: [MAJOR FEATURE] working with raw actions and controller input
 
 
@@ -1004,6 +1006,7 @@ void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
     SDL_Surface* surface;
     Uint32 rmask, gmask, bmask, amask;
 
+    // same order as ImGui U32 colors
     rmask = 0x000000ff;
     gmask = 0x0000ff00;
     bmask = 0x00ff0000;
@@ -1014,6 +1017,10 @@ void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
         LOGF_ERROR("SDL_CreateRGBSurface() failed: %s", SDL_GetError());
         return;
     }
+
+    // not sure if this is always false, on every platform
+    const bool mustLock = SDL_MUSTLOCK(surface); 
+    if (mustLock) { SDL_LockSurface(surface); }
 
     SDL_Rect rect{ 0 };
     rect.h = height;
@@ -1031,6 +1038,9 @@ void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
         relPos += relStep;
     }
     SDL_SaveBMP(surface, path);
+
+    if (mustLock) { SDL_UnlockSurface(surface); }
+
     SDL_FreeSurface(surface);
 }
 
@@ -1394,7 +1404,7 @@ void OpenFunscripter::ShowMainMenuBar()
             if (ImGui::MenuItem("Metadata", NULL, &ShowMetadataEditor)) {}
             ImGui::Separator();
 
-            if (ImGui::MenuItem("Draw Video", NULL, &settings->data().draw_video)) { settings->saveSettings(); }
+            if (ImGui::MenuItem("Draw video", NULL, &settings->data().draw_video)) { settings->saveSettings(); }
             if (ImGui::MenuItem("Reset video position", NULL)) { player.resetTranslationAndZoom(); }
             ImGui::Combo("Video Mode", (int*)&player.activeMode, 
                 "Full Video\0"
