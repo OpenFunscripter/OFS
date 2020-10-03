@@ -668,7 +668,7 @@ int OpenFunscripter::run()
             // IMGUI HERE
             CreateDockspace();
             ShowAboutWindow(&ShowAbout);
-            ShowUndoRedoHistory(&ShowHistory);
+            undoRedoSystem.ShowUndoRedoHistory(&ShowHistory);
             simulator.ShowSimulator(&settings->data().show_simulator);
             ShowStatisticsWindow(&ShowStatistics);
             if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { saveScript(); }
@@ -1261,10 +1261,10 @@ void OpenFunscripter::ShowMainMenuBar()
                 saveHeatmap(heatmapPath.string().c_str(), heatmapWidth, heatmapHeight); 
             }
             ImGui::Separator();
-            if (ImGui::MenuItem("Undo", BINDING_STRING("undo"), false, !undoRedoSystem.UndoStack.empty())) {
+            if (ImGui::MenuItem("Undo", BINDING_STRING("undo"), false, !undoRedoSystem.UndoEmpty())) {
                 undoRedoSystem.Undo();
             }
-            if (ImGui::MenuItem("Redo", BINDING_STRING("redo"), false, !undoRedoSystem.RedoStack.empty())) {
+            if (ImGui::MenuItem("Redo", BINDING_STRING("redo"), false, !undoRedoSystem.RedoEmpty())) {
                 undoRedoSystem.Redo();
             }
             ImGui::Separator();
@@ -1647,41 +1647,6 @@ void OpenFunscripter::ShowStatisticsWindow(bool* open)
 
     ImGui::End();
 
-}
-
-void OpenFunscripter::ShowUndoRedoHistory(bool* open)
-{
-    if (*open) {
-        ImGui::SetNextWindowSizeConstraints(ImVec2(200, 100), ImVec2(200, 200));
-        ImGui::Begin("Undo/Redo History", open, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
-        //for(auto it = undoRedoSystem.RedoStack.rbegin(); it != undoRedoSystem.RedoStack.rend(); it++) {
-        ImGui::TextDisabled("Redo stack");
-        // TODO: get rid of the string comparison but keep the counting
-        for (auto it = undoRedoSystem.RedoStack.begin(); it != undoRedoSystem.RedoStack.end(); it++) {
-            int count = 1;
-            auto copy_it = it;
-            while (++copy_it != undoRedoSystem.RedoStack.end() && copy_it->Message == it->Message) {
-                count++;
-            }
-            it = copy_it - 1;
-
-            ImGui::BulletText("%s (%d)", (*it).Message.c_str(), count);
-        }
-        ImGui::Separator();
-        ImGui::TextDisabled("Undo stack");
-        for (auto it = undoRedoSystem.UndoStack.rbegin(); it != undoRedoSystem.UndoStack.rend(); it++) {
-            int count = 1;
-            auto copy_it = it;
-            while (++copy_it != undoRedoSystem.UndoStack.rend() && copy_it->Message == it->Message) {
-                count++;
-            }
-            it = copy_it - 1;
-
-            ImGui::BulletText("%s (%d)", (*it).Message.c_str(), count);
-
-        }
-        ImGui::End();
-    }
 }
 
 bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position)

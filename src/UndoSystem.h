@@ -43,18 +43,23 @@ public:
 class UndoSystem
 {
 	void SnapshotRedo(const std::string& msg) noexcept;
-public:
 	// using vector as a stack...
 	// because std::stack can't be iterated
 	std::vector<ScriptState> UndoStack;
 	std::vector<ScriptState> RedoStack;
+public:
 	int32_t SystemDiskPointer = 0;
 	const int32_t MaxScriptStateInMemory = 500;
+
+	void ShowUndoRedoHistory(bool* open);
 
 	void Snapshot(const std::string& msg, bool clearRedo = true) noexcept;
 	void Undo() noexcept;
 	void Redo() noexcept;
 	void ClearHistory() noexcept;
 	void ClearRedo() noexcept;
+
+	inline bool UndoEmpty() const { return UndoStack.empty(); }
+	inline bool RedoEmpty() const { return RedoStack.empty(); }
 };
 

@@ -103,7 +103,6 @@ private:
 	void CreateDockspace();
 	void ShowAboutWindow(bool* open);
 	void ShowStatisticsWindow(bool* open);
-	void ShowUndoRedoHistory(bool* open);
 	bool DrawTimelineWidget(const char* label, float* position);
 	void ShowMainMenuBar();
 	bool ShowMetadataEditorWindow(bool* open);
