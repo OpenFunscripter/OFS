@@ -179,9 +179,6 @@ bool OpenFunscripter::setup()
         stbi_image_free(image_data);
     }
 
-
-
-
     // register custom events with sdl
     events.setup();
 

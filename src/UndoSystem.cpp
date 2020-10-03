@@ -118,7 +118,7 @@ void ScriptState::WriteToDisk(int32_t diskPointer)
 		LOGF_INFO("Written undo state \"%s\" to disk.", tmp);
 	}
 	else {
-		LOGF_ERROR("Failed to write undo state to disk.");
+		LOG_ERROR("Failed to write undo state to disk.");
 	}
 }
 
@@ -137,20 +137,20 @@ Funscript::FunscriptData& ScriptState::Data()
 			SDL_RWseek(handle, header.message_len, RW_SEEK_CUR);
 
 			data.Actions.resize(header.actions_len);
-			SDL_RWread(handle, data.Actions.data(), sizeof(FunscriptAction), header.actions_len) * sizeof(FunscriptAction);
+			SDL_RWread(handle, data.Actions.data(), sizeof(FunscriptAction), header.actions_len);
 
 			data.selection.resize(header.selection_len);
-			SDL_RWread(handle, data.selection.data(), sizeof(FunscriptAction), header.selection_len) * sizeof(FunscriptAction);
+			SDL_RWread(handle, data.selection.data(), sizeof(FunscriptAction), header.selection_len);
 
 			data.RawActions.resize(header.raw_len);
-			SDL_RWread(handle, data.RawActions.data(), sizeof(FunscriptAction), header.raw_len) * sizeof(FunscriptAction);
+			SDL_RWread(handle, data.RawActions.data(), sizeof(FunscriptAction), header.raw_len);
 
 			SDL_RWclose(handle);
 			DiskPointer = -1; // not on disk anymore
 			LOGF_INFO("Loaded undo state \"%s\" from disk.", tmp);
 		}
 		else {
-			LOGF_ERROR("Failed to load undo state from disk");
+			LOG_ERROR("Failed to load undo state from disk");
 		}
 
 	}
