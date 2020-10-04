@@ -1059,12 +1059,6 @@ void OpenFunscripter::updateTitle()
     SDL_SetWindowTitle(window, ss.str().c_str());
 }
 
-void OpenFunscripter::fireAlert(const std::string& msg)
-{
-    pfd::notify alert("OpenFunscripter", msg, pfd::icon::info);
-    alert.ready(20);
-}
-
 void OpenFunscripter::saveScript(const char* path, bool override_location)
 {
     LoadedFunscript->metadata.original_name = std::filesystem::path(LoadedFunscript->current_path)
@@ -1080,8 +1074,9 @@ void OpenFunscripter::saveScript(const char* path, bool override_location)
         LoadedFunscript->save(path, override_location);
         updateTitle();
     }
-    fireAlert("Script saved!");
-    last_save_time = std::chrono::system_clock::now();
+    if (override_location) {
+        last_save_time = std::chrono::system_clock::now();
+    }
 }
 
 void OpenFunscripter::saveHeatmap(const char* path, int width, int height)

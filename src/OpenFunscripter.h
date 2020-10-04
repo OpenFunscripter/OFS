@@ -92,8 +92,6 @@ private:
 	void showSaveFileDialog();
 	bool openFile(const std::string& file);
 	void updateTitle();
-
-	void fireAlert(const std::string& msg);
 	
 	void SetFullscreen(bool fullscreen);
 

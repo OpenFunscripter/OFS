@@ -686,8 +686,6 @@ void VideoplayerWindow::saveFrameToImage(const std::string& directory)
 
 	auto saveThread = [](void* user) -> int {
 		auto ctx = (ScreenshotSavingThreadData*)user;
-		pfd::notify alert("OpenFunscripter", "Screenshot " + ctx->filename, pfd::icon::info);
-		alert.ready(20);
 		stbi_flip_vertically_on_write(true);
 		stbi_write_png(ctx->filename.c_str(),
 			ctx->w, ctx->h,
