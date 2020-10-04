@@ -48,7 +48,6 @@ private:
 
 	ScriptingMode scripting;
 	KeybindingSystem keybinds;
-	UndoSystem undoRedoSystem;
 	ScriptPositionsWindow scriptPositions;
 	ControllerInput rawInput;
 
@@ -113,6 +112,7 @@ public:
 	EventSystem events;
 	VideoplayerWindow player;
 	ScriptSimulator simulator;
+	UndoSystem undoRedoSystem;
 	std::unique_ptr<OpenFunscripterSettings> settings;
 	std::unique_ptr<Funscript> LoadedFunscript;
 

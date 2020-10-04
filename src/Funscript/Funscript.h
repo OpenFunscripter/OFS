@@ -126,8 +126,16 @@ public:
 	int GetPositionAtTime(int32_t time_ms) noexcept;
 	
 	inline void AddAction(const FunscriptAction& newAction) noexcept { addAction(data.Actions, newAction); }
+	inline void AddActionRaw(const FunscriptAction& newAction) noexcept { 
+		auto act = getActionAtTime(data.RawActions, newAction.at, 0);
+		if (act != nullptr) {
+			RemoveActionRaw(*act);
+		}
+		addAction(data.RawActions, newAction); 
+	}
 	bool EditAction(const FunscriptAction& oldAction, const FunscriptAction& newAction) noexcept;
 	void PasteAction(const FunscriptAction& paste, int32_t error_ms) noexcept;
+	void RemoveActionRaw(const FunscriptAction& action) noexcept;
 	void RemoveAction(const FunscriptAction& action, bool checkInvalidSelection = true) noexcept;
 	void RemoveActions(const std::vector<FunscriptAction>& actions) noexcept;
 

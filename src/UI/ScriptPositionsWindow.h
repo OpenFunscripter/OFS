@@ -53,7 +53,7 @@ class ScriptPositionsWindow
 	
 	void FfmpegAudioProcessingFinished(SDL_Event& ev);
 
-	bool ShowRawActions = false;
+	bool ShowRawActions = true;
 	bool ShowRegularActions = true;
 	bool ShowAudioWaveform = false;
 	float ScaleAudio = 1.f;

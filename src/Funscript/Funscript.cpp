@@ -290,6 +290,14 @@ void Funscript::PasteAction(const FunscriptAction& paste, int32_t error_ms) noex
 	NotifyActionsChanged();
 }
 
+void Funscript::RemoveActionRaw(const FunscriptAction& action) noexcept
+{
+	auto it = std::find(data.RawActions.begin(), data.RawActions.end(), action);
+	if (it != data.RawActions.end()) {
+		data.RawActions.erase(it);
+	}
+}
+
 void Funscript::checkForInvalidatedActions() noexcept
 {
 	auto it = std::remove_if(data.selection.begin(), data.selection.end(), [&](auto& selected) {

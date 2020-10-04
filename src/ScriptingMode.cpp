@@ -258,7 +258,7 @@ void RecordingImpl::DrawModeSettings()
 
     auto ctx = OpenFunscripter::ptr;
     int current_ms = ctx->player.getCurrentPositionMs();
-    int pos = Util::Clamp(100.0 * value, 0.0, 100.0);
+    currentPos = Util::Clamp(100.0 * value, 0.0, 100.0);
 
     static float deadzone = (float)ControllerDeadzone / std::numeric_limits<int16_t>::max();
     ImGui::Text("%s", "Controller deadzone");
@@ -268,12 +268,40 @@ void RecordingImpl::DrawModeSettings()
 
     ImGui::Text("%s", "Position");
     ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-    ImGui::SliderInt("##Pos", &pos, 0, 100);
+    ImGui::SliderInt("##Pos", &currentPos, 0, 100);
     ImGui::PopItemFlag();
+
+    ImGui::Spacing();
+    auto app = OpenFunscripter::ptr;
+    bool playing = !app->player.isPaused();
+    if (playing && recordingActive != playing) {
+        app->undoRedoSystem.Snapshot("Recording");
+    }
+    recordingActive = playing;
+    if (recordingActive) {
+        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 255, 0, 255));
+        ImGui::Text("%s", "Recording active");
+        ImGui::PopStyleColor();
+        
+    }
+    else {
+        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
+        ImGui::Text("%s", "Recording paused");
+        ImGui::PopStyleColor();
+    }
 }
 
 void RecordingImpl::addAction(const FunscriptAction& action)
 {
     // same as default
     ctx().AddAction(action);
+}
+
+void RecordingImpl::update() noexcept
+{
+    auto app = OpenFunscripter::ptr;
+    if (recordingActive) {
+        FunscriptAction act(app->player.getCurrentPositionMs(), currentPos);
+        ctx().AddActionRaw(act);
+    }
 }

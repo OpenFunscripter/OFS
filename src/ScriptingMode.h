@@ -24,6 +24,7 @@ public:
 	virtual ~ScripingModeBaseImpl() {}
 	virtual void DrawModeSettings() = 0;
 	virtual void addAction(const FunscriptAction& action) = 0;
+	virtual void update() noexcept {};
 };
 
 class DefaultModeImpl : public ScripingModeBaseImpl
@@ -67,7 +68,9 @@ private:
 	float right_trigger = 0.f;
 	float left_trigger = 0.f;
 
-	int16_t ControllerDeadzone = 0;
+	int16_t ControllerDeadzone = 1500;
+	bool recordingActive = false;
+	int32_t currentPos = 0;
 public:
 	RecordingImpl();
 	~RecordingImpl();
@@ -79,7 +82,7 @@ public:
 
 	virtual void DrawModeSettings() override;
 	virtual void addAction(const FunscriptAction& action) override;
-
+	virtual void update() noexcept override;
 };
 
 class OpenFunscripter;
@@ -92,5 +95,6 @@ public:
 	void DrawScriptingMode(bool* open);
 	void setMode(ScriptingModeEnum mode);
 	void addEditAction(const FunscriptAction& action);
-	inline void addAction(const FunscriptAction& action) { impl->addAction(action); }
+	inline void addAction(const FunscriptAction& action) noexcept { impl->addAction(action); }
+	inline void update() noexcept { impl->update(); }
 };

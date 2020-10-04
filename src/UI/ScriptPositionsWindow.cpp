@@ -182,7 +182,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		}
 	}
 
-	if (script.Actions().size() > 0) {
+	if (script.RawActions().size() > 0) {
 		// render raw actions
 		const FunscriptAction* prevAction = nullptr;
 		if (ShowRawActions) {

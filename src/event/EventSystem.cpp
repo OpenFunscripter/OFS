@@ -36,7 +36,7 @@ void EventSystem::PushEvent(SDL_Event& event)
 void EventSystem::Subscribe(int32_t eventType, void* listener, EventHandlerFunc handler)
 {
 	handlers.emplace_back(eventType, listener, handler);
-	LOGF_INFO("Total event listeners: %d", (int)handlers.size());
+	LOGF_DEBUG("Total subscribed event listeners: %d", (int)handlers.size());
 }
 
 void EventSystem::Unsubscribe(int32_t eventType, void* listener)
@@ -48,10 +48,10 @@ void EventSystem::Unsubscribe(int32_t eventType, void* listener)
 
 	if (it != handlers.end()) {
 		handlers.erase(it);
-		LOGF_INFO("Total event listeners: %d", (int)handlers.size());
+		LOGF_DEBUG("Total subscribed event listeners: %d", (int)handlers.size());
 	}
 	else {
-		LOG_ERROR("Failed to unsubscribe event.");
+		LOGF_ERROR("Failed to unsubscribe event. \"%d\"", eventType);
 		FUN_ASSERT(false, "please investigate");
 	}
 }

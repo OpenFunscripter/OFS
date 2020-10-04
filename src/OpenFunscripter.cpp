@@ -700,6 +700,7 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev)
 void OpenFunscripter::update() {
     LoadedFunscript->update();
     rawInput.update();
+    scripting.update();
 
     if (RollingBackup) {
         std::chrono::duration<float> timeSinceBackup = std::chrono::system_clock::now() - last_backup;
