@@ -27,6 +27,7 @@ void ScriptingMode::DrawScriptingMode(bool* open)
         "Default\0"
         "Alternating\0"
         "Dynamic injection\0"
+        "Recording\0"
         "\0")) {
         setMode(active_mode);
     }
@@ -48,6 +49,11 @@ void ScriptingMode::setMode(ScriptingModeEnum mode)
     case DYNAMIC_INJECTION:
     {
         impl = std::make_unique<DynamicInjectionImpl>();
+        break;
+    }
+    case RECORDING:
+    {
+        impl = std::make_unique<RecordingImpl>();
         break;
     }
     default:
@@ -175,5 +181,18 @@ void AlternatingImpl::addAction(const FunscriptAction& action)
         }
         return;
     }
+    ctx().AddAction(action);
+}
+
+
+// recording
+void RecordingImpl::DrawModeSettings()
+{
+
+}
+
+void RecordingImpl::addAction(const FunscriptAction& action)
+{
+    // same as default
     ctx().AddAction(action);
 }

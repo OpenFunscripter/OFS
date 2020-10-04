@@ -1,10 +1,10 @@
-#include "RawInput.h"
+#include "ControllerInput.h"
 
 #include "OpenFunscripter.h"
 #include "SDL.h"
-RawInput RawInput::controllers[MAX_CONTROLLERS];
+ControllerInput ControllerInput::controllers[MAX_CONTROLLERS];
 
-void RawInput::OpenController(int device)
+void ControllerInput::OpenController(int device)
 {
 	gamepad = SDL_GameControllerOpen(device);
 	SDL_Joystick* j = SDL_GameControllerGetJoystick(gamepad);
@@ -28,7 +28,7 @@ void RawInput::OpenController(int device)
 	}
 }
 
-void RawInput::CloseController()
+void ControllerInput::CloseController()
 {
 	if (is_connected) {
 		is_connected = false;
@@ -41,7 +41,7 @@ void RawInput::CloseController()
 	}
 }
 
-int RawInput::GetControllerIndex(SDL_JoystickID instance)
+int ControllerInput::GetControllerIndex(SDL_JoystickID instance)
 {
 	for (int i = 0; i < MAX_CONTROLLERS; ++i)
 	{
@@ -52,7 +52,7 @@ int RawInput::GetControllerIndex(SDL_JoystickID instance)
 	return -1;
 }
 
-void RawInput::ControllerAxisMotion(SDL_Event& ev)
+void ControllerInput::ControllerAxisMotion(SDL_Event& ev)
 {
 	auto& axis = ev.caxis;
 	const float range = (float)std::numeric_limits<int16_t>::max() - ControllerDeadzone;
@@ -89,46 +89,46 @@ void RawInput::ControllerAxisMotion(SDL_Event& ev)
 	}
 }
 
-void RawInput::ControllerButtonDown(SDL_Event& ev)
+void ControllerInput::ControllerButtonDown(SDL_Event& ev)
 {
 	auto& cbutton = ev.cbutton;
 	LOGF_DEBUG("down cbutton: %d", cbutton.button);
 }
 
-void RawInput::ControllerButtonUp(SDL_Event& ev)
+void ControllerInput::ControllerButtonUp(SDL_Event& ev)
 {
 	auto& cbutton = ev.cbutton;
 	LOGF_DEBUG("up cbutton: %d", cbutton.button);
 }
 
-void RawInput::ControllerDeviceAdded(SDL_Event& ev)
+void ControllerInput::ControllerDeviceAdded(SDL_Event& ev)
 {
 	if (ev.cdevice.which < MAX_CONTROLLERS) {
-		RawInput& jc = controllers[ev.cdevice.which];
+		ControllerInput& jc = controllers[ev.cdevice.which];
 		jc.OpenController(ev.cdevice.which);
 	}
 }
 
-void RawInput::ControllerDeviceRemoved(SDL_Event& ev)
+void ControllerInput::ControllerDeviceRemoved(SDL_Event& ev)
 {
 	int cIndex = GetControllerIndex(ev.cdevice.which);
 	if (cIndex < 0) return; // unknown controller?
-	RawInput& jc = controllers[cIndex];
+	ControllerInput& jc = controllers[cIndex];
 	jc.CloseController();
 }
 
-void RawInput::setup()
+void ControllerInput::setup()
 {
 	SDL_JoystickEventState(SDL_ENABLE);
 	SDL_GameControllerEventState(SDL_ENABLE);
-	OpenFunscripter::ptr->events.Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &RawInput::ControllerAxisMotion));
-	OpenFunscripter::ptr->events.Subscribe(SDL_CONTROLLERBUTTONUP, EVENT_SYSTEM_BIND(this, &RawInput::ControllerButtonUp));
-	OpenFunscripter::ptr->events.Subscribe(SDL_CONTROLLERBUTTONDOWN, EVENT_SYSTEM_BIND(this, &RawInput::ControllerButtonDown));
-	OpenFunscripter::ptr->events.Subscribe(SDL_CONTROLLERDEVICEADDED, EVENT_SYSTEM_BIND(this, &RawInput::ControllerDeviceAdded));
-	OpenFunscripter::ptr->events.Subscribe(SDL_CONTROLLERDEVICEREMOVED, EVENT_SYSTEM_BIND(this, &RawInput::ControllerDeviceRemoved));
+	OpenFunscripter::ptr->events.Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerAxisMotion));
+	OpenFunscripter::ptr->events.Subscribe(SDL_CONTROLLERBUTTONUP, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerButtonUp));
+	OpenFunscripter::ptr->events.Subscribe(SDL_CONTROLLERBUTTONDOWN, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerButtonDown));
+	OpenFunscripter::ptr->events.Subscribe(SDL_CONTROLLERDEVICEADDED, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerDeviceAdded));
+	OpenFunscripter::ptr->events.Subscribe(SDL_CONTROLLERDEVICEREMOVED, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerDeviceRemoved));
 }
 
-void RawInput::update()
+void ControllerInput::update()
 {
 	if (!RecordData) return;
 
@@ -144,6 +144,11 @@ void RawInput::update()
 	int current_ms = ctx->player.getCurrentPositionMs();
 	int pos = Util::Clamp(100.0 * value, 0.0, 100.0);
 
+	static int prev_pos = 0;
+	if (prev_pos != pos) {
+		LOGF_INFO("%d", pos);
+	}
+	prev_pos = pos;
 	//auto action = ctx->LoadedFunscript->GetActionAtTime(current_ms, ctx->player.getFrameTimeMs(), 0);
 	//if (action != nullptr) {
 	//	ctx->LoadedFunscript->EditAction(*action, FunscriptAction(action->at, pos, FunscriptActionFlag::RawAction));

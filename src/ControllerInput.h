@@ -6,7 +6,7 @@
 // and rewritten for my purposes
 
 #define MAX_CONTROLLERS 4
-class RawInput {
+class ControllerInput {
 private:
 	SDL_GameController* gamepad;
 	SDL_Haptic* haptic;
@@ -22,7 +22,7 @@ private:
 	void OpenController(int device);
 	void CloseController();
 
-	static RawInput controllers[MAX_CONTROLLERS];
+	static ControllerInput controllers[MAX_CONTROLLERS];
 	static int GetControllerIndex(SDL_JoystickID instance);
 
 	void ControllerAxisMotion(SDL_Event& ev);
@@ -31,7 +31,7 @@ private:
 	void ControllerDeviceAdded(SDL_Event& ev);
 	void ControllerDeviceRemoved(SDL_Event& ev);
 public:
-	bool RecordData = false;
+	bool RecordData = true;
 	void setup();
 	void update();
 

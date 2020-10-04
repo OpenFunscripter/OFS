@@ -10,6 +10,7 @@ enum ScriptingModeEnum {
 	DEFAULT_MODE,
 	ALTERNATING,
 	DYNAMIC_INJECTION,
+	RECORDING,
 };
 
 class ScripingModeBaseImpl 
@@ -53,6 +54,17 @@ class AlternatingImpl : public ScripingModeBaseImpl
 public:
 	virtual void DrawModeSettings() override;
 	virtual void addAction(const FunscriptAction& action) override;
+};
+
+class RecordingImpl : public ScripingModeBaseImpl
+{
+public:
+	virtual void DrawModeSettings() override;
+
+
+	// Inherited via ScripingModeBaseImpl
+	virtual void addAction(const FunscriptAction& action) override;
+
 };
 
 class OpenFunscripter;

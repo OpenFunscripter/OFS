@@ -7,7 +7,7 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "UndoSystem.cpp"
   "Funscript/FunscriptAction.cpp"
   "Funscript/Funscript.cpp"
-  "RawInput.cpp"
+  "ControllerInput.cpp"
   "ScriptingMode.cpp"
   "OpenFunscripterUtil.cpp"
   "OFS_Serialization.cpp"

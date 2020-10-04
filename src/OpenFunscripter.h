@@ -17,7 +17,7 @@
 #include "GradientBar.h"
 #include "ScriptSimulator.h"
 #include "Funscript.h"
-#include "RawInput.h"
+#include "ControllerInput.h"
 #include "GradientBar.h"
 
 #include <memory>
@@ -50,7 +50,7 @@ private:
 	KeybindingSystem keybinds;
 	UndoSystem undoRedoSystem;
 	ScriptPositionsWindow scriptPositions;
-	RawInput rawInput;
+	ControllerInput rawInput;
 
 	bool updateTimelineGradient = false;
 	char tmp_buf[2][32];
