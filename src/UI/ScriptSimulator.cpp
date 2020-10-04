@@ -61,19 +61,25 @@ void ScriptSimulator::ShowSimulator(bool* open)
         const ImGuiID itemID = ImGui::GetID("##Simulator");
         
 
-        if (ImGui::Button("Center simulator", ImVec2(-1.f, 0.f))) { CenterSimulator(); }
+        ImGui::Columns(2, 0, false);
+        if (ImGui::Button("Center", ImVec2(-1.f, 0.f))) { CenterSimulator(); }
+        ImGui::NextColumn();
         if (ImGui::Button("Invert", ImVec2(-1.f, 0.f))) { 
             auto tmp = simulator.P1;
             simulator.P1 = simulator.P2;
             simulator.P2 = tmp; 
         }
-        ImGui::ColorEdit4("Text", &simulator.Text.Value.x);
-        ImGui::ColorEdit4("Border", &simulator.Border.Value.x);
-        ImGui::ColorEdit4("Front", &simulator.Front.Value.x);
-        ImGui::ColorEdit4("Back", &simulator.Back.Value.x);
-        ImGui::ColorEdit4("Indicator", &simulator.Indicator.Value.x);
-        ImGui::DragFloat("Width", &simulator.Width);
-        ImGui::DragFloat("Border", &simulator.BorderWidth);
+        ImGui::Columns(1);
+        if (ImGui::CollapsingHeader("Configuration", ImGuiTreeNodeFlags_SpanAvailWidth)) {
+            ImGui::ColorEdit4("Text", &simulator.Text.Value.x);
+            ImGui::ColorEdit4("Border", &simulator.Border.Value.x);
+            ImGui::ColorEdit4("Front", &simulator.Front.Value.x);
+            ImGui::ColorEdit4("Back", &simulator.Back.Value.x);
+            ImGui::ColorEdit4("Indicator", &simulator.Indicator.Value.x);
+            ImGui::DragFloat("Width", &simulator.Width);
+            ImGui::DragFloat("Border", &simulator.BorderWidth);
+        }
+
         ImGui::Checkbox("Indicators", &EnableIndicators);
         ImGui::SameLine(); ImGui::Checkbox("Vanilla", &EnableVanilla);
         Util::Tooltip("Close window to go back");
