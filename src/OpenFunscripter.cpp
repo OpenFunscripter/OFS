@@ -134,12 +134,23 @@ bool OpenFunscripter::setup()
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+
+    const int initialWidth = 1920;
+    const int initialHeight = 1080;
+
     window = SDL_CreateWindow(
         "OpenFunscripter " FUN_LATEST_GIT_TAG,
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-        1920, 1080,
-        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI
+        initialWidth, initialHeight,
+        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN
     );
+    SDL_Rect display;
+    int windowDisplay = SDL_GetWindowDisplayIndex(window);
+    SDL_GetDisplayBounds(windowDisplay, &display);
+    if (initialWidth >= display.w || initialHeight >= display.h) {
+        SDL_MaximizeWindow(window);
+    }
+    
     gl_context = SDL_GL_CreateContext(window);
     SDL_GL_MakeCurrent(window, gl_context);
     SDL_GL_SetSwapInterval(1); // Enable vsync
@@ -212,6 +223,7 @@ bool OpenFunscripter::setup()
 
     rawInput.setup();
     simulator.setup();
+    SDL_ShowWindow(window);
     return true;
 }
 
@@ -1572,13 +1584,26 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open)
 }
 
 void OpenFunscripter::SetFullscreen(bool fullscreen) {
+    static SDL_Rect restoreRect{ 0,0, 1280,720 };
     if (fullscreen) {
-        SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+        //SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+        SDL_GetWindowPosition(window, &restoreRect.x, &restoreRect.y);
+        SDL_GetWindowSize(window, &restoreRect.w, &restoreRect.h);
+
+        SDL_SetWindowResizable(window, SDL_FALSE);
         SDL_SetWindowBordered(window, SDL_FALSE);
+        SDL_SetWindowPosition(window, 0, 0);
+        int display = SDL_GetWindowDisplayIndex(window);
+        SDL_Rect bounds;
+        SDL_GetDisplayBounds(display, &bounds);
+        SDL_SetWindowSize(window,  bounds.w, bounds.h);
     }
     else {
-        SDL_SetWindowFullscreen(window, 0);
+        //SDL_SetWindowFullscreen(window, 0);
+        SDL_SetWindowResizable(window, SDL_TRUE);
         SDL_SetWindowBordered(window, SDL_TRUE);
+        SDL_SetWindowPosition(window, restoreRect.x, restoreRect.y);
+        SDL_SetWindowSize(window, restoreRect.w, restoreRect.h);
     }
 }
 
