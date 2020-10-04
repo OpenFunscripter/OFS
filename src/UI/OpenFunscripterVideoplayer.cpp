@@ -733,7 +733,11 @@ void VideoplayerWindow::nextFrame()
 void VideoplayerWindow::previousFrame()
 {
 	if (isPaused()) {
-		const char* cmd[]{ "frame-back-step", NULL };
+		// this seeks much faster
+		// https://github.com/mpv-player/mpv/issues/4019#issuecomment-358641908
+		stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "-%.08f%", (getFrameTimeMs()*1.01f) / 1000.f);
+		const char* cmd[]{ "seek", tmp_buf, "exact", NULL };
+		//const char* cmd[]{ "frame-back-step", NULL };
 		mpv_command_async(mpv, 0, cmd);
 	}
 }

@@ -444,6 +444,7 @@ void OpenFunscripter::register_bindings()
         false,
         [&](void*) { player.previousFrame(); }
     ));
+
     keybinds.registerBinding(Keybinding(
         "next_frame",
         "Next frame",
