@@ -64,5 +64,6 @@ public:
 	const float MIN_WINDOW_SIZE = 1.f; // this limit is also arbitrary and not enforced
 	void setup();
 
+	inline void ClearAudioWaveform() { audio_waveform_avg.clear(); }
 	void ShowScriptPositions(bool* open, float currentPositionMs);
 };

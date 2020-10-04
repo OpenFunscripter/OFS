@@ -669,6 +669,7 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev)
     LoadedFunscript->metadata.original_total_duration_ms = player.getDuration() * 1000.0;
     player.setPosition(LoadedFunscript->scriptSettings.last_pos_ms);
     settings->addRecentFile(OpenFunscripterSettings::RecentFile{ LoadedFunscript->metadata.original_name, std::string(player.getVideoPath()), LoadedFunscript->current_path });
+    scriptPositions.ClearAudioWaveform();
 }
 
 void OpenFunscripter::update() {
