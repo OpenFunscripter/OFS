@@ -711,6 +711,7 @@ void VideoplayerWindow::setVolume(float volume)
 
 void VideoplayerWindow::setPosition(float pos)
 {
+	MpvData.paused = true;
 	stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f%", pos * 100.0f);
 	const char* cmd[]{ "seek", tmp_buf, "absolute-percent+exact", NULL };
 	mpv_command_async(mpv, 0, cmd);
