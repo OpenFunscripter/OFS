@@ -1484,7 +1484,7 @@ void OpenFunscripter::ShowMainMenuBar()
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Options")) {
-            if (ImGui::MenuItem("Keybindings")) {
+            if (ImGui::MenuItem("Keys")) {
                 keybinds.ShowWindow = true;
             }
             if (ImGui::MenuItem("Fullscreen", BINDING_STRING("fullscreen_toggle"), &Fullscreen)) {

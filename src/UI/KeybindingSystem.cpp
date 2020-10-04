@@ -176,9 +176,9 @@ bool KeybindingSystem::ShowBindingWindow()
 {
     bool save = false;
     if (ShowWindow)
-        ImGui::OpenPopup("Keybindings");
+        ImGui::OpenPopup("Keys");
 
-    if (ImGui::BeginPopupModal("Keybindings", &ShowWindow, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysVerticalScrollbar))
+    if (ImGui::BeginPopupModal("Keys", &ShowWindow, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysVerticalScrollbar))
     {
         constexpr bool disable_indent = true;
         if constexpr (disable_indent)
