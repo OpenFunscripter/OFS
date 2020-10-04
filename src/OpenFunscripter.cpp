@@ -1254,7 +1254,12 @@ void OpenFunscripter::showOpenFileDialog()
         filters.emplace_back("Funscript ( .funscript )");
         filters.emplace_back("*.funscript");
  
+        
+        if (!std::filesystem::exists(path)) {
+            path = "";
+        }
         pfd::open_file fileDialog("Choose a file", path, filters, pfd::opt::none);
+        
         static std::vector<std::string> result;
         result = fileDialog.result();
         SDL_Event ev{ 0 };
