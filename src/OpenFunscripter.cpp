@@ -461,7 +461,7 @@ void OpenFunscripter::register_bindings()
         0,
         false,
         [&](void*) {
-            auto action = LoadedFunscript->GetPreviousActionBehind(player.getCurrentPositionMs() - player.getFrameTimeMs() + 1);
+            auto action = LoadedFunscript->GetPreviousActionBehind(player.getCurrentPositionMs() - (player.getFrameTimeMs() / 2.f));
             if (action != nullptr) player.setPosition(action->at);
         }
     ));
@@ -472,7 +472,7 @@ void OpenFunscripter::register_bindings()
         0,
         false,
         [&](void*) {
-            auto action = LoadedFunscript->GetNextActionAhead(player.getCurrentPositionMs() + player.getFrameTimeMs() - 1);
+            auto action = LoadedFunscript->GetNextActionAhead(player.getCurrentPositionMs() + (player.getFrameTimeMs() / 2.f));
             if (action != nullptr) player.setPosition(action->at);
         }
     ));
