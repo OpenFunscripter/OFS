@@ -690,7 +690,12 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev)
 {
     LoadedFunscript->metadata.original_total_duration_ms = player.getDuration() * 1000.0;
     player.setPosition(LoadedFunscript->scriptSettings.last_pos_ms);
-    settings->addRecentFile(OpenFunscripterSettings::RecentFile{ LoadedFunscript->metadata.original_name, std::string(player.getVideoPath()), LoadedFunscript->current_path });
+
+    auto name = std::filesystem::path(player.getVideoPath())
+        .replace_extension("")
+        .filename()
+        .string();
+    settings->addRecentFile(OpenFunscripterSettings::RecentFile{ name, std::string(player.getVideoPath()), LoadedFunscript->current_path });
     scriptPositions.ClearAudioWaveform();
 }
 
@@ -1263,7 +1268,9 @@ void OpenFunscripter::ShowMainMenuBar()
                 if (settings->data().recentFiles.size() == 0) {
                     ImGui::TextDisabled("%s", "No recent files");
                 }
-                for (auto& recent : settings->data().recentFiles) {
+                auto& recentFiles = settings->data().recentFiles;
+                for (auto it = recentFiles.rbegin(); it != recentFiles.rend(); it++) {
+                    auto& recent = *it;
                     if (ImGui::MenuItem(recent.name.c_str())) {
                         if (!recent.script_path.empty())
                             openFile(recent.script_path);

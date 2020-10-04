@@ -86,7 +86,7 @@ public:
 		});
 		if (!already_contains) { 
 			scripterSettings.recentFiles.push_back(recentFile);
-			if (scripterSettings.recentFiles.size() >= 5) {
+			if (scripterSettings.recentFiles.size() > 5) {
 				scripterSettings.recentFiles.erase(scripterSettings.recentFiles.begin());
 			}
 		}
