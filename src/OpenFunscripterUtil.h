@@ -99,7 +99,9 @@ public:
 			char* buffer = new char[size+1];
 			SDL_RWread(handle, buffer, sizeof(char), size);
 			buffer[size] = '\0';
-			j = nlohmann::json::parse(std::string(buffer, size));
+			if (size > 0) {
+				j = nlohmann::json::parse(std::string(buffer, size));
+			}
 			SDL_RWclose(handle);
 			delete[] buffer;
 		}
@@ -121,7 +123,7 @@ public:
 			SDL_RWclose(handle);
 		}
 		else {
-			LOGF_ERROR("Failed to save: \"%s\"", file);
+			LOGF_ERROR("Failed to save: \"%s\"\n%s", file, SDL_GetError());
 		}
 	}
 
@@ -142,6 +144,13 @@ public:
 
 	static int OpenFileExplorer(const char* path);
 	static int OpenUrl(const char* url);
+
+	inline static std::string Filename(const std::string& path) {
+		return std::filesystem::path(path)
+			.replace_extension("")
+			.filename()
+			.string();
+	}
 
 	inline static bool FileExists(const std::string& file) { return FileExists(file.c_str()); }
 	inline static bool FileExists(const char* file) {

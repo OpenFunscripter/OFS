@@ -135,9 +135,12 @@ bool Funscript::open(const std::string& file)
 	return true;
 }
 
-void Funscript::save(const std::string& path)
+void Funscript::save(const std::string& path, bool override_location)
 {
-	current_path = path;
+	if (override_location) {
+		current_path = path;
+	}
+
 	if (!scriptOpened) {
 		setScriptTemplate();
 	}

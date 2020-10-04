@@ -42,6 +42,7 @@ private:
 	std::vector<FunscriptAction> CopiedSelection;
 
 	std::chrono::system_clock::time_point last_save_time;
+	std::chrono::system_clock::time_point last_backup;
 
 	ImGradient TimelineGradient;
 
@@ -59,6 +60,7 @@ private:
 	void update();
 	void new_frame();
 	void render();
+	void rollingBackup();
 
 	bool imgui_setup();
 	void process_events();
@@ -78,10 +80,8 @@ private:
 	void equalizeSelection();
 	void invertSelection();
 
-	void saveScript(const char* path = nullptr);
-
+	void saveScript(const char* path = nullptr, bool override_location = true);
 	void saveHeatmap(const char* path, int width, int height);
-
 
 	void removeAction(const FunscriptAction& action);
 	void removeAction();

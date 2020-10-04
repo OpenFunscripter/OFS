@@ -691,10 +691,7 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev)
     LoadedFunscript->metadata.original_total_duration_ms = player.getDuration() * 1000.0;
     player.setPosition(LoadedFunscript->scriptSettings.last_pos_ms);
 
-    auto name = std::filesystem::path(player.getVideoPath())
-        .replace_extension("")
-        .filename()
-        .string();
+    auto name = Util::Filename(player.getVideoPath());
     settings->addRecentFile(OpenFunscripterSettings::RecentFile{ name, std::string(player.getVideoPath()), LoadedFunscript->current_path });
     scriptPositions.ClearAudioWaveform();
 }
@@ -702,6 +699,47 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev)
 void OpenFunscripter::update() {
     LoadedFunscript->update();
     rawInput.update();
+
+    if (RollingBackup) {
+        std::chrono::duration<float> timeSinceBackup = std::chrono::system_clock::now() - last_backup;
+        if (timeSinceBackup.count() >= 5.f) {
+            last_backup = std::chrono::system_clock::now();
+            rollingBackup();
+        }
+    }
+}
+
+void OpenFunscripter::rollingBackup()
+{
+    std::filesystem::path backupDir("backup");
+    auto name = Util::Filename(player.getVideoPath());
+    backupDir /= name;
+    backupDir = std::move(std::filesystem::absolute(backupDir));
+    std::filesystem::create_directories(backupDir);
+    char path_buf[1024];
+
+    std::array<char, 15> timestamp;
+    Util::FormatTime(timestamp.data(), timestamp.size(), SDL_GetTicks() / 1000.f, false);
+    std::replace(timestamp.begin(), timestamp.end(), ':', '_');
+    stbsp_snprintf(path_buf, sizeof(path_buf), "Backup_%s.funscript", timestamp.data());
+    saveScript((backupDir / path_buf).string().c_str(), false);
+
+    auto count_files = [](const std::filesystem::path& path) -> std::size_t
+    {
+        return (std::size_t)std::distance(std::filesystem::directory_iterator{ path }, std::filesystem::directory_iterator{});
+    };
+    if (count_files(backupDir) > 5) {
+        auto iterator = std::filesystem::directory_iterator{ backupDir };
+        auto oldest_backup = std::min_element(std::filesystem::begin(iterator), std::filesystem::end(iterator),
+            [](auto& file1, auto& file2) {
+                auto last_write1 = std::filesystem::last_write_time(file1);
+                auto last_write2 = std::filesystem::last_write_time(file2);
+                return last_write1 < last_write2;
+        });
+        std::filesystem::remove(*oldest_backup);
+    }
+
+    
 }
 
 int OpenFunscripter::run()
@@ -1007,6 +1045,7 @@ bool OpenFunscripter::openFile(const std::string& file)
     settings->saveSettings();
 
     last_save_time = std::chrono::system_clock::now();
+    last_backup = std::chrono::system_clock::now();
 
     return result;
 }
@@ -1026,7 +1065,7 @@ void OpenFunscripter::fireAlert(const std::string& msg)
     alert.ready(20);
 }
 
-void OpenFunscripter::saveScript(const char* path)
+void OpenFunscripter::saveScript(const char* path, bool override_location)
 {
     LoadedFunscript->metadata.original_name = std::filesystem::path(LoadedFunscript->current_path)
         .replace_extension("")
@@ -1038,7 +1077,7 @@ void OpenFunscripter::saveScript(const char* path)
         LoadedFunscript->save();
     }
     else {
-        LoadedFunscript->save(path);
+        LoadedFunscript->save(path, override_location);
         updateTitle();
     }
     fireAlert("Script saved!");
@@ -1288,9 +1327,8 @@ void OpenFunscripter::ShowMainMenuBar()
             if (ImGui::MenuItem("Save as...")) {
                 showSaveFileDialog();
             }
-            ImGui::Separator();
-
-            if (ImGui::MenuItem("Automatic rolling backup", NULL, &RollingBackup, false)) {}
+            //ImGui::Separator();
+            //if (ImGui::MenuItem("Automatic rolling backup", NULL, &RollingBackup, false)) {}
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Edit"))

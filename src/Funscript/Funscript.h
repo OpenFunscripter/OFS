@@ -109,8 +109,8 @@ public:
 	void update() noexcept;
 
 	bool open(const std::string& file);
-	void save() { save(current_path); }
-	void save(const std::string& path);
+	void save() { save(current_path, false); }
+	void save(const std::string& path, bool override_location = true);
 	
 	const FunscriptData& Data() const noexcept { return data; }
 	const std::vector<FunscriptAction>& Selection() const noexcept { return data.selection; }
