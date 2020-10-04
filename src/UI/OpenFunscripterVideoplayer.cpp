@@ -741,7 +741,10 @@ void VideoplayerWindow::setPaused(bool paused)
 void VideoplayerWindow::nextFrame()
 {
 	if (isPaused()) {
-		const char* cmd[]{ "frame-step", NULL };
+		// use same method as previousFrame for consistency
+		stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f%", (getFrameTimeMs() * 1.01f) / 1000.f);
+		const char* cmd[]{ "seek", tmp_buf, "exact", NULL };
+		//const char* cmd[]{ "frame-step", NULL };
 		mpv_command_async(mpv, 0, cmd);
 	}
 }

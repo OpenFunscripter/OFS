@@ -205,7 +205,9 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				prevAction = &action;
 			}
 		}
+	}
 
+	if(script.Actions().size() > 0) {
 		// render normal actions
 		if (ShowRegularActions) {
 			auto startIt = std::find_if(script.Actions().begin(), script.Actions().end(),
@@ -218,7 +220,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 			if (endIt != script.Actions().end())
 				endIt += 1;
 
-			prevAction = nullptr;
+			const FunscriptAction* prevAction = nullptr;
 			for (; startIt != endIt; startIt++) {
 				auto& action = *startIt;
 

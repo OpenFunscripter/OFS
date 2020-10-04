@@ -129,9 +129,11 @@ public:
 	inline void AddActionRaw(const FunscriptAction& newAction) noexcept { 
 		auto act = getActionAtTime(data.RawActions, newAction.at, 0);
 		if (act != nullptr) {
-			RemoveActionRaw(*act);
+			act->pos = newAction.pos;
 		}
-		addAction(data.RawActions, newAction); 
+		else {
+			addAction(data.RawActions, newAction); 
+		}
 	}
 	bool EditAction(const FunscriptAction& oldAction, const FunscriptAction& newAction) noexcept;
 	void PasteAction(const FunscriptAction& paste, int32_t error_ms) noexcept;

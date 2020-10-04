@@ -219,22 +219,22 @@ void RecordingImpl::ControllerAxisMotion(SDL_Event& ev)
 
     switch (axis.axis) {
     case SDL_CONTROLLER_AXIS_LEFTX:
-        left_x = axis.value / range;
+        left_x = Util::Clamp(axis.value / range, -1.f, 1.f);
         break;
     case SDL_CONTROLLER_AXIS_LEFTY:
-        left_y = axis.value / range;
+        left_y = Util::Clamp(axis.value / range, -1.f, 1.f);
         break;
     case SDL_CONTROLLER_AXIS_RIGHTX:
-        right_x = axis.value / range;
+        right_x = Util::Clamp(axis.value / range, -1.f, 1.f);
         break;
     case SDL_CONTROLLER_AXIS_RIGHTY:
-        right_y = axis.value / range;
+        right_y = Util::Clamp(axis.value / range, -1.f, 1.f);
         break;
     case SDL_CONTROLLER_AXIS_TRIGGERLEFT:
-        left_trigger = axis.value / range;
+        left_trigger = Util::Clamp(axis.value / range, -1.f, 1.f);
         break;
     case SDL_CONTROLLER_AXIS_TRIGGERRIGHT:
-        right_trigger = axis.value / range;
+        right_trigger = Util::Clamp(axis.value / range, -1.f, 1.f);
         break;
     }
 }
@@ -249,16 +249,6 @@ void RecordingImpl::ControllerButtonDown(SDL_Event& ev)
 
 void RecordingImpl::DrawModeSettings()
 {
-    float right_len = std::sqrt((right_x * right_x) + (right_y * right_y));
-    float left_len = std::sqrt((left_x * left_x) + (left_y * left_y));
-
-    float value = std::max(right_len, left_len);
-    value = std::max(value, left_trigger);
-    value = std::max(value, right_trigger);
-
-    auto ctx = OpenFunscripter::ptr;
-    int current_ms = ctx->player.getCurrentPositionMs();
-    currentPos = Util::Clamp(100.0 * value, 0.0, 100.0);
 
     static float deadzone = (float)ControllerDeadzone / std::numeric_limits<int16_t>::max();
     ImGui::Text("%s", "Controller deadzone");
@@ -266,10 +256,44 @@ void RecordingImpl::DrawModeSettings()
     ControllerDeadzone = std::numeric_limits<int16_t>::max() * deadzone;
     
 
-    ImGui::Text("%s", "Position");
+    ImGui::Text("%s", "Position"); 
     ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
     ImGui::SliderInt("##Pos", &currentPos, 0, 100);
     ImGui::PopItemFlag();
+
+    ImGui::Checkbox("Invert", &inverted);
+    {
+        float value = 0.f;
+        if (std::abs(right_y) > std::abs(left_y)) {
+            float right_len = std::sqrt(/*(right_x * right_x) +*/ (right_y * right_y));
+            if (right_y < 0.f) {
+                // up
+                value = right_len;
+            }
+            else {
+                // down
+                value = -right_len;
+            }
+        }
+        else {
+            float left_len = std::sqrt(/*(left_x * left_x) +*/ (left_y * left_y));
+            if (left_y < 0.f) {
+                // up
+                value = left_len;
+            }
+            else {
+                // down
+                value = -left_len;
+            }
+        }
+
+        //float value = std::max(right_len, left_len);
+        //value = std::max(value, left_trigger);
+        //value = std::max(value, right_trigger);
+
+        currentPos = Util::Clamp<int32_t>(50.f + (50.f * value), 0, 100);
+        if (inverted) { currentPos = std::abs(currentPos - 100); }
+    }
 
     ImGui::Spacing();
     auto app = OpenFunscripter::ptr;

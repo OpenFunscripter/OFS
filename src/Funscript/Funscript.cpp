@@ -98,16 +98,6 @@ bool Funscript::open(const std::string& file)
 	scriptOpened = true;
 
 	std::set<FunscriptAction> actionSet;
-	if (raw_actions.is_array()) {
-		for (auto& action : raw_actions) {
-			int32_t time_ms = action["at"];
-			int32_t pos = action["pos"];
-			actionSet.emplace(time_ms, pos);
-		}
-	}
-	data.RawActions.assign(actionSet.begin(), actionSet.end());
-
-	actionSet.clear();
 	if (actions.is_array()) {
 		for (auto& action : actions) {
 			int32_t time_ms = action["at"];
@@ -116,6 +106,20 @@ bool Funscript::open(const std::string& file)
 		}
 	}
 	data.Actions.assign(actionSet.begin(), actionSet.end());
+
+	std::set<FunscriptAction> rawActionSet;
+	if (raw_actions.is_array()) {
+		for (auto& action : raw_actions) {
+			int32_t time_ms = action["at"];
+			int32_t pos = action["pos"];
+			if (actionSet.find(FunscriptAction(time_ms, pos)) == actionSet.end()) {
+				rawActionSet.emplace(time_ms, pos);
+			}
+		}
+	}
+	data.RawActions.assign(rawActionSet.begin(), rawActionSet.end());
+
+	actionSet.clear();
 
 	loadSettings();
 	loadMetadata();

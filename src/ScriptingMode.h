@@ -68,9 +68,10 @@ private:
 	float right_trigger = 0.f;
 	float left_trigger = 0.f;
 
-	int16_t ControllerDeadzone = 1500;
-	bool recordingActive = false;
+	int16_t ControllerDeadzone = 1750;
 	int32_t currentPos = 0;
+	bool recordingActive = false;
+	bool inverted = false;
 public:
 	RecordingImpl();
 	~RecordingImpl();
