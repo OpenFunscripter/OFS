@@ -76,7 +76,6 @@ private:
 
 
 		bool video_loaded = false;
-
 		const char* file_path = nullptr;
 	} MpvData;
 
@@ -145,6 +144,7 @@ public:
 	void nextFrame();
 	void previousFrame();
 	void togglePlay();
+	void cycleSubtitles();
 
 	inline double getFrameTimeMs() const { return MpvData.average_frame_time * 1000.0; }
 	inline double getSpeed() const { return MpvData.current_speed; }

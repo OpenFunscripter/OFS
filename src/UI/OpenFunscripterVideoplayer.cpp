@@ -746,6 +746,12 @@ void VideoplayerWindow::togglePlay()
 	mpv_command_async(mpv, 0, cmd);
 }
 
+void VideoplayerWindow::cycleSubtitles()
+{
+	const char* cmd[]{ "cycle", "sub", NULL};
+	mpv_command_async(mpv, 0, cmd);
+}
+
 void VideoplayerWindow::closeVideo()
 {
 	const char* cmd[] = { "stop", NULL };

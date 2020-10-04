@@ -569,6 +569,16 @@ void OpenFunscripter::register_bindings()
         true,
         [&](void*) { player.saveFrameToImage(settings->data().screenshot_dir); }
     ));
+
+    // CHANGE SUBTITLES
+    keybinds.registerBinding(Keybinding(
+        "cycle_subtitles",
+        "Cycle subtitles",
+        SDLK_j,
+        0,
+        true,
+        [&](void*) { player.cycleSubtitles(); }
+    ));
 }
 
 
