@@ -62,6 +62,10 @@ private:
 		MpvHwDecoder,
 	};
 
+	enum MpvCommandIdentifier : uint64_t {
+		MpvSeekPlayingCommand = 1
+	};
+
 	struct MpvDataCache {
 		double duration = 0.0;
 		double percent_pos = 0.0;

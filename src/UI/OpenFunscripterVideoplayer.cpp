@@ -72,6 +72,16 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev)
 			}
 			continue;
 		}
+		case MPV_EVENT_COMMAND_REPLY:
+		{
+			switch (mp_event->reply_userdata) {
+			case MpvCommandIdentifier::MpvSeekPlayingCommand:
+			{
+				MpvData.paused = false;
+				break;
+			}
+			}
+		}
 		case MPV_EVENT_FILE_LOADED:
 			// this is kind of useless because no frame has been decoded yet and we don't know the size
 			// which is why I'm setting video_loaded = true when height & width have been updated
@@ -711,10 +721,15 @@ void VideoplayerWindow::setVolume(float volume)
 
 void VideoplayerWindow::setPosition(float pos)
 {
-	MpvData.paused = true;
 	stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f%", pos * 100.0f);
 	const char* cmd[]{ "seek", tmp_buf, "absolute-percent+exact", NULL };
-	mpv_command_async(mpv, 0, cmd);
+	if (!MpvData.paused) {
+		MpvData.paused = true;
+		mpv_command_async(mpv, MpvCommandIdentifier::MpvSeekPlayingCommand, cmd);
+	}
+	else {
+		mpv_command_async(mpv, 0, cmd);
+	}
 }
 
 void VideoplayerWindow::setPaused(bool paused)
