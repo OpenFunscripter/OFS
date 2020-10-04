@@ -54,39 +54,7 @@ int ControllerInput::GetControllerIndex(SDL_JoystickID instance)
 
 void ControllerInput::ControllerAxisMotion(SDL_Event& ev)
 {
-	auto& axis = ev.caxis;
-	const float range = (float)std::numeric_limits<int16_t>::max() - ControllerDeadzone;
 
-	if (axis.value >= 0 && axis.value < ControllerDeadzone)
-		axis.value = 0;
-	else if (axis.value < 0 && axis.value > -ControllerDeadzone)
-		axis.value = 0;
-	else if (axis.value >= ControllerDeadzone)
-		axis.value -= ControllerDeadzone;
-	else if (axis.value <= ControllerDeadzone)
-		axis.value += ControllerDeadzone;
-
-
-	switch (axis.axis) {
-	case SDL_CONTROLLER_AXIS_LEFTX:
-		left_x = axis.value / range;
-		break;
-	case SDL_CONTROLLER_AXIS_LEFTY:
-		left_y = axis.value / range;
-		break;
-	case SDL_CONTROLLER_AXIS_RIGHTX:
-		right_x = axis.value / range;
-		break;
-	case SDL_CONTROLLER_AXIS_RIGHTY:
-		right_y = axis.value / range;
-		break;
-	case SDL_CONTROLLER_AXIS_TRIGGERLEFT:
-		left_trigger = axis.value / range;
-		break;
-	case SDL_CONTROLLER_AXIS_TRIGGERRIGHT:
-		right_trigger = axis.value / range;
-		break;
-	}
 }
 
 void ControllerInput::ControllerButtonDown(SDL_Event& ev)
@@ -130,30 +98,5 @@ void ControllerInput::setup()
 
 void ControllerInput::update()
 {
-	if (!RecordData) return;
 
-	float right_len = std::sqrt((right_x * right_x) + (right_y * right_y)) ;
-	float left_len =  std::sqrt((left_x * left_x) + (left_y * left_y))     ;
-
-	float value = std::max(right_len, left_len);
-	value = std::max(value, left_trigger);
-	value = std::max(value, right_trigger);
-
-
-	auto ctx = OpenFunscripter::ptr;
-	int current_ms = ctx->player.getCurrentPositionMs();
-	int pos = Util::Clamp(100.0 * value, 0.0, 100.0);
-
-	static int prev_pos = 0;
-	if (prev_pos != pos) {
-		LOGF_INFO("%d", pos);
-	}
-	prev_pos = pos;
-	//auto action = ctx->LoadedFunscript->GetActionAtTime(current_ms, ctx->player.getFrameTimeMs(), 0);
-	//if (action != nullptr) {
-	//	ctx->LoadedFunscript->EditAction(*action, FunscriptAction(action->at, pos, FunscriptActionFlag::RawAction));
-	//}
-	//else {
-	//	ctx->LoadedFunscript->AddAction(FunscriptAction(current_ms, pos, FunscriptActionFlag::RawAction));
-	//}
 }

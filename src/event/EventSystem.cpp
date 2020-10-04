@@ -33,7 +33,25 @@ void EventSystem::PushEvent(SDL_Event& event)
 	}
 }
 
-void EventSystem::Subscribe(int32_t eventType, EventHandlerFunc handler)
+void EventSystem::Subscribe(int32_t eventType, void* listener, EventHandlerFunc handler)
 {
-	handlers.emplace_back(eventType, handler);
+	handlers.emplace_back(eventType, listener, handler);
+	LOGF_INFO("Total event listeners: %d", (int)handlers.size());
+}
+
+void EventSystem::Unsubscribe(int32_t eventType, void* listener)
+{
+	auto it = std::find_if(handlers.begin(), handlers.end(),
+		[&](auto& handler) {
+			return handler.listener == listener;
+	});
+
+	if (it != handlers.end()) {
+		handlers.erase(it);
+		LOGF_INFO("Total event listeners: %d", (int)handlers.size());
+	}
+	else {
+		LOG_ERROR("Failed to unsubscribe event.");
+		FUN_ASSERT(false, "please investigate");
+	}
 }

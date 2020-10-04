@@ -13,12 +13,6 @@ private:
 	SDL_JoystickID instance_id;
 	bool is_connected;
 	
-	float right_x = 0.f, right_y = 0.f;
-	float left_x = 0.f, left_y = 0.f;
-	float right_trigger = 0.f;
-	float left_trigger = 0.f;
-
-	const int16_t ControllerDeadzone = 2500;
 	void OpenController(int device);
 	void CloseController();
 
@@ -31,7 +25,6 @@ private:
 	void ControllerDeviceAdded(SDL_Event& ev);
 	void ControllerDeviceRemoved(SDL_Event& ev);
 public:
-	bool RecordData = true;
 	void setup();
 	void update();
 

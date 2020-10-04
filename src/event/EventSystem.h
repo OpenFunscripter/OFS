@@ -14,8 +14,10 @@ class EventHandler {
 public:
 	int32_t eventType;
 	EventHandlerFunc func;
+	void* listener = nullptr;
 
-	EventHandler(int32_t type, EventHandlerFunc func) : eventType(type), func(func) { }
+	EventHandler(int32_t type, void* listener, EventHandlerFunc func)
+		: eventType(type), func(func), listener(listener) { }
 };
 
 class EventSystem {
@@ -39,7 +41,8 @@ public:
 	void setup();
 
 	void PushEvent(SDL_Event& event);
-	void Subscribe(int32_t eventType, EventHandlerFunc handler);
+	void Subscribe(int32_t eventType, void* listener, EventHandlerFunc handler);
+	void Unsubscribe(int32_t eventType, void* listener);
 };
 
-#define EVENT_SYSTEM_BIND(listener, handler) std::bind(handler, listener, std::placeholders::_1)
+#define EVENT_SYSTEM_BIND(listener, handler) listener, std::bind(handler, listener, std::placeholders::_1)

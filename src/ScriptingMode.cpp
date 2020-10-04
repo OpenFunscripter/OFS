@@ -3,6 +3,7 @@
 #include "OpenFunscripter.h"
 
 #include "imgui.h"
+#include "imgui_internal.h"
 
 ScripingModeBaseImpl::ScripingModeBaseImpl()
 {
@@ -185,10 +186,90 @@ void AlternatingImpl::addAction(const FunscriptAction& action)
 }
 
 
+
 // recording
+RecordingImpl::RecordingImpl()
+{
+    OpenFunscripter::ptr->events.Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerAxisMotion));
+    OpenFunscripter::ptr->events.Subscribe(SDL_CONTROLLERBUTTONUP, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerButtonUp));
+    OpenFunscripter::ptr->events.Subscribe(SDL_CONTROLLERBUTTONDOWN, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerButtonDown));
+}
+
+RecordingImpl::~RecordingImpl()
+{
+    OpenFunscripter::ptr->events.Unsubscribe(SDL_CONTROLLERAXISMOTION, this);
+    OpenFunscripter::ptr->events.Unsubscribe(SDL_CONTROLLERBUTTONUP, this);
+    OpenFunscripter::ptr->events.Unsubscribe(SDL_CONTROLLERBUTTONDOWN, this);
+}
+
+void RecordingImpl::ControllerAxisMotion(SDL_Event& ev)
+{
+    auto& axis = ev.caxis;
+    const float range = (float)std::numeric_limits<int16_t>::max() - ControllerDeadzone;
+
+    if (axis.value >= 0 && axis.value < ControllerDeadzone)
+        axis.value = 0;
+    else if (axis.value < 0 && axis.value > -ControllerDeadzone)
+        axis.value = 0;
+    else if (axis.value >= ControllerDeadzone)
+        axis.value -= ControllerDeadzone;
+    else if (axis.value <= ControllerDeadzone)
+        axis.value += ControllerDeadzone;
+
+
+    switch (axis.axis) {
+    case SDL_CONTROLLER_AXIS_LEFTX:
+        left_x = axis.value / range;
+        break;
+    case SDL_CONTROLLER_AXIS_LEFTY:
+        left_y = axis.value / range;
+        break;
+    case SDL_CONTROLLER_AXIS_RIGHTX:
+        right_x = axis.value / range;
+        break;
+    case SDL_CONTROLLER_AXIS_RIGHTY:
+        right_y = axis.value / range;
+        break;
+    case SDL_CONTROLLER_AXIS_TRIGGERLEFT:
+        left_trigger = axis.value / range;
+        break;
+    case SDL_CONTROLLER_AXIS_TRIGGERRIGHT:
+        right_trigger = axis.value / range;
+        break;
+    }
+}
+
+void RecordingImpl::ControllerButtonUp(SDL_Event& ev)
+{
+}
+
+void RecordingImpl::ControllerButtonDown(SDL_Event& ev)
+{
+}
+
 void RecordingImpl::DrawModeSettings()
 {
+    float right_len = std::sqrt((right_x * right_x) + (right_y * right_y));
+    float left_len = std::sqrt((left_x * left_x) + (left_y * left_y));
 
+    float value = std::max(right_len, left_len);
+    value = std::max(value, left_trigger);
+    value = std::max(value, right_trigger);
+
+    auto ctx = OpenFunscripter::ptr;
+    int current_ms = ctx->player.getCurrentPositionMs();
+    int pos = Util::Clamp(100.0 * value, 0.0, 100.0);
+
+    static float deadzone = (float)ControllerDeadzone / std::numeric_limits<int16_t>::max();
+    ImGui::Text("%s", "Controller deadzone");
+    ImGui::SliderFloat("Deadzone", &deadzone, 0.f, 0.5f);
+    ControllerDeadzone = std::numeric_limits<int16_t>::max() * deadzone;
+    
+
+    ImGui::Text("%s", "Position");
+    ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+    ImGui::SliderInt("##Pos", &pos, 0, 100);
+    ImGui::PopItemFlag();
 }
 
 void RecordingImpl::addAction(const FunscriptAction& action)

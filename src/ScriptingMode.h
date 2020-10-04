@@ -3,6 +3,8 @@
 #include "Funscript.h"
 #include "FunscriptAction.h"
 
+#include "SDL_events.h"
+
 #include <memory>
 
 // ATTENTION: no reordering
@@ -19,6 +21,7 @@ protected:
 	Funscript& ctx();
 public:
 	ScripingModeBaseImpl();
+	virtual ~ScripingModeBaseImpl() {}
 	virtual void DrawModeSettings() = 0;
 	virtual void addAction(const FunscriptAction& action) = 0;
 };
@@ -58,11 +61,23 @@ public:
 
 class RecordingImpl : public ScripingModeBaseImpl
 {
+private:
+	float right_x = 0.f, right_y = 0.f;
+	float left_x = 0.f, left_y = 0.f;
+	float right_trigger = 0.f;
+	float left_trigger = 0.f;
+
+	int16_t ControllerDeadzone = 0;
 public:
+	RecordingImpl();
+	~RecordingImpl();
+
+	void ControllerAxisMotion(SDL_Event& ev);
+	void ControllerButtonUp(SDL_Event& ev);
+	void ControllerButtonDown(SDL_Event& ev);
+
+
 	virtual void DrawModeSettings() override;
-
-
-	// Inherited via ScripingModeBaseImpl
 	virtual void addAction(const FunscriptAction& action) override;
 
 };
