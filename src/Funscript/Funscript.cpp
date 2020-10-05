@@ -186,7 +186,7 @@ void Funscript::save(const std::string& path, bool override_location)
 
 int Funscript::GetPositionAtTime(int32_t time_ms) noexcept
 {
-	if (data.Actions.size() == 0) return 0;
+	if (data.Actions.size() == 0) {	return 0; } 
 	else if (data.Actions.size() == 1) return data.Actions[0].pos;
 
 	for (int i = 0; i < data.Actions.size()-1; i++) {
@@ -208,6 +208,29 @@ int Funscript::GetPositionAtTime(int32_t time_ms) noexcept
 	}
 
 	return data.Actions.back().pos;
+}
+
+int Funscript::GetRawPositionAtFrame(int32_t frame_no) noexcept
+{
+	if (frame_no >= data.RawActions.size()) return 0;
+	// this is stupid
+	auto pos = data.RawActions[frame_no].pos;
+	if (pos >= 0) { 
+		return pos; 
+	}
+	else if((frame_no + 1) <= data.RawActions.size()) {
+		pos = data.RawActions[frame_no + 1].pos;
+		if (pos >= 0) {
+			return pos;
+		}
+		else if((frame_no - 1) >= 0) {
+			pos = data.RawActions[frame_no - 1].pos;
+			if (pos >= 0) {
+				return pos;
+			}
+		}
+	}
+	return 0;
 }
 
 FunscriptAction* Funscript::getAction(const FunscriptAction& action) noexcept

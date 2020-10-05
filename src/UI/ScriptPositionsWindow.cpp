@@ -187,24 +187,34 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		// render raw actions
 		const FunscriptAction* prevAction = nullptr;
 		if (ShowRawActions) {
+			draw_list->PathClear();
 			for (auto& action : script.RawActions()) {
 				if (action.at < offset_ms)
 					continue;
 
-				if (prevAction != nullptr) {
+				//if (prevAction != nullptr) {
 					// draw line
-					auto p1 = getPointForAction(action);
-					auto p2 = getPointForAction(*prevAction);
-					draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
-					draw_list->AddLine(p1, p2, IM_COL32(255, 0, 0, 180), 5.0f);
-				}
+					//auto p1 = getPointForAction(action);
+					//auto p2 = getPointForAction(*prevAction);
+					//draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
+					//draw_list->AddLine(p1, p2, IM_COL32(255, 0, 0, 180), 5.0f);
+				//}
+				auto p1 = getPointForAction(action);
+				draw_list->PathLineTo(p1);
 
 				if (action.at > offset_ms + (int)(frameSizeMs)) {
 					break;
 				}
 
-				prevAction = &action;
+				//prevAction = &action;
 			}
+
+			// sort of a hack ...
+			// PathStroke sets  _Path.Size = 0
+			auto tmp = draw_list->_Path.Size;
+			draw_list->PathStroke(IM_COL32(0, 0, 0, 255), false, 7.0f);
+			draw_list->_Path.Size = tmp;
+			draw_list->PathStroke(IM_COL32(255, 0, 0, 180), false, 5.f);
 		}
 	}
 

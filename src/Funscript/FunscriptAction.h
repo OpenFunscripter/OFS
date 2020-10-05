@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <limits>
 
 class FunscriptAction
 {
@@ -8,7 +9,8 @@ public:
 	int32_t at;
 	int32_t pos;
 
-	FunscriptAction() noexcept : at(-1), pos(-1) {}
+	FunscriptAction() noexcept
+		: at(std::numeric_limits<int32_t>::min()), pos(std::numeric_limits<int32_t>::min()) {}
 
 	FunscriptAction(int32_t at, int32_t pos) noexcept
 	{

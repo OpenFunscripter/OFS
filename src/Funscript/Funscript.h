@@ -12,8 +12,13 @@ class Funscript
 public:
 	struct FunscriptData {
 		std::vector<FunscriptAction> Actions;
-		std::vector<FunscriptAction> selection;
 		std::vector<FunscriptAction> RawActions;
+
+		std::vector<FunscriptAction> selection;
+		struct RawSelection {
+			int32_t startIndex;
+			int32_t endIndex;
+		} rawSelection;
 	};
 
 	struct Bookmark {
@@ -127,6 +132,7 @@ public:
 	inline const FunscriptAction* GetClosestAction(int32_t time_ms) noexcept { return getActionAtTime(data.Actions, time_ms, std::numeric_limits<uint32_t>::max()); }
 
 	int GetPositionAtTime(int32_t time_ms) noexcept;
+	int GetRawPositionAtFrame(int32_t frame_no) noexcept;
 	
 	inline void AddAction(const FunscriptAction& newAction) noexcept { addAction(data.Actions, newAction); }
 	inline void AddActionRaw(int32_t frame_no, float frame_time, int32_t pos) noexcept { 

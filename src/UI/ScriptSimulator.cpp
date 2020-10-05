@@ -33,13 +33,21 @@ void ScriptSimulator::ShowSimulator(bool* open)
 {
     if (*open) {
         auto ptr = OpenFunscripter::ptr;
+        int currentPos;
+
+        if (!SimulateRawActions) {
+            currentPos = ptr->LoadedFunscript->GetPositionAtTime(ptr->player.getCurrentPositionMs());
+        }
+        else {
+            currentPos = ptr->LoadedFunscript->GetRawPositionAtFrame(ptr->player.getCurrentFrameEstimate());
+        }
+
         if (EnableVanilla) {
             ImGui::Begin("Simulator", open, 
                 ImGuiWindowFlags_NoBackground
                 | ImGuiWindowFlags_NoDocking);
-            int pos = ptr->LoadedFunscript->GetPositionAtTime(ptr->player.getCurrentPositionMs());
             ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-            ImGui::VSliderInt("", ImGui::GetContentRegionAvail(), &pos, 0, 100);
+            ImGui::VSliderInt("", ImGui::GetContentRegionAvail(), &currentPos, 0, 100);
             ImGui::PopItemFlag();
             ImGui::End();
             if (!*open) {
@@ -93,8 +101,6 @@ void ScriptSimulator::ShowSimulator(bool* open)
             ImGui::End();
             return;
         }
-
-        int currentPos = ptr->LoadedFunscript->GetPositionAtTime(ptr->player.getCurrentPositionMs());
 
         auto offset = window->ViewportPos; 
         

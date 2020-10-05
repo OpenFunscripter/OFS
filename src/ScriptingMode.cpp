@@ -204,6 +204,8 @@ RecordingImpl::~RecordingImpl()
     app->events->Unsubscribe(SDL_CONTROLLERBUTTONUP, this);
     app->events->Unsubscribe(SDL_CONTROLLERBUTTONDOWN, this);
     app->events->Unsubscribe(SDL_MOUSEMOTION, this);
+ 
+    app->simulator.SimulateRawActions = false;
 }
 
 void RecordingImpl::ControllerAxisMotion(SDL_Event& ev)
@@ -318,7 +320,7 @@ void RecordingImpl::DrawModeSettings()
     ImGui::SliderInt("##Pos", &currentPos, 0, 100);
     ImGui::PopItemFlag();
 
-    ImGui::Checkbox("Invert", &inverted);
+    ImGui::Checkbox("Invert", &inverted); ImGui::SameLine(); ImGui::Checkbox("Record on play", &automaticRecording);
     
     currentPos = Util::Clamp<int32_t>(50.f + (50.f * value), 0, 100);
     if (inverted) { currentPos = std::abs(currentPos - 100); }
@@ -326,20 +328,23 @@ void RecordingImpl::DrawModeSettings()
     ImGui::Spacing();
     auto app = OpenFunscripter::ptr;
     bool playing = !app->player.isPaused();
-    if (playing && recordingActive != playing) {
+    if (automaticRecording && playing && recordingActive != playing) {
         app->undoRedoSystem.Snapshot("Recording");
+        recordingActive = true;
     }
-    recordingActive = playing;
-    if (recordingActive) {
+
+    if (recordingActive && playing) {
         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 255, 0, 255));
         ImGui::Text("%s", "Recording active");
         ImGui::PopStyleColor();
-        
+        app->simulator.SimulateRawActions = true;
     }
     else {
         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
         ImGui::Text("%s", "Recording paused");
         ImGui::PopStyleColor();
+        app->simulator.SimulateRawActions = false;
+        recordingActive = false;
     }
 }
 

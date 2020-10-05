@@ -39,6 +39,7 @@ public:
 			OFS_REFLECT(Indicator, ar);
 		}
 	} simulator;
+	bool SimulateRawActions = false;
 
 	ScriptSimulator() {}
 	void setup();
