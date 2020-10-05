@@ -1719,9 +1719,6 @@ void OpenFunscripter::CreateDockspace()
 void OpenFunscripter::ShowAboutWindow(bool* open)
 {
     if (!*open) return;
-    static struct CheckUpdateThreadData {
-
-    } CheckThreadData;
     ImGui::Begin("About", open, ImGuiWindowFlags_None 
         | ImGuiWindowFlags_AlwaysAutoResize
         | ImGuiWindowFlags_NoDocking

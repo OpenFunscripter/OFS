@@ -43,7 +43,7 @@ void EventSystem::Unsubscribe(int32_t eventType, void* listener)
 {
 	auto it = std::find_if(handlers.begin(), handlers.end(),
 		[&](auto& handler) {
-			return handler.listener == listener;
+			return handler.listener == listener && handler.eventType == eventType;
 	});
 
 	if (it != handlers.end()) {
