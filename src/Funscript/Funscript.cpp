@@ -355,6 +355,28 @@ void Funscript::RemoveActions(const std::vector<FunscriptAction>& removeActions)
 	NotifyActionsChanged();
 }
 
+void Funscript::SelectRawFrames(int32_t from, int32_t to) noexcept
+{
+	if (data.rawSelection.hasSelection()) { data.rawSelection.deselect(); }
+	data.selection.clear();
+
+	int i = 0;
+	for (; i < data.RawActions.size(); i++) {
+		auto& action = data.RawActions[i];
+		if (action.at >= from) {
+			data.rawSelection.startIndex = i;
+			break;
+		}
+	}
+	for (; i < data.RawActions.size(); i++) {
+		auto& action = data.RawActions[i];
+		if (action.at >= to) {
+			data.rawSelection.endIndex = i;
+			break;
+		}
+	}
+}
+
 bool Funscript::ToggleSelection(const FunscriptAction& action) noexcept
 {
 	auto it = std::find(data.selection.begin(), data.selection.end(), action);

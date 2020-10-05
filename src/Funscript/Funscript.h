@@ -18,6 +18,8 @@ public:
 		struct RawSelection {
 			int32_t startIndex;
 			int32_t endIndex;
+			inline bool hasSelection() const noexcept { return startIndex >= 0; }
+			inline void deselect() noexcept { startIndex = -1; endIndex = -1; }
 		} rawSelection;
 	};
 
@@ -135,9 +137,9 @@ public:
 	int GetRawPositionAtFrame(int32_t frame_no) noexcept;
 	
 	inline void AddAction(const FunscriptAction& newAction) noexcept { addAction(data.Actions, newAction); }
-	inline void AddActionRaw(int32_t frame_no, float frame_time, int32_t pos) noexcept { 
+	inline void AddActionRaw(int32_t frame_no, int32_t at, int32_t pos) noexcept { 
 		if (frame_no >= data.RawActions.size()) return;
-		data.RawActions[frame_no].at = frame_time * frame_no;
+		data.RawActions[frame_no].at = at;
 		data.RawActions[frame_no].pos = pos;
 	}
 	bool EditAction(const FunscriptAction& oldAction, const FunscriptAction& newAction) noexcept;
@@ -154,6 +156,9 @@ public:
 			[](auto& a, auto& b) { return a.at < b.at; }
 		);
 	}
+
+	// raw selection
+	void SelectRawFrames(int32_t from, int32_t to) noexcept;
 
 	// selection api
 	bool ToggleSelection(const FunscriptAction& action) noexcept;

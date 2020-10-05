@@ -6,11 +6,11 @@
 #include "SDL.h"
 #include "stb_sprintf.h"
 
-//#define MINIMP3_ONLY_MP3
 //#define MINIMP3_ONLY_SIMD
 //#define MINIMP3_NO_SIMD
 //#define MINIMP3_NONSTANDARD_BUT_LOGICAL
 //#define MINIMP3_FLOAT_OUTPUT
+#define MINIMP3_ONLY_MP3
 #define MINIMP3_FLOAT_OUTPUT
 #define MINIMP3_IMPLEMENTATION
 #include "minimp3_ex.h"
@@ -19,10 +19,18 @@ void ScriptPositionsWindow::updateSelection(bool clear)
 {
 	float min = std::min(rel_x1, rel_x2);
 	float max = std::max(rel_x1, rel_x2);
-
 	int selection_start_ms = offset_ms + (frameSizeMs * min);
 	int selection_end_ms = offset_ms + (frameSizeMs * max);
 	OpenFunscripter::script().SelectTime(selection_start_ms, selection_end_ms, clear);
+}
+
+void ScriptPositionsWindow::updateRawSelection()
+{
+	float min = std::min(rel_x1, rel_x2);
+	float max = std::max(rel_x1, rel_x2);
+	float selection_start_ms = offset_ms + (frameSizeMs * min);
+	float selection_end_ms = offset_ms + (frameSizeMs * max);
+	OpenFunscripter::script().SelectRawFrames(selection_start_ms, selection_end_ms);
 }
 
 void ScriptPositionsWindow::FfmpegAudioProcessingFinished(SDL_Event& ev)
@@ -81,7 +89,7 @@ void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
 
 		// start drag selection
 		ImRect rect(canvas_pos, canvas_pos + canvas_size);
-		selection = true;
+		IsSelecting = true;
 		rel_x1 = (mousePos.x - canvas_pos.x) / rect.GetWidth();
 		rel_x2 = rel_x1;
 	}
@@ -93,9 +101,17 @@ void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
 void ScriptPositionsWindow::mouse_released(SDL_Event& ev)
 {
 	auto& button = ev.button;
-	if (selection && button.button == SDL_BUTTON_LEFT) {
-		selection = false;
-		updateSelection(!(SDL_GetModState() & KMOD_CTRL));
+	if (IsSelecting && button.button == SDL_BUTTON_LEFT) {
+		IsSelecting = false;
+		auto modstate = SDL_GetModState();
+		if (modstate & KMOD_SHIFT) {
+			// raw select
+			updateRawSelection();
+		}
+		else {
+			// regular select
+			updateSelection(!(modstate & KMOD_CTRL));
+		}
 	}
 }
 
@@ -103,7 +119,7 @@ void ScriptPositionsWindow::mouse_drag(SDL_Event& ev)
 {
 	// TODO: fix scuffed code
 	auto& motion = ev.motion;
-	if (selection) {
+	if (IsSelecting) {
 		rel_x2 = (ImGui::GetMousePos().x - canvas_pos.x) / canvas_size.x;
 	}
 }
@@ -187,34 +203,51 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		// render raw actions
 		const FunscriptAction* prevAction = nullptr;
 		if (ShowRawActions) {
-			draw_list->PathClear();
+
+			auto pathStroke = [](auto draw_list, uint32_t col) {
+				// sort of a hack ...
+				// PathStroke sets  _Path.Size = 0
+				auto tmp = draw_list->_Path.Size;
+				draw_list->PathStroke(IM_COL32(0, 0, 0, 255), false, 7.0f);
+				draw_list->_Path.Size = tmp;
+				draw_list->PathStroke(col, false, 5.f);
+			};
+			
+			bool selectionPathStarted = false;
+			int32_t index = -1;
 			for (auto& action : script.RawActions()) {
+				index++;
 				if (action.at < offset_ms)
 					continue;
 
-				//if (prevAction != nullptr) {
-					// draw line
-					//auto p1 = getPointForAction(action);
-					//auto p2 = getPointForAction(*prevAction);
-					//draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
-					//draw_list->AddLine(p1, p2, IM_COL32(255, 0, 0, 180), 5.0f);
-				//}
+				if (index >= script.Data().rawSelection.startIndex 
+					&& index <= script.Data().rawSelection.endIndex) {
+					if (!selectionPathStarted) {
+						pathStroke(draw_list, IM_COL32(255, 0, 0, 180));
+						if (index >= 1) {
+							auto p1 = getPointForAction(script.RawActions()[index-1]);
+							draw_list->PathLineTo(p1);
+						}
+					}
+					selectionPathStarted = true;
+				}
+				else if (selectionPathStarted) {
+					pathStroke(draw_list, IM_COL32(0, 255, 0, 180));
+					if (index >= 1) {
+						auto p1 = getPointForAction(script.RawActions()[index - 1]);
+						draw_list->PathLineTo(p1);
+					}
+					selectionPathStarted = false;
+				}
+
 				auto p1 = getPointForAction(action);
 				draw_list->PathLineTo(p1);
 
 				if (action.at > offset_ms + (int)(frameSizeMs)) {
 					break;
 				}
-
-				//prevAction = &action;
 			}
-
-			// sort of a hack ...
-			// PathStroke sets  _Path.Size = 0
-			auto tmp = draw_list->_Path.Size;
-			draw_list->PathStroke(IM_COL32(0, 0, 0, 255), false, 7.0f);
-			draw_list->_Path.Size = tmp;
-			draw_list->PathStroke(IM_COL32(255, 0, 0, 180), false, 5.f);
+			pathStroke(draw_list, IM_COL32(255, 0, 0, 180));
 		}
 	}
 
@@ -288,7 +321,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		IM_COL32(255, 255, 255, 255), 3.0f);
 
 	// selection box
-	if (selection) {
+	if (IsSelecting) {
 		constexpr auto selectColor = IM_COL32(3, 252, 207, 255);
 		constexpr auto selectColorBackground = IM_COL32(3, 252, 207, 100);
 		draw_list->AddRectFilled(canvas_pos + ImVec2(canvas_size.x * rel_x1, 0), canvas_pos + ImVec2(canvas_size.x * rel_x2, canvas_size.y), selectColorBackground);

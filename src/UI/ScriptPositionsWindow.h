@@ -28,7 +28,7 @@ class ScriptPositionsWindow
 	ImVec2 canvas_size;
 	int offset_ms;
 	float frameSizeMs;
-	bool selection = false;
+	bool IsSelecting = false;
 	bool PositionsItemHovered = false;
 	float rel_x1 = 0.0f;
 	float rel_x2 = 0.0f;
@@ -47,6 +47,7 @@ class ScriptPositionsWindow
 		return ImVec2(x, y);
 	}
 	void updateSelection(bool clear);
+	void updateRawSelection();
 
 	std::vector<FunscriptAction> ActionPositionWindow;
 	std::vector<ImVec2> ActionScreenCoordinates;
