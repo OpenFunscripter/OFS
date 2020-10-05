@@ -5,9 +5,8 @@
 #include <vector>
 #include <functional>
 
-// insanely basic event system lacks ability to unsubscribe
-// it doesn't get any simpler than this but this still allows for some nice decoupling
-
+// insanely basic event system
+// it doesn't get any simpler than this
 using EventHandlerFunc = std::function<void(SDL_Event&)>;
 
 class EventHandler {

@@ -190,20 +190,25 @@ void AlternatingImpl::addAction(const FunscriptAction& action)
 // recording
 RecordingImpl::RecordingImpl()
 {
-    OpenFunscripter::ptr->events.Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerAxisMotion));
-    OpenFunscripter::ptr->events.Subscribe(SDL_CONTROLLERBUTTONUP, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerButtonUp));
-    OpenFunscripter::ptr->events.Subscribe(SDL_CONTROLLERBUTTONDOWN, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerButtonDown));
+    auto app = OpenFunscripter::ptr;
+    app->events.Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerAxisMotion));
+    app->events.Subscribe(SDL_CONTROLLERBUTTONUP, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerButtonUp));
+    app->events.Subscribe(SDL_CONTROLLERBUTTONDOWN, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerButtonDown));
+    app->events.Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &RecordingImpl::MouseMovement));
 }
 
 RecordingImpl::~RecordingImpl()
 {
-    OpenFunscripter::ptr->events.Unsubscribe(SDL_CONTROLLERAXISMOTION, this);
-    OpenFunscripter::ptr->events.Unsubscribe(SDL_CONTROLLERBUTTONUP, this);
-    OpenFunscripter::ptr->events.Unsubscribe(SDL_CONTROLLERBUTTONDOWN, this);
+    auto app = OpenFunscripter::ptr;
+    app->events.Unsubscribe(SDL_CONTROLLERAXISMOTION, this);
+    app->events.Unsubscribe(SDL_CONTROLLERBUTTONUP, this);
+    app->events.Unsubscribe(SDL_CONTROLLERBUTTONDOWN, this);
+    app->events.Unsubscribe(SDL_MOUSEMOTION, this);
 }
 
 void RecordingImpl::ControllerAxisMotion(SDL_Event& ev)
 {
+    if (activeMode != RecordingMode::Controller) return;
     auto& axis = ev.caxis;
     const float range = (float)std::numeric_limits<int16_t>::max() - ControllerDeadzone;
 
@@ -237,6 +242,33 @@ void RecordingImpl::ControllerAxisMotion(SDL_Event& ev)
         right_trigger = Util::Clamp(axis.value / range, -1.f, 1.f);
         break;
     }
+
+    //float value = std::max(right_len, left_len);
+    //value = std::max(value, left_trigger);
+    //value = std::max(value, right_trigger);
+
+    if (std::abs(right_y) > std::abs(left_y)) {
+        float right_len = std::sqrt(/*(right_x * right_x) +*/ (right_y * right_y));
+        if (right_y < 0.f) {
+            // up
+            value = right_len;
+        }
+        else {
+            // down
+            value = -right_len;
+        }
+    }
+    else {
+        float left_len = std::sqrt(/*(left_x * left_x) +*/ (left_y * left_y));
+        if (left_y < 0.f) {
+            // up
+            value = left_len;
+        }
+        else {
+            // down
+            value = -left_len;
+        }
+    }
 }
 
 void RecordingImpl::ControllerButtonUp(SDL_Event& ev)
@@ -247,14 +279,39 @@ void RecordingImpl::ControllerButtonDown(SDL_Event& ev)
 {
 }
 
+void RecordingImpl::MouseMovement(SDL_Event& ev)
+{
+    if (activeMode != RecordingMode::Mouse) return; 
+    SDL_MouseMotionEvent& motion = ev.motion;
+    auto app = OpenFunscripter::ptr;
+    // there's alot of indirection here
+    auto simP1 = app->settings->data().simulator->P1;
+    auto simP2 = app->settings->data().simulator->P2;
+
+    auto [top_y, bottom_y] = std::minmax(simP1.y, simP2.y);
+
+
+    value = motion.y - bottom_y;
+    value /= (top_y - bottom_y);
+    value = Util::Clamp(value, 0.f, 1.f);
+
+    value = ((value - 0.f) / (1.f - 0.f)) * (1.f - -1.f) + -1.f;
+}
+
 void RecordingImpl::DrawModeSettings()
 {
 
     static float deadzone = (float)ControllerDeadzone / std::numeric_limits<int16_t>::max();
-    ImGui::Text("%s", "Controller deadzone");
-    ImGui::SliderFloat("Deadzone", &deadzone, 0.f, 0.5f);
-    ControllerDeadzone = std::numeric_limits<int16_t>::max() * deadzone;
-    
+    ImGui::Combo("Mode", (int*)&activeMode,
+        "Mouse\0"
+        "Controller\0"
+        "\0");
+
+    if (activeMode == RecordingMode::Controller) {
+        ImGui::Text("%s", "Controller deadzone");
+        ImGui::SliderFloat("Deadzone", &deadzone, 0.f, 0.5f);
+        ControllerDeadzone = std::numeric_limits<int16_t>::max() * deadzone;
+    }
 
     ImGui::Text("%s", "Position"); 
     ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
@@ -262,38 +319,9 @@ void RecordingImpl::DrawModeSettings()
     ImGui::PopItemFlag();
 
     ImGui::Checkbox("Invert", &inverted);
-    {
-        float value = 0.f;
-        if (std::abs(right_y) > std::abs(left_y)) {
-            float right_len = std::sqrt(/*(right_x * right_x) +*/ (right_y * right_y));
-            if (right_y < 0.f) {
-                // up
-                value = right_len;
-            }
-            else {
-                // down
-                value = -right_len;
-            }
-        }
-        else {
-            float left_len = std::sqrt(/*(left_x * left_x) +*/ (left_y * left_y));
-            if (left_y < 0.f) {
-                // up
-                value = left_len;
-            }
-            else {
-                // down
-                value = -left_len;
-            }
-        }
-
-        //float value = std::max(right_len, left_len);
-        //value = std::max(value, left_trigger);
-        //value = std::max(value, right_trigger);
-
-        currentPos = Util::Clamp<int32_t>(50.f + (50.f * value), 0, 100);
-        if (inverted) { currentPos = std::abs(currentPos - 100); }
-    }
+    
+    currentPos = Util::Clamp<int32_t>(50.f + (50.f * value), 0, 100);
+    if (inverted) { currentPos = std::abs(currentPos - 100); }
 
     ImGui::Spacing();
     auto app = OpenFunscripter::ptr;

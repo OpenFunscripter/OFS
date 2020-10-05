@@ -68,10 +68,19 @@ private:
 	float right_trigger = 0.f;
 	float left_trigger = 0.f;
 
+	float value = 0.f;
+
 	int16_t ControllerDeadzone = 1750;
 	int32_t currentPos = 0;
 	bool recordingActive = false;
 	bool inverted = false;
+
+	// Attention: don't change order
+	enum RecordingMode : int32_t {
+		Mouse,
+		Controller,
+	};
+	RecordingMode activeMode = RecordingMode::Mouse;
 public:
 	RecordingImpl();
 	~RecordingImpl();
@@ -80,6 +89,7 @@ public:
 	void ControllerButtonUp(SDL_Event& ev);
 	void ControllerButtonDown(SDL_Event& ev);
 
+	void MouseMovement(SDL_Event& ev);
 
 	virtual void DrawModeSettings() override;
 	virtual void addAction(const FunscriptAction& action) override;
