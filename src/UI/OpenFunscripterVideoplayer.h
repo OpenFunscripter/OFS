@@ -153,9 +153,10 @@ public:
 	inline double getFrameTimeMs() const { return MpvData.average_frame_time * 1000.0; }
 	inline double getSpeed() const { return MpvData.current_speed; }
 	inline double getDuration() const { return MpvData.duration; }
-	inline int getTotalNumFrames() const { return MpvData.total_num_frames; }
+	inline int64_t getTotalNumFrames() const { return MpvData.total_num_frames; }
 	inline bool isPaused() const { return MpvData.paused; };
 	inline double getPosition() const { return MpvData.percent_pos; }
+	inline int64_t getCurrentFrameEstimate() const { return MpvData.percent_pos * MpvData.total_num_frames; }
 
 	inline bool isLoaded() const { return MpvData.video_loaded; }
 	void closeVideo();

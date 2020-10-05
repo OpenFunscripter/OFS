@@ -353,7 +353,6 @@ void RecordingImpl::update() noexcept
 {
     auto app = OpenFunscripter::ptr;
     if (recordingActive) {
-        FunscriptAction act(app->player.getCurrentPositionMs(), currentPos);
-        ctx().AddActionRaw(act);
+        ctx().AddActionRaw(app->player.getCurrentFrameEstimate()+1, app->player.getFrameTimeMs(), currentPos);
     }
 }

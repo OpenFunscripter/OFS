@@ -105,6 +105,11 @@ bool OpenFunscripter::imgui_setup()
 
 OpenFunscripter::~OpenFunscripter()
 {
+    // needs a certain destruction order
+    scripting.reset();
+    rawInput.reset();
+    events.reset();
+
     settings->saveSettings();
 }
 
@@ -191,7 +196,8 @@ bool OpenFunscripter::setup()
     }
 
     // register custom events with sdl
-    events.setup();
+    events = std::make_unique<EventSystem>();
+    events->setup();
 
     keybinds.setup();
     register_bindings(); // needs to happen before setBindings
@@ -200,18 +206,19 @@ bool OpenFunscripter::setup()
     scriptPositions.setup();
     LoadedFunscript = std::make_unique<Funscript>();
 
-    scripting.setup();
+    scripting = std::make_unique<ScriptingMode>();
+    scripting->setup();
     if (!player.setup()) {
         LOG_ERROR("Failed to init video player");
         return false;
     }
 
-    events.Subscribe(EventSystem::FunscriptActionsChangedEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FunscriptChanged));
-    events.Subscribe(EventSystem::FunscriptActionClickedEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FunscriptActionClicked));
-    events.Subscribe(EventSystem::FileDialogOpenEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FileDialogOpenEvent));
-    events.Subscribe(EventSystem::FileDialogSaveEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FileDialogSaveEvent));
-    events.Subscribe(SDL_DROPFILE, EVENT_SYSTEM_BIND(this, &OpenFunscripter::DragNDrop));
-    events.Subscribe(EventSystem::MpvVideoLoaded, EVENT_SYSTEM_BIND(this, &OpenFunscripter::MpvVideoLoaded));
+    events->Subscribe(EventSystem::FunscriptActionsChangedEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FunscriptChanged));
+    events->Subscribe(EventSystem::FunscriptActionClickedEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FunscriptActionClicked));
+    events->Subscribe(EventSystem::FileDialogOpenEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FileDialogOpenEvent));
+    events->Subscribe(EventSystem::FileDialogSaveEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FileDialogSaveEvent));
+    events->Subscribe(SDL_DROPFILE, EVENT_SYSTEM_BIND(this, &OpenFunscripter::DragNDrop));
+    events->Subscribe(EventSystem::MpvVideoLoaded, EVENT_SYSTEM_BIND(this, &OpenFunscripter::MpvVideoLoaded));
     // cache these here because openFile overrides them
     std::string last_video = settings->data().most_recent_file.video_path;
     std::string last_script = settings->data().most_recent_file.script_path;
@@ -221,9 +228,13 @@ bool OpenFunscripter::setup()
         openFile(last_video);
 
 
-    rawInput.setup();
+    rawInput = std::make_unique<ControllerInput>();
+    rawInput->setup();
     simulator.setup();
     SDL_ShowWindow(window);
+
+    //DEBUG
+    scripting->setMode(ScriptingModeEnum::RECORDING);
     return true;
 }
 
@@ -636,7 +647,7 @@ void OpenFunscripter::process_events()
             break;
         }
         }
-        events.PushEvent(event);
+        events->PushEvent(event);
     }
 }
 
@@ -690,6 +701,7 @@ void OpenFunscripter::DragNDrop(SDL_Event& ev)
 void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev)
 {
     LoadedFunscript->metadata.original_total_duration_ms = player.getDuration() * 1000.0;
+    LoadedFunscript->reserveRawActionMemory(player.getTotalNumFrames());
     player.setPosition(LoadedFunscript->scriptSettings.last_pos_ms);
 
     auto name = Util::Filename(player.getVideoPath());
@@ -699,8 +711,8 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev)
 
 void OpenFunscripter::update() {
     LoadedFunscript->update();
-    rawInput.update();
-    scripting.update();
+    rawInput->update();
+    scripting->update();
 
     if (RollingBackup) {
         std::chrono::duration<float> timeSinceBackup = std::chrono::system_clock::now() - last_backup;
@@ -759,7 +771,7 @@ int OpenFunscripter::run()
             ShowStatisticsWindow(&ShowStatistics);
             if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { saveScript(); }
             player.DrawVideoPlayer(NULL);
-            scripting.DrawScriptingMode(NULL);
+            scripting->DrawScriptingMode(NULL);
 
             if (keybinds.ShowBindingWindow()) {
                 settings->saveKeybinds(keybinds.getBindings());
@@ -1147,7 +1159,7 @@ void OpenFunscripter::removeAction()
 void OpenFunscripter::addEditAction(int pos)
 {
     undoRedoSystem.Snapshot("Add/Edit Action");
-    scripting.addEditAction(FunscriptAction(player.getCurrentPositionMs(), pos));
+    scripting->addEditAction(FunscriptAction(player.getCurrentPositionMs(), pos));
 }
 
 void OpenFunscripter::cutSelection()

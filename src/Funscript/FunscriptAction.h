@@ -5,10 +5,10 @@
 class FunscriptAction
 {
 public:
-	int32_t at = 0;
-	int32_t pos = 0;
+	int32_t at;
+	int32_t pos;
 
-	FunscriptAction() noexcept {}
+	FunscriptAction() noexcept : at(-1), pos(-1) {}
 
 	FunscriptAction(int32_t at, int32_t pos) noexcept
 	{

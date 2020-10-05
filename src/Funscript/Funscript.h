@@ -5,7 +5,7 @@
 #include "OFS_Reflection.h"
 #include <vector>
 #include <string>
-
+#include "OpenFunscripterUtil.h"
 
 class Funscript
 {
@@ -111,7 +111,10 @@ public:
 	bool open(const std::string& file);
 	void save() { save(current_path, false); }
 	void save(const std::string& path, bool override_location = true);
-	
+	void reserveRawActionMemory(int32_t frameCount) { 
+		data.RawActions.resize(frameCount); 
+	}
+
 	const FunscriptData& Data() const noexcept { return data; }
 	const std::vector<FunscriptAction>& Selection() const noexcept { return data.selection; }
 	const std::vector<FunscriptAction>& Actions() const noexcept { return data.Actions; }
@@ -126,14 +129,10 @@ public:
 	int GetPositionAtTime(int32_t time_ms) noexcept;
 	
 	inline void AddAction(const FunscriptAction& newAction) noexcept { addAction(data.Actions, newAction); }
-	inline void AddActionRaw(const FunscriptAction& newAction) noexcept { 
-		auto act = getActionAtTime(data.RawActions, newAction.at, 0);
-		if (act != nullptr) {
-			act->pos = newAction.pos;
-		}
-		else {
-			addAction(data.RawActions, newAction); 
-		}
+	inline void AddActionRaw(int32_t frame_no, float frame_time, int32_t pos) noexcept { 
+		if (frame_no >= data.RawActions.size()) return;
+		data.RawActions[frame_no].at = frame_time * frame_no;
+		data.RawActions[frame_no].pos = pos;
 	}
 	bool EditAction(const FunscriptAction& oldAction, const FunscriptAction& newAction) noexcept;
 	void PasteAction(const FunscriptAction& paste, int32_t error_ms) noexcept;
