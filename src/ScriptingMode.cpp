@@ -290,13 +290,20 @@ void RecordingImpl::MouseMovement(SDL_Event& ev)
     auto simP1 = app->settings->data().simulator->P1;
     auto simP2 = app->settings->data().simulator->P2;
 
-    auto [top_y, bottom_y] = std::minmax(simP1.y, simP2.y);
-
-
-    value = motion.y - bottom_y;
-    value /= (top_y - bottom_y);
-    value = Util::Clamp(value, 0.f, 1.f);
-
+    if (std::abs(simP1.x - simP2.x) > std::abs(simP1.y - simP2.y)) {
+        // horizontal
+        auto [top_x, bottom_x] = std::minmax(simP1.x, simP2.x);
+        value = motion.x - top_x;
+        value /= (bottom_x - top_x);
+        value = Util::Clamp(value, 0.f, 1.f);
+    }
+    else {
+        // vertical
+        auto [top_y, bottom_y] = std::minmax(simP1.y, simP2.y);
+        value = motion.y - bottom_y;
+        value /= (top_y - bottom_y);
+        value = Util::Clamp(value, 0.f, 1.f);
+    }
     value = ((value - 0.f) / (1.f - 0.f)) * (1.f - -1.f) + -1.f;
 }
 
