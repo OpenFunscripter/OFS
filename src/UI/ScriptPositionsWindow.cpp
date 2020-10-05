@@ -34,11 +34,12 @@ void ScriptPositionsWindow::FfmpegAudioProcessingFinished(SDL_Event& ev)
 
 void ScriptPositionsWindow::setup()
 {
-	OpenFunscripter::ptr->events.Subscribe(SDL_MOUSEBUTTONDOWN, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_pressed));
-	OpenFunscripter::ptr->events.Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_scroll));
-	OpenFunscripter::ptr->events.Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_drag));
-	OpenFunscripter::ptr->events.Subscribe(SDL_MOUSEBUTTONUP, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_released));
-	OpenFunscripter::ptr->events.Subscribe(EventSystem::FfmpegAudioProcessingFinished, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::FfmpegAudioProcessingFinished));
+	auto app = OpenFunscripter::ptr;
+	app->events->Subscribe(SDL_MOUSEBUTTONDOWN, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_pressed));
+	app->events->Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_scroll));
+	app->events->Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_drag));
+	app->events->Subscribe(SDL_MOUSEBUTTONUP, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_released));
+	app->events->Subscribe(EventSystem::FfmpegAudioProcessingFinished, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::FfmpegAudioProcessingFinished));
 
 	std::array<ImColor, 4> heatColor{
 		IM_COL32(0xFF, 0xFF, 0xFF, 0xFF),

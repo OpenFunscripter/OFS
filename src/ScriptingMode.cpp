@@ -191,19 +191,19 @@ void AlternatingImpl::addAction(const FunscriptAction& action)
 RecordingImpl::RecordingImpl()
 {
     auto app = OpenFunscripter::ptr;
-    app->events.Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerAxisMotion));
-    app->events.Subscribe(SDL_CONTROLLERBUTTONUP, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerButtonUp));
-    app->events.Subscribe(SDL_CONTROLLERBUTTONDOWN, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerButtonDown));
-    app->events.Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &RecordingImpl::MouseMovement));
+    app->events->Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerAxisMotion));
+    app->events->Subscribe(SDL_CONTROLLERBUTTONUP, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerButtonUp));
+    app->events->Subscribe(SDL_CONTROLLERBUTTONDOWN, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerButtonDown));
+    app->events->Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &RecordingImpl::MouseMovement));
 }
 
 RecordingImpl::~RecordingImpl()
 {
     auto app = OpenFunscripter::ptr;
-    app->events.Unsubscribe(SDL_CONTROLLERAXISMOTION, this);
-    app->events.Unsubscribe(SDL_CONTROLLERBUTTONUP, this);
-    app->events.Unsubscribe(SDL_CONTROLLERBUTTONDOWN, this);
-    app->events.Unsubscribe(SDL_MOUSEMOTION, this);
+    app->events->Unsubscribe(SDL_CONTROLLERAXISMOTION, this);
+    app->events->Unsubscribe(SDL_CONTROLLERBUTTONUP, this);
+    app->events->Unsubscribe(SDL_CONTROLLERBUTTONDOWN, this);
+    app->events->Unsubscribe(SDL_MOUSEMOTION, this);
 }
 
 void RecordingImpl::ControllerAxisMotion(SDL_Event& ev)

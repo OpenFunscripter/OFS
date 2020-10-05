@@ -45,12 +45,6 @@ private:
 	std::chrono::system_clock::time_point last_backup;
 
 	ImGradient TimelineGradient;
-
-	ScriptingMode scripting;
-	KeybindingSystem keybinds;
-	ScriptPositionsWindow scriptPositions;
-	ControllerInput rawInput;
-
 	bool updateTimelineGradient = false;
 	char tmp_buf[2][32];
 
@@ -109,10 +103,15 @@ public:
 
 	~OpenFunscripter();
 
-	EventSystem events;
+	KeybindingSystem keybinds;
+	ScriptPositionsWindow scriptPositions;
 	VideoplayerWindow player;
 	ScriptSimulator simulator;
 	UndoSystem undoRedoSystem;
+
+	std::unique_ptr<ScriptingMode> scripting;
+	std::unique_ptr<EventSystem> events;
+	std::unique_ptr<ControllerInput> rawInput;
 	std::unique_ptr<OpenFunscripterSettings> settings;
 	std::unique_ptr<Funscript> LoadedFunscript;
 

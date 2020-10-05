@@ -8,8 +8,9 @@
 
 void KeybindingSystem::setup()
 {
-    OpenFunscripter::ptr->events.Subscribe(SDL_KEYDOWN, EVENT_SYSTEM_BIND(this, &KeybindingSystem::pressed));
+    OpenFunscripter::ptr->events->Subscribe(SDL_KEYDOWN, EVENT_SYSTEM_BIND(this, &KeybindingSystem::pressed));
 }
+
 void KeybindingSystem::pressed(SDL_Event& ev)
 {
     auto key = ev.key;

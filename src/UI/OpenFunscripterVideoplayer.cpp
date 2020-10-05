@@ -239,9 +239,10 @@ void VideoplayerWindow::updateRenderTexture()
 
 bool VideoplayerWindow::setup()
 {
-	OpenFunscripter::ptr->events.Subscribe(EventSystem::WakeupOnMpvEvents, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvEvents));
-	OpenFunscripter::ptr->events.Subscribe(EventSystem::WakeupOnMpvRenderUpdate, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvRenderUpdate));
-	OpenFunscripter::ptr->events.Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::mouse_scroll));
+	auto app = OpenFunscripter::ptr;
+	app->events->Subscribe(EventSystem::WakeupOnMpvEvents, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvEvents));
+	app->events->Subscribe(EventSystem::WakeupOnMpvRenderUpdate, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvRenderUpdate));
+	app->events->Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::mouse_scroll));
 	
 	updateRenderTexture();
 
