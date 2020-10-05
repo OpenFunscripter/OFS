@@ -54,7 +54,8 @@ void OpenFunscripterSettings::saveSettings()
 void OpenFunscripterSettings::saveKeybinds(const std::vector<Keybinding>& bindings)
 {
 	OFS::archiver ar(&keybindsObj);
-	ar << reflect_member(KeybindsStr, (std::vector<Keybinding>*)&bindings);	
+	auto pair = reflect_member(KeybindsStr, (std::vector<Keybinding>*) & bindings);
+	ar << pair;
 	save_keybinds();
 }
 
@@ -63,7 +64,8 @@ std::vector<Keybinding> OpenFunscripterSettings::getKeybindings()
 	auto& keybinds = keybindsObj[KeybindsStr];
 	std::vector<Keybinding> bindings;
 	OFS::unpacker upkg(&keybindsObj);
-	upkg << reflect_member(KeybindsStr, &bindings);
+	auto pair = reflect_member(KeybindsStr, &bindings);
+	upkg << pair;
 	return bindings;
 }
 

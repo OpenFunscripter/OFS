@@ -705,7 +705,8 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev)
     player.setPosition(LoadedFunscript->scriptSettings.last_pos_ms);
 
     auto name = Util::Filename(player.getVideoPath());
-    settings->addRecentFile(OpenFunscripterSettings::RecentFile{ name, std::string(player.getVideoPath()), LoadedFunscript->current_path });
+    auto recentFile = OpenFunscripterSettings::RecentFile{ name, std::string(player.getVideoPath()), LoadedFunscript->current_path };
+    settings->addRecentFile(recentFile);
     scriptPositions.ClearAudioWaveform();
 }
 
