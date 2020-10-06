@@ -72,7 +72,7 @@ private:
 
 	int16_t ControllerDeadzone = 1750;
 	int32_t currentPos = 0;
-	bool automaticRecording = false;
+	bool automaticRecording = true;
 	bool recordingActive = false;
 	bool inverted = false;
 

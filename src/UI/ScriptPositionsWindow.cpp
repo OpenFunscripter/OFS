@@ -207,47 +207,32 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 			auto pathStroke = [](auto draw_list, uint32_t col) {
 				// sort of a hack ...
 				// PathStroke sets  _Path.Size = 0
+				// so we reset it in order to draw the same path twice
 				auto tmp = draw_list->_Path.Size;
 				draw_list->PathStroke(IM_COL32(0, 0, 0, 255), false, 7.0f);
 				draw_list->_Path.Size = tmp;
 				draw_list->PathStroke(col, false, 5.f);
 			};
 			
-			bool selectionPathStarted = false;
-			int32_t index = -1;
-			for (auto& action : script.RawActions()) {
-				index++;
-				if (action.at < offset_ms)
-					continue;
+			int32_t startIndex = std::max<int32_t>((offset_ms / OpenFunscripter::ptr->player.getFrameTimeMs()), 0);
+			int32_t endIndex =  std::min<int32_t>(((float)offset_ms + frameSizeMs) / OpenFunscripter::ptr->player.getFrameTimeMs(), script.RawActions().size());
 
-				if (index >= script.Data().rawSelection.startIndex 
-					&& index <= script.Data().rawSelection.endIndex) {
-					if (!selectionPathStarted) {
-						pathStroke(draw_list, IM_COL32(255, 0, 0, 180));
-						if (index >= 1) {
-							auto p1 = getPointForAction(script.RawActions()[index-1]);
-							draw_list->PathLineTo(p1);
-						}
+			auto pathRawSection = [this](auto draw_list, auto rawActions, int32_t fromIndex, int32_t toIndex) {
+				for (int i = fromIndex; i < toIndex; i++) {
+					auto& action = rawActions[i];
+					if (action.pos >= 0) {
+						auto point = getPointForAction(action);
+						draw_list->PathLineTo(point);
 					}
-					selectionPathStarted = true;
 				}
-				else if (selectionPathStarted) {
-					pathStroke(draw_list, IM_COL32(0, 255, 0, 180));
-					if (index >= 1) {
-						auto p1 = getPointForAction(script.RawActions()[index - 1]);
-						draw_list->PathLineTo(p1);
-					}
-					selectionPathStarted = false;
-				}
-
-				auto p1 = getPointForAction(action);
-				draw_list->PathLineTo(p1);
-
-				if (action.at > offset_ms + (int)(frameSizeMs)) {
-					break;
-				}
-			}
+			};
+			pathRawSection(draw_list, script.RawActions(), startIndex, endIndex);
 			pathStroke(draw_list, IM_COL32(255, 0, 0, 180));
+
+			if (script.Data().rawSelection.startIndex >= startIndex) {
+				pathRawSection(draw_list, script.RawActions(), script.Data().rawSelection.startIndex, script.Data().rawSelection.endIndex);
+				pathStroke(draw_list, IM_COL32(0, 255, 0, 180));
+			}
 		}
 	}
 
