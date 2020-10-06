@@ -102,7 +102,7 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev)
 				break;
 			case MPV_FORMAT_FLAG:
 			case MPV_FORMAT_INT64:
-				LOGF_DEBUG("Property \"%s\" has changed to %d", prop->name, *(int64_t*)prop->data);
+				LOGF_DEBUG("Property \"%s\" has changed to %ld", prop->name, *(int64_t*)prop->data);
 				break;
 			case MPV_FORMAT_STRING:
 				LOGF_DEBUG("Property \"%s\" has changed to %s", prop->name, *(char**)prop->data);
