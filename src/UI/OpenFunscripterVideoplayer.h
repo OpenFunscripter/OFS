@@ -147,6 +147,7 @@ public:
 	void setPaused(bool paused);
 	void nextFrame();
 	void previousFrame();
+	void relativeFrameSeek(int32_t seek);
 	void togglePlay();
 	void cycleSubtitles();
 

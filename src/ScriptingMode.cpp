@@ -338,20 +338,22 @@ void RecordingImpl::DrawModeSettings()
     if (automaticRecording && playing && recordingActive != playing) {
         app->undoRedoSystem.Snapshot("Recording");
         recordingActive = true;
+        app->simulator.SimulateRawActions = true;
+    }
+    else if (!playing && recordingActive) {
+        recordingActive = false;
+        app->simulator.SimulateRawActions = false;
     }
 
     if (recordingActive && playing) {
         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 255, 0, 255));
         ImGui::Text("%s", "Recording active");
         ImGui::PopStyleColor();
-        app->simulator.SimulateRawActions = true;
     }
     else {
         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
         ImGui::Text("%s", "Recording paused");
         ImGui::PopStyleColor();
-        app->simulator.SimulateRawActions = false;
-        recordingActive = false;
     }
 }
 

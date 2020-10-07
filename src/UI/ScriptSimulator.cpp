@@ -91,6 +91,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
         ImGui::Checkbox("Indicators", &EnableIndicators);
         ImGui::SameLine(); ImGui::Checkbox("Vanilla", &EnableVanilla);
         Util::Tooltip("Close window to go back");
+        ImGui::Checkbox("Simulate raw actions", &SimulateRawActions);
         simulator.BorderWidth = Util::Clamp<float>(simulator.BorderWidth, 0.f, 1000.f);
         simulator.Width = Util::Clamp<float>(simulator.Width, 0.f, 1000.f);
 

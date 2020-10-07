@@ -102,7 +102,9 @@ bool Funscript::open(const std::string& file)
 		for (auto& action : actions) {
 			int32_t time_ms = action["at"];
 			int32_t pos = action["pos"];
-			actionSet.emplace(time_ms, pos);
+			if (time_ms >= 0) {
+				actionSet.emplace(time_ms, pos);
+			}
 		}
 	}
 	data.Actions.assign(actionSet.begin(), actionSet.end());

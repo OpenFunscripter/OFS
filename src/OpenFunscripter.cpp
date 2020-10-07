@@ -465,6 +465,31 @@ void OpenFunscripter::register_bindings()
         [&](void*) { player.nextFrame(); }
     ));
 
+    keybinds.registerBinding(Keybinding(
+        "fast_step",
+        "Fast step",
+        SDLK_RIGHT,
+        KMOD_CTRL,
+        false,
+        [&](void*) { 
+            int32_t frameStep = settings->data().fast_step_amount;
+            player.relativeFrameSeek(frameStep); 
+        }
+    ));
+
+
+    keybinds.registerBinding(Keybinding(
+        "fast_backstep",
+        "Fast backstep",
+        SDLK_LEFT,
+        KMOD_CTRL,
+        false,
+        [&](void*) {
+            int32_t frameStep = settings->data().fast_step_amount;
+            player.relativeFrameSeek(-frameStep);
+        }
+    ));
+
     // JUMP BETWEEN ACTIONS
     keybinds.registerBinding(Keybinding(
         "prev_action",
@@ -592,7 +617,6 @@ void OpenFunscripter::register_bindings()
         [&](void*) { player.cycleSubtitles(); }
     ));
 }
-
 
 
 void OpenFunscripter::new_frame()

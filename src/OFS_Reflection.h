@@ -29,6 +29,7 @@ struct reflect_function {
 };
 
 
+// specializations
 template<typename Archive>
 struct reflect_function<ImVec2, Archive> 
 {

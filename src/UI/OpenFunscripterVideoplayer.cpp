@@ -743,7 +743,7 @@ void VideoplayerWindow::nextFrame()
 {
 	if (isPaused()) {
 		// use same method as previousFrame for consistency
-		stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f%", (getFrameTimeMs() * 1.01f) / 1000.f);
+		stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f%", ((getFrameTimeMs() * 1.001f) / 1000.f));
 		const char* cmd[]{ "seek", tmp_buf, "exact", NULL };
 		//const char* cmd[]{ "frame-step", NULL };
 		mpv_command_async(mpv, 0, cmd);
@@ -755,9 +755,18 @@ void VideoplayerWindow::previousFrame()
 	if (isPaused()) {
 		// this seeks much faster
 		// https://github.com/mpv-player/mpv/issues/4019#issuecomment-358641908
-		stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "-%.08f%", (getFrameTimeMs()*1.01f) / 1000.f);
+		stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "-%.08f%", ((getFrameTimeMs()*1.001f) / 1000.f));
 		const char* cmd[]{ "seek", tmp_buf, "exact", NULL };
 		//const char* cmd[]{ "frame-back-step", NULL };
+		mpv_command_async(mpv, 0, cmd);
+	}
+}
+
+void VideoplayerWindow::relativeFrameSeek(int32_t seek)
+{
+	if (isPaused()) {
+		stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f%", ((getFrameTimeMs() * 1.001f) / 1000.f) * seek);
+		const char* cmd[]{ "seek", tmp_buf, "exact", NULL };
 		mpv_command_async(mpv, 0, cmd);
 	}
 }

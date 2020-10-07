@@ -83,6 +83,13 @@ bool OpenFunscripterSettings::ShowPreferenceWindow()
 		if (ImGui::Checkbox("Force hardware decoding (Requires program restart)", &scripterSettings.force_hw_decoding))
 			save = true;
 		Util::Tooltip("Use this for really high resolution video 4K+ VR videos for example.");
+
+		if (ImGui::InputInt("Fast frame step", &scripterSettings.fast_step_amount, 1, 1)) {
+			save = true;
+			scripterSettings.fast_step_amount = Util::Clamp<int32_t>(scripterSettings.fast_step_amount, 2, 30);
+		}
+		Util::Tooltip("Amount of frames to skip with fast step.");
+
 		ImGui::EndPopup();
 	}
 

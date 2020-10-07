@@ -34,6 +34,7 @@ private:
 		RecentFile most_recent_file;
 		std::string screenshot_dir = "screenshot";
 		int32_t default_font_size = 18;
+		int32_t fast_step_amount = 6;
 		bool always_show_bookmark_labels = false;
 		bool draw_video= true;
 		bool show_simulator = false;
@@ -54,6 +55,7 @@ private:
 			OFS_REFLECT(draw_video, ar);
 			OFS_REFLECT(show_simulator, ar);
 			OFS_REFLECT(default_font_size, ar);
+			OFS_REFLECT(fast_step_amount, ar);
 			OFS_REFLECT(force_hw_decoding, ar);
 			OFS_REFLECT(recentFiles, ar);
 			OFS_REFLECT_PTR(simulator, ar);
