@@ -88,13 +88,17 @@ void ScriptSimulator::ShowSimulator(bool* open)
             ImGui::DragFloat("Border", &simulator.BorderWidth);
             ImGui::SliderFloat("Opacity", &simulator.GlobalOpacity, 0.f, 1.f);
             simulator.GlobalOpacity = Util::Clamp<float>(simulator.GlobalOpacity, 0.f, 1.f);
+            ImGui::Checkbox("Indicators", &simulator.EnableIndicators);
+            ImGui::SameLine(); 
+            ImGui::Checkbox("Height Lines", &simulator.EnableHeightLines);
+            ImGui::Checkbox("Show position", &simulator.EnablePosition);
         }
 
-        ImGui::Checkbox("Indicators", &simulator.EnableIndicators);
-        ImGui::SameLine(); ImGui::Checkbox("Vanilla", &EnableVanilla);
-        Util::Tooltip("Close window to go back");
-        ImGui::Checkbox("Show position", &simulator.EnablePosition);
-        ImGui::Checkbox("Simulate raw actions", &SimulateRawActions);
+        ImGui::Checkbox("Simulate raw actions", &SimulateRawActions); ImGui::SameLine();
+        if (ImGui::Button("Vanilla")) {
+            EnableVanilla = true;
+        }
+        Util::Tooltip("Switch to vanilla simulator.");
         simulator.BorderWidth = Util::Clamp<float>(simulator.BorderWidth, 0.f, 1000.f);
         simulator.Width = Util::Clamp<float>(simulator.Width, 0.f, 1000.f);
 
@@ -134,25 +138,27 @@ void ScriptSimulator::ShowSimulator(bool* open)
         );
 
         // HEIGHT LINES
-        for (int i = 1; i < 10; i++) {
-            float pos = i * 10.f;
-            auto indicator1 =
-                barP2
-                + (direction * distance * (pos / 100.f))
-                - (perpendicular * (simulator.Width / 2.f))
-                + (perpendicular * (simulator.BorderWidth / 2.f));
-            auto indicator2 =
-                barP2
-                + (direction * distance * (pos / 100.f))
-                + (perpendicular * (simulator.Width / 2.f))
-                - (perpendicular * (simulator.BorderWidth / 2.f));
+        if (simulator.EnableHeightLines) {
+            for (int i = 1; i < 10; i++) {
+                float pos = i * 10.f;
+                auto indicator1 =
+                    barP2
+                    + (direction * distance * (pos / 100.f))
+                    - (perpendicular * (simulator.Width / 2.f))
+                    + (perpendicular * (simulator.BorderWidth / 2.f));
+                auto indicator2 =
+                    barP2
+                    + (direction * distance * (pos / 100.f))
+                    + (perpendicular * (simulator.Width / 2.f))
+                    - (perpendicular * (simulator.BorderWidth / 2.f));
             
-            front_draw->AddLine(
-                indicator1,
-                indicator2,
-                GetColor(simulator.Border),
-                simulator.BorderWidth / 3.f
-            );
+                front_draw->AddLine(
+                    indicator1,
+                    indicator2,
+                    GetColor(simulator.Border),
+                    simulator.BorderWidth / 3.f
+                );
+            }
         }
 
         // INDICATORS

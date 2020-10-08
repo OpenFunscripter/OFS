@@ -33,6 +33,7 @@ public:
 		float GlobalOpacity = 1.f;
 		bool EnableIndicators = true;
 		bool EnablePosition = false;
+		bool EnableHeightLines = true;
 
 		template <class Archive>
 		inline void reflect(Archive& ar)
@@ -49,6 +50,7 @@ public:
 			OFS_REFLECT(GlobalOpacity, ar);
 			OFS_REFLECT(EnableIndicators, ar);
 			OFS_REFLECT(EnablePosition, ar);
+			OFS_REFLECT(EnableHeightLines, ar);
 		}
 	} simulator;
 	bool SimulateRawActions = false;
