@@ -4,6 +4,7 @@
 #include "OpenFunscripterUtil.h"
 #include "EventSystem.h"
 #include "OFS_Serialization.h"
+#include "OpenFunscripter.h"
 
 #include <algorithm>
 #include <limits>
@@ -549,6 +550,27 @@ void Funscript::MoveSelectionTime(int32_t time_offset) noexcept
 		moveActionsTime(moving, time_offset);
 		SelectAll();
 		return;
+	}
+
+	auto prev = GetPreviousActionBehind(data.selection.front().at);
+	auto next = GetNextActionAhead(data.selection.back().at);
+
+	int32_t min_bound = 0;
+	int32_t max_bound = std::numeric_limits<int32_t>::max();
+
+	float frameTime = OpenFunscripter::ptr->player.getFrameTimeMs();
+	if (time_offset > 0) {
+		if (next != nullptr) {
+			max_bound = next->at - frameTime;
+			time_offset = std::min(time_offset, max_bound - data.selection.back().at);
+		}
+	}
+	else
+	{
+		if (prev != nullptr) {
+			min_bound = prev->at + frameTime;
+			time_offset = std::max(time_offset, min_bound - data.selection.front().at);
+		}
 	}
 
 	for (auto& find : data.selection) {
