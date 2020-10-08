@@ -33,7 +33,7 @@ private:
 	bool ShowMetadataEditor = false;
 	bool ShowStatistics = true;
 	bool ShowHistory = true;
-	bool RollingBackup = false;
+	bool RollingBackup = true;
 	bool Fullscreen = false;
 	bool DebugMetrics = false;
 	bool DebugDemo = false;

@@ -160,18 +160,34 @@ void ScriptPositionsWindow::mouse_drag(SDL_Event& ev)
 		auto& toBeMoved = app->script().Selection()[0];
 		auto newAction = getActionForPoint(mousePos, frameTime);
 		if (newAction.at != toBeMoved.at || newAction.pos != toBeMoved.pos) {
-			auto nearbyAction = app->script().GetActionAtTime(newAction.at, frameTime);
-			if (nearbyAction != nullptr) {
-				app->script().RemoveAction(*nearbyAction);
-				app->script().ClearSelection();
-				app->script().AddAction(newAction);
+			const FunscriptAction* nearbyAction = nullptr;
+			if ((newAction.at - toBeMoved.at) > 0) {
+				nearbyAction = app->script().GetNextActionAhead(toBeMoved.at);
+				if (nearbyAction != nullptr) {
+					if (std::abs(nearbyAction->at - newAction.at) > frameTime) {
+						nearbyAction = nullptr;
+					}
+				}
 			}
-			else {
+			else if((newAction.at - toBeMoved.at) < 0) {
+				nearbyAction = app->script().GetPreviousActionBehind(toBeMoved.at);
+				if (nearbyAction != nullptr) {
+					if (std::abs(nearbyAction->at - newAction.at) > frameTime) {
+						nearbyAction = nullptr;
+					}
+ 				}
+			}
+
+			if (nearbyAction == nullptr) {
 				app->script().RemoveAction(toBeMoved);
 				app->script().ClearSelection();
 				app->script().AddAction(newAction);
+				app->script().SetSelection(newAction, true);
 			}
-			app->script().SetSelection(newAction, true);
+			else {
+				app->script().ClearSelection();
+				IsMoving = false;
+			}
 		}
 	}
 }

@@ -739,16 +739,18 @@ void OpenFunscripter::update() {
     scripting->update();
 
     if (RollingBackup) {
-        std::chrono::duration<float> timeSinceBackup = std::chrono::system_clock::now() - last_backup;
-        if (timeSinceBackup.count() >= 5.f) {
-            last_backup = std::chrono::system_clock::now();
-            rollingBackup();
-        }
+        rollingBackup();
     }
 }
 
 void OpenFunscripter::rollingBackup()
 {
+    std::chrono::duration<float> timeSinceBackup = std::chrono::system_clock::now() - last_backup;
+    if (timeSinceBackup.count() < 61.f) {
+        return;
+    }
+    last_backup = std::chrono::system_clock::now();
+
     std::filesystem::path backupDir("backup");
     auto name = Util::Filename(player.getVideoPath());
     backupDir /= name;
@@ -756,11 +758,10 @@ void OpenFunscripter::rollingBackup()
     std::filesystem::create_directories(backupDir);
     char path_buf[1024];
 
-    std::array<char, 15> timestamp;
-    Util::FormatTime(timestamp.data(), timestamp.size(), SDL_GetTicks() / 1000.f, false);
-    std::replace(timestamp.begin(), timestamp.end(), ':', '_');
-    stbsp_snprintf(path_buf, sizeof(path_buf), "Backup_%s.funscript", timestamp.data());
-    saveScript((backupDir / path_buf).string().c_str(), false);
+    stbsp_snprintf(path_buf, sizeof(path_buf), "Backup_%d.funscript", SDL_GetTicks());
+    auto savePath = (backupDir / path_buf);
+    LOGF_INFO("Backup at \"%s\"", savePath.string().c_str());
+    saveScript(savePath.string().c_str() , false);
 
     auto count_files = [](const std::filesystem::path& path) -> std::size_t
     {
@@ -770,10 +771,12 @@ void OpenFunscripter::rollingBackup()
         auto iterator = std::filesystem::directory_iterator{ backupDir };
         auto oldest_backup = std::min_element(std::filesystem::begin(iterator), std::filesystem::end(iterator),
             [](auto& file1, auto& file2) {
-                auto last_write1 = std::filesystem::last_write_time(file1);
-                auto last_write2 = std::filesystem::last_write_time(file2);
-                return last_write1 < last_write2;
+                std::error_code ec;
+                std::filesystem::file_time_type last_write1 = std::filesystem::last_write_time(file1, ec);
+                std::filesystem::file_time_type last_write2 = std::filesystem::last_write_time(file2, ec);
+                return last_write1.time_since_epoch() > last_write2.time_since_epoch();
         });
+        LOGF_INFO("Removing old backup: \"%s\"", (*oldest_backup).path().string().c_str());
         std::filesystem::remove(*oldest_backup);
     }
 
@@ -1377,8 +1380,11 @@ void OpenFunscripter::ShowMainMenuBar()
             if (ImGui::MenuItem("Save as...")) {
                 showSaveFileDialog();
             }
-            //ImGui::Separator();
-            //if (ImGui::MenuItem("Automatic rolling backup", NULL, &RollingBackup, false)) {}
+            ImGui::Separator();
+            if (ImGui::MenuItem("Automatic rolling backup", NULL, &RollingBackup)) {}
+            if (ImGui::MenuItem("Open backup directory")) {
+                Util::OpenFileExplorer("backup");
+            }
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Edit"))
