@@ -316,10 +316,18 @@ void RecordingImpl::DrawModeSettings()
         "Controller\0"
         "\0");
 
-    if (activeMode == RecordingMode::Controller) {
+    switch (activeMode) {
+    case RecordingMode::Controller:
+    {
         ImGui::Text("%s", "Controller deadzone");
         ImGui::SliderFloat("Deadzone", &deadzone, 0.f, 0.5f);
         ControllerDeadzone = std::numeric_limits<int16_t>::max() * deadzone;
+        break;
+    }
+    case RecordingMode::Mouse:
+    {
+        break;
+    }
     }
 
     ImGui::Text("%s", "Position"); 

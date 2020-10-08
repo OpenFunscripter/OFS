@@ -86,11 +86,14 @@ void ScriptSimulator::ShowSimulator(bool* open)
             ImGui::ColorEdit4("Indicator", &simulator.Indicator.Value.x);
             ImGui::DragFloat("Width", &simulator.Width);
             ImGui::DragFloat("Border", &simulator.BorderWidth);
+            ImGui::SliderFloat("Opacity", &simulator.GlobalOpacity, 0.f, 1.f);
+            simulator.GlobalOpacity = Util::Clamp<float>(simulator.GlobalOpacity, 0.f, 1.f);
         }
 
         ImGui::Checkbox("Indicators", &EnableIndicators);
         ImGui::SameLine(); ImGui::Checkbox("Vanilla", &EnableVanilla);
         Util::Tooltip("Close window to go back");
+        ImGui::Checkbox("Show position", &EnablePosition);
         ImGui::Checkbox("Simulate raw actions", &SimulateRawActions);
         simulator.BorderWidth = Util::Clamp<float>(simulator.BorderWidth, 0.f, 1000.f);
         simulator.Width = Util::Clamp<float>(simulator.Width, 0.f, 1000.f);
@@ -117,7 +120,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
         front_draw->AddLine(
             barP1 + direction,
             barP2 - direction,
-            simulator.Back,
+            GetColor(simulator.Back),
             simulator.Width - simulator.BorderWidth + 1.f
         );
 
@@ -126,9 +129,31 @@ void ScriptSimulator::ShowSimulator(bool* open)
         front_draw->AddLine(
             barP2 + ((direction * distance)*percent),
             barP2,
-            simulator.Front,
-            simulator.Width - simulator.BorderWidth
+            GetColor(simulator.Front),
+            simulator.Width - simulator.BorderWidth + 1.f
         );
+
+        // HEIGHT LINES
+        for (int i = 1; i < 10; i++) {
+            float pos = i * 10.f;
+            auto indicator1 =
+                barP2
+                + (direction * distance * (pos / 100.f))
+                - (perpendicular * (simulator.Width / 2.f))
+                + (perpendicular * (simulator.BorderWidth / 2.f));
+            auto indicator2 =
+                barP2
+                + (direction * distance * (pos / 100.f))
+                + (perpendicular * (simulator.Width / 2.f))
+                - (perpendicular * (simulator.BorderWidth / 2.f));
+            
+            front_draw->AddLine(
+                indicator1,
+                indicator2,
+                GetColor(simulator.Border),
+                simulator.BorderWidth / 3.f
+            );
+        }
 
         // INDICATORS
         if (EnableIndicators) {
@@ -159,13 +184,13 @@ void ScriptSimulator::ShowSimulator(bool* open)
                     front_draw->AddLine(
                         indicator1,
                         indicator2,
-                        ImGui::ColorConvertFloat4ToU32(simulator.Indicator),
+                        GetColor(simulator.Indicator),
                         simulator.BorderWidth/2.f
                     );
                     stbsp_snprintf(tmp, sizeof(tmp), "%d", previousAction->pos);
                     auto textOffset = ImGui::CalcTextSize(tmp);
                     textOffset /= 2.f;
-                    front_draw->AddText(indicatorCenter - textOffset, ImGui::ColorConvertFloat4ToU32(simulator.Text), tmp);
+                    front_draw->AddText(indicatorCenter - textOffset, GetColor(simulator.Text), tmp);
                 }
             }
             if (nextAction != nullptr) {
@@ -184,13 +209,13 @@ void ScriptSimulator::ShowSimulator(bool* open)
                     front_draw->AddLine(
                         indicator1,
                         indicator2,
-                        ImGui::ColorConvertFloat4ToU32(simulator.Indicator),
+                        GetColor(simulator.Indicator),
                         simulator.BorderWidth / 2.f
                     );
                     stbsp_snprintf(tmp, sizeof(tmp), "%d", nextAction->pos);
                     auto textOffset = ImGui::CalcTextSize(tmp);
                     textOffset /= 2.f;
-                    front_draw->AddText(indicatorCenter - textOffset, ImGui::ColorConvertFloat4ToU32(simulator.Text), tmp);
+                    front_draw->AddText(indicatorCenter - textOffset, GetColor(simulator.Text), tmp);
                 }
             }
         }
@@ -200,22 +225,24 @@ void ScriptSimulator::ShowSimulator(bool* open)
         front_draw->AddQuad(
             offset + simulator.P1 - borderOffset, offset + simulator.P1 + borderOffset,
             offset + simulator.P2 + borderOffset, offset + simulator.P2 - borderOffset,
-            ImGui::ColorConvertFloat4ToU32(simulator.Border),
+            GetColor(simulator.Border),
             simulator.BorderWidth
         );
 
 
         // TEXT
-        stbsp_snprintf(tmp, sizeof(tmp), "%d", currentPos);
-        ImGui::PushFont(OpenFunscripter::DefaultFont2);
-        auto textOffset = ImGui::CalcTextSize(tmp);
-        textOffset /= 2.f;
-        front_draw->AddText(
-            barP2 + direction * distance * 0.5f - textOffset,
-            ImGui::ColorConvertFloat4ToU32(simulator.Text),
-            tmp
-        );
-        ImGui::PopFont();
+        if (EnablePosition) {
+            stbsp_snprintf(tmp, sizeof(tmp), "%d", currentPos);
+            ImGui::PushFont(OpenFunscripter::DefaultFont2);
+            auto textOffset = ImGui::CalcTextSize(tmp);
+            textOffset /= 2.f;
+            front_draw->AddText(
+                barP2 + direction * distance * 0.5f - textOffset,
+                GetColor(simulator.Text),
+                tmp
+            );
+            ImGui::PopFont();
+        }
 
         auto barCenter = barP2 + (direction * (distance / 2.f));
 

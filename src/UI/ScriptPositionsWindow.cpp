@@ -170,7 +170,6 @@ void ScriptPositionsWindow::mouse_drag(SDL_Event& ev)
 				app->script().RemoveAction(toBeMoved);
 				app->script().ClearSelection();
 				app->script().AddAction(newAction);
-				//app->script().EditAction(toBeMoved, newAction);
 			}
 			app->script().SetSelection(newAction, true);
 		}
