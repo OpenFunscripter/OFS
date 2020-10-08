@@ -60,6 +60,7 @@ private:
 		MpvPauseState,
 		MpvFilePath,
 		MpvHwDecoder,
+		MpvFramesPerSecond,
 	};
 
 	enum MpvCommandIdentifier : uint64_t {
@@ -70,14 +71,13 @@ private:
 		double duration = 0.0;
 		double percent_pos = 0.0;
 		double current_speed = 1.0;
-
 		double average_frame_time = 0.0167;
+		double fps = 0;
 
 		int64_t total_num_frames = 0;
 		int64_t paused = false;
 		int64_t video_width = 0;
 		int64_t video_height = 0;
-
 
 		bool video_loaded = false;
 		const char* file_path = nullptr;
@@ -158,7 +158,7 @@ public:
 	inline bool isPaused() const { return MpvData.paused; };
 	inline double getPosition() const { return MpvData.percent_pos; }
 	inline int64_t getCurrentFrameEstimate() const { return MpvData.percent_pos * MpvData.total_num_frames; }
-
+	inline double getFps() const { return MpvData.fps; }
 	inline bool isLoaded() const { return MpvData.video_loaded; }
 	void closeVideo();
 

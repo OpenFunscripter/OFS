@@ -98,7 +98,9 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev)
 			case MPV_FORMAT_NONE:
 				continue;
 			case MPV_FORMAT_DOUBLE:
-				//LOGF_DEBUG("Property \"%s\" has changed to %lf", prop->name, *(double*)prop->data);
+				//if (mp_event->reply_userdata != MpvPosition) {
+				//	LOGF_DEBUG("Property \"%s\" has changed to %lf", prop->name, *(double*)prop->data);
+				//}
 				break;
 			case MPV_FORMAT_FLAG:
 			case MPV_FORMAT_INT64:
@@ -135,6 +137,9 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev)
 				}
 				break;
 			}
+			case MpvFramesPerSecond:
+				MpvData.fps = *(double*)prop->data;
+				break;
 			case MpvDuration:
 				MpvData.duration = *(double*)prop->data;
 				MpvData.average_frame_time = MpvData.duration / (double)MpvData.total_num_frames;
@@ -185,6 +190,7 @@ void VideoplayerWindow::observeProperties()
 	mpv_observe_property(mpv, MpvPauseState, "pause", MPV_FORMAT_FLAG);
 	mpv_observe_property(mpv, MpvFilePath, "path", MPV_FORMAT_STRING);
 	mpv_observe_property(mpv, MpvHwDecoder, "hwdec-current", MPV_FORMAT_STRING);
+	mpv_observe_property(mpv, MpvFramesPerSecond, "estimated-vf-fps", MPV_FORMAT_DOUBLE);
 }
 
 void VideoplayerWindow::renderToTexture()

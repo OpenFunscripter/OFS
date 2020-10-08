@@ -233,8 +233,6 @@ bool OpenFunscripter::setup()
     simulator.setup();
     SDL_ShowWindow(window);
 
-    //DEBUG
-    scripting->setMode(ScriptingModeEnum::RECORDING);
     return true;
 }
 

@@ -4,6 +4,7 @@
 #include "GradientBar.h"
 
 #include "imgui.h"
+#include "imgui_internal.h"
 
 #include <vector>
 #include <memory>
@@ -38,7 +39,7 @@ class ScriptPositionsWindow
 	void mouse_drag(SDL_Event& ev);
 	void mouse_scroll(SDL_Event& ev);
 
-	inline ImVec2 getPointForAction(const FunscriptAction& action) {
+	inline ImVec2 getPointForAction(const FunscriptAction& action) noexcept {
 		float relative_x = (float)(action.at - offset_ms) / frameSizeMs;
 		float x = (canvas_size.x) * relative_x;
 		float y = (canvas_size.y) * (1 - (action.pos / 100.0));
@@ -46,6 +47,17 @@ class ScriptPositionsWindow
 		y += canvas_pos.y;
 		return ImVec2(x, y);
 	}
+
+	inline FunscriptAction getActionForPoint(const ImVec2& point) noexcept {
+		ImVec2 localCoord;
+		localCoord = point - canvas_pos;
+		float relative_x = localCoord.x / canvas_size.x;
+		float relative_y = localCoord.y / canvas_size.y;
+		float at_ms = (relative_x * frameSizeMs) + offset_ms;
+		float pos = 100.f - (relative_y * 100.f);
+		return FunscriptAction(at_ms, pos);
+	}
+
 	void updateSelection(bool clear);
 	void updateRawSelection();
 

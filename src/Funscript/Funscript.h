@@ -141,6 +141,12 @@ public:
 		if (frame_no >= data.RawActions.size()) return;
 		data.RawActions[frame_no].at = at;
 		data.RawActions[frame_no].pos = pos;
+		if (frame_no >= 1 && frame_no < data.RawActions.size()) {
+			data.RawActions[frame_no-1].at = at;
+			data.RawActions[frame_no-1].pos = pos;
+			data.RawActions[frame_no+1].at = at;
+			data.RawActions[frame_no+1].pos = pos;
+		}
 	}
 	bool EditAction(const FunscriptAction& oldAction, const FunscriptAction& newAction) noexcept;
 	void PasteAction(const FunscriptAction& paste, int32_t error_ms) noexcept;

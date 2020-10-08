@@ -68,30 +68,50 @@ void ScriptPositionsWindow::setup()
 void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
 {
 	auto& button = ev.button;
-	if (button.button == SDL_BUTTON_LEFT && PositionsItemHovered) {
-		auto mousePos = ImGui::GetMousePos();
+	auto modstate = SDL_GetModState();
+	auto mousePos = ImGui::GetMousePos();
+	FunscriptAction* clickedAction = nullptr;
+	
+	if (PositionsItemHovered) {
 		// test if an action has been clicked
 		int index = 0;
 		for (auto& vert : ActionScreenCoordinates) {
 			const ImVec2 size(10, 10);
 			ImRect rect(vert - size, vert + size);
 			if (rect.Contains(mousePos)) {
-				static ActionClickedEventArgs args = std::tuple<SDL_Event, FunscriptAction>(ev, ActionPositionWindow[index]);
-				args = std::tuple<SDL_Event, FunscriptAction>(ev, ActionPositionWindow[index]);
+				clickedAction = &ActionPositionWindow[index];
+				break;
+			}
+			index++;
+		}
+	}
+
+	if (button.button == SDL_BUTTON_LEFT) {
+		if (modstate & KMOD_SHIFT && PositionsItemHovered) {
+			// shift click an action into the window
+			auto app = OpenFunscripter::ptr;
+			auto action = getActionForPoint(mousePos);
+			auto edit = app->script().GetActionAtTime(action.at, app->player.getFrameTimeMs());
+			app->undoRedoSystem.Snapshot("Added action");
+			if (edit != nullptr) { app->script().RemoveAction(*edit); }
+			app->script().AddAction(action);
+		}
+		else if (PositionsItemHovered) {
+			if (clickedAction != nullptr) { 
+				static ActionClickedEventArgs args;
+				args = std::tuple<SDL_Event, FunscriptAction>(ev, *clickedAction);
 				SDL_Event notify;
 				notify.type = EventSystem::FunscriptActionClickedEvent;
 				notify.user.data1 = &args;
 				SDL_PushEvent(&notify);
-				return;
+				return; 
 			}
-			index++;
+			// start drag selection
+			ImRect rect(canvas_pos, canvas_pos + canvas_size);
+			IsSelecting = true;
+			rel_x1 = (mousePos.x - canvas_pos.x) / rect.GetWidth();
+			rel_x2 = rel_x1;
 		}
-
-		// start drag selection
-		ImRect rect(canvas_pos, canvas_pos + canvas_size);
-		IsSelecting = true;
-		rel_x1 = (mousePos.x - canvas_pos.x) / rect.GetWidth();
-		rel_x2 = rel_x1;
 	}
 	else if (button.button == SDL_BUTTON_MIDDLE) {
 		OpenFunscripter::script().ClearSelection();
