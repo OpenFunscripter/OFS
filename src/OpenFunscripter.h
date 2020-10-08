@@ -29,7 +29,7 @@ private:
 	SDL_Window* window;
 	SDL_GLContext gl_context;
 	bool exit_app = false;
-
+	
 	bool ShowMetadataEditor = false;
 	bool ShowStatistics = true;
 	bool ShowHistory = true;
@@ -130,4 +130,6 @@ public:
 	void shutdown();
 
 	static inline Funscript& script() { return *OpenFunscripter::ptr->LoadedFunscript; }
+
+	static void SetCursorType(SDL_SystemCursor id);
 };

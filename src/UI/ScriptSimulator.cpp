@@ -90,10 +90,10 @@ void ScriptSimulator::ShowSimulator(bool* open)
             simulator.GlobalOpacity = Util::Clamp<float>(simulator.GlobalOpacity, 0.f, 1.f);
         }
 
-        ImGui::Checkbox("Indicators", &EnableIndicators);
+        ImGui::Checkbox("Indicators", &simulator.EnableIndicators);
         ImGui::SameLine(); ImGui::Checkbox("Vanilla", &EnableVanilla);
         Util::Tooltip("Close window to go back");
-        ImGui::Checkbox("Show position", &EnablePosition);
+        ImGui::Checkbox("Show position", &simulator.EnablePosition);
         ImGui::Checkbox("Simulate raw actions", &SimulateRawActions);
         simulator.BorderWidth = Util::Clamp<float>(simulator.BorderWidth, 0.f, 1000.f);
         simulator.Width = Util::Clamp<float>(simulator.Width, 0.f, 1000.f);
@@ -156,7 +156,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
         }
 
         // INDICATORS
-        if (EnableIndicators) {
+        if (simulator.EnableIndicators) {
             auto app = OpenFunscripter::ptr;
             auto previousAction = app->LoadedFunscript->GetActionAtTime(app->player.getCurrentPositionMs(), app->player.getFrameTimeMs());
             if (previousAction == nullptr) {
@@ -231,7 +231,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
 
 
         // TEXT
-        if (EnablePosition) {
+        if (simulator.EnablePosition) {
             stbsp_snprintf(tmp, sizeof(tmp), "%d", currentPos);
             ImGui::PushFont(OpenFunscripter::DefaultFont2);
             auto textOffset = ImGui::CalcTextSize(tmp);
@@ -258,6 +258,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
         float barCenterDistance = Distance(mouse, barCenter);
 
         if (p1Distance <= (simulator.Width / 2.f)) {
+            OpenFunscripter::SetCursorType(SDL_SYSTEM_CURSOR_HAND);
             g->HoveredWindow = window;
             g->HoveredDockNode = window->DockNode;
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
@@ -266,6 +267,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
             }
         }
         else if (p2Distance <= (simulator.Width/2.f)) {
+            OpenFunscripter::SetCursorType(SDL_SYSTEM_CURSOR_HAND);
             g->HoveredWindow = window;
             g->HoveredDockNode = window->DockNode;
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
@@ -274,14 +276,16 @@ void ScriptSimulator::ShowSimulator(bool* open)
             }
         }
         else if (barCenterDistance <= (simulator.Width / 2.f)) {
+            OpenFunscripter::SetCursorType(SDL_SYSTEM_CURSOR_SIZEALL);
             g->HoveredWindow = window;
             g->HoveredDockNode = window->DockNode;
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                 startDragP1 = simulator.P1;
                 startDragP2 = simulator.P2;
-                movingBar = true;
+                IsMovingSimulator = true;
             }
         }
+
 
         if (dragging != nullptr) {
             if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
@@ -289,13 +293,13 @@ void ScriptSimulator::ShowSimulator(bool* open)
             }
             if(ImGui::IsMouseReleased(ImGuiMouseButton_Left)) { dragging = nullptr; }
         }
-        else if (movingBar) {
+        else if (IsMovingSimulator) {
             if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
                 auto delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
                 simulator.P1 = startDragP1 + delta;
                 simulator.P2 = startDragP2 + delta;
             }
-            if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) { movingBar = false; }
+            if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) { IsMovingSimulator = false; }
         }
 
 

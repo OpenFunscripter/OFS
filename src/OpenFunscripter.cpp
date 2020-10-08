@@ -524,19 +524,19 @@ void OpenFunscripter::register_bindings()
     // PLAYBACK SPEED
     keybinds.registerBinding(Keybinding(
         "decrement_speed",
-        "Playbackspeed -25%",
+        "Playbackspeed -10%",
         SDLK_KP_MINUS,
         0,
         true,
-        [&](void*) { player.addSpeed(-0.25); }
+        [&](void*) { player.addSpeed(-0.10); }
     ));
     keybinds.registerBinding(Keybinding(
         "increment_speed",
-        "Playbackspeed +25%",
+        "Playbackspeed +10%",
         SDLK_KP_PLUS,
         0,
         true,
-        [&](void*) { player.addSpeed(0.25); }
+        [&](void*) { player.addSpeed(0.10); }
     ));
 
 
@@ -733,6 +733,7 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev)
 }
 
 void OpenFunscripter::update() {
+    OpenFunscripter::SetCursorType(SDL_SYSTEM_CURSOR_ARROW);
     LoadedFunscript->update();
     rawInput->update();
     scripting->update();
@@ -915,14 +916,14 @@ int OpenFunscripter::run()
                 ImGui::SetColumnWidth(2, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
                 ImGui::NextColumn();
 
-                if (ImGui::Button("-25%", ImVec2(0, 0))) {
-                    player.addSpeed(-0.25);
+                if (ImGui::Button("-10%", ImVec2(0, 0))) {
+                    player.addSpeed(-0.10);
                 }
                 ImGui::SetColumnWidth(3, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
                 ImGui::NextColumn();
 
-                if (ImGui::Button("+25%", ImVec2(0, 0))) {
-                    player.addSpeed(0.25);
+                if (ImGui::Button("+10%", ImVec2(0, 0))) {
+                    player.addSpeed(0.10);
                 }
                 ImGui::SetColumnWidth(4, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
                 ImGui::NextColumn();
@@ -1009,6 +1010,18 @@ void OpenFunscripter::shutdown()
     SDL_GL_DeleteContext(gl_context);   
     SDL_DestroyWindow(window);
     SDL_Quit();
+}
+
+void OpenFunscripter::SetCursorType(SDL_SystemCursor id)
+{
+    static SDL_Cursor* current = SDL_GetCursor();
+    static int32_t cursorType = -1;
+    if (cursorType != id) {
+        cursorType = id;
+        SDL_FreeCursor(current);
+        current = SDL_CreateSystemCursor(id);
+        SDL_SetCursor(current);
+    }
 }
 
 

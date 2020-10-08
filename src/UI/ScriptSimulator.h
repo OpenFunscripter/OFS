@@ -9,10 +9,8 @@ private:
 	ImVec2 startDragP1;
 	ImVec2 startDragP2;
 	ImVec2* dragging = nullptr;
-	bool movingBar = false;
-	bool EnableIndicators = true;
+	bool IsMovingSimulator = false;
 	bool EnableVanilla = false;
-	bool EnablePosition = false;
 	const bool ShowMovementHandle = false;
 
 	inline int32_t GetColor(const ImColor& col) const noexcept {
@@ -33,6 +31,8 @@ public:
 		float Width = 120.f;
 		float BorderWidth = 8.f;
 		float GlobalOpacity = 1.f;
+		bool EnableIndicators = true;
+		bool EnablePosition = false;
 
 		template <class Archive>
 		inline void reflect(Archive& ar)
@@ -47,6 +47,8 @@ public:
 			OFS_REFLECT(Border, ar);
 			OFS_REFLECT(Indicator, ar);
 			OFS_REFLECT(GlobalOpacity, ar);
+			OFS_REFLECT(EnableIndicators, ar);
+			OFS_REFLECT(EnablePosition, ar);
 		}
 	} simulator;
 	bool SimulateRawActions = false;
