@@ -157,9 +157,9 @@ void ScriptPositionsWindow::mouse_drag(SDL_Event& ev)
 		auto mousePos = ImGui::GetMousePos();
 		auto app = OpenFunscripter::ptr;
 		auto frameTime = app->player.getFrameTimeMs();
-		auto newAction = getActionForPoint(mousePos, frameTime);
 		auto& toBeMoved = app->script().Selection()[0];
-		if (newAction.at != toBeMoved.at) {
+		auto newAction = getActionForPoint(mousePos, frameTime);
+		if (newAction.at != toBeMoved.at || newAction.pos != toBeMoved.pos) {
 			auto nearbyAction = app->script().GetActionAtTime(newAction.at, frameTime);
 			if (nearbyAction != nullptr) {
 				app->script().RemoveAction(*nearbyAction);

@@ -195,6 +195,7 @@ RecordingImpl::RecordingImpl()
     app->events->Subscribe(SDL_CONTROLLERBUTTONUP, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerButtonUp));
     app->events->Subscribe(SDL_CONTROLLERBUTTONDOWN, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerButtonDown));
     app->events->Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &RecordingImpl::MouseMovement));
+    app->events->Subscribe(SDL_MOUSEBUTTONDOWN, EVENT_SYSTEM_BIND(this, &RecordingImpl::MouseDown));
 }
 
 RecordingImpl::~RecordingImpl()
@@ -204,7 +205,7 @@ RecordingImpl::~RecordingImpl()
     app->events->Unsubscribe(SDL_CONTROLLERBUTTONUP, this);
     app->events->Unsubscribe(SDL_CONTROLLERBUTTONDOWN, this);
     app->events->Unsubscribe(SDL_MOUSEMOTION, this);
- 
+    app->events->Unsubscribe(SDL_MOUSEBUTTONDOWN, this);
     app->simulator.SimulateRawActions = false;
 }
 
@@ -305,6 +306,20 @@ void RecordingImpl::MouseMovement(SDL_Event& ev)
         value = Util::Clamp(value, 0.f, 1.f);
     }
     value = ((value - 0.f) / (1.f - 0.f)) * (1.f - -1.f) + -1.f;
+}
+
+void RecordingImpl::MouseDown(SDL_Event& ev)
+{
+    auto& button = ev.button;
+    auto modstate = SDL_GetModState();
+    if (modstate & KMOD_SHIFT && button.button == SDL_BUTTON_LEFT) {
+        auto app = OpenFunscripter::ptr;
+        auto close = ctx().GetActionAtTime(app->player.getCurrentPositionMs(), app->player.getFrameTimeMs());
+        if (close != nullptr) {
+            ctx().RemoveAction(*close);
+        }
+        ctx().AddAction(FunscriptAction(app->player.getCurrentPositionMs(), currentPos));
+    }
 }
 
 void RecordingImpl::DrawModeSettings()

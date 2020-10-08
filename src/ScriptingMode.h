@@ -91,6 +91,7 @@ public:
 	void ControllerButtonDown(SDL_Event& ev);
 
 	void MouseMovement(SDL_Event& ev);
+	void MouseDown(SDL_Event& ev);
 
 	virtual void DrawModeSettings() override;
 	virtual void addAction(const FunscriptAction& action) override;

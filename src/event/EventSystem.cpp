@@ -35,12 +35,14 @@ void EventSystem::PushEvent(SDL_Event& event)
 
 void EventSystem::Subscribe(int32_t eventType, void* listener, EventHandlerFunc handler)
 {
+	// this excects the listener to never relocate
 	handlers.emplace_back(eventType, listener, handler);
 	LOGF_DEBUG("Total subscribed event listeners: %d", (int)handlers.size());
 }
 
 void EventSystem::Unsubscribe(int32_t eventType, void* listener)
 {
+	// this excects the listener to never relocate
 	auto it = std::find_if(handlers.begin(), handlers.end(),
 		[&](auto& handler) {
 			return handler.listener == listener && handler.eventType == eventType;

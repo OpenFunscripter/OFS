@@ -54,7 +54,7 @@ class ScriptPositionsWindow
 		localCoord = point - canvas_pos;
 		float relative_x = localCoord.x / canvas_size.x;
 		float relative_y = localCoord.y / canvas_size.y;
-		float at_ms = (relative_x * frameSizeMs) + offset_ms;
+		float at_ms = offset_ms + (relative_x *frameSizeMs);
 		// fix frame alignment
 		at_ms =  std::max<float>((int32_t)(at_ms / frameTime) * frameTime, 0.f);
 		float pos = Util::Clamp<float>(100.f - (relative_y * 100.f), 0.f, 100.f);
