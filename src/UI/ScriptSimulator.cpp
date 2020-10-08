@@ -90,7 +90,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
             simulator.GlobalOpacity = Util::Clamp<float>(simulator.GlobalOpacity, 0.f, 1.f);
             ImGui::Checkbox("Indicators", &simulator.EnableIndicators);
             ImGui::SameLine(); 
-            ImGui::Checkbox("Height Lines", &simulator.EnableHeightLines);
+            ImGui::Checkbox("Lines", &simulator.EnableHeightLines);
             ImGui::Checkbox("Show position", &simulator.EnablePosition);
         }
 

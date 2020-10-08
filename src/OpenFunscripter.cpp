@@ -117,6 +117,7 @@ bool OpenFunscripter::setup()
 {
     FUN_ASSERT(ptr == nullptr, "there can only be one instance");
     ptr = this;
+    settings = std::make_unique<OpenFunscripterSettings>("data/keybinds.json", "data/config.json");
     
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
     {
@@ -135,6 +136,9 @@ bool OpenFunscripter::setup()
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 
+    // antialiasing
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 2);
 
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
@@ -166,7 +170,6 @@ bool OpenFunscripter::setup()
         return false;
     }
     
-    settings = std::make_unique<OpenFunscripterSettings>("data/keybinds.json", "data/config.json");
     if (!imgui_setup()) {
         LOG_ERROR("Failed to setup ImGui");
         return false;
