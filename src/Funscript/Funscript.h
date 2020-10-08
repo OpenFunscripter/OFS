@@ -118,8 +118,10 @@ public:
 	bool open(const std::string& file);
 	void save() { save(current_path, false); }
 	void save(const std::string& path, bool override_location = true);
-	void reserveRawActionMemory(int32_t frameCount) { 
-		data.RawActions.resize(frameCount); 
+	
+	inline void reserveRawActionMemory(int32_t frameCount) { 
+		data.RawActions.resize(frameCount);
+		data.Actions.reserve(frameCount);
 	}
 
 	const FunscriptData& Data() const noexcept { return data; }
@@ -155,8 +157,8 @@ public:
 	void RemoveActions(const std::vector<FunscriptAction>& actions) noexcept;
 
 	// bookmarks
-	inline const std::vector<Funscript::Bookmark>& Bookmarks() const { return scriptSettings.Bookmarks; }
-	inline void AddBookmark(const Funscript::Bookmark& bookmark) { 
+	inline const std::vector<Funscript::Bookmark>& Bookmarks() const noexcept { return scriptSettings.Bookmarks; }
+	inline void AddBookmark(const Funscript::Bookmark& bookmark) noexcept { 
 		scriptSettings.Bookmarks.push_back(bookmark); 
 		std::sort(scriptSettings.Bookmarks.begin(), scriptSettings.Bookmarks.end(),
 			[](auto& a, auto& b) { return a.at < b.at; }

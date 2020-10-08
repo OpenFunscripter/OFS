@@ -88,9 +88,18 @@ void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
 
 	if (button.button == SDL_BUTTON_LEFT) {
 		if (modstate & KMOD_SHIFT && PositionsItemHovered) {
-			// shift click an action into the window
 			auto app = OpenFunscripter::ptr;
-			auto action = getActionForPoint(mousePos);
+			if (clickedAction != nullptr) {
+				// start move
+				app->script().ClearSelection();
+				app->script().SetSelection(*clickedAction, true);
+				IsMoving = true;
+				app->undoRedoSystem.Snapshot("Mouse move action");
+				return;
+			}
+
+			// shift click an action into the window
+			auto action = getActionForPoint(mousePos, app->player.getFrameTimeMs());
 			auto edit = app->script().GetActionAtTime(action.at, app->player.getFrameTimeMs());
 			app->undoRedoSystem.Snapshot("Added action");
 			if (edit != nullptr) { app->script().RemoveAction(*edit); }
@@ -121,7 +130,10 @@ void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
 void ScriptPositionsWindow::mouse_released(SDL_Event& ev)
 {
 	auto& button = ev.button;
-	if (IsSelecting && button.button == SDL_BUTTON_LEFT) {
+	if (IsMoving && button.button == SDL_BUTTON_LEFT) {
+		IsMoving = false;
+	}
+	else if (IsSelecting && button.button == SDL_BUTTON_LEFT) {
 		IsSelecting = false;
 		auto modstate = SDL_GetModState();
 		if (modstate & KMOD_SHIFT) {
@@ -137,10 +149,31 @@ void ScriptPositionsWindow::mouse_released(SDL_Event& ev)
 
 void ScriptPositionsWindow::mouse_drag(SDL_Event& ev)
 {
-	// TODO: fix scuffed code
 	auto& motion = ev.motion;
 	if (IsSelecting) {
 		rel_x2 = (ImGui::GetMousePos().x - canvas_pos.x) / canvas_size.x;
+	}
+	else if (IsMoving) {
+		auto mousePos = ImGui::GetMousePos();
+		auto app = OpenFunscripter::ptr;
+		auto frameTime = app->player.getFrameTimeMs();
+		auto newAction = getActionForPoint(mousePos, frameTime);
+		auto& toBeMoved = app->script().Selection()[0];
+		if (newAction.at != toBeMoved.at) {
+			auto nearbyAction = app->script().GetActionAtTime(newAction.at, frameTime);
+			if (nearbyAction != nullptr) {
+				app->script().RemoveAction(*nearbyAction);
+				app->script().ClearSelection();
+				app->script().AddAction(newAction);
+			}
+			else {
+				app->script().RemoveAction(toBeMoved);
+				app->script().ClearSelection();
+				app->script().AddAction(newAction);
+				//app->script().EditAction(toBeMoved, newAction);
+			}
+			app->script().SetSelection(newAction, true);
+		}
 	}
 }
 

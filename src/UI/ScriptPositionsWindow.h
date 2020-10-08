@@ -30,6 +30,7 @@ class ScriptPositionsWindow
 	int offset_ms;
 	float frameSizeMs;
 	bool IsSelecting = false;
+	bool IsMoving = false;
 	bool PositionsItemHovered = false;
 	float rel_x1 = 0.0f;
 	float rel_x2 = 0.0f;
@@ -48,13 +49,15 @@ class ScriptPositionsWindow
 		return ImVec2(x, y);
 	}
 
-	inline FunscriptAction getActionForPoint(const ImVec2& point) noexcept {
+	inline FunscriptAction getActionForPoint(const ImVec2& point, float frameTime) noexcept {
 		ImVec2 localCoord;
 		localCoord = point - canvas_pos;
 		float relative_x = localCoord.x / canvas_size.x;
 		float relative_y = localCoord.y / canvas_size.y;
 		float at_ms = (relative_x * frameSizeMs) + offset_ms;
-		float pos = 100.f - (relative_y * 100.f);
+		// fix frame alignment
+		at_ms =  std::max<float>((int32_t)(at_ms / frameTime) * frameTime, 0.f);
+		float pos = Util::Clamp<float>(100.f - (relative_y * 100.f), 0.f, 100.f);
 		return FunscriptAction(at_ms, pos);
 	}
 
