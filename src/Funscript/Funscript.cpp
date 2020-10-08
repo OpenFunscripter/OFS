@@ -220,7 +220,7 @@ int Funscript::GetRawPositionAtFrame(int32_t frame_no) noexcept
 	if (pos >= 0) { 
 		return pos; 
 	}
-	else if((frame_no + 1) <= data.RawActions.size()) {
+	else if((frame_no + 1) < data.RawActions.size()) {
 		pos = data.RawActions[frame_no + 1].pos;
 		if (pos >= 0) {
 			return pos;
