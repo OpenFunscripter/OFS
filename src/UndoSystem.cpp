@@ -93,7 +93,10 @@ void ScriptState::WriteToDisk(int32_t diskPointer)
 {
 	char tmp[512];
 	stbsp_snprintf(tmp, sizeof(tmp), "tmp/undo_state/%d", diskPointer);
-	std::filesystem::create_directory("tmp/undo_state");
+	std::error_code ec;
+	std::filesystem::create_directories("tmp/undo_state", ec);
+	FUN_ASSERT(ec.value() == 0, "panic");
+
 	auto handle = SDL_RWFromFile(tmp, "wb");
 	if (handle != nullptr) {
 		DiskPointer = diskPointer;

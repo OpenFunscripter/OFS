@@ -13,7 +13,7 @@
 #include "imgui_internal.h"
 
 
-// TODO: Rolling backup
+// TODO: add actions via shift clicking simulator ( scripting mode independent )
 // TODO: QoL make keybindings groupable just a visual improvement
 // TODO: make heatmap generation more sophisticated
 // TODO: [MAJOR FEATURE] working with raw actions and controller input
