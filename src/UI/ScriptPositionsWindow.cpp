@@ -244,31 +244,31 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	}
 
 	float visibleFrames = frameSizeMs / frameTime;
-	const float maxVisibleFrames = 300.f;
-	if (visibleFrames <= (maxVisibleFrames - 25.f)) {
+	const float maxVisibleFrames = 400.f;
+	if (visibleFrames <= (maxVisibleFrames * 0.75f)) {
 		// render frame dividers
 		float offset = -std::fmod(offset_ms, frameTime);
 		const int lineCount = visibleFrames + 2;
+		int alpha = 255 * (1.f - (visibleFrames / maxVisibleFrames));
 		for (int i = 0; i < lineCount; i++) {
 			draw_list->AddLine(
 				canvas_pos + ImVec2(((offset + (i * frameTime)) / frameSizeMs) * canvas_size.x, 0.f),
 				canvas_pos + ImVec2(((offset + (i * frameTime)) / frameSizeMs) * canvas_size.x, canvas_size.y),
-				IM_COL32(80, 80, 80, 255 * (1.f - (visibleFrames / maxVisibleFrames))),
+				IM_COL32(80, 80, 80, alpha),
 				1.f
 			);
 		}
 
-		if (IsPaused || OpenFunscripter::ptr->player.getSpeed() <= 0.5) {
+		if (IsPaused || OpenFunscripter::ptr->player.getSpeed() <= 0.4) {
 			float realFrameTime = OpenFunscripter::ptr->player.getRealCurrentPositionMs() - offset_ms;
 			draw_list->AddLine(
 				canvas_pos + ImVec2((realFrameTime / frameSizeMs) * canvas_size.x, 0.f),
 				canvas_pos + ImVec2((realFrameTime / frameSizeMs) * canvas_size.x, canvas_size.y),
-				IM_COL32(255, 80, 80, 255 * (1.f - (visibleFrames / maxVisibleFrames))),
+				IM_COL32(255, 0, 0, alpha),
 				1.f
 			);
 		}
 	}
-
 
 
 	if (ShowAudioWaveform) {
