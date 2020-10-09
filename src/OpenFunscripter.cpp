@@ -797,7 +797,7 @@ void OpenFunscripter::rollingBackup()
             LOGF_INFO("Removing old backup: \"%s\"", (*oldest_backup).path().string().c_str());
             std::filesystem::remove(*oldest_backup, ec);
             if (ec) {
-                LOGF_INFO("Failed to remove old backup");
+                LOG_INFO("Failed to remove old backup");
             }
         }
     }
