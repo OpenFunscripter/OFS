@@ -327,7 +327,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 			pathRawSection(draw_list, script.RawActions(), startIndex, endIndex);
 			pathStroke(draw_list, IM_COL32(255, 0, 0, 180));
 
-			if (script.Data().rawSelection.startIndex >= startIndex) {
+			if (script.Data().rawSelection.hasSelection() && script.Data().rawSelection.startIndex >= startIndex) {
 				pathRawSection(draw_list, script.RawActions(), script.Data().rawSelection.startIndex, script.Data().rawSelection.endIndex);
 				pathStroke(draw_list, IM_COL32(0, 255, 0, 180));
 			}

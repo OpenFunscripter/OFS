@@ -16,8 +16,8 @@ public:
 
 		std::vector<FunscriptAction> selection;
 		struct RawSelection {
-			int32_t startIndex;
-			int32_t endIndex;
+			int32_t startIndex = -1;
+			int32_t endIndex = -1;
 			inline bool hasSelection() const noexcept { return startIndex >= 0; }
 			inline void deselect() noexcept { startIndex = -1; endIndex = -1; }
 		} rawSelection;
