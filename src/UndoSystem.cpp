@@ -81,7 +81,8 @@ void UndoSystem::ClearHistory() noexcept
 	UndoStack.clear();
 	RedoStack.clear();
 	SystemDiskPointer = 0;
-	std::filesystem::remove_all("tmp/undo_state");
+	std::error_code ec;
+	std::filesystem::remove_all("tmp/undo_state", ec);
 }
 
 void UndoSystem::ClearRedo() noexcept
@@ -102,7 +103,7 @@ void ScriptState::WriteToDisk(int32_t diskPointer)
 		DiskPointer = diskPointer;
 		auto header = Header();
 		// write header
-		SDL_RWwrite(handle, &header, sizeof(header), 1);
+		SDL_RWwrite(handle, &header, sizeof(ScriptState::ScriptStateHeader), 1);
 
 		// write data in this layout
 		//const char* message;

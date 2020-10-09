@@ -68,7 +68,9 @@ bool OpenFunscripter::imgui_setup()
     ImFont* font = nullptr;
     io.Fonts->Clear();
     io.Fonts->AddFontDefault();
-    if (!std::filesystem::exists(roboto) || !std::filesystem::is_regular_file(roboto)) { 
+
+    std::error_code ec;
+    if (!std::filesystem::exists(roboto, ec) || !std::filesystem::is_regular_file(roboto, ec)) { 
         LOGF_WARN("\"%s\" font is missing.", roboto);
     }
     else {
@@ -77,7 +79,7 @@ bool OpenFunscripter::imgui_setup()
         io.FontDefault = font;
     }
 
-    if (!std::filesystem::exists(fontawesome) || !std::filesystem::is_regular_file(fontawesome)) {
+    if (!std::filesystem::exists(fontawesome, ec) || !std::filesystem::is_regular_file(fontawesome, ec)) {
         LOGF_WARN("\"%s\" font is missing. No icons.", fontawesome);
     }
     else {
@@ -757,8 +759,9 @@ void OpenFunscripter::rollingBackup()
     std::filesystem::path backupDir("backup");
     auto name = Util::Filename(player.getVideoPath());
     backupDir /= name;
-    backupDir = std::move(std::filesystem::absolute(backupDir));
-    std::filesystem::create_directories(backupDir);
+    std::error_code ec;
+    backupDir = std::move(std::filesystem::absolute(backupDir, ec));
+    std::filesystem::create_directories(backupDir, ec);
     char path_buf[1024];
 
     stbsp_snprintf(path_buf, sizeof(path_buf), "Backup_%d.funscript", SDL_GetTicks());
@@ -779,8 +782,15 @@ void OpenFunscripter::rollingBackup()
                 std::filesystem::file_time_type last_write2 = std::filesystem::last_write_time(file2, ec);
                 return last_write1.time_since_epoch() > last_write2.time_since_epoch();
         });
-        LOGF_INFO("Removing old backup: \"%s\"", (*oldest_backup).path().string().c_str());
-        std::filesystem::remove(*oldest_backup);
+
+        std::error_code ec;
+        if ((*oldest_backup).path().extension() == ".funscript") {
+            LOGF_INFO("Removing old backup: \"%s\"", (*oldest_backup).path().string().c_str());
+            std::filesystem::remove(*oldest_backup, ec);
+            if (ec) {
+                LOGF_INFO("Failed to remove old backup");
+            }
+        }
     }
 
     
@@ -1398,9 +1408,10 @@ void OpenFunscripter::ShowMainMenuBar()
             }
             // this is awkward
             if (ImGui::MenuItem("Open screenshot directory")) {
+                std::error_code ec;
                 std::filesystem::path dir(settings->data().screenshot_dir);
-                dir = std::filesystem::absolute(dir);
-                std::filesystem::create_directories(dir);
+                dir = std::filesystem::absolute(dir, ec);
+                std::filesystem::create_directories(dir, ec);
                 Util::OpenFileExplorer(dir.string().c_str());
             }
 
@@ -1416,7 +1427,8 @@ void OpenFunscripter::ShowMainMenuBar()
                 char buf[1024];
                 stbsp_snprintf(buf, sizeof(buf), "%s_Heatmap.bmp", LoadedFunscript->metadata.original_name.c_str());
                 std::filesystem::path heatmapPath(settings->data().screenshot_dir);
-                std::filesystem::create_directories(heatmapPath);
+                std::error_code ec;
+                std::filesystem::create_directories(heatmapPath, ec);
                 heatmapPath /= buf;
                 saveHeatmap(heatmapPath.string().c_str(), heatmapWidth, heatmapHeight); 
             }

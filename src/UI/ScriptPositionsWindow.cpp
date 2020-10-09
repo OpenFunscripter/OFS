@@ -398,6 +398,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 
 				auto ffmpegThread = [](void* userData) {
 					auto& ctx = *((ScriptPositionsWindow*)userData);
+					std::error_code ec;
 
 					auto base = SDL_GetBasePath();
 					auto base_path = std::filesystem::path(base);
@@ -405,7 +406,8 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 
 					auto ffmpeg_path = base_path / "ffmpeg.exe";
 					auto output_path = base_path / "tmp";
-					std::filesystem::create_directories(output_path);
+					std::filesystem::create_directories(output_path, ec);
+
 					output_path /= "audio.mp3";
 					auto video_path = OpenFunscripter::ptr->player.getVideoPath();
 
