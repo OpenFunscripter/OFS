@@ -139,14 +139,15 @@ public:
 	int GetRawPositionAtFrame(int32_t frame_no) noexcept;
 	
 	inline void AddAction(const FunscriptAction& newAction) noexcept { addAction(data.Actions, newAction); }
-	inline void AddActionRaw(int32_t frame_no, int32_t at, int32_t pos) noexcept { 
+	inline void AddActionRaw(int32_t frame_no, int32_t frame_time_ms, int32_t at, int32_t pos) noexcept { 
+		// TODO: this sucks
 		if (frame_no >= data.RawActions.size()) return;
 		data.RawActions[frame_no].at = at;
 		data.RawActions[frame_no].pos = pos;
 		if (frame_no >= 1 && frame_no < data.RawActions.size()) {
-			data.RawActions[frame_no-1].at = at;
+			data.RawActions[frame_no-1].at = at - frame_time_ms;
 			data.RawActions[frame_no-1].pos = pos;
-			data.RawActions[frame_no+1].at = at;
+			data.RawActions[frame_no+1].at = at + frame_time_ms;
 			data.RawActions[frame_no+1].pos = pos;
 		}
 	}

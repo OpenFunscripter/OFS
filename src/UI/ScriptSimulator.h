@@ -12,8 +12,7 @@ private:
 	ImVec2* dragging = nullptr;
 	bool IsMovingSimulator = false;
 	bool EnableVanilla = false;
-	const bool ShowMovementHandle = false;
-
+	bool MouseBetweenSimulator = false;
 	float mouseValue;
 
 	inline int32_t GetColor(const ImColor& col) const noexcept {

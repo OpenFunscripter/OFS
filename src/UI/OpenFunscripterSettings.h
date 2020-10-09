@@ -37,7 +37,7 @@ private:
 		int32_t fast_step_amount = 6;
 		bool always_show_bookmark_labels = false;
 		bool draw_video= true;
-		bool show_simulator = false;
+		bool show_simulator = true;
 		bool force_hw_decoding = false;
 
 

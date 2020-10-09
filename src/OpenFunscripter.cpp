@@ -139,7 +139,7 @@ bool OpenFunscripter::setup()
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 
     // antialiasing
-    // this caused problems on my linux testing
+    // this caused problems in my linux testing
 #ifdef WIN32
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 2);
@@ -762,6 +762,7 @@ void OpenFunscripter::update() {
 
 void OpenFunscripter::rollingBackup()
 {
+    if (LoadedFunscript->current_path.empty()) { return; }
     std::chrono::duration<float> timeSinceBackup = std::chrono::system_clock::now() - last_backup;
     if (timeSinceBackup.count() < 61.f) {
         return;
@@ -1401,7 +1402,7 @@ void OpenFunscripter::ShowMainMenuBar()
                 showSaveFileDialog();
             }
             ImGui::Separator();
-            if (ImGui::MenuItem("Automatic rolling backup", NULL, &RollingBackup)) {}
+            if (ImGui::MenuItem("Enable rolling backup", NULL, &RollingBackup)) {}
             if (ImGui::MenuItem("Open backup directory")) {
                 Util::OpenFileExplorer("backup");
             }
@@ -1519,10 +1520,11 @@ void OpenFunscripter::ShowMainMenuBar()
             if (ImGui::MenuItem("Invert", BINDING_STRING("invert_actions"), false)) {
                 invertSelection();
             }
-            if (ImGui::MenuItem("Align", NULL)) {
-                undoRedoSystem.Snapshot("Align");
+            if (ImGui::MenuItem("Frame align", NULL)) {
+                undoRedoSystem.Snapshot("Frame align");
                 LoadedFunscript->AlignWithFrameTimeSelection(player.getFrameTimeMs());
             }
+            Util::Tooltip("Don't use on already aligned actions.");
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Bookmarks")) {

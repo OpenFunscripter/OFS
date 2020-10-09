@@ -34,16 +34,17 @@ void ScriptSimulator::MouseMovement(SDL_Event& ev)
         auto [top_x, bottom_x] = std::minmax(simP1.x, simP2.x);
         mouseValue = motion.x - top_x;
         mouseValue /= (bottom_x - top_x);
-        mouseValue = Util::Clamp(mouseValue, 0.f, 1.f);
     }
     else {
         // vertical
         auto [top_y, bottom_y] = std::minmax(simP1.y, simP2.y);
         mouseValue = motion.y - bottom_y;
-        mouseValue /= (top_y - bottom_y);
-        mouseValue = Util::Clamp(mouseValue, 0.f, 1.f);
+        mouseValue /= top_y - bottom_y;
     }
-    //mouseValue = ((mouseValue - 0.f) / (1.f - 0.f)) * (1.f - -1.f) + -1.f;
+    auto clamped = Util::Clamp(mouseValue, 0.f, 1.f);
+    MouseBetweenSimulator = clamped == mouseValue;
+    mouseValue = clamped;
+    mouseValue = ((mouseValue - 0.f) / (1.f - 0.f)) * (1.f - -1.f) + -1.f;
 }
 
 void ScriptSimulator::MouseDown(SDL_Event& ev)
@@ -51,8 +52,11 @@ void ScriptSimulator::MouseDown(SDL_Event& ev)
     auto& button = ev.button;
     auto modstate = SDL_GetModState();
     if (modstate & KMOD_SHIFT && button.button == SDL_BUTTON_LEFT) {
-        auto app = OpenFunscripter::ptr;
-        app->scripting->addEditAction(FunscriptAction(app->player.getCurrentPositionMs(), mouseValue * 100));
+        if (MouseBetweenSimulator) {
+            auto app = OpenFunscripter::ptr;
+            app->undoRedoSystem.Snapshot("Add/Edit Action");
+            app->scripting->addEditAction(FunscriptAction(app->player.getCurrentPositionMs(), 50 + (50 * mouseValue)));
+        }
     }
 }
 
@@ -290,7 +294,8 @@ void ScriptSimulator::ShowSimulator(bool* open)
 
         auto barCenter = barP2 + (direction * (distance / 2.f));
 
-        if (ShowMovementHandle) {
+        constexpr bool ShowMovementHandle = false;
+        if constexpr (ShowMovementHandle) {
             front_draw->AddCircle(barP1, simulator.Width/2.f, IM_COL32(255, 0, 0, 255), 0, 5.f);
             front_draw->AddCircle(barP2, simulator.Width/2.f, IM_COL32(255, 0, 0, 255), 0, 5.f);
             front_draw->AddCircle(barCenter, simulator.Width / 2.f, IM_COL32(255, 0, 0, 255), 0, 5.f);

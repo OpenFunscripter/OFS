@@ -260,7 +260,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 			);
 		}
 
-		if (IsPaused || OpenFunscripter::ptr->player.getSpeed() <= 0.4) {
+		if (IsPaused || OpenFunscripter::ptr->player.getSpeed() <= 0.1) {
 			float realFrameTime = OpenFunscripter::ptr->player.getRealCurrentPositionMs() - offset_ms;
 			draw_list->AddLine(
 				canvas_pos + ImVec2((realFrameTime / frameSizeMs) * canvas_size.x, 0.f),
@@ -312,8 +312,8 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				draw_list->PathStroke(col, false, 5.f);
 			};
 
-			int32_t startIndex = std::max<int32_t>((offset_ms / frameTime), 0);
-			int32_t endIndex = std::min<int32_t>(((float)offset_ms + frameSizeMs) / frameTime, script.RawActions().size());
+			int32_t startIndex = Util::Clamp<int32_t>((offset_ms / frameTime), 0, script.RawActions().size());
+			int32_t endIndex = Util::Clamp<int32_t>(((float)offset_ms + frameSizeMs) / frameTime, startIndex, script.RawActions().size());
 
 			auto pathRawSection = [this](auto draw_list, auto rawActions, int32_t fromIndex, int32_t toIndex) {
 				for (int i = fromIndex; i < toIndex; i++) {
