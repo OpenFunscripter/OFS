@@ -154,8 +154,9 @@ void ScriptPositionsWindow::mouse_drag(SDL_Event& ev)
 		rel_x2 = (ImGui::GetMousePos().x - canvas_pos.x) / canvas_size.x;
 	}
 	else if (IsMoving) {
-		auto mousePos = ImGui::GetMousePos();
 		auto app = OpenFunscripter::ptr;
+		if (!app->script().HasSelection()) { IsMoving = false; return; }
+		auto mousePos = ImGui::GetMousePos();
 		auto frameTime = app->player.getFrameTimeMs();
 		auto& toBeMoved = app->script().Selection()[0];
 		auto newAction = getActionForPoint(mousePos, frameTime);
@@ -269,7 +270,6 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 			);
 		}
 	}
-
 
 	if (ShowAudioWaveform) {
 		const float durationMs = OpenFunscripter::ptr->player.getDuration() * 1000.f;

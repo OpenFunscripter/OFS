@@ -17,7 +17,45 @@ inline static ImVec2 Normalize(const ImVec2& p) {
 
 void ScriptSimulator::setup()
 {
+    auto app = OpenFunscripter::ptr;
+    app->events->Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &ScriptSimulator::MouseMovement));
+    app->events->Subscribe(SDL_MOUSEBUTTONDOWN, EVENT_SYSTEM_BIND(this, &ScriptSimulator::MouseDown));
 }
+
+void ScriptSimulator::MouseMovement(SDL_Event& ev)
+{
+    SDL_MouseMotionEvent& motion = ev.motion;
+    // there's alot of indirection here
+    const auto& simP1 = simulator.P1;
+    const auto& simP2 = simulator.P2;
+
+    if (std::abs(simP1.x - simP2.x) > std::abs(simP1.y - simP2.y)) {
+        // horizontal
+        auto [top_x, bottom_x] = std::minmax(simP1.x, simP2.x);
+        mouseValue = motion.x - top_x;
+        mouseValue /= (bottom_x - top_x);
+        mouseValue = Util::Clamp(mouseValue, 0.f, 1.f);
+    }
+    else {
+        // vertical
+        auto [top_y, bottom_y] = std::minmax(simP1.y, simP2.y);
+        mouseValue = motion.y - bottom_y;
+        mouseValue /= (top_y - bottom_y);
+        mouseValue = Util::Clamp(mouseValue, 0.f, 1.f);
+    }
+    //mouseValue = ((mouseValue - 0.f) / (1.f - 0.f)) * (1.f - -1.f) + -1.f;
+}
+
+void ScriptSimulator::MouseDown(SDL_Event& ev)
+{
+    auto& button = ev.button;
+    auto modstate = SDL_GetModState();
+    if (modstate & KMOD_SHIFT && button.button == SDL_BUTTON_LEFT) {
+        auto app = OpenFunscripter::ptr;
+        app->scripting->addEditAction(FunscriptAction(app->player.getCurrentPositionMs(), mouseValue * 100));
+    }
+}
+
 
 void ScriptSimulator::CenterSimulator()
 {

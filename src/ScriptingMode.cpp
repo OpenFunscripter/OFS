@@ -192,20 +192,12 @@ RecordingImpl::RecordingImpl()
 {
     auto app = OpenFunscripter::ptr;
     app->events->Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerAxisMotion));
-    app->events->Subscribe(SDL_CONTROLLERBUTTONUP, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerButtonUp));
-    app->events->Subscribe(SDL_CONTROLLERBUTTONDOWN, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerButtonDown));
-    app->events->Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &RecordingImpl::MouseMovement));
-    app->events->Subscribe(SDL_MOUSEBUTTONDOWN, EVENT_SYSTEM_BIND(this, &RecordingImpl::MouseDown));
 }
 
 RecordingImpl::~RecordingImpl()
 {
     auto app = OpenFunscripter::ptr;
     app->events->Unsubscribe(SDL_CONTROLLERAXISMOTION, this);
-    app->events->Unsubscribe(SDL_CONTROLLERBUTTONUP, this);
-    app->events->Unsubscribe(SDL_CONTROLLERBUTTONDOWN, this);
-    app->events->Unsubscribe(SDL_MOUSEMOTION, this);
-    app->events->Unsubscribe(SDL_MOUSEBUTTONDOWN, this);
     app->simulator.SimulateRawActions = false;
 }
 
@@ -274,53 +266,6 @@ void RecordingImpl::ControllerAxisMotion(SDL_Event& ev)
     }
 }
 
-void RecordingImpl::ControllerButtonUp(SDL_Event& ev)
-{
-}
-
-void RecordingImpl::ControllerButtonDown(SDL_Event& ev)
-{
-}
-
-void RecordingImpl::MouseMovement(SDL_Event& ev)
-{
-    if (activeMode != RecordingMode::Mouse) return; 
-    SDL_MouseMotionEvent& motion = ev.motion;
-    auto app = OpenFunscripter::ptr;
-    // there's alot of indirection here
-    auto simP1 = app->settings->data().simulator->P1;
-    auto simP2 = app->settings->data().simulator->P2;
-
-    if (std::abs(simP1.x - simP2.x) > std::abs(simP1.y - simP2.y)) {
-        // horizontal
-        auto [top_x, bottom_x] = std::minmax(simP1.x, simP2.x);
-        value = motion.x - top_x;
-        value /= (bottom_x - top_x);
-        value = Util::Clamp(value, 0.f, 1.f);
-    }
-    else {
-        // vertical
-        auto [top_y, bottom_y] = std::minmax(simP1.y, simP2.y);
-        value = motion.y - bottom_y;
-        value /= (top_y - bottom_y);
-        value = Util::Clamp(value, 0.f, 1.f);
-    }
-    value = ((value - 0.f) / (1.f - 0.f)) * (1.f - -1.f) + -1.f;
-}
-
-void RecordingImpl::MouseDown(SDL_Event& ev)
-{
-    auto& button = ev.button;
-    auto modstate = SDL_GetModState();
-    if (modstate & KMOD_SHIFT && button.button == SDL_BUTTON_LEFT) {
-        auto app = OpenFunscripter::ptr;
-        auto close = ctx().GetActionAtTime(app->player.getCurrentPositionMs(), app->player.getFrameTimeMs());
-        if (close != nullptr) {
-            ctx().RemoveAction(*close);
-        }
-        ctx().AddAction(FunscriptAction(app->player.getCurrentPositionMs(), currentPos));
-    }
-}
 
 void RecordingImpl::DrawModeSettings()
 {
@@ -341,6 +286,7 @@ void RecordingImpl::DrawModeSettings()
     }
     case RecordingMode::Mouse:
     {
+        value = OpenFunscripter::ptr->simulator.getMouseValue();
         break;
     }
     }

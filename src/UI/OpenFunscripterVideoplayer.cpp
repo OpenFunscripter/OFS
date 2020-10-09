@@ -759,6 +759,8 @@ void VideoplayerWindow::nextFrame()
 		// use same method as previousFrame for consistency
 		float relSeek = ((getFrameTimeMs() * 1.001f) / 1000.f);
 		MpvData.percent_pos += (relSeek / MpvData.duration);
+		MpvData.percent_pos = Util::Clamp(MpvData.percent_pos, 0.0, 1.0);
+
 		stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f%", relSeek);
 		const char* cmd[]{ "seek", tmp_buf, "exact", NULL };
 		//const char* cmd[]{ "frame-step", NULL };
@@ -773,6 +775,8 @@ void VideoplayerWindow::previousFrame()
 		// https://github.com/mpv-player/mpv/issues/4019#issuecomment-358641908
 		float relSeek = ((getFrameTimeMs() * 1.001f) / 1000.f);
 		MpvData.percent_pos -= (relSeek / MpvData.duration);
+		MpvData.percent_pos = Util::Clamp(MpvData.percent_pos, 0.0, 1.0);
+
 		stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "-%.08f%", relSeek);
 		const char* cmd[]{ "seek", tmp_buf, "exact", NULL };
 		//const char* cmd[]{ "frame-back-step", NULL };
@@ -785,6 +789,8 @@ void VideoplayerWindow::relativeFrameSeek(int32_t seek)
 	if (isPaused()) {
 		float relSeek = ((getFrameTimeMs() * 1.001f) / 1000.f) * seek;
 		MpvData.percent_pos += (relSeek / MpvData.duration);
+		MpvData.percent_pos = Util::Clamp(MpvData.percent_pos, 0.0, 1.0);
+
 		stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f%", relSeek);
 		const char* cmd[]{ "seek", tmp_buf, "exact", NULL };
 		mpv_command_async(mpv, 0, cmd);

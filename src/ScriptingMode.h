@@ -87,11 +87,6 @@ public:
 	~RecordingImpl();
 
 	void ControllerAxisMotion(SDL_Event& ev);
-	void ControllerButtonUp(SDL_Event& ev);
-	void ControllerButtonDown(SDL_Event& ev);
-
-	void MouseMovement(SDL_Event& ev);
-	void MouseDown(SDL_Event& ev);
 
 	virtual void DrawModeSettings() override;
 	virtual void addAction(const FunscriptAction& action) override;

@@ -1,7 +1,8 @@
 #pragma once
 
+#include "SDL_events.h"
 #include "imgui.h"
-
+#include "imgui_internal.h"
 #include "OFS_Reflection.h"
 
 class ScriptSimulator {
@@ -12,6 +13,8 @@ private:
 	bool IsMovingSimulator = false;
 	bool EnableVanilla = false;
 	const bool ShowMovementHandle = false;
+
+	float mouseValue;
 
 	inline int32_t GetColor(const ImColor& col) const noexcept {
 		auto color = ImGui::ColorConvertFloat4ToU32(col);
@@ -56,6 +59,12 @@ public:
 	bool SimulateRawActions = false;
 
 	ScriptSimulator() {}
+
+	void MouseMovement(SDL_Event& ev);
+	void MouseDown(SDL_Event& ev);
+
+	inline float getMouseValue() const { return mouseValue; }
+
 	void setup();
 	void CenterSimulator();
 	void ShowSimulator(bool* open);
