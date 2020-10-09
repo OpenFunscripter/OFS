@@ -63,6 +63,7 @@ pkg_check_modules(mpv REQUIRED IMPORTED_TARGET mpv)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
 	mpv
+	OpenGL
 )
 endif()
 
