@@ -70,6 +70,7 @@ private:
 	struct MpvDataCache {
 		double duration = 0.0;
 		double percent_pos = 0.0;
+		double real_percent_pos = 0.0;
 		double current_speed = 1.0;
 		double average_frame_time = 0.0167;
 		double fps = 0;
@@ -140,6 +141,10 @@ public:
 
 	inline double getCurrentPositionMs() const { return getCurrentPositionSeconds() * 1000.0; }
 	inline double getCurrentPositionSeconds() const { return MpvData.percent_pos * MpvData.duration; }
+
+	inline double getRealCurrentPositionMs() const { return MpvData.real_percent_pos * MpvData.duration * 1000.0; }
+	inline void syncWithRealTime() { MpvData.percent_pos = MpvData.real_percent_pos; }
+
 
 	void setVolume(float volume);
 	inline void setPosition(int32_t time_ms) { float rel_pos = ((float)time_ms) / (getDuration() * 1000.f); setPosition(rel_pos); }

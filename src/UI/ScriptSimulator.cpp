@@ -36,7 +36,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
         int currentPos;
 
         if (!SimulateRawActions) {
-            currentPos = ptr->LoadedFunscript->GetPositionAtTime(ptr->player.getCurrentPositionMs());
+            currentPos = ptr->LoadedFunscript->GetPositionAtTime(ptr->player.getCurrentPositionMsInterp());
         }
         else {
             currentPos = ptr->LoadedFunscript->GetRawPositionAtFrame(ptr->player.getCurrentFrameEstimate());

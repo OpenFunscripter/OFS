@@ -208,7 +208,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	auto& script = OpenFunscripter::script();
 
 	frameSizeMs = WindowSizeSeconds * 1000.0;
-	offset_ms = std::round(currentPositionMs) - (frameSizeMs / 2.0);
+	offset_ms = currentPositionMs - (frameSizeMs / 2.0);
 
 	ActionScreenCoordinates.clear();
 	ActionPositionWindow.clear();
@@ -222,6 +222,8 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	const ImGuiID itemID = ImGui::GetID("##ScriptPositions");
 	ImRect itemBB(canvas_pos, canvas_pos + canvas_size);
 	ImGui::ItemAdd(itemBB, itemID);
+	float frameTime = OpenFunscripter::ptr->player.getFrameTimeMs();
+	bool IsPaused = OpenFunscripter::ptr->player.isPaused();
 
 	draw_list->AddRectFilledMultiColor(canvas_pos, ImVec2(canvas_pos.x + canvas_size.x, canvas_pos.y + canvas_size.y),
 		IM_COL32(0, 0, 50, 255), IM_COL32(0, 0, 50, 255),
@@ -241,10 +243,38 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		);
 	}
 
-	if(ShowAudioWaveform) {
+	float visibleFrames = frameSizeMs / frameTime;
+	const float maxVisibleFrames = 300.f;
+	if (visibleFrames <= (maxVisibleFrames - 25.f)) {
+		// render frame dividers
+		float offset = -std::fmod(offset_ms, frameTime);
+		const int lineCount = visibleFrames + 2;
+		for (int i = 0; i < lineCount; i++) {
+			draw_list->AddLine(
+				canvas_pos + ImVec2(((offset + (i * frameTime)) / frameSizeMs) * canvas_size.x, 0.f),
+				canvas_pos + ImVec2(((offset + (i * frameTime)) / frameSizeMs) * canvas_size.x, canvas_size.y),
+				IM_COL32(80, 80, 80, 255 * (1.f - (visibleFrames / maxVisibleFrames))),
+				1.f
+			);
+		}
+
+		if (IsPaused || OpenFunscripter::ptr->player.getSpeed() <= 0.5) {
+			float realFrameTime = OpenFunscripter::ptr->player.getRealCurrentPositionMs() - offset_ms;
+			draw_list->AddLine(
+				canvas_pos + ImVec2((realFrameTime / frameSizeMs) * canvas_size.x, 0.f),
+				canvas_pos + ImVec2((realFrameTime / frameSizeMs) * canvas_size.x, canvas_size.y),
+				IM_COL32(255, 80, 80, 255 * (1.f - (visibleFrames / maxVisibleFrames))),
+				1.f
+			);
+		}
+	}
+
+
+
+	if (ShowAudioWaveform) {
 		const float durationMs = OpenFunscripter::ptr->player.getDuration() * 1000.f;
 		const float rel_start = offset_ms / durationMs;
-		const float rel_end = ((float)(offset_ms) + frameSizeMs) / durationMs;
+		const float rel_end = ((float)(offset_ms)+frameSizeMs) / durationMs;
 
 		auto& audio_waveform = audio_waveform_avg;
 
@@ -262,7 +292,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				total_len = canvas_size.y * audio_waveform[i] * ScaleAudio;
 			draw_list->AddLine(
 				canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) + (total_len / 2.f)),
-				canvas_pos + ImVec2(total_pos_x, (canvas_size.y/2.f) - (total_len / 2.f)),
+				canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) - (total_len / 2.f)),
 				/*IM_COL32(245, 176, 66, 255)*/ IM_COL32(227, 66, 52, 255), line_width);
 		}
 	}
@@ -281,9 +311,9 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				draw_list->_Path.Size = tmp;
 				draw_list->PathStroke(col, false, 5.f);
 			};
-			
-			int32_t startIndex = std::max<int32_t>((offset_ms / OpenFunscripter::ptr->player.getFrameTimeMs()), 0);
-			int32_t endIndex =  std::min<int32_t>(((float)offset_ms + frameSizeMs) / OpenFunscripter::ptr->player.getFrameTimeMs(), script.RawActions().size());
+
+			int32_t startIndex = std::max<int32_t>((offset_ms / frameTime), 0);
+			int32_t endIndex = std::min<int32_t>(((float)offset_ms + frameSizeMs) / frameTime, script.RawActions().size());
 
 			auto pathRawSection = [this](auto draw_list, auto rawActions, int32_t fromIndex, int32_t toIndex) {
 				for (int i = fromIndex; i < toIndex; i++) {
@@ -304,7 +334,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		}
 	}
 
-	if(script.Actions().size() > 0) {
+	if (script.Actions().size() > 0) {
 		// render normal actions
 		if (ShowRegularActions) {
 			auto startIt = std::find_if(script.Actions().begin(), script.Actions().end(),
@@ -366,6 +396,15 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 			}
 		}
 	}
+
+	char tmp[16];
+	stbsp_snprintf(tmp, sizeof(tmp), "%.2f seconds", WindowSizeSeconds);
+	auto textSize = ImGui::CalcTextSize(tmp);
+	draw_list->AddText(
+		canvas_pos + ImVec2(style.FramePadding.x, canvas_size.y - textSize.y - style.FramePadding.y),
+		ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]),
+		tmp
+	);
 
 	// current position indicator -> |
 	draw_list->AddLine(

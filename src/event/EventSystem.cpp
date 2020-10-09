@@ -37,7 +37,6 @@ void EventSystem::Subscribe(int32_t eventType, void* listener, EventHandlerFunc 
 {
 	// this excects the listener to never relocate
 	handlers.emplace_back(eventType, listener, handler);
-	LOGF_DEBUG("Total subscribed event listeners: %d", (int)handlers.size());
 }
 
 void EventSystem::Unsubscribe(int32_t eventType, void* listener)
@@ -50,7 +49,6 @@ void EventSystem::Unsubscribe(int32_t eventType, void* listener)
 
 	if (it != handlers.end()) {
 		handlers.erase(it);
-		LOGF_DEBUG("Total subscribed event listeners: %d", (int)handlers.size());
 	}
 	else {
 		LOGF_ERROR("Failed to unsubscribe event. \"%d\"", eventType);

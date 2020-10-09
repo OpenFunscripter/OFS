@@ -27,7 +27,7 @@ class ScriptPositionsWindow
 
 	ImVec2 canvas_pos;
 	ImVec2 canvas_size;
-	int offset_ms;
+	float offset_ms;
 	float frameSizeMs;
 	bool IsSelecting = false;
 	bool IsMoving = false;

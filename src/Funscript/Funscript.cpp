@@ -651,3 +651,17 @@ void Funscript::InvertSelection() noexcept
 	}
 	data.selection = copySelection;
 }
+
+void Funscript::AlignWithFrameTimeSelection(float frameTimeMs) noexcept
+{
+	if (data.selection.size() == 0) return;
+	auto copySelection = data.selection;
+	RemoveSelectedActions();
+	for (auto& act : copySelection)
+	{
+		float offset = std::fmod<float>(act.at, frameTimeMs);
+		act.at -= (int)offset;
+		AddAction(act);
+	}
+	data.selection = copySelection;
+}

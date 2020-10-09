@@ -501,7 +501,7 @@ void OpenFunscripter::register_bindings()
         0,
         false,
         [&](void*) {
-            auto action = LoadedFunscript->GetPreviousActionBehind(player.getCurrentPositionMs() - (player.getFrameTimeMs() / 2.f));
+            auto action = LoadedFunscript->GetPreviousActionBehind(player.getCurrentPositionMs() - 1.f);
             if (action != nullptr) player.setPosition(action->at);
         }
     ));
@@ -512,7 +512,7 @@ void OpenFunscripter::register_bindings()
         0,
         false,
         [&](void*) {
-            auto action = LoadedFunscript->GetNextActionAhead(player.getCurrentPositionMs() + (player.getFrameTimeMs() / 2.f));
+            auto action = LoadedFunscript->GetNextActionAhead(player.getCurrentPositionMs() + 1.f);
             if (action != nullptr) player.setPosition(action->at);
         }
     ));
@@ -526,6 +526,15 @@ void OpenFunscripter::register_bindings()
         true,
         [&](void*) { player.togglePlay(); }
     ));
+    keybinds.registerBinding(Keybinding(
+        "sync_timestamps",
+        "Sync time with player",
+        SDLK_s,
+        0,
+        true,
+        [&](void*) { player.syncWithRealTime(); }
+    ));
+
     // PLAYBACK SPEED
     keybinds.registerBinding(Keybinding(
         "decrement_speed",
@@ -810,7 +819,7 @@ int OpenFunscripter::run()
             simulator.ShowSimulator(&settings->data().show_simulator);
             ShowStatisticsWindow(&ShowStatistics);
             if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { saveScript(); }
-            player.DrawVideoPlayer(NULL);
+
             scripting->DrawScriptingMode(NULL);
 
             if (keybinds.ShowBindingWindow()) {
@@ -905,7 +914,7 @@ int OpenFunscripter::run()
                     }
                 }
 
-                ImGui::Columns(6, 0, false);
+                ImGui::Columns(5, 0, false);
                 {               
                     // format total duration
                     // this doesn't need to be done every frame
@@ -919,29 +928,23 @@ int OpenFunscripter::run()
 
                 auto& style = ImGui::GetStyle();
                 ImGui::SetColumnWidth(0, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
-                
-                ImGui::Checkbox("Smooth", &player.smooth_scrolling);
-                Util::Tooltip("Smooths out the scrolling of the script timeline.\nEspecially at low playback speeds or higher refresh rates than the video.");
-                
-                ImGui::SetColumnWidth(1, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
-                ImGui::NextColumn();
-
+                               
                 if (ImGui::Button("1x", ImVec2(0, 0))) {
                     player.setSpeed(1.f);
                 }
-                ImGui::SetColumnWidth(2, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
+                ImGui::SetColumnWidth(1, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
                 ImGui::NextColumn();
 
                 if (ImGui::Button("-10%", ImVec2(0, 0))) {
                     player.addSpeed(-0.10);
                 }
-                ImGui::SetColumnWidth(3, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
+                ImGui::SetColumnWidth(2, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
                 ImGui::NextColumn();
 
                 if (ImGui::Button("+10%", ImVec2(0, 0))) {
                     player.addSpeed(0.10);
                 }
-                ImGui::SetColumnWidth(4, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
+                ImGui::SetColumnWidth(3, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
                 ImGui::NextColumn();
 
                 ImGui::SetNextItemWidth(-1.f);
@@ -1010,6 +1013,7 @@ int OpenFunscripter::run()
                 ImGui::ShowMetricsWindow(&DebugMetrics);
             }
 
+            player.DrawVideoPlayer(NULL);
         }
         render();
         SDL_GL_SwapWindow(window);
@@ -1511,6 +1515,10 @@ void OpenFunscripter::ShowMainMenuBar()
             }
             if (ImGui::MenuItem("Invert", BINDING_STRING("invert_actions"), false)) {
                 invertSelection();
+            }
+            if (ImGui::MenuItem("Align", NULL)) {
+                undoRedoSystem.Snapshot("Align");
+                LoadedFunscript->AlignWithFrameTimeSelection(player.getFrameTimeMs());
             }
             ImGui::EndMenu();
         }
