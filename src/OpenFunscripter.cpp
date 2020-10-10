@@ -20,6 +20,8 @@ ImFont* OpenFunscripter::DefaultFont2 = nullptr;
 
 const char* glsl_version = "#version 150";
 
+static SDL_Cursor* SystemCursors[SDL_NUM_SYSTEM_CURSORS];
+
 bool OpenFunscripter::imgui_setup() noexcept
 {
     // Setup Dear ImGui context
@@ -242,8 +244,14 @@ bool OpenFunscripter::setup()
     rawInput = std::make_unique<ControllerInput>();
     rawInput->setup();
     simulator.setup();
-    SDL_ShowWindow(window);
+    
+    // init cursors
+    for (int i = 0; i < SDL_NUM_SYSTEM_CURSORS; i++) {
+        SystemCursors[i] = SDL_CreateSystemCursor((SDL_SystemCursor)i);
+    }
 
+
+    SDL_ShowWindow(window);
     return true;
 }
 
@@ -1090,14 +1098,7 @@ void OpenFunscripter::shutdown() noexcept
 
 void OpenFunscripter::SetCursorType(SDL_SystemCursor id) noexcept
 {
-    static SDL_Cursor* current = SDL_GetCursor();
-    static int32_t cursorType = -1;
-    if (cursorType != id) {
-        cursorType = id;
-        SDL_FreeCursor(current);
-        current = SDL_CreateSystemCursor(id);
-        SDL_SetCursor(current);
-    }
+    SDL_SetCursor(SystemCursors[id]);
 }
 
 
