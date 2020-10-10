@@ -57,6 +57,7 @@ void Funscript::loadSettings()
 {
 	if (Json.contains("OpenFunscripter")) {
 		auto& settings = Json["OpenFunscripter"];
+		scriptSettings.player = &OpenFunscripter::ptr->player.settings;
 		OFS::serializer::load(&scriptSettings, &settings);
 	}
 }
@@ -64,6 +65,7 @@ void Funscript::loadSettings()
 void Funscript::saveSettings()
 {
 	auto settings = nlohmann::json::object();
+	scriptSettings.player = &OpenFunscripter::ptr->player.settings;
 	OFS::serializer::save(&scriptSettings, &settings);
 	Json["OpenFunscripter"] = settings;
 }

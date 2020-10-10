@@ -331,14 +331,14 @@ void VideoplayerWindow::mouse_scroll(SDL_Event& ev)
 {
 	auto scroll = ev.wheel;
 	if (videoHovered) {
-		auto mouse_pos_in_vid = ImGui::GetMousePos() - viewport_pos - video_pos;
+		auto mouse_pos_in_vid = ImGui::GetMousePos() - viewport_pos - settings.video_pos;
 		float zoom_point_x = (mouse_pos_in_vid.x - (video_draw_size.x/2.f)) / video_draw_size.x;
 		float zoom_point_y = (mouse_pos_in_vid.y - (video_draw_size.y/2.f)) / video_draw_size.y;
 
 		float vid_width = MpvData.video_width;
 		float vid_height = MpvData.video_height;
 
-		switch (activeMode) {
+		switch (settings.activeMode) {
 		case VideoMode::LEFT_PANE:
 		case VideoMode::RIGHT_PANE:
 			vid_width /= 2.f;
@@ -351,27 +351,28 @@ void VideoplayerWindow::mouse_scroll(SDL_Event& ev)
 		zoom_point_x *= vid_width;
 		zoom_point_y *= vid_height;
 
-		const float old_scale = zoom_factor;
+		const float old_scale = settings.zoom_factor;
 		// apply zoom
-		if (activeMode == VideoMode::VR_MODE) {
-			vr_zoom *= ((1+(zoom_multi * scroll.y)));
-			vr_zoom = Util::Clamp(vr_zoom, 0.05f, 2.0f);
+		if (settings.activeMode == VideoMode::VR_MODE) {
+			settings.vr_zoom *= ((1+(zoom_multi * scroll.y)));
+			settings.vr_zoom = Util::Clamp(settings.vr_zoom, 0.05f, 2.0f);
 			return;
 		}
 
-		zoom_factor *= 1 + (zoom_multi * scroll.y);
-		zoom_factor = Util::Clamp(zoom_factor, 0.0f, 10.f);
+		settings.zoom_factor *= 1 + (zoom_multi * scroll.y);
+		settings.zoom_factor = Util::Clamp(settings.zoom_factor, 0.0f, 10.f);
 
-		const float scale_change = (zoom_factor - old_scale) * base_scale_factor;
+		const float scale_change = (settings.zoom_factor - old_scale) * base_scale_factor;
 		const float offset_x = -(zoom_point_x * scale_change);
 		const float offset_y = -(zoom_point_y * scale_change);
 
-		prev_translation.x += offset_x;
-		prev_translation.y += offset_y;
+		settings.prev_translation.x += offset_x;
+		settings.prev_translation.y += offset_y;
 
 
-		if(!dragStarted)
-			current_translation = prev_translation;
+		if (!dragStarted) {
+			settings.current_translation = settings.prev_translation;
+		}
 	}
 }
 
@@ -520,7 +521,7 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 			ImVec2 uv0(0.f, 1.f);
 			ImVec2 uv1(1.f, 0.f);
 
-			switch (activeMode) {
+			switch (settings.activeMode) {
 			case VideoMode::LEFT_PANE:
 				videoSize.x /= 2.f;
 				uv1.x = 0.5f;
@@ -544,17 +545,17 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 				break;
 			}
 
-			if (activeMode == VideoMode::VR_MODE) {
+			if (settings.activeMode == VideoMode::VR_MODE) {
 				if (videoHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !dragStarted) {
 					dragStarted = true;
 				}
 				// apply drag to translation
 				else if (dragStarted && videoHovered)
 				{
-					current_vr_rotation = 
-						prev_vr_rotation 
+					settings.current_vr_rotation =
+						settings.prev_vr_rotation
 						+ (ImGui::GetMouseDragDelta(ImGuiMouseButton_Left) 
-							/ ImVec2((10000.f * vr_zoom), (video_draw_size.y / video_draw_size.x) * 10000.f * vr_zoom));
+							/ ImVec2((10000.f * settings.vr_zoom), (video_draw_size.y / video_draw_size.x) * 10000.f * settings.vr_zoom));
 				}
 
 				player_viewport = ImGui::GetCurrentWindowRead()->Viewport;
@@ -577,8 +578,8 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 							{ (R + L) / (L - R),  (T + B) / (B - T),  0.0f,   1.0f },
 						};
 						glUniformMatrix4fv(glGetUniformLocation(ctx.vr_shader, "ProjMtx"), 1, GL_FALSE, &ortho_projection[0][0]);
-						glUniform2fv(glGetUniformLocation(ctx.vr_shader, "rotation"), 1, &ctx.current_vr_rotation.x);
-						glUniform1f(glGetUniformLocation(ctx.vr_shader, "zoom"), ctx.vr_zoom);
+						glUniform2fv(glGetUniformLocation(ctx.vr_shader, "rotation"), 1, &ctx.settings.current_vr_rotation.x);
+						glUniform1f(glGetUniformLocation(ctx.vr_shader, "zoom"), ctx.settings.vr_zoom);
 						glUniform1f(glGetUniformLocation(ctx.vr_shader, "aspect_ratio"), ctx.video_draw_size.x / ctx.video_draw_size.y);
 					}, this);
 				ImGui::Image((void*)(intptr_t)render_texture, ImGui::GetContentRegionAvail(), uv0, uv1);
@@ -586,9 +587,9 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 				ImGui::GetWindowDrawList()->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
 			}
 			else {
-				videoSize = videoSize * ImVec2(zoom_factor, zoom_factor);
-				video_pos = (ImGui::GetWindowSize() - videoSize) * 0.5f + current_translation;
-				ImGui::SetCursorPos(video_pos);
+				videoSize = videoSize * ImVec2(settings.zoom_factor, settings.zoom_factor);
+				settings.video_pos = (ImGui::GetWindowSize() - videoSize) * 0.5f + settings.current_translation;
+				ImGui::SetCursorPos(settings.video_pos);
 				// the videoHovered is one frame old but moving this up prevents flicker while dragging and zooming at the same time
 				// start video dragging
 				if (videoHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !dragStarted) {
@@ -597,7 +598,7 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 				// apply drag to translation
 				else if(dragStarted && videoHovered)
 				{
-					current_translation = prev_translation + ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
+					settings.current_translation = settings.prev_translation + ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
 				}
 				ImGui::Image((void*)(intptr_t)render_texture, videoSize, uv0, uv1);
 			}
@@ -607,8 +608,8 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 			// cancel drag
 			if ((dragStarted && !videoHovered) || ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
 				dragStarted = false;
-				prev_translation = current_translation;
-				prev_vr_rotation = current_vr_rotation;
+				settings.prev_translation = settings.current_translation;
+				settings.prev_vr_rotation = settings.current_vr_rotation;
 			}
 
 			// recenter
@@ -627,8 +628,8 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 
 void VideoplayerWindow::setSpeed(float speed)
 {
-	playbackSpeed = speed;
-	playbackSpeed = Util::Clamp<float>(playbackSpeed, minPlaybackSpeed, maxPlaybackSpeed);
+	settings.playback_speed = speed;
+	settings.playback_speed = Util::Clamp<float>(settings.playback_speed, minPlaybackSpeed, maxPlaybackSpeed);
 	stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.3f", speed);
 	const char* cmd[]{ "set", "speed", tmp_buf, NULL };
 	mpv_command_async(mpv, 0, cmd);
@@ -636,9 +637,9 @@ void VideoplayerWindow::setSpeed(float speed)
 
 void VideoplayerWindow::addSpeed(float speed)
 {
-	playbackSpeed += speed;
-	playbackSpeed = Util::Clamp<float>(playbackSpeed, minPlaybackSpeed, maxPlaybackSpeed);
-	setSpeed(playbackSpeed);
+	settings.playback_speed += speed;
+	settings.playback_speed = Util::Clamp<float>(settings.playback_speed, minPlaybackSpeed, maxPlaybackSpeed);
+	setSpeed(settings.playback_speed);
 	//stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.3f", speed);
 	//const char* cmd[]{ "add", "speed", tmp_buf, NULL };
 	//mpv_command_async(mpv, 0, cmd);
@@ -657,7 +658,8 @@ void VideoplayerWindow::openVideo(const std::string& file)
 	MpvData.video_height = 0;
 
 	setPaused(true);
-	setVolume(volume);
+	setVolume(settings.volume);
+	setSpeed(settings.playback_speed);
 	resetTranslationAndZoom();
 }
 

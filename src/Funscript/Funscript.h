@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include "OpenFunscripterUtil.h"
+#include "OpenFunscripterVideoplayer.h"
 
 class Funscript
 {
@@ -37,11 +38,13 @@ public:
 	struct Settings {
 		std::vector<Bookmark> Bookmarks;
 		int32_t last_pos_ms = 0;
+		VideoplayerWindow::OFS_VideoPlayerSettings* player;
 
 		template <class Archive>
 		inline void reflect(Archive& ar) {
 			OFS_REFLECT(Bookmarks, ar);
 			OFS_REFLECT(last_pos_ms, ar);
+			OFS_REFLECT_PTR(player, ar);
 		}
 	} scriptSettings;
 

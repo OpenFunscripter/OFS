@@ -875,14 +875,14 @@ int OpenFunscripter::run()
                     if (mute)
                         player.setVolume(0.0f);
                     else
-                        player.setVolume(player.volume);
+                        player.setVolume(player.settings.volume);
                 }
                 ImGui::SetColumnWidth(0, ImGui::GetItemRectSize().x + 10);
                 ImGui::NextColumn();
                 ImGui::SetNextItemWidth(-1);
-                if (ImGui::SliderFloat("##Volume", &player.volume, 0.0f, 1.0f)) {
-                    player.setVolume(player.volume);
-                    if (player.volume > 0.0f)
+                if (ImGui::SliderFloat("##Volume", &player.settings.volume, 0.0f, 1.0f)) {
+                    player.setVolume(player.settings.volume);
+                    if (player.settings.volume > 0.0f)
                         mute = false;
                 }
                 ImGui::NextColumn();
@@ -948,9 +948,9 @@ int OpenFunscripter::run()
                     ImGui::NextColumn();
 
                     ImGui::SetNextItemWidth(-1.f);
-                    if (ImGui::SliderFloat("##Speed", &player.playbackSpeed, player.minPlaybackSpeed, player.maxPlaybackSpeed)) {
-                        if (player.playbackSpeed != player.getSpeed()) {
-                            player.setSpeed(player.playbackSpeed);
+                    if (ImGui::SliderFloat("##Speed", &player.settings.playback_speed, player.minPlaybackSpeed, player.maxPlaybackSpeed)) {
+                        if (player.settings.playback_speed != player.getSpeed()) {
+                            player.setSpeed(player.settings.playback_speed);
                         }
                     }
                     Util::Tooltip("Speed");
@@ -960,8 +960,10 @@ int OpenFunscripter::run()
                     float position = player.getPosition();
                     static bool hasSeeked = false;
                     if (DrawTimelineWidget("Timeline", &position)) {
+                        if (!player.isPaused()) {
+                            hasSeeked = true;
+                        }
                         player.setPosition(position, true);
-                        hasSeeked = true;
                     }
                     if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && hasSeeked) {
                         player.setPaused(false);
@@ -1592,7 +1594,7 @@ void OpenFunscripter::ShowMainMenuBar()
 
             if (ImGui::MenuItem("Draw video", NULL, &settings->data().draw_video)) { settings->saveSettings(); }
             if (ImGui::MenuItem("Reset video position", NULL)) { player.resetTranslationAndZoom(); }
-            ImGui::Combo("Video Mode", (int*)&player.activeMode, 
+            ImGui::Combo("Video Mode", (int32_t*)&player.settings.activeMode,
                 "Full Video\0"
                 "Left Pane\0"
                 "Right Pane\0"

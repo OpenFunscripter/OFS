@@ -2,6 +2,7 @@
 
 #include "SDL.h"
 #include "imgui.h"
+#include "OFS_Reflection.h"
 
 #include <string>
 #include <chrono>
@@ -9,7 +10,7 @@
 struct mpv_handle;
 struct mpv_render_context;
 
-enum class VideoMode {
+enum VideoMode : int32_t {
 	FULL,
 	LEFT_PANE,
 	RIGHT_PANE,
@@ -38,16 +39,8 @@ private:
 
 	unsigned int vr_shader;
 	ImGuiViewport* player_viewport;
-
-	float vr_zoom = 0.5f;
-	ImVec2 prev_vr_rotation;
-	ImVec2 current_vr_rotation;
-
-	ImVec2 prev_translation;
-	ImVec2 current_translation;
 	
 	ImVec2 video_draw_size;
-	ImVec2 video_pos;
 	ImVec2 viewport_pos;
 
 	enum MpvPropertyGet : uint64_t {
@@ -87,7 +80,7 @@ private:
 	char tmp_buf[32];
 
 	float base_scale_factor = 1.f;
-	float zoom_factor = 1.f;
+
 	const float zoom_multi = 0.15f;
 	
 	std::chrono::high_resolution_clock::time_point smooth_time;
@@ -107,19 +100,47 @@ private:
 
 	void notifyVideoLoaded();
 public:
-	VideoplayerWindow()
-		: prev_translation(0.f, 0.f), current_translation(0.f, 0.f), activeMode(VideoMode::FULL), current_vr_rotation(0.5f, -0.5f)
-	{}
+	VideoplayerWindow()	{ }
+
+	struct OFS_VideoPlayerSettings {
+		ImVec2 current_vr_rotation = ImVec2(0.5f, -0.5f);
+		ImVec2 current_translation = ImVec2(0.0f, 0.0f);
+		ImVec2 video_pos = ImVec2(0.0f, 0.0f);
+		ImVec2 prev_vr_rotation;
+		ImVec2 prev_translation;
+
+		VideoMode activeMode = VideoMode::FULL;
+		float vr_zoom = 0.2f;
+		float zoom_factor = 1.f;
+		float volume = 0.5f;
+		float playback_speed = 1.f;
+
+		template <class Archive>
+		inline void reflect(Archive& ar) {
+			OFS_REFLECT(activeMode, ar);
+			OFS_REFLECT(volume, ar);
+			OFS_REFLECT(playback_speed, ar);
+			OFS_REFLECT(vr_zoom, ar);
+			OFS_REFLECT(current_vr_rotation, ar);
+			OFS_REFLECT(prev_vr_rotation, ar);
+			OFS_REFLECT(current_translation, ar);
+			OFS_REFLECT(prev_translation, ar);
+			OFS_REFLECT(video_pos, ar);
+		}
+	};
 
 	const float minPlaybackSpeed = 0.05f;
 	const float maxPlaybackSpeed = 5.0f;
-	float playbackSpeed = 1.f;
-	float volume = 0.5f;
-	VideoMode activeMode;
+	OFS_VideoPlayerSettings settings;
+
 	bool setup();
 	void DrawVideoPlayer(bool* open);
 
-	inline void resetTranslationAndZoom() { vr_zoom = 0.5f; zoom_factor = 1.f; prev_translation = ImVec2(0.f, 0.f); current_translation = ImVec2(0.f, 0.f); }
+	inline void resetTranslationAndZoom() { 
+		settings.zoom_factor = 1.f;
+		settings.prev_translation = ImVec2(0.f, 0.f);
+		settings.current_translation = ImVec2(0.f, 0.f); 
+	}
 
 	void setSpeed(float speed);
 	void addSpeed(float speed);
