@@ -74,13 +74,9 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev)
 		}
 		case MPV_EVENT_COMMAND_REPLY:
 		{
-			switch (mp_event->reply_userdata) {
-			case MpvCommandIdentifier::MpvSeekPlayingCommand:
-			{
-				MpvData.paused = false;
-				break;
-			}
-			}
+			// attach user_data to command
+			// and handle it here when it finishes
+			continue;
 		}
 		case MPV_EVENT_FILE_LOADED:
 			// this is kind of useless because no frame has been decoded yet and we don't know the size
@@ -733,18 +729,15 @@ void VideoplayerWindow::setVolume(float volume)
 	mpv_command_async(mpv, 0, cmd);
 }
 
-void VideoplayerWindow::setPosition(float pos)
+void VideoplayerWindow::setPosition(float pos, bool pausesVideo)
 {
 	MpvData.percent_pos = pos;
 	stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f%", pos * 100.0f);
 	const char* cmd[]{ "seek", tmp_buf, "absolute-percent+exact", NULL };
-	if (!MpvData.paused) {
-		MpvData.paused = true;
-		mpv_command_async(mpv, MpvCommandIdentifier::MpvSeekPlayingCommand, cmd);
+	if (pausesVideo) {
+		setPaused(true);
 	}
-	else {
-		mpv_command_async(mpv, 0, cmd);
-	}
+	mpv_command_async(mpv, 0, cmd);
 }
 
 void VideoplayerWindow::setPaused(bool paused)

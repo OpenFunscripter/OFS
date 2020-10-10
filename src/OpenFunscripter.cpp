@@ -12,8 +12,6 @@
 #include "imgui_stdlib.h"
 #include "imgui_internal.h"
 
-
-// TODO: add actions via shift clicking simulator ( scripting mode independent )
 // TODO: QoL make keybindings groupable just a visual improvement
 // TODO: make heatmap generation more sophisticated
 // TODO: [MAJOR FEATURE] working with raw actions and controller input
@@ -812,8 +810,8 @@ void OpenFunscripter::rollingBackup()
 int OpenFunscripter::run()
 {
     while (!exit_app) {
-        update();
         process_events();
+        update();
         new_frame();
         {
             // IMGUI HERE
@@ -835,8 +833,9 @@ int OpenFunscripter::run()
             }
 
             if (player.isLoaded()) {
-                ImGui::Begin("Video Controls");
                 {
+                    ImGui::Begin("Video Controls");
+                
                     const int seek_ms = 3000;
                     // Playback controls
                     ImGui::Columns(5, 0, false);
@@ -869,7 +868,6 @@ int OpenFunscripter::run()
                         player.nextFrame();
                     }
                     ImGui::NextColumn();
-                }
 
                 static bool mute = false;
                 ImGui::Columns(2, 0, false);
@@ -888,125 +886,130 @@ int OpenFunscripter::run()
                         mute = false;
                 }
                 ImGui::NextColumn();
-
-
-
-
                 ImGui::End();
-                ImGui::Begin("Time");
-
-                static float actualPlaybackSpeed = 1.0f;
+            }
                 {
-                    const double speedCalcUpdateFrequency = 1.0;
-                    static uint32_t start_time = SDL_GetTicks();
-                    static float lastPlayerPosition = 0.0f;
-                    if (!player.isPaused()) {
-                        if ((SDL_GetTicks() - start_time)/1000.0f >= speedCalcUpdateFrequency) {
-                            double duration = player.getDuration();
-                            double position = player.getPosition();
-                            double expectedStep = speedCalcUpdateFrequency / duration;
-                            double actualStep = std::abs(position - lastPlayerPosition);
-                            actualPlaybackSpeed = actualStep / expectedStep;
+                    ImGui::Begin("Time");
 
+                    static float actualPlaybackSpeed = 1.0f;
+                    {
+                        const double speedCalcUpdateFrequency = 1.0;
+                        static uint32_t start_time = SDL_GetTicks();
+                        static float lastPlayerPosition = 0.0f;
+                        if (!player.isPaused()) {
+                            if ((SDL_GetTicks() - start_time) / 1000.0f >= speedCalcUpdateFrequency) {
+                                double duration = player.getDuration();
+                                double position = player.getPosition();
+                                double expectedStep = speedCalcUpdateFrequency / duration;
+                                double actualStep = std::abs(position - lastPlayerPosition);
+                                actualPlaybackSpeed = actualStep / expectedStep;
+
+                                lastPlayerPosition = player.getPosition();
+                                start_time = SDL_GetTicks();
+                            }
+                        }
+                        else {
                             lastPlayerPosition = player.getPosition();
                             start_time = SDL_GetTicks();
                         }
                     }
-                    else {
-                        lastPlayerPosition = player.getPosition();
-                        start_time = SDL_GetTicks();
-                    }
-                }
 
-                ImGui::Columns(5, 0, false);
-                {               
-                    // format total duration
-                    // this doesn't need to be done every frame
-                    Util::FormatTime(tmp_buf[1], sizeof(tmp_buf[1]), player.getDuration(), true);
-
-                    double time_seconds = player.getCurrentPositionSecondsInterp();
-                    Util::FormatTime(tmp_buf[0], sizeof(tmp_buf[0]), time_seconds, true);
-                    ImGui::Text(" %s / %s (x%.03f)", tmp_buf[0], tmp_buf[1], actualPlaybackSpeed); 
-                    ImGui::NextColumn();
-                }
-
-                auto& style = ImGui::GetStyle();
-                ImGui::SetColumnWidth(0, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
-                               
-                if (ImGui::Button("1x", ImVec2(0, 0))) {
-                    player.setSpeed(1.f);
-                }
-                ImGui::SetColumnWidth(1, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
-                ImGui::NextColumn();
-
-                if (ImGui::Button("-10%", ImVec2(0, 0))) {
-                    player.addSpeed(-0.10);
-                }
-                ImGui::SetColumnWidth(2, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
-                ImGui::NextColumn();
-
-                if (ImGui::Button("+10%", ImVec2(0, 0))) {
-                    player.addSpeed(0.10);
-                }
-                ImGui::SetColumnWidth(3, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
-                ImGui::NextColumn();
-
-                ImGui::SetNextItemWidth(-1.f);
-                if (ImGui::SliderFloat("##Speed", &player.playbackSpeed, player.minPlaybackSpeed, player.maxPlaybackSpeed)) {
-                    if (player.playbackSpeed != player.getSpeed()) {
-                        player.setSpeed(player.playbackSpeed);
-                    }
-                }
-                Util::Tooltip("Speed");
-
-                ImGui::Columns(1, 0, false);
-
-                float position = player.getPosition();
-                if (DrawTimelineWidget("Timeline", &position)) {
-                    player.setPosition(position);
-                }
-
-                scriptPositions.ShowScriptPositions(NULL, player.getCurrentPositionMsInterp());
-                ImGui::End();
-
-
-                ImGui::Begin("Action Editor");
-                if (player.isPaused()) {
-                    auto scriptAction = LoadedFunscript->GetActionAtTime(player.getCurrentPositionMs(), player.getFrameTimeMs());
-
-                    if (scriptAction == nullptr)
+                    ImGui::Columns(5, 0, false);
                     {
-                        // create action
-                        static int newActionPosition = 0;
-                        ImGui::SliderInt("Position", &newActionPosition, 0, 100);
-                        if (ImGui::Button("New Action")) {
-                            addEditAction(newActionPosition);
+                        // format total duration
+                        // this doesn't need to be done every frame
+                        Util::FormatTime(tmp_buf[1], sizeof(tmp_buf[1]), player.getDuration(), true);
+
+                        double time_seconds = player.getCurrentPositionSecondsInterp();
+                        Util::FormatTime(tmp_buf[0], sizeof(tmp_buf[0]), time_seconds, true);
+                        ImGui::Text(" %s / %s (x%.03f)", tmp_buf[0], tmp_buf[1], actualPlaybackSpeed);
+                        ImGui::NextColumn();
+                    }
+
+                    auto& style = ImGui::GetStyle();
+                    ImGui::SetColumnWidth(0, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
+
+                    if (ImGui::Button("1x", ImVec2(0, 0))) {
+                        player.setSpeed(1.f);
+                    }
+                    ImGui::SetColumnWidth(1, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
+                    ImGui::NextColumn();
+
+                    if (ImGui::Button("-10%", ImVec2(0, 0))) {
+                        player.addSpeed(-0.10);
+                    }
+                    ImGui::SetColumnWidth(2, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
+                    ImGui::NextColumn();
+
+                    if (ImGui::Button("+10%", ImVec2(0, 0))) {
+                        player.addSpeed(0.10);
+                    }
+                    ImGui::SetColumnWidth(3, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
+                    ImGui::NextColumn();
+
+                    ImGui::SetNextItemWidth(-1.f);
+                    if (ImGui::SliderFloat("##Speed", &player.playbackSpeed, player.minPlaybackSpeed, player.maxPlaybackSpeed)) {
+                        if (player.playbackSpeed != player.getSpeed()) {
+                            player.setSpeed(player.playbackSpeed);
                         }
                     }
-                }
+                    Util::Tooltip("Speed");
 
-                ImGui::Separator();
-                ImGui::Columns(1, 0, false);
-                if (ImGui::Button("100", ImVec2(-1, 0))) {
-                    addEditAction(100);
-                }
-                for (int i = 9; i != 0; i--) {
-                    if (i % 3 == 0) {
-                        ImGui::Columns(3, 0, false);
-                    }
-                    sprintf(tmp_buf[0], "%d", i * 10);
-                    if (ImGui::Button(tmp_buf[0], ImVec2(-1, 0))) {
-                        addEditAction(i * 10);
-                    }
-                    ImGui::NextColumn();
-                }
-                ImGui::Columns(1, 0, false);
-                if (ImGui::Button("0", ImVec2(-1, 0))) {
-                    addEditAction(0);
-                }
+                    ImGui::Columns(1, 0, false);
 
-                ImGui::Separator();
-                ImGui::End();
+                    float position = player.getPosition();
+                    static bool hasSeeked = false;
+                    if (DrawTimelineWidget("Timeline", &position)) {
+                        player.setPosition(position, true);
+                        hasSeeked = true;
+                    }
+                    if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && hasSeeked) {
+                        player.setPaused(false);
+                        hasSeeked = false;
+                    }
+
+                    scriptPositions.ShowScriptPositions(NULL, player.getCurrentPositionMsInterp());
+                    ImGui::End();
+                }
+                {
+                    ImGui::Begin("Action Editor");
+                    if (player.isPaused()) {
+                        auto scriptAction = LoadedFunscript->GetActionAtTime(player.getCurrentPositionMs(), player.getFrameTimeMs());
+
+                        if (scriptAction == nullptr)
+                        {
+                            // create action
+                            static int newActionPosition = 0;
+                            ImGui::SliderInt("Position", &newActionPosition, 0, 100);
+                            if (ImGui::Button("New Action")) {
+                                addEditAction(newActionPosition);
+                            }
+                        }
+                    }
+
+                    ImGui::Separator();
+                    ImGui::Columns(1, 0, false);
+                    if (ImGui::Button("100", ImVec2(-1, 0))) {
+                        addEditAction(100);
+                    }
+                    for (int i = 9; i != 0; i--) {
+                        if (i % 3 == 0) {
+                            ImGui::Columns(3, 0, false);
+                        }
+                        sprintf(tmp_buf[0], "%d", i * 10);
+                        if (ImGui::Button(tmp_buf[0], ImVec2(-1, 0))) {
+                            addEditAction(i * 10);
+                        }
+                        ImGui::NextColumn();
+                    }
+                    ImGui::Columns(1, 0, false);
+                    if (ImGui::Button("0", ImVec2(-1, 0))) {
+                        addEditAction(0);
+                    }
+
+                    ImGui::Separator();
+                    ImGui::End();
+                }
             }
 
             if (DebugDemo) {

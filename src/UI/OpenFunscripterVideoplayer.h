@@ -64,7 +64,7 @@ private:
 	};
 
 	enum MpvCommandIdentifier : uint64_t {
-		MpvSeekPlayingCommand = 1
+		//MpvSeekPlayingCommand = 1
 	};
 
 	struct MpvDataCache {
@@ -115,7 +115,6 @@ public:
 	const float maxPlaybackSpeed = 5.0f;
 	float playbackSpeed = 1.f;
 	float volume = 0.5f;
-	bool smooth_scrolling = true;
 	VideoMode activeMode;
 	bool setup();
 	void DrawVideoPlayer(bool* open);
@@ -130,7 +129,7 @@ public:
 
 	inline double getCurrentPositionMsInterp() const { return getCurrentPositionSecondsInterp() * 1000.0; }
 	inline double getCurrentPositionSecondsInterp() const { 
-		if (!smooth_scrolling || MpvData.paused) {
+		if (MpvData.paused) {
 			return getCurrentPositionSeconds();
 		}
 		else {
@@ -147,8 +146,11 @@ public:
 
 
 	void setVolume(float volume);
-	inline void setPosition(int32_t time_ms) { float rel_pos = ((float)time_ms) / (getDuration() * 1000.f); setPosition(rel_pos); }
-	void setPosition(float rel_pos);
+	inline void setPosition(int32_t time_ms, bool pausesVideo = false) { 
+		float rel_pos = ((float)time_ms) / (getDuration() * 1000.f);
+		setPosition(rel_pos, pausesVideo); 
+	}
+	void setPosition(float rel_pos, bool pausesVideo);
 	void setPaused(bool paused);
 	void nextFrame();
 	void previousFrame();
