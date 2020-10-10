@@ -626,7 +626,7 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 	}
 }
 
-void VideoplayerWindow::setSpeed(float speed)
+void VideoplayerWindow::setSpeed(float speed) noexcept
 {
 	settings.playback_speed = speed;
 	settings.playback_speed = Util::Clamp<float>(settings.playback_speed, minPlaybackSpeed, maxPlaybackSpeed);
@@ -635,7 +635,7 @@ void VideoplayerWindow::setSpeed(float speed)
 	mpv_command_async(mpv, 0, cmd);
 }
 
-void VideoplayerWindow::addSpeed(float speed)
+void VideoplayerWindow::addSpeed(float speed) noexcept
 {
 	settings.playback_speed += speed;
 	settings.playback_speed = Util::Clamp<float>(settings.playback_speed, minPlaybackSpeed, maxPlaybackSpeed);
@@ -724,17 +724,17 @@ void VideoplayerWindow::saveFrameToImage(const std::string& directory)
 	SDL_DetachThread(handle);
 }
 
-void VideoplayerWindow::setVolume(float volume)
+void VideoplayerWindow::setVolume(float volume) noexcept
 {
-	stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.2f", volume*100.f);
+	stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.2f", (float)(volume*100.f));
 	const char* cmd[]{"set", "volume", tmp_buf, NULL};
 	mpv_command_async(mpv, 0, cmd);
 }
 
-void VideoplayerWindow::setPosition(float pos, bool pausesVideo)
+void VideoplayerWindow::setPosition(float pos, bool pausesVideo) noexcept
 {
 	MpvData.percent_pos = pos;
-	stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f%", pos * 100.0f);
+	stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f%", (float)(pos * 100.0f));
 	const char* cmd[]{ "seek", tmp_buf, "absolute-percent+exact", NULL };
 	if (pausesVideo) {
 		setPaused(true);
@@ -742,13 +742,13 @@ void VideoplayerWindow::setPosition(float pos, bool pausesVideo)
 	mpv_command_async(mpv, 0, cmd);
 }
 
-void VideoplayerWindow::setPaused(bool paused)
+void VideoplayerWindow::setPaused(bool paused) noexcept
 {
 	MpvData.paused = paused;
 	mpv_set_property_async(mpv, 0, "pause", MPV_FORMAT_FLAG, &MpvData.paused);
 }
 
-void VideoplayerWindow::nextFrame()
+void VideoplayerWindow::nextFrame() noexcept
 {
 	if (isPaused()) {
 		// use same method as previousFrame for consistency
@@ -756,14 +756,14 @@ void VideoplayerWindow::nextFrame()
 		MpvData.percent_pos += (relSeek / MpvData.duration);
 		MpvData.percent_pos = Util::Clamp(MpvData.percent_pos, 0.0, 1.0);
 
-		stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f%", relSeek);
+		stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f", relSeek);
 		const char* cmd[]{ "seek", tmp_buf, "exact", NULL };
 		//const char* cmd[]{ "frame-step", NULL };
 		mpv_command_async(mpv, 0, cmd);
 	}
 }
 
-void VideoplayerWindow::previousFrame()
+void VideoplayerWindow::previousFrame() noexcept
 {
 	if (isPaused()) {
 		// this seeks much faster
@@ -772,39 +772,39 @@ void VideoplayerWindow::previousFrame()
 		MpvData.percent_pos -= (relSeek / MpvData.duration);
 		MpvData.percent_pos = Util::Clamp(MpvData.percent_pos, 0.0, 1.0);
 
-		stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "-%.08f%", relSeek);
+		stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "-%.08f", relSeek);
 		const char* cmd[]{ "seek", tmp_buf, "exact", NULL };
 		//const char* cmd[]{ "frame-back-step", NULL };
 		mpv_command_async(mpv, 0, cmd);
 	}
 }
 
-void VideoplayerWindow::relativeFrameSeek(int32_t seek)
+void VideoplayerWindow::relativeFrameSeek(int32_t seek) noexcept
 {
 	if (isPaused()) {
 		float relSeek = ((getFrameTimeMs() * 1.001f) / 1000.f) * seek;
 		MpvData.percent_pos += (relSeek / MpvData.duration);
 		MpvData.percent_pos = Util::Clamp(MpvData.percent_pos, 0.0, 1.0);
 
-		stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f%", relSeek);
+		stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f", relSeek);
 		const char* cmd[]{ "seek", tmp_buf, "exact", NULL };
 		mpv_command_async(mpv, 0, cmd);
 	}
 }
 
-void VideoplayerWindow::togglePlay()
+void VideoplayerWindow::togglePlay() noexcept
 {
 	const char* cmd[]{ "cycle", "pause", NULL };
 	mpv_command_async(mpv, 0, cmd);
 }
 
-void VideoplayerWindow::cycleSubtitles()
+void VideoplayerWindow::cycleSubtitles() noexcept
 {
 	const char* cmd[]{ "cycle", "sub", NULL};
 	mpv_command_async(mpv, 0, cmd);
 }
 
-void VideoplayerWindow::closeVideo()
+void VideoplayerWindow::closeVideo() noexcept
 {
 	const char* cmd[] = { "stop", NULL };
 	mpv_command_async(mpv, 0, cmd);

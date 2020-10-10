@@ -50,35 +50,35 @@ private:
 
 	void register_bindings();
 
-	void update();
-	void new_frame();
-	void render();
-	void rollingBackup();
+	void update() noexcept;
+	void new_frame() noexcept;
+	void render() noexcept;
+	void rollingBackup() noexcept;
 
-	bool imgui_setup();
-	void process_events();
+	bool imgui_setup() noexcept;
+	void process_events() noexcept;
 
-	void FunscriptChanged(SDL_Event& ev);
-	void FunscriptActionClicked(SDL_Event& ev);
+	void FunscriptChanged(SDL_Event& ev) noexcept;
+	void FunscriptActionClicked(SDL_Event& ev) noexcept;
 
-	void FileDialogOpenEvent(SDL_Event& ev);
-	void FileDialogSaveEvent(SDL_Event& ev);
-	void DragNDrop(SDL_Event& ev);
+	void FileDialogOpenEvent(SDL_Event& ev) noexcept;
+	void FileDialogSaveEvent(SDL_Event& ev) noexcept;
+	void DragNDrop(SDL_Event& ev) noexcept;
 
-	void MpvVideoLoaded(SDL_Event& ev);
+	void MpvVideoLoaded(SDL_Event& ev) noexcept;
 
-	void cutSelection();
-	void copySelection();
-	void pasteSelection();
-	void equalizeSelection();
-	void invertSelection();
+	void cutSelection() noexcept;
+	void copySelection() noexcept;
+	void pasteSelection() noexcept;
+	void equalizeSelection() noexcept;
+	void invertSelection() noexcept;
 
 	void saveScript(const char* path = nullptr, bool override_location = true);
 	void saveHeatmap(const char* path, int width, int height);
 
-	void removeAction(const FunscriptAction& action);
-	void removeAction();
-	void addEditAction(int pos);
+	void removeAction(const FunscriptAction& action) noexcept;
+	void removeAction() noexcept;
+	void addEditAction(int pos) noexcept;
 
 
 	void showOpenFileDialog();
@@ -91,12 +91,12 @@ private:
 	void UpdateTimelineGradient(ImGradient& grad);
 
 	// UI
-	void CreateDockspace();
-	void ShowAboutWindow(bool* open);
-	void ShowStatisticsWindow(bool* open);
-	bool DrawTimelineWidget(const char* label, float* position);
-	void ShowMainMenuBar();
-	bool ShowMetadataEditorWindow(bool* open);
+	void CreateDockspace() noexcept;
+	void ShowAboutWindow(bool* open) noexcept;
+	void ShowStatisticsWindow(bool* open) noexcept;
+	bool DrawTimelineWidget(const char* label, float* position) noexcept;
+	void ShowMainMenuBar() noexcept;
+	bool ShowMetadataEditorWindow(bool* open) noexcept;
 public:
 	static OpenFunscripter* ptr;
 	static ImFont* DefaultFont2; // x2 size of default
@@ -126,10 +126,10 @@ public:
 
 
 	bool setup();
-	int run();
-	void shutdown();
+	int run() noexcept;
+	void shutdown() noexcept;
 
-	static inline Funscript& script() { return *OpenFunscripter::ptr->LoadedFunscript; }
+	static inline Funscript& script() noexcept { return *OpenFunscripter::ptr->LoadedFunscript; }
 
-	static void SetCursorType(SDL_SystemCursor id);
+	static void SetCursorType(SDL_SystemCursor id) noexcept;
 };

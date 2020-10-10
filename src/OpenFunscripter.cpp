@@ -20,7 +20,7 @@ ImFont* OpenFunscripter::DefaultFont2 = nullptr;
 
 const char* glsl_version = "#version 150";
 
-bool OpenFunscripter::imgui_setup()
+bool OpenFunscripter::imgui_setup() noexcept
 {
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -679,7 +679,7 @@ void OpenFunscripter::register_bindings()
 }
 
 
-void OpenFunscripter::new_frame()
+void OpenFunscripter::new_frame() noexcept
 {
     ImGuiIO& io = ImGui::GetIO();
     glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
@@ -692,7 +692,7 @@ void OpenFunscripter::new_frame()
     ImGui::NewFrame();
 }
 
-void OpenFunscripter::render()
+void OpenFunscripter::render() noexcept
 {
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -711,7 +711,7 @@ void OpenFunscripter::render()
     }
 }
 
-void OpenFunscripter::process_events()
+void OpenFunscripter::process_events() noexcept
 {
     SDL_Event event;
     while (SDL_PollEvent(&event))
@@ -735,12 +735,12 @@ void OpenFunscripter::process_events()
     }
 }
 
-void OpenFunscripter::FunscriptChanged(SDL_Event& ev)
+void OpenFunscripter::FunscriptChanged(SDL_Event& ev) noexcept
 {
     updateTimelineGradient = true;
 }
 
-void OpenFunscripter::FunscriptActionClicked(SDL_Event& ev)
+void OpenFunscripter::FunscriptActionClicked(SDL_Event& ev) noexcept
 {
     auto& [btn_ev, action] = *((ActionClickedEventArgs*)ev.user.data1);
     auto& button = btn_ev.button; // turns out I don't need this...
@@ -753,7 +753,7 @@ void OpenFunscripter::FunscriptActionClicked(SDL_Event& ev)
     }
 }
 
-void OpenFunscripter::FileDialogOpenEvent(SDL_Event& ev)
+void OpenFunscripter::FileDialogOpenEvent(SDL_Event& ev) noexcept
 {
     auto& result = *static_cast<std::vector<std::string>*>(ev.user.data1);
     if (result.size() > 0) {
@@ -765,7 +765,7 @@ void OpenFunscripter::FileDialogOpenEvent(SDL_Event& ev)
     }
 }
 
-void OpenFunscripter::FileDialogSaveEvent(SDL_Event& ev) {
+void OpenFunscripter::FileDialogSaveEvent(SDL_Event& ev) noexcept {
     auto& result = *static_cast<std::string*>(ev.user.data1);
     if (!result.empty())
     {
@@ -776,13 +776,13 @@ void OpenFunscripter::FileDialogSaveEvent(SDL_Event& ev) {
     }
 }
 
-void OpenFunscripter::DragNDrop(SDL_Event& ev)
+void OpenFunscripter::DragNDrop(SDL_Event& ev) noexcept
 {
     openFile(ev.drop.file);
     SDL_free(ev.drop.file);
 }
 
-void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev)
+void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
 {
     LoadedFunscript->metadata.original_total_duration_ms = player.getDuration() * 1000.0;
     LoadedFunscript->reserveRawActionMemory(player.getTotalNumFrames());
@@ -794,7 +794,7 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev)
     scriptPositions.ClearAudioWaveform();
 }
 
-void OpenFunscripter::update() {
+void OpenFunscripter::update() noexcept {
     OpenFunscripter::SetCursorType(SDL_SYSTEM_CURSOR_ARROW);
     LoadedFunscript->update();
     rawInput->update();
@@ -805,7 +805,7 @@ void OpenFunscripter::update() {
     }
 }
 
-void OpenFunscripter::rollingBackup()
+void OpenFunscripter::rollingBackup() noexcept
 {
     if (LoadedFunscript->current_path.empty()) { return; }
     std::chrono::duration<float> timeSinceBackup = std::chrono::system_clock::now() - last_backup;
@@ -854,7 +854,7 @@ void OpenFunscripter::rollingBackup()
     
 }
 
-int OpenFunscripter::run()
+int OpenFunscripter::run() noexcept
 {
     while (!exit_app) {
         process_events();
@@ -1077,7 +1077,7 @@ int OpenFunscripter::run()
 	return 0;
 }
 
-void OpenFunscripter::shutdown()
+void OpenFunscripter::shutdown() noexcept
 {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL2_Shutdown();
@@ -1088,7 +1088,7 @@ void OpenFunscripter::shutdown()
     SDL_Quit();
 }
 
-void OpenFunscripter::SetCursorType(SDL_SystemCursor id)
+void OpenFunscripter::SetCursorType(SDL_SystemCursor id) noexcept
 {
     static SDL_Cursor* current = SDL_GetCursor();
     static int32_t cursorType = -1;
@@ -1248,13 +1248,13 @@ void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
     SDL_FreeSurface(surface);
 }
 
-void OpenFunscripter::removeAction(const FunscriptAction& action)
+void OpenFunscripter::removeAction(const FunscriptAction& action) noexcept
 {
     undoRedoSystem.Snapshot("Remove action");
     LoadedFunscript->RemoveAction(action);
 }
 
-void OpenFunscripter::removeAction()
+void OpenFunscripter::removeAction() noexcept
 {
     if (LoadedFunscript->HasSelection()) {
         undoRedoSystem.Snapshot("Removed selection");
@@ -1268,13 +1268,13 @@ void OpenFunscripter::removeAction()
     }
 }
 
-void OpenFunscripter::addEditAction(int pos)
+void OpenFunscripter::addEditAction(int pos) noexcept
 {
     undoRedoSystem.Snapshot("Add/Edit Action");
     scripting->addEditAction(FunscriptAction(player.getCurrentPositionMs(), pos));
 }
 
-void OpenFunscripter::cutSelection()
+void OpenFunscripter::cutSelection() noexcept
 {
     if (LoadedFunscript->HasSelection()) {
         copySelection();
@@ -1283,7 +1283,7 @@ void OpenFunscripter::cutSelection()
     }
 }
 
-void OpenFunscripter::copySelection()
+void OpenFunscripter::copySelection() noexcept
 {
     if (LoadedFunscript->HasSelection()) {
         CopiedSelection.clear();
@@ -1293,7 +1293,7 @@ void OpenFunscripter::copySelection()
     }
 }
 
-void OpenFunscripter::pasteSelection()
+void OpenFunscripter::pasteSelection() noexcept
 {
     if (CopiedSelection.size() == 0) return;
     undoRedoSystem.Snapshot("Paste copied actions");
@@ -1307,7 +1307,7 @@ void OpenFunscripter::pasteSelection()
     player.setPosition((CopiedSelection.end() - 1)->at + offset_ms);
 }
 
-void OpenFunscripter::equalizeSelection()
+void OpenFunscripter::equalizeSelection() noexcept
 {
     if (!LoadedFunscript->HasSelection()) {
         undoRedoSystem.Snapshot("Equalize actions");
@@ -1333,7 +1333,7 @@ void OpenFunscripter::equalizeSelection()
     }
 }
 
-void OpenFunscripter::invertSelection()
+void OpenFunscripter::invertSelection() noexcept
 {
     if (!LoadedFunscript->HasSelection()) {
         undoRedoSystem.Snapshot("Invert actions");
@@ -1416,7 +1416,7 @@ void OpenFunscripter::showSaveFileDialog()
 }
 
 
-void OpenFunscripter::ShowMainMenuBar()
+void OpenFunscripter::ShowMainMenuBar() noexcept
 {
 #define BINDING_STRING(binding) keybinds.getBindingString(binding).c_str()
     // TODO: either remove the shortcuts or dynamically retrieve them
@@ -1684,7 +1684,7 @@ void OpenFunscripter::ShowMainMenuBar()
 #undef BINDING_STRING
 }
 
-bool OpenFunscripter::ShowMetadataEditorWindow(bool* open)
+bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
 {
     if (!*open) return false;
     bool save = false;
@@ -1798,7 +1798,7 @@ void OpenFunscripter::SetFullscreen(bool fullscreen) {
     }
 }
 
-void OpenFunscripter::CreateDockspace()
+void OpenFunscripter::CreateDockspace() noexcept
 {
     const bool opt_fullscreen_persistant = true;
     const bool opt_fullscreen = opt_fullscreen_persistant;
@@ -1850,7 +1850,7 @@ void OpenFunscripter::CreateDockspace()
     ImGui::End();
 }
 
-void OpenFunscripter::ShowAboutWindow(bool* open)
+void OpenFunscripter::ShowAboutWindow(bool* open) noexcept
 {
     if (!*open) return;
     ImGui::Begin("About", open, ImGuiWindowFlags_None 
@@ -1866,7 +1866,7 @@ void OpenFunscripter::ShowAboutWindow(bool* open)
     ImGui::End();
 }
 
-void OpenFunscripter::ShowStatisticsWindow(bool* open)
+void OpenFunscripter::ShowStatisticsWindow(bool* open) noexcept
 {
     if (!*open) return;
     ImGui::Begin("Statistics", open, ImGuiWindowFlags_None);
@@ -1900,7 +1900,7 @@ void OpenFunscripter::ShowStatisticsWindow(bool* open)
 
 }
 
-bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position)
+bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position) noexcept
 {
     bool change = false;
 

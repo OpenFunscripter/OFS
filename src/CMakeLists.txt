@@ -42,6 +42,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   portable_file_dialogs
 )
 
+target_compile_definitions(${PROJECT_NAME} PUBLIC
+	"JSON_HEDLEY_NO_THROW"
+)
+
 if(WIN32)
 target_include_directories(${PROJECT_NAME} PRIVATE 
 	"${CMAKE_SOURCE_DIR}/lib/libmpv/include"
@@ -93,9 +97,11 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
 # warnings as errors
 if(MSVC)
+    target_compile_options(${PROJECT_NAME} PUBLIC /EHs-c- /GR-)
 	# target_compile_options(${PROJECT_NAME} PRIVATE /W2 /WX)
 	# target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
 else() # clang/gcc
+	target_compile_options(${PROJECT_NAME} PUBLIC -fno-exceptions -fno-rtti)
 	target_compile_options(${PROJECT_NAME} PUBLIC -fpermissive -Wno-writable-strings)
 	# target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic -Werror 
 	# 	-Wno-error=unused-parameter 

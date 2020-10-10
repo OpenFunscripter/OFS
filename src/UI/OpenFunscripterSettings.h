@@ -67,19 +67,19 @@ private:
 	const char* ConfigStr = "config";
 	nlohmann::json keybindsObj;
 	nlohmann::json configObj;
-	nlohmann::json& config() { return configObj[ConfigStr]; }
+	nlohmann::json& config() noexcept { return configObj[ConfigStr]; }
 
 	void save_keybinds();
 	void save_config();
 	void load_config();
 public:
 	OpenFunscripterSettings(const std::string& keybinds, const std::string& config);
-	ScripterSettingsData& data() { return scripterSettings; }
+	ScripterSettingsData& data() noexcept { return scripterSettings; }
 	void saveSettings();
 	void saveKeybinds(const std::vector<KeybindingGroup>& binding);
 	std::vector<KeybindingGroup> getKeybindings();
 
-	inline void addRecentFile(RecentFile& recentFile) {
+	inline void addRecentFile(RecentFile& recentFile) noexcept {
 		bool already_contains = std::any_of(scripterSettings.recentFiles.begin(), scripterSettings.recentFiles.end(),
 			[&](auto& file) {
 				return file.video_path == recentFile.video_path && file.script_path == recentFile.script_path;

@@ -12,7 +12,7 @@ struct mpv_handle;
 struct mpv_render_context;
 
 enum VideoMode : int32_t {
-	FULL = 1,
+	FULL,
 	LEFT_PANE,
 	RIGHT_PANE,
 	TOP_PANE,
@@ -120,7 +120,7 @@ public:
 		template <class Archive>
 		inline void reflect(Archive& ar) {
 			OFS_REFLECT(activeMode, ar);
-			activeMode = (VideoMode)Util::Clamp<int32_t>(activeMode, VideoMode::FULL, VideoMode::TOTAL_NUM_MODES);
+			activeMode = (VideoMode)Util::Clamp<int32_t>(activeMode, VideoMode::FULL, VideoMode::TOTAL_NUM_MODES - 1);
 			OFS_REFLECT(volume, ar);
 			OFS_REFLECT(playback_speed, ar);
 			OFS_REFLECT(vr_zoom, ar);
@@ -139,20 +139,20 @@ public:
 	bool setup();
 	void DrawVideoPlayer(bool* open);
 
-	inline void resetTranslationAndZoom() { 
+	inline void resetTranslationAndZoom() noexcept {
 		settings.zoom_factor = 1.f;
 		settings.prev_translation = ImVec2(0.f, 0.f);
 		settings.current_translation = ImVec2(0.f, 0.f); 
 	}
 
-	void setSpeed(float speed);
-	void addSpeed(float speed);
+	void setSpeed(float speed) noexcept;
+	void addSpeed(float speed) noexcept;
 
 	void openVideo(const std::string& file);
 	void saveFrameToImage(const std::string& file);
 
-	inline double getCurrentPositionMsInterp() const { return getCurrentPositionSecondsInterp() * 1000.0; }
-	inline double getCurrentPositionSecondsInterp() const { 
+	inline double getCurrentPositionMsInterp() const noexcept { return getCurrentPositionSecondsInterp() * 1000.0; }
+	inline double getCurrentPositionSecondsInterp() const noexcept {
 		if (MpvData.paused) {
 			return getCurrentPositionSeconds();
 		}
@@ -162,38 +162,38 @@ public:
 		}
 	}
 
-	inline double getCurrentPositionMs() const { return getCurrentPositionSeconds() * 1000.0; }
-	inline double getCurrentPositionSeconds() const { return MpvData.percent_pos * MpvData.duration; }
+	inline double getCurrentPositionMs() const noexcept { return getCurrentPositionSeconds() * 1000.0; }
+	inline double getCurrentPositionSeconds() const noexcept { return MpvData.percent_pos * MpvData.duration; }
 
-	inline double getRealCurrentPositionMs() const { return MpvData.real_percent_pos * MpvData.duration * 1000.0; }
-	inline void syncWithRealTime() { MpvData.percent_pos = MpvData.real_percent_pos; }
+	inline double getRealCurrentPositionMs() const noexcept { return MpvData.real_percent_pos * MpvData.duration * 1000.0; }
+	inline void syncWithRealTime() noexcept { MpvData.percent_pos = MpvData.real_percent_pos; }
 
 
-	void setVolume(float volume);
-	inline void setPosition(int32_t time_ms, bool pausesVideo = false) { 
+	void setVolume(float volume) noexcept;
+	inline void setPosition(int32_t time_ms, bool pausesVideo = false) noexcept {
 		float rel_pos = ((float)time_ms) / (getDuration() * 1000.f);
 		setPosition(rel_pos, pausesVideo); 
 	}
-	void setPosition(float rel_pos, bool pausesVideo);
-	void setPaused(bool paused);
-	void nextFrame();
-	void previousFrame();
-	void relativeFrameSeek(int32_t seek);
-	void togglePlay();
-	void cycleSubtitles();
+	void setPosition(float rel_pos, bool pausesVideo) noexcept;
+	void setPaused(bool paused) noexcept;
+	void nextFrame() noexcept;
+	void previousFrame() noexcept;
+	void relativeFrameSeek(int32_t seek) noexcept;
+	void togglePlay() noexcept;
+	void cycleSubtitles() noexcept;
 
-	inline double getFrameTimeMs() const { return MpvData.average_frame_time * 1000.0; }
-	inline double getSpeed() const { return MpvData.current_speed; }
-	inline double getDuration() const { return MpvData.duration; }
-	inline int64_t getTotalNumFrames() const { return MpvData.total_num_frames; }
-	inline bool isPaused() const { return MpvData.paused; };
-	inline double getPosition() const { return MpvData.percent_pos; }
-	inline int64_t getCurrentFrameEstimate() const { return MpvData.percent_pos * MpvData.total_num_frames; }
-	inline double getFps() const { return MpvData.fps; }
-	inline bool isLoaded() const { return MpvData.video_loaded; }
-	void closeVideo();
+	inline double getFrameTimeMs() const noexcept { return MpvData.average_frame_time * 1000.0; }
+	inline double getSpeed() const noexcept { return MpvData.current_speed; }
+	inline double getDuration() const noexcept { return MpvData.duration; }
+	inline int64_t getTotalNumFrames() const  noexcept { return MpvData.total_num_frames; }
+	inline bool isPaused() const noexcept { return MpvData.paused; };
+	inline double getPosition() const noexcept { return MpvData.percent_pos; }
+	inline int64_t getCurrentFrameEstimate() const noexcept { return MpvData.percent_pos * MpvData.total_num_frames; }
+	inline double getFps() const noexcept { return MpvData.fps; }
+	inline bool isLoaded() const noexcept { return MpvData.video_loaded; }
+	void closeVideo() noexcept;
 
-	inline const char* getVideoPath() const { return (MpvData.file_path == nullptr) ? "" : MpvData.file_path; }
+	inline const char* getVideoPath() const noexcept { return (MpvData.file_path == nullptr) ? "" : MpvData.file_path; }
 };
 
 
