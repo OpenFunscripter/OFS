@@ -138,8 +138,8 @@ public:
 	inline const FunscriptAction* GetPreviousActionBehind(int32_t time_ms) noexcept { return getPreviousActionBehind(time_ms); }
 	inline const FunscriptAction* GetClosestAction(int32_t time_ms) noexcept { return getActionAtTime(data.Actions, time_ms, std::numeric_limits<uint32_t>::max()); }
 
-	int GetPositionAtTime(int32_t time_ms) noexcept;
-	int GetRawPositionAtFrame(int32_t frame_no) noexcept;
+	float GetPositionAtTime(int32_t time_ms) noexcept;
+	float GetRawPositionAtFrame(int32_t frame_no) noexcept;
 	
 	inline void AddAction(const FunscriptAction& newAction) noexcept { addAction(data.Actions, newAction); }
 	inline void AddActionRaw(int32_t frame_no, int32_t frame_time_ms, int32_t at, int32_t pos) noexcept { 

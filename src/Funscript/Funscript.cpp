@@ -189,7 +189,7 @@ void Funscript::save(const std::string& path, bool override_location)
 	Util::WriteJson(Json, path.c_str());
 }
 
-int Funscript::GetPositionAtTime(int32_t time_ms) noexcept
+float Funscript::GetPositionAtTime(int32_t time_ms) noexcept
 {
 	if (data.Actions.size() == 0) {	return 0; } 
 	else if (data.Actions.size() == 1) return data.Actions[0].pos;
@@ -201,9 +201,9 @@ int Funscript::GetPositionAtTime(int32_t time_ms) noexcept
 		if (time_ms > action.at && time_ms < next.at) {
 			// interpolate position
 			int32_t last_pos = action.pos;
-			int32_t diff = next.pos - action.pos;
+			float diff = next.pos - action.pos;
 			float progress = (float)(time_ms - action.at) / (next.at - action.at);
-			int32_t interp = last_pos + (int32_t)(progress * (float)diff);
+			float interp = last_pos +(progress * (float)diff);
 			return interp;
 		}
 		else if (action.at == time_ms) {
@@ -215,7 +215,7 @@ int Funscript::GetPositionAtTime(int32_t time_ms) noexcept
 	return data.Actions.back().pos;
 }
 
-int Funscript::GetRawPositionAtFrame(int32_t frame_no) noexcept
+float Funscript::GetRawPositionAtFrame(int32_t frame_no) noexcept
 {
 	if (frame_no >= data.RawActions.size()) return 0;
 	// this is stupid

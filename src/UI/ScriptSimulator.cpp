@@ -75,7 +75,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
 {
     if (*open) {
         auto ptr = OpenFunscripter::ptr;
-        int currentPos;
+        float currentPos;
 
         if (!SimulateRawActions) {
             currentPos = ptr->LoadedFunscript->GetPositionAtTime(ptr->player.getCurrentPositionMsInterp());
@@ -89,7 +89,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
                 ImGuiWindowFlags_NoBackground
                 | ImGuiWindowFlags_NoDocking);
             ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-            ImGui::VSliderInt("", ImGui::GetContentRegionAvail(), &currentPos, 0, 100);
+            ImGui::VSliderFloat("", ImGui::GetContentRegionAvail(), &currentPos, 0, 100);
             ImGui::PopItemFlag();
             ImGui::End();
             if (!*open) {
