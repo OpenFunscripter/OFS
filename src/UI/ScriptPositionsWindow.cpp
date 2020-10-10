@@ -435,14 +435,11 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				ShowAudioWaveform = false; // gets switched true after processing
 				ffmpegInProgress = true;
 
-				auto ffmpegThread = [](void* userData) {
+				auto ffmpegThread = [](void* userData) -> int {
 					auto& ctx = *((ScriptPositionsWindow*)userData);
 					std::error_code ec;
 
-					auto base = SDL_GetBasePath();
-					auto base_path = std::filesystem::path(base);
-					SDL_free(base);
-
+					auto base_path = Util::Basepath();
 					auto ffmpeg_path = base_path / "ffmpeg.exe";
 					auto output_path = base_path / "tmp";
 					std::filesystem::create_directories(output_path, ec);
@@ -452,12 +449,13 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 
 					bool succ = OutputAudioFile(ffmpeg_path.string().c_str(), video_path,  output_path.string().c_str());
 					if (!succ) {
-						LOGF_ERROR("Failed to output mp3 from video. (ffmpeg_path: \"%s\")", ffmpeg_path.c_str());
+						LOGF_ERROR("Failed to output mp3 from video. (ffmpeg_path: \"%s\")", ffmpeg_path.string().c_str());
 						ctx.ShowAudioWaveform = false;
 					}
 				
 					mp3dec_t mp3d;
 					mp3dec_file_info_t info;
+
 					if (mp3dec_load(&mp3d, output_path.string().c_str(), &info, NULL, NULL))
 					{
 						/* error */

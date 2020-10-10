@@ -85,9 +85,15 @@ bool OpenFunscripter::imgui_setup()
         if (font == nullptr) return false;
     }
 
-    config.MergeMode = false;
-    DefaultFont2 = io.Fonts->AddFontFromFileTTF(roboto, settings->data().default_font_size * 2.0f, &config);
-    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+    if (!std::filesystem::exists(roboto, ec) || !std::filesystem::is_regular_file(roboto, ec)) {
+        LOGF_WARN("\"%s\" font is missing.", roboto);
+    } 
+    else
+    {
+        config.MergeMode = false;
+        DefaultFont2 = io.Fonts->AddFontFromFileTTF(roboto, settings->data().default_font_size * 2.0f, &config);
+        io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+    }
 
     // Upload texture to graphics system
     GLuint font_tex;
@@ -455,7 +461,10 @@ void OpenFunscripter::register_bindings()
             SDLK_F2,
             0,
             true,
-            [&](void*) { player.saveFrameToImage(settings->data().screenshot_dir); }
+            [&](void*) { 
+                auto screenshot_dir = Util::Basepath() / "screenshot";
+                player.saveFrameToImage(screenshot_dir.string()); 
+            }
         ));
 
         // CHANGE SUBTITLES
@@ -805,11 +814,11 @@ void OpenFunscripter::rollingBackup()
     }
     last_backup = std::chrono::system_clock::now();
 
-    std::filesystem::path backupDir("backup");
+    auto backupDir = Util::Basepath();
+    backupDir /= "backup";
     auto name = Util::Filename(player.getVideoPath());
     backupDir /= name;
     std::error_code ec;
-    backupDir = std::move(std::filesystem::absolute(backupDir, ec));
     std::filesystem::create_directories(backupDir, ec);
     char path_buf[1024];
 
@@ -1455,15 +1464,15 @@ void OpenFunscripter::ShowMainMenuBar()
         {
             if (ImGui::MenuItem("Save frame as image", BINDING_STRING("save_frame_as_image")))
             { 
-                player.saveFrameToImage(settings->data().screenshot_dir);
+                auto screenshot_dir = Util::Basepath() / "screenshot";
+                player.saveFrameToImage(screenshot_dir.string().c_str());
             }
             // this is awkward
             if (ImGui::MenuItem("Open screenshot directory")) {
                 std::error_code ec;
-                std::filesystem::path dir(settings->data().screenshot_dir);
-                dir = std::filesystem::absolute(dir, ec);
-                std::filesystem::create_directories(dir, ec);
-                Util::OpenFileExplorer(dir.string().c_str());
+                auto screenshot_dir = Util::Basepath() / "screenshot";
+                std::filesystem::create_directories(screenshot_dir, ec);
+                Util::OpenFileExplorer(screenshot_dir.string().c_str());
             }
 
             ImGui::Separator();
@@ -1477,11 +1486,11 @@ void OpenFunscripter::ShowMainMenuBar()
             if (ImGui::MenuItem("Save heatmap")) { 
                 char buf[1024];
                 stbsp_snprintf(buf, sizeof(buf), "%s_Heatmap.bmp", LoadedFunscript->metadata.original_name.c_str());
-                std::filesystem::path heatmapPath(settings->data().screenshot_dir);
+                auto heatmapPath = Util::Basepath() / "screenshot";
                 std::error_code ec;
                 std::filesystem::create_directories(heatmapPath, ec);
                 heatmapPath /= buf;
-                saveHeatmap(heatmapPath.string().c_str(), heatmapWidth, heatmapHeight); 
+                saveHeatmap(heatmapPath.string().c_str(), heatmapWidth, heatmapHeight);
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Undo", BINDING_STRING("undo"), false, !undoRedoSystem.UndoEmpty())) {

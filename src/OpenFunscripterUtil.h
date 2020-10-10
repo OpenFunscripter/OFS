@@ -2,6 +2,7 @@
 
 #include "SDL_rwops.h"
 #include "SDL_log.h"
+#include "SDL_filesystem.h"
 #include "nlohmann/json.hpp"
 
 #include <memory>
@@ -144,6 +145,13 @@ public:
 
 	static int OpenFileExplorer(const char* path);
 	static int OpenUrl(const char* url);
+
+	inline static std::filesystem::path Basepath() {
+		char* base = SDL_GetBasePath();
+		std::filesystem::path path(base);
+		SDL_free(base);
+		return path;
+	}
 
 	inline static std::string Filename(const std::string& path) {
 		return std::filesystem::path(path)
