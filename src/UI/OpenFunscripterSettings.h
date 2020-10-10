@@ -78,8 +78,8 @@ public:
 	OpenFunscripterSettings(const std::string& keybinds, const std::string& config);
 	ScripterSettingsData& data() { return scripterSettings; }
 	void saveSettings();
-	void saveKeybinds(const std::vector<Keybinding>& binding);
-	std::vector<Keybinding> getKeybindings();
+	void saveKeybinds(const std::vector<KeybindingGroup>& binding);
+	std::vector<KeybindingGroup> getKeybindings();
 
 	inline void addRecentFile(RecentFile& recentFile) {
 		bool already_contains = std::any_of(scripterSettings.recentFiles.begin(), scripterSettings.recentFiles.end(),

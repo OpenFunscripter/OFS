@@ -82,26 +82,28 @@ void KeybindingSystem::pressed(SDL_Event& ev)
     // this prevents keybindings from being processed when typing into a textbox etc.
     if (ImGui::IsAnyItemActive()) return;
     // process bindings
-    for (auto& binding : ActiveBindings) {
-        if (key.repeat && binding.ignore_repeats) continue;
+    for (auto& group : ActiveBindings) {
+        for (auto& binding : group.bindings) {
+            if (key.repeat && binding.ignore_repeats) continue;
 
-        if (key.keysym.sym == binding.key) {
-            bool modifierMismatch = false;
-            for (auto possibleModifier : possibleModifiers) {
-                if ((modstate & possibleModifier) != (binding.modifiers & possibleModifier)) {
-                    modifierMismatch = true;
-                    break;
+            if (key.keysym.sym == binding.key) {
+                bool modifierMismatch = false;
+                for (auto possibleModifier : possibleModifiers) {
+                    if ((modstate & possibleModifier) != (binding.modifiers & possibleModifier)) {
+                        modifierMismatch = true;
+                        break;
+                    }
                 }
+                if (modifierMismatch) continue;
             }
-            if (modifierMismatch) continue;
-        }
-        else {
-            continue;
-        }
+            else {
+                continue;
+            }
 
-        // execute binding
-        binding.action(0);
-        break;
+            // execute binding
+            binding.action(0);
+            break;
+        }
     }
 }
 
@@ -149,28 +151,38 @@ const std::string& KeybindingSystem::getBindingString(const char* binding_id) no
     return empty;
 }
 
-void KeybindingSystem::setBindings(const std::vector<Keybinding>& bindings)
+void KeybindingSystem::setBindings(const std::vector<KeybindingGroup>& groups)
 {
     // setBindings only does something if the bindings were previously registered
-    for (auto& keybind : bindings) {
-        auto it = std::find_if(ActiveBindings.begin(), ActiveBindings.end(),
-            [&](auto active) { return active.identifier == keybind.identifier; });
-        if (it != ActiveBindings.end()) {
-            // override defaults
-            it->ignore_repeats = keybind.ignore_repeats;
-            it->key = keybind.key;
-            it->modifiers = keybind.modifiers;
-            it->key_str = loadKeyString(keybind.key, keybind.modifiers);
-            binding_string_cache[it->identifier] = it->key_str;
+    for (auto& group : groups) {
+        for (auto& keybind : group.bindings) {
+            auto groupIt = std::find_if(ActiveBindings.begin(), ActiveBindings.end(),
+                [&](auto& activeGroup) { return activeGroup.name == group.name; });
+
+            if (groupIt != ActiveBindings.end()) {
+                auto it = std::find_if(groupIt->bindings.begin(), groupIt->bindings.end(),
+                    [&](auto& active) { return active.identifier == keybind.identifier; });
+
+                if (it != groupIt->bindings.end()) {
+                    // override defaults
+                    it->ignore_repeats = keybind.ignore_repeats;
+                    it->key = keybind.key;
+                    it->modifiers = keybind.modifiers;
+                    it->key_str = loadKeyString(keybind.key, keybind.modifiers);
+                    binding_string_cache[it->identifier] = it->key_str;
+                }
+            }
         }
     }
 }
 
-void KeybindingSystem::registerBinding(const Keybinding& binding)
+void KeybindingSystem::registerBinding(const KeybindingGroup& group)
 {
-    ActiveBindings.push_back(binding);
-    (ActiveBindings.end() - 1)->key_str = loadKeyString(binding.key, binding.modifiers);
-    binding_string_cache[(ActiveBindings.end() - 1)->identifier] = (ActiveBindings.end() - 1)->key_str;
+    ActiveBindings.emplace_back(std::move(group));
+    for (auto& binding : ActiveBindings.back().bindings) {
+        binding.key_str = loadKeyString(binding.key, binding.modifiers);
+        binding_string_cache[binding.identifier] = binding.key_str;
+    }
 }
 
 bool KeybindingSystem::ShowBindingWindow()
@@ -190,40 +202,48 @@ bool KeybindingSystem::ShowBindingWindow()
         ImGui::Text("The keybindings get saved everytime a change is made.");
         ImGui::Text("Config: \"data/keybindings.json\"\nIf you wan't to revert to defaults delete the config.");
 
-        ImGui::Columns(3, "bindings");
-        ImGui::Separator();
-        ImGui::Text("Action"); ImGui::NextColumn();
-        ImGui::Text("Current"); ImGui::NextColumn();
-        ImGui::Text("Ignore repeats"); ImGui::NextColumn();
 
         ImGui::Separator();
         int id = 0;
-        for(auto& binding : ActiveBindings)
+        for(auto& group : ActiveBindings)
         {
-            ImGui::PushID(id++);
-            ImGui::Text("%s", binding.description.c_str()); ImGui::NextColumn();
-            if(ImGui::Button(!binding.key_str.empty() ? binding.key_str.c_str() : "-- Not set --", ImVec2(-1, 0))) {
-                currentlyChanging = &binding;
-                currentlyHeldKeys.str("");
-                ImGui::OpenPopup("Change Binding");
-            }
-            ImGui::NextColumn();
-            if (ImGui::Checkbox("", &binding.ignore_repeats)) { save = true; } ImGui::NextColumn();
+            ImGui::Columns(1);
+            if (ImGui::CollapsingHeader(group.name.c_str())) {
+                ImGui::PushID(group.name.c_str());
+                
+                ImGui::Columns(3, "bindings");
+                ImGui::Separator();
+                ImGui::Text("Action"); ImGui::NextColumn();
+                ImGui::Text("Current"); ImGui::NextColumn();
+                ImGui::Text("Ignore repeats"); ImGui::NextColumn();
+                for (auto& binding : group.bindings) {
+                    ImGui::PushID(id++);
+                    ImGui::Text("%s", binding.description.c_str()); ImGui::NextColumn();
+                    if(ImGui::Button(!binding.key_str.empty() ? binding.key_str.c_str() : "-- Not set --", ImVec2(-1, 0))) {
+                        currentlyChanging = &binding;
+                        currentlyHeldKeys.str("");
+                        ImGui::OpenPopup("Change Binding");
+                    }
+                    ImGui::NextColumn();
+                    if (ImGui::Checkbox("", &binding.ignore_repeats)) { save = true; } ImGui::NextColumn();
 
-            if (ImGui::BeginPopupModal("Change Binding", 0, ImGuiWindowFlags_AlwaysAutoResize)) 
-            {
-                if (currentlyHeldKeys.tellp() == 0)
-                    ImGui::Text("Press any key...\nEscape to cancel.");
-                else
-                    ImGui::Text(currentlyHeldKeys.str().c_str());
-                if (!currentlyChanging) {
-                    save = true; // autosave
-                    ImGui::CloseCurrentPopup();
+                    if (ImGui::BeginPopupModal("Change Binding", 0, ImGuiWindowFlags_AlwaysAutoResize)) 
+                    {
+                        if (currentlyHeldKeys.tellp() == 0)
+                            ImGui::Text("Press any key...\nEscape to cancel.");
+                        else
+                            ImGui::Text(currentlyHeldKeys.str().c_str());
+                        if (!currentlyChanging) {
+                            save = true; // autosave
+                            ImGui::CloseCurrentPopup();
+                        }
+                        ImGui::EndPopup();
+                    }
+
+                    ImGui::PopID();
                 }
-                ImGui::EndPopup();
+                ImGui::PopID();
             }
-
-            ImGui::PopID();
         }
         ImGui::Columns(1);
         ImGui::Separator();

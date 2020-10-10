@@ -11,12 +11,13 @@ struct mpv_handle;
 struct mpv_render_context;
 
 enum VideoMode : int32_t {
-	FULL,
+	FULL = 1,
 	LEFT_PANE,
 	RIGHT_PANE,
 	TOP_PANE,
 	BOTTOM_PANE,
-	VR_MODE
+	VR_MODE,
+	TOTAL_NUM_MODES,
 };
 
 class VideoplayerWindow
@@ -118,6 +119,7 @@ public:
 		template <class Archive>
 		inline void reflect(Archive& ar) {
 			OFS_REFLECT(activeMode, ar);
+			activeMode = (VideoMode)Util::Clamp<int32_t>(activeMode, VideoMode::FULL, VideoMode::TOTAL_NUM_MODES);
 			OFS_REFLECT(volume, ar);
 			OFS_REFLECT(playback_speed, ar);
 			OFS_REFLECT(vr_zoom, ar);

@@ -12,7 +12,6 @@
 #include "imgui_stdlib.h"
 #include "imgui_internal.h"
 
-// TODO: QoL make keybindings groupable just a visual improvement
 // TODO: make heatmap generation more sophisticated
 // TODO: [MAJOR FEATURE] working with raw actions and controller input
 
@@ -244,57 +243,242 @@ bool OpenFunscripter::setup()
 
 void OpenFunscripter::register_bindings()
 {
-    // UNDO / REDO
-    keybinds.registerBinding(Keybinding(
-        "undo",
-        "Undo",
-        SDLK_z,
-        KMOD_CTRL,
-        false,
-        [&](void*) { undoRedoSystem.Undo(); }
-    ));
-    keybinds.registerBinding(Keybinding(
-        "redo",
-        "Redo",
-        SDLK_y,
-        KMOD_CTRL,
-        false,
-        [&](void*) { undoRedoSystem.Redo(); }
-    ));
+    {
+        KeybindingGroup group;
+        group.name = "Actions";
+        // DELETE ACTION
+        group.bindings.push_back(Keybinding(
+            "remove_action",
+            "Remove action",
+            SDLK_DELETE,
+            0,
+            true,
+            [&](void*) { removeAction(); }
+        ));
 
-    // COPY / PASTE
-    keybinds.registerBinding(Keybinding(
-        "copy",
-        "Copy",
-        SDLK_c,
-        KMOD_CTRL,
-        true,
-        [&](void*) { copySelection(); }
-    ));
-    keybinds.registerBinding(Keybinding(
-        "paste",
-        "Paste",
-        SDLK_v,
-        KMOD_CTRL,
-        true,
-        [&](void*) { pasteSelection(); }
-    ));
-    keybinds.registerBinding(Keybinding(
-        "cut",
-        "Cut",
-        SDLK_x,
-        KMOD_CTRL,
-        true,
-        [&](void*) { cutSelection(); }
-    ));
-    keybinds.registerBinding(Keybinding(
-        "select_all",
-        "Select all",
-        SDLK_a,
-        KMOD_CTRL,
-        true,
-        [&](void*) { LoadedFunscript->SelectAll(); }
-    ));
+        //ADD ACTIONS
+        group.bindings.push_back(Keybinding(
+            "action 0",
+            "Action at 0",
+            SDLK_KP_0,
+            0,
+            true,
+            [&](void*) { addEditAction(0); }
+        ));
+        std::stringstream ss;
+        for (int i = 1; i < 10; i++) {
+            ss.str("");
+            ss << "action " << i * 10;
+            std::string id = ss.str();
+            ss.str("");
+            ss << "Action at " << i * 10;
+
+            group.bindings.push_back(Keybinding(
+                id,
+                ss.str(),
+                SDLK_KP_1 + i - 1,
+                0,
+                true,
+                [&, i](void*) { addEditAction(i * 10); }
+            ));
+        }
+        group.bindings.push_back(Keybinding(
+            "action 100",
+            "Action at 100",
+            SDLK_KP_DIVIDE,
+            0,
+            true,
+            [&](void*) { addEditAction(100); }
+        ));
+
+        keybinds.registerBinding(group);
+    }
+
+    {
+        KeybindingGroup group;
+        group.name = "Core";
+
+        // SAVE
+        group.bindings.push_back(Keybinding(
+            "save",
+            "Save",
+            SDLK_s,
+            KMOD_CTRL,
+
+            true,
+            [&](void*) { saveScript(); }
+        ));
+
+
+        group.bindings.push_back(Keybinding(
+            "sync_timestamps",
+            "Sync time with player",
+            SDLK_s,
+            0,
+            true,
+            [&](void*) { player.syncWithRealTime(); }
+        ));
+
+
+        keybinds.registerBinding(group);
+    }
+    {
+        KeybindingGroup group;
+        group.name = "Navigation";
+        // JUMP BETWEEN ACTIONS
+        group.bindings.push_back(Keybinding(
+            "prev_action",
+            "Previous action",
+            SDLK_DOWN,
+            0,
+            false,
+            [&](void*) {
+                auto action = LoadedFunscript->GetPreviousActionBehind(player.getCurrentPositionMs() - 1.f);
+                if (action != nullptr) player.setPosition(action->at);
+            }
+        ));
+        group.bindings.push_back(Keybinding(
+            "next_action",
+            "Next action",
+            SDLK_UP,
+            0,
+            false,
+            [&](void*) {
+                auto action = LoadedFunscript->GetNextActionAhead(player.getCurrentPositionMs() + 1.f);
+                if (action != nullptr) player.setPosition(action->at);
+            }
+        ));
+
+        // FRAME CONTROL
+        group.bindings.push_back(Keybinding(
+            "prev_frame",
+            "Previous frame",
+            SDLK_LEFT,
+            0,
+            false,
+            [&](void*) { player.previousFrame(); }
+        ));
+
+        group.bindings.push_back(Keybinding(
+            "next_frame",
+            "Next frame",
+            SDLK_RIGHT,
+            0,
+            false,
+            [&](void*) { player.nextFrame(); }
+        ));
+
+        group.bindings.push_back(Keybinding(
+            "fast_step",
+            "Fast step",
+            SDLK_RIGHT,
+            KMOD_CTRL,
+            false,
+            [&](void*) {
+                int32_t frameStep = settings->data().fast_step_amount;
+                player.relativeFrameSeek(frameStep);
+            }
+        ));
+        group.bindings.push_back(Keybinding(
+            "fast_backstep",
+            "Fast backstep",
+            SDLK_LEFT,
+            KMOD_CTRL,
+            false,
+            [&](void*) {
+                int32_t frameStep = settings->data().fast_step_amount;
+                player.relativeFrameSeek(-frameStep);
+            }
+        ));
+        keybinds.registerBinding(group);
+    }
+    
+    {
+        KeybindingGroup group;
+        group.name = "Utility";
+        // UNDO / REDO
+        group.bindings.push_back(Keybinding(
+            "undo",
+            "Undo",
+            SDLK_z,
+            KMOD_CTRL,
+            false,
+            [&](void*) { undoRedoSystem.Undo(); }
+        ));
+        group.bindings.push_back(Keybinding(
+            "redo",
+            "Redo",
+            SDLK_y,
+            KMOD_CTRL,
+            false,
+            [&](void*) { undoRedoSystem.Redo(); }
+        ));
+
+        // COPY / PASTE
+        group.bindings.push_back(Keybinding(
+            "copy",
+            "Copy",
+            SDLK_c,
+            KMOD_CTRL,
+            true,
+            [&](void*) { copySelection(); }
+        ));
+        group.bindings.push_back(Keybinding(
+            "paste",
+            "Paste",
+            SDLK_v,
+            KMOD_CTRL,
+            true,
+            [&](void*) { pasteSelection(); }
+        ));
+        group.bindings.push_back(Keybinding(
+            "cut",
+            "Cut",
+            SDLK_x,
+            KMOD_CTRL,
+            true,
+            [&](void*) { cutSelection(); }
+        ));
+        group.bindings.push_back(Keybinding(
+            "select_all",
+            "Select all",
+            SDLK_a,
+            KMOD_CTRL,
+            true,
+            [&](void*) { LoadedFunscript->SelectAll(); }
+        ));
+
+        // SCREENSHOT VIDEO
+        group.bindings.push_back(Keybinding(
+            "save_frame_as_image",
+            "Save frame as image",
+            SDLK_F2,
+            0,
+            true,
+            [&](void*) { player.saveFrameToImage(settings->data().screenshot_dir); }
+        ));
+
+        // CHANGE SUBTITLES
+        group.bindings.push_back(Keybinding(
+            "cycle_subtitles",
+            "Cycle subtitles",
+            SDLK_j,
+            0,
+            true,
+            [&](void*) { player.cycleSubtitles(); }
+        ));
+
+        // FULLSCREEN
+        group.bindings.push_back(Keybinding(
+            "fullscreen_toggle",
+            "Toggle fullscreen",
+            SDLK_F10,
+            0,
+            true,
+            [&](void*) { Fullscreen = !Fullscreen; SetFullscreen(Fullscreen); }
+        ));
+        keybinds.registerBinding(group);
+    }
 
     // MOVE LEFT/RIGHT
     auto move_actions_horizontal = [](int32_t time_ms) {
@@ -331,304 +515,158 @@ void OpenFunscripter::register_bindings()
             }
         }
     };
-    keybinds.registerBinding(Keybinding(
-        "move_actions_left_snapped",
-        "Move actions left with snapping",
-        SDLK_LEFT,
-        KMOD_CTRL | KMOD_SHIFT,
-        false,
-        [&](void*) {
-            move_actions_horizontal_with_video(-player.getFrameTimeMs());
-        }
-    ));
-    keybinds.registerBinding(Keybinding(
-        "move_actions_right_snapped",
-        "Move actions right with snapping",
-        SDLK_RIGHT,
-        KMOD_CTRL | KMOD_SHIFT,
-        false,
-        [&](void*) {
-            move_actions_horizontal_with_video(player.getFrameTimeMs());
-        }
-    ));
+    {
+        KeybindingGroup group;
+        group.name = "Moving";
+        group.bindings.push_back(Keybinding(
+            "move_actions_left_snapped",
+            "Move actions left with snapping",
+            SDLK_LEFT,
+            KMOD_CTRL | KMOD_SHIFT,
+            false,
+            [&](void*) {
+                move_actions_horizontal_with_video(-player.getFrameTimeMs());
+            }
+        ));
+        group.bindings.push_back(Keybinding(
+            "move_actions_right_snapped",
+            "Move actions right with snapping",
+            SDLK_RIGHT,
+            KMOD_CTRL | KMOD_SHIFT,
+            false,
+            [&](void*) {
+                move_actions_horizontal_with_video(player.getFrameTimeMs());
+            }
+        ));
 
-    keybinds.registerBinding(Keybinding(
-        "move_actions_left",
-        "Move actions left",
-        SDLK_LEFT,
-        KMOD_SHIFT,
-        false,
-        [&](void*) {
-            move_actions_horizontal(-player.getFrameTimeMs());
-        }
-    ));
+        group.bindings.push_back(Keybinding(
+            "move_actions_left",
+            "Move actions left",
+            SDLK_LEFT,
+            KMOD_SHIFT,
+            false,
+            [&](void*) {
+                move_actions_horizontal(-player.getFrameTimeMs());
+            }
+        ));
 
-    keybinds.registerBinding(Keybinding(
-        "move_actions_right",
-        "Move actions right",
-        SDLK_RIGHT,
-        KMOD_SHIFT,
-        false,
-        [&](void*) {
-            move_actions_horizontal(player.getFrameTimeMs());
-        }
-    ));
+        group.bindings.push_back(Keybinding(
+            "move_actions_right",
+            "Move actions right",
+            SDLK_RIGHT,
+            KMOD_SHIFT,
+            false,
+            [&](void*) {
+                move_actions_horizontal(player.getFrameTimeMs());
+            }
+        ));
 
-    // MOVE SELECTION UP/DOWN
-    keybinds.registerBinding(Keybinding(
-        "move_actions_up",
-        "Move actions up",
-        SDLK_UP,
-        KMOD_SHIFT,
-        false,
-        [&](void*) {
-            if (LoadedFunscript->HasSelection()) {
+        // MOVE SELECTION UP/DOWN
+        group.bindings.push_back(Keybinding(
+            "move_actions_up",
+            "Move actions up",
+            SDLK_UP,
+            KMOD_SHIFT,
+            false,
+            [&](void*) {
+                if (LoadedFunscript->HasSelection()) {
+                    undoRedoSystem.Snapshot("Actions moved");
+                    LoadedFunscript->MoveSelectionPosition(1);
+                }
+                else {
+                    auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
+                    if (closest != nullptr) {
+                        undoRedoSystem.Snapshot("Actions moved");
+                        FunscriptAction moved(closest->at, closest->pos + 1);
+                        LoadedFunscript->EditAction(*closest, moved);
+                    }
+                }
+            }
+        ));
+        group.bindings.push_back(Keybinding(
+            "move_actions_down",
+            "Move actions down",
+            SDLK_DOWN,
+            KMOD_SHIFT,
+            false,
+            [&](void*) {
                 undoRedoSystem.Snapshot("Actions moved");
-                LoadedFunscript->MoveSelectionPosition(1);
-            }
-            else {
-                auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
-                if (closest != nullptr) {
-                    undoRedoSystem.Snapshot("Actions moved");
-                    FunscriptAction moved(closest->at, closest->pos + 1);
-                    LoadedFunscript->EditAction(*closest, moved);
+                if (LoadedFunscript->HasSelection()) {
+                    LoadedFunscript->MoveSelectionPosition(-1);
+                }
+                else {
+                    auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
+                    if (closest != nullptr) {
+                        undoRedoSystem.Snapshot("Actions moved");
+                        FunscriptAction moved(closest->at, closest->pos - 1);
+                        LoadedFunscript->EditAction(*closest, moved);
+                    }
                 }
             }
-        }
-    ));
-    keybinds.registerBinding(Keybinding(
-        "move_actions_down",
-        "Move actions down",
-        SDLK_DOWN,
-        KMOD_SHIFT,
-        false,
-        [&](void*) {
-            undoRedoSystem.Snapshot("Actions moved");
-            if (LoadedFunscript->HasSelection()) {
-                LoadedFunscript->MoveSelectionPosition(-1);
-            }
-            else {
-                auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
-                if (closest != nullptr) {
-                    undoRedoSystem.Snapshot("Actions moved");
-                    FunscriptAction moved(closest->at, closest->pos - 1);
-                    LoadedFunscript->EditAction(*closest, moved);
-                }
-            }
-        }
-    ));
-
+        ));
+        keybinds.registerBinding(group);
+    }
     // FUNCTIONS
-    keybinds.registerBinding(Keybinding(
-        "equalize_actions",
-        "Equalize actions",
-        SDLK_UNKNOWN,
-        0,
-        true,
-        [&](void*) {
-            equalizeSelection();
-        }
-    ));
-    keybinds.registerBinding(Keybinding(
-        "invert_actions",
-        "Invert actions",
-        SDLK_UNKNOWN,
-        0,
-        true,
-        [&](void*) {
-            invertSelection();
-        }
-    ));
-
-    // SAVE
-    keybinds.registerBinding(Keybinding(
-        "save",
-        "Save",
-        SDLK_s,
-        KMOD_CTRL,
-        true,
-        [&](void*) { saveScript(); }
-    ));
-
-    // FRAME CONTROL
-    keybinds.registerBinding(Keybinding(
-        "prev_frame",
-        "Previous frame",
-        SDLK_LEFT,
-        0,
-        false,
-        [&](void*) { player.previousFrame(); }
-    ));
-
-    keybinds.registerBinding(Keybinding(
-        "next_frame",
-        "Next frame",
-        SDLK_RIGHT,
-        0,
-        false,
-        [&](void*) { player.nextFrame(); }
-    ));
-
-    keybinds.registerBinding(Keybinding(
-        "fast_step",
-        "Fast step",
-        SDLK_RIGHT,
-        KMOD_CTRL,
-        false,
-        [&](void*) { 
-            int32_t frameStep = settings->data().fast_step_amount;
-            player.relativeFrameSeek(frameStep); 
-        }
-    ));
-
-
-    keybinds.registerBinding(Keybinding(
-        "fast_backstep",
-        "Fast backstep",
-        SDLK_LEFT,
-        KMOD_CTRL,
-        false,
-        [&](void*) {
-            int32_t frameStep = settings->data().fast_step_amount;
-            player.relativeFrameSeek(-frameStep);
-        }
-    ));
-
-    // JUMP BETWEEN ACTIONS
-    keybinds.registerBinding(Keybinding(
-        "prev_action",
-        "Previous action",
-        SDLK_DOWN,
-        0,
-        false,
-        [&](void*) {
-            auto action = LoadedFunscript->GetPreviousActionBehind(player.getCurrentPositionMs() - 1.f);
-            if (action != nullptr) player.setPosition(action->at);
-        }
-    ));
-    keybinds.registerBinding(Keybinding(
-        "next_action",
-        "Next action",
-        SDLK_UP,
-        0,
-        false,
-        [&](void*) {
-            auto action = LoadedFunscript->GetNextActionAhead(player.getCurrentPositionMs() + 1.f);
-            if (action != nullptr) player.setPosition(action->at);
-        }
-    ));
-
-    // PLAY / PAUSE
-    keybinds.registerBinding(Keybinding(
-        "toggle_play",
-        "Play / Pause",
-        SDLK_SPACE,
-        0,
-        true,
-        [&](void*) { player.togglePlay(); }
-    ));
-    keybinds.registerBinding(Keybinding(
-        "sync_timestamps",
-        "Sync time with player",
-        SDLK_s,
-        0,
-        true,
-        [&](void*) { player.syncWithRealTime(); }
-    ));
-
-    // PLAYBACK SPEED
-    keybinds.registerBinding(Keybinding(
-        "decrement_speed",
-        "Playbackspeed -10%",
-        SDLK_KP_MINUS,
-        0,
-        true,
-        [&](void*) { player.addSpeed(-0.10); }
-    ));
-    keybinds.registerBinding(Keybinding(
-        "increment_speed",
-        "Playbackspeed +10%",
-        SDLK_KP_PLUS,
-        0,
-        true,
-        [&](void*) { player.addSpeed(0.10); }
-    ));
-
-
-    // DELETE ACTION
-    keybinds.registerBinding(Keybinding(
-        "remove_action",
-        "Remove action",
-        SDLK_DELETE,
-        0,
-        true,
-        [&](void*) { removeAction(); }
-    ));
-
-    //ADD ACTIONS
-    keybinds.registerBinding(Keybinding(
-        "action 0",
-        "Action at 0",
-        SDLK_KP_0,
-        0,
-        true,
-        [&](void*) { addEditAction(0); }
-    ));
-    std::stringstream ss;
-    for (int i = 1; i < 10; i++) {
-        ss.str("");
-        ss << "action " << i * 10;
-        std::string id = ss.str();
-        ss.str("");
-        ss << "Action at " << i * 10;
-
-        keybinds.registerBinding(Keybinding(
-            id,
-            ss.str(),
-            SDLK_KP_1 + i - 1,
+    {
+        KeybindingGroup group;
+        group.name = "Special";
+        group.bindings.push_back(Keybinding(
+            "equalize_actions",
+            "Equalize actions",
+            SDLK_UNKNOWN,
             0,
             true,
-            [&, i](void*) { addEditAction(i * 10); }
+            [&](void*) {
+                equalizeSelection();
+            }
         ));
+        group.bindings.push_back(Keybinding(
+            "invert_actions",
+            "Invert actions",
+            SDLK_UNKNOWN,
+            0,
+            true,
+            [&](void*) {
+                invertSelection();
+            }
+        ));
+        keybinds.registerBinding(group);
     }
-    keybinds.registerBinding(Keybinding(
-        "action 100",
-        "Action at 100",
-        SDLK_KP_DIVIDE,
-        0,
-        true,
-        [&](void*) { addEditAction(100); }
-    ));
 
-    // FULLSCREEN
-    keybinds.registerBinding(Keybinding(
-        "fullscreen_toggle",
-        "Toggle fullscreen",
-        SDLK_F10,
-        0,
-        true,
-        [&](void*) { Fullscreen = !Fullscreen; SetFullscreen(Fullscreen); }
-    ));
+    // VIDEO CONTROL
+    {
+        KeybindingGroup group;
+        group.name = "Video player";
+        // PLAY / PAUSE
+        group.bindings.push_back(Keybinding(
+            "toggle_play",
+            "Play / Pause",
+            SDLK_SPACE,
+            0,
+            true,
+            [&](void*) { player.togglePlay(); }
+        ));
 
-    // SCREENSHOT VIDEO
-    keybinds.registerBinding(Keybinding(
-        "save_frame_as_image",
-        "Save frame as image",
-        SDLK_F2,
-        0,
-        true,
-        [&](void*) { player.saveFrameToImage(settings->data().screenshot_dir); }
-    ));
+        // PLAYBACK SPEED
+        group.bindings.push_back(Keybinding(
+            "decrement_speed",
+            "Playbackspeed -10%",
+            SDLK_KP_MINUS,
+            0,
+            true,
+            [&](void*) { player.addSpeed(-0.10); }
+        ));
+        group.bindings.push_back(Keybinding(
+            "increment_speed",
+            "Playbackspeed +10%",
+            SDLK_KP_PLUS,
+            0,
+            true,
+            [&](void*) { player.addSpeed(0.10); }
+        ));
+        keybinds.registerBinding(group);
+    }
 
-    // CHANGE SUBTITLES
-    keybinds.registerBinding(Keybinding(
-        "cycle_subtitles",
-        "Cycle subtitles",
-        SDLK_j,
-        0,
-        true,
-        [&](void*) { player.cycleSubtitles(); }
-    ));
 }
 
 

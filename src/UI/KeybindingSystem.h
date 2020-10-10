@@ -13,6 +13,7 @@
 
 using KeybindingAction = std::function<void(void*)>;
 
+
 struct Keybinding
 {
 	std::string identifier;
@@ -41,6 +42,17 @@ struct Keybinding
 	}
 };
 
+struct KeybindingGroup {
+	std::string name;
+	std::vector<Keybinding> bindings;
+
+	template<class Archive>
+	inline void reflect(Archive& ar) {
+		OFS_REFLECT(name, ar);
+		OFS_REFLECT(bindings, ar);
+	}
+};
+
 class KeybindingSystem 
 {
 	std::stringstream currentlyHeldKeys;
@@ -49,15 +61,15 @@ class KeybindingSystem
 
 	void addKeyString(const char* name);
 	void addKeyString(char name);
-	std::vector<Keybinding> ActiveBindings;
+	std::vector<KeybindingGroup> ActiveBindings;
 	std::string loadKeyString(SDL_Keycode key, int mod);
 	void pressed(SDL_Event& ev);
 public:
 	void setup();
 	const std::string& getBindingString(const char* binding_id) noexcept;
-	const std::vector<Keybinding>& getBindings() const { return ActiveBindings; }
-	void setBindings(const std::vector<Keybinding>& bindings);
+	const std::vector<KeybindingGroup>& getBindings() const { return ActiveBindings; }
+	void setBindings(const std::vector<KeybindingGroup>& bindings);
 	bool ShowWindow = false;
-	void registerBinding(const Keybinding& binding);
+	void registerBinding(const KeybindingGroup& group);
 	bool ShowBindingWindow();
 };
