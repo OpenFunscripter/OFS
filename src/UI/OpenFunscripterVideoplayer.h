@@ -3,6 +3,7 @@
 #include "SDL.h"
 #include "imgui.h"
 #include "OFS_Reflection.h"
+#include "OpenFunscripterUtil.h"
 
 #include <string>
 #include <chrono>
