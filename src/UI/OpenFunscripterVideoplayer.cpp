@@ -584,6 +584,7 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 					}, this);
 				ImGui::Image((void*)(intptr_t)render_texture, ImGui::GetContentRegionAvail(), uv0, uv1);
 				video_draw_size = ImGui::GetItemRectSize();
+				// TODO: ImDrawCallback_ResetRenderState unnecessary. instead just reset the shader
 				ImGui::GetWindowDrawList()->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
 			}
 			else {

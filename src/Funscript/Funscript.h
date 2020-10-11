@@ -8,6 +8,8 @@
 #include "OpenFunscripterUtil.h"
 #include "OpenFunscripterVideoplayer.h"
 
+#include "SDL_mutex.h"
+
 class Funscript
 {
 public:
@@ -75,10 +77,13 @@ public:
 
 private:
 	nlohmann::json Json;
+	nlohmann::json BaseLoaded;
 	bool scriptOpened = false;
 	bool funscript_changed = false; // used to fire only one event every frame a change occurs
+	SDL_mutex* saveMutex = nullptr;
 
-	void setScriptTemplate();
+	void setBaseScript(nlohmann::json& base);
+	void setScriptTemplate() noexcept;
 	void checkForInvalidatedActions() noexcept;
 	
 	FunscriptData data;
@@ -90,8 +95,8 @@ private:
 
 	void moveActionsTime(std::vector<FunscriptAction*> moving, int32_t time_offset);
 	void moveActionsPosition(std::vector<FunscriptAction*> moving, int32_t pos_offset);
-	inline void sortSelection() { sortActions(data.selection); }
-	inline void sortActions(std::vector<FunscriptAction>& actions) {
+	inline void sortSelection() noexcept { sortActions(data.selection); }
+	inline void sortActions(std::vector<FunscriptAction>& actions) noexcept {
 		std::sort(actions.begin(), actions.end(),
 			[](auto& a, auto& b) { return a.at < b.at; }
 		);
@@ -104,14 +109,16 @@ private:
 		NotifyActionsChanged();
 	}
 
-	void NotifyActionsChanged();
+	void NotifyActionsChanged() noexcept;
 
-	void loadMetadata();
-	void saveMetadata();
-	void loadSettings();
-	void saveSettings();
+	void loadMetadata() noexcept;
+	void saveMetadata() noexcept;
+	void loadSettings() noexcept;
+	void saveSettings() noexcept;
 public:
-	Funscript() { NotifyActionsChanged(); }
+	Funscript();
+	~Funscript();
+
 	std::string current_path;
 
 	inline void rollback(const FunscriptData& data) noexcept { this->data = data; NotifyActionsChanged(); }
