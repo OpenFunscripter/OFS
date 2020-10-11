@@ -2110,16 +2110,13 @@ void OpenFunscripter::UpdateTimelineGradient(ImGradient& grad)
             }
             kernel_offset += kernel_size_ms;
 
+
             float actionsRelToMax = Util::Clamp((float)actions_in_kernel / max_actions_in_kernel, 0.0f, 1.0f);
-
             HeatMap.computeColorAt(actionsRelToMax, (float*)&color.Value);
-
-            float markPos = (kernel_offset + (kernel_size_ms / 2.f) - kernel_size_ms) / totalDurationMs;
+            float markPos = kernel_offset  / totalDurationMs;
             grad.addMark(markPos, color);
         } while (kernel_offset < (segment.front().at + durationMs));
-        grad.addMark(kernel_offset / totalDurationMs, IM_COL32(0, 0, 0, 255));
-
-
+        grad.addMark((kernel_offset + 1.f) / totalDurationMs, IM_COL32(0, 0, 0, 255));
     }
     grad.refreshCache();
 }
