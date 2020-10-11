@@ -56,8 +56,8 @@ public:
 		std::vector<std::string> tags;
 		std::vector<std::string> performers;
 		std::string comment;
-		bool paid = false;
-		int64_t original_total_duration_ms = 0;
+		std::string license;
+		int64_t original_total_duration_s = 0;
 
 		template <class Archive>
 		inline void reflect(Archive& ar) {
@@ -67,8 +67,8 @@ public:
 			OFS_REFLECT(url_video, ar);
 			OFS_REFLECT(tags, ar);
 			OFS_REFLECT(performers, ar);
-			OFS_REFLECT(paid, ar);
-			OFS_REFLECT(original_total_duration_ms, ar);
+			OFS_REFLECT(license, ar);
+			OFS_REFLECT(original_total_duration_s, ar);
 		}
 
 	} metadata;

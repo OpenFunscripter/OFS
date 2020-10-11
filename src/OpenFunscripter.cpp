@@ -12,6 +12,9 @@
 #include "imgui_stdlib.h"
 #include "imgui_internal.h"
 
+// FIX: Add type checking to the deserialization. 
+//      I assume it would crash if a field is specified but doesn't have the correct type.
+
 // TODO: make heatmap generation more sophisticated
 // TODO: [MAJOR FEATURE] working with raw actions and controller input
 
@@ -246,10 +249,11 @@ bool OpenFunscripter::setup()
     simulator.setup();
     
     // init cursors
+    SDL_FreeCursor(SDL_GetCursor());
     for (int i = 0; i < SDL_NUM_SYSTEM_CURSORS; i++) {
         SystemCursors[i] = SDL_CreateSystemCursor((SDL_SystemCursor)i);
     }
-
+    SetCursorType(SDL_SYSTEM_CURSOR_ARROW);
 
     SDL_ShowWindow(window);
     return true;
@@ -792,7 +796,7 @@ void OpenFunscripter::DragNDrop(SDL_Event& ev) noexcept
 
 void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
 {
-    LoadedFunscript->metadata.original_total_duration_ms = player.getDuration() * 1000.0;
+    LoadedFunscript->metadata.original_total_duration_s = player.getDuration();
     LoadedFunscript->reserveRawActionMemory(player.getTotalNumFrames());
     player.setPosition(LoadedFunscript->scriptSettings.last_pos_ms);
 
@@ -1192,7 +1196,7 @@ void OpenFunscripter::saveScript(const char* path, bool override_location)
         .replace_extension("")
         .filename()
         .string();
-    LoadedFunscript->metadata.original_total_duration_ms = player.getDuration() * 1000.0;
+    LoadedFunscript->metadata.original_total_duration_s = player.getDuration();
     LoadedFunscript->scriptSettings.last_pos_ms = player.getCurrentPositionMs();
     if (path == nullptr) {
         LoadedFunscript->save();
@@ -1691,18 +1695,41 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
     bool save = false;
     auto& metadata = LoadedFunscript->metadata;
     ImGui::Begin("Metadata Editor", open, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking);
-    ImGui::LabelText("Original name", "%s", metadata.original_name.c_str());
-    Util::FormatTime(tmp_buf[0], sizeof(tmp_buf), metadata.original_total_duration_ms / 1000.f, true);
-    ImGui::LabelText("Original duration", "%s", tmp_buf[0]);
+    ImGui::LabelText("Name", "%s", metadata.original_name.c_str());
+    Util::FormatTime(tmp_buf[0], sizeof(tmp_buf), metadata.original_total_duration_s, false);
+    ImGui::LabelText("Duration", "%s", tmp_buf[0]);
 
     ImGui::InputText("Creator", &metadata.creator);
     ImGui::InputText("Url", &metadata.url);
     ImGui::InputText("Video url", &metadata.url_video);
-    ImGui::InputTextMultiline("Comment", &metadata.comment);
-    ImGui::Checkbox("Paid", &metadata.paid);
+    ImGui::InputTextMultiline("Comment", &metadata.comment, ImVec2(0.f, ImGui::GetFontSize()*3.f));
+
+    {
+        enum LicenseType : int32_t {
+            None,
+            Free,
+            Paid
+        };
+        static LicenseType currentLicense = LicenseType::None;
+
+        if (ImGui::Combo("License", (int32_t*)&currentLicense, " \0Free\0Paid\0")) {
+            switch (currentLicense) {
+            case  LicenseType::None:
+                metadata.license = "";
+                break;
+            case LicenseType::Free:
+                metadata.license = "Free";
+                break;
+            case LicenseType::Paid:
+                metadata.license = "Paid";
+                break;
+            }
+        }
+    }
     
+    ImGui::Text("%s", "Tags");
     static std::string newTag;
-    ImGui::InputText("Tag", &newTag); ImGui::SameLine(); 
+    ImGui::InputText("##Tag", &newTag); ImGui::SameLine(); 
     if (ImGui::Button("Add", ImVec2(-1.f, 0.f))) { 
         Util::trim(newTag);
         if (!newTag.empty()) {
@@ -1713,7 +1740,6 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
     auto& style = ImGui::GetStyle();
 
     auto availableWidth = ImGui::GetContentRegionAvail().x;
-    ImGui::Text("%s", "Tags"); ImGui::SameLine();
 
     int removeIndex = -1;
     for (int i = 0; i < metadata.tags.size(); i++) {
@@ -1737,8 +1763,9 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
         removeIndex = -1;
     }
 
+    ImGui::Text("%s", "Performers");
     static std::string newPerformer;
-    ImGui::InputText("Performer", &newPerformer); ImGui::SameLine();
+    ImGui::InputText("##Performer", &newPerformer); ImGui::SameLine();
     if (ImGui::Button("Add##Performer", ImVec2(-1.f, 0.f))) {
         Util::trim(newPerformer);
         if (!newPerformer.empty()) {
@@ -1747,7 +1774,6 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
     }
 
     availableWidth = ImGui::GetContentRegionAvail().x;
-    ImGui::Text("%s", "Performers"); ImGui::SameLine();
 
     for (int i = 0; i < metadata.performers.size(); i++) {
         ImGui::PushID(i);
