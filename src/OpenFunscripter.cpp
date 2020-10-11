@@ -2057,36 +2057,69 @@ void OpenFunscripter::UpdateTimelineGradient(ImGradient& grad)
         pos += (1.f / (heatColor.size() - 1));
     }
 
+    auto getSegments = [](const std::vector<FunscriptAction>& actions, int32_t gapDurationMs) -> std::vector<std::vector<FunscriptAction>> {
+        std::vector<std::vector<FunscriptAction>> segments;
+        {
+            FunscriptAction previous(0, -1);
+
+            for (auto& action : actions)
+            {
+                if (previous.pos == action.pos) { 
+                    continue;
+                }
+
+                if (action.at - previous.at >= gapDurationMs) {
+                    segments.emplace_back();
+                }
+                if (segments.size() == 0) { segments.emplace_back(); }
+                segments.back().emplace_back(action);
+
+                previous = action;
+            }
+
+            return segments;
+        }
+    };
+
     // this comes fairly close to what ScriptPlayer's heatmap looks like
-    const float durationMs = player.getDuration() * 1000.0;
+    const float totalDurationMs = player.getDuration() * 1000.0;
     const float kernel_size_ms = 5000.f;
     const float max_actions_in_kernel = 24.5f;
 
-    float kernel_offset = 0.f;
     ImColor color(0.f, 0.f, 0.f, 1.f);
-    do {
-        int actions_in_kernel = 0;
-        float kernel_start = kernel_offset;
-        float kernel_end = kernel_offset + kernel_size_ms;
 
-        if (kernel_offset < (LoadedFunscript->Actions().end() - 1)->at)
-        {
-            for (int i = 0; i < LoadedFunscript->Actions().size(); i++) {
-                auto& action = LoadedFunscript->Actions()[i];
-                if (action.at >= kernel_start && action.at <= kernel_end)
-                    actions_in_kernel++;
-                else if (action.at > kernel_end)
-                    break;
+    auto segments = getSegments(LoadedFunscript->Actions(), 10000);
+    for (auto& segment : segments) {
+        const float durationMs = segment.back().at - segment.front().at;
+        float kernel_offset = segment.front().at;
+        grad.addMark(kernel_offset / totalDurationMs, IM_COL32(0, 0, 0, 255));
+        do {
+            int actions_in_kernel = 0;
+            float kernel_start = kernel_offset;
+            float kernel_end = kernel_offset + kernel_size_ms;
+
+            if (kernel_offset < segment.back().at)
+            {
+                for (int i = 0; i < segment.size(); i++) {
+                    auto& action = segment[i];
+                    if (action.at >= kernel_start && action.at <= kernel_end)
+                        actions_in_kernel++;
+                    else if (action.at > kernel_end)
+                        break;
+                }
             }
-        }
-        kernel_offset += kernel_size_ms;
+            kernel_offset += kernel_size_ms;
 
-        float actionsRelToMax = Util::Clamp((float)actions_in_kernel / max_actions_in_kernel, 0.0f, 1.0f);
+            float actionsRelToMax = Util::Clamp((float)actions_in_kernel / max_actions_in_kernel, 0.0f, 1.0f);
 
-        HeatMap.computeColorAt(actionsRelToMax, (float*)&color.Value);
+            HeatMap.computeColorAt(actionsRelToMax, (float*)&color.Value);
 
-        float markPos = (kernel_offset + (kernel_size_ms / 2.f) - kernel_size_ms) / durationMs;
-        grad.addMark(markPos, color);
-    } while (kernel_offset < durationMs);
+            float markPos = (kernel_offset + (kernel_size_ms / 2.f) - kernel_size_ms) / totalDurationMs;
+            grad.addMark(markPos, color);
+        } while (kernel_offset < (segment.front().at + durationMs));
+        grad.addMark(kernel_offset / totalDurationMs, IM_COL32(0, 0, 0, 255));
+
+
+    }
     grad.refreshCache();
 }
