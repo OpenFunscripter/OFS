@@ -44,6 +44,7 @@ public:
 		}
 
 		inline void RemoveActiveRecording() {
+			if (!HasRecording()) return;
 			Recordings.erase(Recordings.begin() + RecordingIdx);
 			if (RecordingIdx > 0 && RecordingIdx >= Recordings.size() - 1) {
 				RecordingIdx--;

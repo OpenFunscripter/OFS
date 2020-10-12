@@ -75,7 +75,7 @@ class ScriptPositionsWindow
 		ActiveOnly,
 	};
 
-	RecordingRenderMode RecordingMode = RecordingRenderMode::ActiveOnly;
+	RecordingRenderMode RecordingMode = RecordingRenderMode::All;
 	bool ShowRegularActions = true;
 	bool ShowAudioWaveform = false;
 	float ScaleAudio = 1.f;

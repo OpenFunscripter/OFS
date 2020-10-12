@@ -327,6 +327,8 @@ void RecordingImpl::DrawModeSettings()
         ImGui::PopStyleColor();
     }
 
+    ImGui::Spacing();
+    ImGui::Text("Total recordings: %ld", ctx().Raw().Recordings.size());
     ImGui::InputInt("Recording", &ctx().Raw().RecordingIdx, 1, 1);
     ctx().Raw().RecordingIdx = Util::Clamp<int32_t>(ctx().Raw().RecordingIdx, 0, ctx().Raw().Recordings.size()-1);
     if (ImGui::Button("Delete", ImVec2(-1.f, 0.f))) {
