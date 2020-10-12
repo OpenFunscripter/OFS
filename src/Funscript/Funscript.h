@@ -181,12 +181,8 @@ public:
 	inline void AddActionRaw(int32_t frame_no, int32_t at, int32_t pos, float frameTimeMs) noexcept {
 		auto& recording = rawData.Recording();
 		if (frame_no >= recording.RawActions.size()) return;
-		recording.RawActions[frame_no].at = at;
+		recording.RawActions[frame_no].at = at - frameTimeMs;
 		recording.RawActions[frame_no].pos = pos;
-		if (frame_no + 1 < recording.RawActions.size()) {
-			recording.RawActions[frame_no+1].at = at + frameTimeMs;
-			recording.RawActions[frame_no+1].pos = pos;
-		}
 	}
 	bool EditAction(FunscriptAction oldAction, FunscriptAction newAction) noexcept;
 	void PasteAction(FunscriptAction paste, int32_t error_ms) noexcept;
