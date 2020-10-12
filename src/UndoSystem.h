@@ -26,7 +26,7 @@ public:
 		header.actions_len = data.Actions.size();
 		header.message_len = Message.size();
 		header.selection_len = data.selection.size();
-		header.raw_len = data.RawActions.size();
+		//header.raw_len = data.RawActions.size();
 		return header;
 	}
 	inline bool IsOnDisk() const { return DiskPointer != -1; }

@@ -308,9 +308,13 @@ void RecordingImpl::DrawModeSettings()
         app->undoRedoSystem.Snapshot("Recording");
         recordingActive = true;
         app->simulator.SimulateRawActions = true;
+        rollingBackupTmp = app->RollingBackup;
+        app->RollingBackup = false;
+        ctx().NewRecording(app->player.getTotalNumFrames());
     }
     else if (!playing && recordingActive) {
         recordingActive = false;
+        app->RollingBackup = rollingBackupTmp;
         app->simulator.SimulateRawActions = false;
     }
 
@@ -336,6 +340,6 @@ void RecordingImpl::update() noexcept
 {
     auto app = OpenFunscripter::ptr;
     if (recordingActive) {
-        ctx().AddActionRaw(app->player.getCurrentFrameEstimate()+1, app->player.getFrameTimeMs(),  app->player.getCurrentPositionMs(), currentPos);
+        ctx().AddActionRaw(app->player.getCurrentFrameEstimate(), app->player.getCurrentPositionMs(), currentPos, app->player.getFrameTimeMs());
     }
 }

@@ -43,7 +43,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 )
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
-	"JSON_HEDLEY_NO_THROW"
+	"JSON_NOEXCEPTION"
 )
 
 if(WIN32)
@@ -97,7 +97,7 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
 # warnings as errors
 if(MSVC)
-    target_compile_options(${PROJECT_NAME} PUBLIC /EHs-c- /GR-)
+    target_compile_options(${PROJECT_NAME} PUBLIC /EHc- /GR-)
 	# target_compile_options(${PROJECT_NAME} PRIVATE /W2 /WX)
 	# target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
 else() # clang/gcc

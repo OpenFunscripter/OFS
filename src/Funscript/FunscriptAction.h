@@ -1,11 +1,11 @@
 #pragma once
 
+#include "OFS_Reflection.h"
 #include <cstdint>
 #include <limits>
 
-class FunscriptAction
+struct FunscriptAction
 {
-public:
 	int32_t at;
 	int32_t pos;
 
@@ -28,6 +28,12 @@ public:
 
 	inline bool operator<(const FunscriptAction& b) const noexcept {
 		return this->at < b.at;
+	}
+
+	template <class Archive>
+	inline void reflect(Archive& ar) {
+		OFS_REFLECT(at, ar);
+		OFS_REFLECT(pos, ar);
 	}
 };
 

@@ -113,12 +113,12 @@ void ScriptState::WriteToDisk(int32_t diskPointer)
 		SDL_RWwrite(handle, Message.data(), Message.size(), 1);
 		SDL_RWwrite(handle, data.Actions.data(), sizeof(FunscriptAction), data.Actions.size());
 		SDL_RWwrite(handle, data.selection.data(), sizeof(FunscriptAction), data.selection.size());
-		SDL_RWwrite(handle, data.RawActions.data(), sizeof(FunscriptAction), data.RawActions.size());
+		//SDL_RWwrite(handle, data.RawActions.data(), sizeof(FunscriptAction), data.RawActions.size());
 		SDL_RWclose(handle);
 
 		data.Actions.clear();
 		data.selection.clear();
-		data.RawActions.clear();
+		//data.RawActions.clear();
 		LOGF_INFO("Written undo state \"%s\" to disk.", tmp);
 	}
 	else {
@@ -146,8 +146,8 @@ Funscript::FunscriptData& ScriptState::Data()
 			data.selection.resize(header.selection_len);
 			SDL_RWread(handle, data.selection.data(), sizeof(FunscriptAction), header.selection_len);
 
-			data.RawActions.resize(header.raw_len);
-			SDL_RWread(handle, data.RawActions.data(), sizeof(FunscriptAction), header.raw_len);
+			//data.RawActions.resize(header.raw_len);
+			//SDL_RWread(handle, data.RawActions.data(), sizeof(FunscriptAction), header.raw_len);
 
 			SDL_RWclose(handle);
 			DiskPointer = -1; // not on disk anymore

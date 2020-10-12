@@ -33,7 +33,6 @@ private:
 	bool ShowMetadataEditor = false;
 	bool ShowStatistics = true;
 	bool ShowHistory = true;
-	bool RollingBackup = true;
 	bool Fullscreen = false;
 	bool DebugMetrics = false;
 	bool DebugDemo = false;
@@ -109,20 +108,15 @@ public:
 	ScriptSimulator simulator;
 	UndoSystem undoRedoSystem;
 
+	bool RollingBackup = true;
+
 	std::unique_ptr<ScriptingMode> scripting;
 	std::unique_ptr<EventSystem> events;
 	std::unique_ptr<ControllerInput> rawInput;
 	std::unique_ptr<OpenFunscripterSettings> settings;
 	std::unique_ptr<Funscript> LoadedFunscript;
 
-	const std::array<const char*, 6> SupportedVideoExtensions{
-		".mp4",
-		".avi",
-		".m4v",
-		".webm",
-		".mkv",
-		".wmv",
-	};
+
 
 
 	bool setup();

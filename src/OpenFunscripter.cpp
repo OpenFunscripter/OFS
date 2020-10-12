@@ -18,6 +18,16 @@
 // TODO: make heatmap generation more sophisticated
 // TODO: [MAJOR FEATURE] working with raw actions and controller input
 
+constexpr std::array<const char*, 6> SupportedVideoExtensions{
+    ".mp4",
+    ".avi",
+    ".m4v",
+    ".webm",
+    ".mkv",
+    ".wmv",
+};
+
+
 OpenFunscripter* OpenFunscripter::ptr = nullptr;
 ImFont* OpenFunscripter::DefaultFont2 = nullptr;
 
@@ -797,7 +807,7 @@ void OpenFunscripter::DragNDrop(SDL_Event& ev) noexcept
 void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
 {
     LoadedFunscript->metadata.original_total_duration_s = player.getDuration();
-    LoadedFunscript->reserveRawActionMemory(player.getTotalNumFrames());
+    LoadedFunscript->reserveActionMemory(player.getTotalNumFrames());
     player.setPosition(LoadedFunscript->scriptSettings.last_pos_ms);
 
     auto name = Util::Filename(player.getVideoPath());
@@ -1373,7 +1383,7 @@ void OpenFunscripter::showOpenFileDialog()
         auto& path = app->settings->data().last_path;
         std::vector<std::string> filters { "All Files", "*" };
         std::stringstream ss;
-        for (auto& ext : app->SupportedVideoExtensions)
+        for (auto& ext : SupportedVideoExtensions)
             ss << '*' << ext << ';';
         filters.emplace_back(std::string("Videos ( ") + ss.str() + " )");
         filters.emplace_back(ss.str());

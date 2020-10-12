@@ -71,7 +71,7 @@ void ScriptSimulator::CenterSimulator()
     simulator.P2 = simulator.P1 + ImVec2(0.f, default_len);
 }
 
-void ScriptSimulator::ShowSimulator(bool* open)
+void ScriptSimulator::ShowSimulator(bool* open) 
 {
     if (*open) {
         auto ptr = OpenFunscripter::ptr;

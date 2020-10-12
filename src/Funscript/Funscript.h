@@ -7,7 +7,6 @@
 #include <string>
 #include "OpenFunscripterUtil.h"
 #include "OpenFunscripterVideoplayer.h"
-
 #include "SDL_mutex.h"
 
 class Funscript
@@ -15,15 +14,28 @@ class Funscript
 public:
 	struct FunscriptData {
 		std::vector<FunscriptAction> Actions;
-		std::vector<FunscriptAction> RawActions;
-
 		std::vector<FunscriptAction> selection;
-		struct RawSelection {
-			int32_t startIndex = -1;
-			int32_t endIndex = -1;
-			inline bool hasSelection() const noexcept { return startIndex >= 0; }
-			inline void deselect() noexcept { startIndex = -1; endIndex = -1; }
-		} rawSelection;
+
+		int32_t RecordingIdx = 0;
+		struct Recording {
+			std::vector<FunscriptAction> RawActions;
+			
+			template <class Archive>
+			inline void reflect(Archive& ar) {
+				OFS_REFLECT(RawActions, ar);
+			}
+		};
+		std::vector<Recording> Recordings;
+		inline bool HasRecording() const { return Recordings.size() > 0; }
+		inline Recording& Recording() { 
+			FUN_ASSERT(HasRecording(), "no recording");
+			return Recordings[RecordingIdx]; 
+		}
+		inline void NewRecording(int32_t frame_no) {
+			Recordings.emplace_back();
+			Recordings.back().RawActions.resize(frame_no);
+			RecordingIdx = Recordings.size() - 1;
+		}
 	};
 
 	struct Bookmark {
@@ -129,15 +141,17 @@ public:
 	void save() { save(current_path, false); }
 	void save(const std::string& path, bool override_location = true);
 	
-	inline void reserveRawActionMemory(int32_t frameCount) { 
-		data.RawActions.resize(frameCount);
+	inline void reserveActionMemory(int32_t frameCount) { 
 		data.Actions.reserve(frameCount);
 	}
 
 	const FunscriptData& Data() const noexcept { return data; }
 	const std::vector<FunscriptAction>& Selection() const noexcept { return data.selection; }
 	const std::vector<FunscriptAction>& Actions() const noexcept { return data.Actions; }
-	const std::vector<FunscriptAction>& RawActions() const noexcept { return data.RawActions; }
+	const std::vector<FunscriptAction>& Recording() const noexcept { 
+		FUN_ASSERT(data.HasRecording(), "no recording");
+		return data.Recordings[data.RecordingIdx].RawActions; 
+	}
 
 	inline const FunscriptAction* GetAction(const FunscriptAction& action) noexcept { return getAction(action); }
 	inline const FunscriptAction* GetActionAtTime(int32_t time_ms, uint32_t error_ms) noexcept { return getActionAtTime(data.Actions, time_ms, error_ms); }
@@ -149,21 +163,18 @@ public:
 	float GetRawPositionAtFrame(int32_t frame_no) noexcept;
 	
 	inline void AddAction(const FunscriptAction& newAction) noexcept { addAction(data.Actions, newAction); }
-	inline void AddActionRaw(int32_t frame_no, int32_t frame_time_ms, int32_t at, int32_t pos) noexcept { 
-		// TODO: this sucks
-		if (frame_no >= data.RawActions.size()) return;
-		data.RawActions[frame_no].at = at;
-		data.RawActions[frame_no].pos = pos;
-		if (frame_no >= 1 && frame_no < data.RawActions.size()) {
-			data.RawActions[frame_no-1].at = at - frame_time_ms;
-			data.RawActions[frame_no-1].pos = pos;
-			data.RawActions[frame_no+1].at = at + frame_time_ms;
-			data.RawActions[frame_no+1].pos = pos;
+	inline void AddActionRaw(int32_t frame_no, int32_t at, int32_t pos, float frameTimeMs) noexcept {
+		auto& recording = data.Recording();
+		if (frame_no >= recording.RawActions.size()) return;
+		recording.RawActions[frame_no].at = at;
+		recording.RawActions[frame_no].pos = pos;
+		if (frame_no + 1 < recording.RawActions.size()) {
+			recording.RawActions[frame_no+1].at = at + frameTimeMs;
+			recording.RawActions[frame_no+1].pos = pos;
 		}
 	}
 	bool EditAction(const FunscriptAction& oldAction, const FunscriptAction& newAction) noexcept;
 	void PasteAction(const FunscriptAction& paste, int32_t error_ms) noexcept;
-	void RemoveActionRaw(const FunscriptAction& action) noexcept;
 	void RemoveAction(const FunscriptAction& action, bool checkInvalidSelection = true) noexcept;
 	void RemoveActions(const std::vector<FunscriptAction>& actions) noexcept;
 
@@ -176,8 +187,10 @@ public:
 		);
 	}
 
-	// raw selection
-	void SelectRawFrames(int32_t from, int32_t to) noexcept;
+	// recording stuff
+	inline void NewRecording(int32_t frame_no) noexcept {
+		data.NewRecording(frame_no);
+	}
 
 	// selection api
 	bool ToggleSelection(const FunscriptAction& action) noexcept;

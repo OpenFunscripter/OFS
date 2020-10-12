@@ -62,7 +62,6 @@ class ScriptPositionsWindow
 	}
 
 	void updateSelection(bool clear);
-	void updateRawSelection();
 
 	std::vector<FunscriptAction> ActionPositionWindow;
 	std::vector<ImVec2> ActionScreenCoordinates;

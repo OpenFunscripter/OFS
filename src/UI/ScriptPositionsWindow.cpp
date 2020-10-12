@@ -24,15 +24,6 @@ void ScriptPositionsWindow::updateSelection(bool clear)
 	OpenFunscripter::script().SelectTime(selection_start_ms, selection_end_ms, clear);
 }
 
-void ScriptPositionsWindow::updateRawSelection()
-{
-	float min = std::min(rel_x1, rel_x2);
-	float max = std::max(rel_x1, rel_x2);
-	float selection_start_ms = offset_ms + (frameSizeMs * min);
-	float selection_end_ms = offset_ms + (frameSizeMs * max);
-	OpenFunscripter::script().SelectRawFrames(selection_start_ms, selection_end_ms);
-}
-
 void ScriptPositionsWindow::FfmpegAudioProcessingFinished(SDL_Event& ev)
 {
 	ShowAudioWaveform = true;
@@ -136,14 +127,8 @@ void ScriptPositionsWindow::mouse_released(SDL_Event& ev)
 	else if (IsSelecting && button.button == SDL_BUTTON_LEFT) {
 		IsSelecting = false;
 		auto modstate = SDL_GetModState();
-		if (modstate & KMOD_SHIFT) {
-			// raw select
-			updateRawSelection();
-		}
-		else {
-			// regular select
-			updateSelection(!(modstate & KMOD_CTRL));
-		}
+		// regular select
+		updateSelection(!(modstate & KMOD_CTRL));
 	}
 }
 
@@ -297,41 +282,36 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		}
 	}
 
-	if (script.RawActions().size() > 0) {
-		// render raw actions
-		const FunscriptAction* prevAction = nullptr;
-		if (ShowRawActions) {
+	// render raw actions
+	const FunscriptAction* prevAction = nullptr;
+	if (script.Data().HasRecording() && ShowRawActions) {
 
-			auto pathStroke = [](auto draw_list, uint32_t col) {
-				// sort of a hack ...
-				// PathStroke sets  _Path.Size = 0
-				// so we reset it in order to draw the same path twice
-				auto tmp = draw_list->_Path.Size;
-				draw_list->PathStroke(IM_COL32(0, 0, 0, 255), false, 7.0f);
-				draw_list->_Path.Size = tmp;
-				draw_list->PathStroke(col, false, 5.f);
-			};
+		auto pathStroke = [](auto draw_list, uint32_t col) {
+			// sort of a hack ...
+			// PathStroke sets  _Path.Size = 0
+			// so we reset it in order to draw the same path twice
+			auto tmp = draw_list->_Path.Size;
+			draw_list->PathStroke(IM_COL32(0, 0, 0, 255), false, 7.0f);
+			draw_list->_Path.Size = tmp;
+			draw_list->PathStroke(col, false, 5.f);
+		};
 
-			int32_t startIndex = Util::Clamp<int32_t>((offset_ms / frameTime), 0, script.RawActions().size());
-			int32_t endIndex = Util::Clamp<int32_t>(((float)offset_ms + frameSizeMs) / frameTime, startIndex, script.RawActions().size());
+		int32_t startIndex = Util::Clamp<int32_t>((offset_ms / frameTime), 0, script.Recording().size());
+		int32_t endIndex = Util::Clamp<int32_t>(((float)offset_ms + frameSizeMs) / frameTime, startIndex, script.Recording().size());
 
-			auto pathRawSection = [this](auto draw_list, auto rawActions, int32_t fromIndex, int32_t toIndex) {
-				for (int i = fromIndex; i < toIndex; i++) {
-					auto& action = rawActions[i];
-					if (action.pos >= 0) {
-						auto point = getPointForAction(action);
-						draw_list->PathLineTo(point);
-					}
+		auto pathRawSection = [this](auto draw_list, auto rawActions, int32_t fromIndex, int32_t toIndex) {
+			float frameTimeMs = OpenFunscripter::ptr->player.getFrameTimeMs();
+			for (int i = fromIndex; i < toIndex; i++) {
+				auto action = rawActions[i];
+				if (action.pos >= 0) {
+					action.at = i * frameTimeMs;
+					auto point = getPointForAction(action);
+					draw_list->PathLineTo(point);
 				}
-			};
-			pathRawSection(draw_list, script.RawActions(), startIndex, endIndex);
-			pathStroke(draw_list, IM_COL32(255, 0, 0, 180));
-
-			if (script.Data().rawSelection.hasSelection() && script.Data().rawSelection.startIndex >= startIndex) {
-				pathRawSection(draw_list, script.RawActions(), script.Data().rawSelection.startIndex, script.Data().rawSelection.endIndex);
-				pathStroke(draw_list, IM_COL32(0, 255, 0, 180));
 			}
-		}
+		};
+		pathRawSection(draw_list, script.Recording(), startIndex, endIndex);
+		pathStroke(draw_list, IM_COL32(255, 0, 0, 180));
 	}
 
 	if (script.Actions().size() > 0) {

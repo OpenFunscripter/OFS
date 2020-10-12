@@ -76,6 +76,8 @@ private:
 	bool recordingActive = false;
 	bool inverted = false;
 
+	bool rollingBackupTmp = false;
+
 	// Attention: don't change order
 	enum RecordingMode : int32_t {
 		Mouse,
