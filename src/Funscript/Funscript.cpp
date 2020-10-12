@@ -173,20 +173,12 @@ void Funscript::save(const std::string& path, bool override_location)
 		if (action.at < 0)
 			continue;
 
-		nlohmann::json actionObj;
-		actionObj["at"] = action.at;
-		actionObj["pos"] = Util::Clamp(action.pos, 0, 100);
-		actions.push_back(actionObj);
+		nlohmann::json actionObj = {
+			{ "at", action.at },
+			{ "pos", Util::Clamp<int32_t>(action.pos, 0, 100) }
+		};
+		actions.emplace_back(actionObj);
 	}
-
-
-
-	//for (auto& action : data.RawActions) {
-	//	nlohmann::json actionObj;
-	//	actionObj["at"] = action.at;
-	//	actionObj["pos"] = action.pos;
-	//	raw_actions.push_back(actionObj);
-	//}
 
 	threadData->jsonObj = std::move(Json);
 	auto thread = [](void* user) -> int {

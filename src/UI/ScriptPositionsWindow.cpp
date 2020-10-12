@@ -60,19 +60,18 @@ void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
 {
 	auto& button = ev.button;
 	auto mousePos = ImGui::GetMousePos();
-	
-	if (button.clicks == 2) {
-		// seek to position double click
-		float rel_x = (mousePos.x - canvas_pos.x) / canvas_size.x;
-		int32_t seekToMs = offset_ms + (frameSizeMs * rel_x);
-		OpenFunscripter::ptr->player.setPosition(seekToMs, false);
-		return;
-	}
-
 	auto modstate = SDL_GetModState();
 	FunscriptAction* clickedAction = nullptr;
 	
 	if (PositionsItemHovered) {
+		if (button.clicks == 2) {
+			// seek to position double click
+			float rel_x = (mousePos.x - canvas_pos.x) / canvas_size.x;
+			int32_t seekToMs = offset_ms + (frameSizeMs * rel_x);
+			OpenFunscripter::ptr->player.setPosition(seekToMs, false);
+			return;
+		}
+
 		// test if an action has been clicked
 		int index = 0;
 		for (auto& vert : ActionScreenCoordinates) {
