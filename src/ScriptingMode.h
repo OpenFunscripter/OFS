@@ -23,7 +23,7 @@ public:
 	ScripingModeBaseImpl();
 	virtual ~ScripingModeBaseImpl() {}
 	virtual void DrawModeSettings() = 0;
-	virtual void addAction(const FunscriptAction& action) = 0;
+	virtual void addAction(FunscriptAction action) = 0;
 	virtual void update() noexcept {};
 };
 
@@ -31,7 +31,7 @@ class DefaultModeImpl : public ScripingModeBaseImpl
 {
 public:
 	virtual void DrawModeSettings() override {}
-	virtual void addAction(const FunscriptAction& action) override {
+	virtual void addAction(FunscriptAction action) override {
 		ctx().AddAction(action);
 	}
 };
@@ -46,7 +46,7 @@ protected:
 	int top_bottom_direction = 1; // 1 for top and -1 for bottom injection
 public:
 	virtual void DrawModeSettings() override;
-	virtual void addAction(const FunscriptAction& action) override;
+	virtual void addAction(FunscriptAction action) override;
 };
 
 
@@ -57,7 +57,7 @@ class AlternatingImpl : public ScripingModeBaseImpl
 	bool fixed_range_enabled = false;
 public:
 	virtual void DrawModeSettings() override;
-	virtual void addAction(const FunscriptAction& action) override;
+	virtual void addAction(FunscriptAction action) override;
 };
 
 class RecordingImpl : public ScripingModeBaseImpl
@@ -91,7 +91,7 @@ public:
 	void ControllerAxisMotion(SDL_Event& ev);
 
 	virtual void DrawModeSettings() override;
-	virtual void addAction(const FunscriptAction& action) override;
+	virtual void addAction(FunscriptAction action) override;
 	virtual void update() noexcept override;
 };
 
@@ -104,7 +104,7 @@ public:
 	void setup();
 	void DrawScriptingMode(bool* open);
 	void setMode(ScriptingModeEnum mode);
-	void addEditAction(const FunscriptAction& action);
-	inline void addAction(const FunscriptAction& action) noexcept { impl->addAction(action); }
+	void addEditAction(FunscriptAction action);
+	inline void addAction(FunscriptAction action) noexcept { impl->addAction(action); }
 	inline void update() noexcept { impl->update(); }
 };

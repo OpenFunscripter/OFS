@@ -65,7 +65,7 @@ void ScriptingMode::setMode(ScriptingModeEnum mode)
     }
 }
 
-void ScriptingMode::addEditAction(const FunscriptAction& action)
+void ScriptingMode::addEditAction(FunscriptAction action)
 {
     auto ptr = ctx->LoadedFunscript->GetActionAtTime(action.at, ctx->player.getFrameTimeMs());
     if (ptr != nullptr) {
@@ -99,7 +99,7 @@ void DynamicInjectionImpl::DrawModeSettings()
 }
 
 // dynamic injection
-void DynamicInjectionImpl::addAction(const FunscriptAction& action)
+void DynamicInjectionImpl::addAction(FunscriptAction action)
 {
     auto previous = ctx().GetPreviousActionBehind(action.at);
     if (previous != nullptr) {
@@ -140,7 +140,7 @@ void AlternatingImpl::DrawModeSettings()
     }
 }
 
-void AlternatingImpl::addAction(const FunscriptAction& action)
+void AlternatingImpl::addAction(FunscriptAction action)
 {
     auto previous = ctx().GetPreviousActionBehind(action.at);
     if (fixed_range_enabled) {
@@ -336,7 +336,7 @@ void RecordingImpl::DrawModeSettings()
     }
 }
 
-void RecordingImpl::addAction(const FunscriptAction& action)
+void RecordingImpl::addAction(FunscriptAction action)
 {
     // same as default
     ctx().AddAction(action);

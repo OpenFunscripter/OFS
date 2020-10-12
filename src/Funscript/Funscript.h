@@ -115,7 +115,7 @@ private:
 	FunscriptData data;
 	FunscriptRawData rawData;
 	
-	FunscriptAction* getAction(const FunscriptAction& action) noexcept;
+	FunscriptAction* getAction(FunscriptAction action) noexcept;
 	FunscriptAction* getActionAtTime(std::vector<FunscriptAction>& actions, int32_t time_ms, uint32_t error_ms) noexcept;
 	FunscriptAction* getNextActionAhead(int32_t time_ms) noexcept;
 	FunscriptAction* getPreviousActionBehind(int32_t time_ms) noexcept;
@@ -128,7 +128,7 @@ private:
 			[](auto& a, auto& b) { return a.at < b.at; }
 		);
 	}
-	inline void addAction(std::vector<FunscriptAction>& actions, const FunscriptAction& newAction) noexcept {
+	inline void addAction(std::vector<FunscriptAction>& actions, FunscriptAction newAction) noexcept {
 		auto it = std::find_if(actions.begin(), actions.end(), [&](auto& action) {
 			return newAction.at < action.at;
 			});
@@ -168,7 +168,7 @@ public:
 		return rawData.Recordings[rawData.RecordingIdx].RawActions; 
 	}
 
-	inline const FunscriptAction* GetAction(const FunscriptAction& action) noexcept { return getAction(action); }
+	inline const FunscriptAction* GetAction(FunscriptAction action) noexcept { return getAction(action); }
 	inline const FunscriptAction* GetActionAtTime(int32_t time_ms, uint32_t error_ms) noexcept { return getActionAtTime(data.Actions, time_ms, error_ms); }
 	inline const FunscriptAction* GetNextActionAhead(int32_t time_ms) noexcept { return getNextActionAhead(time_ms); }
 	inline const FunscriptAction* GetPreviousActionBehind(int32_t time_ms) noexcept { return getPreviousActionBehind(time_ms); }
@@ -177,7 +177,7 @@ public:
 	float GetPositionAtTime(int32_t time_ms) noexcept;
 	float GetRawPositionAtFrame(int32_t frame_no) noexcept;
 	
-	inline void AddAction(const FunscriptAction& newAction) noexcept { addAction(data.Actions, newAction); }
+	inline void AddAction(FunscriptAction newAction) noexcept { addAction(data.Actions, newAction); }
 	inline void AddActionRaw(int32_t frame_no, int32_t at, int32_t pos, float frameTimeMs) noexcept {
 		auto& recording = rawData.Recording();
 		if (frame_no >= recording.RawActions.size()) return;
@@ -188,9 +188,9 @@ public:
 			recording.RawActions[frame_no+1].pos = pos;
 		}
 	}
-	bool EditAction(const FunscriptAction& oldAction, const FunscriptAction& newAction) noexcept;
-	void PasteAction(const FunscriptAction& paste, int32_t error_ms) noexcept;
-	void RemoveAction(const FunscriptAction& action, bool checkInvalidSelection = true) noexcept;
+	bool EditAction(FunscriptAction oldAction, FunscriptAction newAction) noexcept;
+	void PasteAction(FunscriptAction paste, int32_t error_ms) noexcept;
+	void RemoveAction(FunscriptAction action, bool checkInvalidSelection = true) noexcept;
 	void RemoveActions(const std::vector<FunscriptAction>& actions) noexcept;
 
 	// bookmarks
@@ -206,14 +206,14 @@ public:
 	inline FunscriptRawData& Raw() { return rawData; }
 
 	// selection api
-	bool ToggleSelection(const FunscriptAction& action) noexcept;
-	void SetSelection(const FunscriptAction& action, bool selected) noexcept;
+	bool ToggleSelection(FunscriptAction action) noexcept;
+	void SetSelection(FunscriptAction action, bool selected) noexcept;
 	void SelectTopActions();
 	void SelectBottomActions();
 	void SelectMidActions();
 	void SelectTime(int32_t from_ms, int32_t to_ms, bool clear=true) noexcept;
-	void SelectAction(const FunscriptAction& select) noexcept;
-	void DeselectAction(const FunscriptAction& deselect) noexcept;
+	void SelectAction(FunscriptAction select) noexcept;
+	void DeselectAction(FunscriptAction deselect) noexcept;
 	void SelectAll() noexcept;
 	void RemoveSelectedActions() noexcept;
 	void MoveSelectionTime(int32_t time_offset) noexcept;

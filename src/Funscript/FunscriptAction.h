@@ -18,15 +18,15 @@ struct FunscriptAction
 		this->pos = pos;
 	}
 
-	inline bool operator==(const FunscriptAction& b) const noexcept {
+	inline bool operator==(FunscriptAction b) const noexcept {
 		return this->at == b.at && this->pos == b.pos; 
 	}
 
-	inline bool operator!=(const FunscriptAction& b) const noexcept {
+	inline bool operator!=(FunscriptAction b) const noexcept {
 		return !(*this == b);
 	}
 
-	inline bool operator<(const FunscriptAction& b) const noexcept {
+	inline bool operator<(FunscriptAction b) const noexcept {
 		return this->at < b.at;
 	}
 

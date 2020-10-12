@@ -75,7 +75,7 @@ private:
 	void saveScript(const char* path = nullptr, bool override_location = true);
 	void saveHeatmap(const char* path, int width, int height);
 
-	void removeAction(const FunscriptAction& action) noexcept;
+	void removeAction(FunscriptAction action) noexcept;
 	void removeAction() noexcept;
 	void addEditAction(int pos) noexcept;
 

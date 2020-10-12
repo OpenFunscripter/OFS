@@ -40,7 +40,7 @@ class ScriptPositionsWindow
 	void mouse_drag(SDL_Event& ev);
 	void mouse_scroll(SDL_Event& ev);
 
-	inline ImVec2 getPointForAction(const FunscriptAction& action) noexcept {
+	inline ImVec2 getPointForAction(FunscriptAction action) noexcept {
 		float relative_x = (float)(action.at - offset_ms) / frameSizeMs;
 		float x = (canvas_size.x) * relative_x;
 		float y = (canvas_size.y) * (1 - (action.pos / 100.0));

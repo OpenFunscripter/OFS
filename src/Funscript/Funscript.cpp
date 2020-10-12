@@ -242,7 +242,7 @@ float Funscript::GetRawPositionAtFrame(int32_t frame_no) noexcept
 	return 0;
 }
 
-FunscriptAction* Funscript::getAction(const FunscriptAction& action) noexcept
+FunscriptAction* Funscript::getAction(FunscriptAction action) noexcept
 {
 	auto it = std::find(data.Actions.begin(), data.Actions.end(), action);
 	if (it != data.Actions.end())
@@ -302,7 +302,7 @@ FunscriptAction* Funscript::getPreviousActionBehind(int32_t time_ms) noexcept
 	return nullptr;
 }
 
-bool Funscript::EditAction(const FunscriptAction& oldAction, const FunscriptAction& newAction) noexcept
+bool Funscript::EditAction(FunscriptAction oldAction, FunscriptAction newAction) noexcept
 {
 	// update action
 	auto act = getAction(oldAction);
@@ -316,7 +316,7 @@ bool Funscript::EditAction(const FunscriptAction& oldAction, const FunscriptActi
 	return false;
 }
 
-void Funscript::PasteAction(const FunscriptAction& paste, int32_t error_ms) noexcept
+void Funscript::PasteAction(FunscriptAction paste, int32_t error_ms) noexcept
 {
 	auto act = GetActionAtTime(paste.at, error_ms);
 	if (act != nullptr) {
@@ -338,7 +338,7 @@ void Funscript::checkForInvalidatedActions() noexcept
 		data.selection.erase(it);
 }
 
-void Funscript::RemoveAction(const FunscriptAction& action, bool checkInvalidSelection) noexcept
+void Funscript::RemoveAction(FunscriptAction action, bool checkInvalidSelection) noexcept
 {
 	auto it = std::find(data.Actions.begin(), data.Actions.end(), action);
 	if (it != data.Actions.end()) {
@@ -356,7 +356,7 @@ void Funscript::RemoveActions(const std::vector<FunscriptAction>& removeActions)
 	NotifyActionsChanged();
 }
 
-bool Funscript::ToggleSelection(const FunscriptAction& action) noexcept
+bool Funscript::ToggleSelection(FunscriptAction action) noexcept
 {
 	auto it = std::find(data.selection.begin(), data.selection.end(), action);
 	bool is_selected = it != data.selection.end();
@@ -369,7 +369,7 @@ bool Funscript::ToggleSelection(const FunscriptAction& action) noexcept
 	return !is_selected;
 }
 
-void Funscript::SetSelection(const FunscriptAction& action, bool selected) noexcept
+void Funscript::SetSelection(FunscriptAction action, bool selected) noexcept
 {
 	auto it = std::find(data.selection.begin(), data.selection.end(), action);
 	bool is_selected = it != data.selection.end();
@@ -459,7 +459,7 @@ void Funscript::SelectTime(int32_t from_ms, int32_t to_ms, bool clear) noexcept
 
 }
 
-void Funscript::SelectAction(const FunscriptAction& select) noexcept
+void Funscript::SelectAction(FunscriptAction select) noexcept
 {
 	auto action = GetAction(select);
 	if (action != nullptr) {
@@ -470,7 +470,7 @@ void Funscript::SelectAction(const FunscriptAction& select) noexcept
 	}
 }
 
-void Funscript::DeselectAction(const FunscriptAction& deselect) noexcept
+void Funscript::DeselectAction(FunscriptAction deselect) noexcept
 {
 	auto action = GetAction(deselect);
 	if (action != nullptr)

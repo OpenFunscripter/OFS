@@ -1270,7 +1270,7 @@ void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
     SDL_FreeSurface(surface);
 }
 
-void OpenFunscripter::removeAction(const FunscriptAction& action) noexcept
+void OpenFunscripter::removeAction(FunscriptAction action) noexcept
 {
     undoRedoSystem.Snapshot("Remove action");
     LoadedFunscript->RemoveAction(action);
