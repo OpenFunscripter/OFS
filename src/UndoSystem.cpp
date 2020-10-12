@@ -136,7 +136,7 @@ Funscript::FunscriptData& ScriptState::Data()
 		if (handle != nullptr) {
 			ScriptStateHeader header;
 			SDL_RWread(handle, &header, sizeof(ScriptStateHeader), 1);
-			
+		
 			// seek over message
 			SDL_RWseek(handle, header.message_len, RW_SEEK_CUR);
 
@@ -145,9 +145,6 @@ Funscript::FunscriptData& ScriptState::Data()
 
 			data.selection.resize(header.selection_len);
 			SDL_RWread(handle, data.selection.data(), sizeof(FunscriptAction), header.selection_len);
-
-			//data.RawActions.resize(header.raw_len);
-			//SDL_RWread(handle, data.RawActions.data(), sizeof(FunscriptAction), header.raw_len);
 
 			SDL_RWclose(handle);
 			DiskPointer = -1; // not on disk anymore

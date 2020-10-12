@@ -75,7 +75,7 @@ void Funscript::loadSettings() noexcept
 		OFS::serializer::load(&scriptSettings, &settings);
 
 		OFS::unpacker upkg(&Json["OpenFunscripter"]);
-		OFS_REFLECT_NAMED(Recordings, data.Recordings, upkg);
+		OFS_REFLECT_NAMED(Recordings, rawData.Recordings, upkg);
 	}
 }
 
@@ -85,7 +85,7 @@ void Funscript::saveSettings() noexcept
 	OFS::serializer::save(&scriptSettings, &Json["OpenFunscripter"]);
 
 	OFS::archiver ar(&Json["OpenFunscripter"]);
-	OFS_REFLECT_NAMED(Recordings, data.Recordings, ar);
+	OFS_REFLECT_NAMED(Recordings, rawData.Recordings, ar);
 }
 
 void Funscript::update() noexcept
@@ -228,7 +228,7 @@ float Funscript::GetPositionAtTime(int32_t time_ms) noexcept
 
 float Funscript::GetRawPositionAtFrame(int32_t frame_no) noexcept
 {
-	auto& recording = data.Recording();
+	auto& recording = rawData.Recording();
 	if (frame_no >= recording.RawActions.size()) return 0;
 	// this is stupid
 	auto pos = recording.RawActions[frame_no].pos;

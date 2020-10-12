@@ -15,8 +15,9 @@ public:
 	struct FunscriptData {
 		std::vector<FunscriptAction> Actions;
 		std::vector<FunscriptAction> selection;
+	};
 
-		int32_t RecordingIdx = 0;
+	struct FunscriptRawData {
 		struct Recording {
 			std::vector<FunscriptAction> RawActions;
 			
@@ -25,16 +26,28 @@ public:
 				OFS_REFLECT(RawActions, ar);
 			}
 		};
+
+		int32_t RecordingIdx = 0;
 		std::vector<Recording> Recordings;
+		
 		inline bool HasRecording() const { return Recordings.size() > 0; }
+		
 		inline Recording& Recording() { 
 			FUN_ASSERT(HasRecording(), "no recording");
 			return Recordings[RecordingIdx]; 
 		}
+		
 		inline void NewRecording(int32_t frame_no) {
 			Recordings.emplace_back();
 			Recordings.back().RawActions.resize(frame_no);
 			RecordingIdx = Recordings.size() - 1;
+		}
+
+		inline void RemoveActiveRecording() {
+			Recordings.erase(Recordings.begin() + RecordingIdx);
+			if (RecordingIdx > 0 && RecordingIdx >= Recordings.size() - 1) {
+				RecordingIdx--;
+			}
 		}
 	};
 
@@ -99,6 +112,7 @@ private:
 	void checkForInvalidatedActions() noexcept;
 	
 	FunscriptData data;
+	FunscriptRawData rawData;
 	
 	FunscriptAction* getAction(const FunscriptAction& action) noexcept;
 	FunscriptAction* getActionAtTime(std::vector<FunscriptAction>& actions, int32_t time_ms, uint32_t error_ms) noexcept;
@@ -149,8 +163,8 @@ public:
 	const std::vector<FunscriptAction>& Selection() const noexcept { return data.selection; }
 	const std::vector<FunscriptAction>& Actions() const noexcept { return data.Actions; }
 	const std::vector<FunscriptAction>& Recording() const noexcept { 
-		FUN_ASSERT(data.HasRecording(), "no recording");
-		return data.Recordings[data.RecordingIdx].RawActions; 
+		FUN_ASSERT(rawData.HasRecording(), "no recording");
+		return rawData.Recordings[rawData.RecordingIdx].RawActions; 
 	}
 
 	inline const FunscriptAction* GetAction(const FunscriptAction& action) noexcept { return getAction(action); }
@@ -164,7 +178,7 @@ public:
 	
 	inline void AddAction(const FunscriptAction& newAction) noexcept { addAction(data.Actions, newAction); }
 	inline void AddActionRaw(int32_t frame_no, int32_t at, int32_t pos, float frameTimeMs) noexcept {
-		auto& recording = data.Recording();
+		auto& recording = rawData.Recording();
 		if (frame_no >= recording.RawActions.size()) return;
 		recording.RawActions[frame_no].at = at;
 		recording.RawActions[frame_no].pos = pos;
@@ -188,9 +202,7 @@ public:
 	}
 
 	// recording stuff
-	inline void NewRecording(int32_t frame_no) noexcept {
-		data.NewRecording(frame_no);
-	}
+	inline FunscriptRawData& Raw() { return rawData; }
 
 	// selection api
 	bool ToggleSelection(const FunscriptAction& action) noexcept;

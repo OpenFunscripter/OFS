@@ -297,7 +297,6 @@ void RecordingImpl::DrawModeSettings()
     ImGui::PopItemFlag();
 
     ImGui::Checkbox("Invert", &inverted); ImGui::SameLine(); ImGui::Checkbox("Record on play", &automaticRecording);
-    
     currentPos = Util::Clamp<int32_t>(50.f + (50.f * value), 0, 100);
     if (inverted) { currentPos = std::abs(currentPos - 100); }
 
@@ -305,12 +304,11 @@ void RecordingImpl::DrawModeSettings()
     auto app = OpenFunscripter::ptr;
     bool playing = !app->player.isPaused();
     if (automaticRecording && playing && recordingActive != playing) {
-        app->undoRedoSystem.Snapshot("Recording");
         recordingActive = true;
         app->simulator.SimulateRawActions = true;
         rollingBackupTmp = app->RollingBackup;
         app->RollingBackup = false;
-        ctx().NewRecording(app->player.getTotalNumFrames());
+        ctx().Raw().NewRecording(app->player.getTotalNumFrames());
     }
     else if (!playing && recordingActive) {
         recordingActive = false;
@@ -327,6 +325,12 @@ void RecordingImpl::DrawModeSettings()
         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
         ImGui::Text("%s", "Recording paused");
         ImGui::PopStyleColor();
+    }
+
+    ImGui::InputInt("Recording", &ctx().Raw().RecordingIdx, 1, 1);
+    ctx().Raw().RecordingIdx = Util::Clamp<int32_t>(ctx().Raw().RecordingIdx, 0, ctx().Raw().Recordings.size()-1);
+    if (ImGui::Button("Delete", ImVec2(-1.f, 0.f))) {
+        ctx().Raw().RemoveActiveRecording();
     }
 }
 

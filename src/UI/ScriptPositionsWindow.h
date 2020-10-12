@@ -68,7 +68,14 @@ class ScriptPositionsWindow
 	
 	void FfmpegAudioProcessingFinished(SDL_Event& ev);
 
-	bool ShowRawActions = true;
+	// ATTENTION: no reordering
+	enum RecordingRenderMode : int32_t {
+		None,
+		All,
+		ActiveOnly,
+	};
+
+	RecordingRenderMode RecordingMode = RecordingRenderMode::ActiveOnly;
 	bool ShowRegularActions = true;
 	bool ShowAudioWaveform = false;
 	float ScaleAudio = 1.f;

@@ -18,13 +18,16 @@
 // TODO: make heatmap generation more sophisticated
 // TODO: [MAJOR FEATURE] working with raw actions and controller input
 
-constexpr std::array<const char*, 6> SupportedVideoExtensions{
+// the video player supports a lot more than these
+// these are the ones looked for when loading funscripts
+// also used to generate a filter for the file dialog
+constexpr std::array<const char*, 6> SupportedVideoExtensions {
     ".mp4",
+    ".mkv",
+    ".webm",
+    ".wmv",
     ".avi",
     ".m4v",
-    ".webm",
-    ".mkv",
-    ".wmv",
 };
 
 
@@ -266,6 +269,10 @@ bool OpenFunscripter::setup()
     SetCursorType(SDL_SYSTEM_CURSOR_ARROW);
 
     SDL_ShowWindow(window);
+
+#ifndef NDEBUG
+    scripting->setMode(ScriptingModeEnum::RECORDING);
+#endif
     return true;
 }
 

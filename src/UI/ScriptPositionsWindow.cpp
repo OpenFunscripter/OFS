@@ -284,8 +284,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 
 	// render raw actions
 	const FunscriptAction* prevAction = nullptr;
-	if (script.Data().HasRecording() && ShowRawActions) {
-
+	if (script.Raw().HasRecording() && RecordingMode != RecordingRenderMode::None) {
 		auto pathStroke = [](auto draw_list, uint32_t col) {
 			// sort of a hack ...
 			// PathStroke sets  _Path.Size = 0
@@ -295,10 +294,6 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 			draw_list->_Path.Size = tmp;
 			draw_list->PathStroke(col, false, 5.f);
 		};
-
-		int32_t startIndex = Util::Clamp<int32_t>((offset_ms / frameTime), 0, script.Recording().size());
-		int32_t endIndex = Util::Clamp<int32_t>(((float)offset_ms + frameSizeMs) / frameTime, startIndex, script.Recording().size());
-
 		auto pathRawSection = [this](auto draw_list, auto rawActions, int32_t fromIndex, int32_t toIndex) {
 			float frameTimeMs = OpenFunscripter::ptr->player.getFrameTimeMs();
 			for (int i = fromIndex; i < toIndex; i++) {
@@ -310,8 +305,38 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				}
 			}
 		};
-		pathRawSection(draw_list, script.Recording(), startIndex, endIndex);
-		pathStroke(draw_list, IM_COL32(255, 0, 0, 180));
+
+		switch (RecordingMode) {
+		case RecordingRenderMode::All:
+		{
+			for(int i=0; i < script.Raw().Recordings.size(); i++) {
+				auto& recording = script.Raw().Recordings[i];
+
+				int32_t startIndex = Util::Clamp<int32_t>((offset_ms / frameTime), 0, recording.RawActions.size());
+				int32_t endIndex = Util::Clamp<int32_t>(((float)offset_ms + frameSizeMs) / frameTime, startIndex, recording.RawActions.size());
+
+				pathRawSection(draw_list, recording.RawActions, startIndex, endIndex);
+				if (i != script.Raw().RecordingIdx) {
+					pathStroke(draw_list, IM_COL32(255, 0, 0, 180));
+				}
+				else {
+					pathStroke(draw_list, IM_COL32(0, 255, 0, 180));
+				}
+			}
+			break;
+		}
+		case RecordingRenderMode::ActiveOnly: 
+		{
+			auto& recording = script.Recording();
+
+			int32_t startIndex = Util::Clamp<int32_t>((offset_ms / frameTime), 0, recording.size());
+			int32_t endIndex = Util::Clamp<int32_t>(((float)offset_ms + frameSizeMs) / frameTime, startIndex, recording.size());
+
+			pathRawSection(draw_list, recording, startIndex, endIndex);
+			pathStroke(draw_list, IM_COL32(0, 255, 0, 180));
+			break;
+		}
+		}
 	}
 
 	if (script.Actions().size() > 0) {
@@ -407,7 +432,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	if (ImGui::BeginPopupContextItem())
 	{
 		ImGui::MenuItem("Draw actions", NULL, &ShowRegularActions);
-		ImGui::MenuItem("Draw raw actions", NULL, &ShowRawActions);
+		ImGui::Combo("Recording", (int32_t*)&RecordingMode, "No\0All\0Active\0");
 		ImGui::SliderFloat("Waveform scale", &ScaleAudio, 0.25f, 10.f);
 		if (ImGui::MenuItem("Audio waveform", NULL, &ShowAudioWaveform, !ffmpegInProgress)) {}
 		if (ImGui::MenuItem(ffmpegInProgress ? "Processing audio..." : "Update waveform", NULL, false, !ffmpegInProgress)) {
