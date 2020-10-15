@@ -269,10 +269,6 @@ bool OpenFunscripter::setup()
     SetCursorType(SDL_SYSTEM_CURSOR_ARROW);
 
     SDL_ShowWindow(window);
-
-#ifndef NDEBUG
-    scripting->setMode(ScriptingModeEnum::RECORDING);
-#endif
     return true;
 }
 
@@ -875,7 +871,7 @@ void OpenFunscripter::rollingBackup() noexcept
             LOGF_INFO("Removing old backup: \"%s\"", (*oldest_backup).path().string().c_str());
             std::filesystem::remove(*oldest_backup, ec);
             if (ec) {
-                LOG_INFO("Failed to remove old backup");
+                LOGF_INFO("Failed to remove old backup\n%s", ec.message().c_str());
             }
         }
     }
