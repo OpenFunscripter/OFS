@@ -395,45 +395,79 @@ void RecordingImpl::DrawModeSettings()
         ImGui::Text("%s", "Recording paused");
         ImGui::PopStyleColor();
     }
+    static bool OpenRecordingsWindow = true;
+    if (ImGui::Button("Recordings", ImVec2(-1.f, 0.f))) { OpenRecordingsWindow = !OpenRecordingsWindow; }
+    if (OpenRecordingsWindow) {
+        ImGui::Begin("Recordings", &OpenRecordingsWindow, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Text("Total recordings: %ld", ctx().Raw().Recordings.size());
+        //ImGui::InputInt("Recording", &ctx().Raw().RecordingIdx, 1, 1);
+        
+        if (ctx().Raw().Recordings.size() > 0) {
+            int count = 0;
+            char tmp[32];
+            stbsp_snprintf(tmp, sizeof(tmp), "Recording %d#", ctx().Raw().RecordingIdx);
+            if (ImGui::BeginCombo("Recordings", tmp)) {
+                for (auto&& recording : ctx().Raw().Recordings) {
+                    stbsp_snprintf(tmp, sizeof(tmp), "Recording %d#", count);
+                    const bool is_selected = (ctx().Raw().RecordingIdx == count);
 
-    ImGui::Spacing();
-    ImGui::Text("Total recordings: %ld", ctx().Raw().Recordings.size());
-    ImGui::InputInt("Recording", &ctx().Raw().RecordingIdx, 1, 1);
-    ctx().Raw().RecordingIdx = Util::Clamp<int32_t>(ctx().Raw().RecordingIdx, 0, ctx().Raw().Recordings.size()-1);
-    if (ImGui::Button("Delete", ImVec2(-1.f, 0.f))) {
-        ctx().Raw().RemoveActiveRecording();
-    }
+                    if (ImGui::Selectable(tmp, is_selected)) {
+                        ctx().Raw().RecordingIdx = count;
+                    }
 
-    static float epsilon = 0.f;
-    if (ImGui::DragFloat("Epsilon", &epsilon, 0.1f, 0.f, 40.f)) {
-        epsilon = Util::Clamp<float>(epsilon, 0.f, 40.f);
+                    if (ImGui::IsItemHovered()) {
+                        ctx().Raw().RecordingIdx = count;
+                    }
+
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();
+                    count++;
+                }
+                ImGui::EndCombo();
+            }
+
+            ctx().Raw().RecordingIdx = Util::Clamp<int32_t>(ctx().Raw().RecordingIdx, 0, ctx().Raw().Recordings.size()-1);
+            if (ImGui::Button("Delete (Can't be undone)", ImVec2(-1.f, 0.f))) {
+                ctx().Raw().RemoveActiveRecording();
+            }
+        }
+
+        static float epsilon = 0.f;
+        static Funscript::FunscriptRawData::Recording GeneratedRecording;
+
         if (ctx().Raw().HasRecording()) {
-            app->undoRedoSystem.Undo();
-            app->undoRedoSystem.Snapshot("Generate actions");
-            std::vector<FunscriptAction> simplified;
-            RamerDouglasPeucker(ctx().Raw().Recording().RawActions, epsilon, simplified);
-            for (auto&& act : simplified) {
-                if (act.at >= 0) {
-                    if (!ctx().EditAction(act, act)) {
-                        ctx().AddAction(act);
+            if (ImGui::Button("Generate actions from recording", ImVec2(-1.f, 0.f))) {
+                app->undoRedoSystem.Snapshot("Generate actions");
+                std::vector<FunscriptAction> simplified;
+                GeneratedRecording.RawActions = std::move(ctx().Raw().Active().RawActions);
+                ctx().Raw().RemoveActiveRecording();
+                RamerDouglasPeucker(GeneratedRecording.RawActions, epsilon, simplified);
+                for (auto&& act : simplified) {
+                    if (act.at >= 0) {
+                        ctx().AddEditAction(act, app->player.getFrameTimeMs()/4.f);
                     }
                 }
             }
         }
-    }
-    if (ImGui::Button("Generate actions from recording", ImVec2(-1.f, 0.f))) {
-        if (ctx().Raw().HasRecording()) {
-            app->undoRedoSystem.Snapshot("Generate actions");
-            std::vector<FunscriptAction> simplified;
-            RamerDouglasPeucker(ctx().Raw().Recording().RawActions, epsilon, simplified);
-            for (auto&& act : simplified) {
-                if (act.at >= 0) {
-                    if (!ctx().EditAction(act, act)) {
-                        ctx().AddAction(act);
+        if (GeneratedRecording.RawActions.size() > 0) {
+            if (ImGui::DragFloat("Epsilon", &epsilon, 0.1f, 0.f, 1000.f)) {
+                epsilon = Util::Clamp<float>(epsilon, 0.f, 1000.f);
+                app->undoRedoSystem.Undo();
+                app->undoRedoSystem.Snapshot("Generate actions");
+                std::vector<FunscriptAction> simplified;
+                RamerDouglasPeucker(GeneratedRecording.RawActions, epsilon, simplified);
+                for (auto&& act : simplified) {
+                    if (act.at >= 0) {
+                        ctx().AddEditAction(act, app->player.getFrameTimeMs()/4.f);
                     }
                 }
             }
+            if (ImGui::Button("Finalize", ImVec2(-1.f, 0.f))) {
+                GeneratedRecording.RawActions.clear();
+            }
         }
+
+        ImGui::End();
     }
 }
 

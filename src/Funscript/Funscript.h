@@ -32,7 +32,7 @@ public:
 		
 		inline bool HasRecording() const { return Recordings.size() > 0; }
 		
-		inline Recording& Recording() { 
+		inline Recording& Active() { 
 			FUN_ASSERT(HasRecording(), "no recording");
 			return Recordings[RecordingIdx]; 
 		}
@@ -179,12 +179,13 @@ public:
 	
 	inline void AddAction(FunscriptAction newAction) noexcept { addAction(data.Actions, newAction); }
 	inline void AddActionRaw(int32_t frame_no, int32_t at, int32_t pos, float frameTimeMs) noexcept {
-		auto& recording = rawData.Recording();
+		auto& recording = rawData.Active();
 		if (frame_no >= recording.RawActions.size()) return;
 		recording.RawActions[frame_no].at = at - frameTimeMs;
 		recording.RawActions[frame_no].pos = pos;
 	}
 	bool EditAction(FunscriptAction oldAction, FunscriptAction newAction) noexcept;
+	void AddEditAction(FunscriptAction action, float frameTimeMs) noexcept;
 	void PasteAction(FunscriptAction paste, int32_t error_ms) noexcept;
 	void RemoveAction(FunscriptAction action, bool checkInvalidSelection = true) noexcept;
 	void RemoveActions(const std::vector<FunscriptAction>& actions) noexcept;

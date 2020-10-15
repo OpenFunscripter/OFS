@@ -220,7 +220,7 @@ float Funscript::GetPositionAtTime(int32_t time_ms) noexcept
 
 float Funscript::GetRawPositionAtFrame(int32_t frame_no) noexcept
 {
-	auto& recording = rawData.Recording();
+	auto& recording = rawData.Active();
 	if (frame_no >= recording.RawActions.size()) return 0;
 	// this is stupid
 	auto pos = recording.RawActions[frame_no].pos;
@@ -314,6 +314,17 @@ bool Funscript::EditAction(FunscriptAction oldAction, FunscriptAction newAction)
 		return true;
 	}
 	return false;
+}
+
+void Funscript::AddEditAction(FunscriptAction action, float frameTimeMs) noexcept
+{
+	auto close = getActionAtTime(data.Actions, action.at, frameTimeMs);
+	if (close != nullptr) {
+		*close = action;
+	}
+	else {
+		AddAction(action);
+	}
 }
 
 void Funscript::PasteAction(FunscriptAction paste, int32_t error_ms) noexcept
