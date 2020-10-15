@@ -395,18 +395,26 @@ void RecordingImpl::DrawModeSettings()
         ImGui::Text("%s", "Recording paused");
         ImGui::PopStyleColor();
     }
+    
     static bool OpenRecordingsWindow = true;
     if (ImGui::Button("Recordings", ImVec2(-1.f, 0.f))) { OpenRecordingsWindow = !OpenRecordingsWindow; }
+    
     if (OpenRecordingsWindow) {
-        ImGui::Begin("Recordings", &OpenRecordingsWindow, ImGuiWindowFlags_AlwaysAutoResize);
+        static float epsilon = 0.f;
+        static Funscript::FunscriptRawData::Recording GeneratedRecording;
+        ImGui::Begin("Recordings", &OpenRecordingsWindow, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking);
         ImGui::Text("Total recordings: %ld", ctx().Raw().Recordings.size());
-        //ImGui::InputInt("Recording", &ctx().Raw().RecordingIdx, 1, 1);
-        
-        if (ctx().Raw().Recordings.size() > 0) {
+       
+        if (ctx().Raw().Recordings.size() > 0 && GeneratedRecording.RawActions.size() == 0) {
+            ImGui::NewLine();
+            if (ImGui::Button("Delete selected (Can't be undone)", ImVec2(-1.f, 0.f))) {
+                ctx().Raw().RemoveActiveRecording();
+            }
+            ImGui::NewLine();
             int count = 0;
             char tmp[32];
             stbsp_snprintf(tmp, sizeof(tmp), "Recording %d#", ctx().Raw().RecordingIdx);
-            if (ImGui::BeginCombo("Recordings", tmp)) {
+            if (ImGui::BeginCombo("Selected", tmp)) {
                 for (auto&& recording : ctx().Raw().Recordings) {
                     stbsp_snprintf(tmp, sizeof(tmp), "Recording %d#", count);
                     const bool is_selected = (ctx().Raw().RecordingIdx == count);
@@ -427,20 +435,11 @@ void RecordingImpl::DrawModeSettings()
             }
 
             ctx().Raw().RecordingIdx = Util::Clamp<int32_t>(ctx().Raw().RecordingIdx, 0, ctx().Raw().Recordings.size()-1);
-            if (ImGui::Button("Delete (Can't be undone)", ImVec2(-1.f, 0.f))) {
-                ctx().Raw().RemoveActiveRecording();
-            }
-        }
 
-        static float epsilon = 0.f;
-        static Funscript::FunscriptRawData::Recording GeneratedRecording;
-
-        if (ctx().Raw().HasRecording()) {
             if (ImGui::Button("Generate actions from recording", ImVec2(-1.f, 0.f))) {
                 app->undoRedoSystem.Snapshot("Generate actions");
                 std::vector<FunscriptRawAction> simplified;
-                GeneratedRecording.RawActions = std::move(ctx().Raw().Active().RawActions);
-                ctx().Raw().RemoveActiveRecording();
+                GeneratedRecording.RawActions = ctx().Raw().Active().RawActions;
                 RamerDouglasPeucker(GeneratedRecording.RawActions, epsilon, simplified);
                 for (auto&& act : simplified) {
                     if (act.at >= 0) {
@@ -449,9 +448,14 @@ void RecordingImpl::DrawModeSettings()
                 }
             }
         }
+
+
         if (GeneratedRecording.RawActions.size() > 0) {
-            if (ImGui::DragFloat("Epsilon", &epsilon, 0.1f, 0.f, 1000.f)) {
-                epsilon = Util::Clamp<float>(epsilon, 0.f, 1000.f);
+            ImGui::NewLine();
+            ImGui::Text("%s", "Tweaking");
+            ImGui::TextDisabled("%s", "This works by undoing the previous \"Generate actions\"!\nDo not do anything else till you \"Finalize\"");
+            if (ImGui::DragFloat("Epsilon", &epsilon, 0.2f, 0.f, 200.f)) {
+                epsilon = Util::Clamp<float>(epsilon, 0.f, 200.f);
                 app->undoRedoSystem.Undo();
                 app->undoRedoSystem.Snapshot("Generate actions");
                 std::vector<FunscriptRawAction> simplified;
