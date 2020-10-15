@@ -432,7 +432,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		draw_list->AddLine(canvas_pos + ImVec2(canvas_size.x * rel_x2, 0), canvas_pos + ImVec2(canvas_size.x * rel_x2, canvas_size.y), selectColor, 3.0f);
 	}
 
-	PositionsItemHovered = ImGui::IsItemHovered();
+	PositionsItemHovered = ImGui::IsWindowHovered(); //ImGui::IsItemHovered();
 
 	// right click context menu
 	if (ImGui::BeginPopupContextItem())
