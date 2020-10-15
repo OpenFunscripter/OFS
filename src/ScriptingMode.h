@@ -76,7 +76,7 @@ private:
 	bool recordingActive = false;
 	bool inverted = false;
 
-	bool OpenRecordingsWindow = true;
+	bool OpenRecordingsWindow = false;
 	bool rollingBackupTmp = false;
 	float epsilon = 0.f;
 	Funscript::FunscriptRawData::Recording GeneratedRecording; // TODO: get rid of this?
