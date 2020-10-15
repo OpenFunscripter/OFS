@@ -70,13 +70,16 @@ private:
 
 	float value = 0.f;
 
-	int16_t ControllerDeadzone = 1750;
+	int32_t ControllerDeadzone = 1750;
 	int32_t currentPos = 0;
 	bool automaticRecording = true;
 	bool recordingActive = false;
 	bool inverted = false;
 
+	bool OpenRecordingsWindow = true;
 	bool rollingBackupTmp = false;
+	float epsilon = 0.f;
+	Funscript::FunscriptRawData::Recording GeneratedRecording; // TODO: get rid of this?
 
 	// Attention: don't change order
 	enum RecordingMode : int32_t {

@@ -339,7 +339,6 @@ inline static void RamerDouglasPeucker(const std::vector<FunscriptRawAction>& po
 void RecordingImpl::DrawModeSettings()
 {
 
-    static float deadzone = (float)ControllerDeadzone / std::numeric_limits<int16_t>::max();
     ImGui::Combo("Mode", (int*)&activeMode,
         "Mouse\0"
         "Controller\0"
@@ -349,8 +348,7 @@ void RecordingImpl::DrawModeSettings()
     case RecordingMode::Controller:
     {
         ImGui::Text("%s", "Controller deadzone");
-        ImGui::SliderFloat("Deadzone", &deadzone, 0.f, 0.5f);
-        ControllerDeadzone = std::numeric_limits<int16_t>::max() * deadzone;
+        ImGui::SliderInt("Deadzone", &ControllerDeadzone, 0, std::numeric_limits<int16_t>::max());
         break;
     }
     case RecordingMode::Mouse:
@@ -396,12 +394,9 @@ void RecordingImpl::DrawModeSettings()
         ImGui::PopStyleColor();
     }
     
-    static bool OpenRecordingsWindow = true;
     if (ImGui::Button("Recordings", ImVec2(-1.f, 0.f))) { OpenRecordingsWindow = !OpenRecordingsWindow; }
     
     if (OpenRecordingsWindow) {
-        static float epsilon = 0.f;
-        static Funscript::FunscriptRawData::Recording GeneratedRecording;
         ImGui::Begin("Recordings", &OpenRecordingsWindow, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking);
         ImGui::Text("Total recordings: %ld", ctx().Raw().Recordings.size());
        
