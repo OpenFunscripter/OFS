@@ -16,7 +16,7 @@ inline Funscript& ScripingModeBaseImpl::ctx() {
 void ScriptingMode::setup()
 {
     ctx = OpenFunscripter::ptr;
-    setMode(DEFAULT_MODE);
+    setMode(ScriptingModeEnum::DEFAULT_MODE);
 }
 
 void ScriptingMode::DrawScriptingMode(bool* open)
@@ -42,17 +42,17 @@ void ScriptingMode::setMode(ScriptingModeEnum mode)
 {
     active_mode = mode;
     switch (mode) {
-    case ALTERNATING:
+    case ScriptingModeEnum::ALTERNATING:
     {
         impl = std::make_unique<AlternatingImpl>();
         break;
     }
-    case DYNAMIC_INJECTION:
+    case ScriptingModeEnum::DYNAMIC_INJECTION:
     {
         impl = std::make_unique<DynamicInjectionImpl>();
         break;
     }
-    case RECORDING:
+    case ScriptingModeEnum::RECORDING:
     {
         impl = std::make_unique<RecordingImpl>();
         break;
