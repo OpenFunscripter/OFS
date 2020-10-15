@@ -266,7 +266,7 @@ void RecordingImpl::ControllerAxisMotion(SDL_Event& ev)
     }
 }
 
-inline static double PerpendicularDistance(const FunscriptAction pt, const FunscriptAction lineStart, const FunscriptAction lineEnd)
+inline static double PerpendicularDistance(const FunscriptRawAction pt, const FunscriptRawAction lineStart, const FunscriptRawAction lineEnd)
 {
     double dx = (double)lineEnd.at - lineStart.at;
     double dy = (double)lineEnd.pos - lineStart.pos;
@@ -295,7 +295,7 @@ inline static double PerpendicularDistance(const FunscriptAction pt, const Funsc
     return std::sqrt(ax*ax + ay*ay);
 }
 
-inline static void RamerDouglasPeucker(const std::vector<FunscriptAction>& pointList, double epsilon, std::vector<FunscriptAction>& out)
+inline static void RamerDouglasPeucker(const std::vector<FunscriptRawAction>& pointList, double epsilon, std::vector<FunscriptRawAction>& out)
 {
     // Find the point with the maximum distance from line between start and end
     double dmax = 0.0;
@@ -315,10 +315,10 @@ inline static void RamerDouglasPeucker(const std::vector<FunscriptAction>& point
     if (dmax > epsilon)
     {
         // Recursive call
-        std::vector<FunscriptAction> recResults1;
-        std::vector<FunscriptAction> recResults2;
-        std::vector<FunscriptAction> firstLine(pointList.begin(), pointList.begin() + index + 1);
-        std::vector<FunscriptAction> lastLine(pointList.begin() + index, pointList.end());
+        std::vector<FunscriptRawAction> recResults1;
+        std::vector<FunscriptRawAction> recResults2;
+        std::vector<FunscriptRawAction> firstLine(pointList.begin(), pointList.begin() + index + 1);
+        std::vector<FunscriptRawAction> lastLine(pointList.begin() + index, pointList.end());
         RamerDouglasPeucker(firstLine, epsilon, recResults1);
         RamerDouglasPeucker(lastLine, epsilon, recResults2);
 
@@ -438,13 +438,13 @@ void RecordingImpl::DrawModeSettings()
         if (ctx().Raw().HasRecording()) {
             if (ImGui::Button("Generate actions from recording", ImVec2(-1.f, 0.f))) {
                 app->undoRedoSystem.Snapshot("Generate actions");
-                std::vector<FunscriptAction> simplified;
+                std::vector<FunscriptRawAction> simplified;
                 GeneratedRecording.RawActions = std::move(ctx().Raw().Active().RawActions);
                 ctx().Raw().RemoveActiveRecording();
                 RamerDouglasPeucker(GeneratedRecording.RawActions, epsilon, simplified);
                 for (auto&& act : simplified) {
                     if (act.at >= 0) {
-                        ctx().AddEditAction(act, app->player.getFrameTimeMs()/4.f);
+                        ctx().AddEditAction(FunscriptAction(act.at, act.pos), app->player.getFrameTimeMs()/4.f);
                     }
                 }
             }
@@ -454,11 +454,11 @@ void RecordingImpl::DrawModeSettings()
                 epsilon = Util::Clamp<float>(epsilon, 0.f, 1000.f);
                 app->undoRedoSystem.Undo();
                 app->undoRedoSystem.Snapshot("Generate actions");
-                std::vector<FunscriptAction> simplified;
+                std::vector<FunscriptRawAction> simplified;
                 RamerDouglasPeucker(GeneratedRecording.RawActions, epsilon, simplified);
                 for (auto&& act : simplified) {
                     if (act.at >= 0) {
-                        ctx().AddEditAction(act, app->player.getFrameTimeMs()/4.f);
+                        ctx().AddEditAction(FunscriptAction(act.at, act.pos), app->player.getFrameTimeMs()/4.f);
                     }
                 }
             }

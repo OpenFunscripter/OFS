@@ -19,7 +19,7 @@ public:
 
 	struct FunscriptRawData {
 		struct Recording {
-			std::vector<FunscriptAction> RawActions;
+			std::vector<FunscriptRawAction> RawActions;
 			
 			template <class Archive>
 			inline void reflect(Archive& ar) {
@@ -163,7 +163,7 @@ public:
 	const FunscriptData& Data() const noexcept { return data; }
 	const std::vector<FunscriptAction>& Selection() const noexcept { return data.selection; }
 	const std::vector<FunscriptAction>& Actions() const noexcept { return data.Actions; }
-	const std::vector<FunscriptAction>& Recording() const noexcept { 
+	const std::vector<FunscriptRawAction>& ActiveRecording() const noexcept { 
 		FUN_ASSERT(rawData.HasRecording(), "no recording");
 		return rawData.Recordings[rawData.RecordingIdx].RawActions; 
 	}
@@ -182,6 +182,7 @@ public:
 		auto& recording = rawData.Active();
 		if (frame_no >= recording.RawActions.size()) return;
 		recording.RawActions[frame_no].at = at - frameTimeMs;
+		recording.RawActions[frame_no].frame_no = frame_no;
 		recording.RawActions[frame_no].pos = pos;
 	}
 	bool EditAction(FunscriptAction oldAction, FunscriptAction newAction) noexcept;

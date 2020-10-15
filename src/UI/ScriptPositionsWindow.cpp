@@ -304,9 +304,9 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 			float frameTimeMs = OpenFunscripter::ptr->player.getFrameTimeMs();
 			for (int i = fromIndex; i < toIndex; i++) {
 				auto action = rawActions[i];
-				if (action.pos >= 0) {
+				if (action.frame_no >= 0) {
 					action.at = i * frameTimeMs;
-					auto point = getPointForAction(action);
+					auto point = getPointForAction(FunscriptAction(action.at, action.pos));
 					draw_list->PathLineTo(point);
 				}
 			}
@@ -333,7 +333,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		}
 		case RecordingRenderMode::ActiveOnly: 
 		{
-			auto& recording = script.Recording();
+			auto& recording = script.ActiveRecording();
 
 			int32_t startIndex = Util::Clamp<int32_t>((offset_ms / frameTime), 0, recording.size());
 			int32_t endIndex = Util::Clamp<int32_t>(((float)offset_ms + frameSizeMs) / frameTime, startIndex, recording.size());

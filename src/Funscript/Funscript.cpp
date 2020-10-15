@@ -76,6 +76,20 @@ void Funscript::loadSettings() noexcept
 
 		OFS::unpacker upkg(&Json["OpenFunscripter"]);
 		OFS_REFLECT_NAMED(Recordings, rawData.Recordings, upkg);
+		
+		// fix action position in the array -> index == frame_no
+		std::vector<Funscript::FunscriptRawData::Recording> Fixed;
+		for (auto&& rec : rawData.Recordings) {
+			Funscript::FunscriptRawData::Recording recording;
+			for (auto&& raw : rec.RawActions) {
+				if (raw.frame_no > 0) {
+					recording.RawActions.resize(raw.frame_no + 1);
+					recording.RawActions[raw.frame_no] = raw;
+				}
+			}
+			Fixed.emplace_back(std::move(recording));
+		}
+		rawData.Recordings = std::move(Fixed);
 	}
 }
 
@@ -84,8 +98,20 @@ void Funscript::saveSettings() noexcept
 	scriptSettings.player = &OpenFunscripter::ptr->player.settings;
 	OFS::serializer::save(&scriptSettings, &Json["OpenFunscripter"]);
 
+	// filter all empty actions to serialize
+	std::vector<Funscript::FunscriptRawData::Recording> filtered;
+	for (auto&& rec : rawData.Recordings) {
+		Funscript::FunscriptRawData::Recording filteredRecording;
+		filteredRecording.RawActions.reserve(rec.RawActions.size());
+		for (auto&& raw : rec.RawActions) {
+			if (raw.frame_no > 0) {
+				filteredRecording.RawActions.emplace_back(raw);
+			}
+		}
+		filtered.emplace_back(std::move(filteredRecording));
+	}
 	OFS::archiver ar(&Json["OpenFunscripter"]);
-	OFS_REFLECT_NAMED(Recordings, rawData.Recordings, ar);
+	OFS_REFLECT_NAMED(Recordings, filtered, ar);
 }
 
 void Funscript::update() noexcept
