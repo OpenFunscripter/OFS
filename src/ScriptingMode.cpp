@@ -397,7 +397,7 @@ void RecordingImpl::DrawModeSettings()
     if (ImGui::Button("Recordings", ImVec2(-1.f, 0.f))) { OpenRecordingsWindow = !OpenRecordingsWindow; }
     
     if (OpenRecordingsWindow) {
-        ImGui::Begin("Recordings", &OpenRecordingsWindow, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking);
+        ImGui::Begin("Recordings", &OpenRecordingsWindow, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking);
         ImGui::Text("Total recordings: %ld", ctx().Raw().Recordings.size());
        
         if (ctx().Raw().Recordings.size() > 0 && GeneratedRecording.RawActions.size() == 0) {
