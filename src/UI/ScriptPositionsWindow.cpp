@@ -221,7 +221,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		IM_COL32(0, 0, 50, 255), IM_COL32(0, 0, 50, 255),
 		IM_COL32(0, 0, 20, 255), IM_COL32(0, 0, 20, 255)
 	);
-	draw_list->AddRect(canvas_pos, ImVec2(canvas_pos.x + canvas_size.x, canvas_pos.y + canvas_size.y), IM_COL32(255, 255, 255, 255));
+
 
 	// height indicators
 	for (int i = 0; i < 9; i++) {
@@ -261,6 +261,16 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 			);
 		}
 	}
+
+	// border
+	const float borderThicknes = 1.f;
+	draw_list->AddRect(
+		canvas_pos,
+		ImVec2(canvas_pos.x + canvas_size.x, canvas_pos.y + canvas_size.y),
+		script.HasSelection() ? ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_SliderGrabActive]) : IM_COL32(255, 255, 255, 255),
+		0.f, ImDrawCornerFlags_All,
+		borderThicknes
+	);
 
 	if (ShowAudioWaveform) {
 		const float durationMs = OpenFunscripter::ptr->player.getDuration() * 1000.f;
