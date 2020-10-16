@@ -661,22 +661,18 @@ void OpenFunscripter::register_bindings()
         group.bindings.push_back(Keybinding(
             "equalize_actions",
             "Equalize actions",
-            SDLK_UNKNOWN,
+            SDLK_e,
             0,
             true,
-            [&](void*) {
-                equalizeSelection();
-            }
+            [&](void*) { equalizeSelection(); }
         ));
         group.bindings.push_back(Keybinding(
             "invert_actions",
             "Invert actions",
-            SDLK_UNKNOWN,
+            SDLK_i,
             0,
             true,
-            [&](void*) {
-                invertSelection();
-            }
+            [&](void*) { invertSelection(); }
         ));
         keybinds.registerBinding(group);
     }
@@ -1371,19 +1367,9 @@ void OpenFunscripter::invertSelection() noexcept
         undoRedoSystem.Snapshot("Invert actions");
         // same hack as above 
         auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
-        if (closest != nullptr) {
-            auto behind = LoadedFunscript->GetPreviousActionBehind(closest->at);
-            if (behind != nullptr) {
-                auto front = LoadedFunscript->GetNextActionAhead(closest->at);
-                if (front != nullptr) {
-                    LoadedFunscript->SelectAction(*behind);
-                    LoadedFunscript->SelectAction(*closest);
-                    LoadedFunscript->SelectAction(*front);
-                    LoadedFunscript->InvertSelection();
-                    LoadedFunscript->ClearSelection();
-                }
-            }
-        }
+        LoadedFunscript->SelectAction(*closest);
+        LoadedFunscript->InvertSelection();
+        LoadedFunscript->ClearSelection();
     }
     else if (LoadedFunscript->Selection().size() >= 3) {
         undoRedoSystem.Snapshot("Invert actions");
