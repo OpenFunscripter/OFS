@@ -71,6 +71,7 @@ private:
 	void pasteSelection() noexcept;
 	void equalizeSelection() noexcept;
 	void invertSelection() noexcept;
+	void isolateAction() noexcept;
 
 	void saveScript(const char* path = nullptr, bool override_location = true);
 	void saveHeatmap(const char* path, int width, int height);

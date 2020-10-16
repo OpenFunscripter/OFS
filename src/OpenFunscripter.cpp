@@ -678,6 +678,14 @@ void OpenFunscripter::register_bindings()
             true,
             [&](void*) { invertSelection(); }
         ));
+        group.bindings.push_back(Keybinding(
+            "isolate_action",
+            "Isolate action",
+            SDLK_r,
+            0,
+            true,
+            [&](void*) { isolateAction(); }
+        ));
         keybinds.registerBinding(group);
     }
 
@@ -1381,6 +1389,24 @@ void OpenFunscripter::invertSelection() noexcept
     }
 }
 
+void OpenFunscripter::isolateAction() noexcept
+{
+    auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMsInterp());
+    if (closest != nullptr) {
+        undoRedoSystem.Snapshot("Isolate action");
+        auto prev = LoadedFunscript->GetPreviousActionBehind(closest->at - 1);
+        auto next = LoadedFunscript->GetNextActionAhead(closest->at + 1);
+        if (prev != nullptr && next != nullptr) {
+            auto tmp = *next; // removing prev will invalidate the pointer
+            LoadedFunscript->RemoveAction(*prev);
+            LoadedFunscript->RemoveAction(tmp);
+        }
+        else if (prev != nullptr) { LoadedFunscript->RemoveAction(*prev); }
+        else if (next != nullptr) { LoadedFunscript->RemoveAction(*next); }
+
+    }
+}
+
 void OpenFunscripter::showOpenFileDialog()
 {
     // we run this in a seperate thread so we don't block the main thread
@@ -1598,7 +1624,11 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem("Invert", BINDING_STRING("invert_actions"), false)) {
                 invertSelection();
             }
-            if (ImGui::MenuItem("Frame align", NULL)) {
+            if (ImGui::MenuItem("Isolate", BINDING_STRING("isolate_action"))) {
+                isolateAction();
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Frame align selection", NULL)) {
                 undoRedoSystem.Snapshot("Frame align");
                 LoadedFunscript->AlignWithFrameTimeSelection(player.getFrameTimeMs());
             }
