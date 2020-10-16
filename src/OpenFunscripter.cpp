@@ -624,9 +624,11 @@ void OpenFunscripter::register_bindings()
                 else {
                     auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
                     if (closest != nullptr) {
-                        undoRedoSystem.Snapshot("Actions moved");
                         FunscriptAction moved(closest->at, closest->pos + 1);
-                        LoadedFunscript->EditAction(*closest, moved);
+                        if (moved.pos <= 100 && moved.pos >= 0) {
+                            undoRedoSystem.Snapshot("Actions moved");
+                            LoadedFunscript->EditAction(*closest, moved);
+                        }
                     }
                 }
             }
@@ -645,9 +647,11 @@ void OpenFunscripter::register_bindings()
                 else {
                     auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
                     if (closest != nullptr) {
-                        undoRedoSystem.Snapshot("Actions moved");
                         FunscriptAction moved(closest->at, closest->pos - 1);
-                        LoadedFunscript->EditAction(*closest, moved);
+                        if (moved.pos <= 100 && moved.pos >= 0) {
+                            undoRedoSystem.Snapshot("Actions moved");
+                            LoadedFunscript->EditAction(*closest, moved);
+                        }
                     }
                 }
             }
