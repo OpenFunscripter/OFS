@@ -484,6 +484,14 @@ void OpenFunscripter::register_bindings()
             true,
             [&](void*) { LoadedFunscript->SelectAll(); }
         ));
+        group.bindings.push_back(Keybinding(
+            "deselect_all",
+            "Deselect all",
+            SDLK_d,
+            KMOD_CTRL,
+            true,
+            [&](void*) { LoadedFunscript->ClearSelection(); }
+        ));
 
         // SCREENSHOT VIDEO
         group.bindings.push_back(Keybinding(
@@ -1541,6 +1549,10 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem("Select all", BINDING_STRING("select_all"), false)) {
                 LoadedFunscript->SelectAll();
             }
+            if (ImGui::MenuItem("Deselect all", BINDING_STRING("deselect_all"), false)) {
+                LoadedFunscript->ClearSelection();
+            }
+
             if (ImGui::BeginMenu("Special")) {
                 if (ImGui::MenuItem("Select all left")) {
                     LoadedFunscript->SelectTime(0, player.getCurrentPositionMs());
