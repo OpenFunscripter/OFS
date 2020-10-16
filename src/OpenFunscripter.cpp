@@ -103,6 +103,12 @@ bool OpenFunscripter::imgui_setup() noexcept
         if (font == nullptr) return false;
     }
 
+    config.MergeMode = true;
+    font = io.Fonts->AddFontFromFileTTF("data/fonts/NotoSansJP-Regular.otf", settings->data().default_font_size, &config, io.Fonts->GetGlyphRangesJapanese());
+    if (font == nullptr) {
+        LOG_WARN("Missing japanese glyphs!!!");
+    }
+
     if (!std::filesystem::exists(roboto, ec) || !std::filesystem::is_regular_file(roboto, ec)) {
         LOGF_WARN("\"%s\" font is missing.", roboto);
     } 
