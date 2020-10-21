@@ -25,7 +25,7 @@ before_build:
     cd ffmpeg
     7z e ffmpeg-release-essentials.7z
     ls
-    cp ./bin/ffmpeg.exe ../bin/{configuration}/
+    cp ffmpeg.exe ../bin/{configuration}/
     cd ..
     mkdir build
     cd build
