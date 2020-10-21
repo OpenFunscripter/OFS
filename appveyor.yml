@@ -32,4 +32,4 @@ build:
   
 artifacts:  
 - path: \bin\$(configuration)\
-  name: OpenFunscripter
+  name: OFS_$(APPVEYOR_REPO_COMMIT)_$(APPVEYOR_REPO_BRANCH)
