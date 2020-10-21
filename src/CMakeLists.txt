@@ -32,6 +32,11 @@ endif()
 add_executable(${PROJECT_NAME} ${OPEN_FUNSCRIPTER_SOURCES})
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
 
+# copy data directory
+add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory
+                   ${CMAKE_SOURCE_DIR}/data $<TARGET_FILE_DIR:${PROJECT_NAME}>"/data")
+
 target_link_libraries(${PROJECT_NAME} PUBLIC
   nlohmann_json
   imgui
@@ -47,19 +52,23 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 )
 
 if(WIN32)
-target_include_directories(${PROJECT_NAME} PRIVATE 
-	"${CMAKE_SOURCE_DIR}/lib/libmpv/include"
-)
-target_link_directories(${PROJECT_NAME} PUBLIC 
-	"${CMAKE_SOURCE_DIR}/lib/libmpv/"
-)
-target_link_libraries(${PROJECT_NAME} PUBLIC
-	# linking of libmpv can be improved but this works...
-	  mpv.lib
-)
-target_compile_definitions(${PROJECT_NAME} PUBLIC
-	"NOMINMAX"
-)
+	# copy mpv-1.dll to bin dir
+	add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy
+                   "${CMAKE_SOURCE_DIR}/lib/libmpv/mpv-1.dll" $<TARGET_FILE_DIR:${PROJECT_NAME}>"/mpv-1.dll")
+	target_include_directories(${PROJECT_NAME} PRIVATE 
+		"${CMAKE_SOURCE_DIR}/lib/libmpv/include"
+	)
+	target_link_directories(${PROJECT_NAME} PUBLIC 
+		"${CMAKE_SOURCE_DIR}/lib/libmpv/"
+	)
+	target_link_libraries(${PROJECT_NAME} PUBLIC
+		# linking of libmpv can be improved but this works...
+		  mpv.lib
+	)
+	target_compile_definitions(${PROJECT_NAME} PUBLIC
+		"NOMINMAX"
+	)
 else()
 # linux etc. 
 find_package(PkgConfig REQUIRED) 
