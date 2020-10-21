@@ -27,5 +27,9 @@ before_build:
     cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -G "Visual Studio 16 2019" -A x64
 build:
   project: c:\projects\OpenFunscripter\build\src\OpenFunscripter.sln
-  verbosity: detailed
+  verbosity: normal
   parallel: true
+  
+artifacts:  
+    - path:  c:\projects\OpenFunscripter\bin\$(configuration)\
+    name: OpenFunscripter
