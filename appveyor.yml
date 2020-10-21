@@ -7,8 +7,9 @@ install:
 image:
 - Visual Studio 2019
 configuration:
-- Release
 - Debug
+- Release
+
 platform:
 - x64
 environment:
@@ -27,7 +28,18 @@ build:
   project: c:\projects\OpenFunscripter\build\src\OpenFunscripter.sln
   verbosity: minimal
   parallel: true
-  
+
+cache:
+- lib\
+
+after_build:
+- cmd: |-
+    mkdir ffmpeg
+    wget "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.7z" ./ffmpeg/ffmpeg-release-essentials.7z
+    cd ffmpeg
+    7z e ffmpeg-release-essentials.7z
+    cp ./bin/ffmpeg.exe ../bin/{configuration}/
+
 artifacts:  
 - path: \bin\$(configuration)\
   name: OFS-$(platform)_$(APPVEYOR_REPO_BRANCH)-$(APPVEYOR_REPO_COMMIT)
