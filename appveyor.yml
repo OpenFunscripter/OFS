@@ -41,12 +41,10 @@ after_build:
     7z e ffmpeg-release-essentials.7z
     cp ffmpeg.exe "../bin/%configuration%/"
     cd "../bin/%configuration%/"
-    7z a OFS.7z data
-    7z a OFS.7z OpenFunscripter.exe
-    7z a OFS.7z ffmpeg.exe
-    7z a OFS.7z mpv-1.dll
+    7z a OFS-%platform%_%APPVEYOR_REPO_BRANCH%-%APPVEYOR_REPO_COMMIT%.7z ffmpeg.exe
+    7z a OFS-%platform%_%APPVEYOR_REPO_BRANCH%-%APPVEYOR_REPO_COMMIT%.7z mpv-1.dll
+    7z a OFS-%platform%_%APPVEYOR_REPO_BRANCH%-%APPVEYOR_REPO_COMMIT%.7z data
+    7z a OFS-%platform%_%APPVEYOR_REPO_BRANCH%-%APPVEYOR_REPO_COMMIT%.7z OpenFunscripter.exe
 
 artifacts:
-  - path: /bin/$(configuration)/OFS.7z
-# - path: \bin\$(configuration)\
-  # name: OFS-$(platform)_$(APPVEYOR_REPO_BRANCH)-$(APPVEYOR_REPO_COMMIT)
+  - path: /bin/$(configuration)/OFS-$(platform)_$(APPVEYOR_REPO_BRANCH)-$(APPVEYOR_REPO_COMMIT).7z
