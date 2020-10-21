@@ -122,6 +122,9 @@ void Funscript::update() noexcept
 		SDL_Event ev;
 		ev.type = EventSystem::FunscriptActionsChangedEvent;
 		SDL_PushEvent(&ev);
+
+		// TODO: find out how expensive this is on an already sorted array
+		sortActions(data.Actions);
 	}
 }
 
@@ -182,7 +185,6 @@ void Funscript::save(const std::string& path, bool override_location)
 	threadData = new SaveThreadData();
 	threadData->mutex = saveMutex;
 	threadData->path = path;
-	SDL_LockMutex(saveMutex);
 
 	setScriptTemplate();
 	saveSettings();
@@ -209,6 +211,7 @@ void Funscript::save(const std::string& path, bool override_location)
 	threadData->jsonObj = std::move(Json);
 	auto thread = [](void* user) -> int {
 		SaveThreadData* data = static_cast<SaveThreadData*>(user);
+		SDL_LockMutex(data->mutex);
 		Util::WriteJson(data->jsonObj, data->path.c_str());
 		SDL_UnlockMutex(data->mutex);
 		delete data;
