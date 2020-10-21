@@ -30,7 +30,7 @@ build:
   parallel: true
 
 cache:
-- lib\
+# - lib\
 
 after_build:
 - cmd: |-
