@@ -1,4 +1,4 @@
-version: '{APPVEYOR_REPO_COMMIT}-{branch}'
+version: $(APPVEYOR_REPO_COMMIT)'-{branch}'
 branches:
   only:
   - master
