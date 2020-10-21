@@ -85,7 +85,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
         }
 
         if (EnableVanilla) {
-            ImGui::Begin("Simulator", open, 
+            ImGui::Begin(SimulatorId, open, 
                 ImGuiWindowFlags_NoBackground
                 | ImGuiWindowFlags_NoDocking);
             ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
@@ -99,7 +99,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
             return;
         }
 
-        ImGui::Begin("Simulator", open, ImGuiWindowFlags_None);
+        ImGui::Begin(SimulatorId, open, ImGuiWindowFlags_None);
         char tmp[4];
         auto draw_list = ImGui::GetWindowDrawList();
         auto front_draw = ImGui::GetForegroundDrawList();

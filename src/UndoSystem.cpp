@@ -11,7 +11,7 @@ void UndoSystem::ShowUndoRedoHistory(bool* open)
 {
 	if (*open) {
 		ImGui::SetNextWindowSizeConstraints(ImVec2(200, 100), ImVec2(200, 200));
-		ImGui::Begin("Undo/Redo History", open, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
+		ImGui::Begin(UndoHistoryId, open, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
 		//for(auto it = undoRedoSystem.RedoStack.rbegin(); it != undoRedoSystem.RedoStack.rend(); it++) {
 		ImGui::TextDisabled("Redo stack");
 		// TODO: get rid of the string comparison but keep the counting

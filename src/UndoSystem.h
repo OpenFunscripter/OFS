@@ -46,6 +46,8 @@ class UndoSystem
 	std::vector<ScriptState> UndoStack;
 	std::vector<ScriptState> RedoStack;
 public:
+	static constexpr char* UndoHistoryId = "Undo/Redo history";
+
 	int32_t SystemDiskPointer = 0;
 	const int32_t MaxScriptStateInMemory = 500;
 

@@ -22,6 +22,7 @@ private:
 		return color;
 	}
 public:
+	static constexpr char* SimulatorId = "Simulator";
 	struct SimulatorSettings {
 		ImVec2 P1;
 		ImVec2 P2;

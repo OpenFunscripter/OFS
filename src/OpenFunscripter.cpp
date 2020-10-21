@@ -38,6 +38,15 @@ const char* glsl_version = "#version 150";
 
 static SDL_Cursor* SystemCursors[SDL_NUM_SYSTEM_CURSORS];
 
+static ImGuiID MainDockspaceID;
+constexpr char* StatisticsId = "Statistics";
+constexpr char* PlayerTimeId = "Time";
+constexpr char* PlayerControlId = "Controls";
+constexpr char* ActionEditorId = "Action editor";
+
+constexpr int DefaultWidth = 1920;
+constexpr int DefaultHeight= 1080;
+
 bool OpenFunscripter::imgui_setup() noexcept
 {
     // Setup Dear ImGui context
@@ -176,19 +185,16 @@ bool OpenFunscripter::setup()
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
-    const int initialWidth = 1920;
-    const int initialHeight = 1080;
-
     window = SDL_CreateWindow(
-        "OpenFunscripter " FUN_LATEST_GIT_TAG,
+        "OpenFunscripter " FUN_LATEST_GIT_TAG "@" FUN_LATEST_GIT_HASH,
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-        initialWidth, initialHeight,
+        DefaultWidth, DefaultHeight,
         SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN
     );
     SDL_Rect display;
     int windowDisplay = SDL_GetWindowDisplayIndex(window);
     SDL_GetDisplayBounds(windowDisplay, &display);
-    if (initialWidth >= display.w || initialHeight >= display.h) {
+    if (DefaultWidth >= display.w || DefaultHeight >= display.h) {
         SDL_MaximizeWindow(window);
     }
     
@@ -276,6 +282,50 @@ bool OpenFunscripter::setup()
 
     SDL_ShowWindow(window);
     return true;
+}
+
+void OpenFunscripter::setupDefaultLayout(bool force) noexcept
+{
+    MainDockspaceID = ImGui::GetID("MainAppDockspace");
+    auto imgui_ini = Util::Basepath() / "imgui.ini";
+    if (force || !Util::FileExists(imgui_ini.string().c_str())) {
+        LOG_INFO("imgui.ini was not found...");
+        LOG_INFO("Setting default layout.");
+
+        ImGui::ClearIniSettings();
+        ImGui::DockBuilderRemoveNode(MainDockspaceID); // Clear out existing layout
+        ImGui::DockBuilderAddNode(MainDockspaceID, ImGuiDockNodeFlags_DockSpace); // Add empty node
+        ImGui::DockBuilderSetNodeSize(MainDockspaceID, ImVec2(DefaultWidth, DefaultHeight));
+
+        ImGuiID dock_player_center_id;
+        ImGuiID opposite_node_id;
+        auto dock_time_bottom_id = ImGui::DockBuilderSplitNode(MainDockspaceID, ImGuiDir_Down, 0.1f, NULL, &dock_player_center_id);
+        auto dock_positions_id = ImGui::DockBuilderSplitNode(dock_player_center_id, ImGuiDir_Down, 0.15f, NULL, &dock_player_center_id);
+        auto dock_mode_right_id = ImGui::DockBuilderSplitNode(dock_player_center_id, ImGuiDir_Right, 0.15f, NULL, &dock_player_center_id);
+        auto dock_simulator_right_id = ImGui::DockBuilderSplitNode(dock_mode_right_id, ImGuiDir_Down, 0.15f, NULL, &dock_mode_right_id);
+        auto dock_action_right_id = ImGui::DockBuilderSplitNode(dock_mode_right_id, ImGuiDir_Down, 0.38f, NULL, &dock_mode_right_id);
+        auto dock_stats_right_id = ImGui::DockBuilderSplitNode(dock_mode_right_id, ImGuiDir_Down, 0.38f, NULL, &dock_mode_right_id);
+        auto dock_undo_right_id = ImGui::DockBuilderSplitNode(dock_mode_right_id, ImGuiDir_Down, 0.5f, NULL, &dock_mode_right_id);
+
+        auto dock_player_control_id = ImGui::DockBuilderSplitNode(dock_time_bottom_id, ImGuiDir_Left, 0.15f, &dock_time_bottom_id, &dock_time_bottom_id);
+        
+        ImGui::DockBuilderGetNode(dock_player_center_id)->LocalFlags |= ImGuiDockNodeFlags_AutoHideTabBar;
+        ImGui::DockBuilderGetNode(dock_positions_id)->LocalFlags |= ImGuiDockNodeFlags_AutoHideTabBar;
+        ImGui::DockBuilderGetNode(dock_time_bottom_id)->LocalFlags |= ImGuiDockNodeFlags_AutoHideTabBar;
+        ImGui::DockBuilderGetNode(dock_player_control_id)->LocalFlags |= ImGuiDockNodeFlags_AutoHideTabBar;
+
+        ImGui::DockBuilderDockWindow(UndoSystem::UndoHistoryId, dock_undo_right_id);
+        ImGui::DockBuilderDockWindow(StatisticsId, dock_stats_right_id);
+        ImGui::DockBuilderDockWindow(VideoplayerWindow::PlayerId, dock_player_center_id);
+        ImGui::DockBuilderDockWindow(PlayerTimeId, dock_time_bottom_id);
+        ImGui::DockBuilderDockWindow(PlayerControlId, dock_player_control_id);
+        ImGui::DockBuilderDockWindow(ScriptPositionsWindow::PositionsId, dock_positions_id);
+        ImGui::DockBuilderDockWindow(ScriptingMode::ScriptingModeId, dock_mode_right_id);
+        ImGui::DockBuilderDockWindow(ScriptSimulator::SimulatorId, dock_simulator_right_id);
+        ImGui::DockBuilderDockWindow(ActionEditorId, dock_action_right_id);
+        simulator.CenterSimulator();
+        ImGui::DockBuilderFinish(MainDockspaceID);
+    }
 }
 
 void OpenFunscripter::register_bindings()
@@ -903,6 +953,9 @@ void OpenFunscripter::rollingBackup() noexcept
 
 int OpenFunscripter::run() noexcept
 {
+    new_frame();
+    setupDefaultLayout(false);
+    render();
     while (!exit_app) {
         process_events();
         update();
@@ -928,7 +981,7 @@ int OpenFunscripter::run() noexcept
 
             if (player.isLoaded()) {
                 {
-                    ImGui::Begin("Video Controls");
+                    ImGui::Begin(PlayerControlId);
                 
                     const int seek_ms = 3000;
                     // Playback controls
@@ -983,7 +1036,7 @@ int OpenFunscripter::run() noexcept
                 ImGui::End();
             }
                 {
-                    ImGui::Begin("Time");
+                    ImGui::Begin(PlayerTimeId);
 
                     static float actualPlaybackSpeed = 1.0f;
                     {
@@ -1068,7 +1121,7 @@ int OpenFunscripter::run() noexcept
                     ImGui::End();
                 }
                 {
-                    ImGui::Begin("Action Editor");
+                    ImGui::Begin(ActionEditorId);
                     if (player.isPaused()) {
                         auto scriptAction = LoadedFunscript->GetActionAtTime(player.getCurrentPositionMs(), player.getFrameTimeMs());
 
@@ -1221,7 +1274,7 @@ void OpenFunscripter::updateTitle()
     std::stringstream ss;
     ss.str(std::string());
     
-    ss << "OpenFunscripter " FUN_LATEST_GIT_TAG " - \"" << LoadedFunscript->current_path << "\"";
+    ss << "OpenFunscripter " FUN_LATEST_GIT_TAG "@" FUN_LATEST_GIT_HASH " - \"" << LoadedFunscript->current_path << "\"";
     SDL_SetWindowTitle(window, ss.str().c_str());
 }
 
@@ -1688,9 +1741,11 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("View")) {
-            if (ImGui::MenuItem("Statistics", NULL, &ShowStatistics)) {}
-            if (ImGui::MenuItem("Undo/Redo History", NULL, &ShowHistory)) {}
-            if (ImGui::MenuItem("Simulator", NULL, &settings->data().show_simulator)) { settings->saveSettings(); }
+            if (ImGui::MenuItem("Reset layout")) { setupDefaultLayout(true); }
+            ImGui::Separator();
+            if (ImGui::MenuItem(StatisticsId, NULL, &ShowStatistics)) {}
+            if (ImGui::MenuItem(UndoSystem::UndoHistoryId, NULL, &ShowHistory)) {}
+            if (ImGui::MenuItem(ScriptSimulator::SimulatorId, NULL, &settings->data().show_simulator)) { settings->saveSettings(); }
             if (ImGui::MenuItem("Metadata", NULL, &ShowMetadataEditor)) {}
             ImGui::Separator();
 
@@ -1918,8 +1973,7 @@ void OpenFunscripter::CreateDockspace() noexcept
     ImGuiIO& io = ImGui::GetIO();
     if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
     {
-        ImGuiID dockspace_id = ImGui::GetID("MainAppDockspace");
-        ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+        ImGui::DockSpace(MainDockspaceID, ImVec2(0.0f, 0.0f), dockspace_flags);
     }
 
     ShowMainMenuBar();
@@ -1936,17 +1990,17 @@ void OpenFunscripter::ShowAboutWindow(bool* open) noexcept
         | ImGuiWindowFlags_NoCollapse
     );
     ImGui::Text("%s", "OpenFunscripter " FUN_LATEST_GIT_TAG);
+    ImGui::Text("Commit: %s", FUN_LATEST_GIT_HASH);
     if (ImGui::Button("Latest release", ImVec2(-1.f, 0.f))) {
         Util::OpenUrl("https://github.com/gagax1234/OpenFunscripter/releases/latest");
     }
-
     ImGui::End();
 }
 
 void OpenFunscripter::ShowStatisticsWindow(bool* open) noexcept
 {
     if (!*open) return;
-    ImGui::Begin("Statistics", open, ImGuiWindowFlags_None);
+    ImGui::Begin(StatisticsId, open, ImGuiWindowFlags_None);
     const FunscriptAction* behind = LoadedFunscript->GetActionAtTime(player.getCurrentPositionMs(), 0);
     const FunscriptAction* front = nullptr;
     if (behind != nullptr) {
@@ -2170,3 +2224,5 @@ void OpenFunscripter::UpdateTimelineGradient(ImGradient& grad)
     }
     grad.refreshCache();
 }
+
+

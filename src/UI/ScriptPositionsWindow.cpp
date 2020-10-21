@@ -205,7 +205,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	ActionScreenCoordinates.clear();
 	ActionPositionWindow.clear();
 
-	ImGui::Begin("Script Positions", open, ImGuiWindowFlags_None);
+	ImGui::Begin(PositionsId, open, ImGuiWindowFlags_None);
 	auto draw_list = ImGui::GetWindowDrawList();
 
 	canvas_pos = ImGui::GetCursorScreenPos();

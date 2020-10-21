@@ -21,7 +21,7 @@ void ScriptingMode::setup()
 
 void ScriptingMode::DrawScriptingMode(bool* open)
 {
-	ImGui::Begin("Scripting Mode", open);
+	ImGui::Begin(ScriptingModeId, open);
     ImGui::PushItemWidth(-1);
     // ATTENTION: order needs to be the same as the enum
     if (ImGui::Combo("##Mode", (int*)&active_mode, 

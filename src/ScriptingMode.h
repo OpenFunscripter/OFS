@@ -104,6 +104,7 @@ class ScriptingMode {
 	ScriptingModeEnum active_mode;
 	OpenFunscripter* ctx;
 public:
+	static constexpr char* ScriptingModeId = "Mode";
 	void setup();
 	void DrawScriptingMode(bool* open);
 	void setMode(ScriptingModeEnum mode);

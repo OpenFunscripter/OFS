@@ -90,6 +90,8 @@ private:
 
 	void UpdateTimelineGradient(ImGradient& grad);
 
+	void setupDefaultLayout(bool force) noexcept;
+
 	// UI
 	void CreateDockspace() noexcept;
 	void ShowAboutWindow(bool* open) noexcept;

@@ -504,7 +504,7 @@ void VideoplayerWindow::notifyVideoLoaded()
 void VideoplayerWindow::DrawVideoPlayer(bool* open)
 {
 	if (MpvData.video_loaded) {
-		ImGui::Begin("Player", open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
+		ImGui::Begin(PlayerId, open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
 
 		// this redraw has to happen even if the video isn't actually shown in the gui
 		if (redraw_video) { renderToTexture(); }
