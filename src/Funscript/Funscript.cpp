@@ -208,7 +208,7 @@ void Funscript::save(const std::string& path, bool override_location)
 		actions.emplace_back(actionObj);
 	}
 
-	threadData->jsonObj = std::move(Json);
+	threadData->jsonObj = std::move(Json); // give ownership to the thread
 	auto thread = [](void* user) -> int {
 		SaveThreadData* data = static_cast<SaveThreadData*>(user);
 		SDL_LockMutex(data->mutex);
