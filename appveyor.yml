@@ -19,7 +19,7 @@ matrix:
   fast_finish: true
 
 before_build:
-- ps: |-
+- cmd: |-
     mkdir ffmpeg
     Start-FileDownload "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.7z" -FileName "./ffmpeg/ffmpeg-release-essentials.7z"
     cd ffmpeg
