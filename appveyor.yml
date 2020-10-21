@@ -8,7 +8,7 @@ install:
 image:
 - Visual Studio 2019
 configuration:
-- RelWithDebInfos
+- Release
 - Debug
 platform:
 - x64
