@@ -19,7 +19,13 @@ matrix:
   fast_finish: true
 
 before_build:
-- cmd: |-
+- ps: |-
+    mkdir ffmpeg
+    Start-FileDownload "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.7z" -FileName "./ffmpeg/ffmpeg-release-essentials.7z"
+    cd ffmpeg
+    7z e ffmpeg-release-essentials.7z
+    cp ./bin/ffmpeg.exe ../bin/{configuration}/
+    cd ..
     mkdir build
     cd build
     cmake --version
@@ -32,13 +38,13 @@ build:
 cache:
 - lib\
 
-after_build:
-- cmd: |-
-    mkdir ffmpeg
-    wget "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.7z" ./ffmpeg/ffmpeg-release-essentials.7z
-    cd ffmpeg
-    7z e ffmpeg-release-essentials.7z
-    cp ./bin/ffmpeg.exe ../bin/{configuration}/
+# after_build:
+# - cmd: |-
+    # mkdir ffmpeg
+    # wget "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.7z" ./ffmpeg/ffmpeg-release-essentials.7z
+    # cd ffmpeg
+    # 7z e ffmpeg-release-essentials.7z
+    # cp ./bin/ffmpeg.exe ../bin/{configuration}/
 
 artifacts:  
 - path: \bin\$(configuration)\
