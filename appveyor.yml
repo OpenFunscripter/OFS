@@ -3,7 +3,7 @@ branches:
   - master
 clone_folder: c:\projects\OpenFunscripter
 install:
-    - git submodule update --init --recursive
+#    - git submodule update --init --recursive
 image:
 - Visual Studio 2019
 configuration:
@@ -21,7 +21,7 @@ matrix:
 before_build:
 - cmd: |-
     mkdir ffmpeg
-    Start-FileDownload "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.7z" -FileName "./ffmpeg/ffmpeg-release-essentials.7z"
+    appveyor DownloadFile "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.7z" -FileName "./ffmpeg/ffmpeg-release-essentials.7z"
     cd ffmpeg
     7z e ffmpeg-release-essentials.7z
     cp ./bin/ffmpeg.exe ../bin/{configuration}/
