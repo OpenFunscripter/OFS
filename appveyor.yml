@@ -31,5 +31,5 @@ build:
   parallel: true
   
 artifacts:  
-    - path:  c:\projects\OpenFunscripter\bin\$(configuration)\
-    name: OpenFunscripter
+- path:  c:\projects\OpenFunscripter\bin\$(configuration)\
+  name: OpenFunscripter
