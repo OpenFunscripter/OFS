@@ -288,11 +288,15 @@ void OpenFunscripter::setupDefaultLayout(bool force) noexcept
 {
     MainDockspaceID = ImGui::GetID("MainAppDockspace");
     auto imgui_ini = Util::Basepath() / "imgui.ini";
-    if (force || !Util::FileExists(imgui_ini.string().c_str())) {
-        LOG_INFO("imgui.ini was not found...");
-        LOG_INFO("Setting default layout.");
+    bool imgui_ini_found = Util::FileExists(imgui_ini.string().c_str());
+    if (force || !imgui_ini_found) {
+        if (!imgui_ini_found) {
+            LOG_INFO("imgui.ini was not found...");
+            LOG_INFO("Setting default layout.");
+        }
 
         ImGui::ClearIniSettings();
+
         ImGui::DockBuilderRemoveNode(MainDockspaceID); // Clear out existing layout
         ImGui::DockBuilderAddNode(MainDockspaceID, ImGuiDockNodeFlags_DockSpace); // Add empty node
         ImGui::DockBuilderSetNodeSize(MainDockspaceID, ImVec2(DefaultWidth, DefaultHeight));
@@ -314,8 +318,6 @@ void OpenFunscripter::setupDefaultLayout(bool force) noexcept
         ImGui::DockBuilderGetNode(dock_time_bottom_id)->LocalFlags |= ImGuiDockNodeFlags_AutoHideTabBar;
         ImGui::DockBuilderGetNode(dock_player_control_id)->LocalFlags |= ImGuiDockNodeFlags_AutoHideTabBar;
 
-        ImGui::DockBuilderDockWindow(UndoSystem::UndoHistoryId, dock_undo_right_id);
-        ImGui::DockBuilderDockWindow(StatisticsId, dock_stats_right_id);
         ImGui::DockBuilderDockWindow(VideoplayerWindow::PlayerId, dock_player_center_id);
         ImGui::DockBuilderDockWindow(PlayerTimeId, dock_time_bottom_id);
         ImGui::DockBuilderDockWindow(PlayerControlId, dock_player_control_id);
@@ -323,6 +325,8 @@ void OpenFunscripter::setupDefaultLayout(bool force) noexcept
         ImGui::DockBuilderDockWindow(ScriptingMode::ScriptingModeId, dock_mode_right_id);
         ImGui::DockBuilderDockWindow(ScriptSimulator::SimulatorId, dock_simulator_right_id);
         ImGui::DockBuilderDockWindow(ActionEditorId, dock_action_right_id);
+        ImGui::DockBuilderDockWindow(StatisticsId, dock_stats_right_id);
+        ImGui::DockBuilderDockWindow(UndoSystem::UndoHistoryId, dock_undo_right_id);
         simulator.CenterSimulator();
         ImGui::DockBuilderFinish(MainDockspaceID);
     }
@@ -1741,7 +1745,10 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("View")) {
+#ifndef NDEBUG
+            // this breaks the layout after restarting for some reason
             if (ImGui::MenuItem("Reset layout")) { setupDefaultLayout(true); }
+#endif
             ImGui::Separator();
             if (ImGui::MenuItem(StatisticsId, NULL, &ShowStatistics)) {}
             if (ImGui::MenuItem(UndoSystem::UndoHistoryId, NULL, &ShowHistory)) {}
