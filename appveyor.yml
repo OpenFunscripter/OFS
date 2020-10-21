@@ -20,7 +20,6 @@ matrix:
 
 before_build:
 - cmd: |-
-    cd ..
     mkdir build
     cd build
     cmake --version
@@ -35,6 +34,7 @@ cache:
 
 after_build:
 - cmd: |-
+    cd ..
     mkdir ffmpeg
     appveyor DownloadFile "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.7z" -FileName "./ffmpeg/ffmpeg-release-essentials.7z"
     cd ffmpeg
