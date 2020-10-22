@@ -91,12 +91,12 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 find_package(Git)
 execute_process(
-    COMMAND ${GIT_EXECUTABLE} describe --abbrev=0 --tags
+    COMMAND ${GIT_EXECUTABLE} --git-dir=${CMAKE_SOURCE_DIR}/.git describe --abbrev=0 --tags
     RESULT_VARIABLE result
     OUTPUT_VARIABLE LATEST_GIT_TAG)
 
 execute_process(
-    COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+    COMMAND ${GIT_EXECUTABLE} --git-dir=${CMAKE_SOURCE_DIR}/.git rev-parse --short HEAD
     RESULT_VARIABLE result
     OUTPUT_VARIABLE LATEST_GIT_HASH)
 
