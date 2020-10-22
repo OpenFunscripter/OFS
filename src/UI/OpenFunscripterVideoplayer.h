@@ -102,7 +102,7 @@ private:
 
 	void notifyVideoLoaded();
 public:
-	static constexpr char* PlayerId = "Player";
+	static constexpr const char* PlayerId = "Player";
 	VideoplayerWindow()	{ }
 
 	struct OFS_VideoPlayerSettings {

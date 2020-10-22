@@ -39,10 +39,10 @@ const char* glsl_version = "#version 150";
 static SDL_Cursor* SystemCursors[SDL_NUM_SYSTEM_CURSORS];
 
 static ImGuiID MainDockspaceID;
-constexpr char* StatisticsId = "Statistics";
-constexpr char* PlayerTimeId = "Time";
-constexpr char* PlayerControlId = "Controls";
-constexpr char* ActionEditorId = "Action editor";
+constexpr const char* StatisticsId = "Statistics";
+constexpr const char* PlayerTimeId = "Time";
+constexpr const char* PlayerControlId = "Controls";
+constexpr const char* ActionEditorId = "Action editor";
 
 constexpr int DefaultWidth = 1920;
 constexpr int DefaultHeight= 1080;
