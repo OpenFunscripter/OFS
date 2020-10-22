@@ -349,23 +349,32 @@ void RecordingImpl::DrawModeSettings()
     {
         ImGui::Text("%s", "Controller deadzone");
         ImGui::SliderInt("Deadzone", &ControllerDeadzone, 0, std::numeric_limits<int16_t>::max());
+        ImGui::Checkbox("Center", &controllerCenter);
+        if (controllerCenter) {
+            currentPos = Util::Clamp<int32_t>(50.f + (50.f * value), 0, 100);
+        }
+        else {
+            currentPos = Util::Clamp<int32_t>(100.f * std::abs(value), 0, 100);
+        }
         break;
     }
     case RecordingMode::Mouse:
     {
         value = OpenFunscripter::ptr->simulator.getMouseValue();
+        currentPos = Util::Clamp<int32_t>(50.f + (50.f * value), 0, 100);
         break;
     }
     }
 
+    ImGui::Checkbox("Invert", &inverted); ImGui::SameLine(); ImGui::Checkbox("Record on play", &automaticRecording);
+    if (inverted) { 
+        currentPos = std::abs(currentPos - 100); 
+    }
     ImGui::Text("%s", "Position"); 
     ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
     ImGui::SliderInt("##Pos", &currentPos, 0, 100);
     ImGui::PopItemFlag();
 
-    ImGui::Checkbox("Invert", &inverted); ImGui::SameLine(); ImGui::Checkbox("Record on play", &automaticRecording);
-    currentPos = Util::Clamp<int32_t>(50.f + (50.f * value), 0, 100);
-    if (inverted) { currentPos = std::abs(currentPos - 100); }
 
     ImGui::Spacing();
     auto app = OpenFunscripter::ptr;
