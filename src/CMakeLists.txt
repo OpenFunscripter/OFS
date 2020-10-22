@@ -124,7 +124,7 @@ if(MSVC)
 	# target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
 else() # clang/gcc
 	target_compile_options(${PROJECT_NAME} PUBLIC -fno-exceptions -fno-rtti)
-	target_compile_options(${PROJECT_NAME} PUBLIC -fpermissive -Wno-writable-strings)
+	target_compile_options(${PROJECT_NAME} PUBLIC -fpermissive)
 	# target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic -Werror 
 	# 	-Wno-error=unused-parameter 
 	# 	-Wno-error=unused-variable 

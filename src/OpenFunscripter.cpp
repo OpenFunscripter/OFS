@@ -1748,8 +1748,8 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
 #ifndef NDEBUG
             // this breaks the layout after restarting for some reason
             if (ImGui::MenuItem("Reset layout")) { setupDefaultLayout(true); }
-#endif
             ImGui::Separator();
+#endif
             if (ImGui::MenuItem(StatisticsId, NULL, &ShowStatistics)) {}
             if (ImGui::MenuItem(UndoSystem::UndoHistoryId, NULL, &ShowHistory)) {}
             if (ImGui::MenuItem(ScriptSimulator::SimulatorId, NULL, &settings->data().show_simulator)) { settings->saveSettings(); }
