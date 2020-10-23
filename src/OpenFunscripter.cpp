@@ -15,8 +15,10 @@
 // FIX: Add type checking to the deserialization. 
 //      I assume it would crash if a field is specified but doesn't have the correct type.
 
+// TODO: rendering selection generates offscreen vertices
+// TODO: use a ringbuffer in the undosystem
+// TODO: full controller support
 // TODO: make heatmap generation more sophisticated
-// TODO: [MAJOR FEATURE] working with raw actions and controller input
 
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
@@ -29,7 +31,6 @@ constexpr std::array<const char*, 6> SupportedVideoExtensions {
     ".avi",
     ".m4v",
 };
-
 
 OpenFunscripter* OpenFunscripter::ptr = nullptr;
 ImFont* OpenFunscripter::DefaultFont2 = nullptr;
