@@ -399,12 +399,22 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		}
 
 		if (script.HasSelection()) {
+			auto startIt = std::find_if(script.Selection().begin(), script.Selection().end(),
+				[&](auto& act) { return act.at >= offset_ms; });
+			if (startIt != script.Selection().begin())
+				startIt -= 1;
+
+			auto endIt = std::find_if(startIt, script.Selection().end(),
+				[&](auto& act) { return act.at >= offset_ms + frameSizeMs; });
+			if (endIt != script.Selection().end())
+				endIt += 1;
+
 			constexpr auto selectedDots = IM_COL32(11, 252, 3, 255);
 			constexpr auto selectedLines = IM_COL32(3, 194, 252, 255);
 
 			const FunscriptAction* prev_action = nullptr;
-			for (int i = 0; i < script.Selection().size(); i++) {
-				auto& action = script.Selection()[i];
+			for (; startIt != endIt; startIt++) {
+				auto&& action = *startIt;
 				auto point = getPointForAction(action);
 
 				if (prev_action != nullptr) {

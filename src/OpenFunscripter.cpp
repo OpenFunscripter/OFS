@@ -15,7 +15,6 @@
 // FIX: Add type checking to the deserialization. 
 //      I assume it would crash if a field is specified but doesn't have the correct type.
 
-// TODO: rendering selection generates offscreen vertices
 // TODO: use a ringbuffer in the undosystem
 // TODO: full controller support
 // TODO: make heatmap generation more sophisticated
