@@ -77,26 +77,31 @@ public:
 	} scriptSettings;
 
 	struct Metadata {
+		std::string type = "basic";
+		std::string title;
 		std::string creator;
-		std::string original_name;
-		std::string url;
-		std::string url_video;
+		std::string script_url;
+		std::string video_url;
 		std::vector<std::string> tags;
 		std::vector<std::string> performers;
-		std::string comment;
+		std::string description;
 		std::string license;
-		int64_t original_total_duration_s = 0;
+		std::string notes;
+		int64_t duration = 0;
 
 		template <class Archive>
 		inline void reflect(Archive& ar) {
+			OFS_REFLECT(type, ar);
+			OFS_REFLECT(title, ar);
 			OFS_REFLECT(creator, ar);
-			OFS_REFLECT(original_name, ar);
-			OFS_REFLECT(url, ar);
-			OFS_REFLECT(url_video, ar);
+			OFS_REFLECT(script_url, ar);
+			OFS_REFLECT(video_url, ar);
 			OFS_REFLECT(tags, ar);
 			OFS_REFLECT(performers, ar);
 			OFS_REFLECT(license, ar);
-			OFS_REFLECT(original_total_duration_s, ar);
+			OFS_REFLECT(duration, ar);
+			OFS_REFLECT(description, ar);
+			OFS_REFLECT(notes, ar);
 		}
 
 	} metadata;

@@ -160,8 +160,8 @@ bool Funscript::open(const std::string& file)
 	loadSettings();
 	loadMetadata();
 
-	if (metadata.original_name.empty()) {
-		metadata.original_name = std::filesystem::path(current_path)
+	if (metadata.title.empty()) {
+		metadata.title = std::filesystem::path(current_path)
 			.replace_extension("")
 			.filename()
 			.string();

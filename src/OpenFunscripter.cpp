@@ -885,7 +885,7 @@ void OpenFunscripter::DragNDrop(SDL_Event& ev) noexcept
 
 void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
 {
-    LoadedFunscript->metadata.original_total_duration_s = player.getDuration();
+    LoadedFunscript->metadata.duration = player.getDuration();
     LoadedFunscript->reserveActionMemory(player.getTotalNumFrames());
     player.setPosition(LoadedFunscript->scriptSettings.last_pos_ms);
 
@@ -1284,11 +1284,11 @@ void OpenFunscripter::updateTitle()
 
 void OpenFunscripter::saveScript(const char* path, bool override_location)
 {
-    LoadedFunscript->metadata.original_name = std::filesystem::path(LoadedFunscript->current_path)
+    LoadedFunscript->metadata.title = std::filesystem::path(LoadedFunscript->current_path)
         .replace_extension("")
         .filename()
         .string();
-    LoadedFunscript->metadata.original_total_duration_s = player.getDuration();
+    LoadedFunscript->metadata.duration = player.getDuration();
     LoadedFunscript->scriptSettings.last_pos_ms = player.getCurrentPositionMs();
     if (path == nullptr) {
         LoadedFunscript->save();
@@ -1590,7 +1590,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::InputInt("##heiht", &heatmapHeight);
             if (ImGui::MenuItem("Save heatmap")) { 
                 char buf[1024];
-                stbsp_snprintf(buf, sizeof(buf), "%s_Heatmap.bmp", LoadedFunscript->metadata.original_name.c_str());
+                stbsp_snprintf(buf, sizeof(buf), "%s_Heatmap.bmp", LoadedFunscript->metadata.title.c_str());
                 auto heatmapPath = Util::Basepath() / "screenshot";
                 std::error_code ec;
                 std::filesystem::create_directories(heatmapPath, ec);
@@ -1807,14 +1807,15 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
     bool save = false;
     auto& metadata = LoadedFunscript->metadata;
     ImGui::Begin("Metadata Editor", open, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking);
-    ImGui::LabelText("Name", "%s", metadata.original_name.c_str());
-    Util::FormatTime(tmp_buf[0], sizeof(tmp_buf), metadata.original_total_duration_s, false);
+    ImGui::LabelText("Title", "%s", metadata.title.c_str());
+    Util::FormatTime(tmp_buf[0], sizeof(tmp_buf), metadata.duration, false);
     ImGui::LabelText("Duration", "%s", tmp_buf[0]);
 
     ImGui::InputText("Creator", &metadata.creator);
-    ImGui::InputText("Url", &metadata.url);
-    ImGui::InputText("Video url", &metadata.url_video);
-    ImGui::InputTextMultiline("Comment", &metadata.comment, ImVec2(0.f, ImGui::GetFontSize()*3.f));
+    ImGui::InputText("Url", &metadata.script_url);
+    ImGui::InputText("Video url", &metadata.video_url);
+    ImGui::InputTextMultiline("Description", &metadata.description, ImVec2(0.f, ImGui::GetFontSize()*3.f));
+    ImGui::InputTextMultiline("Notes", &metadata.notes, ImVec2(0.f, ImGui::GetFontSize() * 3.f));
 
     {
         enum LicenseType : int32_t {
