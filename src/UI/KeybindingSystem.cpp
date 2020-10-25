@@ -5,6 +5,38 @@
 #include "imgui.h"
 
 #include <algorithm>
+#include <array>
+#include "SDL_gamecontroller.h"
+
+// strings for SDL_GameControllerButton enum
+static const std::array<const char*, SDL_CONTROLLER_BUTTON_MAX> gameButtonString {
+    "A",
+    "B",
+    "X",
+    "Y",
+    "Back",
+    "Guide",
+    "Start",
+    "Leftstick",
+    "Rightstick",
+    "Leftshoulder",
+    "Rightshoulder",
+    "DPAD Up",
+    "DPAD Down",
+    "DPAD Left",
+    "DPAD Right"
+};
+
+
+static const char* GetButtonString(int32_t button) {
+    if (button >= 0 && button < SDL_CONTROLLER_BUTTON_MAX) {
+        //return SDL_GameControllerGetStringForButton((SDL_GameControllerButton)button);
+        return gameButtonString[button];
+    }
+    else {
+        return "- Not set -";
+    }
+}
 
 void KeybindingSystem::setup()
 {
@@ -12,6 +44,7 @@ void KeybindingSystem::setup()
     app->events->Subscribe(SDL_KEYDOWN, EVENT_SYSTEM_BIND(this, &KeybindingSystem::KeyPressed));
     app->events->Subscribe(SDL_CONTROLLERBUTTONUP, EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerButtonUp));
     app->events->Subscribe(SDL_CONTROLLERBUTTONDOWN, EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerButtonDown));
+    app->events->Subscribe(EventSystem::ControllerButtonRepeat, EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerButtonRepeat));
 }
 
 void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
@@ -87,7 +120,7 @@ void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
     // process bindings
     for (auto& group : ActiveBindings) {
         for (auto& binding : group.bindings) {
-            if (key.repeat && binding.key.ignore_repeats) continue;
+            if (key.repeat && binding.ignore_repeats) continue;
 
             if (key.keysym.sym == binding.key.key) {
                 bool modifierMismatch = false;
@@ -105,9 +138,59 @@ void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
 
             // execute binding
             binding.action(0);
-            break;
+            return;
         }
     }
+}
+
+void KeybindingSystem::ProcessControllerBindings(SDL_Event& ev, bool repeat) noexcept
+{
+    auto& cbutton = ev.cbutton;
+    bool navmodeActive = ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_NavEnableGamepad;
+    // process bindings
+    for (auto& group : ActiveBindings) {
+        for (auto& binding : group.bindings) {
+            if ((binding.ignore_repeats && repeat) || binding.controller.button < 0) { continue; }
+            if (binding.controller.button == cbutton.button) {
+                if (navmodeActive) {
+                    // navmode bindings get processed during navmode
+                    // everything else doesn't get processed during navmode
+                    if (binding.controller.navmode) {
+                        binding.action(0);
+                    }
+                }
+                else {
+                    binding.action(0);
+                }
+            }
+        }
+    }
+}
+
+void KeybindingSystem::ControllerButtonRepeat(SDL_Event& ev) noexcept
+{
+    if (currentlyChanging != nullptr) return;
+    if (ShowWindow) return;
+    //auto& cbutton = ev.cbutton; // only cbutton.button is set
+    LOGF_INFO("Process repeat: %d", ev.cbutton.button);
+    ProcessControllerBindings(ev, true);
+}
+
+void KeybindingSystem::ControllerButtonDown(SDL_Event& ev) noexcept
+{
+    if (currentlyChanging != nullptr) {
+        auto& cbutton = ev.cbutton;
+        currentlyChanging->controller.button = cbutton.button;
+        currentlyChanging = nullptr;
+        return;
+    }
+    if (ShowWindow) return;
+    LOGF_INFO("Process button down: %d", ev.cbutton.button);
+    ProcessControllerBindings(ev, false);
+}
+
+void KeybindingSystem::ControllerButtonUp(SDL_Event& ev) noexcept
+{
 }
 
 void KeybindingSystem::addKeyString(const char* name)
@@ -124,14 +207,6 @@ void KeybindingSystem::addKeyString(char name)
         currentlyHeldKeys << name;
     else
         currentlyHeldKeys << "+" << name;
-}
-
-void KeybindingSystem::ControllerButtonDown(SDL_Event& ev) noexcept
-{
-}
-
-void KeybindingSystem::ControllerButtonUp(SDL_Event& ev) noexcept
-{
 }
 
 std::string KeybindingSystem::loadKeyString(SDL_Keycode key, int mod)
@@ -176,11 +251,15 @@ void KeybindingSystem::setBindings(const std::vector<KeybindingGroup>& groups)
 
                 if (it != groupIt->bindings.end()) {
                     // override defaults
-                    it->key.ignore_repeats = keybind.key.ignore_repeats;
+                    it->ignore_repeats = keybind.ignore_repeats;
                     it->key.key = keybind.key.key;
                     it->key.modifiers = keybind.key.modifiers;
                     it->key.key_str = loadKeyString(keybind.key.key, keybind.key.modifiers);
                     binding_string_cache[it->identifier] = it->key.key_str;
+
+                    // controller
+                    it->controller.button = keybind.controller.button;
+                    it->controller.navmode = keybind.controller.navmode;
                 }
             }
         }
@@ -213,6 +292,7 @@ bool KeybindingSystem::ShowBindingWindow()
         ImGui::Text("The keybindings get saved everytime a change is made.");
         ImGui::Text("Config: \"data/keybindings.json\"\nIf you wan't to revert to defaults delete the config.");
 
+        auto& style = ImGui::GetStyle();
 
         ImGui::Separator();
         int id = 0;
@@ -225,28 +305,43 @@ bool KeybindingSystem::ShowBindingWindow()
                 ImGui::Columns(3, "bindings");
                 ImGui::Separator();
                 ImGui::Text("Action"); ImGui::NextColumn();
-                ImGui::Text("Current"); ImGui::NextColumn();
-                ImGui::Text("Ignore repeats"); ImGui::NextColumn();
+                ImGui::Text("Keyboard"); ImGui::NextColumn();
+                //ImGui::Text("Ignore repeats"); ImGui::NextColumn();
+                ImGui::Text("Controller"); ImGui::NextColumn();
                 for (auto& binding : group.bindings) {
                     ImGui::PushID(id++);
                     ImGui::Text("%s", binding.description.c_str()); ImGui::NextColumn();
-                    if(ImGui::Button(!binding.key.key_str.empty() ? binding.key.key_str.c_str() : "-- Not set --", ImVec2(-1.f, 0.f))) {
+                    if(ImGui::Button(!binding.key.key_str.empty() ? binding.key.key_str.c_str() : "-- Not set --",
+                        ImVec2(ImGui::GetColumnWidth(1) - (2.f*ImGui::GetFontSize()) - style.ItemSpacing.x - style.FramePadding.x, 0.f))) {
                         currentlyChanging = &binding;
                         currentlyHeldKeys.str("");
-                        ImGui::OpenPopup("Change Binding");
+                        ImGui::OpenPopup("Change key");
                     }
-                    if (ImGui::Button("Controller", ImVec2(-1.f, 0.f))) {
-
+                    ImGui::SameLine();
+                    if (ImGui::Checkbox("", &binding.ignore_repeats)) { save = true; }
+                    Util::Tooltip("Ignore key repeats");
+                    ImGui::NextColumn();
+                    if (ImGui::Button(GetButtonString(binding.controller.button), ImVec2(-1.f, 0.f))) {
+                        currentlyChanging = &binding;
+                        ImGui::OpenPopup("Change button");
                     }
                     ImGui::NextColumn();
-                    if (ImGui::Checkbox("", &binding.key.ignore_repeats)) { save = true; } ImGui::NextColumn();
 
-                    if (ImGui::BeginPopupModal("Change Binding", 0, ImGuiWindowFlags_AlwaysAutoResize)) 
+                    if (ImGui::BeginPopupModal("Change key", 0, ImGuiWindowFlags_AlwaysAutoResize)) 
                     {
                         if (currentlyHeldKeys.tellp() == 0)
-                            ImGui::Text("Press any key...\nEscape to cancel.");
+                            ImGui::TextUnformatted("Press any key...\nEscape to cancel.");
                         else
                             ImGui::Text(currentlyHeldKeys.str().c_str());
+                        if (!currentlyChanging) {
+                            save = true; // autosave
+                            ImGui::CloseCurrentPopup();
+                        }
+                        ImGui::EndPopup();
+                    }
+
+                    if (ImGui::BeginPopupModal("Change button")) {
+                        ImGui::TextUnformatted("Press any button...");
                         if (!currentlyChanging) {
                             save = true; // autosave
                             ImGui::CloseCurrentPopup();
@@ -261,8 +356,6 @@ bool KeybindingSystem::ShowBindingWindow()
         }
         ImGui::Columns(1);
         ImGui::Separator();
-
-        /*save = ImGui::Button("Save", ImVec2(-1, 0));*/
 
         if constexpr (disable_indent)
             ImGui::PopStyleVar();

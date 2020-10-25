@@ -2,7 +2,10 @@
 
 #include "OpenFunscripter.h"
 #include "SDL.h"
-ControllerInput ControllerInput::controllers[MAX_CONTROLLERS];
+
+std::array<int64_t, SDL_CONTROLLER_BUTTON_MAX> ButtonsHeldDown = {-1};
+std::array<ControllerInput, 4> ControllerInput::Controllers;
+int32_t ControllerInput::activeControllers = 0;
 
 void ControllerInput::OpenController(int device)
 {
@@ -10,6 +13,7 @@ void ControllerInput::OpenController(int device)
 	SDL_Joystick* j = SDL_GameControllerGetJoystick(gamepad);
 	instance_id = SDL_JoystickInstanceID(j);
 	is_connected = true;
+	LOGF_INFO("Controller \"%s\" connected!", SDL_GameControllerName(gamepad));
 	if (SDL_JoystickIsHaptic(j)) {
 		haptic = SDL_HapticOpenFromJoystick(j);
 		LOGF_DEBUG("Haptic Effects: %d\n", SDL_HapticNumEffects(haptic));
@@ -43,29 +47,44 @@ void ControllerInput::CloseController()
 
 int ControllerInput::GetControllerIndex(SDL_JoystickID instance)
 {
-	for (int i = 0; i < MAX_CONTROLLERS; ++i)
+	for (int i = 0; i < Controllers.size(); ++i)
 	{
-		if (controllers[i].is_connected && controllers[i].instance_id == instance) {
+		if (Controllers[i].is_connected && Controllers[i].instance_id == instance) {
 			return i;
 		}
 	}
 	return -1;
 }
 
-void ControllerInput::ControllerDeviceAdded(SDL_Event& ev)
+void ControllerInput::ControllerButtonDown(SDL_Event& ev) const noexcept
 {
-	if (ev.cdevice.which < MAX_CONTROLLERS) {
-		ControllerInput& jc = controllers[ev.cdevice.which];
+	const int64_t RepeatDelayMs = 300;
+	auto& cbutton = ev.cbutton;
+	ButtonsHeldDown[cbutton.button] = (int64_t)SDL_GetTicks() + RepeatDelayMs;
+}
+
+void ControllerInput::ControllerButtonUp(SDL_Event& ev) const noexcept
+{
+	auto& cbutton = ev.cbutton;
+	ButtonsHeldDown[cbutton.button] = -1;
+}
+
+void ControllerInput::ControllerDeviceAdded(SDL_Event& ev) noexcept
+{
+	if (ev.cdevice.which < Controllers.size()) {
+		ControllerInput& jc = Controllers[ev.cdevice.which];
 		jc.OpenController(ev.cdevice.which);
+		activeControllers++;
 	}
 }
 
-void ControllerInput::ControllerDeviceRemoved(SDL_Event& ev)
+void ControllerInput::ControllerDeviceRemoved(SDL_Event& ev) noexcept
 {
 	int cIndex = GetControllerIndex(ev.cdevice.which);
 	if (cIndex < 0) return; // unknown controller?
-	ControllerInput& jc = controllers[cIndex];
+	ControllerInput& jc = Controllers[cIndex];
 	jc.CloseController();
+	activeControllers--;
 }
 
 void ControllerInput::setup()
@@ -75,9 +94,23 @@ void ControllerInput::setup()
 	auto app = OpenFunscripter::ptr;
 	app->events->Subscribe(SDL_CONTROLLERDEVICEADDED, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerDeviceAdded));
 	app->events->Subscribe(SDL_CONTROLLERDEVICEREMOVED, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerDeviceRemoved));
+	app->events->Subscribe(SDL_CONTROLLERBUTTONDOWN, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerButtonDown));
+	app->events->Subscribe(SDL_CONTROLLERBUTTONUP, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerButtonUp));
 }
 
-void ControllerInput::update()
+void ControllerInput::update() noexcept
 {
+	const int64_t ButtonRepeatMS = 50;
 
+	int buttonEnumVal = 0;
+	for (auto&& button : ButtonsHeldDown) {
+		if (button > 0 && ((int64_t)SDL_GetTicks() - button) >= ButtonRepeatMS) {
+			SDL_Event ev;
+			ev.type = EventSystem::ControllerButtonRepeat;
+			ev.cbutton.button = buttonEnumVal;
+			SDL_PushEvent(&ev);
+			button = SDL_GetTicks();
+		}
+		buttonEnumVal++;
+	}
 }

@@ -38,6 +38,8 @@ public:
 
 	static int32_t MpvVideoLoaded;
 
+	static int32_t ControllerButtonRepeat;
+
 	void setup();
 
 	void PushEvent(SDL_Event& event);

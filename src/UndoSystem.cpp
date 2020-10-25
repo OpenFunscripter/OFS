@@ -5,7 +5,7 @@
 
 // this array provides strings for the StateType enum
 // for this to work the order needs to be maintained
-std::array<std::string, (int32_t)StateType::TOTAL_UNDOSTATE_TYPES> stateStrings {
+static std::array<std::string, (int32_t)StateType::TOTAL_UNDOSTATE_TYPES> stateStrings {
 	"Add/Edit actions",
 	"Add/Edit action",
 	"Add action",

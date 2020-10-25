@@ -83,6 +83,7 @@ private:
 	void removeAction() noexcept;
 	void addEditAction(int pos) noexcept;
 
+	void seekByTime(int32_t ms) noexcept;
 
 	void showOpenFileDialog();
 	void showSaveFileDialog();
@@ -119,7 +120,7 @@ public:
 	std::unique_ptr<SpecialFunctionsWindow> specialFunctions;
 	std::unique_ptr<ScriptingMode> scripting;
 	std::unique_ptr<EventSystem> events;
-	std::unique_ptr<ControllerInput> rawInput;
+	std::unique_ptr<ControllerInput> controllerInput;
 	std::unique_ptr<OpenFunscripterSettings> settings;
 	std::unique_ptr<Funscript> LoadedFunscript;
 
@@ -128,6 +129,5 @@ public:
 	void shutdown() noexcept;
 
 	static inline Funscript& script() noexcept { return *OpenFunscripter::ptr->LoadedFunscript; }
-
 	static void SetCursorType(SDL_SystemCursor id) noexcept;
 };

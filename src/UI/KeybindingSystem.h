@@ -18,12 +18,13 @@ struct Keybinding
 	std::string key_str;
 	SDL_Keycode key;
 	Uint16 modifiers;
-	bool ignore_repeats = true;
 
-	Keybinding() {}
+	Keybinding()
+		: key(0), modifiers(0)/*, ignore_repeats(false)*/
+	{}
 
-	Keybinding(SDL_Keycode key, Uint16 mod, bool ignore_repeat)
-		: key(key), modifiers(mod), ignore_repeats(ignore_repeat)
+	Keybinding(SDL_Keycode key, Uint16 mod/*, bool ignore_repeat*/)
+		: key(key), modifiers(mod)/*, ignore_repeats(ignore_repeat)*/
 	{}
 
 	template <class Archive>
@@ -31,29 +32,38 @@ struct Keybinding
 		OFS_REFLECT(key_str, ar);
 		OFS_REFLECT(key, ar);
 		OFS_REFLECT(modifiers, ar);
-		OFS_REFLECT(ignore_repeats, ar);
+		/*OFS_REFLECT(ignore_repeats, ar);*/
 	}
 };
 
 struct ControllerBinding {
 	int32_t button = -1;
+	bool navmode = false;
+
+	ControllerBinding()
+		: button(-1), navmode(false) {}
+	ControllerBinding(int32_t button, bool navmode)
+		: button(button), navmode(navmode) {}
+
 	template<class Archive>
 	inline void reflect(Archive& ar) {
 		OFS_REFLECT(button, ar);
+		OFS_REFLECT(navmode, ar);
 	}
 };
 
 struct Binding {
 	std::string identifier;
 	std::string description;
+	bool ignore_repeats = true;
 	Keybinding key;
 	ControllerBinding controller;
 	BindingAction action;
 
 	Binding() {}
 
-	Binding(const std::string& id, const std::string& description, BindingAction action)
-		: identifier(id), description(description), action(action) {}
+	Binding(const std::string& id, const std::string& description, bool ignore_repeats, BindingAction action)
+		: identifier(id), description(description), ignore_repeats(ignore_repeats), action(action) {}
 
 	template<class Archive>
 	inline void reflect(Archive& ar) {
@@ -61,6 +71,7 @@ struct Binding {
 		OFS_REFLECT(description, ar);
 		OFS_REFLECT(key, ar);
 		OFS_REFLECT(controller, ar);
+		OFS_REFLECT(ignore_repeats, ar);
 	}
 };
 
@@ -86,16 +97,20 @@ class KeybindingSystem
 	std::vector<KeybindingGroup> ActiveBindings;
 	std::string loadKeyString(SDL_Keycode key, int mod);
 	
+	void ProcessControllerBindings(SDL_Event& ev, bool repeat) noexcept;
+
 	void KeyPressed(SDL_Event& ev) noexcept;
+	void ControllerButtonRepeat(SDL_Event& ev) noexcept;
 	void ControllerButtonDown(SDL_Event& ev) noexcept;
 	void ControllerButtonUp(SDL_Event& ev) noexcept;
 	
 public:
+	bool ShowWindow = false;
+
 	void setup();
 	const std::string& getBindingString(const char* binding_id) noexcept;
 	const std::vector<KeybindingGroup>& getBindings() const { return ActiveBindings; }
 	void setBindings(const std::vector<KeybindingGroup>& bindings);
-	bool ShowWindow = false;
 	void registerBinding(const KeybindingGroup& group);
 	bool ShowBindingWindow();
 };
