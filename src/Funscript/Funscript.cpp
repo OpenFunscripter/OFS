@@ -490,6 +490,7 @@ void Funscript::RangeExtendSelection(int32_t rangeExtend) noexcept
 			}
 		}
 	}
+	if (rangeExtendSelection.size() == 0) { return; }
 	ClearSelection();
 	ExtendRange(rangeExtendSelection, rangeExtend);
 }

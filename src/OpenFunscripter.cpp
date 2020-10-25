@@ -146,6 +146,7 @@ OpenFunscripter::~OpenFunscripter()
     // needs a certain destruction order
     scripting.reset();
     rawInput.reset();
+    specialFunctions.reset();
     events.reset();
 
     settings->saveSettings();

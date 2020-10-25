@@ -3,7 +3,9 @@
 #include "OpenFunscripter.h"
 #include <array>
 
-std::array<std::string, (int32_t)StateType::TOTAL_UNDOSTATE_TYPES> stateStrings{
+// this array provides strings for the StateType enum
+// for this to work the order needs to be maintained
+std::array<std::string, (int32_t)StateType::TOTAL_UNDOSTATE_TYPES> stateStrings {
 	"Add/Edit actions",
 	"Add/Edit action",
 	"Add action",
@@ -41,9 +43,7 @@ void UndoSystem::ShowUndoRedoHistory(bool* open)
 	if (*open) {
 		ImGui::SetNextWindowSizeConstraints(ImVec2(200, 100), ImVec2(200, 200));
 		ImGui::Begin(UndoHistoryId, open, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
-		//for(auto it = undoRedoSystem.RedoStack.rbegin(); it != undoRedoSystem.RedoStack.rend(); it++) {
 		ImGui::TextDisabled("Redo stack");
-		// TODO: get rid of the string comparison but keep the counting
 		for (auto it = RedoStack.begin(); it != RedoStack.end(); it++) {
 			int count = 1;
 			auto copy_it = it;
