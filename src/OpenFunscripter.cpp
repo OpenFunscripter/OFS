@@ -56,7 +56,7 @@ bool OpenFunscripter::imgui_setup() noexcept
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;        // Enable Gamepad Controls
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
     io.ConfigWindowsMoveFromTitleBarOnly = true;
@@ -1603,9 +1603,8 @@ void OpenFunscripter::showSaveFileDialog()
 
 void OpenFunscripter::ShowMainMenuBar() noexcept
 {
-#define BINDING_STRING(binding) keybinds.getBindingString(binding).c_str()
-    // TODO: either remove the shortcuts or dynamically retrieve them
-    if (ImGui::BeginMenuBar())
+#define BINDING_STRING(binding) keybinds.getBindingString(binding).c_str()  
+    if (ImGui::BeginMainMenuBar())
     {
         ImVec2 region = ImGui::GetContentRegionAvail();
 
@@ -1883,7 +1882,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             }
             ImGui::TextColored(col,"last saved %d minutes ago", (int)(duration.count() / 60.f));
         }
-        ImGui::EndMenuBar();
+        ImGui::EndMainMenuBar();
     }
 #undef BINDING_STRING
 }
@@ -2033,7 +2032,7 @@ void OpenFunscripter::CreateDockspace() noexcept
 
     // We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
     // because it would be confusing to have two docking targets within each others.
-    ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+    ImGuiWindowFlags window_flags = /*ImGuiWindowFlags_MenuBar |*/ ImGuiWindowFlags_NoDocking;
     if (opt_fullscreen)
     {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
