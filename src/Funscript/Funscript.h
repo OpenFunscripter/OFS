@@ -184,6 +184,7 @@ public:
 	
 	inline void AddAction(FunscriptAction newAction) noexcept { addAction(data.Actions, newAction); }
 	inline void AddActionRaw(int32_t frame_no, int32_t at, int32_t pos, float frameTimeMs) noexcept {
+		if (!rawData.HasRecording()) { return; }
 		auto& recording = rawData.Active();
 		if (frame_no >= recording.RawActions.size()) return;
 		recording.RawActions[frame_no].at = at - frameTimeMs;
