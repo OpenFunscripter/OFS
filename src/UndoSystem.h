@@ -40,7 +40,8 @@ public:
 	void ClearHistory() noexcept;
 	void ClearRedo() noexcept;
 
-	inline bool UndoEmpty() const { return UndoStack.empty(); }
-	inline bool RedoEmpty() const { return RedoStack.empty(); }
+	inline bool MatchUndoTop(const std::string& message) const noexcept { return !UndoEmpty() && UndoStack.back().Message == message; }
+	inline bool UndoEmpty() const noexcept { return UndoStack.empty(); }
+	inline bool RedoEmpty() const noexcept { return RedoStack.empty(); }
 };
 

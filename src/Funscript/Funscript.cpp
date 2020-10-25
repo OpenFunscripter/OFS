@@ -49,9 +49,12 @@ void Funscript::setScriptTemplate() noexcept
 
 void Funscript::NotifyActionsChanged() noexcept
 {
-	if (!funscript_changed) {
-		funscript_changed = true;
-	}
+	funscriptChanged = true;
+}
+
+void Funscript::NotifySelectionChanged() noexcept
+{
+	selectionChanged = true;
 }
 
 void Funscript::loadMetadata() noexcept
@@ -116,15 +119,20 @@ void Funscript::saveSettings() noexcept
 
 void Funscript::update() noexcept
 {
-	if (funscript_changed)
-	{
-		funscript_changed = false;
+	if (funscriptChanged) {
+		funscriptChanged = false;
 		SDL_Event ev;
 		ev.type = EventSystem::FunscriptActionsChangedEvent;
 		SDL_PushEvent(&ev);
 
 		// TODO: find out how expensive this is on an already sorted array
 		sortActions(data.Actions);
+	}
+	if (selectionChanged) {
+		selectionChanged = false;
+		SDL_Event ev;
+		ev.type = EventSystem::FunscriptSelectionChangedEvent;
+		SDL_PushEvent(&ev);
 	}
 }
 
@@ -374,8 +382,10 @@ void Funscript::checkForInvalidatedActions() noexcept
 			return true;
 		return false;
 	});
-	if(it != data.selection.end())
+	if (it != data.selection.end()) {
 		data.selection.erase(it);
+		NotifySelectionChanged();
+	}
 }
 
 void Funscript::RemoveAction(FunscriptAction action, bool checkInvalidSelection) noexcept
@@ -396,6 +406,94 @@ void Funscript::RemoveActions(const std::vector<FunscriptAction>& removeActions)
 	NotifyActionsChanged();
 }
 
+void Funscript::RangeExtendSelection(int32_t rangeExtend) noexcept
+{
+	auto ExtendRange = [](std::vector<FunscriptAction*>& actions, int32_t rangeExtend) -> void {
+		if (rangeExtend == 0) { return; }
+		if (actions.size() < 0) { return; }
+
+		auto StretchPosition = [](int32_t position, int32_t lowest, int32_t highest, int extension) -> int32_t
+		{
+			int32_t newHigh = Util::Clamp<int32_t>(highest + extension, 0, 100);
+			int32_t newLow = Util::Clamp<int32_t>(lowest - extension, 0, 100);
+
+			double relativePosition = (position - lowest) / (double)(highest - lowest);
+			double newposition = relativePosition * (newHigh - newLow) + newLow;
+
+			return Util::Clamp<int32_t>(newposition, 0, 100);
+		};
+
+		int lastExtremeIndex = 0;
+		int32_t lastValue = (*actions[0]).pos;
+		int32_t lastExtremeValue = lastValue;
+
+		int32_t lowest = lastValue;
+		int32_t highest = lastValue;
+
+		enum class direction {
+			NONE,
+			UP,
+			DOWN
+		};
+		direction strokeDir = direction::NONE;
+
+		for (int index = 0; index < actions.size(); index++)
+		{
+			// Direction unknown
+			if (strokeDir == direction::NONE)
+			{
+				if ((*actions[index]).pos < lastExtremeValue) {
+					strokeDir = direction::DOWN;
+				}
+				else if ((*actions[index]).pos > lastExtremeValue) {
+					strokeDir = direction::UP;
+				}
+			}
+			else
+			{
+				if (((*actions[index]).pos < lastValue && strokeDir == direction::UP)     //previous was highpoint
+					|| ((*actions[index]).pos > lastValue && strokeDir == direction::DOWN) //previous was lowpoint
+					|| (index == actions.size() - 1))                            //last action
+				{
+					for (int i = lastExtremeIndex + 1; i < index; i++)
+					{
+						FunscriptAction& action = *actions[i];
+						action.pos = StretchPosition(action.pos, lowest, highest, rangeExtend);
+					}
+
+					lastExtremeValue = (*actions[index - 1]).pos;
+					lastExtremeIndex = index - 1;
+
+					highest = lastExtremeValue;
+					lowest = lastExtremeValue;
+
+					strokeDir = (strokeDir == direction::UP) ? direction::DOWN : direction::UP;
+				}
+
+				lastValue = (*actions[index]).pos;
+				if (lastValue > highest)
+					highest = lastValue;
+				if (lastValue < lowest)
+					lowest = lastValue;
+			}
+		}
+	};
+	std::vector<FunscriptAction*> rangeExtendSelection;
+	rangeExtendSelection.reserve(SelectionSize());
+	int selectionOffset = 0;
+	for (auto&& act : data.Actions) {
+		for (int i = selectionOffset; i < data.selection.size(); i++) {
+			if (data.selection[i] == act) {
+				rangeExtendSelection.push_back(&act);
+				selectionOffset = i;
+				break;
+			}
+		}
+	}
+	ClearSelection();
+	ExtendRange(rangeExtendSelection, rangeExtend);
+}
+
 bool Funscript::ToggleSelection(FunscriptAction action) noexcept
 {
 	auto it = std::find(data.selection.begin(), data.selection.end(), action);
@@ -406,6 +504,7 @@ bool Funscript::ToggleSelection(FunscriptAction action) noexcept
 	else {
 		data.selection.emplace_back(action);
 	}
+	NotifySelectionChanged();
 	return !is_selected;
 }
 
@@ -420,6 +519,7 @@ void Funscript::SetSelection(FunscriptAction action, bool selected) noexcept
 	else if(!is_selected && selected) {
 		data.selection.emplace_back(action);
 	}
+	NotifySelectionChanged();
 }
 
 void Funscript::SelectTopActions()
@@ -440,6 +540,7 @@ void Funscript::SelectTopActions()
 	}
 	for (auto& act : deselect)
 		SetSelection(act, false);
+	NotifySelectionChanged();
 }
 
 void Funscript::SelectBottomActions()
@@ -460,6 +561,7 @@ void Funscript::SelectBottomActions()
 	}
 	for (auto& act : deselect)
 		SetSelection(act, false);
+	NotifySelectionChanged();
 }
 
 void Funscript::SelectMidActions()
@@ -479,6 +581,7 @@ void Funscript::SelectMidActions()
 		}), selectionCopy.end());
 	data.selection = selectionCopy;
 	sortSelection();
+	NotifySelectionChanged();
 }
 
 void Funscript::SelectTime(int32_t from_ms, int32_t to_ms, bool clear) noexcept
@@ -496,7 +599,7 @@ void Funscript::SelectTime(int32_t from_ms, int32_t to_ms, bool clear) noexcept
 
 	if (!clear)
 		sortSelection();
-
+	NotifySelectionChanged();
 }
 
 void Funscript::SelectAction(FunscriptAction select) noexcept
@@ -507,6 +610,7 @@ void Funscript::SelectAction(FunscriptAction select) noexcept
 			// keep selection ordered for rendering purposes
 			sortSelection();
 		}
+		NotifySelectionChanged();
 	}
 }
 
@@ -515,12 +619,14 @@ void Funscript::DeselectAction(FunscriptAction deselect) noexcept
 	auto action = GetAction(deselect);
 	if (action != nullptr)
 		SetSelection(*action, false);
+	NotifySelectionChanged();
 }
 
 void Funscript::SelectAll() noexcept
 {
 	ClearSelection();
 	data.selection.assign(data.Actions.begin(), data.Actions.end());
+	NotifySelectionChanged();
 }
 
 void Funscript::RemoveSelectedActions() noexcept
@@ -528,6 +634,7 @@ void Funscript::RemoveSelectedActions() noexcept
 	RemoveActions(data.selection);
 	ClearSelection();
 	//NotifyActionsChanged(); // already called in RemoveActions
+	NotifySelectionChanged();
 }
 
 void Funscript::moveActionsTime(std::vector<FunscriptAction*> moving, int32_t time_offset)

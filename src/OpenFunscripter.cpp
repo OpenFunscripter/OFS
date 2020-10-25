@@ -268,7 +268,7 @@ bool OpenFunscripter::setup()
     if (!last_video.empty())
         openFile(last_video);
 
-
+    specialFunctions = std::make_unique<SpecialFunctionsWindow>();
     rawInput = std::make_unique<ControllerInput>();
     rawInput->setup();
     simulator.setup();
@@ -968,6 +968,7 @@ int OpenFunscripter::run() noexcept
             // IMGUI HERE
             CreateDockspace();
             ShowAboutWindow(&ShowAbout);
+            specialFunctions->ShowFunctionsWindow(&ShowSpecialFunctions);
             undoRedoSystem.ShowUndoRedoHistory(&ShowHistory);
             simulator.ShowSimulator(&settings->data().show_simulator);
             ShowStatisticsWindow(&ShowStatistics);
@@ -1754,6 +1755,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem(UndoSystem::UndoHistoryId, NULL, &ShowHistory)) {}
             if (ImGui::MenuItem(ScriptSimulator::SimulatorId, NULL, &settings->data().show_simulator)) { settings->saveSettings(); }
             if (ImGui::MenuItem("Metadata", NULL, &ShowMetadataEditor)) {}
+            if(ImGui::MenuItem(SpecialFunctionsWindow::SpecialFunctionsId, NULL, &ShowSpecialFunctions)) {}
             ImGui::Separator();
 
             if (ImGui::MenuItem("Draw video", NULL, &settings->data().draw_video)) { settings->saveSettings(); }

@@ -103,7 +103,6 @@ class OpenFunscripter;
 class ScriptingMode {
 	std::unique_ptr<ScripingModeBaseImpl> impl;
 	ScriptingModeEnum active_mode;
-	OpenFunscripter* ctx;
 public:
 	static constexpr const char* ScriptingModeId = "Mode";
 	void setup();

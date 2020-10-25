@@ -2,6 +2,7 @@
 
 int32_t EventSystem::FunscriptActionsChangedEvent = 0;
 int32_t EventSystem::FunscriptActionClickedEvent = 0;
+int32_t EventSystem::FunscriptSelectionChangedEvent = 0;
 
 int32_t EventSystem::WakeupOnMpvEvents = 0; 
 int32_t EventSystem::WakeupOnMpvRenderUpdate = 0;
@@ -17,6 +18,7 @@ void EventSystem::setup()
 {
 	FunscriptActionsChangedEvent = SDL_RegisterEvents(1);
 	FunscriptActionClickedEvent = SDL_RegisterEvents(1);
+	FunscriptSelectionChangedEvent = SDL_RegisterEvents(1);
 	WakeupOnMpvEvents = SDL_RegisterEvents(1);
 	WakeupOnMpvRenderUpdate = SDL_RegisterEvents(1);
 	FileDialogOpenEvent = SDL_RegisterEvents(1);

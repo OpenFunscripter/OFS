@@ -19,6 +19,7 @@
 #include "Funscript.h"
 #include "ControllerInput.h"
 #include "GradientBar.h"
+#include "SpecialFunctions.h"
 
 #include <memory>
 #include <array>
@@ -30,6 +31,8 @@ private:
 	SDL_GLContext gl_context;
 	bool exit_app = false;
 	
+	// TODO: move this into a bitset
+	bool ShowSpecialFunctions = true;
 	bool ShowMetadataEditor = false;
 	bool ShowStatistics = true;
 	bool ShowHistory = true;
@@ -113,14 +116,12 @@ public:
 
 	bool RollingBackup = true;
 
+	std::unique_ptr<SpecialFunctionsWindow> specialFunctions;
 	std::unique_ptr<ScriptingMode> scripting;
 	std::unique_ptr<EventSystem> events;
 	std::unique_ptr<ControllerInput> rawInput;
 	std::unique_ptr<OpenFunscripterSettings> settings;
 	std::unique_ptr<Funscript> LoadedFunscript;
-
-
-
 
 	bool setup();
 	int run() noexcept;

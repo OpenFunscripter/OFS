@@ -26,6 +26,7 @@ public:
 	// custom events
 	static int32_t FunscriptActionsChangedEvent;
 	static int32_t FunscriptActionClickedEvent;
+	static int32_t FunscriptSelectionChangedEvent;
 
 	static int32_t WakeupOnMpvEvents;
 	static int32_t WakeupOnMpvRenderUpdate;

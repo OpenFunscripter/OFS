@@ -15,7 +15,6 @@ inline Funscript& ScripingModeBaseImpl::ctx() {
 
 void ScriptingMode::setup()
 {
-    ctx = OpenFunscripter::ptr;
     setMode(ScriptingModeEnum::DEFAULT_MODE);
 }
 
@@ -67,9 +66,10 @@ void ScriptingMode::setMode(ScriptingModeEnum mode)
 
 void ScriptingMode::addEditAction(FunscriptAction action)
 {
-    auto ptr = ctx->LoadedFunscript->GetActionAtTime(action.at, ctx->player.getFrameTimeMs());
+    auto app = OpenFunscripter::ptr;
+    auto ptr = OpenFunscripter::script().GetActionAtTime(action.at, app->player.getFrameTimeMs());
     if (ptr != nullptr) {
-        ctx->LoadedFunscript->EditAction(*ptr, FunscriptAction(ptr->at, action.pos));
+        app->LoadedFunscript->EditAction(*ptr, FunscriptAction(ptr->at, action.pos));
     }
     else {
 	    impl->addAction(action);

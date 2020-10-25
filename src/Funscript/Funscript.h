@@ -110,7 +110,8 @@ private:
 	nlohmann::json Json;
 	nlohmann::json BaseLoaded;
 	bool scriptOpened = false;
-	bool funscript_changed = false; // used to fire only one event every frame a change occurs
+	bool funscriptChanged = false; // used to fire only one event every frame a change occurs
+	bool selectionChanged = false;
 	SDL_mutex* saveMutex = nullptr;
 
 	void setBaseScript(nlohmann::json& base);
@@ -142,6 +143,7 @@ private:
 	}
 
 	void NotifyActionsChanged() noexcept;
+	void NotifySelectionChanged() noexcept;
 
 	void loadMetadata() noexcept;
 	void saveMetadata() noexcept;
@@ -206,10 +208,12 @@ public:
 		);
 	}
 
+
 	// recording stuff
 	inline FunscriptRawData& Raw() { return rawData; }
 
 	// selection api
+	void RangeExtendSelection(int32_t rangeExtend) noexcept;
 	bool ToggleSelection(FunscriptAction action) noexcept;
 	void SetSelection(FunscriptAction action, bool selected) noexcept;
 	void SelectTopActions();
