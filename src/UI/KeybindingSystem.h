@@ -11,30 +11,23 @@
 #include <sstream>
 #include <unordered_map>
 
-using KeybindingAction = std::function<void(void*)>;
-
+using BindingAction = std::function<void(void*)>;
 
 struct Keybinding
 {
-	std::string identifier;
-	std::string description;
 	std::string key_str;
 	SDL_Keycode key;
 	Uint16 modifiers;
-
 	bool ignore_repeats = true;
-	KeybindingAction action;
 
 	Keybinding() {}
 
-	Keybinding(const std::string& id, const std::string& description, SDL_Keycode key, Uint16 mod, bool ignore_repeat, KeybindingAction action)
-		: identifier(id), description(description), key(key), modifiers(mod), ignore_repeats(ignore_repeat), action(action)
+	Keybinding(SDL_Keycode key, Uint16 mod, bool ignore_repeat)
+		: key(key), modifiers(mod), ignore_repeats(ignore_repeat)
 	{}
 
 	template <class Archive>
 	inline void reflect(Archive& ar) {
-		OFS_REFLECT(identifier, ar);
-		OFS_REFLECT(description, ar);
 		OFS_REFLECT(key_str, ar);
 		OFS_REFLECT(key, ar);
 		OFS_REFLECT(modifiers, ar);
@@ -42,9 +35,38 @@ struct Keybinding
 	}
 };
 
+struct ControllerBinding {
+
+	template<class Archive>
+	inline void reflect(Archive& ar) {
+
+	}
+};
+
+struct Binding {
+	std::string identifier;
+	std::string description;
+	Keybinding key;
+	ControllerBinding controller;
+	BindingAction action;
+
+	Binding() {}
+
+	Binding(const std::string& id, const std::string& description, BindingAction action)
+		: identifier(id), description(description), action(action) {}
+
+	template<class Archive>
+	inline void reflect(Archive& ar) {
+		OFS_REFLECT(identifier, ar);
+		OFS_REFLECT(description, ar);
+		OFS_REFLECT(key, ar);
+		OFS_REFLECT(controller, ar);
+	}
+};
+
 struct KeybindingGroup {
 	std::string name;
-	std::vector<Keybinding> bindings;
+	std::vector<Binding> bindings;
 
 	template<class Archive>
 	inline void reflect(Archive& ar) {
@@ -56,7 +78,7 @@ struct KeybindingGroup {
 class KeybindingSystem 
 {
 	std::stringstream currentlyHeldKeys;
-	Keybinding* currentlyChanging = nullptr;
+	Binding* currentlyChanging = nullptr;
 	std::unordered_map<std::string, std::string> binding_string_cache;
 
 	void addKeyString(const char* name);

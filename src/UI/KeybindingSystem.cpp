@@ -68,12 +68,12 @@ void KeybindingSystem::pressed(SDL_Event& ev)
         }
         addKeyString(SDL_GetKeyName(key.keysym.sym));
 
-        currentlyChanging->key = key.keysym.sym;
-        currentlyChanging->key_str = currentlyHeldKeys.str();
-        binding_string_cache[currentlyChanging->identifier] = currentlyChanging->key_str;
+        currentlyChanging->key.key = key.keysym.sym;
+        currentlyChanging->key.key_str = currentlyHeldKeys.str();
+        binding_string_cache[currentlyChanging->identifier] = currentlyChanging->key.key_str;
 
 
-        currentlyChanging->modifiers = modstate;
+        currentlyChanging->key.modifiers = modstate;
         currentlyChanging = nullptr;
         return;
     }
@@ -84,12 +84,12 @@ void KeybindingSystem::pressed(SDL_Event& ev)
     // process bindings
     for (auto& group : ActiveBindings) {
         for (auto& binding : group.bindings) {
-            if (key.repeat && binding.ignore_repeats) continue;
+            if (key.repeat && binding.key.ignore_repeats) continue;
 
-            if (key.keysym.sym == binding.key) {
+            if (key.keysym.sym == binding.key.key) {
                 bool modifierMismatch = false;
                 for (auto possibleModifier : possibleModifiers) {
-                    if ((modstate & possibleModifier) != (binding.modifiers & possibleModifier)) {
+                    if ((modstate & possibleModifier) != (binding.key.modifiers & possibleModifier)) {
                         modifierMismatch = true;
                         break;
                     }
@@ -165,11 +165,11 @@ void KeybindingSystem::setBindings(const std::vector<KeybindingGroup>& groups)
 
                 if (it != groupIt->bindings.end()) {
                     // override defaults
-                    it->ignore_repeats = keybind.ignore_repeats;
-                    it->key = keybind.key;
-                    it->modifiers = keybind.modifiers;
-                    it->key_str = loadKeyString(keybind.key, keybind.modifiers);
-                    binding_string_cache[it->identifier] = it->key_str;
+                    it->key.ignore_repeats = keybind.key.ignore_repeats;
+                    it->key.key = keybind.key.key;
+                    it->key.modifiers = keybind.key.modifiers;
+                    it->key.key_str = loadKeyString(keybind.key.key, keybind.key.modifiers);
+                    binding_string_cache[it->identifier] = it->key.key_str;
                 }
             }
         }
@@ -180,8 +180,8 @@ void KeybindingSystem::registerBinding(const KeybindingGroup& group)
 {
     ActiveBindings.emplace_back(std::move(group));
     for (auto& binding : ActiveBindings.back().bindings) {
-        binding.key_str = loadKeyString(binding.key, binding.modifiers);
-        binding_string_cache[binding.identifier] = binding.key_str;
+        binding.key.key_str = loadKeyString(binding.key.key, binding.key.modifiers);
+        binding_string_cache[binding.identifier] = binding.key.key_str;
     }
 }
 
@@ -219,13 +219,13 @@ bool KeybindingSystem::ShowBindingWindow()
                 for (auto& binding : group.bindings) {
                     ImGui::PushID(id++);
                     ImGui::Text("%s", binding.description.c_str()); ImGui::NextColumn();
-                    if(ImGui::Button(!binding.key_str.empty() ? binding.key_str.c_str() : "-- Not set --", ImVec2(-1, 0))) {
+                    if(ImGui::Button(!binding.key.key_str.empty() ? binding.key.key_str.c_str() : "-- Not set --", ImVec2(-1, 0))) {
                         currentlyChanging = &binding;
                         currentlyHeldKeys.str("");
                         ImGui::OpenPopup("Change Binding");
                     }
                     ImGui::NextColumn();
-                    if (ImGui::Checkbox("", &binding.ignore_repeats)) { save = true; } ImGui::NextColumn();
+                    if (ImGui::Checkbox("", &binding.key.ignore_repeats)) { save = true; } ImGui::NextColumn();
 
                     if (ImGui::BeginPopupModal("Change Binding", 0, ImGuiWindowFlags_AlwaysAutoResize)) 
                     {

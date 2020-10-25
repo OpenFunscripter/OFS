@@ -341,24 +341,29 @@ void OpenFunscripter::register_bindings()
         KeybindingGroup group;
         group.name = "Actions";
         // DELETE ACTION
-        group.bindings.push_back(Keybinding(
+        auto& remove_action = group.bindings.emplace_back(
             "remove_action",
             "Remove action",
+            [&](void*) { removeAction(); }
+        );
+        remove_action.key = Keybinding(
             SDLK_DELETE,
             0,
-            true,
-            [&](void*) { removeAction(); }
-        ));
+            true
+        );
 
         //ADD ACTIONS
-        group.bindings.push_back(Keybinding(
+        auto& action_0 = group.bindings.emplace_back(
             "action 0",
             "Action at 0",
+            [&](void*) { addEditAction(0); }
+        );
+        action_0.key = Keybinding(
             SDLK_KP_0,
             0,
-            true,
-            [&](void*) { addEditAction(0); }
-        ));
+            true
+        );
+
         std::stringstream ss;
         for (int i = 1; i < 10; i++) {
             ss.str("");
@@ -367,23 +372,27 @@ void OpenFunscripter::register_bindings()
             ss.str("");
             ss << "Action at " << i * 10;
 
-            group.bindings.push_back(Keybinding(
+            auto& action = group.bindings.emplace_back(
                 id,
                 ss.str(),
+                [&, i](void*) { addEditAction(i * 10); }
+            );
+            action.key = Keybinding(
                 SDLK_KP_1 + i - 1,
                 0,
-                true,
-                [&, i](void*) { addEditAction(i * 10); }
-            ));
+                true
+            );
         }
-        group.bindings.push_back(Keybinding(
+        auto& action_100 = group.bindings.emplace_back(
             "action 100",
             "Action at 100",
+            [&](void*) { addEditAction(100); }
+        );
+        action_100.key = Keybinding(
             SDLK_KP_DIVIDE,
             0,
-            true,
-            [&](void*) { addEditAction(100); }
-        ));
+            true
+        );
 
         keybinds.registerBinding(group);
     }
@@ -393,26 +402,27 @@ void OpenFunscripter::register_bindings()
         group.name = "Core";
 
         // SAVE
-        group.bindings.push_back(Keybinding(
+        auto& save = group.bindings.emplace_back(
             "save",
             "Save",
+            [&](void*) { saveScript(); }
+        );
+        save.key = Keybinding(
             SDLK_s,
             KMOD_CTRL,
+            true
+        );
 
-            true,
-            [&](void*) { saveScript(); }
-        ));
-
-
-        group.bindings.push_back(Keybinding(
+        auto& sync_timestamp = group.bindings.emplace_back(
             "sync_timestamps",
             "Sync time with player",
+            [&](void*) { player.syncWithRealTime(); }
+        );
+        sync_timestamp.key = Keybinding(
             SDLK_s,
             0,
-            true,
-            [&](void*) { player.syncWithRealTime(); }
-        ));
-
+            true
+        );
 
         keybinds.registerBinding(group);
     }
@@ -420,70 +430,84 @@ void OpenFunscripter::register_bindings()
         KeybindingGroup group;
         group.name = "Navigation";
         // JUMP BETWEEN ACTIONS
-        group.bindings.push_back(Keybinding(
+        auto& prev_action = group.bindings.emplace_back(
             "prev_action",
             "Previous action",
-            SDLK_DOWN,
-            0,
-            false,
             [&](void*) {
                 auto action = LoadedFunscript->GetPreviousActionBehind(player.getCurrentPositionMs() - 1.f);
                 if (action != nullptr) player.setPosition(action->at);
             }
-        ));
-        group.bindings.push_back(Keybinding(
+        );
+        prev_action.key = Keybinding(
+            SDLK_DOWN,
+            0,
+            false
+        );
+
+        auto& next_action = group.bindings.emplace_back(
             "next_action",
             "Next action",
-            SDLK_UP,
-            0,
-            false,
             [&](void*) {
                 auto action = LoadedFunscript->GetNextActionAhead(player.getCurrentPositionMs() + 1.f);
                 if (action != nullptr) player.setPosition(action->at);
             }
-        ));
+        );
+        next_action.key = Keybinding(
+            SDLK_UP,
+            0,
+            false
+        );
 
         // FRAME CONTROL
-        group.bindings.push_back(Keybinding(
+        auto& prev_frame = group.bindings.emplace_back(
             "prev_frame",
             "Previous frame",
+            [&](void*) { player.previousFrame(); }
+        );
+        prev_frame.key = Keybinding(
             SDLK_LEFT,
             0,
-            false,
-            [&](void*) { player.previousFrame(); }
-        ));
+            false
+        );
 
-        group.bindings.push_back(Keybinding(
+        auto& next_frame = group.bindings.emplace_back(
             "next_frame",
             "Next frame",
+            [&](void*) { player.nextFrame(); }
+        );
+        next_frame.key = Keybinding(
             SDLK_RIGHT,
             0,
-            false,
-            [&](void*) { player.nextFrame(); }
-        ));
+            false
+        );
 
-        group.bindings.push_back(Keybinding(
+        auto& fast_step = group.bindings.emplace_back(
             "fast_step",
             "Fast step",
-            SDLK_RIGHT,
-            KMOD_CTRL,
-            false,
             [&](void*) {
                 int32_t frameStep = settings->data().fast_step_amount;
                 player.relativeFrameSeek(frameStep);
             }
-        ));
-        group.bindings.push_back(Keybinding(
+        );
+        fast_step.key = Keybinding(
+            SDLK_RIGHT,
+            KMOD_CTRL,
+            false
+        );
+
+        auto& fast_backstep = group.bindings.emplace_back(
             "fast_backstep",
             "Fast backstep",
-            SDLK_LEFT,
-            KMOD_CTRL,
-            false,
             [&](void*) {
                 int32_t frameStep = settings->data().fast_step_amount;
                 player.relativeFrameSeek(-frameStep);
             }
-        ));
+        );
+        fast_backstep.key = Keybinding(
+            SDLK_LEFT,
+            KMOD_CTRL,
+            false
+        );
         keybinds.registerBinding(group);
     }
     
@@ -491,97 +515,122 @@ void OpenFunscripter::register_bindings()
         KeybindingGroup group;
         group.name = "Utility";
         // UNDO / REDO
-        group.bindings.push_back(Keybinding(
+        auto& undo = group.bindings.emplace_back(
             "undo",
             "Undo",
+            [&](void*) { undoRedoSystem.Undo(); }
+        );
+        undo.key = Keybinding(
             SDLK_z,
             KMOD_CTRL,
-            false,
-            [&](void*) { undoRedoSystem.Undo(); }
-        ));
-        group.bindings.push_back(Keybinding(
+            false
+        );
+
+        auto& redo = group.bindings.emplace_back(
             "redo",
             "Redo",
+            [&](void*) { undoRedoSystem.Redo(); }
+        ); 
+        redo.key = Keybinding(
             SDLK_y,
             KMOD_CTRL,
-            false,
-            [&](void*) { undoRedoSystem.Redo(); }
-        ));
+            false
+        );
 
         // COPY / PASTE
-        group.bindings.push_back(Keybinding(
+        auto& copy = group.bindings.emplace_back(
             "copy",
             "Copy",
+            [&](void*) { copySelection(); }
+        );
+        copy.key = Keybinding(
             SDLK_c,
             KMOD_CTRL,
-            true,
-            [&](void*) { copySelection(); }
-        ));
-        group.bindings.push_back(Keybinding(
+            true
+        );
+
+        auto& paste = group.bindings.emplace_back(
             "paste",
             "Paste",
+            [&](void*) { pasteSelection(); }
+        );
+        paste.key = Keybinding(
             SDLK_v,
             KMOD_CTRL,
-            true,
-            [&](void*) { pasteSelection(); }
-        ));
-        group.bindings.push_back(Keybinding(
+            true
+        );
+
+        auto& cut = group.bindings.emplace_back(
             "cut",
             "Cut",
+            [&](void*) { cutSelection(); }
+        );
+        cut.key = Keybinding(
             SDLK_x,
             KMOD_CTRL,
-            true,
-            [&](void*) { cutSelection(); }
-        ));
-        group.bindings.push_back(Keybinding(
+            true
+        );
+
+        auto& select_all = group.bindings.emplace_back(
             "select_all",
             "Select all",
+            [&](void*) { LoadedFunscript->SelectAll(); }
+        );
+        select_all.key = Keybinding(
             SDLK_a,
             KMOD_CTRL,
-            true,
-            [&](void*) { LoadedFunscript->SelectAll(); }
-        ));
-        group.bindings.push_back(Keybinding(
+            true
+        );
+
+        auto& deselect_all = group.bindings.emplace_back(
             "deselect_all",
             "Deselect all",
+            [&](void*) { LoadedFunscript->ClearSelection(); }
+        );
+        deselect_all.key = Keybinding(
             SDLK_d,
             KMOD_CTRL,
-            true,
-            [&](void*) { LoadedFunscript->ClearSelection(); }
-        ));
+            true
+        );
 
         // SCREENSHOT VIDEO
-        group.bindings.push_back(Keybinding(
+        auto& save_frame_as_image = group.bindings.emplace_back(
             "save_frame_as_image",
             "Save frame as image",
-            SDLK_F2,
-            0,
-            true,
             [&](void*) { 
                 auto screenshot_dir = Util::Basepath() / "screenshot";
                 player.saveFrameToImage(screenshot_dir.string()); 
             }
-        ));
+        );
+        save_frame_as_image.key = Keybinding(
+            SDLK_F2,
+            0,
+            true
+        );
 
         // CHANGE SUBTITLES
-        group.bindings.push_back(Keybinding(
+        auto& cycle_subtitles = group.bindings.emplace_back(
             "cycle_subtitles",
             "Cycle subtitles",
+            [&](void*) { player.cycleSubtitles(); }
+        );
+        cycle_subtitles.key = Keybinding(
             SDLK_j,
             0,
-            true,
-            [&](void*) { player.cycleSubtitles(); }
-        ));
+            true
+        );
 
         // FULLSCREEN
-        group.bindings.push_back(Keybinding(
+        auto& fullscreen_toggle = group.bindings.emplace_back(
             "fullscreen_toggle",
             "Toggle fullscreen",
+            [&](void*) { Fullscreen = !Fullscreen; SetFullscreen(Fullscreen); }
+        );
+        fullscreen_toggle.key = Keybinding(
             SDLK_F10,
             0,
-            true,
-            [&](void*) { Fullscreen = !Fullscreen; SetFullscreen(Fullscreen); }
-        ));
+            true
+        );
         keybinds.registerBinding(group);
     }
 
@@ -623,56 +672,62 @@ void OpenFunscripter::register_bindings()
     {
         KeybindingGroup group;
         group.name = "Moving";
-        group.bindings.push_back(Keybinding(
+        auto& move_actions_left_snapped = group.bindings.emplace_back(
             "move_actions_left_snapped",
             "Move actions left with snapping",
-            SDLK_LEFT,
-            KMOD_CTRL | KMOD_SHIFT,
-            false,
             [&](void*) {
                 move_actions_horizontal_with_video(-player.getFrameTimeMs());
             }
-        ));
-        group.bindings.push_back(Keybinding(
+        );
+        move_actions_left_snapped.key = Keybinding(
+            SDLK_LEFT,
+            KMOD_CTRL | KMOD_SHIFT,
+            false
+        );
+
+        auto& move_actions_right_snapped = group.bindings.emplace_back(
             "move_actions_right_snapped",
             "Move actions right with snapping",
-            SDLK_RIGHT,
-            KMOD_CTRL | KMOD_SHIFT,
-            false,
             [&](void*) {
                 move_actions_horizontal_with_video(player.getFrameTimeMs());
             }
-        ));
+        );
+        move_actions_right_snapped.key = Keybinding(
+            SDLK_RIGHT,
+            KMOD_CTRL | KMOD_SHIFT,
+            false
+        );
 
-        group.bindings.push_back(Keybinding(
+        auto& move_actions_left = group.bindings.emplace_back(
             "move_actions_left",
             "Move actions left",
-            SDLK_LEFT,
-            KMOD_SHIFT,
-            false,
             [&](void*) {
                 move_actions_horizontal(-player.getFrameTimeMs());
             }
-        ));
+        );
+        move_actions_left.key = Keybinding(
+            SDLK_LEFT,
+            KMOD_SHIFT,
+            false
+        );
 
-        group.bindings.push_back(Keybinding(
+        auto& move_actions_right = group.bindings.emplace_back(
             "move_actions_right",
             "Move actions right",
-            SDLK_RIGHT,
-            KMOD_SHIFT,
-            false,
             [&](void*) {
                 move_actions_horizontal(player.getFrameTimeMs());
             }
-        ));
+        );
+        move_actions_right.key = Keybinding(
+            SDLK_RIGHT,
+            KMOD_SHIFT,
+            false
+        );
 
         // MOVE SELECTION UP/DOWN
-        group.bindings.push_back(Keybinding(
+        auto& move_actions_up = group.bindings.emplace_back(
             "move_actions_up",
             "Move actions up",
-            SDLK_UP,
-            KMOD_SHIFT,
-            false,
             [&](void*) {
                 if (LoadedFunscript->HasSelection()) {
                     undoRedoSystem.Snapshot(StateType::ACTIONS_MOVED);
@@ -689,13 +744,15 @@ void OpenFunscripter::register_bindings()
                     }
                 }
             }
-        ));
-        group.bindings.push_back(Keybinding(
+        );
+        move_actions_up.key = Keybinding(
+            SDLK_UP,
+            KMOD_SHIFT,
+            false
+        );
+        auto& move_actions_down = group.bindings.emplace_back(
             "move_actions_down",
             "Move actions down",
-            SDLK_DOWN,
-            KMOD_SHIFT,
-            false,
             [&](void*) {
                 undoRedoSystem.Snapshot(StateType::ACTIONS_MOVED);
                 if (LoadedFunscript->HasSelection()) {
@@ -712,37 +769,49 @@ void OpenFunscripter::register_bindings()
                     }
                 }
             }
-        ));
+        );
+        move_actions_down.key = Keybinding(
+            SDLK_DOWN,
+            KMOD_SHIFT,
+            false
+        );
         keybinds.registerBinding(group);
     }
     // FUNCTIONS
     {
         KeybindingGroup group;
         group.name = "Special";
-        group.bindings.push_back(Keybinding(
+        auto& equalize = group.bindings.emplace_back(
             "equalize_actions",
             "Equalize actions",
+            [&](void*) { equalizeSelection(); }
+        );
+        equalize.key = Keybinding(
             SDLK_e,
             0,
-            true,
-            [&](void*) { equalizeSelection(); }
-        ));
-        group.bindings.push_back(Keybinding(
+            true
+        );
+
+        auto& invert = group.bindings.emplace_back(
             "invert_actions",
             "Invert actions",
+            [&](void*) { invertSelection(); }
+        );
+        invert.key = Keybinding(
             SDLK_i,
             0,
-            true,
-            [&](void*) { invertSelection(); }
-        ));
-        group.bindings.push_back(Keybinding(
+            true
+        );
+        auto& isolate = group.bindings.emplace_back(
             "isolate_action",
             "Isolate action",
+            [&](void*) { isolateAction(); }
+        );
+        isolate.key = Keybinding(
             SDLK_r,
             0,
-            true,
-            [&](void*) { isolateAction(); }
-        ));
+            true
+        );
         keybinds.registerBinding(group);
     }
 
@@ -751,32 +820,39 @@ void OpenFunscripter::register_bindings()
         KeybindingGroup group;
         group.name = "Video player";
         // PLAY / PAUSE
-        group.bindings.push_back(Keybinding(
+        auto& toggle_play = group.bindings.emplace_back(
             "toggle_play",
             "Play / Pause",
+            [&](void*) { player.togglePlay(); }
+        );
+        toggle_play.key = Keybinding(
             SDLK_SPACE,
             0,
-            true,
-            [&](void*) { player.togglePlay(); }
-        ));
+            true
+        );
 
         // PLAYBACK SPEED
-        group.bindings.push_back(Keybinding(
+        auto& decrement_speed = group.bindings.emplace_back(
             "decrement_speed",
             "Playbackspeed -10%",
+            [&](void*) { player.addSpeed(-0.10); }
+        );
+        decrement_speed.key = Keybinding(
             SDLK_KP_MINUS,
             0,
-            true,
-            [&](void*) { player.addSpeed(-0.10); }
-        ));
-        group.bindings.push_back(Keybinding(
+            true
+        );
+        auto& increment_speed = group.bindings.emplace_back(
             "increment_speed",
             "Playbackspeed +10%",
+            [&](void*) { player.addSpeed(0.10); }
+        );
+        increment_speed.key = Keybinding(
             SDLK_KP_PLUS,
             0,
-            true,
-            [&](void*) { player.addSpeed(0.10); }
-        ));
+            true
+        );
+
         keybinds.registerBinding(group);
     }
 
