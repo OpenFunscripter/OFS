@@ -82,18 +82,18 @@ private:
 	float epsilon = 0.f;
 	Funscript::FunscriptRawData::Recording GeneratedRecording; // TODO: get rid of this?
 
+public:
 	// Attention: don't change order
 	enum RecordingMode : int32_t {
 		Mouse,
 		Controller,
 	};
 	RecordingMode activeMode = RecordingMode::Mouse;
-public:
 	RecordingImpl();
 	~RecordingImpl();
 
 	void ControllerAxisMotion(SDL_Event& ev);
-
+	void setRecordingMode(RecordingMode mode) noexcept { activeMode = mode; }
 	virtual void DrawModeSettings() override;
 	virtual void addAction(FunscriptAction action) override;
 	virtual void update() noexcept override;
@@ -105,6 +105,7 @@ class ScriptingMode {
 	ScriptingModeEnum active_mode;
 public:
 	ScriptingModeEnum mode() const { return active_mode; }
+	ScripingModeBaseImpl& Impl() { return *impl.get(); }
 
 	static constexpr const char* ScriptingModeId = "Mode";
 	void setup();

@@ -287,10 +287,11 @@ bool KeybindingSystem::ShowBindingWindow()
         if constexpr (disable_indent)
             ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 0.0f);
 
-        ImGui::Text("You can use CTRL, SHIFT & ALT as modifiers.");
-        ImGui::Text("There's no checking for duplicate bindings. So just don't do that.");
-        ImGui::Text("The keybindings get saved everytime a change is made.");
-        ImGui::Text("Config: \"data/keybindings.json\"\nIf you wan't to revert to defaults delete the config.");
+        ImGui::TextUnformatted("You can use CTRL, SHIFT & ALT as modifiers.");
+        ImGui::TextUnformatted("There's no checking for duplicate bindings. So just don't do that.");
+        ImGui::TextUnformatted("Only controller buttons can be bound. The DPAD directions count as a buttons.");
+        ImGui::TextUnformatted("The keybindings get saved everytime a change is made.");
+        ImGui::TextUnformatted("Config: \"data/keybindings.json\"\nIf you wan't to revert to defaults delete the config.");
 
         auto& style = ImGui::GetStyle();
 
@@ -302,31 +303,29 @@ bool KeybindingSystem::ShowBindingWindow()
             if (ImGui::CollapsingHeader(group.name.c_str())) {
                 ImGui::PushID(group.name.c_str());
                 
-                ImGui::Columns(3, "bindings");
+                ImGui::Columns(4, "bindings");
                 ImGui::Separator();
                 ImGui::Text("Action"); ImGui::NextColumn();
                 ImGui::Text("Keyboard"); ImGui::NextColumn();
-                //ImGui::Text("Ignore repeats"); ImGui::NextColumn();
                 ImGui::Text("Controller"); ImGui::NextColumn();
+                ImGui::Text("Ignore repeats"); ImGui::NextColumn();
                 for (auto& binding : group.bindings) {
                     ImGui::PushID(id++);
                     ImGui::Text("%s", binding.description.c_str()); ImGui::NextColumn();
-                    if(ImGui::Button(!binding.key.key_str.empty() ? binding.key.key_str.c_str() : "-- Not set --",
-                        ImVec2(ImGui::GetColumnWidth(1) - (2.f*ImGui::GetFontSize()) - style.ItemSpacing.x - style.FramePadding.x, 0.f))) {
+                    if(ImGui::Button(!binding.key.key_str.empty() ? binding.key.key_str.c_str() : "-- Not set --", ImVec2(-1.f, 0.f))) {
                         currentlyChanging = &binding;
                         currentlyHeldKeys.str("");
                         ImGui::OpenPopup("Change key");
                     }
-                    ImGui::SameLine();
-                    if (ImGui::Checkbox("", &binding.ignore_repeats)) { save = true; }
-                    Util::Tooltip("Ignore key repeats");
                     ImGui::NextColumn();
                     if (ImGui::Button(GetButtonString(binding.controller.button), ImVec2(-1.f, 0.f))) {
                         currentlyChanging = &binding;
                         ImGui::OpenPopup("Change button");
                     }
                     ImGui::NextColumn();
-
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (ImGui::GetColumnWidth(3) / 2.f) - (2.f * ImGui::GetFontSize()) + style.ItemSpacing.x);
+                    if (ImGui::Checkbox("", &binding.ignore_repeats)) { save = true; }
+                    ImGui::NextColumn();
                     if (ImGui::BeginPopupModal("Change key", 0, ImGuiWindowFlags_AlwaysAutoResize)) 
                     {
                         if (currentlyHeldKeys.tellp() == 0)

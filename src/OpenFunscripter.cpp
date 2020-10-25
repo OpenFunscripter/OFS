@@ -939,6 +939,7 @@ void OpenFunscripter::register_bindings()
                 if (scripting->mode() != ScriptingModeEnum::RECORDING) {
                     prevMode = scripting->mode();
                     scripting->setMode(ScriptingModeEnum::RECORDING);
+                    ((RecordingImpl&)scripting->Impl()).setRecordingMode(RecordingImpl::RecordingMode::Controller);
                 }
                 else {
                     scripting->setMode(prevMode);
