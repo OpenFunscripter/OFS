@@ -32,7 +32,6 @@ private:
 	bool exit_app = false;
 	
 	// TODO: move this into a bitset
-	bool ShowSpecialFunctions = true;
 	bool ShowMetadataEditor = false;
 	bool ShowStatistics = true;
 	bool ShowHistory = true;

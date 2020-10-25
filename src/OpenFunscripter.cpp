@@ -1108,7 +1108,7 @@ int OpenFunscripter::run() noexcept
             // IMGUI HERE
             CreateDockspace();
             ShowAboutWindow(&ShowAbout);
-            specialFunctions->ShowFunctionsWindow(&ShowSpecialFunctions);
+            specialFunctions->ShowFunctionsWindow(&settings->data().show_special_functions);
             undoRedoSystem.ShowUndoRedoHistory(&ShowHistory);
             simulator.ShowSimulator(&settings->data().show_simulator);
             ShowStatisticsWindow(&ShowStatistics);
@@ -1901,7 +1901,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem(UndoSystem::UndoHistoryId, NULL, &ShowHistory)) {}
             if (ImGui::MenuItem(ScriptSimulator::SimulatorId, NULL, &settings->data().show_simulator)) { settings->saveSettings(); }
             if (ImGui::MenuItem("Metadata", NULL, &ShowMetadataEditor)) {}
-            if(ImGui::MenuItem(SpecialFunctionsWindow::SpecialFunctionsId, NULL, &ShowSpecialFunctions)) {}
+            if(ImGui::MenuItem(SpecialFunctionsWindow::SpecialFunctionsId, NULL, &settings->data().show_special_functions)) {}
             ImGui::Separator();
 
             if (ImGui::MenuItem("Draw video", NULL, &settings->data().draw_video)) { settings->saveSettings(); }
