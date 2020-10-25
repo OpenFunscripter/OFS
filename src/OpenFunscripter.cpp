@@ -15,6 +15,8 @@
 // FIX: Add type checking to the deserialization. 
 //      I assume it would crash if a field is specified but doesn't have the correct type.
 
+// TODO: improve open / save file dialog (make them reusable)
+// TODO: add a stripped save option (saves bare minium without OFS stuff)
 // TODO: use a ringbuffer in the undosystem
 // TODO: full controller support
 // TODO: make heatmap generation more sophisticated
@@ -1560,6 +1562,12 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem("Save as...")) {
                 showSaveFileDialog();
             }
+#ifndef NDEBUG
+            if (ImGui::MenuItem("Save as... (for sharing)")) {
+                
+            }
+            Util::Tooltip("Saves the bare minium.");
+#endif
             ImGui::Separator();
             if (ImGui::MenuItem("Enable rolling backup", NULL, &RollingBackup)) {}
             if (ImGui::MenuItem("Open backup directory")) {
