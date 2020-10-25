@@ -36,10 +36,10 @@ struct Keybinding
 };
 
 struct ControllerBinding {
-
+	int32_t button = -1;
 	template<class Archive>
 	inline void reflect(Archive& ar) {
-
+		OFS_REFLECT(button, ar);
 	}
 };
 
@@ -85,7 +85,11 @@ class KeybindingSystem
 	void addKeyString(char name);
 	std::vector<KeybindingGroup> ActiveBindings;
 	std::string loadKeyString(SDL_Keycode key, int mod);
-	void pressed(SDL_Event& ev);
+	
+	void KeyPressed(SDL_Event& ev) noexcept;
+	void ControllerButtonDown(SDL_Event& ev) noexcept;
+	void ControllerButtonUp(SDL_Event& ev) noexcept;
+	
 public:
 	void setup();
 	const std::string& getBindingString(const char* binding_id) noexcept;

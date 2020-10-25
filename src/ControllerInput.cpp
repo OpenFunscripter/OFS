@@ -52,23 +52,6 @@ int ControllerInput::GetControllerIndex(SDL_JoystickID instance)
 	return -1;
 }
 
-void ControllerInput::ControllerAxisMotion(SDL_Event& ev)
-{
-
-}
-
-void ControllerInput::ControllerButtonDown(SDL_Event& ev)
-{
-	auto& cbutton = ev.cbutton;
-	LOGF_DEBUG("down cbutton: %d", cbutton.button);
-}
-
-void ControllerInput::ControllerButtonUp(SDL_Event& ev)
-{
-	auto& cbutton = ev.cbutton;
-	LOGF_DEBUG("up cbutton: %d", cbutton.button);
-}
-
 void ControllerInput::ControllerDeviceAdded(SDL_Event& ev)
 {
 	if (ev.cdevice.which < MAX_CONTROLLERS) {
@@ -90,9 +73,6 @@ void ControllerInput::setup()
 	SDL_JoystickEventState(SDL_ENABLE);
 	SDL_GameControllerEventState(SDL_ENABLE);
 	auto app = OpenFunscripter::ptr;
-	app->events->Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerAxisMotion));
-	app->events->Subscribe(SDL_CONTROLLERBUTTONUP, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerButtonUp));
-	app->events->Subscribe(SDL_CONTROLLERBUTTONDOWN, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerButtonDown));
 	app->events->Subscribe(SDL_CONTROLLERDEVICEADDED, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerDeviceAdded));
 	app->events->Subscribe(SDL_CONTROLLERDEVICEREMOVED, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerDeviceRemoved));
 }

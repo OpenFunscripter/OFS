@@ -8,10 +8,13 @@
 
 void KeybindingSystem::setup()
 {
-    OpenFunscripter::ptr->events->Subscribe(SDL_KEYDOWN, EVENT_SYSTEM_BIND(this, &KeybindingSystem::pressed));
+    auto app = OpenFunscripter::ptr;
+    app->events->Subscribe(SDL_KEYDOWN, EVENT_SYSTEM_BIND(this, &KeybindingSystem::KeyPressed));
+    app->events->Subscribe(SDL_CONTROLLERBUTTONUP, EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerButtonUp));
+    app->events->Subscribe(SDL_CONTROLLERBUTTONDOWN, EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerButtonDown));
 }
 
-void KeybindingSystem::pressed(SDL_Event& ev)
+void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
 {
     auto key = ev.key;
     auto modstate = key.keysym.mod;
@@ -123,6 +126,14 @@ void KeybindingSystem::addKeyString(char name)
         currentlyHeldKeys << "+" << name;
 }
 
+void KeybindingSystem::ControllerButtonDown(SDL_Event& ev) noexcept
+{
+}
+
+void KeybindingSystem::ControllerButtonUp(SDL_Event& ev) noexcept
+{
+}
+
 std::string KeybindingSystem::loadKeyString(SDL_Keycode key, int mod)
 {
     currentlyHeldKeys.str("");
@@ -219,10 +230,13 @@ bool KeybindingSystem::ShowBindingWindow()
                 for (auto& binding : group.bindings) {
                     ImGui::PushID(id++);
                     ImGui::Text("%s", binding.description.c_str()); ImGui::NextColumn();
-                    if(ImGui::Button(!binding.key.key_str.empty() ? binding.key.key_str.c_str() : "-- Not set --", ImVec2(-1, 0))) {
+                    if(ImGui::Button(!binding.key.key_str.empty() ? binding.key.key_str.c_str() : "-- Not set --", ImVec2(-1.f, 0.f))) {
                         currentlyChanging = &binding;
                         currentlyHeldKeys.str("");
                         ImGui::OpenPopup("Change Binding");
+                    }
+                    if (ImGui::Button("Controller", ImVec2(-1.f, 0.f))) {
+
                     }
                     ImGui::NextColumn();
                     if (ImGui::Checkbox("", &binding.key.ignore_repeats)) { save = true; } ImGui::NextColumn();
