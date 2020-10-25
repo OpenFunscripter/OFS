@@ -37,11 +37,10 @@ private:
 		bool always_show_bookmark_labels = false;
 		bool draw_video= true;
 		bool show_simulator = true;
+		bool show_special_functions = false;
 		bool force_hw_decoding = false;
 
-
 		std::vector<RecentFile> recentFiles;
-
 		ScriptSimulator::SimulatorSettings* simulator;
 
 		template <class Archive>
@@ -52,6 +51,7 @@ private:
 			OFS_REFLECT(always_show_bookmark_labels, ar);
 			OFS_REFLECT(draw_video, ar);
 			OFS_REFLECT(show_simulator, ar);
+			OFS_REFLECT(show_special_functions, ar);
 			OFS_REFLECT(default_font_size, ar);
 			OFS_REFLECT(fast_step_amount, ar);
 			OFS_REFLECT(force_hw_decoding, ar);
