@@ -104,6 +104,8 @@ class ScriptingMode {
 	std::unique_ptr<ScripingModeBaseImpl> impl;
 	ScriptingModeEnum active_mode;
 public:
+	ScriptingModeEnum mode() const { return active_mode; }
+
 	static constexpr const char* ScriptingModeId = "Mode";
 	void setup();
 	void DrawScriptingMode(bool* open);

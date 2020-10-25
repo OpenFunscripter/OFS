@@ -351,6 +351,10 @@ void OpenFunscripter::register_bindings()
             SDLK_DELETE,
             0
         );
+        remove_action.controller = ControllerBinding(
+            SDL_CONTROLLER_BUTTON_B,
+            false
+        );
 
         //ADD ACTIONS
         auto& action_0 = group.bindings.emplace_back(
@@ -848,7 +852,7 @@ void OpenFunscripter::register_bindings()
             0
         );
         toggle_play.controller = ControllerBinding(
-            SDL_CONTROLLER_BUTTON_A,
+            SDL_CONTROLLER_BUTTON_START,
             false
         );
         // PLAYBACK SPEED
@@ -915,6 +919,36 @@ void OpenFunscripter::register_bindings()
             false
         );
 
+        auto& add_action_controller = group.bindings.emplace_back(
+            "add_action_controller",
+            "Add action",
+            true,
+            [&](void*) { addEditAction(100); }
+        );
+        add_action_controller.controller = ControllerBinding(
+            SDL_CONTROLLER_BUTTON_A,
+            false
+        );
+        
+        auto& toggle_recording_mode = group.bindings.emplace_back(
+            "toggle_recording_mode",
+            "Toggle recording mode",
+            true,
+            [&](void*) {
+                static ScriptingModeEnum prevMode;
+                if (scripting->mode() != ScriptingModeEnum::RECORDING) {
+                    prevMode = scripting->mode();
+                    scripting->setMode(ScriptingModeEnum::RECORDING);
+                }
+                else {
+                    scripting->setMode(prevMode);
+                }
+            }
+        );
+        toggle_recording_mode.controller = ControllerBinding(
+            SDL_CONTROLLER_BUTTON_BACK,
+            false
+        );
         keybinds.registerBinding(group);
     }
 }
