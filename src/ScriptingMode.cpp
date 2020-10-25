@@ -441,7 +441,7 @@ void RecordingImpl::DrawModeSettings()
             ctx().Raw().RecordingIdx = Util::Clamp<int32_t>(ctx().Raw().RecordingIdx, 0, ctx().Raw().Recordings.size()-1);
 
             if (ImGui::Button("Generate actions from recording", ImVec2(-1.f, 0.f))) {
-                app->undoRedoSystem.Snapshot("Generate actions");
+                app->undoRedoSystem.Snapshot(StateType::GENERATE_ACTIONS);
                 std::vector<FunscriptRawAction> simplified;
                 GeneratedRecording.RawActions = ctx().Raw().Active().RawActions;
                 RamerDouglasPeucker(GeneratedRecording.RawActions, epsilon, simplified);
@@ -461,7 +461,7 @@ void RecordingImpl::DrawModeSettings()
             if (ImGui::DragFloat("Epsilon", &epsilon, 0.2f, 0.f, 200.f)) {
                 epsilon = Util::Clamp<float>(epsilon, 0.f, 200.f);
                 app->undoRedoSystem.Undo();
-                app->undoRedoSystem.Snapshot("Generate actions");
+                app->undoRedoSystem.Snapshot(StateType::GENERATE_ACTIONS);
                 std::vector<FunscriptRawAction> simplified;
                 RamerDouglasPeucker(GeneratedRecording.RawActions, epsilon, simplified);
                 for (auto&& act : simplified) {

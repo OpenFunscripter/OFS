@@ -1,10 +1,39 @@
 #include "UndoSystem.h"
 
 #include "OpenFunscripter.h"
+#include <array>
 
-void UndoSystem::SnapshotRedo(const std::string& msg) noexcept
+std::array<std::string, (int32_t)StateType::TOTAL_UNDOSTATE_TYPES> stateStrings{
+	"Add/Edit actions",
+	"Add/Edit action",
+	"Add action",
+
+	"Remove actions",
+	"Remove action",
+
+	"Mouse moved actions",
+	"Actions moved",
+
+	"Cut selection",
+	"Remove selection",
+	"Paste selection",
+
+	"Equalize",
+	"Invert",
+	"Isolate",
+
+	"Top points",
+	"Mid points",
+	"Bottom points",
+
+	"Generate actions",
+	"Frame align",
+	"Range extend",
+};
+
+void UndoSystem::SnapshotRedo(StateType type) noexcept
 {
-	RedoStack.emplace_back(msg, OpenFunscripter::script().Data());
+	RedoStack.emplace_back(type, OpenFunscripter::script().Data());
 }
 
 void UndoSystem::ShowUndoRedoHistory(bool* open)
@@ -18,32 +47,32 @@ void UndoSystem::ShowUndoRedoHistory(bool* open)
 		for (auto it = RedoStack.begin(); it != RedoStack.end(); it++) {
 			int count = 1;
 			auto copy_it = it;
-			while (++copy_it != RedoStack.end() && copy_it->Message == it->Message) {
+			while (++copy_it != RedoStack.end() && copy_it->type == it->type) {
 				count++;
 			}
 			it = copy_it - 1;
 
-			ImGui::BulletText("%s (%d)", (*it).Message.c_str(), count);
+			ImGui::BulletText("%s (%d)", (*it).Message().c_str(), count);
 		}
 		ImGui::Separator();
 		ImGui::TextDisabled("Undo stack");
 		for (auto it = UndoStack.rbegin(); it != UndoStack.rend(); it++) {
 			int count = 1;
 			auto copy_it = it;
-			while (++copy_it != UndoStack.rend() && copy_it->Message == it->Message) {
+			while (++copy_it != UndoStack.rend() && copy_it->type == it->type) {
 				count++;
 			}
 			it = copy_it - 1;
 
-			ImGui::BulletText("%s (%d)", (*it).Message.c_str(), count);
+			ImGui::BulletText("%s (%d)", (*it).Message().c_str(), count);
 		}
 		ImGui::End();
 	}
 }
 
-void UndoSystem::Snapshot(const std::string& msg, bool clearRedo) noexcept
+void UndoSystem::Snapshot(StateType type, bool clearRedo) noexcept
 {
-	UndoStack.emplace_back(msg, OpenFunscripter::script().Data());
+	UndoStack.emplace_back(type, OpenFunscripter::script().Data());
 
 	if (UndoStack.size() > MaxScriptStateInMemory) {
 		UndoStack.erase(UndoStack.begin()); // erase first action
@@ -57,7 +86,7 @@ void UndoSystem::Snapshot(const std::string& msg, bool clearRedo) noexcept
 void UndoSystem::Undo() noexcept
 {
 	if (UndoStack.empty()) return;
-	SnapshotRedo(UndoStack.back().Message);
+	SnapshotRedo(UndoStack.back().type);
 	OpenFunscripter::script().rollback(UndoStack.back().Data()); // copy data
 	UndoStack.pop_back(); // pop of the stack
 }
@@ -65,7 +94,7 @@ void UndoSystem::Undo() noexcept
 void UndoSystem::Redo() noexcept
 {
 	if (RedoStack.empty()) return;
-	Snapshot(RedoStack.back().Message, false);
+	Snapshot(RedoStack.back().type, false);
 	OpenFunscripter::script().rollback(RedoStack.back().Data()); // copy data
 	RedoStack.pop_back(); // pop of the stack
 }
@@ -79,4 +108,9 @@ void UndoSystem::ClearHistory() noexcept
 void UndoSystem::ClearRedo() noexcept
 {
 	RedoStack.clear();
+}
+
+const std::string& ScriptState::Message() const
+{
+	return stateStrings[(int32_t)type];
 }
