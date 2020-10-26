@@ -1144,9 +1144,9 @@ int OpenFunscripter::run() noexcept
             CreateDockspace();
             ShowAboutWindow(&ShowAbout);
             specialFunctions->ShowFunctionsWindow(&settings->data().show_special_functions);
-            undoRedoSystem.ShowUndoRedoHistory(&ShowHistory);
+            undoRedoSystem.ShowUndoRedoHistory(&settings->data().show_history);
             simulator.ShowSimulator(&settings->data().show_simulator);
-            ShowStatisticsWindow(&ShowStatistics);
+            ShowStatisticsWindow(&settings->data().show_statistics);
             if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { saveScript(); }
 
             scripting->DrawScriptingMode(NULL);
@@ -1294,8 +1294,9 @@ int OpenFunscripter::run() noexcept
                     scriptPositions.ShowScriptPositions(NULL, player.getCurrentPositionMsInterp());
                     ImGui::End();
                 }
+                if(settings->data().show_action_editor)
                 {
-                    ImGui::Begin(ActionEditorId);
+                    ImGui::Begin(ActionEditorId, &settings->data().show_action_editor);
                     if (player.isPaused()) {
                         auto scriptAction = LoadedFunscript->GetActionAtTime(player.getCurrentPositionMs(), player.getFrameTimeMs());
 
@@ -1932,11 +1933,12 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem("Reset layout")) { setupDefaultLayout(true); }
             ImGui::Separator();
 #endif
-            if (ImGui::MenuItem(StatisticsId, NULL, &ShowStatistics)) {}
-            if (ImGui::MenuItem(UndoSystem::UndoHistoryId, NULL, &ShowHistory)) {}
+            if (ImGui::MenuItem(StatisticsId, NULL, &settings->data().show_statistics)) {}
+            if (ImGui::MenuItem(UndoSystem::UndoHistoryId, NULL, &settings->data().show_history)) {}
             if (ImGui::MenuItem(ScriptSimulator::SimulatorId, NULL, &settings->data().show_simulator)) { settings->saveSettings(); }
             if (ImGui::MenuItem("Metadata", NULL, &ShowMetadataEditor)) {}
-            if(ImGui::MenuItem(SpecialFunctionsWindow::SpecialFunctionsId, NULL, &settings->data().show_special_functions)) {}
+            if (ImGui::MenuItem("Action editor", NULL, &settings->data().show_action_editor)) {}
+            if (ImGui::MenuItem(SpecialFunctionsWindow::SpecialFunctionsId, NULL, &settings->data().show_special_functions)) {}
             ImGui::Separator();
 
             if (ImGui::MenuItem("Draw video", NULL, &settings->data().draw_video)) { settings->saveSettings(); }

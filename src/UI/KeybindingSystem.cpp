@@ -184,7 +184,6 @@ void KeybindingSystem::ControllerButtonRepeat(SDL_Event& ev) noexcept
     if (currentlyChanging != nullptr) return;
     if (ShowWindow) return;
     //auto& cbutton = ev.cbutton; // only cbutton.button is set
-    LOGF_INFO("Process repeat: %d", ev.cbutton.button);
     ProcessControllerBindings(ev, true);
 }
 
@@ -206,7 +205,6 @@ void KeybindingSystem::ControllerButtonDown(SDL_Event& ev) noexcept
         return;
     }
     if (ShowWindow) return;
-    LOGF_INFO("Process button down: %d", ev.cbutton.button);
     ProcessControllerBindings(ev, false);
 }
 

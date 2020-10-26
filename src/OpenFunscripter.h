@@ -33,8 +33,6 @@ private:
 	
 	// TODO: move this into a bitset
 	bool ShowMetadataEditor = false;
-	bool ShowStatistics = true;
-	bool ShowHistory = true;
 	bool Fullscreen = false;
 	bool DebugMetrics = false;
 	bool DebugDemo = false;
