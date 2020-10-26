@@ -23,7 +23,7 @@
 #define ICON_PLAY "\xef\x81\x8b"
 #define ICON_PAUSE "\xef\x81\x8c"
 #define ICON_GAMEPAD "\xef\x84\x9b"
-
+#define ICON_HAND_RIGHT "\xef\x82\xa4"
 
 //#ifndef NDEBUG
 #define LOG_INFO(msg)  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, msg)

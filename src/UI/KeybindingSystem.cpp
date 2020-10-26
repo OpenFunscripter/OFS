@@ -44,6 +44,7 @@ void KeybindingSystem::setup()
     auto app = OpenFunscripter::ptr;
     app->events->Subscribe(SDL_KEYDOWN, EVENT_SYSTEM_BIND(this, &KeybindingSystem::KeyPressed));
     //app->events->Subscribe(SDL_CONTROLLERBUTTONUP, EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerButtonUp));
+    app->events->Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerAxis));
     app->events->Subscribe(SDL_CONTROLLERBUTTONDOWN, EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerButtonDown));
     app->events->Subscribe(EventSystem::ControllerButtonRepeat, EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerButtonRepeat));
 }
@@ -206,6 +207,29 @@ void KeybindingSystem::ControllerButtonDown(SDL_Event& ev) noexcept
     }
     if (ShowWindow) return;
     ProcessControllerBindings(ev, false);
+}
+
+void KeybindingSystem::ControllerAxis(SDL_Event& ev) noexcept
+{
+    auto& caxis = ev.caxis;
+    if (SetControllerSpeed && caxis.axis == lastAxis && caxis.value <= 0) {
+        SetControllerSpeed = false; 
+        return;
+    }
+
+    if (caxis.value < 0) { return; }
+    if (SetControllerSpeed) { return; }
+    auto app = OpenFunscripter::ptr;
+    if (caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT) {
+        float speed = 1.f - (caxis.value / (float)std::numeric_limits<int16_t>::max());
+        app->player.setSpeed(speed);
+        lastAxis = caxis.axis;
+    }
+    else if (caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT) {
+        float speed = 1.f + (caxis.value / (float)std::numeric_limits<int16_t>::max());
+        app->player.setSpeed(speed);
+        lastAxis = caxis.axis;
+    }
 }
 
 void KeybindingSystem::addKeyString(const char* name)

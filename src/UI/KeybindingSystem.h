@@ -94,6 +94,8 @@ class KeybindingSystem
 	bool ControllerOnly = false;
 	std::string filterString;
 
+	bool SetControllerSpeed = false;
+
 	void addKeyString(const char* name);
 	void addKeyString(char name);
 	std::vector<KeybindingGroup> ActiveBindings;
@@ -104,7 +106,9 @@ class KeybindingSystem
 	void KeyPressed(SDL_Event& ev) noexcept;
 	void ControllerButtonRepeat(SDL_Event& ev) noexcept;
 	void ControllerButtonDown(SDL_Event& ev) noexcept;
-	
+
+	int32_t lastAxis = 0;
+	void ControllerAxis(SDL_Event& ev) noexcept;
 public:
 	bool ShowWindow = false;
 
@@ -114,4 +118,7 @@ public:
 	void setBindings(const std::vector<KeybindingGroup>& bindings);
 	void registerBinding(const KeybindingGroup& group);
 	bool ShowBindingWindow();
+
+	// TODO: get this out of here including SetControllerSpeed, ControllerAxis & lastAxis
+	inline void SetControllerPlaybackSpeed() { SetControllerSpeed = true; }
 };

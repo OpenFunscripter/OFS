@@ -858,7 +858,7 @@ void OpenFunscripter::register_bindings()
         // PLAYBACK SPEED
         auto& decrement_speed = group.bindings.emplace_back(
             "decrement_speed",
-            "Playbackspeed -10%",
+            "Playback speed -10%",
             true,
             [&](void*) { player.addSpeed(-0.10); }
         );
@@ -868,7 +868,7 @@ void OpenFunscripter::register_bindings()
         );
         auto& increment_speed = group.bindings.emplace_back(
             "increment_speed",
-            "Playbackspeed +10%",
+            "Playback speed +10%",
             true,
             [&](void*) { player.addSpeed(0.10); }
         );
@@ -899,7 +899,7 @@ void OpenFunscripter::register_bindings()
 
         auto& seek_forward_second = group.bindings.emplace_back(
             "seek_forward_second",
-            "Seek forward 1 second",
+            "Forward 1 second",
             false,
             [&](void*) { seekByTime(1000); }
         );
@@ -910,7 +910,7 @@ void OpenFunscripter::register_bindings()
 
         auto& seek_backward_second = group.bindings.emplace_back(
             "seek_backward_second",
-            "Seek backward 1 second",
+            "Backward 1 second",
             false,
             [&](void*) { seekByTime(-1000); }
         );
@@ -969,6 +969,19 @@ void OpenFunscripter::register_bindings()
         );
         controller_select.controller = ControllerBinding(
             SDL_CONTROLLER_BUTTON_RIGHTSTICK,
+            false
+        );
+
+        auto& set_playbackspeed_controller = group.bindings.emplace_back(
+            "set_current_playbackspeed_controller",
+            "Set current playback speed",
+            true,
+            [&](void*) {
+                keybinds.SetControllerPlaybackSpeed();
+            }
+        );
+        set_playbackspeed_controller.controller = ControllerBinding(
+            SDL_CONTROLLER_BUTTON_X,
             false
         );
         keybinds.registerBinding(group);
