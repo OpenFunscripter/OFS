@@ -91,6 +91,8 @@ class KeybindingSystem
 	std::stringstream currentlyHeldKeys;
 	Binding* currentlyChanging = nullptr;
 	std::unordered_map<std::string, std::string> binding_string_cache;
+	bool ControllerOnly = false;
+	std::string filterString;
 
 	void addKeyString(const char* name);
 	void addKeyString(char name);
@@ -102,7 +104,6 @@ class KeybindingSystem
 	void KeyPressed(SDL_Event& ev) noexcept;
 	void ControllerButtonRepeat(SDL_Event& ev) noexcept;
 	void ControllerButtonDown(SDL_Event& ev) noexcept;
-	void ControllerButtonUp(SDL_Event& ev) noexcept;
 	
 public:
 	bool ShowWindow = false;

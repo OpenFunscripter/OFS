@@ -3,6 +3,7 @@
 #include "OpenFunscripter.h"
 
 #include "imgui.h"
+#include "imgui_stdlib.h"
 
 #include <algorithm>
 #include <array>
@@ -42,7 +43,7 @@ void KeybindingSystem::setup()
 {
     auto app = OpenFunscripter::ptr;
     app->events->Subscribe(SDL_KEYDOWN, EVENT_SYSTEM_BIND(this, &KeybindingSystem::KeyPressed));
-    app->events->Subscribe(SDL_CONTROLLERBUTTONUP, EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerButtonUp));
+    //app->events->Subscribe(SDL_CONTROLLERBUTTONUP, EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerButtonUp));
     app->events->Subscribe(SDL_CONTROLLERBUTTONDOWN, EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerButtonDown));
     app->events->Subscribe(EventSystem::ControllerButtonRepeat, EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerButtonRepeat));
 }
@@ -102,8 +103,19 @@ void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
             return;
             }
         }
-        addKeyString(SDL_GetKeyName(key.keysym.sym));
+        
+        // check duplicate
+        for (auto&& group : ActiveBindings) {
+            for (auto&& binding : group.bindings) {
+                if (binding.key.key == key.keysym.sym && binding.key.modifiers == modstate) {
+                    LOGF_INFO("Key already bound for \"%s\"", binding.description.c_str());
+                    currentlyHeldKeys.str("");
+                    return;
+                }
+            }
+        }
 
+        addKeyString(SDL_GetKeyName(key.keysym.sym));
         currentlyChanging->key.key = key.keysym.sym;
         currentlyChanging->key.key_str = currentlyHeldKeys.str();
         binding_string_cache[currentlyChanging->identifier] = currentlyChanging->key.key_str;
@@ -180,6 +192,15 @@ void KeybindingSystem::ControllerButtonDown(SDL_Event& ev) noexcept
 {
     if (currentlyChanging != nullptr) {
         auto& cbutton = ev.cbutton;
+        // check duplicate
+        for (auto&& group : ActiveBindings) {
+            for (auto&& binding : group.bindings) {
+                if (binding.controller.button == cbutton.button) {
+                    LOGF_INFO("The button is already bound for \"%s\"", binding.description.c_str());
+                    return;
+                }
+            }
+        }
         currentlyChanging->controller.button = cbutton.button;
         currentlyChanging = nullptr;
         return;
@@ -187,10 +208,6 @@ void KeybindingSystem::ControllerButtonDown(SDL_Event& ev) noexcept
     if (ShowWindow) return;
     LOGF_INFO("Process button down: %d", ev.cbutton.button);
     ProcessControllerBindings(ev, false);
-}
-
-void KeybindingSystem::ControllerButtonUp(SDL_Event& ev) noexcept
-{
 }
 
 void KeybindingSystem::addKeyString(const char* name)
@@ -288,19 +305,35 @@ bool KeybindingSystem::ShowBindingWindow()
             ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 0.0f);
 
         ImGui::TextUnformatted("You can use CTRL, SHIFT & ALT as modifiers.");
-        ImGui::TextUnformatted("There's no checking for duplicate bindings. So just don't do that.");
         ImGui::TextUnformatted("Only controller buttons can be bound. The DPAD directions count as a buttons.");
         ImGui::TextUnformatted("The keybindings get saved everytime a change is made.");
         ImGui::TextUnformatted("Config: \"data/keybindings.json\"\nIf you wan't to revert to defaults delete the config.");
+        
+        ImGui::Spacing();
+        ImGui::InputText("Filter", &filterString); 
+        ImGui::SameLine(); ImGui::Checkbox("Controller only", &ControllerOnly);
+        ImGui::Spacing();
 
         auto& style = ImGui::GetStyle();
-
         ImGui::Separator();
         int id = 0;
-        for(auto& group : ActiveBindings)
+        std::vector<Binding*> filteredBindings;
+        for(auto&& group : ActiveBindings)
         {
+            int32_t headerFlags = ImGuiTreeNodeFlags_None;
+            filteredBindings.clear();
+            for (auto&& binding : group.bindings) {
+                if (ControllerOnly && binding.controller.button < 0) { continue; }
+                if (!filterString.empty() && !Util::ContainsInsensitive(binding.description, filterString)) { continue; }
+                filteredBindings.emplace_back(&binding);
+            }
+            if (filteredBindings.size() == 0) { continue; }
+            if (ControllerOnly || !filterString.empty()) {
+                headerFlags |= ImGuiTreeNodeFlags_DefaultOpen;
+            }
+
             ImGui::Columns(1);
-            if (ImGui::CollapsingHeader(group.name.c_str())) {
+            if (ImGui::CollapsingHeader(group.name.c_str(), headerFlags)) {
                 ImGui::PushID(group.name.c_str());
                 
                 ImGui::Columns(4, "bindings");
@@ -309,7 +342,9 @@ bool KeybindingSystem::ShowBindingWindow()
                 ImGui::Text("Keyboard"); ImGui::NextColumn();
                 ImGui::Text("Controller"); ImGui::NextColumn();
                 ImGui::Text("Ignore repeats"); ImGui::NextColumn();
-                for (auto& binding : group.bindings) {
+                for (auto bindingPtr : filteredBindings /*group.bindings*/) {
+                    auto& binding = *bindingPtr;
+
                     ImGui::PushID(id++);
                     ImGui::Text("%s", binding.description.c_str()); ImGui::NextColumn();
                     if(ImGui::Button(!binding.key.key_str.empty() ? binding.key.key_str.c_str() : "-- Not set --", ImVec2(-1.f, 0.f))) {
@@ -340,7 +375,7 @@ bool KeybindingSystem::ShowBindingWindow()
                     }
 
                     if (ImGui::BeginPopupModal("Change button")) {
-                        ImGui::TextUnformatted("Press any button...");
+                        ImGui::TextUnformatted("Press any button...\nEscape to cancel.");
                         if (!currentlyChanging) {
                             save = true; // autosave
                             ImGui::CloseCurrentPopup();

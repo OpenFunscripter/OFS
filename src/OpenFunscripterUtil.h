@@ -204,4 +204,13 @@ public:
 	{
 		return ltrim(rtrim(str, chars), chars);
 	}
+
+	inline static bool ContainsInsensitive(const std::string& string1, const std::string& string2) {
+		auto it = std::search(
+			string1.begin(), string1.end(),
+			string2.begin(), string2.end(),
+			[](char ch1, char ch2) { return std::toupper(ch1) == std::toupper(ch2); }
+		);
+		return (it != string1.end());
+	}	
 };
