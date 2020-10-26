@@ -444,12 +444,23 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		IM_COL32(255, 255, 255, 255), 3.0f);
 
 	// selection box
+	constexpr auto selectColor = IM_COL32(3, 252, 207, 255);
+	constexpr auto selectColorBackground = IM_COL32(3, 252, 207, 100);
 	if (IsSelecting) {
-		constexpr auto selectColor = IM_COL32(3, 252, 207, 255);
-		constexpr auto selectColorBackground = IM_COL32(3, 252, 207, 100);
 		draw_list->AddRectFilled(canvas_pos + ImVec2(canvas_size.x * rel_x1, 0), canvas_pos + ImVec2(canvas_size.x * rel_x2, canvas_size.y), selectColorBackground);
 		draw_list->AddLine(canvas_pos + ImVec2(canvas_size.x * rel_x1, 0), canvas_pos + ImVec2(canvas_size.x * rel_x1, canvas_size.y), selectColor, 3.0f);
 		draw_list->AddLine(canvas_pos + ImVec2(canvas_size.x * rel_x2, 0), canvas_pos + ImVec2(canvas_size.x * rel_x2, canvas_size.y), selectColor, 3.0f);
+	}
+
+	// TODO: refactor this
+	// selectionStart currently used for controller select
+	if (startSelectionMs >= 0) {
+		float startSelectRel = (startSelectionMs - offset_ms) / frameSizeMs;
+		draw_list->AddLine(
+			canvas_pos + ImVec2(canvas_size.x * startSelectRel, 0),
+			canvas_pos + ImVec2(canvas_size.x * startSelectRel, canvas_size.y),
+			selectColor, 3.0f
+		);
 	}
 
 	PositionsItemHovered = ImGui::IsWindowHovered(); //ImGui::IsItemHovered();

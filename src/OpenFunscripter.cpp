@@ -950,6 +950,27 @@ void OpenFunscripter::register_bindings()
             SDL_CONTROLLER_BUTTON_BACK,
             false
         );
+
+        auto& controller_select = group.bindings.emplace_back(
+            "set_selection_controller",
+            "Controller select",
+            true,
+            [&](void*) {
+                if (scriptPositions.selectionStart() < 0) {
+                    scriptPositions.setStartSelection(player.getCurrentPositionMsInterp());
+                }
+                else {
+                    int32_t tmp = player.getCurrentPositionMsInterp();
+                    auto [min, max] = std::minmax(scriptPositions.selectionStart(), tmp);
+                    LoadedFunscript->SelectTime(min, max);
+                    scriptPositions.setStartSelection(-1);
+                }
+            }
+        );
+        controller_select.controller = ControllerBinding(
+            SDL_CONTROLLER_BUTTON_RIGHTSTICK,
+            false
+        );
         keybinds.registerBinding(group);
     }
 }
@@ -1996,7 +2017,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
         ImGui::Spacing();
         if (ControllerInput::AnythingConnected()) {
             bool navmodeActive = ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_NavEnableGamepad;
-            ImGui::Text("Controller navigation mode: %s", (navmodeActive) ? "active" : "inactive");
+            ImGui::Text(ICON_GAMEPAD " " ICON_LONG_ARROW_RIGHT " %s", (navmodeActive) ? "Navigation" : "Scripting");
         }
         if (player.isLoaded()) {
             ImGui::SameLine(region.x - ImGui::GetFontSize()*12);

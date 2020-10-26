@@ -22,6 +22,7 @@
 #define ICON_LONG_ARROW_RIGHT "\xef\x85\xb8"
 #define ICON_PLAY "\xef\x81\x8b"
 #define ICON_PAUSE "\xef\x81\x8c"
+#define ICON_GAMEPAD "\xef\x84\x9b"
 
 
 //#ifndef NDEBUG

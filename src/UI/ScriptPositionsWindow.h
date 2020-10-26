@@ -80,6 +80,7 @@ class ScriptPositionsWindow
 	bool ShowAudioWaveform = false;
 	float ScaleAudio = 1.f;
 	float WindowSizeSeconds = 5.f;
+	int32_t startSelectionMs = -1;
 public:
 	static constexpr const char* PositionsId = "Positions";
 
@@ -87,6 +88,8 @@ public:
 	const float MIN_WINDOW_SIZE = 1.f; // this limit is also arbitrary and not enforced
 	void setup();
 
-	inline void ClearAudioWaveform() { audio_waveform_avg.clear(); }
+	inline void ClearAudioWaveform() noexcept { audio_waveform_avg.clear(); }
+	inline void setStartSelection(int32_t ms) noexcept { startSelectionMs = ms; }
+	inline int32_t selectionStart() const noexcept { return startSelectionMs; }
 	void ShowScriptPositions(bool* open, float currentPositionMs);
 };
