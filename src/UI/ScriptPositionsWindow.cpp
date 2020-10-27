@@ -187,7 +187,7 @@ void ScriptPositionsWindow::mouse_drag(SDL_Event& ev)
 void ScriptPositionsWindow::mouse_scroll(SDL_Event& ev)
 {
 	auto& wheel = ev.wheel;
-	const float scrollPercent = 0.15f;
+	constexpr float scrollPercent = 0.10f;
 	ImRect rect(canvas_pos, canvas_pos + canvas_size);
 	if (rect.Contains(ImGui::GetMousePos())) {
 		WindowSizeSeconds *= 1 + (scrollPercent * -wheel.y);

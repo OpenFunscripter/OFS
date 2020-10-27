@@ -83,7 +83,7 @@ private:
 
 	float base_scale_factor = 1.f;
 
-	const float zoom_multi = 0.15f;
+	const float zoom_multi = 0.1f;
 	
 	std::chrono::high_resolution_clock::time_point smooth_time;
 
