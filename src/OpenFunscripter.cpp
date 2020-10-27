@@ -1139,7 +1139,14 @@ void OpenFunscripter::rollingBackup() noexcept
 
     auto count_files = [](const std::filesystem::path& path) -> std::size_t
     {
-        return (std::size_t)std::distance(std::filesystem::directory_iterator{ path }, std::filesystem::directory_iterator{});
+        std::error_code ec;
+        auto safe_iterator = std::filesystem::directory_iterator(path, ec);
+        auto count = (std::size_t)std::distance(safe_iterator, std::filesystem::directory_iterator{});
+        if (ec) {
+            LOGF_ERROR("Failed to count files %s", ec.message().c_str());
+            return 0;
+        }
+        return count;
     };
     if (count_files(backupDir) > 5) {
         auto iterator = std::filesystem::directory_iterator{ backupDir };
