@@ -470,12 +470,12 @@ void Funscript::RangeExtendSelection(int32_t rangeExtend) noexcept
 					strokeDir = (strokeDir == direction::UP) ? direction::DOWN : direction::UP;
 				}
 
-				lastValue = (*actions[index]).pos;
-				if (lastValue > highest)
-					highest = lastValue;
-				if (lastValue < lowest)
-					lowest = lastValue;
 			}
+			lastValue = (*actions[index]).pos;
+			if (lastValue > highest)
+				highest = lastValue;
+			if (lastValue < lowest)
+				lowest = lastValue;
 		}
 	};
 	std::vector<FunscriptAction*> rangeExtendSelection;

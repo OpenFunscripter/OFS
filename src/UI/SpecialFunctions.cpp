@@ -55,8 +55,8 @@ void FunctionRangeExtender::DrawUI() noexcept
     auto app = OpenFunscripter::ptr;
     //const std::string SnapshotMsg("Range extend");
     if (app->script().SelectionSize() > 4 || (app->undoRedoSystem.MatchUndoTop(StateType::RANGE_EXTEND))) {
-        if (ImGui::SliderInt("Range", &rangeExtend, -25, 75)) {
-            rangeExtend = Util::Clamp<int32_t>(rangeExtend, -25, 75);
+        if (ImGui::SliderInt("Range", &rangeExtend, -50, 100)) {
+            rangeExtend = Util::Clamp<int32_t>(rangeExtend, -50, 100);
             if (createUndoState || 
                 !app->undoRedoSystem.MatchUndoTop(StateType::RANGE_EXTEND)) {
                 app->undoRedoSystem.Snapshot(StateType::RANGE_EXTEND);
