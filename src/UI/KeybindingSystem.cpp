@@ -328,7 +328,7 @@ bool KeybindingSystem::ShowBindingWindow()
 
         ImGui::TextUnformatted("You can use CTRL, SHIFT & ALT as modifiers.");
         ImGui::TextUnformatted("Only controller buttons can be bound. The DPAD directions count as a buttons.");
-        ImGui::TextUnformatted("The keybindings get saved everytime a change is made.");
+        ImGui::TextUnformatted("The bindings get saved everytime a change is made.");
         ImGui::TextUnformatted("Config: \"data/keybindings.json\"\nIf you wan't to revert to defaults delete the config.");
         
         ImGui::Spacing();

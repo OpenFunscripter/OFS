@@ -1126,7 +1126,7 @@ void OpenFunscripter::rollingBackup() noexcept
 
     auto backupDir = Util::Basepath();
     backupDir /= "backup";
-    auto name = Util::Filename(player.getVideoPath());
+    auto name = Util::trim(Util::Filename(player.getVideoPath())); // this needs to be trimmed because trailing spaces
     backupDir /= name;
     std::error_code ec;
     std::filesystem::create_directories(backupDir, ec);
@@ -1141,9 +1141,10 @@ void OpenFunscripter::rollingBackup() noexcept
     {
         std::error_code ec;
         auto safe_iterator = std::filesystem::directory_iterator(path, ec);
-        auto count = (std::size_t)std::distance(safe_iterator, std::filesystem::directory_iterator{});
+        auto count = (std::size_t)std::distance(safe_iterator, std::filesystem::end(safe_iterator));
         if (ec) {
             LOGF_ERROR("Failed to count files %s", ec.message().c_str());
+            LOGF_ERROR("Path: \"%s\"", path.string().c_str());
             return 0;
         }
         return count;
