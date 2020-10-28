@@ -1126,7 +1126,8 @@ void OpenFunscripter::rollingBackup() noexcept
 
     auto backupDir = Util::Basepath();
     backupDir /= "backup";
-    auto name = Util::trim(Util::Filename(player.getVideoPath())); // this needs to be trimmed because trailing spaces
+    auto name = Util::Filename(player.getVideoPath());
+    name = Util::trim(name); // this needs to be trimmed because trailing spaces
     backupDir /= name;
     std::error_code ec;
     std::filesystem::create_directories(backupDir, ec);
