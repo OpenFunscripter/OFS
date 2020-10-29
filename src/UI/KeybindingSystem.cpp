@@ -73,6 +73,14 @@ void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
     if (currentlyChanging != nullptr) {
         if (key.repeat) return;
         if (key.keysym.sym == SDLK_ESCAPE) {
+            if (changingController) {
+                currentlyChanging->controller.button = SDL_CONTROLLER_BUTTON_INVALID;
+            }
+            else {
+                currentlyChanging->key.key = SDLK_UNKNOWN;
+                currentlyChanging->key.modifiers = 0;
+                currentlyChanging->key.key_str = "";
+            }
             currentlyChanging = nullptr;
             return;
         }
@@ -370,12 +378,14 @@ bool KeybindingSystem::ShowBindingWindow()
                     ImGui::PushID(id++);
                     ImGui::Text("%s", binding.description.c_str()); ImGui::NextColumn();
                     if(ImGui::Button(!binding.key.key_str.empty() ? binding.key.key_str.c_str() : "-- Not set --", ImVec2(-1.f, 0.f))) {
+                        changingController = false;
                         currentlyChanging = &binding;
                         currentlyHeldKeys.str("");
                         ImGui::OpenPopup("Change key");
                     }
                     ImGui::NextColumn();
                     if (ImGui::Button(GetButtonString(binding.controller.button), ImVec2(-1.f, 0.f))) {
+                        changingController = true;
                         currentlyChanging = &binding;
                         ImGui::OpenPopup("Change button");
                     }
@@ -386,7 +396,7 @@ bool KeybindingSystem::ShowBindingWindow()
                     if (ImGui::BeginPopupModal("Change key", 0, ImGuiWindowFlags_AlwaysAutoResize)) 
                     {
                         if (currentlyHeldKeys.tellp() == 0)
-                            ImGui::TextUnformatted("Press any key...\nEscape to cancel.");
+                            ImGui::TextUnformatted("Press any key...\nEscape to clear.");
                         else
                             ImGui::Text(currentlyHeldKeys.str().c_str());
                         if (!currentlyChanging) {
@@ -397,7 +407,7 @@ bool KeybindingSystem::ShowBindingWindow()
                     }
 
                     if (ImGui::BeginPopupModal("Change button")) {
-                        ImGui::TextUnformatted("Press any button...\nEscape to cancel.");
+                        ImGui::TextUnformatted("Press any button...\nEscape to clear.");
                         if (!currentlyChanging) {
                             save = true; // autosave
                             ImGui::CloseCurrentPopup();

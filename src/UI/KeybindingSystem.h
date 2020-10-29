@@ -90,6 +90,7 @@ class KeybindingSystem
 {
 	std::stringstream currentlyHeldKeys;
 	Binding* currentlyChanging = nullptr;
+	bool changingController = false;
 	std::unordered_map<std::string, std::string> binding_string_cache;
 	bool ControllerOnly = false;
 	std::string filterString;
