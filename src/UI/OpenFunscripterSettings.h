@@ -40,7 +40,7 @@ private:
 		bool show_statistics = true;
 		bool show_history = true;
 		bool show_special_functions = false;
-		bool show_action_editor = true;
+		bool show_action_editor = false;
 		bool force_hw_decoding = false;
 
 		std::vector<RecentFile> recentFiles;
