@@ -1209,11 +1209,11 @@ int OpenFunscripter::run() noexcept
                     const int seek_ms = 3000;
                     // Playback controls
                     ImGui::Columns(5, 0, false);
-                    if (ImGui::Button("<", ImVec2(-1, 0))) {
+                    if (ImGui::Button(ICON_STEP_BACKWARD /*"<"*/, ImVec2(-1, 0))) {
                         player.previousFrame();
                     }
                     ImGui::NextColumn();
-                    if (ImGui::Button("<<", ImVec2(-1, 0))) {
+                    if (ImGui::Button(ICON_BACKWARD /*"<<"*/, ImVec2(-1, 0))) {
                         seekByTime(-seek_ms);
                     }
                     ImGui::NextColumn();
@@ -1223,12 +1223,12 @@ int OpenFunscripter::run() noexcept
                     }
                     ImGui::NextColumn();
 
-                    if (ImGui::Button(">>", ImVec2(-1, 0))) {
+                    if (ImGui::Button(ICON_FORWARD /*">>"*/, ImVec2(-1, 0))) {
                         seekByTime(seek_ms);
                     }
                     ImGui::NextColumn();
 
-                    if (ImGui::Button(">", ImVec2(-1, 0))) {
+                    if (ImGui::Button(ICON_STEP_FORWARD /*">"*/, ImVec2(-1, 0))) {
                         player.nextFrame();
                     }
                     ImGui::NextColumn();

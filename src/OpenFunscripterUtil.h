@@ -24,6 +24,10 @@
 #define ICON_PAUSE "\xef\x81\x8c"
 #define ICON_GAMEPAD "\xef\x84\x9b"
 #define ICON_HAND_RIGHT "\xef\x82\xa4"
+#define ICON_BACKWARD "\xef\x81\x8a"
+#define ICON_FORWARD "\xef\x81\x8e"
+#define ICON_STEP_BACKWARD "\xef\x81\x88"
+#define ICON_STEP_FORWARD "\xef\x81\x91"
 
 //#ifndef NDEBUG
 #define LOG_INFO(msg)  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, msg)
