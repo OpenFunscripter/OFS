@@ -135,6 +135,7 @@ public:
 
 	const float minPlaybackSpeed = 0.05f;
 	const float maxPlaybackSpeed = 5.0f;
+
 	OFS_VideoPlayerSettings settings;
 
 	bool setup();

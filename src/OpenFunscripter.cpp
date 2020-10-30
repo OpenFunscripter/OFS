@@ -1313,9 +1313,7 @@ int OpenFunscripter::run() noexcept
 
                     ImGui::SetNextItemWidth(-1.f);
                     if (ImGui::SliderFloat("##Speed", &player.settings.playback_speed, player.minPlaybackSpeed, player.maxPlaybackSpeed)) {
-                        if (player.settings.playback_speed != player.getSpeed()) {
-                            player.setSpeed(player.settings.playback_speed);
-                        }
+                        player.setSpeed(player.settings.playback_speed);
                     }
                     Util::Tooltip("Speed");
 

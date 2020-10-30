@@ -630,7 +630,7 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 void VideoplayerWindow::setSpeed(float speed) noexcept
 {
 	speed = Util::Clamp<float>(speed, minPlaybackSpeed, maxPlaybackSpeed);
-	if (settings.playback_speed != speed) {
+	if (getSpeed() != speed) {
 		settings.playback_speed = speed;
 		stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.3f", speed);
 		const char* cmd[]{ "set", "speed", tmp_buf, NULL };
