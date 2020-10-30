@@ -454,10 +454,9 @@ void RecordingImpl::DrawModeSettings()
         }
 
 
-        if (GeneratedRecording.RawActions.size() > 0) {
-            ImGui::NewLine();
+        if (GeneratedRecording.RawActions.size() > 0 && app->undoRedoSystem.MatchUndoTop(StateType::GENERATE_ACTIONS)) {
+            ImGui::Spacing();
             ImGui::Text("%s", "Tweaking");
-            ImGui::TextDisabled("%s", "This works by undoing the previous \"Generate actions\"!\nDo not do anything else till you \"Finalize\"");
             if (ImGui::DragFloat("Epsilon", &epsilon, 0.2f, 0.f, 200.f)) {
                 epsilon = Util::Clamp<float>(epsilon, 0.f, 200.f);
                 app->undoRedoSystem.Undo();
@@ -473,6 +472,9 @@ void RecordingImpl::DrawModeSettings()
             if (ImGui::Button("Finalize", ImVec2(-1.f, 0.f))) {
                 GeneratedRecording.RawActions.clear();
             }
+        }
+        else {
+            GeneratedRecording.RawActions.clear();
         }
 
         ImGui::End();
