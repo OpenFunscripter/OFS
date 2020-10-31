@@ -94,32 +94,32 @@ void Util::OpenFileDialog(const std::string& title, const std::string& path, Fil
 		EventSystem::SingleShotEventHandler handler;
 	};
 	auto thread = [](void* ctx) {
-		auto& data = *(FileDialogThreadData*)ctx;
-		if (!std::filesystem::exists(data.path)) {
-			data.path = "";
+		auto data = (FileDialogThreadData*)ctx;
+		if (!std::filesystem::exists(data->path)) {
+			data->path = "";
 		}
 
-		pfd::open_file fileDialog(data.title, data.path, data.filters, (data.multiple) ? pfd::opt::multiselect : pfd::opt::none);
+		pfd::open_file fileDialog(data->title, data->path, data->filters, (data->multiple) ? pfd::opt::multiselect : pfd::opt::none);
 		
 		auto dialogResult = new FileDialogResult;
 		dialogResult->files = fileDialog.result();
 
 		auto eventData = new EventSystem::SingleShotEventData;
 		eventData->ctx = dialogResult;
-		eventData->handler = data.handler;
+		eventData->handler = data->handler;
 
 		SDL_Event ev{ 0 };
 		ev.type = EventSystem::SingleShotEvent;
 		ev.user.data1 = eventData;
 		SDL_PushEvent(&ev);
-		delete ctx;
+		delete data;
 		return 0;
 	};
 	auto threadData = new FileDialogThreadData;
 	threadData->handler = [handler](void* ctx) {
-		auto result = *(FileDialogResult*)ctx;
-		handler(result);
-		delete ctx;
+		auto result = (FileDialogResult*)ctx;
+		handler(*result);
+		delete result;
 	};
 	threadData->filters = filters;
 	threadData->multiple = multiple;
@@ -138,25 +138,25 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
 		EventSystem::SingleShotEventHandler handler;
 	};
 	auto thread = [](void* ctx) -> int32_t {
-		auto data = *(SaveFileDialogThreadData*)ctx;
+		auto data = (SaveFileDialogThreadData*)ctx;
 
-		if (!std::filesystem::exists(data.path)) {
-			data.path = "";
+		if (!std::filesystem::exists(data->path)) {
+			data->path = "";
 		}
 
-		pfd::save_file saveFileDialog(data.title, data.path, data.filters, pfd::opt::none);
+		pfd::save_file saveFileDialog(data->title, data->path, data->filters, pfd::opt::none);
 		auto saveDialogResult = new FileDialogResult;
 		saveDialogResult->files.emplace_back(saveFileDialog.result());
 
 		auto eventData = new EventSystem::SingleShotEventData;
 		eventData->ctx = saveDialogResult;
-		eventData->handler = data.handler;
+		eventData->handler = data->handler;
 
 		SDL_Event ev{ 0 };
 		ev.type = EventSystem::SingleShotEvent;
 		ev.user.data1 = eventData;
 		SDL_PushEvent(&ev);
-		delete ctx;
+		delete data;
 		return 0;
 	};
 	auto threadData = new SaveFileDialogThreadData;
@@ -164,9 +164,9 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
 	threadData->path = path;
 	threadData->filters = filters;
 	threadData->handler = [handler](void* ctx) {
-		auto result = *(FileDialogResult*)ctx;
-		handler(result);
-		delete ctx;
+		auto result = (FileDialogResult*)ctx;
+		handler(*result);
+		delete result;
 	};
 	auto handle = SDL_CreateThread(thread, "SaveFileDialog", threadData);
 }
