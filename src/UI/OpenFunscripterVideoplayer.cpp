@@ -79,9 +79,7 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev)
 			continue;
 		}
 		case MPV_EVENT_FILE_LOADED:
-			// this is kind of useless because no frame has been decoded yet and we don't know the size
-			// which is why I'm setting video_loaded = true when height & width have been updated
-			//MpvData.video_loaded = true; 		
+			MpvData.video_loaded = true; 		
 			continue;
 		case MPV_EVENT_PROPERTY_CHANGE:
 		{
