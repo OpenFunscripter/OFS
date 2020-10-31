@@ -1777,7 +1777,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 showSaveFileDialog();
             }
 #ifndef NDEBUG
-            if (ImGui::MenuItem("Save as... (for sharing)")) {
+            if (ImGui::MenuItem(ICON_SHARE" Share...")) {
                 
             }
             Util::Tooltip("Saves the bare minium.");
@@ -2251,7 +2251,7 @@ void OpenFunscripter::ShowAboutWindow(bool* open) noexcept
     );
     ImGui::Text("%s", "OpenFunscripter " FUN_LATEST_GIT_TAG);
     ImGui::Text("Commit: %s", FUN_LATEST_GIT_HASH);
-    if (ImGui::Button("Latest release", ImVec2(-1.f, 0.f))) {
+    if (ImGui::Button("Latest release " ICON_GITHUB, ImVec2(-1.f, 0.f))) {
         Util::OpenUrl("https://github.com/gagax1234/OpenFunscripter/releases/latest");
     }
     ImGui::End();
