@@ -1,6 +1,5 @@
 #include "UndoSystem.h"
 
-#include "OpenFunscripter.h"
 #include <array>
 
 // this array provides strings for the StateType enum
@@ -35,7 +34,7 @@ static std::array<const std::string, (int32_t)StateType::TOTAL_UNDOSTATE_TYPES> 
 
 void UndoSystem::SnapshotRedo(StateType type) noexcept
 {
-	RedoStack.emplace_back(type, OpenFunscripter::script().Data());
+	RedoStack.emplace_back(type, Script->Data());
 }
 
 void UndoSystem::ShowUndoRedoHistory(bool* open)
@@ -72,9 +71,9 @@ void UndoSystem::ShowUndoRedoHistory(bool* open)
 
 void UndoSystem::Snapshot(StateType type, bool clearRedo) noexcept
 {
-	UndoStack.emplace_back(type, OpenFunscripter::script().Data());
+	UndoStack.emplace_back(type, Script->Data());
 
-	if (UndoStack.size() > MaxScriptStateInMemory) {
+	if (UndoStack.size() > OFS::MaxScriptStateInMemory) {
 		UndoStack.erase(UndoStack.begin()); // erase first action
 	}
 	
@@ -87,7 +86,7 @@ void UndoSystem::Undo() noexcept
 {
 	if (UndoStack.empty()) return;
 	SnapshotRedo(UndoStack.back().type);
-	OpenFunscripter::script().rollback(UndoStack.back().Data()); // copy data
+	Script->rollback(UndoStack.back().Data()); // copy data
 	UndoStack.pop_back(); // pop of the stack
 }
 
@@ -95,7 +94,7 @@ void UndoSystem::Redo() noexcept
 {
 	if (RedoStack.empty()) return;
 	Snapshot(RedoStack.back().type, false);
-	OpenFunscripter::script().rollback(RedoStack.back().Data()); // copy data
+	Script->rollback(RedoStack.back().Data()); // copy data
 	RedoStack.pop_back(); // pop of the stack
 }
 

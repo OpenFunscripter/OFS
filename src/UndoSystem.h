@@ -54,17 +54,23 @@ public:
 		: type(type), data(data) {}
 };
 
+namespace OFS {
+	constexpr int32_t MaxScriptStateInMemory = 1000;
+}
+
 class UndoSystem
 {
+	Funscript* Script = nullptr;
 	void SnapshotRedo(StateType type) noexcept;
 	// using vector as a stack...
 	// because std::stack can't be iterated
 	std::vector<ScriptState> UndoStack;
 	std::vector<ScriptState> RedoStack;
 public:
+	UndoSystem(Funscript* script) : Script(script) {
+		FUN_ASSERT(script != nullptr, "no script");
+	}
 	static constexpr const char* UndoHistoryId = "Undo/Redo history";
-	const int32_t MaxScriptStateInMemory = 1000;
-
 	void ShowUndoRedoHistory(bool* open);
 
 	void Snapshot(StateType type, bool clearRedo = true) noexcept;

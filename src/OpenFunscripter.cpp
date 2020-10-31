@@ -540,7 +540,7 @@ void OpenFunscripter::register_bindings()
             "undo",
             "Undo",
             false,
-            [&](void*) { undoRedoSystem.Undo(); }
+            [&](void*) { LoadedFunscript->undoSystem->Undo(); }
         );
         undo.key = Keybinding(
             SDLK_z,
@@ -551,7 +551,7 @@ void OpenFunscripter::register_bindings()
             "redo",
             "Redo",
             false,
-            [&](void*) { undoRedoSystem.Redo(); }
+            [&](void*) { LoadedFunscript->undoSystem->Redo(); }
         ); 
         redo.key = Keybinding(
             SDLK_y,
@@ -658,14 +658,15 @@ void OpenFunscripter::register_bindings()
     // MOVE LEFT/RIGHT
     auto move_actions_horizontal = [](int32_t time_ms) {
         auto ptr = OpenFunscripter::ptr;
+        auto undoSystem = ptr->script().undoSystem.get();
         if (ptr->LoadedFunscript->HasSelection()) {
-            ptr->undoRedoSystem.Snapshot(StateType::ACTIONS_MOVED);
+            undoSystem->Snapshot(StateType::ACTIONS_MOVED);
             ptr->LoadedFunscript->MoveSelectionTime(time_ms);
         }
         else {
             auto closest = ptr->LoadedFunscript->GetClosestAction(ptr->player.getCurrentPositionMs());
             if (closest != nullptr) {
-                ptr->undoRedoSystem.Snapshot(StateType::ACTIONS_MOVED);
+                undoSystem->Snapshot(StateType::ACTIONS_MOVED);
                 FunscriptAction moved(closest->at + time_ms, closest->pos);
                 ptr->LoadedFunscript->EditAction(*closest, moved);
             }
@@ -673,8 +674,9 @@ void OpenFunscripter::register_bindings()
     };
     auto move_actions_horizontal_with_video = [](int32_t time_ms) {
         auto ptr = OpenFunscripter::ptr;
+        auto undoSystem = ptr->script().undoSystem.get();
         if (ptr->LoadedFunscript->HasSelection()) {
-            ptr->undoRedoSystem.Snapshot(StateType::ACTIONS_MOVED);
+            undoSystem->Snapshot(StateType::ACTIONS_MOVED);
             ptr->LoadedFunscript->MoveSelectionTime(time_ms);
             auto closest = ptr->LoadedFunscript->GetClosestActionSelection(ptr->player.getCurrentPositionMs());
             if (closest != nullptr) { ptr->player.setPosition(closest->at); }
@@ -683,7 +685,7 @@ void OpenFunscripter::register_bindings()
         else {
             auto closest = ptr->LoadedFunscript->GetClosestAction(ptr->player.getCurrentPositionMs());
             if (closest != nullptr) {
-                ptr->undoRedoSystem.Snapshot(StateType::ACTIONS_MOVED);
+                undoSystem->Snapshot(StateType::ACTIONS_MOVED);
                 FunscriptAction moved(closest->at + time_ms, closest->pos);
                 ptr->LoadedFunscript->EditAction(*closest, moved);
                 ptr->player.setPosition(moved.at);
@@ -752,7 +754,7 @@ void OpenFunscripter::register_bindings()
             false,
             [&](void*) {
                 if (LoadedFunscript->HasSelection()) {
-                    undoRedoSystem.Snapshot(StateType::ACTIONS_MOVED);
+                    LoadedFunscript->undoSystem->Snapshot(StateType::ACTIONS_MOVED);
                     LoadedFunscript->MoveSelectionPosition(1);
                 }
                 else {
@@ -760,7 +762,7 @@ void OpenFunscripter::register_bindings()
                     if (closest != nullptr) {
                         FunscriptAction moved(closest->at, closest->pos + 1);
                         if (moved.pos <= 100 && moved.pos >= 0) {
-                            undoRedoSystem.Snapshot(StateType::ACTIONS_MOVED);
+                            LoadedFunscript->undoSystem->Snapshot(StateType::ACTIONS_MOVED);
                             LoadedFunscript->EditAction(*closest, moved);
                         }
                     }
@@ -776,7 +778,7 @@ void OpenFunscripter::register_bindings()
             "Move actions down",
             false,
             [&](void*) {
-                undoRedoSystem.Snapshot(StateType::ACTIONS_MOVED);
+                LoadedFunscript->undoSystem->Snapshot(StateType::ACTIONS_MOVED);
                 if (LoadedFunscript->HasSelection()) {
                     LoadedFunscript->MoveSelectionPosition(-1);
                 }
@@ -785,7 +787,7 @@ void OpenFunscripter::register_bindings()
                     if (closest != nullptr) {
                         FunscriptAction moved(closest->at, closest->pos - 1);
                         if (moved.pos <= 100 && moved.pos >= 0) {
-                            undoRedoSystem.Snapshot(StateType::ACTIONS_MOVED);
+                            LoadedFunscript->undoSystem->Snapshot(StateType::ACTIONS_MOVED);
                             LoadedFunscript->EditAction(*closest, moved);
                         }
                     }
@@ -1187,7 +1189,7 @@ int OpenFunscripter::run() noexcept
             CreateDockspace();
             ShowAboutWindow(&ShowAbout);
             specialFunctions->ShowFunctionsWindow(&settings->data().show_special_functions);
-            undoRedoSystem.ShowUndoRedoHistory(&settings->data().show_history);
+            LoadedFunscript->undoSystem->ShowUndoRedoHistory(&settings->data().show_history);
             simulator.ShowSimulator(&settings->data().show_simulator);
             ShowStatisticsWindow(&settings->data().show_statistics);
             if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { saveScript(); }
@@ -1455,7 +1457,7 @@ bool OpenFunscripter::openFile(const std::string& file)
 
     auto openFunscript = [this](const std::string& file) -> bool {
         LoadedFunscript = std::make_unique<Funscript>();
-        undoRedoSystem.ClearHistory();
+        LoadedFunscript->undoSystem->ClearHistory();
         if (!Util::FileExists(file)) {
             return false;
         }
@@ -1559,14 +1561,14 @@ void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
 
 void OpenFunscripter::removeAction(FunscriptAction action) noexcept
 {
-    undoRedoSystem.Snapshot(StateType::REMOVE_ACTION);
+    LoadedFunscript->undoSystem->Snapshot(StateType::REMOVE_ACTION);
     LoadedFunscript->RemoveAction(action);
 }
 
 void OpenFunscripter::removeAction() noexcept
 {
     if (LoadedFunscript->HasSelection()) {
-        undoRedoSystem.Snapshot(StateType::REMOVE_SELECTION);
+        LoadedFunscript->undoSystem->Snapshot(StateType::REMOVE_SELECTION);
         LoadedFunscript->RemoveSelectedActions();
     }
     else {
@@ -1579,7 +1581,7 @@ void OpenFunscripter::removeAction() noexcept
 
 void OpenFunscripter::addEditAction(int pos) noexcept
 {
-    undoRedoSystem.Snapshot(StateType::ADD_EDIT_ACTIONS);
+    LoadedFunscript->undoSystem->Snapshot(StateType::ADD_EDIT_ACTIONS);
     scripting->addEditAction(FunscriptAction(player.getCurrentPositionMs(), pos));
 }
 
@@ -1594,7 +1596,7 @@ void OpenFunscripter::cutSelection() noexcept
 {
     if (LoadedFunscript->HasSelection()) {
         copySelection();
-        undoRedoSystem.Snapshot(StateType::CUT_SELECTION);
+        LoadedFunscript->undoSystem->Snapshot(StateType::CUT_SELECTION);
         LoadedFunscript->RemoveSelectedActions();
     }
 }
@@ -1612,7 +1614,7 @@ void OpenFunscripter::copySelection() noexcept
 void OpenFunscripter::pasteSelection() noexcept
 {
     if (CopiedSelection.size() == 0) return;
-    undoRedoSystem.Snapshot(StateType::PASTE_COPIED_ACTIONS);
+    LoadedFunscript->undoSystem->Snapshot(StateType::PASTE_COPIED_ACTIONS);
     // paste CopiedSelection relatively to position
     // NOTE: assumes CopiedSelection is ordered by time
     int offset_ms = std::round(player.getCurrentPositionMs()) - CopiedSelection.begin()->at;
@@ -1626,7 +1628,7 @@ void OpenFunscripter::pasteSelection() noexcept
 void OpenFunscripter::equalizeSelection() noexcept
 {
     if (!LoadedFunscript->HasSelection()) {
-        undoRedoSystem.Snapshot(StateType::EQUALIZE_ACTIONS);
+        LoadedFunscript->undoSystem->Snapshot(StateType::EQUALIZE_ACTIONS);
         // this is a small hack
         auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
         if (closest != nullptr) {
@@ -1644,7 +1646,7 @@ void OpenFunscripter::equalizeSelection() noexcept
         }
     }
     else if(LoadedFunscript->Selection().size() >= 3) {
-        undoRedoSystem.Snapshot(StateType::EQUALIZE_ACTIONS);
+        LoadedFunscript->undoSystem->Snapshot(StateType::EQUALIZE_ACTIONS);
         LoadedFunscript->EqualizeSelection();
     }
 }
@@ -1652,7 +1654,7 @@ void OpenFunscripter::equalizeSelection() noexcept
 void OpenFunscripter::invertSelection() noexcept
 {
     if (!LoadedFunscript->HasSelection()) {
-        undoRedoSystem.Snapshot(StateType::INVERT_ACTIONS);
+        LoadedFunscript->undoSystem->Snapshot(StateType::INVERT_ACTIONS);
         // same hack as above 
         auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
         LoadedFunscript->SelectAction(*closest);
@@ -1660,7 +1662,7 @@ void OpenFunscripter::invertSelection() noexcept
         LoadedFunscript->ClearSelection();
     }
     else if (LoadedFunscript->Selection().size() >= 3) {
-        undoRedoSystem.Snapshot(StateType::INVERT_ACTIONS);
+        LoadedFunscript->undoSystem->Snapshot(StateType::INVERT_ACTIONS);
         LoadedFunscript->InvertSelection();
     }
 }
@@ -1669,7 +1671,7 @@ void OpenFunscripter::isolateAction() noexcept
 {
     auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMsInterp());
     if (closest != nullptr) {
-        undoRedoSystem.Snapshot(StateType::ISOLATE_ACTION);
+        LoadedFunscript->undoSystem->Snapshot(StateType::ISOLATE_ACTION);
         auto prev = LoadedFunscript->GetPreviousActionBehind(closest->at - 1);
         auto next = LoadedFunscript->GetNextActionAhead(closest->at + 1);
         if (prev != nullptr && next != nullptr) {
@@ -1822,11 +1824,11 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 saveHeatmap(heatmapPath.string().c_str(), heatmapWidth, heatmapHeight);
             }
             ImGui::Separator();
-            if (ImGui::MenuItem("Undo", BINDING_STRING("undo"), false, !undoRedoSystem.UndoEmpty())) {
-                undoRedoSystem.Undo();
+            if (ImGui::MenuItem("Undo", BINDING_STRING("undo"), false, !LoadedFunscript->undoSystem->UndoEmpty())) {
+                LoadedFunscript->undoSystem->Undo();
             }
-            if (ImGui::MenuItem("Redo", BINDING_STRING("redo"), false, !undoRedoSystem.RedoEmpty())) {
-                undoRedoSystem.Redo();
+            if (ImGui::MenuItem("Redo", BINDING_STRING("redo"), false, !LoadedFunscript->undoSystem->RedoEmpty())) {
+                LoadedFunscript->undoSystem->Redo();
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Cut", BINDING_STRING("cut"), false, LoadedFunscript->HasSelection())) {
@@ -1882,19 +1884,19 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::Separator();
             if (ImGui::MenuItem("Top points only", NULL, false)) {
                 if (LoadedFunscript->HasSelection()) {
-                    undoRedoSystem.Snapshot(StateType::TOP_POINTS_ONLY);
+                    LoadedFunscript->undoSystem->Snapshot(StateType::TOP_POINTS_ONLY);
                     LoadedFunscript->SelectTopActions();
                 }
             }
             if (ImGui::MenuItem("Mid points only", NULL, false)) {
                 if (LoadedFunscript->HasSelection()) {
-                    undoRedoSystem.Snapshot(StateType::MID_POINTS_ONLY);
+                    LoadedFunscript->undoSystem->Snapshot(StateType::MID_POINTS_ONLY);
                     LoadedFunscript->SelectMidActions();
                 }
             }
             if (ImGui::MenuItem("Bottom points only", NULL, false)) {
                 if (LoadedFunscript->HasSelection()) {
-                    undoRedoSystem.Snapshot(StateType::BOTTOM_POINTS_ONLY);
+                    LoadedFunscript->undoSystem->Snapshot(StateType::BOTTOM_POINTS_ONLY);
                     LoadedFunscript->SelectBottomActions();
                 }
             }
@@ -1910,7 +1912,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Frame align selection", NULL)) {
-                undoRedoSystem.Snapshot(StateType::FRAME_ALIGN);
+                LoadedFunscript->undoSystem->Snapshot(StateType::FRAME_ALIGN);
                 LoadedFunscript->AlignWithFrameTimeSelection(player.getFrameTimeMs());
             }
             Util::Tooltip("Don't use on already aligned actions.");

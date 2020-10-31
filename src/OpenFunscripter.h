@@ -110,7 +110,6 @@ public:
 	ScriptPositionsWindow scriptPositions;
 	VideoplayerWindow player;
 	ScriptSimulator simulator;
-	UndoSystem undoRedoSystem;
 
 	bool RollingBackup = true;
 

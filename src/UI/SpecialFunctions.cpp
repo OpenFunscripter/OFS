@@ -53,17 +53,17 @@ void FunctionRangeExtender::SelectionChanged(SDL_Event& ev) noexcept
 void FunctionRangeExtender::DrawUI() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    //const std::string SnapshotMsg("Range extend");
-    if (app->script().SelectionSize() > 4 || (app->undoRedoSystem.MatchUndoTop(StateType::RANGE_EXTEND))) {
+    auto undoSystem = app->script().undoSystem.get();
+    if (app->script().SelectionSize() > 4 || (undoSystem->MatchUndoTop(StateType::RANGE_EXTEND))) {
         if (ImGui::SliderInt("Range", &rangeExtend, -50, 100)) {
             rangeExtend = Util::Clamp<int32_t>(rangeExtend, -50, 100);
             if (createUndoState || 
-                !app->undoRedoSystem.MatchUndoTop(StateType::RANGE_EXTEND)) {
-                app->undoRedoSystem.Snapshot(StateType::RANGE_EXTEND);
+                !undoSystem->MatchUndoTop(StateType::RANGE_EXTEND)) {
+                undoSystem->Snapshot(StateType::RANGE_EXTEND);
             }
             else {
-                app->undoRedoSystem.Undo();
-                app->undoRedoSystem.Snapshot(StateType::RANGE_EXTEND);
+                undoSystem->Undo();
+                undoSystem->Snapshot(StateType::RANGE_EXTEND);
             }
             createUndoState = false;
             ctx().RangeExtendSelection(rangeExtend);

@@ -91,14 +91,14 @@ void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
 				app->script().ClearSelection();
 				app->script().SetSelection(*clickedAction, true);
 				IsMoving = true;
-				app->undoRedoSystem.Snapshot(StateType::MOUSE_MOVE_ACTION);
+				app->script().undoSystem->Snapshot(StateType::MOUSE_MOVE_ACTION);
 				return;
 			}
 
 			// shift click an action into the window
 			auto action = getActionForPoint(mousePos, app->player.getFrameTimeMs());
 			auto edit = app->script().GetActionAtTime(action.at, app->player.getFrameTimeMs());
-			app->undoRedoSystem.Snapshot(StateType::ADD_ACTION);
+			app->script().undoSystem->Snapshot(StateType::ADD_ACTION);
 			if (edit != nullptr) { app->script().RemoveAction(*edit); }
 			app->script().AddAction(action);
 		}

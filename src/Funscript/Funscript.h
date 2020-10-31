@@ -5,9 +5,12 @@
 #include "OFS_Reflection.h"
 #include <vector>
 #include <string>
+#include <memory>
 #include "OpenFunscripterUtil.h"
 #include "OpenFunscripterVideoplayer.h"
 #include "SDL_mutex.h"
+
+class UndoSystem;
 
 class Funscript
 {
@@ -51,7 +54,7 @@ public:
 			}
 		}
 	};
-
+	
 	struct Bookmark {
 		int32_t at;
 		std::string name;
@@ -153,8 +156,9 @@ public:
 	Funscript();
 	~Funscript();
 
-	std::string current_path;
+	std::unique_ptr<UndoSystem> undoSystem;
 
+	std::string current_path;
 	inline void rollback(const FunscriptData& data) noexcept { this->data = data; NotifyActionsChanged(); }
 
 	void update() noexcept;
