@@ -145,7 +145,6 @@ private:
 		NotifyActionsChanged();
 	}
 
-	void NotifyActionsChanged() noexcept;
 	void NotifySelectionChanged() noexcept;
 
 	void loadMetadata() noexcept;
@@ -155,6 +154,8 @@ private:
 public:
 	Funscript();
 	~Funscript();
+
+	void NotifyActionsChanged() noexcept;
 
 	std::unique_ptr<UndoSystem> undoSystem;
 

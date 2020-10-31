@@ -1,5 +1,6 @@
 #include "ScriptPositionsWindow.h"
 #include "imgui_internal.h"
+#include "imgui_stdlib.h"
 
 #include "OpenFunscripter.h"
 
@@ -355,6 +356,44 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		}
 	}
 
+	for (auto&& loadedScript : OpenFunscripter::ptr->LoadedFunscripts) {
+		auto& loaded = *loadedScript;
+		auto startIt = std::find_if(loaded.Actions().begin(), loaded.Actions().end(),
+			[&](auto& act) { return act.at >= offset_ms; });
+		if (startIt != loaded.Actions().begin())
+			startIt -= 1;
+
+		auto endIt = std::find_if(startIt, loaded.Actions().end(),
+			[&](auto& act) { return act.at >= offset_ms + frameSizeMs; });
+		if (endIt != loaded.Actions().end())
+			endIt += 1;
+
+		const FunscriptAction* prevAction = nullptr;
+		for (; startIt != endIt; startIt++) {
+			auto& action = *startIt;
+
+			//auto p1 = getPointForAction(action);
+			//ActionScreenCoordinates.emplace_back(p1);
+			//ActionPositionWindow.emplace_back(action);
+
+			if (prevAction != nullptr) {
+				auto p1 = getPointForAction(action);
+				// draw line
+				auto p2 = getPointForAction(*prevAction);
+				// calculate speed relative to maximum speed
+				//float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.at - prevAction->at) / 1000.0f)) / max_speed_per_seconds, 0.f, 1.f);
+				//ImColor speed_color;
+				//speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
+				//speed_color.Value.w = 0.6f;
+				draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
+				//draw_list->AddLine(p1, p2, speed_color, 3.0f);
+				draw_list->AddLine(p1, p2, IM_COL32(255, 255, 255, 255 * 0.6f), 3.f);
+			}
+
+			prevAction = &action;
+		}
+	}
+
 	if (script.Actions().size() > 0) {
 		// render normal actions
 		if (ShowRegularActions) {
@@ -468,8 +507,34 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	// right click context menu
 	if (ImGui::BeginPopupContextItem())
 	{
+		auto app = OpenFunscripter::ptr;
+		ImGui::SetNextItemWidth(-1.f);
+		if (ImGui::BeginCombo("##ActiveScript", app->ActiveFunscript()->metadata.title.c_str())) {
+			auto selectable = [](std::unique_ptr<Funscript>& script) {
+				if (ImGui::Selectable(script->metadata.title.c_str()) || ImGui::IsItemHovered()) {
+					auto app = OpenFunscripter::ptr;
+					if (app->ActiveFunscript() != script) {
+						return true;
+					}
+				}
+				return false;
+			};
+			for (int i = 0; i < app->LoadedFunscripts.size(); i++) {
+				auto&& script = app->LoadedFunscripts[i];
+				if (selectable(script)) {
+					app->ActiveFunscriptIdx = i;
+					app->updateTitle();
+					app->ActiveFunscript()->NotifyActionsChanged();
+				}
+			}
+			ImGui::EndCombo();
+		}
+
+
+		ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
 		ImGui::MenuItem("Draw actions", NULL, &ShowRegularActions);
 		ImGui::Combo("Recording", (int32_t*)&RecordingMode, "No\0All\0Active\0");
+		ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
 		ImGui::SliderFloat("Waveform scale", &ScaleAudio, 0.25f, 10.f);
 		if (ImGui::MenuItem("Audio waveform", NULL, &ShowAudioWaveform, !ffmpegInProgress)) {}
 		if (ImGui::MenuItem(ffmpegInProgress ? "Processing audio..." : "Update waveform", NULL, false, !ffmpegInProgress)) {

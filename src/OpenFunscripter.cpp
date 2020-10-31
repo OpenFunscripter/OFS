@@ -15,10 +15,8 @@
 // FIX: Add type checking to the deserialization. 
 //      I assume it would crash if a field is specified but doesn't have the correct type.
 
-// TODO: improve open / save file dialog (make them reusable)
 // TODO: add a stripped save option (saves bare minium without OFS stuff)
 // TODO: use a ringbuffer in the undosystem
-// TODO: full controller support
 // TODO: make heatmap generation more sophisticated
 
 // the video player supports a lot more than these
@@ -36,7 +34,7 @@ constexpr std::array<const char*, 6> SupportedVideoExtensions {
 OpenFunscripter* OpenFunscripter::ptr = nullptr;
 ImFont* OpenFunscripter::DefaultFont2 = nullptr;
 
-const char* glsl_version = "#version 150";
+constexpr const char* glsl_version = "#version 150";
 
 static SDL_Cursor* SystemCursors[SDL_NUM_SYSTEM_CURSORS];
 
@@ -75,7 +73,7 @@ bool OpenFunscripter::imgui_setup() noexcept
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
-    io.ConfigWindowsMoveFromTitleBarOnly = true;
+    io.ConfigWindowsMoveFromTitleBarOnly = false;
     io.ConfigViewportsNoDecoration = false;
     io.ConfigViewportsNoAutoMerge = false;
     io.ConfigViewportsNoTaskBarIcon = false;
@@ -264,7 +262,7 @@ bool OpenFunscripter::setup()
     keybinds.setBindings(settings->getKeybindings()); // override with user bindings
 
     scriptPositions.setup();
-    LoadedFunscript = std::make_unique<Funscript>();
+    LoadedFunscripts.emplace_back(std::move(std::make_unique<Funscript>()));
 
     scripting = std::make_unique<ScriptingMode>();
     scripting->setup();
@@ -453,7 +451,7 @@ void OpenFunscripter::register_bindings()
             "Previous action",
             false,
             [&](void*) {
-                auto action = LoadedFunscript->GetPreviousActionBehind(player.getCurrentPositionMs() - 1.f);
+                auto action = ActiveFunscript()->GetPreviousActionBehind(player.getCurrentPositionMs() - 1.f);
                 if (action != nullptr) player.setPosition(action->at);
             }
         );
@@ -471,7 +469,7 @@ void OpenFunscripter::register_bindings()
             "Next action",
             false,
             [&](void*) {
-                auto action = LoadedFunscript->GetNextActionAhead(player.getCurrentPositionMs() + 1.f);
+                auto action = ActiveFunscript()->GetNextActionAhead(player.getCurrentPositionMs() + 1.f);
                 if (action != nullptr) player.setPosition(action->at);
             }
         );
@@ -554,7 +552,7 @@ void OpenFunscripter::register_bindings()
             "undo",
             "Undo",
             false,
-            [&](void*) { LoadedFunscript->undoSystem->Undo(); }
+            [&](void*) { ActiveFunscript()->undoSystem->Undo(); }
         );
         undo.key = Keybinding(
             SDLK_z,
@@ -565,7 +563,7 @@ void OpenFunscripter::register_bindings()
             "redo",
             "Redo",
             false,
-            [&](void*) { LoadedFunscript->undoSystem->Redo(); }
+            [&](void*) { ActiveFunscript()->undoSystem->Redo(); }
         ); 
         redo.key = Keybinding(
             SDLK_y,
@@ -610,7 +608,7 @@ void OpenFunscripter::register_bindings()
             "select_all",
             "Select all",
             true,
-            [&](void*) { LoadedFunscript->SelectAll(); }
+            [&](void*) { ActiveFunscript()->SelectAll(); }
         );
         select_all.key = Keybinding(
             SDLK_a,
@@ -621,7 +619,7 @@ void OpenFunscripter::register_bindings()
             "deselect_all",
             "Deselect all",
             true,
-            [&](void*) { LoadedFunscript->ClearSelection(); }
+            [&](void*) { ActiveFunscript()->ClearSelection(); }
         );
         deselect_all.key = Keybinding(
             SDLK_d,
@@ -673,35 +671,35 @@ void OpenFunscripter::register_bindings()
     auto move_actions_horizontal = [](int32_t time_ms) {
         auto ptr = OpenFunscripter::ptr;
         auto undoSystem = ptr->script().undoSystem.get();
-        if (ptr->LoadedFunscript->HasSelection()) {
+        if (ptr->ActiveFunscript()->HasSelection()) {
             undoSystem->Snapshot(StateType::ACTIONS_MOVED);
-            ptr->LoadedFunscript->MoveSelectionTime(time_ms);
+            ptr->ActiveFunscript()->MoveSelectionTime(time_ms);
         }
         else {
-            auto closest = ptr->LoadedFunscript->GetClosestAction(ptr->player.getCurrentPositionMs());
+            auto closest = ptr->ActiveFunscript()->GetClosestAction(ptr->player.getCurrentPositionMs());
             if (closest != nullptr) {
                 undoSystem->Snapshot(StateType::ACTIONS_MOVED);
                 FunscriptAction moved(closest->at + time_ms, closest->pos);
-                ptr->LoadedFunscript->EditAction(*closest, moved);
+                ptr->ActiveFunscript()->EditAction(*closest, moved);
             }
         }
     };
     auto move_actions_horizontal_with_video = [](int32_t time_ms) {
         auto ptr = OpenFunscripter::ptr;
         auto undoSystem = ptr->script().undoSystem.get();
-        if (ptr->LoadedFunscript->HasSelection()) {
+        if (ptr->ActiveFunscript()->HasSelection()) {
             undoSystem->Snapshot(StateType::ACTIONS_MOVED);
-            ptr->LoadedFunscript->MoveSelectionTime(time_ms);
-            auto closest = ptr->LoadedFunscript->GetClosestActionSelection(ptr->player.getCurrentPositionMs());
+            ptr->ActiveFunscript()->MoveSelectionTime(time_ms);
+            auto closest = ptr->ActiveFunscript()->GetClosestActionSelection(ptr->player.getCurrentPositionMs());
             if (closest != nullptr) { ptr->player.setPosition(closest->at); }
-            else { ptr->player.setPosition(ptr->LoadedFunscript->Selection().front().at); }
+            else { ptr->player.setPosition(ptr->ActiveFunscript()->Selection().front().at); }
         }
         else {
-            auto closest = ptr->LoadedFunscript->GetClosestAction(ptr->player.getCurrentPositionMs());
+            auto closest = ptr->ActiveFunscript()->GetClosestAction(ptr->player.getCurrentPositionMs());
             if (closest != nullptr) {
                 undoSystem->Snapshot(StateType::ACTIONS_MOVED);
                 FunscriptAction moved(closest->at + time_ms, closest->pos);
-                ptr->LoadedFunscript->EditAction(*closest, moved);
+                ptr->ActiveFunscript()->EditAction(*closest, moved);
                 ptr->player.setPosition(moved.at);
             }
         }
@@ -767,17 +765,17 @@ void OpenFunscripter::register_bindings()
             "Move actions up",
             false,
             [&](void*) {
-                if (LoadedFunscript->HasSelection()) {
-                    LoadedFunscript->undoSystem->Snapshot(StateType::ACTIONS_MOVED);
-                    LoadedFunscript->MoveSelectionPosition(1);
+                if (ActiveFunscript()->HasSelection()) {
+                    ActiveFunscript()->undoSystem->Snapshot(StateType::ACTIONS_MOVED);
+                    ActiveFunscript()->MoveSelectionPosition(1);
                 }
                 else {
-                    auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
+                    auto closest = ActiveFunscript()->GetClosestAction(player.getCurrentPositionMs());
                     if (closest != nullptr) {
                         FunscriptAction moved(closest->at, closest->pos + 1);
                         if (moved.pos <= 100 && moved.pos >= 0) {
-                            LoadedFunscript->undoSystem->Snapshot(StateType::ACTIONS_MOVED);
-                            LoadedFunscript->EditAction(*closest, moved);
+                            ActiveFunscript()->undoSystem->Snapshot(StateType::ACTIONS_MOVED);
+                            ActiveFunscript()->EditAction(*closest, moved);
                         }
                     }
                 }
@@ -792,17 +790,17 @@ void OpenFunscripter::register_bindings()
             "Move actions down",
             false,
             [&](void*) {
-                LoadedFunscript->undoSystem->Snapshot(StateType::ACTIONS_MOVED);
-                if (LoadedFunscript->HasSelection()) {
-                    LoadedFunscript->MoveSelectionPosition(-1);
+                ActiveFunscript()->undoSystem->Snapshot(StateType::ACTIONS_MOVED);
+                if (ActiveFunscript()->HasSelection()) {
+                    ActiveFunscript()->MoveSelectionPosition(-1);
                 }
                 else {
-                    auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
+                    auto closest = ActiveFunscript()->GetClosestAction(player.getCurrentPositionMs());
                     if (closest != nullptr) {
                         FunscriptAction moved(closest->at, closest->pos - 1);
                         if (moved.pos <= 100 && moved.pos >= 0) {
-                            LoadedFunscript->undoSystem->Snapshot(StateType::ACTIONS_MOVED);
-                            LoadedFunscript->EditAction(*closest, moved);
+                            ActiveFunscript()->undoSystem->Snapshot(StateType::ACTIONS_MOVED);
+                            ActiveFunscript()->EditAction(*closest, moved);
                         }
                     }
                 }
@@ -978,7 +976,7 @@ void OpenFunscripter::register_bindings()
                 else {
                     int32_t tmp = player.getCurrentPositionMsInterp();
                     auto [min, max] = std::minmax(scriptPositions.selectionStart(), tmp);
-                    LoadedFunscript->SelectTime(min, max);
+                    ActiveFunscript()->SelectTime(min, max);
                     scriptPositions.setStartSelection(-1);
                 }
             }
@@ -1072,7 +1070,7 @@ void OpenFunscripter::FunscriptActionClicked(SDL_Event& ev) noexcept
     auto& button = btn_ev.button; // turns out I don't need this...
 
     if (SDL_GetModState() & KMOD_CTRL) {
-        LoadedFunscript->SelectAction(action);
+        ActiveFunscript()->SelectAction(action);
     }
     else {
         player.setPosition(action.at);
@@ -1087,19 +1085,19 @@ void OpenFunscripter::DragNDrop(SDL_Event& ev) noexcept
 
 void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
 {
-    LoadedFunscript->metadata.duration = player.getDuration();
-    LoadedFunscript->reserveActionMemory(player.getTotalNumFrames());
-    player.setPosition(LoadedFunscript->scriptSettings.last_pos_ms);
+    ActiveFunscript()->metadata.duration = player.getDuration();
+    ActiveFunscript()->reserveActionMemory(player.getTotalNumFrames());
+    player.setPosition(ActiveFunscript()->scriptSettings.last_pos_ms);
 
     auto name = Util::Filename(player.getVideoPath());
-    auto recentFile = OpenFunscripterSettings::RecentFile{ name, std::string(player.getVideoPath()), LoadedFunscript->current_path };
+    auto recentFile = OpenFunscripterSettings::RecentFile{ name, std::string(player.getVideoPath()), ActiveFunscript()->current_path };
     settings->addRecentFile(recentFile);
     scriptPositions.ClearAudioWaveform();
 }
 
 void OpenFunscripter::update() noexcept {
     OpenFunscripter::SetCursorType(SDL_SYSTEM_CURSOR_ARROW);
-    LoadedFunscript->update();
+    ActiveFunscript()->update();
     ControllerInput::UpdateControllers();
     scripting->update();
 
@@ -1110,7 +1108,7 @@ void OpenFunscripter::update() noexcept {
 
 void OpenFunscripter::rollingBackup() noexcept
 {
-    if (LoadedFunscript->current_path.empty()) { return; }
+    if (ActiveFunscript()->current_path.empty()) { return; }
     std::chrono::duration<float> timeSinceBackup = std::chrono::system_clock::now() - last_backup;
     if (timeSinceBackup.count() < 61.f) {
         return;
@@ -1180,7 +1178,7 @@ int OpenFunscripter::run() noexcept
             CreateDockspace();
             ShowAboutWindow(&ShowAbout);
             specialFunctions->ShowFunctionsWindow(&settings->data().show_special_functions);
-            LoadedFunscript->undoSystem->ShowUndoRedoHistory(&settings->data().show_history);
+            ActiveFunscript()->undoSystem->ShowUndoRedoHistory(&settings->data().show_history);
             simulator.ShowSimulator(&settings->data().show_simulator);
             ShowStatisticsWindow(&settings->data().show_statistics);
             if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { saveScript(); }
@@ -1332,7 +1330,7 @@ int OpenFunscripter::run() noexcept
                 {
                     ImGui::Begin(ActionEditorId, &settings->data().show_action_editor);
                     if (player.isPaused()) {
-                        auto scriptAction = LoadedFunscript->GetActionAtTime(player.getCurrentPositionMs(), player.getFrameTimeMs());
+                        auto scriptAction = ActiveFunscript()->GetActionAtTime(player.getCurrentPositionMs(), player.getFrameTimeMs());
 
                         if (scriptAction == nullptr)
                         {
@@ -1428,11 +1426,11 @@ bool OpenFunscripter::openFile(const std::string& file)
     }
     else {
         video_path = file;
-        if (!Util::FileNamesMatch(video_path, LoadedFunscript->current_path)) {
+        if (!Util::FileNamesMatch(video_path, ActiveFunscript()->current_path)) {
             funscript_path = base_path.string() + ".funscript";
         }
         else {
-            funscript_path = LoadedFunscript->current_path;
+            funscript_path = ActiveFunscript()->current_path;
         }
     }
 
@@ -1447,12 +1445,12 @@ bool OpenFunscripter::openFile(const std::string& file)
     }
 
     auto openFunscript = [this](const std::string& file) -> bool {
-        LoadedFunscript = std::make_unique<Funscript>();
-        LoadedFunscript->undoSystem->ClearHistory();
+        ActiveFunscript() = std::make_unique<Funscript>();
+        ActiveFunscript()->undoSystem->ClearHistory();
         if (!Util::FileExists(file)) {
             return false;
         }
-        return LoadedFunscript->open(file);
+        return ActiveFunscript()->open(file);
     };
 
     // try load funscript
@@ -1460,7 +1458,7 @@ bool OpenFunscripter::openFile(const std::string& file)
     if (!result) {
         LOGF_WARN("Couldn't find funscript. \"%s\"", funscript_path.c_str());
     }
-    LoadedFunscript->current_path = funscript_path;
+    ActiveFunscript()->current_path = funscript_path;
 
     updateTitle();
 
@@ -1478,32 +1476,35 @@ bool OpenFunscripter::openFile(const std::string& file)
     return result;
 }
 
-void OpenFunscripter::updateTitle()
+void OpenFunscripter::updateTitle() noexcept
 {
     std::stringstream ss;
     ss.str(std::string());
     
-    ss << "OpenFunscripter " FUN_LATEST_GIT_TAG "@" FUN_LATEST_GIT_HASH " - \"" << LoadedFunscript->current_path << "\"";
+    ss << "OpenFunscripter " FUN_LATEST_GIT_TAG "@" FUN_LATEST_GIT_HASH " - \"" << ActiveFunscript()->current_path << "\"";
     SDL_SetWindowTitle(window, ss.str().c_str());
 }
 
 void OpenFunscripter::saveScript(const char* path, bool override_location)
 {
-    LoadedFunscript->metadata.title = std::filesystem::path(LoadedFunscript->current_path)
+    ActiveFunscript()->metadata.title = std::filesystem::path(ActiveFunscript()->current_path)
         .replace_extension("")
         .filename()
         .string();
-    LoadedFunscript->metadata.duration = player.getDuration();
-    LoadedFunscript->scriptSettings.last_pos_ms = player.getCurrentPositionMs();
+    ActiveFunscript()->metadata.duration = player.getDuration();
+    ActiveFunscript()->scriptSettings.last_pos_ms = player.getCurrentPositionMs();
     if (path == nullptr) {
-        LoadedFunscript->save();
+        ActiveFunscript()->save();
     }
     else {
-        LoadedFunscript->save(path, override_location);
+        ActiveFunscript()->save(path, override_location);
         updateTitle();
     }
     if (override_location) {
         last_save_time = std::chrono::system_clock::now();
+    }
+    for (auto&& script : LoadedFunscripts) {
+        script->save();
     }
 }
 
@@ -1552,18 +1553,18 @@ void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
 
 void OpenFunscripter::removeAction(FunscriptAction action) noexcept
 {
-    LoadedFunscript->undoSystem->Snapshot(StateType::REMOVE_ACTION);
-    LoadedFunscript->RemoveAction(action);
+    ActiveFunscript()->undoSystem->Snapshot(StateType::REMOVE_ACTION);
+    ActiveFunscript()->RemoveAction(action);
 }
 
 void OpenFunscripter::removeAction() noexcept
 {
-    if (LoadedFunscript->HasSelection()) {
-        LoadedFunscript->undoSystem->Snapshot(StateType::REMOVE_SELECTION);
-        LoadedFunscript->RemoveSelectedActions();
+    if (ActiveFunscript()->HasSelection()) {
+        ActiveFunscript()->undoSystem->Snapshot(StateType::REMOVE_SELECTION);
+        ActiveFunscript()->RemoveSelectedActions();
     }
     else {
-        auto action = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
+        auto action = ActiveFunscript()->GetClosestAction(player.getCurrentPositionMs());
         if (action != nullptr) {
             removeAction(*action); // snapshoted in here
         }
@@ -1572,7 +1573,7 @@ void OpenFunscripter::removeAction() noexcept
 
 void OpenFunscripter::addEditAction(int pos) noexcept
 {
-    LoadedFunscript->undoSystem->Snapshot(StateType::ADD_EDIT_ACTIONS);
+    ActiveFunscript()->undoSystem->Snapshot(StateType::ADD_EDIT_ACTIONS);
     scripting->addEditAction(FunscriptAction(player.getCurrentPositionMs(), pos));
 }
 
@@ -1585,18 +1586,18 @@ void OpenFunscripter::seekByTime(int32_t ms) noexcept
 
 void OpenFunscripter::cutSelection() noexcept
 {
-    if (LoadedFunscript->HasSelection()) {
+    if (ActiveFunscript()->HasSelection()) {
         copySelection();
-        LoadedFunscript->undoSystem->Snapshot(StateType::CUT_SELECTION);
-        LoadedFunscript->RemoveSelectedActions();
+        ActiveFunscript()->undoSystem->Snapshot(StateType::CUT_SELECTION);
+        ActiveFunscript()->RemoveSelectedActions();
     }
 }
 
 void OpenFunscripter::copySelection() noexcept
 {
-    if (LoadedFunscript->HasSelection()) {
+    if (ActiveFunscript()->HasSelection()) {
         CopiedSelection.clear();
-        for (auto action : LoadedFunscript->Selection()) {
+        for (auto action : ActiveFunscript()->Selection()) {
             CopiedSelection.emplace_back(action);
         }
     }
@@ -1605,73 +1606,73 @@ void OpenFunscripter::copySelection() noexcept
 void OpenFunscripter::pasteSelection() noexcept
 {
     if (CopiedSelection.size() == 0) return;
-    LoadedFunscript->undoSystem->Snapshot(StateType::PASTE_COPIED_ACTIONS);
+    ActiveFunscript()->undoSystem->Snapshot(StateType::PASTE_COPIED_ACTIONS);
     // paste CopiedSelection relatively to position
     // NOTE: assumes CopiedSelection is ordered by time
     int offset_ms = std::round(player.getCurrentPositionMs()) - CopiedSelection.begin()->at;
 
     for (auto& action : CopiedSelection) {
-        LoadedFunscript->PasteAction(FunscriptAction(action.at + offset_ms, action.pos), player.getFrameTimeMs());
+        ActiveFunscript()->PasteAction(FunscriptAction(action.at + offset_ms, action.pos), player.getFrameTimeMs());
     }
     player.setPosition((CopiedSelection.end() - 1)->at + offset_ms);
 }
 
 void OpenFunscripter::equalizeSelection() noexcept
 {
-    if (!LoadedFunscript->HasSelection()) {
-        LoadedFunscript->undoSystem->Snapshot(StateType::EQUALIZE_ACTIONS);
+    if (!ActiveFunscript()->HasSelection()) {
+        ActiveFunscript()->undoSystem->Snapshot(StateType::EQUALIZE_ACTIONS);
         // this is a small hack
-        auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
+        auto closest = ActiveFunscript()->GetClosestAction(player.getCurrentPositionMs());
         if (closest != nullptr) {
-            auto behind = LoadedFunscript->GetPreviousActionBehind(closest->at);
+            auto behind = ActiveFunscript()->GetPreviousActionBehind(closest->at);
             if (behind != nullptr) {
-                auto front = LoadedFunscript->GetNextActionAhead(closest->at);
+                auto front = ActiveFunscript()->GetNextActionAhead(closest->at);
                 if (front != nullptr) {
-                    LoadedFunscript->SelectAction(*behind);
-                    LoadedFunscript->SelectAction(*closest);
-                    LoadedFunscript->SelectAction(*front);
-                    LoadedFunscript->EqualizeSelection();
-                    LoadedFunscript->ClearSelection();
+                    ActiveFunscript()->SelectAction(*behind);
+                    ActiveFunscript()->SelectAction(*closest);
+                    ActiveFunscript()->SelectAction(*front);
+                    ActiveFunscript()->EqualizeSelection();
+                    ActiveFunscript()->ClearSelection();
                 }
             }
         }
     }
-    else if(LoadedFunscript->Selection().size() >= 3) {
-        LoadedFunscript->undoSystem->Snapshot(StateType::EQUALIZE_ACTIONS);
-        LoadedFunscript->EqualizeSelection();
+    else if(ActiveFunscript()->Selection().size() >= 3) {
+        ActiveFunscript()->undoSystem->Snapshot(StateType::EQUALIZE_ACTIONS);
+        ActiveFunscript()->EqualizeSelection();
     }
 }
 
 void OpenFunscripter::invertSelection() noexcept
 {
-    if (!LoadedFunscript->HasSelection()) {
-        LoadedFunscript->undoSystem->Snapshot(StateType::INVERT_ACTIONS);
+    if (!ActiveFunscript()->HasSelection()) {
+        ActiveFunscript()->undoSystem->Snapshot(StateType::INVERT_ACTIONS);
         // same hack as above 
-        auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMs());
-        LoadedFunscript->SelectAction(*closest);
-        LoadedFunscript->InvertSelection();
-        LoadedFunscript->ClearSelection();
+        auto closest = ActiveFunscript()->GetClosestAction(player.getCurrentPositionMs());
+        ActiveFunscript()->SelectAction(*closest);
+        ActiveFunscript()->InvertSelection();
+        ActiveFunscript()->ClearSelection();
     }
-    else if (LoadedFunscript->Selection().size() >= 3) {
-        LoadedFunscript->undoSystem->Snapshot(StateType::INVERT_ACTIONS);
-        LoadedFunscript->InvertSelection();
+    else if (ActiveFunscript()->Selection().size() >= 3) {
+        ActiveFunscript()->undoSystem->Snapshot(StateType::INVERT_ACTIONS);
+        ActiveFunscript()->InvertSelection();
     }
 }
 
 void OpenFunscripter::isolateAction() noexcept
 {
-    auto closest = LoadedFunscript->GetClosestAction(player.getCurrentPositionMsInterp());
+    auto closest = ActiveFunscript()->GetClosestAction(player.getCurrentPositionMsInterp());
     if (closest != nullptr) {
-        LoadedFunscript->undoSystem->Snapshot(StateType::ISOLATE_ACTION);
-        auto prev = LoadedFunscript->GetPreviousActionBehind(closest->at - 1);
-        auto next = LoadedFunscript->GetNextActionAhead(closest->at + 1);
+        ActiveFunscript()->undoSystem->Snapshot(StateType::ISOLATE_ACTION);
+        auto prev = ActiveFunscript()->GetPreviousActionBehind(closest->at - 1);
+        auto next = ActiveFunscript()->GetNextActionAhead(closest->at + 1);
         if (prev != nullptr && next != nullptr) {
             auto tmp = *next; // removing prev will invalidate the pointer
-            LoadedFunscript->RemoveAction(*prev);
-            LoadedFunscript->RemoveAction(tmp);
+            ActiveFunscript()->RemoveAction(*prev);
+            ActiveFunscript()->RemoveAction(tmp);
         }
-        else if (prev != nullptr) { LoadedFunscript->RemoveAction(*prev); }
-        else if (next != nullptr) { LoadedFunscript->RemoveAction(*next); }
+        else if (prev != nullptr) { ActiveFunscript()->RemoveAction(*prev); }
+        else if (next != nullptr) { ActiveFunscript()->RemoveAction(*next); }
 
     }
 }
@@ -1715,6 +1716,50 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
         {
             if (ImGui::MenuItem(ICON_FOLDER_OPEN" Open video / script")) {
                 showOpenFileDialog();
+            }
+            if (ImGui::BeginMenu("Open...", player.isLoaded())) {
+                if (ImGui::MenuItem("Add new")) {
+                    Util::SaveFileDialog("Add new funscript", settings->data().last_path,
+                        [](auto& result) {
+                            if (result.files.size() > 0) {
+                                auto app = OpenFunscripter::ptr;
+                                auto it = std::find_if(app->LoadedFunscripts.begin(), app->LoadedFunscripts.end(),
+                                    [file = std::filesystem::path(result.files[0])](auto& script) {
+                                        return std::filesystem::path(script->current_path) == file;
+                                    }
+                                );
+                                if (it == app->LoadedFunscripts.end()) {
+                                    auto newScript = std::make_unique<Funscript>();
+                                    newScript->current_path = result.files[0];
+                                    newScript->metadata.title = Util::Filename(result.files[0]);
+                                    app->LoadedFunscripts.emplace_back(std::move(newScript));
+                                }
+                            }
+                        }, { "Funscript", "*.funscript" });
+                }
+                if (ImGui::MenuItem("Add existing")) {
+                    Util::OpenFileDialog("Add existing funscripts", settings->data().last_path,
+                        [](auto& result) {
+                            if (result.files.size() > 0) {
+                                for (auto&& scriptPath : result.files) {
+                                    auto newScript = std::make_unique<Funscript>();
+                                    if (newScript->open(scriptPath)) {
+                                        auto app = OpenFunscripter::ptr;
+                                        auto it = std::find_if(app->LoadedFunscripts.begin(), app->LoadedFunscripts.end(),
+                                            [file = std::filesystem::path(scriptPath)](auto& script) {
+                                            return std::filesystem::path(script->current_path) == file;
+                                        });
+                                        if (it == app->LoadedFunscripts.end()) {
+                                            newScript->current_path = scriptPath;
+                                            newScript->metadata.title = Util::Filename(scriptPath);
+                                            OpenFunscripter::ptr->LoadedFunscripts.emplace_back(std::move(newScript));
+                                        }
+                                    }
+                                }
+                            }
+                        }, true, { "Funscript", "*.funscript" });
+                }
+                ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Recent files")) {
                 if (settings->data().recentFiles.size() == 0) {
@@ -1778,7 +1823,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::InputInt("##heiht", &heatmapHeight);
             if (ImGui::MenuItem("Save heatmap")) { 
                 char buf[1024];
-                stbsp_snprintf(buf, sizeof(buf), "%s_Heatmap.bmp", LoadedFunscript->metadata.title.c_str());
+                stbsp_snprintf(buf, sizeof(buf), "%s_Heatmap.bmp", ActiveFunscript()->metadata.title.c_str());
                 auto heatmapPath = Util::Basepath() / "screenshot";
                 std::error_code ec;
                 std::filesystem::create_directories(heatmapPath, ec);
@@ -1786,17 +1831,17 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 saveHeatmap(heatmapPath.string().c_str(), heatmapWidth, heatmapHeight);
             }
             ImGui::Separator();
-            if (ImGui::MenuItem("Undo", BINDING_STRING("undo"), false, !LoadedFunscript->undoSystem->UndoEmpty())) {
-                LoadedFunscript->undoSystem->Undo();
+            if (ImGui::MenuItem("Undo", BINDING_STRING("undo"), false, !ActiveFunscript()->undoSystem->UndoEmpty())) {
+                ActiveFunscript()->undoSystem->Undo();
             }
-            if (ImGui::MenuItem("Redo", BINDING_STRING("redo"), false, !LoadedFunscript->undoSystem->RedoEmpty())) {
-                LoadedFunscript->undoSystem->Redo();
+            if (ImGui::MenuItem("Redo", BINDING_STRING("redo"), false, !ActiveFunscript()->undoSystem->RedoEmpty())) {
+                ActiveFunscript()->undoSystem->Redo();
             }
             ImGui::Separator();
-            if (ImGui::MenuItem("Cut", BINDING_STRING("cut"), false, LoadedFunscript->HasSelection())) {
+            if (ImGui::MenuItem("Cut", BINDING_STRING("cut"), false, ActiveFunscript()->HasSelection())) {
                 cutSelection();
             }
-            if (ImGui::MenuItem("Copy", BINDING_STRING("copy"), false, LoadedFunscript->HasSelection()))
+            if (ImGui::MenuItem("Copy", BINDING_STRING("copy"), false, ActiveFunscript()->HasSelection()))
             {
                 copySelection();
             }
@@ -1808,18 +1853,18 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
         }
         if (ImGui::BeginMenu("Select")) {
             if (ImGui::MenuItem("Select all", BINDING_STRING("select_all"), false)) {
-                LoadedFunscript->SelectAll();
+                ActiveFunscript()->SelectAll();
             }
             if (ImGui::MenuItem("Deselect all", BINDING_STRING("deselect_all"), false)) {
-                LoadedFunscript->ClearSelection();
+                ActiveFunscript()->ClearSelection();
             }
 
             if (ImGui::BeginMenu("Special")) {
                 if (ImGui::MenuItem("Select all left")) {
-                    LoadedFunscript->SelectTime(0, player.getCurrentPositionMs());
+                    ActiveFunscript()->SelectTime(0, player.getCurrentPositionMs());
                 }
                 if (ImGui::MenuItem("Select all right")) {
-                    LoadedFunscript->SelectTime(player.getCurrentPositionMs(), player.getDuration()*1000.f);
+                    ActiveFunscript()->SelectTime(player.getCurrentPositionMs(), player.getDuration()*1000.f);
                 }
                 ImGui::Separator();
                 static int32_t selectionPoint = -1;
@@ -1828,7 +1873,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         selectionPoint = player.getCurrentPositionMs();
                     }
                     else {
-                        LoadedFunscript->SelectTime(player.getCurrentPositionMs(), selectionPoint);
+                        ActiveFunscript()->SelectTime(player.getCurrentPositionMs(), selectionPoint);
                         selectionPoint = -1;
                     }
                 }
@@ -1837,7 +1882,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         selectionPoint = player.getCurrentPositionMs();
                     }
                     else {
-                        LoadedFunscript->SelectTime(selectionPoint, player.getCurrentPositionMs());
+                        ActiveFunscript()->SelectTime(selectionPoint, player.getCurrentPositionMs());
                         selectionPoint = -1;
                     }
                 }
@@ -1845,21 +1890,21 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Top points only", NULL, false)) {
-                if (LoadedFunscript->HasSelection()) {
-                    LoadedFunscript->undoSystem->Snapshot(StateType::TOP_POINTS_ONLY);
-                    LoadedFunscript->SelectTopActions();
+                if (ActiveFunscript()->HasSelection()) {
+                    ActiveFunscript()->undoSystem->Snapshot(StateType::TOP_POINTS_ONLY);
+                    ActiveFunscript()->SelectTopActions();
                 }
             }
             if (ImGui::MenuItem("Mid points only", NULL, false)) {
-                if (LoadedFunscript->HasSelection()) {
-                    LoadedFunscript->undoSystem->Snapshot(StateType::MID_POINTS_ONLY);
-                    LoadedFunscript->SelectMidActions();
+                if (ActiveFunscript()->HasSelection()) {
+                    ActiveFunscript()->undoSystem->Snapshot(StateType::MID_POINTS_ONLY);
+                    ActiveFunscript()->SelectMidActions();
                 }
             }
             if (ImGui::MenuItem("Bottom points only", NULL, false)) {
-                if (LoadedFunscript->HasSelection()) {
-                    LoadedFunscript->undoSystem->Snapshot(StateType::BOTTOM_POINTS_ONLY);
-                    LoadedFunscript->SelectBottomActions();
+                if (ActiveFunscript()->HasSelection()) {
+                    ActiveFunscript()->undoSystem->Snapshot(StateType::BOTTOM_POINTS_ONLY);
+                    ActiveFunscript()->SelectBottomActions();
                 }
             }
             ImGui::Separator();
@@ -1874,15 +1919,15 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Frame align selection", NULL)) {
-                LoadedFunscript->undoSystem->Snapshot(StateType::FRAME_ALIGN);
-                LoadedFunscript->AlignWithFrameTimeSelection(player.getFrameTimeMs());
+                ActiveFunscript()->undoSystem->Snapshot(StateType::FRAME_ALIGN);
+                ActiveFunscript()->AlignWithFrameTimeSelection(player.getFrameTimeMs());
             }
             Util::Tooltip("Don't use on already aligned actions.");
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Bookmarks")) {
             static std::string bookmarkName;
-            auto& bookmarks = LoadedFunscript->scriptSettings.Bookmarks;
+            auto& bookmarks = ActiveFunscript()->scriptSettings.Bookmarks;
             auto editBookmark = std::find_if(bookmarks.begin(), bookmarks.end(),
                 [&](auto& mark) {
                     constexpr int threshold = 15000;
@@ -1903,21 +1948,21 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     if (bookmarkName.empty())
                     {
                         std::stringstream ss;
-                        ss << LoadedFunscript->Bookmarks().size() + 1 << '#';
+                        ss << ActiveFunscript()->Bookmarks().size() + 1 << '#';
                         bookmarkName = ss.str();
                     }
                     bookmark.name = bookmarkName;
                     bookmarkName = "";
-                    LoadedFunscript->AddBookmark(bookmark);
+                    ActiveFunscript()->AddBookmark(bookmark);
                 }
             }
 
             if (ImGui::BeginMenu("Go to...")) {
-                if (LoadedFunscript->Bookmarks().size() == 0) {
+                if (ActiveFunscript()->Bookmarks().size() == 0) {
                     ImGui::TextDisabled("No bookmarks");
                 }
                 else {
-                    for (auto& mark : LoadedFunscript->Bookmarks()) {
+                    for (auto& mark : ActiveFunscript()->Bookmarks()) {
                         if (ImGui::MenuItem(mark.name.c_str())) {
                             player.setPosition(mark.at);
                         }
@@ -2021,7 +2066,7 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
 {
     if (!*open) return false;
     bool save = false;
-    auto& metadata = LoadedFunscript->metadata;
+    auto& metadata = ActiveFunscript()->metadata;
     ImGui::Begin("Metadata Editor", open, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking);
     ImGui::LabelText("Title", "%s", metadata.title.c_str());
     Util::FormatTime(tmp_buf[0], sizeof(tmp_buf), metadata.duration, false);
@@ -2225,14 +2270,14 @@ void OpenFunscripter::ShowStatisticsWindow(bool* open) noexcept
 {
     if (!*open) return;
     ImGui::Begin(StatisticsId, open, ImGuiWindowFlags_None);
-    const FunscriptAction* behind = LoadedFunscript->GetActionAtTime(player.getCurrentPositionMs(), 0);
+    const FunscriptAction* behind = ActiveFunscript()->GetActionAtTime(player.getCurrentPositionMs(), 0);
     const FunscriptAction* front = nullptr;
     if (behind != nullptr) {
-        front = LoadedFunscript->GetNextActionAhead(player.getCurrentPositionMs() + 1);
+        front = ActiveFunscript()->GetNextActionAhead(player.getCurrentPositionMs() + 1);
     }
     else {
-        behind = LoadedFunscript->GetPreviousActionBehind(player.getCurrentPositionMs());
-        front = LoadedFunscript->GetNextActionAhead(player.getCurrentPositionMs());
+        behind = ActiveFunscript()->GetPreviousActionBehind(player.getCurrentPositionMs());
+        front = ActiveFunscript()->GetNextActionAhead(player.getCurrentPositionMs());
     }
 
     if (behind != nullptr) {
@@ -2286,7 +2331,7 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position) noe
     bool item_hovered = ImGui::IsItemHovered();
 
     // bookmarks
-    for (auto& bookmark : LoadedFunscript->scriptSettings.Bookmarks) {
+    for (auto& bookmark : ActiveFunscript()->scriptSettings.Bookmarks) {
         const float rectWidth = 7.f;
 
         ImVec2 p1((frame_bb.Min.x + (frame_bb.GetWidth() * (bookmark.at / (player.getDuration() * 1000.0)))) - (rectWidth/2.f), frame_bb.Min.y);       
@@ -2366,7 +2411,7 @@ void OpenFunscripter::UpdateTimelineGradient(ImGradient& grad)
     grad.addMark(0.f, IM_COL32(0, 0, 0, 255));
     grad.addMark(1.f, IM_COL32(0, 0, 0, 255));
 
-    if (LoadedFunscript->Actions().size() == 0) {
+    if (ActiveFunscript()->Actions().size() == 0) {
         return;
     }
 
@@ -2416,7 +2461,7 @@ void OpenFunscripter::UpdateTimelineGradient(ImGradient& grad)
 
     ImColor color(0.f, 0.f, 0.f, 1.f);
 
-    auto segments = getSegments(LoadedFunscript->Actions(), 10000);
+    auto segments = getSegments(ActiveFunscript()->Actions(), 10000);
     for (auto& segment : segments) {
         const float durationMs = segment.back().at - segment.front().at;
         float kernel_offset = segment.front().at;

@@ -83,7 +83,6 @@ private:
 	void showOpenFileDialog();
 	void showSaveFileDialog();
 	bool openFile(const std::string& file);
-	void updateTitle();
 	
 	void SetFullscreen(bool fullscreen);
 
@@ -116,12 +115,16 @@ public:
 	std::unique_ptr<EventSystem> events;
 	std::unique_ptr<ControllerInput> controllerInput;
 	std::unique_ptr<OpenFunscripterSettings> settings;
-	std::unique_ptr<Funscript> LoadedFunscript;
+	int32_t ActiveFunscriptIdx = 0;
+	std::vector<std::unique_ptr<Funscript>> LoadedFunscripts;
 
 	bool setup();
 	int run() noexcept;
 	void shutdown() noexcept;
 
-	static inline Funscript& script() noexcept { return *OpenFunscripter::ptr->LoadedFunscript; }
+	inline std::unique_ptr<Funscript>& ActiveFunscript() noexcept { return LoadedFunscripts[ActiveFunscriptIdx]; }
+
+	void updateTitle() noexcept;
+	static inline Funscript& script() noexcept { return *OpenFunscripter::ptr->ActiveFunscript(); }
 	static void SetCursorType(SDL_SystemCursor id) noexcept;
 };

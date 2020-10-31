@@ -78,10 +78,10 @@ void ScriptSimulator::ShowSimulator(bool* open)
         float currentPos;
 
         if (!SimulateRawActions) {
-            currentPos = ptr->LoadedFunscript->GetPositionAtTime(ptr->player.getCurrentPositionMsInterp());
+            currentPos = ptr->ActiveFunscript()->GetPositionAtTime(ptr->player.getCurrentPositionMsInterp());
         }
         else {
-            currentPos = ptr->LoadedFunscript->GetRawPositionAtFrame(ptr->player.getCurrentFrameEstimate());
+            currentPos = ptr->ActiveFunscript()->GetRawPositionAtFrame(ptr->player.getCurrentFrameEstimate());
         }
 
         if (EnableVanilla) {
@@ -206,14 +206,14 @@ void ScriptSimulator::ShowSimulator(bool* open)
         // INDICATORS
         if (simulator.EnableIndicators) {
             auto app = OpenFunscripter::ptr;
-            auto previousAction = app->LoadedFunscript->GetActionAtTime(app->player.getCurrentPositionMs(), app->player.getFrameTimeMs());
+            auto previousAction = app->ActiveFunscript()->GetActionAtTime(app->player.getCurrentPositionMs(), app->player.getFrameTimeMs());
             if (previousAction == nullptr) {
-                previousAction = app->LoadedFunscript->GetPreviousActionBehind(app->player.getCurrentPositionMs());
+                previousAction = app->ActiveFunscript()->GetPreviousActionBehind(app->player.getCurrentPositionMs());
             }
-            auto nextAction = app->LoadedFunscript->GetNextActionAhead(app->player.getCurrentPositionMs());
+            auto nextAction = app->ActiveFunscript()->GetNextActionAhead(app->player.getCurrentPositionMs());
             if (previousAction != nullptr && nextAction == previousAction)
             {
-                nextAction = app->LoadedFunscript->GetNextActionAhead(previousAction->at);
+                nextAction = app->ActiveFunscript()->GetNextActionAhead(previousAction->at);
             }
 
             if (previousAction != nullptr) {

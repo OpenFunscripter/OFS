@@ -69,7 +69,7 @@ void ScriptingMode::addEditAction(FunscriptAction action)
     auto app = OpenFunscripter::ptr;
     auto ptr = OpenFunscripter::script().GetActionAtTime(action.at, app->player.getFrameTimeMs());
     if (ptr != nullptr) {
-        app->LoadedFunscript->EditAction(*ptr, FunscriptAction(ptr->at, action.pos));
+        app->ActiveFunscript()->EditAction(*ptr, FunscriptAction(ptr->at, action.pos));
     }
     else {
 	    impl->addAction(action);
@@ -423,11 +423,7 @@ void RecordingImpl::DrawModeSettings()
                     stbsp_snprintf(tmp, sizeof(tmp), "Recording %d#", count);
                     const bool is_selected = (ctx().Raw().RecordingIdx == count);
 
-                    if (ImGui::Selectable(tmp, is_selected)) {
-                        ctx().Raw().RecordingIdx = count;
-                    }
-
-                    if (ImGui::IsItemHovered()) {
+                    if (ImGui::Selectable(tmp, is_selected) || ImGui::IsItemHovered()) {
                         ctx().Raw().RecordingIdx = count;
                     }
 

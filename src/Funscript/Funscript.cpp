@@ -74,9 +74,9 @@ void Funscript::saveMetadata() noexcept
 
 void Funscript::loadSettings() noexcept
 {
+	scriptSettings.player = &OpenFunscripter::ptr->player.settings;
 	if (Json.contains("OpenFunscripter")) {
 		auto& settings = Json["OpenFunscripter"];
-		scriptSettings.player = &OpenFunscripter::ptr->player.settings;
 		OFS::serializer::load(&scriptSettings, &settings);
 
 		OFS::unpacker upkg(&Json["OpenFunscripter"]);
