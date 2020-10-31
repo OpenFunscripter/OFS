@@ -49,6 +49,22 @@ constexpr const char* ActionEditorId = "Action editor";
 constexpr int DefaultWidth = 1920;
 constexpr int DefaultHeight= 1080;
 
+
+static std::vector<std::string> DefaultOpenFileDialogFilters() {
+    std::vector<std::string> filters;
+    std::stringstream ss;
+    for (auto& ext : SupportedVideoExtensions) {
+        ss << '*' << ext << ';';
+    }
+    filters.emplace_back("All files");
+    filters.emplace_back("*");
+    filters.emplace_back(std::string("Videos ( ") + ss.str() + " )");
+    filters.emplace_back(ss.str());
+    filters.emplace_back("Funscript ( .funscript )");
+    filters.emplace_back("*.funscript");
+    return filters;
+}
+
 bool OpenFunscripter::imgui_setup() noexcept
 {
     // Setup Dear ImGui context
@@ -259,8 +275,6 @@ bool OpenFunscripter::setup()
 
     events->Subscribe(EventSystem::FunscriptActionsChangedEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FunscriptChanged));
     events->Subscribe(EventSystem::FunscriptActionClickedEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FunscriptActionClicked));
-    events->Subscribe(EventSystem::FileDialogOpenEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FileDialogOpenEvent));
-    events->Subscribe(EventSystem::FileDialogSaveEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FileDialogSaveEvent));
     events->Subscribe(SDL_DROPFILE, EVENT_SYSTEM_BIND(this, &OpenFunscripter::DragNDrop));
     events->Subscribe(EventSystem::MpvVideoLoaded, EVENT_SYSTEM_BIND(this, &OpenFunscripter::MpvVideoLoaded));
     // cache these here because openFile overrides them
@@ -1065,29 +1079,6 @@ void OpenFunscripter::FunscriptActionClicked(SDL_Event& ev) noexcept
     }
 }
 
-void OpenFunscripter::FileDialogOpenEvent(SDL_Event& ev) noexcept
-{
-    auto& result = *static_cast<std::vector<std::string>*>(ev.user.data1);
-    if (result.size() > 0) {
-        auto file = result[0];
-        if (Util::FileExists(file))
-        {
-            openFile(file);
-        }
-    }
-}
-
-void OpenFunscripter::FileDialogSaveEvent(SDL_Event& ev) noexcept {
-    auto& result = *static_cast<std::string*>(ev.user.data1);
-    if (!result.empty())
-    {
-        saveScript(result.c_str());
-        std::filesystem::path dir(result);
-        dir.remove_filename();
-        settings->data().last_path = dir.string();
-    }
-}
-
 void OpenFunscripter::DragNDrop(SDL_Event& ev) noexcept
 {
     openFile(ev.drop.file);
@@ -1687,60 +1678,31 @@ void OpenFunscripter::isolateAction() noexcept
 
 void OpenFunscripter::showOpenFileDialog()
 {
-    // we run this in a seperate thread so we don't block the main thread
-    // the result gets passed to the main thread via an event
-    auto thread = [](void* ctx) {
-        auto app = (OpenFunscripter*)ctx;
-        auto& path = app->settings->data().last_path;
-        std::vector<std::string> filters { "All Files", "*" };
-        std::stringstream ss;
-        for (auto& ext : SupportedVideoExtensions)
-            ss << '*' << ext << ';';
-        filters.emplace_back(std::string("Videos ( ") + ss.str() + " )");
-        filters.emplace_back(ss.str());
-        filters.emplace_back("Funscript ( .funscript )");
-        filters.emplace_back("*.funscript");
- 
-        
-        if (!std::filesystem::exists(path)) {
-            path = "";
-        }
-        pfd::open_file fileDialog("Choose a file", path, filters, pfd::opt::none);
-        
-        static std::vector<std::string> result;
-        result = fileDialog.result();
-        SDL_Event ev{ 0 };
-        ev.type = EventSystem::FileDialogOpenEvent;
-        ev.user.data1 = &result;
-        SDL_PushEvent(&ev);
-        return 0;
-    };
-    auto handle = SDL_CreateThread(thread, "OpenFunscripterFileDialog", this);
-    SDL_DetachThread(handle);
+    Util::OpenFileDialog("Choose a file", settings->data().last_path,
+        [&](auto& result) {
+            if (result.files.size() > 0) {
+                auto file = result.files[0];
+                if (Util::FileExists(file))
+                {
+                    openFile(file);
+                }
+            }
+        }, false, DefaultOpenFileDialogFilters());
 }
 
 void OpenFunscripter::showSaveFileDialog()
 {
-    // we run this in a seperate thread so we don't block the main thread
-    // the result gets passed to the main thread via an event
-    auto thread = [](void* ctx) {
-        auto app = (OpenFunscripter*)ctx;
-        auto path = std::filesystem::path(app->settings->data().most_recent_file.script_path);
-        path.replace_extension(".funscript");
-
-        pfd::save_file saveDialog("Save", path.string(), { "Funscript", "*.funscript" });
-        static std::string result;
-        result = saveDialog.result();
-        SDL_Event ev{ 0 };
-        ev.type = EventSystem::FileDialogSaveEvent;
-        ev.user.data1 = &result;
-        SDL_PushEvent(&ev);
-        return 0;
-    };
-    auto handle = SDL_CreateThread(thread, "OpenFunscripterSaveFileDialog", this);
-    SDL_DetachThread(handle);
+    auto path = std::filesystem::path(settings->data().most_recent_file.script_path);
+    Util::SaveFileDialog("Save", path.string(),
+        [&](auto& result) {
+            if (result.files.size() > 0) {
+                saveScript(result.files[0].c_str());
+                std::filesystem::path dir(result.files[0]);
+                dir.remove_filename();
+                settings->data().last_path = dir.string();
+            }
+        }, {"Funscript", "*.funscript"});
 }
-
 
 void OpenFunscripter::ShowMainMenuBar() noexcept
 {

@@ -60,8 +60,6 @@ private:
 	void FunscriptChanged(SDL_Event& ev) noexcept;
 	void FunscriptActionClicked(SDL_Event& ev) noexcept;
 
-	void FileDialogOpenEvent(SDL_Event& ev) noexcept;
-	void FileDialogSaveEvent(SDL_Event& ev) noexcept;
 	void DragNDrop(SDL_Event& ev) noexcept;
 
 	void MpvVideoLoaded(SDL_Event& ev) noexcept;

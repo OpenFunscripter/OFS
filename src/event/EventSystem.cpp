@@ -7,14 +7,20 @@ int32_t EventSystem::FunscriptSelectionChangedEvent = 0;
 int32_t EventSystem::WakeupOnMpvEvents = 0; 
 int32_t EventSystem::WakeupOnMpvRenderUpdate = 0;
 
-int32_t EventSystem::FileDialogOpenEvent = 0;
-int32_t EventSystem::FileDialogSaveEvent = 0;
-
 int32_t EventSystem::FfmpegAudioProcessingFinished = 0;
 
 int32_t EventSystem::MpvVideoLoaded = 0;
 
 int32_t EventSystem::ControllerButtonRepeat = 0;
+
+int32_t EventSystem::SingleShotEvent = 0;
+
+void EventSystem::SingleShotHandler(SDL_Event& ev) noexcept
+{
+	SingleShotEventData* data = (SingleShotEventData*)ev.user.data1;
+	data->handler(data->ctx);
+	delete data;
+}
 
 void EventSystem::setup()
 {
@@ -23,11 +29,12 @@ void EventSystem::setup()
 	FunscriptSelectionChangedEvent = SDL_RegisterEvents(1);
 	WakeupOnMpvEvents = SDL_RegisterEvents(1);
 	WakeupOnMpvRenderUpdate = SDL_RegisterEvents(1);
-	FileDialogOpenEvent = SDL_RegisterEvents(1);
-	FileDialogSaveEvent = SDL_RegisterEvents(1);
 	FfmpegAudioProcessingFinished = SDL_RegisterEvents(1);
 	MpvVideoLoaded = SDL_RegisterEvents(1);
 	ControllerButtonRepeat = SDL_RegisterEvents(1);
+	SingleShotEvent = SDL_RegisterEvents(1);
+
+	Subscribe(SingleShotEvent, EVENT_SYSTEM_BIND(this, &EventSystem::SingleShotHandler));
 }
 
 void EventSystem::PushEvent(SDL_Event& event)
@@ -38,7 +45,7 @@ void EventSystem::PushEvent(SDL_Event& event)
 	}
 }
 
-void EventSystem::Subscribe(int32_t eventType, void* listener, EventHandlerFunc handler)
+void EventSystem::Subscribe(int32_t eventType, void* listener, EventHandlerFunc&& handler)
 {
 	// this excects the listener to never relocate
 	handlers.emplace_back(eventType, listener, handler);

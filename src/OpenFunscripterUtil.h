@@ -9,6 +9,8 @@
 #include <fstream>
 #include <iomanip>
 #include <filesystem>
+#include <functional>
+#include <vector>
 
 #include "stb_sprintf.h"
 #include "stb_image.h"
@@ -219,5 +221,12 @@ public:
 			[](char ch1, char ch2) { return std::toupper(ch1) == std::toupper(ch2); }
 		);
 		return (it != string1.end());
-	}	
+	}
+
+	struct FileDialogResult {
+		std::vector<std::string> files;
+	};
+	using FileDialogResultHandler = std::function<void(FileDialogResult&)>;
+	static void OpenFileDialog(const std::string& title, const std::string& path, FileDialogResultHandler&& handler, bool multiple = false, const std::vector<std::string>& filters = { "All Files", "*" }) noexcept;
+	static void SaveFileDialog(const std::string& title, const std::string& path, FileDialogResultHandler&& handler, const std::vector<std::string>& filters = { "All Files", "*" }) noexcept;
 };

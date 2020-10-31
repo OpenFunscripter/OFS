@@ -22,6 +22,8 @@ public:
 class EventSystem {
 private:
 	std::vector<EventHandler> handlers;
+
+	void SingleShotHandler(SDL_Event& ev) noexcept;
 public:
 	// custom events
 	static int32_t FunscriptActionsChangedEvent;
@@ -31,20 +33,24 @@ public:
 	static int32_t WakeupOnMpvEvents;
 	static int32_t WakeupOnMpvRenderUpdate;
 
-	static int32_t FileDialogOpenEvent;
-	static int32_t FileDialogSaveEvent;
-
 	static int32_t FfmpegAudioProcessingFinished;
 
 	static int32_t MpvVideoLoaded;
 
 	static int32_t ControllerButtonRepeat;
 
+	using SingleShotEventHandler = std::function<void(void*)>;
+	struct SingleShotEventData {
+		void* ctx = nullptr;
+		SingleShotEventHandler handler;
+	};
+	static int32_t SingleShotEvent;
+
 	void setup();
 
 	void PushEvent(SDL_Event& event);
-	void Subscribe(int32_t eventType, void* listener, EventHandlerFunc handler);
+	void Subscribe(int32_t eventType, void* listener, EventHandlerFunc&& handler);
 	void Unsubscribe(int32_t eventType, void* listener);
 };
 
-#define EVENT_SYSTEM_BIND(listener, handler) listener, std::bind(handler, listener, std::placeholders::_1)
+#define EVENT_SYSTEM_BIND(listener, handler) listener, std::move(std::bind(handler, listener, std::placeholders::_1))
