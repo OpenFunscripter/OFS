@@ -73,6 +73,7 @@ private:
 
 	void saveScript(const char* path = nullptr, bool override_location = true);
 	void saveHeatmap(const char* path, int width, int height);
+	void updateTitle() noexcept;
 
 	void removeAction(FunscriptAction action) noexcept;
 	void removeAction() noexcept;
@@ -123,8 +124,8 @@ public:
 	void shutdown() noexcept;
 
 	inline std::unique_ptr<Funscript>& ActiveFunscript() noexcept { return LoadedFunscripts[ActiveFunscriptIdx]; }
+	void UpdateNewActiveScript() noexcept;
 
-	void updateTitle() noexcept;
 	static inline Funscript& script() noexcept { return *OpenFunscripter::ptr->ActiveFunscript(); }
 	static void SetCursorType(SDL_SystemCursor id) noexcept;
 };

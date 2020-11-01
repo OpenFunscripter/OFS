@@ -1476,6 +1476,12 @@ bool OpenFunscripter::openFile(const std::string& file)
     return result;
 }
 
+void OpenFunscripter::UpdateNewActiveScript() noexcept
+{
+    updateTitle();
+    ActiveFunscript()->NotifyActionsChanged();
+}
+
 void OpenFunscripter::updateTitle() noexcept
 {
     std::stringstream ss;
@@ -1758,6 +1764,20 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                                 }
                             }
                         }, true, { "Funscript", "*.funscript" });
+                }
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Unload", LoadedFunscripts.size() > 1)) {
+                int unloadIndex = -1;
+                for(int i=0; i < LoadedFunscripts.size(); i++) {
+                    if (ImGui::MenuItem(LoadedFunscripts[i]->metadata.title.c_str())) {
+                        unloadIndex = i;
+                    }
+                }
+                if (unloadIndex >= 0) {
+                    LoadedFunscripts.erase(LoadedFunscripts.begin() + unloadIndex);
+                    if (ActiveFunscriptIdx > 0) { ActiveFunscriptIdx--; }
+                    UpdateNewActiveScript();
                 }
                 ImGui::EndMenu();
             }

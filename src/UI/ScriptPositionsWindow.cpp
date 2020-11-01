@@ -523,8 +523,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				auto&& script = app->LoadedFunscripts[i];
 				if (selectable(script)) {
 					app->ActiveFunscriptIdx = i;
-					app->updateTitle();
-					app->ActiveFunscript()->NotifyActionsChanged();
+					app->UpdateNewActiveScript();
 				}
 			}
 			ImGui::EndCombo();
