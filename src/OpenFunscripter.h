@@ -71,7 +71,7 @@ private:
 	void invertSelection() noexcept;
 	void isolateAction() noexcept;
 
-	void saveScript(const char* path = nullptr, bool override_location = true);
+	void saveScripts() noexcept;
 	void saveHeatmap(const char* path, int width, int height);
 	void updateTitle() noexcept;
 
@@ -82,7 +82,7 @@ private:
 	void seekByTime(int32_t ms) noexcept;
 
 	void showOpenFileDialog();
-	void showSaveFileDialog();
+	void saveActiveScriptAs();
 	bool openFile(const std::string& file);
 	
 	void SetFullscreen(bool fullscreen);

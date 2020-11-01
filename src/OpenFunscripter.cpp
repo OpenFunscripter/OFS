@@ -19,6 +19,8 @@
 // TODO: use a ringbuffer in the undosystem
 // TODO: make heatmap generation more sophisticated
 
+// TODO: binding to cycle through loaded scripts
+
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
 // also used to generate a filter for the file dialog
@@ -422,7 +424,7 @@ void OpenFunscripter::register_bindings()
             "save",
             "Save",
             true,
-            [&](void*) { saveScript(); }
+            [&](void*) { saveScripts(); }
         );
         save.key = Keybinding(
             SDLK_s,
@@ -1124,44 +1126,55 @@ void OpenFunscripter::rollingBackup() noexcept
     std::filesystem::create_directories(backupDir, ec);
     char path_buf[1024];
 
-    stbsp_snprintf(path_buf, sizeof(path_buf), "Backup_%d.funscript", SDL_GetTicks());
-    auto savePath = (backupDir / path_buf);
-    LOGF_INFO("Backup at \"%s\"", savePath.string().c_str());
-    saveScript(savePath.string().c_str() , false);
+    for (auto&& script : LoadedFunscripts) {
+        auto scriptName = Util::trim(Util::Filename(script->current_path));
+        auto scriptBackupDir = backupDir / scriptName;
+        std::filesystem::create_directories(scriptBackupDir, ec);
+        stbsp_snprintf(path_buf, sizeof(path_buf), "Backup_%d.funscript", SDL_GetTicks());
+        auto savePath = scriptBackupDir / path_buf;
+        LOGF_INFO("Backup at \"%s\"", savePath.string().c_str());
+        script->save(savePath.string().c_str(), false);
 
-    auto count_files = [](const std::filesystem::path& path) -> std::size_t
-    {
-        std::error_code ec;
-        auto safe_iterator = std::filesystem::directory_iterator(path, ec);
-        auto count = (std::size_t)std::distance(safe_iterator, std::filesystem::end(safe_iterator));
-        if (ec) {
-            LOGF_ERROR("Failed to count files %s", ec.message().c_str());
-            LOGF_ERROR("Path: \"%s\"", path.string().c_str());
-            return 0;
-        }
-        return count;
-    };
-    if (count_files(backupDir) > 5) {
-        auto iterator = std::filesystem::directory_iterator{ backupDir };
-        auto oldest_backup = std::min_element(std::filesystem::begin(iterator), std::filesystem::end(iterator),
-            [](auto& file1, auto& file2) {
-                std::error_code ec;
-                std::filesystem::file_time_type last_write1 = std::filesystem::last_write_time(file1, ec);
-                std::filesystem::file_time_type last_write2 = std::filesystem::last_write_time(file2, ec);
-                return last_write1.time_since_epoch() > last_write2.time_since_epoch();
-        });
-
-        std::error_code ec;
-        if ((*oldest_backup).path().extension() == ".funscript") {
-            LOGF_INFO("Removing old backup: \"%s\"", (*oldest_backup).path().string().c_str());
-            std::filesystem::remove(*oldest_backup, ec);
+        // delete oldest backup
+        auto count_files = [](const std::filesystem::path& path) -> std::size_t
+        {
+            std::error_code ec;
+            auto safe_iterator = std::filesystem::directory_iterator(path, ec);
+            auto count = (std::size_t)std::distance(safe_iterator, std::filesystem::end(safe_iterator));
             if (ec) {
-                LOGF_INFO("Failed to remove old backup\n%s", ec.message().c_str());
+                LOGF_ERROR("Failed to count files %s", ec.message().c_str());
+                LOGF_ERROR("Path: \"%s\"", path.string().c_str());
+                return 0;
+            }
+            return count;
+        };
+        auto get_oldest_file = [](const std::filesystem::path& path) {
+            std::error_code ec;
+            auto iterator = std::filesystem::directory_iterator(path, ec);
+            std::filesystem::directory_iterator oldest = std::filesystem::directory_iterator(path, ec);
+            for (auto it = std::filesystem::begin(iterator); it != std::filesystem::end(iterator); it++) {
+                auto path1 = it->path();
+                auto path2 = oldest->path();
+                auto time1 = std::filesystem::last_write_time(path1, ec).time_since_epoch().count();
+                auto time2 = std::filesystem::last_write_time(path2, ec).time_since_epoch().count();
+                if (time1 < time2) {
+                    oldest = it;
+                }
+            }
+            return oldest;
+        };
+        if (count_files(scriptBackupDir) > 5) {
+            auto oldest_backup = get_oldest_file(scriptBackupDir);
+            std::error_code ec;
+            if ((*oldest_backup).path().extension() == ".funscript") {
+                LOGF_INFO("Removing old backup: \"%s\"", (*oldest_backup).path().string().c_str());
+                std::filesystem::remove(*oldest_backup, ec);
+                if (ec) {
+                    LOGF_INFO("Failed to remove old backup\n%s", ec.message().c_str());
+                }
             }
         }
     }
-
-    
 }
 
 int OpenFunscripter::run() noexcept
@@ -1181,7 +1194,7 @@ int OpenFunscripter::run() noexcept
             ActiveFunscript()->undoSystem->ShowUndoRedoHistory(&settings->data().show_history);
             simulator.ShowSimulator(&settings->data().show_simulator);
             ShowStatisticsWindow(&settings->data().show_statistics);
-            if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { saveScript(); }
+            if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { ActiveFunscript()->save(); }
 
             scripting->DrawScriptingMode(NULL);
 
@@ -1491,27 +1504,18 @@ void OpenFunscripter::updateTitle() noexcept
     SDL_SetWindowTitle(window, ss.str().c_str());
 }
 
-void OpenFunscripter::saveScript(const char* path, bool override_location)
+void OpenFunscripter::saveScripts() noexcept
 {
-    ActiveFunscript()->metadata.title = std::filesystem::path(ActiveFunscript()->current_path)
-        .replace_extension("")
-        .filename()
-        .string();
-    ActiveFunscript()->metadata.duration = player.getDuration();
-    ActiveFunscript()->scriptSettings.last_pos_ms = player.getCurrentPositionMs();
-    if (path == nullptr) {
-        ActiveFunscript()->save();
-    }
-    else {
-        ActiveFunscript()->save(path, override_location);
-        updateTitle();
-    }
-    if (override_location) {
-        last_save_time = std::chrono::system_clock::now();
-    }
     for (auto&& script : LoadedFunscripts) {
+        script->metadata.title = std::filesystem::path(script->current_path)
+            .replace_extension("")
+            .filename()
+            .string();
+        script->metadata.duration = player.getDuration();
+        script->scriptSettings.last_pos_ms = player.getCurrentPositionMs();
         script->save();
     }
+    last_save_time = std::chrono::system_clock::now();
 }
 
 void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
@@ -1697,13 +1701,13 @@ void OpenFunscripter::showOpenFileDialog()
         }, false, DefaultOpenFileDialogFilters());
 }
 
-void OpenFunscripter::showSaveFileDialog()
+void OpenFunscripter::saveActiveScriptAs()
 {
     auto path = std::filesystem::path(settings->data().most_recent_file.script_path);
     Util::SaveFileDialog("Save", path.string(),
         [&](auto& result) {
             if (result.files.size() > 0) {
-                saveScript(result.files[0].c_str());
+                ActiveFunscript()->save(result.files[0], true);
                 std::filesystem::path dir(result.files[0]);
                 dir.remove_filename();
                 settings->data().last_path = dir.string();
@@ -1800,10 +1804,10 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::Separator();
 
             if (ImGui::MenuItem("Save", BINDING_STRING("save"))) {
-                saveScript();
+                saveScripts();
             }
             if (ImGui::MenuItem("Save as...")) {
-                showSaveFileDialog();
+                saveActiveScriptAs();
             }
 #ifndef NDEBUG
             if (ImGui::MenuItem(ICON_SHARE" Share...")) {
