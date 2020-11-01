@@ -442,6 +442,37 @@ void OpenFunscripter::register_bindings()
             0
         );
 
+        auto& cycle_loaded_forward_scripts = group.bindings.emplace_back(
+            "cycle_loaded_forward_scripts",
+            "Cycle forward loaded scripts",
+            true,
+            [&](void*) {
+                ActiveFunscriptIdx++;
+                ActiveFunscriptIdx %= LoadedFunscripts.size();
+                UpdateNewActiveScript();
+            }
+        );
+        cycle_loaded_forward_scripts.key = Keybinding(
+            SDLK_PAGEUP,
+            0
+        );
+
+        auto& cycle_loaded_backward_scripts = group.bindings.emplace_back(
+            "cycle_loaded_backward_scripts",
+            "Cycle backward loaded scripts",
+            true,
+            [&](void*) {
+                ActiveFunscriptIdx--;
+                ActiveFunscriptIdx %= LoadedFunscripts.size();
+                UpdateNewActiveScript();
+            }
+        );
+        cycle_loaded_backward_scripts.key = Keybinding(
+            SDLK_PAGEDOWN,
+            0
+        );
+
+
         keybinds.registerBinding(group);
     }
     {
