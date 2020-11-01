@@ -1127,7 +1127,9 @@ void OpenFunscripter::rollingBackup() noexcept
     char path_buf[1024];
 
     for (auto&& script : LoadedFunscripts) {
-        auto scriptName = Util::trim(Util::Filename(script->current_path));
+
+        auto scriptName = Util::Filename(script->current_path);
+        Util::trim(scriptName);
         auto scriptBackupDir = backupDir / scriptName;
         std::filesystem::create_directories(scriptBackupDir, ec);
         stbsp_snprintf(path_buf, sizeof(path_buf), "Backup_%d.funscript", SDL_GetTicks());
