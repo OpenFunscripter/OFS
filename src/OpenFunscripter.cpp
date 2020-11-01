@@ -1724,17 +1724,21 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 showOpenFileDialog();
             }
             if (ImGui::BeginMenu("Open...", player.isLoaded())) {
+                auto fileAlreadyLoaded = [](const std::string& path) -> bool {
+                    auto app = OpenFunscripter::ptr;
+                    auto it = std::find_if(app->LoadedFunscripts.begin(), app->LoadedFunscripts.end(),
+                        [file = std::filesystem::path(path)](auto& script) {
+                            return std::filesystem::path(script->current_path) == file;
+                        }
+                    );
+                    return it != app->LoadedFunscripts.end();
+                };
                 if (ImGui::MenuItem("Add new")) {
                     Util::SaveFileDialog("Add new funscript", settings->data().last_path,
-                        [](auto& result) {
+                        [fileAlreadyLoaded](auto& result) {
                             if (result.files.size() > 0) {
                                 auto app = OpenFunscripter::ptr;
-                                auto it = std::find_if(app->LoadedFunscripts.begin(), app->LoadedFunscripts.end(),
-                                    [file = std::filesystem::path(result.files[0])](auto& script) {
-                                        return std::filesystem::path(script->current_path) == file;
-                                    }
-                                );
-                                if (it == app->LoadedFunscripts.end()) {
+                                if (!fileAlreadyLoaded(result.files[0])) {
                                     auto newScript = std::make_unique<Funscript>();
                                     newScript->current_path = result.files[0];
                                     newScript->metadata.title = Util::Filename(result.files[0]);
@@ -1745,17 +1749,13 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 }
                 if (ImGui::MenuItem("Add existing")) {
                     Util::OpenFileDialog("Add existing funscripts", settings->data().last_path,
-                        [](auto& result) {
+                        [fileAlreadyLoaded](auto& result) {
                             if (result.files.size() > 0) {
                                 for (auto&& scriptPath : result.files) {
                                     auto newScript = std::make_unique<Funscript>();
                                     if (newScript->open(scriptPath)) {
                                         auto app = OpenFunscripter::ptr;
-                                        auto it = std::find_if(app->LoadedFunscripts.begin(), app->LoadedFunscripts.end(),
-                                            [file = std::filesystem::path(scriptPath)](auto& script) {
-                                            return std::filesystem::path(script->current_path) == file;
-                                        });
-                                        if (it == app->LoadedFunscripts.end()) {
+                                        if (!fileAlreadyLoaded(scriptPath)) {
                                             newScript->current_path = scriptPath;
                                             newScript->metadata.title = Util::Filename(scriptPath);
                                             OpenFunscripter::ptr->LoadedFunscripts.emplace_back(std::move(newScript));
