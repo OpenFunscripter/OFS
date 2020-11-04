@@ -1842,12 +1842,16 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem("Save as...")) {
                 saveActiveScriptAs();
             }
-#ifndef NDEBUG
             if (ImGui::MenuItem(ICON_SHARE" Share...")) {
-                
+                auto savePath = std::filesystem::path(settings->data().last_path) / (Util::Filename(ActiveFunscript()->current_path) + "_share.funscript");
+                Util::SaveFileDialog("Share funscript", savePath.string(),
+                    [&](auto& result) {
+                        if (result.files.size() > 0) {
+                            ActiveFunscript()->saveMinium(result.files[0]);
+                        }
+                    }, { "Funscript", "*.funscript" });
             }
             Util::Tooltip("Saves the bare minium.");
-#endif
             ImGui::Separator();
             if (ImGui::MenuItem("Enable rolling backup", NULL, &RollingBackup)) {}
             if (ImGui::MenuItem("Open backup directory")) {

@@ -151,6 +151,8 @@ private:
 	void saveMetadata() noexcept;
 	void loadSettings() noexcept;
 	void saveSettings() noexcept;
+
+	void startSaveThread(const std::string& path, nlohmann::json&& json) noexcept;
 public:
 	Funscript();
 	~Funscript();
@@ -167,7 +169,8 @@ public:
 	bool open(const std::string& file);
 	void save() { save(current_path, false); }
 	void save(const std::string& path, bool override_location = true);
-	
+	void saveMinium(const std::string& path) noexcept;
+
 	inline void reserveActionMemory(int32_t frameCount) { 
 		data.Actions.reserve(frameCount);
 	}

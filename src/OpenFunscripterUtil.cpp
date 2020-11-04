@@ -140,9 +140,18 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
 	auto thread = [](void* ctx) -> int32_t {
 		auto data = (SaveFileDialogThreadData*)ctx;
 
-		if (!std::filesystem::exists(data->path)) {
+		auto dialogPath = std::filesystem::path(data->path);
+		if (std::filesystem::is_directory(dialogPath) && !std::filesystem::exists(dialogPath)) {
 			data->path = "";
 		}
+		else {
+			auto directory = dialogPath;
+			directory.replace_filename("");
+			if (!std::filesystem::exists(directory)) {
+				data->path = "";
+			}
+		}
+
 
 		pfd::save_file saveFileDialog(data->title, data->path, data->filters, pfd::opt::none);
 		auto saveDialogResult = new FileDialogResult;
