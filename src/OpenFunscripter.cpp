@@ -278,7 +278,7 @@ bool OpenFunscripter::setup()
     keybinds.setBindings(settings->getKeybindings()); // override with user bindings
 
     scriptPositions.setup();
-    LoadedFunscripts.emplace_back(std::move(std::make_unique<Funscript>()));
+    clearLoadedScripts(); // initialized std::vector with one Funscript
 
     scripting = std::make_unique<ScriptingMode>();
     scripting->setup();
