@@ -242,7 +242,7 @@ public:
 		std::error_code ec;
 		std::filesystem::create_directories(path, ec);
 		if (ec) {
-			LOG_ERROR("Failed to create directory: %s", ec.message().c_str());
+			LOGF_ERROR("Failed to create directory: %s", ec.message().c_str());
 			return false;
 		}
 		return true;
