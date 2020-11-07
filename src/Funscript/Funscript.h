@@ -69,7 +69,7 @@ public:
 	struct Settings {
 		std::vector<Bookmark> Bookmarks;
 		int32_t last_pos_ms = 0;
-		VideoplayerWindow::OFS_VideoPlayerSettings* player;
+		VideoplayerWindow::OFS_VideoPlayerSettings* player = nullptr;
 
 		template <class Archive>
 		inline void reflect(Archive& ar) {

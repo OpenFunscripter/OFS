@@ -133,3 +133,5 @@ else() # clang/gcc
 	# 	-Wno-nested-anon-types
 	# ) 
 endif()
+
+install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION "bin/")

@@ -1141,8 +1141,10 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
     ActiveFunscript()->metadata.duration = player.getDuration();
     ActiveFunscript()->reserveActionMemory(player.getTotalNumFrames());
     player.setPosition(ActiveFunscript()->scriptSettings.last_pos_ms);
-    player.setSpeed(ActiveFunscript()->scriptSettings.player->playback_speed);
-    player.setVolume(ActiveFunscript()->scriptSettings.player->volume);
+    if (ActiveFunscript()->scriptSettings.player != nullptr) {
+        player.setSpeed(ActiveFunscript()->scriptSettings.player->playback_speed);
+        player.setVolume(ActiveFunscript()->scriptSettings.player->volume);
+    }
     ActiveFunscript()->NotifyActionsChanged();
 
     auto name = Util::Filename(player.getVideoPath());
