@@ -21,6 +21,8 @@
 
 //TODO: test imgui cursor api instead of SDL2
 
+// BUG: linux save screenshot segmenation fault
+
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
 // also used to generate a filter for the file dialog
@@ -1202,7 +1204,7 @@ void OpenFunscripter::rollingBackup() noexcept
         auto scriptName = Util::Filename(script->current_path);
         Util::trim(scriptName);
         auto scriptBackupDir = backupDir / scriptName;
-        if (Util::CreateDirectories(scriptBackupDir.string())) {
+        if (!Util::CreateDirectories(scriptBackupDir.string())) {
             continue;
         }
 
