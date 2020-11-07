@@ -198,8 +198,8 @@ void ScriptPositionsWindow::mouse_scroll(SDL_Event& ev)
 
 void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositionMs)
 {
+	auto app = OpenFunscripter::ptr;
 	auto& script = OpenFunscripter::script();
-
 	frameSizeMs = WindowSizeSeconds * 1000.0;
 	offset_ms = currentPositionMs - (frameSizeMs / 2.0);
 
@@ -212,11 +212,11 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	canvas_pos = ImGui::GetCursorScreenPos();
 	canvas_size = ImGui::GetContentRegionAvail();
 	auto& style = ImGui::GetStyle();
-	const ImGuiID itemID = ImGui::GetID("##ScriptPositions");
+	const ImGuiID itemID = ImGui::GetID("###ScriptPositions");
 	ImRect itemBB(canvas_pos, canvas_pos + canvas_size);
 	ImGui::ItemAdd(itemBB, itemID);
-	float frameTime = OpenFunscripter::ptr->player.getFrameTimeMs();
-	bool IsPaused = OpenFunscripter::ptr->player.isPaused();
+	float frameTime = app->player.getFrameTimeMs();
+	bool IsPaused = app->player.isPaused();
 
 	draw_list->AddRectFilledMultiColor(canvas_pos, ImVec2(canvas_pos.x + canvas_size.x, canvas_pos.y + canvas_size.y),
 		IM_COL32(0, 0, 50, 255), IM_COL32(0, 0, 50, 255),
@@ -239,7 +239,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	float visibleFrames = frameSizeMs / frameTime;
 	const float maxVisibleFrames = 400.f;
 	if (visibleFrames <= (maxVisibleFrames * 0.75f)) {
-		// render frame dividers
+		//render frame dividers
 		float offset = -std::fmod(offset_ms, frameTime);
 		const int lineCount = visibleFrames + 2;
 		int alpha = 255 * (1.f - (visibleFrames / maxVisibleFrames));
@@ -252,13 +252,31 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 			);
 		}
 
-		if (IsPaused || OpenFunscripter::ptr->player.getSpeed() <= 0.1) {
-			float realFrameTime = OpenFunscripter::ptr->player.getRealCurrentPositionMs() - offset_ms;
+		// out of sync line
+		if (IsPaused || app->player.getSpeed() <= 0.1) {
+			float realFrameTime = app->player.getRealCurrentPositionMs() - offset_ms;
 			draw_list->AddLine(
 				canvas_pos + ImVec2((realFrameTime / frameSizeMs) * canvas_size.x, 0.f),
 				canvas_pos + ImVec2((realFrameTime / frameSizeMs) * canvas_size.x, canvas_size.y),
 				IM_COL32(255, 0, 0, alpha),
 				1.f
+			);
+		}
+	}
+
+	// time dividers
+	const float timeIntervalMs = std::round(app->player.getFps() * 0.1f) * app->player.getFrameTimeMs();
+	const float visibleTimeIntervals = frameSizeMs / timeIntervalMs;
+	if (visibleTimeIntervals <= (maxVisibleFrames * 0.75f)) {
+		float offset = -std::fmod(offset_ms, timeIntervalMs);
+		const int lineCount = visibleTimeIntervals+2;
+		int alpha = 255 * (1.f - (visibleTimeIntervals / maxVisibleFrames));
+		for (int i = 0; i < lineCount; i++) {
+			draw_list->AddLine(
+				canvas_pos + ImVec2(((offset + (i * timeIntervalMs)) / frameSizeMs) * canvas_size.x, 0.f),
+				canvas_pos + ImVec2(((offset + (i * timeIntervalMs)) / frameSizeMs) * canvas_size.x, canvas_size.y),
+				IM_COL32(80, 80, 80, alpha),
+				3.f
 			);
 		}
 	}
@@ -274,7 +292,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	);
 
 	if (ShowAudioWaveform) {
-		const float durationMs = OpenFunscripter::ptr->player.getDuration() * 1000.f;
+		const float durationMs = app->player.getDuration() * 1000.f;
 		const float rel_start = offset_ms / durationMs;
 		const float rel_end = ((float)(offset_ms)+frameSizeMs) / durationMs;
 
@@ -356,7 +374,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		}
 	}
 
-	for (auto&& loadedScript : OpenFunscripter::ptr->LoadedFunscripts) {
+	for (auto&& loadedScript : app->LoadedFunscripts) {
 		auto& loaded = *loadedScript;
 		auto startIt = std::find_if(loaded.Actions().begin(), loaded.Actions().end(),
 			[&](auto& act) { return act.at >= offset_ms; });
@@ -507,118 +525,123 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	// right click context menu
 	if (ImGui::BeginPopupContextItem())
 	{
-		auto app = OpenFunscripter::ptr;
-		ImGui::SetNextItemWidth(-1.f);
-		if (ImGui::BeginCombo("##ActiveScript", app->ActiveFunscript()->metadata.title.c_str())) {
-			auto selectable = [](std::unique_ptr<Funscript>& script) {
-				if (ImGui::Selectable(script->metadata.title.c_str()) || ImGui::IsItemHovered()) {
-					auto app = OpenFunscripter::ptr;
-					if (app->ActiveFunscript() != script) {
-						return true;
-					}
-				}
-				return false;
-			};
-			for (int i = 0; i < app->LoadedFunscripts.size(); i++) {
-				auto&& script = app->LoadedFunscripts[i];
-				if (selectable(script)) {
-					app->ActiveFunscriptIdx = i;
-					app->UpdateNewActiveScript();
-				}
-			}
-			ImGui::EndCombo();
-		}
-
-
-		ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
-		ImGui::MenuItem("Draw actions", NULL, &ShowRegularActions);
-		ImGui::Combo("Recording", (int32_t*)&RecordingMode, "No\0All\0Active\0");
-		ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
-		ImGui::SliderFloat("Waveform scale", &ScaleAudio, 0.25f, 10.f);
-		if (ImGui::MenuItem("Audio waveform", NULL, &ShowAudioWaveform, !ffmpegInProgress)) {}
-		if (ImGui::MenuItem(ffmpegInProgress ? "Processing audio..." : "Update waveform", NULL, false, !ffmpegInProgress)) {
-			if (!ffmpegInProgress) {
-				ShowAudioWaveform = false; // gets switched true after processing
-				ffmpegInProgress = true;
-
-				auto ffmpegThread = [](void* userData) -> int {
-					auto& ctx = *((ScriptPositionsWindow*)userData);
-					std::error_code ec;
-
-					auto base_path = Util::Basepath();
-					auto ffmpeg_path = base_path / "ffmpeg.exe";
-					auto output_path = base_path / "tmp";
-					std::filesystem::create_directories(output_path, ec);
-
-					output_path /= "audio.mp3";
-					auto video_path = OpenFunscripter::ptr->player.getVideoPath();
-
-					bool succ = OutputAudioFile(ffmpeg_path.string().c_str(), video_path,  output_path.string().c_str());
-					if (!succ) {
-						LOGF_ERROR("Failed to output mp3 from video. (ffmpeg_path: \"%s\")", ffmpeg_path.string().c_str());
-						ctx.ShowAudioWaveform = false;
-					}
-				
-					mp3dec_t mp3d;
-					mp3dec_file_info_t info;
-
-					if (mp3dec_load(&mp3d, output_path.string().c_str(), &info, NULL, NULL))
-					{
-						/* error */
-						LOGF_ERROR("failed to load \"%s\"", output_path.string().c_str());
-					}
-
-					const int samples_per_line = info.hz / 256.f; // controls the resolution
-
-					FUN_ASSERT(info.channels == 1, "expected one audio channels");
-					// create one vector of floats for each requested channel
-					ctx.audio_waveform_avg.clear();
-					ctx.audio_waveform_avg.reserve((info.samples / samples_per_line) + 1);
-
-					// for each requested channel
-					for (size_t offset = 0; offset < info.samples; offset += samples_per_line)
-					{
-						int sample_count = (info.samples - offset >= samples_per_line) 
-							? samples_per_line
-							: info.samples - offset;
-
-						float average(0);
-						for (int i = offset; i < offset+sample_count; i++) 
-						{
-							float sample = info.buffer[i];
-							float abs_sample = std::abs(sample);
-							average += abs_sample;
-						}
-						average /= sample_count;
-						ctx.audio_waveform_avg.push_back(average);
-					}
-
-					auto map2range = [](float x, float in_min, float in_max, float out_min, float out_max)
-					{
-						return Util::Clamp<float>(
-							out_min + (out_max - out_min) * (x - in_min) / (in_max - in_min),
-							out_min,
-							out_max
-							);
-					};
-
-					auto min = std::min_element(ctx.audio_waveform_avg.begin(), ctx.audio_waveform_avg.end());
-					auto max = std::max_element(ctx.audio_waveform_avg.begin(), ctx.audio_waveform_avg.end());
-					if (*min != 0.f || *max != 1.f) {
-						for (auto& val : ctx.audio_waveform_avg)
-						{
-							val = map2range(val, *min, *max, 0.f, 1.f);
+		if (ImGui::BeginMenu("Scripts")) {
+			if (ImGui::BeginCombo("##ActiveScript", app->ActiveFunscript()->metadata.title.c_str())) {
+				auto selectable = [](std::unique_ptr<Funscript>& script) {
+					if (ImGui::Selectable(script->metadata.title.c_str()) || ImGui::IsItemHovered()) {
+						auto app = OpenFunscripter::ptr;
+						if (app->ActiveFunscript() != script) {
+							return true;
 						}
 					}
-					free(info.buffer);
-					SDL_Event ev;
-					ev.type = EventSystem::FfmpegAudioProcessingFinished;
-					SDL_PushEvent(&ev);
-					return 0;
+					return false;
 				};
-				auto handle = SDL_CreateThread(ffmpegThread, "OpenFunscripterFfmpegThread", this);
-				SDL_DetachThread(handle);
+				for (int i = 0; i < app->LoadedFunscripts.size(); i++) {
+					auto&& script = app->LoadedFunscripts[i];
+					if (selectable(script)) {
+						app->ActiveFunscriptIdx = i;
+						app->UpdateNewActiveScript();
+					}
+				}
+				ImGui::EndCombo();
 			}
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("Rendering")) {
+			ImGui::MenuItem("Draw actions", NULL, &ShowRegularActions);
+			ImGui::Combo("Recording", (int32_t*)&RecordingMode, "No\0All\0Active\0");
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("Audio waveform")) {
+			ImGui::SliderFloat("Waveform scale", &ScaleAudio, 0.25f, 10.f);
+			if (ImGui::MenuItem("Enable waveform", NULL, &ShowAudioWaveform, !ffmpegInProgress)) {}
+			if (ImGui::MenuItem(ffmpegInProgress ? "Processing audio..." : "Update waveform", NULL, false, !ffmpegInProgress)) {
+				if (!ffmpegInProgress) {
+					ShowAudioWaveform = false; // gets switched true after processing
+					ffmpegInProgress = true;
+
+					auto ffmpegThread = [](void* userData) -> int {
+						auto& ctx = *((ScriptPositionsWindow*)userData);
+						std::error_code ec;
+
+						auto base_path = Util::Basepath();
+						auto ffmpeg_path = base_path / "ffmpeg.exe";
+						auto output_path = base_path / "tmp";
+						std::filesystem::create_directories(output_path, ec);
+
+						output_path /= "audio.mp3";
+						auto video_path = OpenFunscripter::ptr->player.getVideoPath();
+
+						bool succ = OutputAudioFile(ffmpeg_path.string().c_str(), video_path, output_path.string().c_str());
+						if (!succ) {
+							LOGF_ERROR("Failed to output mp3 from video. (ffmpeg_path: \"%s\")", ffmpeg_path.string().c_str());
+							ctx.ShowAudioWaveform = false;
+							ctx.ffmpegInProgress = false;
+							return 0;
+						}
+
+						mp3dec_t mp3d;
+						mp3dec_file_info_t info;
+
+						if (mp3dec_load(&mp3d, output_path.string().c_str(), &info, NULL, NULL))
+						{
+							/* error */
+							LOGF_ERROR("failed to load \"%s\"", output_path.string().c_str());
+						}
+
+						const int samples_per_line = info.hz / 256.f; // controls the resolution
+
+						FUN_ASSERT(info.channels == 1, "expected one audio channels");
+						// create one vector of floats for each requested channel
+						ctx.audio_waveform_avg.clear();
+						ctx.audio_waveform_avg.reserve((info.samples / samples_per_line) + 1);
+
+						// for each requested channel
+						for (size_t offset = 0; offset < info.samples; offset += samples_per_line)
+						{
+							int sample_count = (info.samples - offset >= samples_per_line)
+								? samples_per_line
+								: info.samples - offset;
+
+							float average(0);
+							for (int i = offset; i < offset + sample_count; i++)
+							{
+								float sample = info.buffer[i];
+								float abs_sample = std::abs(sample);
+								average += abs_sample;
+							}
+							average /= sample_count;
+							ctx.audio_waveform_avg.push_back(average);
+						}
+
+						auto map2range = [](float x, float in_min, float in_max, float out_min, float out_max)
+						{
+							return Util::Clamp<float>(
+								out_min + (out_max - out_min) * (x - in_min) / (in_max - in_min),
+								out_min,
+								out_max
+								);
+						};
+
+						auto min = std::min_element(ctx.audio_waveform_avg.begin(), ctx.audio_waveform_avg.end());
+						auto max = std::max_element(ctx.audio_waveform_avg.begin(), ctx.audio_waveform_avg.end());
+						if (*min != 0.f || *max != 1.f) {
+							for (auto& val : ctx.audio_waveform_avg)
+							{
+								val = map2range(val, *min, *max, 0.f, 1.f);
+							}
+						}
+						free(info.buffer);
+						SDL_Event ev;
+						ev.type = EventSystem::FfmpegAudioProcessingFinished;
+						SDL_PushEvent(&ev);
+						return 0;
+					};
+					auto handle = SDL_CreateThread(ffmpegThread, "OpenFunscripterFfmpegThread", this);
+					SDL_DetachThread(handle);
+				}
+			}
+			ImGui::EndMenu();
 		}
 		ImGui::EndPopup();
 	}
@@ -632,7 +655,10 @@ bool OutputAudioFile(const char* ffmpeg_path, const char* video_path, const char
 		ffmpeg_path,
 		video_path,
 		output_path);
-	FUN_ASSERT(num <= 1024, "buffer to small");
+	FUN_ASSERT(num <= sizeof(buffer), "buffer to small");
+	if (num >= sizeof(buffer)) {
+		return false;
+	}
 	bool success = std::system(buffer) == 0;
 
 	return success;

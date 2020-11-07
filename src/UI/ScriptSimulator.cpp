@@ -75,13 +75,18 @@ void ScriptSimulator::ShowSimulator(bool* open)
 {
     if (*open) {
         auto ptr = OpenFunscripter::ptr;
-        float currentPos;
+        float currentPos = 0;
 
         if (!SimulateRawActions) {
             currentPos = ptr->ActiveFunscript()->GetPositionAtTime(ptr->player.getCurrentPositionMsInterp());
         }
         else {
-            currentPos = ptr->ActiveFunscript()->GetRawPositionAtFrame(ptr->player.getCurrentFrameEstimate());
+            if (ptr->ActiveFunscript()->Raw().HasRecording()) {
+                currentPos = ptr->ActiveFunscript()->GetRawPositionAtFrame(ptr->player.getCurrentFrameEstimate());
+            }
+            else {
+                SimulateRawActions = false;
+            }
         }
 
         if (EnableVanilla) {
@@ -136,7 +141,9 @@ void ScriptSimulator::ShowSimulator(bool* open)
             ImGui::Checkbox("Show position", &simulator.EnablePosition);
         }
 
+        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, !ptr->ActiveFunscript()->Raw().HasRecording());
         ImGui::Checkbox("Simulate raw actions", &SimulateRawActions); ImGui::SameLine();
+        ImGui::PopItemFlag();
         if (ImGui::Button("Vanilla")) {
             EnableVanilla = true;
         }
@@ -280,7 +287,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
 
         // TEXT
         if (simulator.EnablePosition) {
-            stbsp_snprintf(tmp, sizeof(tmp), "%d", currentPos);
+            stbsp_snprintf(tmp, sizeof(tmp), "%.0f", currentPos);
             ImGui::PushFont(OpenFunscripter::DefaultFont2);
             auto textOffset = ImGui::CalcTextSize(tmp);
             textOffset /= 2.f;

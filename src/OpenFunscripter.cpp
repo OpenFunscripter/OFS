@@ -19,11 +19,10 @@
 // TODO: use a ringbuffer in the undosystem
 // TODO: make heatmap generation more sophisticated
 
-// TODO: binding to cycle through loaded scripts
-
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
 // also used to generate a filter for the file dialog
+
 constexpr std::array<const char*, 6> SupportedVideoExtensions {
     ".mp4",
     ".mkv",
@@ -31,6 +30,13 @@ constexpr std::array<const char*, 6> SupportedVideoExtensions {
     ".wmv",
     ".avi",
     ".m4v",
+};
+
+constexpr std::array<const char*, 4> SupportedAudioExtensions{
+    ".mp3",
+    ".flac",
+    ".wmv",
+    ".ogg"
 };
 
 OpenFunscripter* OpenFunscripter::ptr = nullptr;
@@ -62,6 +68,14 @@ static std::vector<std::string> DefaultOpenFileDialogFilters() {
     filters.emplace_back(ss.str());
     filters.emplace_back("Funscript ( .funscript )");
     filters.emplace_back("*.funscript");
+
+
+    ss.str("");
+    for (auto&& ext : SupportedAudioExtensions) {
+        ss << "*" << ext << ";";
+    }
+    filters.emplace_back(std::string("Audio ( ") + ss.str() + " )");
+    filters.emplace_back(ss.str());
     return filters;
 }
 
@@ -1121,8 +1135,12 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
     ActiveFunscript()->metadata.duration = player.getDuration();
     ActiveFunscript()->reserveActionMemory(player.getTotalNumFrames());
     player.setPosition(ActiveFunscript()->scriptSettings.last_pos_ms);
+    player.setSpeed(ActiveFunscript()->scriptSettings.player->playback_speed);
+    player.setVolume(ActiveFunscript()->scriptSettings.player->volume);
+    ActiveFunscript()->NotifyActionsChanged();
 
     auto name = Util::Filename(player.getVideoPath());
+    ActiveFunscript()->metadata.title = name;
     auto recentFile = OpenFunscripterSettings::RecentFile{ name, std::string(player.getVideoPath()), ActiveFunscript()->current_path };
     settings->addRecentFile(recentFile);
     scriptPositions.ClearAudioWaveform();
@@ -1462,7 +1480,16 @@ bool OpenFunscripter::openFile(const std::string& file)
         funscript_path = file;
         // try find video
         std::string videoPath;
-        for (auto extension : SupportedVideoExtensions) {
+        for (auto&& extension : SupportedVideoExtensions) {
+            videoPath = base_path.string() + extension;
+            if (Util::FileExists(videoPath)) {
+                video_path = videoPath;
+                break;
+            }
+        }
+
+        // try find audio
+        for (auto&& extension : SupportedAudioExtensions) {
             videoPath = base_path.string() + extension;
             if (Util::FileExists(videoPath)) {
                 video_path = videoPath;
@@ -2490,6 +2517,7 @@ void OpenFunscripter::UpdateTimelineGradient(ImGradient& grad)
         HeatMap.addMark(pos, col);
         pos += (1.f / (heatColor.size() - 1));
     }
+    HeatMap.refreshCache();
 
     auto getSegments = [](const std::vector<FunscriptAction>& actions, int32_t gapDurationMs) -> std::vector<std::vector<FunscriptAction>> {
         std::vector<std::vector<FunscriptAction>> segments;
@@ -2546,7 +2574,7 @@ void OpenFunscripter::UpdateTimelineGradient(ImGradient& grad)
 
 
             float actionsRelToMax = Util::Clamp((float)actions_in_kernel / max_actions_in_kernel, 0.0f, 1.0f);
-            HeatMap.computeColorAt(actionsRelToMax, (float*)&color.Value);
+            HeatMap.getColorAt(actionsRelToMax, (float*)&color.Value);
             float markPos = kernel_offset  / totalDurationMs;
             grad.addMark(markPos, color);
         } while (kernel_offset < (segment.front().at + durationMs));
