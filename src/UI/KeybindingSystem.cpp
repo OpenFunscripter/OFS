@@ -341,7 +341,7 @@ bool KeybindingSystem::ShowBindingWindow()
         
         ImGui::Spacing();
         ImGui::InputText("Filter", &filterString); 
-        ImGui::SameLine(); ImGui::Checkbox("Controller only", &ControllerOnly);
+        ImGui::SameLine(); ImGui::Checkbox(" " ICON_GAMEPAD " only", &ControllerOnly);
         ImGui::Spacing();
 
         auto& style = ImGui::GetStyle();
