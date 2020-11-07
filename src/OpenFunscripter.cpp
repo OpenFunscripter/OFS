@@ -363,6 +363,12 @@ void OpenFunscripter::setupDefaultLayout(bool force) noexcept
     }
 }
 
+void OpenFunscripter::clearLoadedScripts() noexcept
+{
+    LoadedFunscripts.clear();
+    LoadedFunscripts.emplace_back(std::move(std::make_unique<Funscript>()));
+}
+
 void OpenFunscripter::register_bindings()
 {
     {
@@ -1488,18 +1494,20 @@ bool OpenFunscripter::openFile(const std::string& file)
             }
         }
 
-        // try find audio
-        for (auto&& extension : SupportedAudioExtensions) {
-            videoPath = base_path.string() + extension;
-            if (Util::FileExists(videoPath)) {
-                video_path = videoPath;
-                break;
+        if (video_path.empty()) {
+            // try find audio
+            for (auto&& extension : SupportedAudioExtensions) {
+                videoPath = base_path.string() + extension;
+                if (Util::FileExists(videoPath)) {
+                    video_path = videoPath;
+                    break;
+                }
             }
         }
     }
     else {
         video_path = file;
-        if (!Util::FileNamesMatch(video_path, ActiveFunscript()->current_path)) {
+        if (ScriptLoaded() && !Util::FileNamesMatch(video_path, ActiveFunscript()->current_path)) {
             funscript_path = base_path.string() + ".funscript";
         }
         else {
@@ -1755,6 +1763,7 @@ void OpenFunscripter::showOpenFileDialog()
                 auto file = result.files[0];
                 if (Util::FileExists(file))
                 {
+                    clearLoadedScripts();
                     openFile(file);
                 }
             }

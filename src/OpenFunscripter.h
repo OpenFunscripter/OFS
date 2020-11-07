@@ -91,6 +91,8 @@ private:
 
 	void setupDefaultLayout(bool force) noexcept;
 
+	void clearLoadedScripts() noexcept;
+
 	// UI
 	void CreateDockspace() noexcept;
 	void ShowAboutWindow(bool* open) noexcept;
@@ -123,7 +125,11 @@ public:
 	int run() noexcept;
 	void shutdown() noexcept;
 
-	inline std::unique_ptr<Funscript>& ActiveFunscript() noexcept { return LoadedFunscripts[ActiveFunscriptIdx]; }
+	inline bool ScriptLoaded() const { return LoadedFunscripts.size() > 0; }
+	inline std::unique_ptr<Funscript>& ActiveFunscript() noexcept { 
+		FUN_ASSERT(ScriptLoaded(), "No script loaded");
+		return LoadedFunscripts[ActiveFunscriptIdx]; 
+	}
 	void UpdateNewActiveScript() noexcept;
 
 	static inline Funscript& script() noexcept { return *OpenFunscripter::ptr->ActiveFunscript(); }
