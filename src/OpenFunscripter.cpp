@@ -19,10 +19,11 @@
 // TODO: use a ringbuffer in the undosystem
 // TODO: make heatmap generation more sophisticated
 
+//TODO: test imgui cursor api instead of SDL2
+
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
 // also used to generate a filter for the file dialog
-
 constexpr std::array<const char*, 6> SupportedVideoExtensions {
     ".mp4",
     ".mkv",
@@ -94,6 +95,9 @@ bool OpenFunscripter::imgui_setup() noexcept
     io.ConfigViewportsNoAutoMerge = false;
     io.ConfigViewportsNoTaskBarIcon = false;
     
+    static auto imguiIniPath = Util::Prefpath("imgui.ini");
+    io.IniFilename = imguiIniPath.c_str();
+
     ImGui::StyleColorsDark();
 
     // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
@@ -109,8 +113,9 @@ bool OpenFunscripter::imgui_setup() noexcept
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // LOAD FONTS
-    const char* roboto = "data/fonts/RobotoMono-Regular.ttf";
-    const char* fontawesome = "data/fonts/fontawesome-webfont.ttf";
+    auto roboto = Util::Prefpath("fonts/RobotoMono-Regular.ttf");
+    auto fontawesome = Util::Prefpath("fonts/fontawesome-webfont.ttf");
+    auto noto_jp = Util::Prefpath("fonts/NotoSansJP-Regular.otf");
 
     unsigned char* pixels;
     int width, height;
@@ -125,40 +130,44 @@ bool OpenFunscripter::imgui_setup() noexcept
     io.Fonts->Clear();
     io.Fonts->AddFontDefault();
 
-    std::error_code ec;
-    if (!std::filesystem::exists(roboto, ec) || !std::filesystem::is_regular_file(roboto, ec)) { 
-        LOGF_WARN("\"%s\" font is missing.", roboto);
+    if (!Util::FileExists(roboto)) { 
+        LOGF_WARN("\"%s\" font is missing.", roboto.c_str());
     }
     else {
-        font = io.Fonts->AddFontFromFileTTF(roboto, settings->data().default_font_size, &config);
+        font = io.Fonts->AddFontFromFileTTF(roboto.c_str(), settings->data().default_font_size, &config);
         if (font == nullptr) return false;
         io.FontDefault = font;
     }
 
-    if (!std::filesystem::exists(fontawesome, ec) || !std::filesystem::is_regular_file(fontawesome, ec)) {
-        LOGF_WARN("\"%s\" font is missing. No icons.", fontawesome);
+    if (!Util::FileExists(fontawesome)) {
+        LOGF_WARN("\"%s\" font is missing. No icons.", fontawesome.c_str());
     }
     else {
         config.MergeMode = true;
-        font = io.Fonts->AddFontFromFileTTF(fontawesome, settings->data().default_font_size, &config, icons_ranges);
+        font = io.Fonts->AddFontFromFileTTF(fontawesome.c_str(), settings->data().default_font_size, &config, icons_ranges);
         if (font == nullptr) return false;
     }
 
-    config.MergeMode = true;
-    font = io.Fonts->AddFontFromFileTTF("data/fonts/NotoSansJP-Regular.otf", settings->data().default_font_size, &config, io.Fonts->GetGlyphRangesJapanese());
-    if (font == nullptr) {
-        LOG_WARN("Missing japanese glyphs!!!");
+    if (!Util::FileExists(noto_jp)) {
+        LOGF_WARN("\"%s\" font is missing. No japanese glyphs.", noto_jp.c_str());
+    }
+    else {
+        config.MergeMode = true;
+        font = io.Fonts->AddFontFromFileTTF(noto_jp.c_str(), settings->data().default_font_size, &config, io.Fonts->GetGlyphRangesJapanese());
+        if (font == nullptr) {
+            LOG_WARN("Missing japanese glyphs!!!");
+        }
     }
 
-    if (!std::filesystem::exists(roboto, ec) || !std::filesystem::is_regular_file(roboto, ec)) {
-        LOGF_WARN("\"%s\" font is missing.", roboto);
+    if (!Util::FileExists(roboto)) {
+        LOGF_WARN("\"%s\" font is missing.", roboto.c_str());
     } 
     else
     {
         config.MergeMode = false;
-        DefaultFont2 = io.Fonts->AddFontFromFileTTF(roboto, settings->data().default_font_size * 2.0f, &config);
-        io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+        DefaultFont2 = io.Fonts->AddFontFromFileTTF(roboto.c_str(), settings->data().default_font_size * 2.0f, &config);
     }
+    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
     // Upload texture to graphics system
     GLuint font_tex;
@@ -188,7 +197,12 @@ bool OpenFunscripter::setup()
 {
     FUN_ASSERT(ptr == nullptr, "there can only be one instance");
     ptr = this;
-    settings = std::make_unique<OpenFunscripterSettings>("data/keybinds.json", "data/config.json");
+    auto prefPath = Util::Prefpath("");
+    Util::CreateDirectories(prefPath);
+
+
+
+    settings = std::make_unique<OpenFunscripterSettings>(Util::Prefpath("keybinds.json"), Util::Prefpath("config.json"));
     
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
     {
@@ -235,7 +249,6 @@ bool OpenFunscripter::setup()
     SDL_GL_MakeCurrent(window, gl_context);
     SDL_GL_SetSwapInterval(1); // Enable vsync
     
-
     if (gladLoadGL() == 0) {
         LOG_ERROR("Failed to load glad.");
         return false;
@@ -250,7 +263,7 @@ bool OpenFunscripter::setup()
     int image_width = 0;
     int image_height = 0;
     int channels;
-    unsigned char* image_data = stbi_load("data/logo64.png", &image_width, &image_height, &channels, 3);
+    unsigned char* image_data = stbi_load(Util::Prefpath("logo64.png").c_str(), &image_width, &image_height, &channels, 3);
     if (image_data != nullptr) {
         std::array<uint16_t, 64 * 64> pixels;
         for (int i = 0; i < (image_width * image_height * 3); i += 3) {
@@ -318,8 +331,8 @@ bool OpenFunscripter::setup()
 void OpenFunscripter::setupDefaultLayout(bool force) noexcept
 {
     MainDockspaceID = ImGui::GetID("MainAppDockspace");
-    auto imgui_ini = Util::Basepath() / "imgui.ini";
-    bool imgui_ini_found = Util::FileExists(imgui_ini.string().c_str());
+    auto imgui_ini = ImGui::GetIO().IniFilename;
+    bool imgui_ini_found = Util::FileExists(imgui_ini);
     if (force || !imgui_ini_found) {
         if (!imgui_ini_found) {
             LOG_INFO("imgui.ini was not found...");
@@ -685,8 +698,8 @@ void OpenFunscripter::register_bindings()
             "Save frame as image",
             true,
             [&](void*) { 
-                auto screenshot_dir = Util::Basepath() / "screenshot";
-                player.saveFrameToImage(screenshot_dir.string()); 
+                auto screenshot_dir = Util::Prefpath("screenshot");
+                player.saveFrameToImage(screenshot_dir); 
             }
         );
         save_frame_as_image.key = Keybinding(
@@ -1174,21 +1187,25 @@ void OpenFunscripter::rollingBackup() noexcept
     }
     last_backup = std::chrono::system_clock::now();
 
-    auto backupDir = Util::Basepath();
-    backupDir /= "backup";
+    auto backupDir = std::filesystem::path(Util::Prefpath("backup"));
     auto name = Util::Filename(player.getVideoPath());
     name = Util::trim(name); // this needs to be trimmed because trailing spaces
     backupDir /= name;
-    std::error_code ec;
-    std::filesystem::create_directories(backupDir, ec);
+    
+    if (!Util::CreateDirectories(backupDir.string())) {
+        return;
+    }
+    
     char path_buf[1024];
-
     for (auto&& script : LoadedFunscripts) {
 
         auto scriptName = Util::Filename(script->current_path);
         Util::trim(scriptName);
         auto scriptBackupDir = backupDir / scriptName;
-        std::filesystem::create_directories(scriptBackupDir, ec);
+        if (Util::CreateDirectories(scriptBackupDir.string())) {
+            continue;
+        }
+
         stbsp_snprintf(path_buf, sizeof(path_buf), "Backup_%d.funscript", SDL_GetTicks());
         auto savePath = scriptBackupDir / path_buf;
         LOGF_INFO("Backup at \"%s\"", savePath.string().c_str());
@@ -1901,15 +1918,13 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
         {
             if (ImGui::MenuItem("Save frame as image", BINDING_STRING("save_frame_as_image")))
             { 
-                auto screenshot_dir = Util::Basepath() / "screenshot";
-                player.saveFrameToImage(screenshot_dir.string().c_str());
+                auto screenshot_dir = Util::Prefpath("screenshot");
+                player.saveFrameToImage(screenshot_dir);
             }
-            // this is awkward
             if (ImGui::MenuItem("Open screenshot directory")) {
-                std::error_code ec;
-                auto screenshot_dir = Util::Basepath() / "screenshot";
-                std::filesystem::create_directories(screenshot_dir, ec);
-                Util::OpenFileExplorer(screenshot_dir.string().c_str());
+                auto screenshot_dir = Util::Prefpath("screenshot");
+                Util::CreateDirectories(screenshot_dir);
+                Util::OpenFileExplorer(screenshot_dir.c_str());
             }
 
             ImGui::Separator();
@@ -1919,15 +1934,15 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::InputInt("##width", &heatmapWidth); ImGui::SameLine();
             ImGui::Text("%s", "x"); ImGui::SameLine();
             ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.f);
-            ImGui::InputInt("##heiht", &heatmapHeight);
+            ImGui::InputInt("##height", &heatmapHeight);
             if (ImGui::MenuItem("Save heatmap")) { 
                 char buf[1024];
                 stbsp_snprintf(buf, sizeof(buf), "%s_Heatmap.bmp", ActiveFunscript()->metadata.title.c_str());
-                auto heatmapPath = Util::Basepath() / "screenshot";
-                std::error_code ec;
-                std::filesystem::create_directories(heatmapPath, ec);
-                heatmapPath /= buf;
-                saveHeatmap(heatmapPath.string().c_str(), heatmapWidth, heatmapHeight);
+                auto heatmapPath = Util::Prefpath("screenshot");
+                if (Util::CreateDirectories(heatmapPath)) {
+                    heatmapPath = (std::filesystem::path(heatmapPath) / buf).string();
+                    saveHeatmap(heatmapPath.c_str(), heatmapWidth, heatmapHeight);
+                }
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Undo", BINDING_STRING("undo"), false, !ActiveFunscript()->undoSystem->UndoEmpty())) {

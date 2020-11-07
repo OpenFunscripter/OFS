@@ -671,10 +671,7 @@ void VideoplayerWindow::saveFrameToImage(const std::string& directory)
 	static ScreenshotSavingThreadData threadData{0};
 	if (threadData.dataBuffer != nullptr) return; // saving in progress
 
-	std::error_code ec;
-	std::filesystem::create_directories(directory, ec);
-	if (ec) {
-		LOGF_ERROR("Failed to create screenshot. Couldn't create \"%s\" directory", directory.c_str());
+	if(!Util::CreateDirectories(directory)) {
 		return;
 	}
 

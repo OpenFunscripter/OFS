@@ -562,17 +562,22 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 
 					auto ffmpegThread = [](void* userData) -> int {
 						auto& ctx = *((ScriptPositionsWindow*)userData);
+
 						std::error_code ec;
-
 						auto base_path = Util::Basepath();
+#if WIN32
 						auto ffmpeg_path = base_path / "ffmpeg.exe";
-						auto output_path = base_path / "tmp";
-						std::filesystem::create_directories(output_path, ec);
-
-						output_path /= "audio.mp3";
+#else
+						auto ffmpeg_path = std::filesystem::path("ffmpeg");
+#endif
+						auto output_path = Util::Prefpath("tmp");
+						if (!Util::CreateDirectories(output_path)) {
+							return 0;
+						}
+						output_path = (std::filesystem::path(output_path) / "audio.mp3").string();
 						auto video_path = OpenFunscripter::ptr->player.getVideoPath();
 
-						bool succ = OutputAudioFile(ffmpeg_path.string().c_str(), video_path, output_path.string().c_str());
+						bool succ = OutputAudioFile(ffmpeg_path.string().c_str(), video_path, output_path.c_str());
 						if (!succ) {
 							LOGF_ERROR("Failed to output mp3 from video. (ffmpeg_path: \"%s\")", ffmpeg_path.string().c_str());
 							ctx.ShowAudioWaveform = false;
@@ -583,10 +588,12 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 						mp3dec_t mp3d;
 						mp3dec_file_info_t info;
 
-						if (mp3dec_load(&mp3d, output_path.string().c_str(), &info, NULL, NULL))
+						if (mp3dec_load(&mp3d, output_path.c_str(), &info, NULL, NULL))
 						{
-							/* error */
-							LOGF_ERROR("failed to load \"%s\"", output_path.string().c_str());
+							LOGF_ERROR("failed to load \"%s\"", output_path.c_str());
+							ctx.ShowAudioWaveform = false;
+							ctx.ffmpegInProgress = false;
+							return 0;
 						}
 
 						const int samples_per_line = info.hz / 256.f; // controls the resolution
