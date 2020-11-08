@@ -24,6 +24,7 @@ before_build:
     cd build
     cmake --version
     cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -G "Visual Studio 16 2019" -A x64
+- ps: dir
 build:
   project: c:\projects\OpenFunscripter\build\src\OpenFunscripter.sln
   verbosity: minimal
@@ -42,6 +43,8 @@ after_build:
   
 - ps: choco install -y -r --no-progress InnoSetup
 - ps: set PATH=%PATH%;"C:\\Program Files (x86)\\Inno Setup 6"
+- ps: cd OpenFunscripter
+- ps: dir
 - ps: iscc openfunscripter-installer.iss   
 - ps: Push-AppveyorArtifact installer\openfunscripter-installer.exe -FileName OpenFunscripter-$env:CONFIGURATION-$env:APPVEYOR_BUILD_VERSION.exe
 
