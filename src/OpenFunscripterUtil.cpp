@@ -179,3 +179,11 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
 	};
 	auto handle = SDL_CreateThread(thread, "SaveFileDialog", threadData);
 }
+
+std::string Util::Resource(const std::string& path) noexcept
+{
+	auto base = Util::Basepath();
+	auto rel = std::filesystem::path(path);
+	rel.make_preferred();
+	return (base / "data" / rel).string();
+}

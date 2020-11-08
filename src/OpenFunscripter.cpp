@@ -115,9 +115,9 @@ bool OpenFunscripter::imgui_setup() noexcept
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // LOAD FONTS
-    auto roboto = Util::Prefpath("fonts/RobotoMono-Regular.ttf");
-    auto fontawesome = Util::Prefpath("fonts/fontawesome-webfont.ttf");
-    auto noto_jp = Util::Prefpath("fonts/NotoSansJP-Regular.otf");
+    auto roboto = Util::Resource("fonts/RobotoMono-Regular.ttf");
+    auto fontawesome = Util::Resource("fonts/fontawesome-webfont.ttf");
+    auto noto_jp = Util::Resource("fonts/NotoSansJP-Regular.otf");
 
     unsigned char* pixels;
     int width, height;
@@ -261,28 +261,28 @@ bool OpenFunscripter::setup()
         return false;
     }
 
-    SDL_Surface* surface;
-    int image_width = 0;
-    int image_height = 0;
-    int channels;
-    unsigned char* image_data = stbi_load(Util::Prefpath("logo64.png").c_str(), &image_width, &image_height, &channels, 3);
-    if (image_data != nullptr) {
-        std::array<uint16_t, 64 * 64> pixels;
-        for (int i = 0; i < (image_width * image_height * 3); i += 3) {
-            pixels[i / 3] = 0;
-            pixels[i / 3] |= 0xf << 12;
-            pixels[i / 3] |= (image_data[i] / 16) << 8;
-            pixels[i / 3] |= (image_data[i + 1] / 16) << 4;
-            pixels[i / 3] |= (image_data[i + 2] / 16) << 0;
-        }
-        surface = SDL_CreateRGBSurfaceFrom(pixels.data(), 64, 64, 64, 16 * 2, 0x0f00, 0x00f0, 0x000f, 0xf000);
-        // The icon is attached to the window pointer
-        SDL_SetWindowIcon(window, surface);
+    //SDL_Surface* surface;
+    //int image_width = 0;
+    //int image_height = 0;
+    //int channels;
+    //unsigned char* image_data = stbi_load(Util::Prefpath("logo64.png").c_str(), &image_width, &image_height, &channels, 3);
+    //if (image_data != nullptr) {
+    //    std::array<uint16_t, 64 * 64> pixels;
+    //    for (int i = 0; i < (image_width * image_height * 3); i += 3) {
+    //        pixels[i / 3] = 0;
+    //        pixels[i / 3] |= 0xf << 12;
+    //        pixels[i / 3] |= (image_data[i] / 16) << 8;
+    //        pixels[i / 3] |= (image_data[i + 1] / 16) << 4;
+    //        pixels[i / 3] |= (image_data[i + 2] / 16) << 0;
+    //    }
+    //    surface = SDL_CreateRGBSurfaceFrom(pixels.data(), 64, 64, 64, 16 * 2, 0x0f00, 0x00f0, 0x000f, 0xf000);
+    //    // The icon is attached to the window pointer
+    //    SDL_SetWindowIcon(window, surface);
 
-        // ...and the surface containing the icon pixel data is no longer required.
-        SDL_FreeSurface(surface);
-        stbi_image_free(image_data);
-    }
+    //    // ...and the surface containing the icon pixel data is no longer required.
+    //    SDL_FreeSurface(surface);
+    //    stbi_image_free(image_data);
+    //}
 
     // register custom events with sdl
     events = std::make_unique<EventSystem>();

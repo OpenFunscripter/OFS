@@ -17,14 +17,17 @@ DefaultGroupName=OpenFunscripter
 UninstallDisplayIcon={app}\OpenFunscripter.exe
 Compression=lzma2
 SolidCompression=yes
-OutputBaseFilename=openfunscripter-installer
+OutputBaseFilename=ofs-installer
 OutputDir=.\installer
 
 [Files]
 Source: "bin\{#Configuration}\OpenFunscripter.exe"; DestDir: "{app}"
 Source: "bin\{#Configuration}\*.dll"; DestDir: "{app}"
 Source: "ffmpeg\ffmpeg.exe"; DestDir: "{app}"
-Source: "data\*"; Flags: recursesubdirs; DestDir: "{userappdata}\OFS\OFS_data"
+Source: "data\*"; Flags: recursesubdirs; DestDir: "{app}"
+
+[Icons]
+Name: "{commonprograms}\OpenFunscripter"; Filename: "{app}\OpenFunscripter.exe"
 
 [Code]
 // Uninstall on install code taken from https://stackoverflow.com/a/2099805/4040754

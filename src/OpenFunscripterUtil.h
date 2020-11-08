@@ -230,6 +230,8 @@ public:
 	static void OpenFileDialog(const std::string& title, const std::string& path, FileDialogResultHandler&& handler, bool multiple = false, const std::vector<std::string>& filters = { "All Files", "*" }) noexcept;
 	static void SaveFileDialog(const std::string& title, const std::string& path, FileDialogResultHandler&& handler, const std::vector<std::string>& filters = { "All Files", "*" }) noexcept;
 
+	static std::string Resource(const std::string& path) noexcept;
+
 	static std::string Prefpath(const std::string& path) {
 		static const char* cachedPref = SDL_GetPrefPath("OFS", "OFS_data");
 		static std::filesystem::path prefPath(cachedPref);

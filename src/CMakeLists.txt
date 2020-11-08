@@ -34,9 +34,9 @@ add_executable(${PROJECT_NAME} ${OPEN_FUNSCRIPTER_SOURCES})
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
 
 # copy data directory
-#add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
-#                   COMMAND ${CMAKE_COMMAND} -E copy_directory
-#                   ${CMAKE_SOURCE_DIR}/data $<TARGET_FILE_DIR:${PROJECT_NAME}>"/data")
+add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
+					COMMAND ${CMAKE_COMMAND} -E copy_directory
+					${CMAKE_SOURCE_DIR}/data $<TARGET_FILE_DIR:${PROJECT_NAME}>"/data")
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
   nlohmann_json
