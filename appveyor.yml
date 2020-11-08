@@ -39,10 +39,11 @@ after_build:
     appveyor DownloadFile "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.7z" -FileName "./ffmpeg/ffmpeg-release-essentials.7z"
     cd ffmpeg
     7z e ffmpeg-release-essentials.7z
-    cp ffmpeg.exe "../bin/%configuration%/"
-    cd "../bin/%configuration%/"
-    7z a "OFS-%platform%_%APPVEYOR_REPO_BRANCH%-%APPVEYOR_REPO_COMMIT%.7z" ffmpeg.exe mpv-1.dll OpenFunscripter.exe
-    7z a "OFS-%platform%_%APPVEYOR_REPO_BRANCH%-%APPVEYOR_REPO_COMMIT%.7z" data
+  
+- ps: choco install -y -r --no-progress InnoSetup
+- ps: set PATH=%PATH%;"C:\\Program Files (x86)\\Inno Setup 5"
+- ps: iscc openfunscripter-installer.iss   
+- ps: Push-AppveyorArtifact installer\openfunscripter-installer.exe -FileName OpenFunscripter-$env:CONFIGURATION-$env:APPVEYOR_BUILD_VERSION.exe
 
-artifacts:
-  - path: /bin/$(configuration)/OFS-$(platform)_$(APPVEYOR_REPO_BRANCH)-$(APPVEYOR_REPO_COMMIT).7z
+# artifacts:
+# - path: /bin/$(configuration)/OFS-$(platform)_$(APPVEYOR_REPO_BRANCH)-$(APPVEYOR_REPO_COMMIT).7z
