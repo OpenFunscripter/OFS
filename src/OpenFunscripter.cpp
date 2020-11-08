@@ -1912,7 +1912,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::Separator();
             if (ImGui::MenuItem("Enable rolling backup", NULL, &RollingBackup)) {}
             if (ImGui::MenuItem("Open backup directory")) {
-                Util::OpenFileExplorer("backup");
+                Util::OpenFileExplorer(Util::Prefpath("backup").c_str());
             }
             ImGui::EndMenu();
         }
