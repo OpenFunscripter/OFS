@@ -1,4 +1,8 @@
 .vs
+.vscode
+build
+build_app
+snap
 out
 bin
 *.zip

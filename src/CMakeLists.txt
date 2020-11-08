@@ -79,6 +79,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	mpv
 	OpenGL
 )
+if(OFS_APP_IMAGE)
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+	"OFS_APP_IMAGE")
+endif()
 endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE 

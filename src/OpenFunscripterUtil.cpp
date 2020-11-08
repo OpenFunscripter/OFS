@@ -182,8 +182,12 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
 
 std::string Util::Resource(const std::string& path) noexcept
 {
-	auto base = Util::Basepath();
 	auto rel = std::filesystem::path(path);
 	rel.make_preferred();
+	#if OFS_APP_IMAGE
+	return (Util::Basepath() / std::filesystem::path("../../data/") / rel).string();
+	#else
+	auto base = Util::Basepath();
 	return (base / "data" / rel).string();
+	#endif
 }
