@@ -41,7 +41,7 @@ after_build:
     7z e ffmpeg-release-essentials.7z
   
 - ps: choco install -y -r --no-progress InnoSetup
-- ps: set PATH=%PATH%;"C:\\Program Files (x86)\\Inno Setup 5"
+- ps: set PATH=%PATH%;"C:\\Program Files (x86)\\Inno Setup 6"
 - ps: iscc openfunscripter-installer.iss   
 - ps: Push-AppveyorArtifact installer\openfunscripter-installer.exe -FileName OpenFunscripter-$env:CONFIGURATION-$env:APPVEYOR_BUILD_VERSION.exe
 

@@ -24,7 +24,7 @@ OutputDir=.\installer
 Source: "OpenFunscripter\OpenFunscripter\bin\{#Configuration}\OpenFunscripter.exe"; DestDir: "{app}"
 Source: "OpenFunscripter\OpenFunscripter\bin\{#Configuration}\*.dll"; DestDir: "{app}"
 Source: "OpenFunscripter\OpenFunscripter\ffmpeg\ffmpeg.exe"; DestDir: "{app}"
-
+Source: "OpenFunscripter\OpenFunscripter\data\*"; DestDir: "{userdata}\OFS\OFS_data"
 
 [Code]
 // Uninstall on install code taken from https://stackoverflow.com/a/2099805/4040754
