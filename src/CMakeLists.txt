@@ -139,3 +139,5 @@ else() # clang/gcc
 endif()
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION "bin/")
+# this is awful
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/data DESTINATION "bin/")

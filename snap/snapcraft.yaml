@@ -1,0 +1,60 @@
+name: openfunscripter
+base: core20 
+version: git 
+summary: openfunscripter
+description: |
+  This is my-snap's description. You have a paragraph or two to tell the
+  most important story about your snap.
+
+grade: devel # must be 'stable' to release into candidate/stable channels
+confinement: devmode # use 'strict' once you have the right plugs and slots
+
+environment:
+  LD_LIBRARY_PATH: $SNAP/usr/lib/x86_64-linux-gnu/samba:$SNAP/usr/lib/x86_64-linux-gnu/pulseaudio:$LD_LIBRARY_PATH
+  #  LIBGL_DRIVERS_PATH: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/dri
+
+apps:
+  OpenFunscripter:
+    command: bin/desktop-launch $SNAP/usr/local/bin/OpenFunscripter
+    plugs:
+      - desktop
+      - desktop-legacy
+      - wayland
+      - unity7
+      - home
+      - network
+      - opengl
+      - audio-playback
+      - x11
+      - gsettings
+    slots:
+      - mpris
+
+parts:
+  app:
+    source: .
+    plugin: cmake
+    cmake-parameters:
+      - -DCMAKE_BUILD_TYPE=Debug
+     #- -DOFS_APP_IMAGE=1
+    build-packages:
+      - libmpv-dev
+      - libglvnd-dev
+      - libxext-dev
+      - pkg-config
+    stage-packages:
+      - libmpv1
+      - samba-libs
+      - libglu1-mesa
+      - freeglut3
+    after:
+      - desktop-helper
+
+  desktop-helper:
+    source: https://github.com/ubuntu/snapcraft-desktop-helpers.git
+    source-subdir: glib-only
+    plugin: make
+    build-packages:
+      - libglib2.0-dev
+    stage-packages:
+      - libglib2.0-bin
