@@ -6,7 +6,7 @@ description: |
   A tool to create funscripts.
 
 grade: devel # must be 'stable' to release into candidate/stable channels
-confinement: devmode # use 'strict' once you have the right plugs and slots
+confinement: strict #devmode # use 'strict' once you have the right plugs and slots
 
 environment:
   LD_LIBRARY_PATH: $SNAP/usr/lib/x86_64-linux-gnu/samba:$SNAP/usr/lib/x86_64-linux-gnu/pulseaudio:$LD_LIBRARY_PATH
