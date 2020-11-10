@@ -46,7 +46,7 @@ after_build:
 - ps: cd ..
 - ps: dir
 - ps: iscc ofs-installer.iss   
-- ps: Push-AppveyorArtifact installer\ofs-installer.exe -FileName OFS$env:platform_$env:APPVEYOR_REPO_BRANCH-$env:APPVEYOR_REPO_COMMIT.exe
+- ps: Push-AppveyorArtifact installer\ofs-installer.exe -FileName OFS-x64_$env:APPVEYOR_REPO_BRANCH-$env:APPVEYOR_REPO_COMMIT.exe
 
 # artifacts:
 # - path: /bin/$(configuration)/OFS-$(platform)_$(APPVEYOR_REPO_BRANCH)-$(APPVEYOR_REPO_COMMIT).7z
