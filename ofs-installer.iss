@@ -24,7 +24,7 @@ OutputDir=.\installer
 Source: "bin\{#Configuration}\OpenFunscripter.exe"; DestDir: "{app}"
 Source: "bin\{#Configuration}\*.dll"; DestDir: "{app}"
 Source: "ffmpeg\ffmpeg.exe"; DestDir: "{app}"
-Source: "data"; Flags: recursesubdirs; DestDir: "{app}"
+Source: "data\*"; Flags: recursesubdirs; DestDir: "{app}\data"
 
 [Icons]
 Name: "{commonprograms}\OpenFunscripter"; Filename: "{app}\OpenFunscripter.exe"
