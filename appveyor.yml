@@ -42,9 +42,7 @@ after_build:
     cd ffmpeg
     7z e ffmpeg-release-essentials.7z
   
-- ps: dir
 - ps: cd ..
-- ps: dir
 - ps: iscc ofs-installer.iss   
 - ps: Push-AppveyorArtifact installer\ofs-installer.exe -FileName OFS-x64_$env:APPVEYOR_REPO_BRANCH-$env:APPVEYOR_REPO_COMMIT.exe
 
