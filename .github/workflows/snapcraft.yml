@@ -1,0 +1,25 @@
+name: snapcraft
+
+# Controls when the action will run. Workflow runs when manually triggered using the UI
+# or API.
+on:
+  workflow_dispatch:
+  
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  
+  craft:
+    runs-on: ubuntu-latest
+       
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - name: Install Snapcraft
+        uses: samuelmeuli/action-snapcraft@v1
+    
+      - name: stuff
+        run: snapcraft --use-lxd
