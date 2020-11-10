@@ -184,10 +184,6 @@ std::string Util::Resource(const std::string& path) noexcept
 {
 	auto rel = std::filesystem::path(path);
 	rel.make_preferred();
-	#if OFS_APP_IMAGE
-	return (Util::Basepath() / std::filesystem::path("../../data/") / rel).string();
-	#else
 	auto base = Util::Basepath();
 	return (base / "data" / rel).string();
-	#endif
 }

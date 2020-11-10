@@ -79,10 +79,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	mpv
 	OpenGL
 )
-if(OFS_APP_IMAGE)
-target_compile_definitions(${PROJECT_NAME} PRIVATE
-	"OFS_APP_IMAGE")
-endif()
 endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE 
@@ -139,5 +135,10 @@ else() # clang/gcc
 endif()
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION "bin/")
+
+if(OFS_SNAP_IMAGE)
 # this is awful
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+	"OFS_SNAP_IMAGE")
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/data DESTINATION "bin/")
+endif()

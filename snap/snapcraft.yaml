@@ -3,8 +3,7 @@ base: core20
 version: git 
 summary: openfunscripter
 description: |
-  This is my-snap's description. You have a paragraph or two to tell the
-  most important story about your snap.
+  A tool to create funscripts.
 
 grade: devel # must be 'stable' to release into candidate/stable channels
 confinement: devmode # use 'strict' once you have the right plugs and slots
@@ -36,7 +35,7 @@ parts:
     plugin: cmake
     cmake-parameters:
       - -DCMAKE_BUILD_TYPE=Debug
-     #- -DOFS_APP_IMAGE=1
+      - -DOFS_SNAP_IMAGE=1
     build-packages:
       - libmpv-dev
       - libglvnd-dev
