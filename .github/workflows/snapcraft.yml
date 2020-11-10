@@ -16,6 +16,7 @@ jobs:
       - name: Check out Git repository
         uses: actions/checkout@v2
         with:
+          submodules: 'recursive'
           fetch-depth: 1
 
       - name: Install Snapcraft
@@ -25,3 +26,8 @@ jobs:
     
       - name: build_snap
         run: sg lxd -c 'snapcraft --use-lxd'
+        
+      - uses: actions/upload-artifact@v2
+        with:
+          name: snap
+          path: "*.snap"
