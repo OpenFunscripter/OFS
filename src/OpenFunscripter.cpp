@@ -22,6 +22,7 @@
 //TODO: test imgui cursor api instead of SDL2
 
 // BUG: linux save screenshot segmenation fault
+// BUG: ffmpeg call bugged
 
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
