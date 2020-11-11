@@ -24,10 +24,10 @@ jobs:
         with:
             use_lxd: true
 
-      - name: Get snap name
+      - name: Get test name
         run: |
           ls
-          echo "$(ls *.png)" >> $TESTTEST_NAME
+          echo "$(ls *.jpg)" >> $TESTTEST_NAME
           
 
       - name: Build
