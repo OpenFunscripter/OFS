@@ -45,7 +45,7 @@ target_link_libraries(imgui_stdlib PUBLIC imgui)
 # ========
 # = SDL2 =
 # ========
-set(SDL_SHARED OFF CACHE BOOL "Build a shared version of the library")
+set(SDL_SHARED OFF CACHE BOOL "" FORCE)
 add_subdirectory("SDL2/")
 
 
@@ -73,4 +73,5 @@ target_include_directories(tinyfiledialogs PUBLIC "tinyfiledialogs/")
 # ============
 set(JSON_BuildTests OFF CACHE BOOL "" FORCE)
 set(JSON_MultipleHeaders ON CACHE BOOL "" FORCE)
+set(JSON_Install OFF CACHE BOOL "" FORCE)
 add_subdirectory("json/")
