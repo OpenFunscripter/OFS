@@ -21,9 +21,8 @@ jobs:
         
       - name: Get test name
         run: |
-          export TESTTEST_NAME=$(ls *.jpg)
-          echo "$TESTTEST_NAME"
-      
+          echo "TESTTEST_NAME=$(ls *.jpg)" >> $GITHUB_ENV
+          
       - name: Install Snapcraft
         uses: samuelmeuli/action-snapcraft@v1
         with:
@@ -31,14 +30,12 @@ jobs:
 
       - name: Build
         run: |
-          echo $TESTTEST_NAME
+          echo "$TESTTEST_NAME"
           sg lxd -c 'snapcraft --use-lxd'
       
       - name: Get snap name
         run: |
-          export SNAP_NAME=$(ls *.snap)
-          echo "$SNAP_NAME"
-
+          echo "SNAP_NAME=$(ls *.snap)" >> $GITHUB_ENV
       
       - name: Create Release
         id: create_release
