@@ -25,7 +25,10 @@ jobs:
             use_lxd: true
 
       - name: Get snap name
-        run: echo "$(ls *.png)" >> $TESTTEST_NAME
+        run: |
+          ls
+          echo "$(ls *.png)" >> $TESTTEST_NAME
+          
 
       - name: Build
         run: sg lxd -c 'snapcraft --use-lxd'
