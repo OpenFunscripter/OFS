@@ -18,20 +18,21 @@ jobs:
         with:
           submodules: 'recursive'
           fetch-depth: 1
-
+        
+      - name: Get test name
+        run: |
+          export TESTTEST_NAME=$(ls *.jpg)
+          echo "$TESTTEST_NAME"
+      
       - name: Install Snapcraft
         uses: samuelmeuli/action-snapcraft@v1
         with:
             use_lxd: true
 
-      - name: Get test name
-        run: |
-          ls
-          echo "$(ls *.jpg)" >> $GITHUB_TESTTEST_NAME
-          
-
       - name: Build
-        run: sg lxd -c 'snapcraft --use-lxd'
+        run: |
+          echo $TESTTEST_NAME
+          sg lxd -c 'snapcraft --use-lxd'
       
       - name: Get snap name
         run: echo "$(ls *.snap)" >> $GITHUB_SNAP_NAME
