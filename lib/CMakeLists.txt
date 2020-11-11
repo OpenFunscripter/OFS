@@ -45,6 +45,7 @@ target_link_libraries(imgui_stdlib PUBLIC imgui)
 # ========
 # = SDL2 =
 # ========
+set(SDL_SHARED OFF CACHE BOOL "Build a shared version of the library")
 add_subdirectory("SDL2/")
 
 
