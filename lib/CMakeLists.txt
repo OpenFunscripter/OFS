@@ -53,6 +53,14 @@ add_subdirectory("SDL2/")
 # =========================
 add_subdirectory("portable-file-dialogs/")
 
+# ===================
+# = tinifiledialogs = 
+# ===================
+set(tiny_SRC "tinyfiledialogs/tinyfiledialogs.c")
+set(tiny_HEADER "tinyfiledialogs/tinyfiledialogs.h")
+add_library(tinyfiledialogs STATIC ${tiny_SRC} ${tiny_HEADER})
+target_include_directories(tinyfiledialogs PUBLIC "tinyfiledialogs/")
+
 # ==============
 # === SPDLOG ===
 # ==============

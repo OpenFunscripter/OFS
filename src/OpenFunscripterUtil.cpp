@@ -17,15 +17,17 @@
 
 #include "imgui.h"
 
-#define NOC_FILE_DIALOG_IMPLEMENTATION
-#if WIN32
-#define NOC_FILE_DIALOG_WIN32
-#elif __APPLE__
-#define NOC_FILE_DIALOG_OSX
-#else
-#define NOC_FILE_DIALOG_GTK
-#endif
-#include "noc_file_dialog.h"
+//#define NOC_FILE_DIALOG_IMPLEMENTATION
+//#if WIN32
+//#define NOC_FILE_DIALOG_WIN32
+//#elif __APPLE__
+//#define NOC_FILE_DIALOG_OSX
+//#else
+//#define NOC_FILE_DIALOG_GTK
+//#endif
+//#include "noc_file_dialog.h"
+
+#include "tinyfiledialogs.h"
 
 bool Util::LoadTextureFromFile(const char* filename, unsigned int* out_texture, int* out_width, int* out_height)
 {
@@ -110,9 +112,9 @@ void Util::OpenFileDialog(const std::string& title, const std::string& path, Fil
 			data->path = "";
 		}
 
-		auto result = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "All Files\0*.*\0", data->path.c_str(), NULL);
+		//auto result = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "All Files\0*.*\0", data->path.c_str(), NULL);
+		auto result = tinyfd_openFileDialog(data->title.c_str(), data->path.c_str(), 0, NULL, "All Files", data->multiple);
 		//pfd::open_file fileDialog(data->title, data->path, data->filters, (data->multiple) ? pfd::opt::multiselect : pfd::opt::none);
-		
 		auto dialogResult = new FileDialogResult;
 		if (result != nullptr) {
 			dialogResult->files.emplace_back(result);
@@ -169,10 +171,13 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
 
 
 		//pfd::save_file saveFileDialog(data->title, data->path, data->filters, pfd::opt::none);
-		auto result = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "All Files\0*.*\0", data->path.c_str(), NULL);
+		//auto result = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "All Files\0*.*\0", data->path.c_str(), NULL);
+		auto result = tinyfd_saveFileDialog(data->title.c_str(), data->path.c_str(), 0, NULL, "All Files");
 		auto saveDialogResult = new FileDialogResult;
 		//saveDialogResult->files.emplace_back(saveFileDialog.result());
-		saveDialogResult->files.emplace_back(result);
+		if (result != nullptr) {
+			saveDialogResult->files.emplace_back(result);
+		}
 		auto eventData = new EventSystem::SingleShotEventData;
 		eventData->ctx = saveDialogResult;
 		eventData->handler = data->handler;
