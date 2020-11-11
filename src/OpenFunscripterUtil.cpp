@@ -4,8 +4,6 @@
 
 #include <filesystem>
 #include  "SDL.h"
-//#include "portable-file-dialogs.h"
-
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -16,16 +14,6 @@
 #include "glad/glad.h"
 
 #include "imgui.h"
-
-//#define NOC_FILE_DIALOG_IMPLEMENTATION
-//#if WIN32
-//#define NOC_FILE_DIALOG_WIN32
-//#elif __APPLE__
-//#define NOC_FILE_DIALOG_OSX
-//#else
-//#define NOC_FILE_DIALOG_GTK
-//#endif
-//#include "noc_file_dialog.h"
 
 #include "tinyfiledialogs.h"
 

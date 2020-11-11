@@ -48,11 +48,6 @@ target_link_libraries(imgui_stdlib PUBLIC imgui)
 add_subdirectory("SDL2/")
 
 
-# =========================
-# = portable-file-dialogs =
-# =========================
-add_subdirectory("portable-file-dialogs/")
-
 # ===================
 # = tinifiledialogs = 
 # ===================

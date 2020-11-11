@@ -45,7 +45,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   glad
   SDL2-static
   SDL2main
-  portable_file_dialogs
   tinyfiledialogs
 )
 

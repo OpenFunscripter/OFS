@@ -16,8 +16,6 @@
 #include "stb_sprintf.h"
 #include "stb_image_write.h"
 
-#include "portable-file-dialogs.h"
-
 static void* get_proc_address_mpv(void* fn_ctx, const char* name)
 {
 	return SDL_GL_GetProcAddress(name);

@@ -34,7 +34,7 @@ parts:
     source: .
     plugin: cmake
     cmake-parameters:
-      - -DCMAKE_BUILD_TYPE=Debug
+      - -DCMAKE_BUILD_TYPE=Release
       - -DOFS_SNAP_IMAGE=1
     build-packages:
       - libmpv-dev
@@ -46,6 +46,7 @@ parts:
       - samba-libs
       - libglu1-mesa
       - freeglut3
+      - zenity
     after:
       - desktop-helper
 
