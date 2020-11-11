@@ -7,10 +7,10 @@ on:
   
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  
-  craft:
+  crafting:
     runs-on: ubuntu-latest
-       
+    env:
+      SHA7: ${GITHUB_SHA::7}       
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - name: Check out Git repository
@@ -24,8 +24,11 @@ jobs:
         with:
             use_lxd: true
     
-      - name: build_snap
-        run: sg lxd -c 'snapcraft --use-lxd'
+      - name: Build
+        run: 
+          sg lxd -c 'snapcraft --use-lxd'
+          echo "$(*.snap)" >> $SNAP_NAME
+
       
       - name: Create Release
         id: create_release
@@ -44,8 +47,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: "*.snap"
-          asset_name: OFS-64x_${{github.ref}}@${{github.sha}}.snap
+          asset_path: ${SNAP_NAME}
+          asset_name: OFS-64x_${{github.ref}}@${SHA7}.snap
           asset_content_type: application/octet-stream
       
       #- uses: actions/upload-artifact@v2
