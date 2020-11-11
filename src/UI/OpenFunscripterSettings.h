@@ -11,9 +11,10 @@
 #include "ScriptSimulator.h"
 
 #include "OFS_Reflection.h"
-
+#include "OpenFunscripterUtil.h"
 #include "imgui.h"
 
+constexpr const char* CurrentSettingsVersion = "1";
 class OpenFunscripterSettings
 {
 public:
@@ -30,8 +31,8 @@ public:
 	};
 private:
 	struct ScripterSettingsData {
+		std::string config_version = CurrentSettingsVersion;
 		std::string last_path;
-		RecentFile most_recent_file;
 		int32_t default_font_size = 18;
 		int32_t fast_step_amount = 6;
 		bool always_show_bookmark_labels = false;
@@ -45,12 +46,17 @@ private:
 
 		std::vector<RecentFile> recentFiles;
 		ScriptSimulator::SimulatorSettings* simulator;
-
 		template <class Archive>
 		inline void reflect(Archive& ar)
 		{
+			OFS_REFLECT(config_version, ar);
+			// checks configuration version and cancels if it doesn't match
+			if (config_version != CurrentSettingsVersion) { 
+				LOGF_WARN("Settings version: \"%s\" didn't match \"%s\". Settings are reset.", config_version.c_str(), CurrentSettingsVersion);
+				config_version = CurrentSettingsVersion;
+				return; 
+			}
 			OFS_REFLECT(last_path, ar);
-			OFS_REFLECT(most_recent_file, ar);
 			OFS_REFLECT(always_show_bookmark_labels, ar);
 			OFS_REFLECT(draw_video, ar);
 			OFS_REFLECT(show_simulator, ar);
@@ -82,8 +88,8 @@ public:
 	OpenFunscripterSettings(const std::string& keybinds, const std::string& config);
 	ScripterSettingsData& data() noexcept { return scripterSettings; }
 	void saveSettings();
-	void saveKeybinds(const std::vector<KeybindingGroup>& binding);
-	std::vector<KeybindingGroup> getKeybindings();
+	void saveKeybinds(const Keybindings& binding);
+	Keybindings getKeybindings();
 
 	inline void addRecentFile(RecentFile& recentFile) noexcept {
 		bool already_contains = std::any_of(scripterSettings.recentFiles.begin(), scripterSettings.recentFiles.end(),

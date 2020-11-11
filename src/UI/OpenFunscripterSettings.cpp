@@ -21,8 +21,8 @@ OpenFunscripterSettings::OpenFunscripterSettings(const std::string& keybinds, co
 	}
 
 	scripterSettings.simulator = &OpenFunscripter::ptr->simulator.simulator;
-	if (!keybindsObj[KeybindsStr].is_array())
-		keybindsObj[KeybindsStr] = nlohmann::json::array();
+	if (!keybindsObj[KeybindsStr].is_object())
+		keybindsObj[KeybindsStr] = nlohmann::json::object();
 	
 	if (!configObj[ConfigStr].is_object())
 		configObj[ConfigStr] = nlohmann::json::object();
@@ -51,21 +51,19 @@ void OpenFunscripterSettings::saveSettings()
 	save_config();
 }
 
-void OpenFunscripterSettings::saveKeybinds(const std::vector<KeybindingGroup>& bindings)
+void OpenFunscripterSettings::saveKeybinds(const Keybindings& bindings)
 {
-	OFS::archiver ar(&keybindsObj);
-	auto pair = reflect_member(KeybindsStr, (std::vector<KeybindingGroup>*) & bindings);
-	ar << pair;
+	OFS::serializer::save((Keybindings*)&bindings, &keybindsObj[KeybindsStr]);
 	save_keybinds();
 }
 
-std::vector<KeybindingGroup> OpenFunscripterSettings::getKeybindings()
+Keybindings OpenFunscripterSettings::getKeybindings()
 {
 	auto& keybinds = keybindsObj[KeybindsStr];
-	std::vector<KeybindingGroup> bindings;
-	OFS::unpacker upkg(&keybindsObj);
-	auto pair = reflect_member(KeybindsStr, &bindings);
-	upkg << pair;
+	Keybindings bindings;
+	if (!keybinds.empty()) {
+		OFS::serializer::load(&bindings, &keybinds);
+	}
 	return bindings;
 }
 

@@ -20,9 +20,7 @@
 // TODO: make heatmap generation more sophisticated
 
 //TODO: test imgui cursor api instead of SDL2
-
 // BUG: linux save screenshot segmenation fault
-// BUG: ffmpeg call bugged
 
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
@@ -307,13 +305,16 @@ bool OpenFunscripter::setup()
     events->Subscribe(EventSystem::FunscriptActionClickedEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FunscriptActionClicked));
     events->Subscribe(SDL_DROPFILE, EVENT_SYSTEM_BIND(this, &OpenFunscripter::DragNDrop));
     events->Subscribe(EventSystem::MpvVideoLoaded, EVENT_SYSTEM_BIND(this, &OpenFunscripter::MpvVideoLoaded));
-    // cache these here because openFile overrides them
-    std::string last_video = settings->data().most_recent_file.video_path;
-    std::string last_script = settings->data().most_recent_file.script_path;
-    if (!last_script.empty())
-        openFile(last_script);
-    if (!last_video.empty())
-        openFile(last_video);
+    
+    if (!settings->data().recentFiles.empty()) {
+        // cache these here because openFile overrides them
+        std::string last_video = settings->data().recentFiles.back().video_path;
+        std::string last_script = settings->data().recentFiles.back().script_path;
+        if (!last_script.empty())
+            openFile(last_script);
+        if (!last_video.empty())
+            openFile(last_video);
+    }
 
     specialFunctions = std::make_unique<SpecialFunctionsWindow>();
     controllerInput = std::make_unique<ControllerInput>();
@@ -1569,8 +1570,6 @@ bool OpenFunscripter::openFile(const std::string& file)
     last_path.replace_filename("");
     last_path /= "";
     settings->data().last_path = last_path.string();
-    settings->data().most_recent_file.video_path = video_path;
-    settings->data().most_recent_file.script_path = funscript_path;
     settings->saveSettings();
 
     last_save_time = std::chrono::system_clock::now();
@@ -1794,7 +1793,8 @@ void OpenFunscripter::showOpenFileDialog()
 
 void OpenFunscripter::saveActiveScriptAs()
 {
-    auto path = std::filesystem::path(settings->data().most_recent_file.script_path);
+    std::filesystem::path path = ActiveFunscript()->current_path;
+    path.make_preferred();
     Util::SaveFileDialog("Save", path.string(),
         [&](auto& result) {
             if (result.files.size() > 0) {

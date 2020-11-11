@@ -114,7 +114,7 @@ void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
         }
         
         // check duplicate
-        for (auto&& group : ActiveBindings) {
+        for (auto&& group : ActiveBindings.groups) {
             for (auto&& binding : group.bindings) {
                 if (binding.key.key == key.keysym.sym && binding.key.modifiers == modstate) {
                     LOGF_INFO("Key already bound for \"%s\"", binding.description.c_str());
@@ -139,7 +139,7 @@ void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
     // this prevents keybindings from being processed when typing into a textbox etc.
     if (ImGui::IsAnyItemActive()) return;
     // process bindings
-    for (auto& group : ActiveBindings) {
+    for (auto& group : ActiveBindings.groups) {
         for (auto& binding : group.bindings) {
             if (key.repeat && binding.ignore_repeats) continue;
 
@@ -169,7 +169,7 @@ void KeybindingSystem::ProcessControllerBindings(SDL_Event& ev, bool repeat) noe
     auto& cbutton = ev.cbutton;
     bool navmodeActive = ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_NavEnableGamepad;
     // process bindings
-    for (auto& group : ActiveBindings) {
+    for (auto&& group : ActiveBindings.groups) {
         for (auto& binding : group.bindings) {
             if ((binding.ignore_repeats && repeat) || binding.controller.button < 0) { continue; }
             if (binding.controller.button == cbutton.button) {
@@ -201,7 +201,7 @@ void KeybindingSystem::ControllerButtonDown(SDL_Event& ev) noexcept
     if (currentlyChanging != nullptr) {
         auto& cbutton = ev.cbutton;
         // check duplicate
-        for (auto&& group : ActiveBindings) {
+        for (auto&& group : ActiveBindings.groups) {
             for (auto&& binding : group.bindings) {
                 if (binding.controller.button == cbutton.button) {
                     LOGF_INFO("The button is already bound for \"%s\"", binding.description.c_str());
@@ -284,15 +284,15 @@ const std::string& KeybindingSystem::getBindingString(const char* binding_id) no
     return empty;
 }
 
-void KeybindingSystem::setBindings(const std::vector<KeybindingGroup>& groups)
+void KeybindingSystem::setBindings(const Keybindings& bindings)
 {
     // setBindings only does something if the bindings were previously registered
-    for (auto& group : groups) {
+    for (auto& group : bindings.groups) {
         for (auto& keybind : group.bindings) {
-            auto groupIt = std::find_if(ActiveBindings.begin(), ActiveBindings.end(),
+            auto groupIt = std::find_if(ActiveBindings.groups.begin(), ActiveBindings.groups.end(),
                 [&](auto& activeGroup) { return activeGroup.name == group.name; });
 
-            if (groupIt != ActiveBindings.end()) {
+            if (groupIt != ActiveBindings.groups.end()) {
                 auto it = std::find_if(groupIt->bindings.begin(), groupIt->bindings.end(),
                     [&](auto& active) { return active.identifier == keybind.identifier; });
 
@@ -315,8 +315,8 @@ void KeybindingSystem::setBindings(const std::vector<KeybindingGroup>& groups)
 
 void KeybindingSystem::registerBinding(const KeybindingGroup& group)
 {
-    ActiveBindings.emplace_back(std::move(group));
-    for (auto& binding : ActiveBindings.back().bindings) {
+    ActiveBindings.groups.emplace_back(std::move(group));
+    for (auto& binding : ActiveBindings.groups.back().bindings) {
         binding.key.key_str = loadKeyString(binding.key.key, binding.key.modifiers);
         binding_string_cache[binding.identifier] = binding.key.key_str;
     }
@@ -348,7 +348,7 @@ bool KeybindingSystem::ShowBindingWindow()
         ImGui::Separator();
         int id = 0;
         std::vector<Binding*> filteredBindings;
-        for(auto&& group : ActiveBindings)
+        for(auto&& group : ActiveBindings.groups)
         {
             int32_t headerFlags = ImGuiTreeNodeFlags_None;
             filteredBindings.clear();

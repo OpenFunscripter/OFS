@@ -2,7 +2,7 @@
 
 
 #include "OFS_Reflection.h"
-
+#include "OpenFunscripterUtil.h"
 #include "SDL.h"
 
 #include <string>
@@ -86,6 +86,23 @@ struct KeybindingGroup {
 	}
 };
 
+constexpr const char* CurrentKeybindingsVersion = "1";
+struct Keybindings {
+	std::string config_version = CurrentKeybindingsVersion;
+	std::vector<KeybindingGroup> groups;
+
+	template<class Archive>
+	inline void reflect(Archive& ar) {
+		OFS_REFLECT(config_version, ar);
+		if (config_version != CurrentKeybindingsVersion) {
+			LOGF_WARN("Keybindings version \"%s\" didn't match \"%s\". Bindings are reset.", config_version.c_str(), CurrentKeybindingsVersion);
+			config_version = CurrentKeybindingsVersion;
+			return;
+		}
+		OFS_REFLECT(groups, ar);
+	}
+};
+
 class KeybindingSystem 
 {
 	std::stringstream currentlyHeldKeys;
@@ -99,7 +116,7 @@ class KeybindingSystem
 
 	void addKeyString(const char* name);
 	void addKeyString(char name);
-	std::vector<KeybindingGroup> ActiveBindings;
+	Keybindings ActiveBindings;
 	std::string loadKeyString(SDL_Keycode key, int mod);
 	
 	void ProcessControllerBindings(SDL_Event& ev, bool repeat) noexcept;
@@ -115,8 +132,8 @@ public:
 
 	void setup();
 	const std::string& getBindingString(const char* binding_id) noexcept;
-	const std::vector<KeybindingGroup>& getBindings() const { return ActiveBindings; }
-	void setBindings(const std::vector<KeybindingGroup>& bindings);
+	const Keybindings& getBindings() const { return ActiveBindings; }
+	void setBindings(const Keybindings& bindings);
 	void registerBinding(const KeybindingGroup& group);
 	bool ShowBindingWindow();
 

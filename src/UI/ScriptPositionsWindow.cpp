@@ -658,7 +658,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 
 bool OutputAudioFile(const char* ffmpeg_path, const char* video_path, const char* output_path) {
 	char buffer[1024];
-	int num = stbsp_snprintf(buffer, sizeof(buffer), "%s -i \"%s\" -b:a 320k -ac 1 -y \"%s\"",
+	int num = stbsp_snprintf(buffer, sizeof(buffer), "\"\"%s\" -i \"%s\" -b:a 320k -ac 1 -y \"%s\"\"",
 		ffmpeg_path,
 		video_path,
 		output_path);
