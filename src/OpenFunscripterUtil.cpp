@@ -85,13 +85,14 @@ void Util::Tooltip(const char* tip)
 	}
 }
 
-void Util::OpenFileDialog(const std::string& title, const std::string& path, FileDialogResultHandler&& handler, bool multiple, const std::vector<std::string>& filters) noexcept
+void Util::OpenFileDialog(const std::string& title, const std::string& path, FileDialogResultHandler&& handler, bool multiple, const std::vector<const char*>& filters, const std::string& filterText) noexcept
 {
 	struct FileDialogThreadData {
 		bool multiple = false;
 		std::string title;
 		std::string path;
-		std::vector<std::string> filters;
+		std::vector<const char*> filters;
+		std::string filterText;
 		EventSystem::SingleShotEventHandler handler;
 	};
 	auto thread = [](void* ctx) {
@@ -100,14 +101,25 @@ void Util::OpenFileDialog(const std::string& title, const std::string& path, Fil
 			data->path = "";
 		}
 
-		//auto result = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "All Files\0*.*\0", data->path.c_str(), NULL);
-		auto result = tinyfd_openFileDialog(data->title.c_str(), data->path.c_str(), 0, NULL, "All Files", data->multiple);
-		//pfd::open_file fileDialog(data->title, data->path, data->filters, (data->multiple) ? pfd::opt::multiselect : pfd::opt::none);
+		auto result = tinyfd_openFileDialog(data->title.c_str(), data->path.c_str(), data->filters.size(), data->filters.data(), !data->filterText.empty() ? data->filterText.c_str() : NULL, data->multiple);
 		auto dialogResult = new FileDialogResult;
 		if (result != nullptr) {
-			dialogResult->files.emplace_back(result);
+			if (data->multiple) {
+				int last = 0;
+				int index = 0;
+				for (char c : std::string(result)) {
+					if (c == '|') {
+						dialogResult->files.emplace_back(std::string(result + last, index - last));
+						last = index+1;
+					}
+					index++;
+				}
+				dialogResult->files.emplace_back(std::string(result + last, index - last));
+			}
+			else {
+				dialogResult->files.emplace_back(result);
+			}
 		}
-		//dialogResult->files = fileDialog.result();
 
 		auto eventData = new EventSystem::SingleShotEventData;
 		eventData->ctx = dialogResult;
@@ -127,6 +139,7 @@ void Util::OpenFileDialog(const std::string& title, const std::string& path, Fil
 		delete result;
 	};
 	threadData->filters = filters;
+	threadData->filterText = filterText;
 	threadData->multiple = multiple;
 	threadData->path = path;
 	threadData->title = title;
@@ -134,12 +147,13 @@ void Util::OpenFileDialog(const std::string& title, const std::string& path, Fil
 	SDL_DetachThread(handle);
 }
 
-void Util::SaveFileDialog(const std::string& title, const std::string& path, FileDialogResultHandler&& handler, const std::vector<std::string>& filters) noexcept
+void Util::SaveFileDialog(const std::string& title, const std::string& path, FileDialogResultHandler&& handler, const std::vector<const char*>& filters, const std::string& filterText) noexcept
 {
 	struct SaveFileDialogThreadData {
 		std::string title;
 		std::string path;
-		std::vector<std::string> filters;
+		std::vector<const char*> filters;
+		std::string filterText;
 		EventSystem::SingleShotEventHandler handler;
 	};
 	auto thread = [](void* ctx) -> int32_t {
@@ -157,12 +171,8 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
 			}
 		}
 
-
-		//pfd::save_file saveFileDialog(data->title, data->path, data->filters, pfd::opt::none);
-		//auto result = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "All Files\0*.*\0", data->path.c_str(), NULL);
-		auto result = tinyfd_saveFileDialog(data->title.c_str(), data->path.c_str(), 0, NULL, "All Files");
+		auto result = tinyfd_saveFileDialog(data->title.c_str(), data->path.c_str(), data->filters.size(), data->filters.data(), !data->filterText.empty() ? data->filterText.c_str() : NULL);
 		auto saveDialogResult = new FileDialogResult;
-		//saveDialogResult->files.emplace_back(saveFileDialog.result());
 		if (result != nullptr) {
 			saveDialogResult->files.emplace_back(result);
 		}
@@ -181,6 +191,7 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
 	threadData->title = title;
 	threadData->path = path;
 	threadData->filters = filters;
+	threadData->filterText = filterText;
 	threadData->handler = [handler](void* ctx) {
 		auto result = (FileDialogResult*)ctx;
 		handler(*result);

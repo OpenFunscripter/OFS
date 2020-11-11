@@ -23,7 +23,6 @@
 
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
-// also used to generate a filter for the file dialog
 constexpr std::array<const char*, 6> SupportedVideoExtensions {
     ".mp4",
     ".mkv",
@@ -56,29 +55,6 @@ constexpr const char* ActionEditorId = "Action editor";
 constexpr int DefaultWidth = 1920;
 constexpr int DefaultHeight= 1080;
 
-
-static std::vector<std::string> DefaultOpenFileDialogFilters() {
-    std::vector<std::string> filters;
-    std::stringstream ss;
-    for (auto& ext : SupportedVideoExtensions) {
-        ss << '*' << ext << ';';
-    }
-    filters.emplace_back("All files");
-    filters.emplace_back("*");
-    filters.emplace_back(std::string("Videos ( ") + ss.str() + " )");
-    filters.emplace_back(ss.str());
-    filters.emplace_back("Funscript ( .funscript )");
-    filters.emplace_back("*.funscript");
-
-
-    ss.str("");
-    for (auto&& ext : SupportedAudioExtensions) {
-        ss << "*" << ext << ";";
-    }
-    filters.emplace_back(std::string("Audio ( ") + ss.str() + " )");
-    filters.emplace_back(ss.str());
-    return filters;
-}
 
 bool OpenFunscripter::imgui_setup() noexcept
 {
@@ -1787,7 +1763,7 @@ void OpenFunscripter::showOpenFileDialog()
                     openFile(file);
                 }
             }
-        }, false, DefaultOpenFileDialogFilters());
+        }, false);
 }
 
 void OpenFunscripter::saveActiveScriptAs()
@@ -1857,7 +1833,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                                     }
                                 }
                             }
-                        }, true, { "Funscript", "*.funscript" });
+                        }, true, { "*.funscript" }, "Funscript");
                 }
                 ImGui::EndMenu();
             }

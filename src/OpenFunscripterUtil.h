@@ -227,8 +227,17 @@ public:
 		std::vector<std::string> files;
 	};
 	using FileDialogResultHandler = std::function<void(FileDialogResult&)>;
-	static void OpenFileDialog(const std::string& title, const std::string& path, FileDialogResultHandler&& handler, bool multiple = false, const std::vector<std::string>& filters = { "All Files", "*" }) noexcept;
-	static void SaveFileDialog(const std::string& title, const std::string& path, FileDialogResultHandler&& handler, const std::vector<std::string>& filters = { "All Files", "*" }) noexcept;
+	static void OpenFileDialog(const std::string& title,
+		const std::string& path,
+		FileDialogResultHandler&& handler,
+		bool multiple = false,
+		const std::vector<const char*>& filters = {},
+		const std::string& filterText = "") noexcept;
+	static void SaveFileDialog(const std::string& title, 
+		const std::string& path, 
+		FileDialogResultHandler&& handler, 
+		const std::vector<const char*>& filters = { },
+		const std::string& filterText = "") noexcept;
 
 	static std::string Resource(const std::string& path) noexcept;
 
