@@ -10,7 +10,7 @@ jobs:
   crafting:
     runs-on: ubuntu-latest
     env:
-      SHA7: ${{github.sha::7}}
+      SHA7: $(git rev-parse --short=7 ${{ github.sha }})
       SNAP_NAME: "Unknown"     
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
