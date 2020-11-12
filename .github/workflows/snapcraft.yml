@@ -18,7 +18,13 @@ jobs:
         with:
           submodules: 'recursive'
           fetch-depth: 1
-                 
+
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
       - name: Install Snapcraft
         uses: samuelmeuli/action-snapcraft@v1
         with:
@@ -42,11 +48,7 @@ jobs:
 #          release_name: Release ${{ github.ref }}
 #          draft: false
 #          prerelease: false
-      - name: Get release
-        id: get_release
-        uses: bruceadams/get-release@v1.2.2
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+
 
       - name: Upload Release Asset
         id: upload-release-asset 
