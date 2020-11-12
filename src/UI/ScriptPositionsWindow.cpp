@@ -673,7 +673,13 @@ bool OutputAudioFile(const char* ffmpeg_path, const char* video_path, const char
 	if (num >= sizeof(buffer)) {
 		return false;
 	}
+
+#if WIN32
+	auto wide = Util::Utf8ToUtf16(buffer);
+	bool success = _wsystem(wide.c_str()) == 0;
+#else
 	bool success = std::system(buffer) == 0;
+#endif
 
 	return success;
 }

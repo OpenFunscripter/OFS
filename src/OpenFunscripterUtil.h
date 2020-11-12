@@ -258,4 +258,7 @@ public:
 		}
 		return true;
 	}
+
+	static std::wstring Utf8ToUtf16(const std::string& str) noexcept;
+	static std::string Utf16ToUtf8(const std::wstring& str) noexcept;
 };

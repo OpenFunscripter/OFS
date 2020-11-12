@@ -223,3 +223,13 @@ std::string Util::Resource(const std::string& path) noexcept
 	auto base = Util::Basepath();
 	return (base / "data" / rel).string();
 }
+
+std::wstring Util::Utf8ToUtf16(const std::string& str) noexcept
+{
+	return tinyfd_utf8to16(str.c_str());
+}
+
+std::string Util::Utf16ToUtf8(const std::wstring& str) noexcept
+{
+	return tinyfd_utf16to8(str.c_str());
+}
