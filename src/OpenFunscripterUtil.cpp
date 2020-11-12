@@ -101,7 +101,22 @@ void Util::OpenFileDialog(const std::string& title, const std::string& path, Fil
 			data->path = "";
 		}
 
-		auto result = tinyfd_openFileDialog(data->title.c_str(), data->path.c_str(), data->filters.size(), data->filters.data(), !data->filterText.empty() ? data->filterText.c_str() : NULL, data->multiple);
+#if WIN32
+		std::wstring wtitle(tinyfd_utf8to16(data->title.c_str()));
+		std::wstring wpath(tinyfd_utf8to16(data->path.c_str()));
+		std::wstring wfilterText(tinyfd_utf8to16(data->filterText.c_str()));
+		std::vector<std::wstring> wfilters;
+		std::vector<const wchar_t*> wc_str;
+		wfilters.reserve(data->filters.size());
+		wc_str.reserve(data->filters.size());
+		for (auto&& filter : data->filters) {
+			wfilters.emplace_back(tinyfd_utf8to16(filter));
+			wc_str.push_back(wfilters.back().c_str());
+		}
+		auto result = tinyfd_utf16to8(tinyfd_openFileDialogW(wtitle.c_str(), wpath.c_str(), wc_str.size(), wc_str.data(), wfilterText.empty() ? NULL : wfilterText.c_str(), data->multiple));
+#else
+		auto result = tinyfd_openFileDialog(data->title.c_str(), data->path.c_str(), data->filters.size(), data->filters.data(), data->filterText.empty() ? NULL : data->filterText.c_str(), data->multiple);
+#endif
 		auto dialogResult = new FileDialogResult;
 		if (result != nullptr) {
 			if (data->multiple) {
@@ -172,6 +187,7 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
 		}
 
 		auto result = tinyfd_saveFileDialog(data->title.c_str(), data->path.c_str(), data->filters.size(), data->filters.data(), !data->filterText.empty() ? data->filterText.c_str() : NULL);
+		FUN_ASSERT(result, "Is this correct?");
 		auto saveDialogResult = new FileDialogResult;
 		if (result != nullptr) {
 			saveDialogResult->files.emplace_back(result);
