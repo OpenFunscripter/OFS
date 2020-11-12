@@ -14,11 +14,11 @@
 // FIX: Add type checking to the deserialization. 
 //      I assume it would crash if a field is specified but doesn't have the correct type.
 
-// TODO: add a stripped save option (saves bare minium without OFS stuff)
 // TODO: use a ringbuffer in the undosystem
 // TODO: make heatmap generation more sophisticated
 
-//TODO: test imgui cursor api instead of SDL2
+// TODO: keybindings "in use" checking should ignore setting the same key/button to itself
+// TODO: test imgui cursor api instead of SDL2
 // BUG: linux save screenshot segmenation fault
 
 // the video player supports a lot more than these

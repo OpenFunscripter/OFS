@@ -658,11 +658,18 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 
 bool OutputAudioFile(const char* ffmpeg_path, const char* video_path, const char* output_path) {
 	char buffer[1024];
-	int num = stbsp_snprintf(buffer, sizeof(buffer), "\"\"%s\" -i \"%s\" -b:a 320k -ac 1 -y \"%s\"\"",
+#if WIN32
+	constexpr const char* fmt = "\"\"%s\" -i \"%s\" -b:a 320k -ac 1 -y \"%s\"\"";
+#else
+	constexpr const char* fmt = "\"%s\" -i \"%s\" -b:a 320k -ac 1 -y \"%s\"";
+#endif
+	int num = stbsp_snprintf(buffer, sizeof(buffer), fmt,
 		ffmpeg_path,
 		video_path,
 		output_path);
+
 	FUN_ASSERT(num <= sizeof(buffer), "buffer to small");
+
 	if (num >= sizeof(buffer)) {
 		return false;
 	}
