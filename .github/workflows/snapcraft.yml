@@ -10,7 +10,6 @@ jobs:
   crafting:
     runs-on: ubuntu-latest
     env:
-      SHA7: $(git rev-parse --short=7 ${{ github.sha }})
       SNAP_NAME: "Unknown"     
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -57,7 +56,7 @@ jobs:
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
           asset_path: ${{env.SNAP_NAME}}
-          asset_name: OFS-64x_${{github.ref}}@${{env.SHA7}}.snap
+          asset_name: OFS-64x_${{github.ref}}@${{github.sha}}.snap
           asset_content_type: application/octet-stream
       
       #- uses: actions/upload-artifact@v2
