@@ -6,14 +6,14 @@ description: |
   A tool to create funscripts.
 
 grade: devel # must be 'stable' to release into candidate/stable channels
-confinement: strict #devmode # use 'strict' once you have the right plugs and slots
+confinement: classic #strict  # strict #devmode # use 'strict' once you have the right plugs and slots
 
 environment:
   LD_LIBRARY_PATH: $SNAP/usr/lib/x86_64-linux-gnu/samba:$SNAP/usr/lib/x86_64-linux-gnu/pulseaudio:$LD_LIBRARY_PATH
   #  LIBGL_DRIVERS_PATH: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/dri
 
 apps:
-  OpenFunscripter:
+  openfunscripter:
     command: bin/desktop-launch $SNAP/usr/local/bin/OpenFunscripter
     plugs:
       - desktop
@@ -26,6 +26,7 @@ apps:
       - audio-playback
       - x11
       - gsettings
+      - device-buttons
     slots:
       - mpris
 
@@ -46,7 +47,7 @@ parts:
       - samba-libs
       - libglu1-mesa
       - freeglut3
-      - zenity
+        #      - zenity
     after:
       - desktop-helper
 
