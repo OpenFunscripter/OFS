@@ -249,9 +249,9 @@ public:
 		return (prefPath / rel).string();
 	}
 
-	static bool CreateDirectories(const std::string& path) {
+	static bool CreateDirectories(const std::filesystem::path& dirs) {
 		std::error_code ec;
-		std::filesystem::create_directories(path, ec);
+		std::filesystem::create_directories(dirs, ec);
 		if (ec) {
 			LOGF_ERROR("Failed to create directory: %s", ec.message().c_str());
 			return false;

@@ -1169,9 +1169,9 @@ void OpenFunscripter::rollingBackup() noexcept
     auto backupDir = std::filesystem::path(Util::Prefpath("backup"));
     auto name = Util::Filename(player.getVideoPath());
     name = Util::trim(name); // this needs to be trimmed because trailing spaces
-    backupDir /= name;
+    backupDir /= Util::Utf8ToUtf16(name);
     
-    if (!Util::CreateDirectories(backupDir.string())) {
+    if (!Util::CreateDirectories(backupDir)) {
         return;
     }
     
@@ -1180,15 +1180,15 @@ void OpenFunscripter::rollingBackup() noexcept
 
         auto scriptName = Util::Filename(script->current_path);
         Util::trim(scriptName);
-        auto scriptBackupDir = backupDir / scriptName;
-        if (!Util::CreateDirectories(scriptBackupDir.string())) {
+        auto scriptBackupDir = backupDir / Util::Utf8ToUtf16(scriptName);
+        if (!Util::CreateDirectories(scriptBackupDir)) {
             continue;
         }
 
         stbsp_snprintf(path_buf, sizeof(path_buf), "Backup_%d.funscript", SDL_GetTicks());
         auto savePath = scriptBackupDir / path_buf;
-        LOGF_INFO("Backup at \"%s\"", savePath.string().c_str());
-        script->save(savePath.string().c_str(), false);
+        LOGF_INFO("Backup at \"%s\"", savePath.u8string().c_str());
+        script->save(savePath.u8string().c_str(), false);
 
         // delete oldest backup
         auto count_files = [](const std::filesystem::path& path) -> std::size_t
@@ -1222,7 +1222,7 @@ void OpenFunscripter::rollingBackup() noexcept
             auto oldest_backup = get_oldest_file(scriptBackupDir);
             std::error_code ec;
             if ((*oldest_backup).path().extension() == ".funscript") {
-                LOGF_INFO("Removing old backup: \"%s\"", (*oldest_backup).path().string().c_str());
+                LOGF_INFO("Removing old backup: \"%s\"", (*oldest_backup).path().u8string().c_str());
                 std::filesystem::remove(*oldest_backup, ec);
                 if (ec) {
                     LOGF_INFO("Failed to remove old backup\n%s", ec.message().c_str());
