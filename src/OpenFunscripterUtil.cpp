@@ -16,6 +16,8 @@
 #include "imgui.h"
 
 #include "tinyfiledialogs.h"
+
+#define UTF_CPP_CPLUSPLUS 201703L // for some reason the library needs this
 #include "utf8.h"
 
 bool Util::LoadTextureFromFile(const char* filename, unsigned int* out_texture, int* out_width, int* out_height)
