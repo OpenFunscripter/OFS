@@ -17,7 +17,8 @@
 
 #include "tinyfiledialogs.h"
 
-#define UTF_CPP_CPLUSPLUS 201703L // for some reason the library needs this
+// we pretend whre on a lower standard because the cpp11 header wants to throw desperately and doesn't compile with -fno-exceptions
+#define UTF_CPP_CPLUSPLUS 199711L 
 #include "utf8.h"
 
 bool Util::LoadTextureFromFile(const char* filename, unsigned int* out_texture, int* out_width, int* out_height)
