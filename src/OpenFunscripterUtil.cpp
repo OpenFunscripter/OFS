@@ -231,6 +231,12 @@ std::string Util::Resource(const std::string& path) noexcept
 std::wstring Util::Utf8ToUtf16(const std::string& str) noexcept
 {
 	std::wstring result;
+
+	if (!utf8::is_valid(str.begin(), str.end())) {
+		LOGF_ERROR("%s is not valid utf8", str.c_str());
+		return result;
+	}
+
 	result.reserve(utf8::unchecked::distance(str.begin(), str.end()));
 	utf8::unchecked::utf8to16(str.begin(), str.end(), std::back_inserter(result));
 	return result;
