@@ -1169,8 +1169,11 @@ void OpenFunscripter::rollingBackup() noexcept
     auto backupDir = std::filesystem::path(Util::Prefpath("backup"));
     auto name = Util::Filename(player.getVideoPath());
     name = Util::trim(name); // this needs to be trimmed because trailing spaces
+#ifdef WIN32
     backupDir /= Util::Utf8ToUtf16(name);
-    
+#else
+    backupDir /= name;
+#endif
     if (!Util::CreateDirectories(backupDir)) {
         return;
     }
@@ -1180,7 +1183,11 @@ void OpenFunscripter::rollingBackup() noexcept
 
         auto scriptName = Util::Filename(script->current_path);
         Util::trim(scriptName);
+#ifdef WIN32
         auto scriptBackupDir = backupDir / Util::Utf8ToUtf16(scriptName);
+#else
+        auto scriptBackupDir = backupDir / scriptName;
+#endif
         if (!Util::CreateDirectories(scriptBackupDir)) {
             continue;
         }
