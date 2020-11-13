@@ -10,3 +10,6 @@
 [submodule "lib/minimp3"]
 	path = lib/minimp3
 	url = https://github.com/lieff/minimp3.git
+[submodule "lib/utfcpp"]
+	path = lib/utfcpp
+	url = https://github.com/nemtrif/utfcpp.git

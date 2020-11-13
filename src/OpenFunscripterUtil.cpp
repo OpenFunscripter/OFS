@@ -16,6 +16,7 @@
 #include "imgui.h"
 
 #include "tinyfiledialogs.h"
+#include "utf8.h"
 
 bool Util::LoadTextureFromFile(const char* filename, unsigned int* out_texture, int* out_width, int* out_height)
 {
@@ -226,10 +227,17 @@ std::string Util::Resource(const std::string& path) noexcept
 
 std::wstring Util::Utf8ToUtf16(const std::string& str) noexcept
 {
-	return tinyfd_utf8to16(str.c_str());
+	std::wstring result;
+	result.reserve(utf8::distance(str.begin(), str.end()));
+	utf8::utf8to16(str.begin(), str.end(), std::back_inserter(result));
+	return result;
 }
 
 std::string Util::Utf16ToUtf8(const std::wstring& str) noexcept
 {
-	return tinyfd_utf16to8(str.c_str());
+	FUN_ASSERT(false, "this is untested but also unused");
+	std::string result;
+	result.reserve(utf8::distance(str.begin(), str.end()));
+	utf8::utf16to8(str.begin(), str.end(), std::back_inserter(result));
+	return result;
 }

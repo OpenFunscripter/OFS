@@ -46,6 +46,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   SDL2-static
   SDL2main
   tinyfiledialogs
+  utf8::cpp
 )
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
