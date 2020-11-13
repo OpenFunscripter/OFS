@@ -231,7 +231,7 @@ std::wstring Util::Utf8ToUtf16(const std::string& str) noexcept
 {
 	std::wstring result;
 	result.reserve(utf8::distance(str.begin(), str.end()));
-	utf8::utf8to16(str.begin(), str.end(), std::back_inserter(result));
+	utf8::unchecked::utf8to16(str.begin(), str.end(), std::back_inserter(result));
 	return result;
 }
 
@@ -240,6 +240,6 @@ std::string Util::Utf16ToUtf8(const std::wstring& str) noexcept
 	FUN_ASSERT(false, "this is untested but also unused");
 	std::string result;
 	result.reserve(utf8::distance(str.begin(), str.end()));
-	utf8::utf16to8(str.begin(), str.end(), std::back_inserter(result));
+	utf8::unchecked::utf16to8(str.begin(), str.end(), std::back_inserter(result));
 	return result;
 }
