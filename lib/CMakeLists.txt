@@ -22,7 +22,7 @@ target_include_directories(glad PUBLIC "glad/include/")
 # ==========
 # == GLM ===
 # ==========
-#add_subdirectory("glm")
+add_subdirectory("glm")
 
 # =========
 # = IMGUI =

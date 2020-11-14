@@ -11,6 +11,10 @@
 #include "imgui_stdlib.h"
 #include "imgui_internal.h"
 
+#include "Simulator3D.h"
+
+static Simulator3D sim3d;
+
 // FIX: Add type checking to the deserialization. 
 //      I assume it would crash if a field is specified but doesn't have the correct type.
 
@@ -295,7 +299,8 @@ bool OpenFunscripter::setup()
     controllerInput = std::make_unique<ControllerInput>();
     controllerInput->setup();
     simulator.setup();
-    
+    sim3d.setup();
+
     // init cursors
     SDL_FreeCursor(SDL_GetCursor());
     for (int i = 0; i < SDL_NUM_SYSTEM_CURSORS; i++) {
@@ -1053,7 +1058,7 @@ void OpenFunscripter::new_frame() noexcept
     ImGuiIO& io = ImGui::GetIO();
     glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
     glClearColor(0.1f, 0.1f, 0.1f, 1.f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
@@ -1454,6 +1459,7 @@ int OpenFunscripter::run() noexcept
             player.DrawVideoPlayer(NULL);
         }
         render();
+        sim3d.render();
         SDL_GL_SwapWindow(window);
     }
 	return 0;

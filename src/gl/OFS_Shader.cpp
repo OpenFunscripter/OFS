@@ -77,3 +77,39 @@ void VrShader::AspectRatio(float aspect) noexcept
 {
 	glUniform1f(glGetUniformLocation(program, "aspect_ratio"), aspect);
 }
+
+LightingShader::LightingShader()
+	: ShaderBase(vtx_shader, frag_shader)
+{
+
+	float lcol[3]{ 1.f, 1.f, 1.f };
+	float vpos[3]{ 0.f, 0.f, 0.f };
+
+	glUniform3fv(glGetUniformLocation(program, "lightColor"), 1, lcol);
+	glUniform3fv(glGetUniformLocation(program, "viewPos"), 1, vpos);
+}
+
+void LightingShader::ModelMtx(const float* mat4) noexcept
+{
+	glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, mat4);
+}
+
+void LightingShader::ProjectionMtx(const float* mat4) noexcept
+{
+	glUniformMatrix4fv(glGetUniformLocation(program, "projection"), 1, GL_FALSE, mat4);
+}
+
+void LightingShader::ViewMtx(const float* mat4) noexcept
+{
+	glUniformMatrix4fv(glGetUniformLocation(program, "view"), 1, GL_FALSE, mat4);
+}
+
+void LightingShader::ObjectColor(const float* vec4) noexcept
+{
+	glUniform4fv(glGetUniformLocation(program, "objectColor"), 1, vec4);
+}
+
+void LightingShader::LightPos(const float* vec3) noexcept
+{
+	glUniform3fv(glGetUniformLocation(program, "lightPos"), 1, vec3);
+}
