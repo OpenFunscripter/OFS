@@ -16,6 +16,7 @@
 #include "stb_sprintf.h"
 #include "stb_image_write.h"
 
+
 static void* get_proc_address_mpv(void* fn_ctx, const char* name)
 {
 	return SDL_GL_GetProcAddress(name);
@@ -376,117 +377,7 @@ void VideoplayerWindow::setup_vr_mode()
 {
 	// VR MODE
 	// setup shader
-	const char* vtx_shader = R"(
-		#version 330 core
-		uniform mat4 ProjMtx;
-		in vec2 Position;
-		in vec2 UV;
-		in vec4 Color;
-		out vec2 Frag_UV;
-		out vec4 Frag_Color;
-		void main()
-		{
-			Frag_UV = UV;
-			Frag_Color = Color;
-			gl_Position = ProjMtx * vec4(Position.xy,0,1);
-		}
-	)";
-
-	// shader from https://www.shadertoy.com/view/4lK3DK
-	const char* frag_shader = R"(
-
-		#version 330 core
-		uniform sampler2D Texture;
-		uniform vec2 rotation;
-		uniform float zoom;
-		uniform float aspect_ratio;
-
-		in vec2 Frag_UV;
-		in vec4 Frag_Color;
-
-		out vec4 Out_Color;
-		#define PI 3.1415926535
-		#define DEG2RAD 0.01745329251994329576923690768489
-		
-		float hfovDegrees = 75.0;
-		float vfovDegrees = 59.0;
-
-		vec3 rotateXY(vec3 p, vec2 angle) {
-			vec2 c = cos(angle), s = sin(angle);
-			p = vec3(p.x, c.x*p.y + s.x*p.z, -s.x*p.y + c.x*p.z);
-			return vec3(c.y*p.x + s.y*p.z, p.y, -s.y*p.x + c.y*p.z);
-		}
-
-		void main()
-		{
-			float inverse_aspect = 1.f / aspect_ratio;
-			float hfovRad = hfovDegrees * DEG2RAD;
-			float vfovRad = -2.f * atan(tan(hfovRad/2.f)*inverse_aspect);
-
-			vec2 uv = vec2(Frag_UV.s - 0.5, Frag_UV.t - 0.5);
-
-			//to spherical
-			vec3 camDir = normalize(vec3(uv.xy * vec2(tan(0.5 * hfovRad), tan(0.5 * vfovRad)), zoom));
-			//camRot is angle vec in rad
-			vec3 camRot = vec3( (rotation - 0.5) * vec2(2.0 * PI,  PI), 0.);
-
-			//rotate
-			vec3 rd = normalize(rotateXY(camDir, camRot.yx));
-
-			//radial azmuth polar
-			vec2 texCoord = vec2(atan(rd.z, rd.x) + PI, acos(-rd.y)) / vec2(2.0 * PI, PI);
-
-			Out_Color = texture(Texture, texCoord);
-		}
-	)";
-
-	unsigned int vertex, fragment;
-	int success;
-	char infoLog[512];
-	vertex = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertex, 1, &vtx_shader, NULL);
-	glCompileShader(vertex);
-
-	// print compile errors if any
-	glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(vertex, 512, NULL, infoLog);
-		LOGF_ERROR("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n%s", infoLog);
-	};
-
-	// similiar for Fragment Shader
-	fragment = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragment, 1, &frag_shader, NULL);
-	glCompileShader(fragment);
-
-	// print compile errors if any
-	glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(fragment, 512, NULL, infoLog);
-		LOGF_ERROR("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n%s", infoLog);
-	};
-
-	// shader Program
-	vr_shader = glCreateProgram();
-	glAttachShader(vr_shader, vertex);
-	glAttachShader(vr_shader, fragment);
-	glLinkProgram(vr_shader);
-	// print linking errors if any
-	glGetProgramiv(vr_shader, GL_LINK_STATUS, &success);
-	if (!success)
-	{
-		glGetProgramInfoLog(vr_shader, 512, NULL, infoLog);
-		LOGF_ERROR("ERROR::SHADER::PROGRAM::LINKING_FAILED\n%s", infoLog);
-	}
-
-	glUseProgram(vr_shader);
-	glUniform1i(glGetUniformLocation(vr_shader, "Texture"), GL_TEXTURE0);
-
-	// delete the shaders as they're linked into our program now and no longer necessary
-	glDeleteShader(vertex);
-	glDeleteShader(fragment);
+	vr_shader = std::make_unique<VrShader>();
 }
 
 void VideoplayerWindow::notifyVideoLoaded()
@@ -560,7 +451,7 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 						auto& ctx = *(VideoplayerWindow*)cmd->UserCallbackData;
 
 						auto draw_data = ctx.player_viewport->DrawData;
-						glUseProgram(ctx.vr_shader);
+						ctx.vr_shader->use();
 
 						float L = draw_data->DisplayPos.x;
 						float R = draw_data->DisplayPos.x + draw_data->DisplaySize.x;
@@ -573,10 +464,10 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 							{ 0.0f, 0.0f, -1.0f, 0.0f },
 							{ (R + L) / (L - R),  (T + B) / (B - T),  0.0f,   1.0f },
 						};
-						glUniformMatrix4fv(glGetUniformLocation(ctx.vr_shader, "ProjMtx"), 1, GL_FALSE, &ortho_projection[0][0]);
-						glUniform2fv(glGetUniformLocation(ctx.vr_shader, "rotation"), 1, &ctx.settings.current_vr_rotation.x);
-						glUniform1f(glGetUniformLocation(ctx.vr_shader, "zoom"), ctx.settings.vr_zoom);
-						glUniform1f(glGetUniformLocation(ctx.vr_shader, "aspect_ratio"), ctx.video_draw_size.x / ctx.video_draw_size.y);
+						ctx.vr_shader->ProjMtx(&ortho_projection[0][0]);
+						ctx.vr_shader->Rotation(&ctx.settings.current_vr_rotation.x);
+						ctx.vr_shader->Zoom(ctx.settings.vr_zoom);
+						ctx.vr_shader->AspectRatio(ctx.video_draw_size.x / ctx.video_draw_size.y);
 					}, this);
 				ImGui::Image((void*)(intptr_t)render_texture, ImGui::GetContentRegionAvail(), uv0, uv1);
 				video_draw_size = ImGui::GetItemRectSize();

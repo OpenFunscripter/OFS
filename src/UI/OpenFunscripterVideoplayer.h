@@ -4,12 +4,14 @@
 #include "imgui.h"
 #include "OFS_Reflection.h"
 #include "OpenFunscripterUtil.h"
+#include "OFS_Shader.h"
 
 #include <string>
 #include <chrono>
 
 struct mpv_handle;
 struct mpv_render_context;
+
 
 enum VideoMode : int32_t {
 	FULL,
@@ -39,7 +41,7 @@ private:
 		std::string filename;
 	};
 
-	unsigned int vr_shader;
+	std::unique_ptr<class VrShader> vr_shader;
 	ImGuiViewport* player_viewport;
 	
 	ImVec2 video_draw_size;
@@ -103,7 +105,6 @@ private:
 	void notifyVideoLoaded();
 public:
 	static constexpr const char* PlayerId = "Player";
-	VideoplayerWindow()	{ }
 
 	struct OFS_VideoPlayerSettings {
 		ImVec2 current_vr_rotation = ImVec2(0.5f, -0.5f);

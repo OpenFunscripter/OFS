@@ -22,6 +22,8 @@ set(OPEN_FUNSCRIPTER_SOURCES
 
   "event/EventSystem.cpp"
 
+  "gl/OFS_Shader.cpp"
+
   "imgui_impl/imgui_impl_opengl3.cpp"
   "imgui_impl/imgui_impl_sdl.cpp" 
 )
@@ -88,6 +90,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	"${PROJECT_SOURCE_DIR}/UI/"
 	"${PROJECT_SOURCE_DIR}/event/"
 	"${PROJECT_SOURCE_DIR}/Funscript/"
+	"${PROJECT_SOURCE_DIR}/gl/"
 	"${CMAKE_SOURCE_DIR}/lib/minimp3/"
 )
 
