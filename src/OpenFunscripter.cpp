@@ -66,7 +66,7 @@ bool OpenFunscripter::imgui_setup() noexcept
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
-    io.ConfigWindowsMoveFromTitleBarOnly = false;
+    io.ConfigWindowsMoveFromTitleBarOnly = true;
     io.ConfigViewportsNoDecoration = false;
     io.ConfigViewportsNoAutoMerge = false;
     io.ConfigViewportsNoTaskBarIcon = false;
@@ -164,6 +164,7 @@ OpenFunscripter::~OpenFunscripter()
     scripting.reset();
     controllerInput.reset();
     specialFunctions.reset();
+    for (auto&& script : LoadedFunscripts) { script.reset(); }
     events.reset();
 
     settings->saveSettings();
@@ -266,7 +267,6 @@ bool OpenFunscripter::setup()
     register_bindings(); // needs to happen before setBindings
     keybinds.setBindings(settings->getKeybindings()); // override with user bindings
 
-    scriptPositions.setup();
     clearLoadedScripts(); // initialized std::vector with one Funscript
 
     scripting = std::make_unique<ScriptingMode>();
@@ -1015,14 +1015,14 @@ void OpenFunscripter::register_bindings()
             "Controller select",
             true,
             [&](void*) {
-                if (scriptPositions.selectionStart() < 0) {
-                    scriptPositions.setStartSelection(player.getCurrentPositionMsInterp());
+                if (ActiveFunscript()->scriptPositions->selectionStart() < 0) {
+                    ActiveFunscript()->scriptPositions->setStartSelection(player.getCurrentPositionMsInterp());
                 }
                 else {
                     int32_t tmp = player.getCurrentPositionMsInterp();
-                    auto [min, max] = std::minmax(scriptPositions.selectionStart(), tmp);
+                    auto [min, max] = std::minmax(ActiveFunscript()->scriptPositions->selectionStart(), tmp);
                     ActiveFunscript()->SelectTime(min, max);
-                    scriptPositions.setStartSelection(-1);
+                    ActiveFunscript()->scriptPositions->setStartSelection(-1);
                 }
             }
         );
@@ -1143,7 +1143,8 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
     ActiveFunscript()->metadata.title = name;
     auto recentFile = OpenFunscripterSettings::RecentFile{ name, std::string(player.getVideoPath()), ActiveFunscript()->current_path };
     settings->addRecentFile(recentFile);
-    scriptPositions.ClearAudioWaveform();
+    
+    ActiveFunscript()->scriptPositions->ClearAudioWaveform();
 }
 
 void OpenFunscripter::update() noexcept {
@@ -1397,8 +1398,12 @@ int OpenFunscripter::run() noexcept
                         player.setPaused(false);
                         hasSeeked = false;
                     }
-
-                    scriptPositions.ShowScriptPositions(NULL, player.getCurrentPositionMsInterp());
+                    
+                    for (auto&& script : LoadedFunscripts) {
+                        float ms = player.getCurrentPositionMsInterp();
+                        script->scriptPositions->ShowScriptPositions(NULL, ms);
+                    }
+                    //ActiveFunscript()->scriptPositions->ShowScriptPositions(NULL, player.getCurrentPositionMsInterp());
                     ImGui::End();
                 }
                 if(settings->data().show_action_editor)

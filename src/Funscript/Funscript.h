@@ -11,6 +11,7 @@
 #include "SDL_mutex.h"
 
 class UndoSystem;
+class ScriptPositionsWindow;
 
 class Funscript
 {
@@ -160,6 +161,7 @@ public:
 	void NotifyActionsChanged() noexcept;
 
 	std::unique_ptr<UndoSystem> undoSystem;
+	std::unique_ptr<ScriptPositionsWindow> scriptPositions;
 
 	std::string current_path;
 	inline void rollback(const FunscriptData& data) noexcept { this->data = data; NotifyActionsChanged(); }

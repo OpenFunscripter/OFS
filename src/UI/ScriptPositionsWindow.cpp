@@ -14,13 +14,19 @@
 #define MINIMP3_IMPLEMENTATION
 #include "minimp3_ex.h"
 
+float ScriptPositionsWindow::WindowSizeSeconds = 5.f;
+bool ScriptPositionsWindow::ffmpegInProgress = false;
+bool ScriptPositionsWindow::ShowAudioWaveform = false;
+bool ScriptPositionsWindow::ShowLoadedGhosts = false;
+std::vector<float> ScriptPositionsWindow::audio_waveform_avg;
+
 void ScriptPositionsWindow::updateSelection(bool clear)
 {
 	float min = std::min(rel_x1, rel_x2);
 	float max = std::max(rel_x1, rel_x2);
 	int selection_start_ms = offset_ms + (frameSizeMs * min);
 	int selection_end_ms = offset_ms + (frameSizeMs * max);
-	OpenFunscripter::script().SelectTime(selection_start_ms, selection_end_ms, clear);
+	ctx->SelectTime(selection_start_ms, selection_end_ms, clear);
 }
 
 void ScriptPositionsWindow::FfmpegAudioProcessingFinished(SDL_Event& ev)
@@ -30,7 +36,8 @@ void ScriptPositionsWindow::FfmpegAudioProcessingFinished(SDL_Event& ev)
 	LOG_INFO("Audio processing complete.");
 }
 
-void ScriptPositionsWindow::setup()
+ScriptPositionsWindow::ScriptPositionsWindow(Funscript* script)
+	: ctx(script)
 {
 	auto app = OpenFunscripter::ptr;
 	app->events->Subscribe(SDL_MOUSEBUTTONDOWN, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_pressed));
@@ -38,7 +45,6 @@ void ScriptPositionsWindow::setup()
 	app->events->Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_drag));
 	app->events->Subscribe(SDL_MOUSEBUTTONUP, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_released));
 	app->events->Subscribe(EventSystem::FfmpegAudioProcessingFinished, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::FfmpegAudioProcessingFinished));
-
 	std::array<ImColor, 4> heatColor{
 		IM_COL32(0xFF, 0xFF, 0xFF, 0xFF),
 		IM_COL32(0x66, 0xff, 0x00, 0xFF),
@@ -53,6 +59,12 @@ void ScriptPositionsWindow::setup()
 	}
 	speedGradient.refreshCache();
 
+}
+
+ScriptPositionsWindow::~ScriptPositionsWindow()
+{
+	auto app = OpenFunscripter::ptr;
+	app->events->UnsubscribeAll(this);
 }
 
 void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
@@ -89,19 +101,19 @@ void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
 			auto app = OpenFunscripter::ptr;
 			if (clickedAction != nullptr) {
 				// start move
-				app->script().ClearSelection();
-				app->script().SetSelection(*clickedAction, true);
+				ctx->ClearSelection();
+				ctx->SetSelection(*clickedAction, true);
 				IsMoving = true;
-				app->script().undoSystem->Snapshot(StateType::MOUSE_MOVE_ACTION);
+				ctx->undoSystem->Snapshot(StateType::MOUSE_MOVE_ACTION);
 				return;
 			}
 
 			// shift click an action into the window
 			auto action = getActionForPoint(mousePos, app->player.getFrameTimeMs());
 			auto edit = app->script().GetActionAtTime(action.at, app->player.getFrameTimeMs());
-			app->script().undoSystem->Snapshot(StateType::ADD_ACTION);
+			ctx->undoSystem->Snapshot(StateType::ADD_ACTION);
 			if (edit != nullptr) { app->script().RemoveAction(*edit); }
-			app->script().AddAction(action);
+			ctx->AddAction(action);
 		}
 		else if (PositionsItemHovered) {
 			if (clickedAction != nullptr) { 
@@ -121,7 +133,7 @@ void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
 		}
 	}
 	else if (button.button == SDL_BUTTON_MIDDLE) {
-		OpenFunscripter::script().ClearSelection();
+		ctx->ClearSelection();
 	}
 }
 
@@ -150,12 +162,12 @@ void ScriptPositionsWindow::mouse_drag(SDL_Event& ev)
 		if (!app->script().HasSelection()) { IsMoving = false; return; }
 		auto mousePos = ImGui::GetMousePos();
 		auto frameTime = app->player.getFrameTimeMs();
-		auto& toBeMoved = app->script().Selection()[0];
+		auto& toBeMoved = ctx->Selection()[0];
 		auto newAction = getActionForPoint(mousePos, frameTime);
 		if (newAction.at != toBeMoved.at || newAction.pos != toBeMoved.pos) {
 			const FunscriptAction* nearbyAction = nullptr;
 			if ((newAction.at - toBeMoved.at) > 0) {
-				nearbyAction = app->script().GetNextActionAhead(toBeMoved.at);
+				nearbyAction = ctx->GetNextActionAhead(toBeMoved.at);
 				if (nearbyAction != nullptr) {
 					if (std::abs(nearbyAction->at - newAction.at) > frameTime) {
 						nearbyAction = nullptr;
@@ -163,7 +175,7 @@ void ScriptPositionsWindow::mouse_drag(SDL_Event& ev)
 				}
 			}
 			else if((newAction.at - toBeMoved.at) < 0) {
-				nearbyAction = app->script().GetPreviousActionBehind(toBeMoved.at);
+				nearbyAction = ctx->GetPreviousActionBehind(toBeMoved.at);
 				if (nearbyAction != nullptr) {
 					if (std::abs(nearbyAction->at - newAction.at) > frameTime) {
 						nearbyAction = nullptr;
@@ -172,13 +184,13 @@ void ScriptPositionsWindow::mouse_drag(SDL_Event& ev)
 			}
 
 			if (nearbyAction == nullptr) {
-				app->script().RemoveAction(toBeMoved);
-				app->script().ClearSelection();
-				app->script().AddAction(newAction);
-				app->script().SetSelection(newAction, true);
+				ctx->RemoveAction(toBeMoved);
+				ctx->ClearSelection();
+				ctx->AddAction(newAction);
+				ctx->SetSelection(newAction, true);
 			}
 			else {
-				app->script().ClearSelection();
+				ctx->ClearSelection();
 				IsMoving = false;
 			}
 		}
@@ -198,21 +210,28 @@ void ScriptPositionsWindow::mouse_scroll(SDL_Event& ev)
 
 void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositionMs)
 {
+
 	auto app = OpenFunscripter::ptr;
-	auto& script = OpenFunscripter::script();
+	auto& script = *ctx;
 	frameSizeMs = WindowSizeSeconds * 1000.0;
 	offset_ms = currentPositionMs - (frameSizeMs / 2.0);
 
 	ActionScreenCoordinates.clear();
 	ActionPositionWindow.clear();
 
-	ImGui::Begin(PositionsId, open, ImGuiWindowFlags_None);
+	const bool IsActivated = app->LoadedFunscripts.size() > 1 && ctx == app->ActiveFunscript().get();
+	if (IsActivated) {
+		constexpr auto activeColor = IM_COL32(0, 150, 0, 255);
+		ImGui::PushStyleColor(ImGuiCol_ChildBg, activeColor);
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, activeColor);
+	}
+	ImGui::Begin(ctx->metadata.title.c_str() /*PositionsId*/, open, ImGuiWindowFlags_None);
 	auto draw_list = ImGui::GetWindowDrawList();
 
 	canvas_pos = ImGui::GetCursorScreenPos();
 	canvas_size = ImGui::GetContentRegionAvail();
 	auto& style = ImGui::GetStyle();
-	const ImGuiID itemID = ImGui::GetID("###ScriptPositions");
+	const ImGuiID itemID = ImGui::GetID(ctx->metadata.title.c_str()/* "###ScriptPositions"*/);
 	ImRect itemBB(canvas_pos, canvas_pos + canvas_size);
 	ImGui::ItemAdd(itemBB, itemID);
 	float frameTime = app->player.getFrameTimeMs();
@@ -374,41 +393,43 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		}
 	}
 
-	for (auto&& loadedScript : app->LoadedFunscripts) {
-		auto& loaded = *loadedScript;
-		auto startIt = std::find_if(loaded.Actions().begin(), loaded.Actions().end(),
-			[&](auto& act) { return act.at >= offset_ms; });
-		if (startIt != loaded.Actions().begin())
-			startIt -= 1;
+	if (ShowLoadedGhosts) {
+		for (auto&& loadedScript : app->LoadedFunscripts) {
+			auto& loaded = *loadedScript;
+			auto startIt = std::find_if(loaded.Actions().begin(), loaded.Actions().end(),
+				[&](auto& act) { return act.at >= offset_ms; });
+			if (startIt != loaded.Actions().begin())
+				startIt -= 1;
 
-		auto endIt = std::find_if(startIt, loaded.Actions().end(),
-			[&](auto& act) { return act.at >= offset_ms + frameSizeMs; });
-		if (endIt != loaded.Actions().end())
-			endIt += 1;
+			auto endIt = std::find_if(startIt, loaded.Actions().end(),
+				[&](auto& act) { return act.at >= offset_ms + frameSizeMs; });
+			if (endIt != loaded.Actions().end())
+				endIt += 1;
 
-		const FunscriptAction* prevAction = nullptr;
-		for (; startIt != endIt; startIt++) {
-			auto& action = *startIt;
+			const FunscriptAction* prevAction = nullptr;
+			for (; startIt != endIt; startIt++) {
+				auto& action = *startIt;
 
-			//auto p1 = getPointForAction(action);
-			//ActionScreenCoordinates.emplace_back(p1);
-			//ActionPositionWindow.emplace_back(action);
+				//auto p1 = getPointForAction(action);
+				//ActionScreenCoordinates.emplace_back(p1);
+				//ActionPositionWindow.emplace_back(action);
 
-			if (prevAction != nullptr) {
-				auto p1 = getPointForAction(action);
-				// draw line
-				auto p2 = getPointForAction(*prevAction);
-				// calculate speed relative to maximum speed
-				//float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.at - prevAction->at) / 1000.0f)) / max_speed_per_seconds, 0.f, 1.f);
-				//ImColor speed_color;
-				//speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
-				//speed_color.Value.w = 0.6f;
-				draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
-				//draw_list->AddLine(p1, p2, speed_color, 3.0f);
-				draw_list->AddLine(p1, p2, IM_COL32(255, 255, 255, 255 * 0.6f), 3.f);
+				if (prevAction != nullptr) {
+					auto p1 = getPointForAction(action);
+					// draw line
+					auto p2 = getPointForAction(*prevAction);
+					// calculate speed relative to maximum speed
+					//float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.at - prevAction->at) / 1000.0f)) / max_speed_per_seconds, 0.f, 1.f);
+					//ImColor speed_color;
+					//speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
+					//speed_color.Value.w = 0.6f;
+					draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
+					//draw_list->AddLine(p1, p2, speed_color, 3.0f);
+					draw_list->AddLine(p1, p2, IM_COL32(255, 255, 255, 255 * 0.6f), 3.f);
+				}
+
+				prevAction = &action;
 			}
-
-			prevAction = &action;
 		}
 	}
 
@@ -526,7 +547,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	if (ImGui::BeginPopupContextItem())
 	{
 		if (ImGui::BeginMenu("Scripts")) {
-			if (ImGui::BeginCombo("##ActiveScript", app->ActiveFunscript()->metadata.title.c_str())) {
+			if (ImGui::BeginCombo("##ActiveScript", ctx->metadata.title.c_str())) {
 				auto selectable = [](std::unique_ptr<Funscript>& script) {
 					if (ImGui::Selectable(script->metadata.title.c_str()) || ImGui::IsItemHovered()) {
 						auto app = OpenFunscripter::ptr;
@@ -654,6 +675,9 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	}
 
 	ImGui::End();
+	if (IsActivated) {
+		ImGui::PopStyleColor(2);
+	}
 }
 
 bool OutputAudioFile(const char* ffmpeg_path, const char* video_path, const char* output_path) {

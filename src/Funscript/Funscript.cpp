@@ -6,6 +6,7 @@
 #include "OFS_Serialization.h"
 #include "OpenFunscripter.h"
 #include "UndoSystem.h"
+#include "ScriptPositionsWindow.h"
 
 #include <algorithm>
 #include <limits>
@@ -16,6 +17,7 @@ Funscript::Funscript()
 	NotifyActionsChanged();
 	saveMutex = SDL_CreateMutex();
 	undoSystem = std::make_unique<UndoSystem>(this);
+	scriptPositions = std::make_unique<ScriptPositionsWindow>(this);
 }
 
 Funscript::~Funscript()

@@ -48,9 +48,10 @@ public:
 
 	void setup();
 
-	void PushEvent(SDL_Event& event);
-	void Subscribe(int32_t eventType, void* listener, EventHandlerFunc&& handler);
-	void Unsubscribe(int32_t eventType, void* listener);
+	void PushEvent(SDL_Event& event) noexcept;
+	void Subscribe(int32_t eventType, void* listener, EventHandlerFunc&& handler) noexcept;
+	void Unsubscribe(int32_t eventType, void* listener) noexcept;
+	void UnsubscribeAll(void* listener) noexcept;
 };
 
 #define EVENT_SYSTEM_BIND(listener, handler) listener, std::move(std::bind(handler, listener, std::placeholders::_1))
