@@ -92,15 +92,16 @@ public:
 	Keybindings getKeybindings();
 
 	inline void addRecentFile(RecentFile& recentFile) noexcept {
-		bool already_contains = std::any_of(scripterSettings.recentFiles.begin(), scripterSettings.recentFiles.end(),
+		auto it = std::find_if(scripterSettings.recentFiles.begin(), scripterSettings.recentFiles.end(),
 			[&](auto& file) {
 				return file.video_path == recentFile.video_path && file.script_path == recentFile.script_path;
 		});
-		if (!already_contains) { 
-			scripterSettings.recentFiles.push_back(recentFile);
-			if (scripterSettings.recentFiles.size() > 5) {
-				scripterSettings.recentFiles.erase(scripterSettings.recentFiles.begin());
-			}
+		if (it != scripterSettings.recentFiles.end()) {
+			scripterSettings.recentFiles.erase(it);
+		}
+		scripterSettings.recentFiles.push_back(recentFile);
+		if (scripterSettings.recentFiles.size() > 5) {
+			scripterSettings.recentFiles.erase(scripterSettings.recentFiles.begin());
 		}
 	}
 
