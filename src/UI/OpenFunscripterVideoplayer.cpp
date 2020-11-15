@@ -490,7 +490,7 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 				}
 				ImGui::Image((void*)(intptr_t)render_texture, videoSize, uv0, uv1);
 			}
-			videoHovered = ImGui::IsItemHovered();
+			videoHovered = ImGui::IsItemHovered() && ImGui::IsWindowHovered();
 			video_draw_size = ImGui::GetItemRectSize();
 
 			// cancel drag

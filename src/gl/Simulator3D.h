@@ -15,6 +15,8 @@ class Simulator3D
 
 	unsigned int VBO = 0;
 	unsigned int cubeVAO = 0;
+	bool Enabled = true;
+	bool TranslateEnabled = false;
 
 	glm::mat4 projection;
 	glm::mat4 view;
@@ -22,6 +24,8 @@ class Simulator3D
 	glm::mat4 translation;
 	glm::mat4 boxModel;
 	glm::mat4 containerModel;
+
+	void reset() noexcept;
 public:
 	void setup() noexcept;
 

@@ -1300,7 +1300,7 @@ int OpenFunscripter::run() noexcept
             simulator.ShowSimulator(&settings->data().show_simulator);
             ShowStatisticsWindow(&settings->data().show_statistics);
             if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { ActiveFunscript()->save(); }
-
+            sim3d.ShowWindow(NULL);
             scripting->DrawScriptingMode(NULL);
 
             if (keybinds.ShowBindingWindow()) {
@@ -1496,7 +1496,7 @@ int OpenFunscripter::run() noexcept
 
             player.DrawVideoPlayer(NULL);
         }
-        sim3d.ShowWindow(NULL);
+
         render();
         SDL_GL_SwapWindow(window);
     }

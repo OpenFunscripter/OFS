@@ -5,6 +5,9 @@
 #include "imgui.h"
 #include "ImGuizmo.h"
 
+// TODO: draw simulator as callback of videoplayer
+
+// cube pos + normals
 constexpr float vertices[] = {
     -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
      0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -54,6 +57,13 @@ constexpr float length = 3.f;
 constexpr float distance = 3.f;
 constexpr float cubeSize = 0.75f;
 
+void Simulator3D::reset() noexcept
+{
+    view = glm::mat4(1.f);
+    translation = glm::mat4(1.f);
+    translation = glm::translate(translation, glm::vec3(0.f, 0.f, -distance));
+}
+
 void Simulator3D::setup() noexcept
 {
 	lightShader = std::make_unique<LightingShader>();
@@ -73,11 +83,7 @@ void Simulator3D::setup() noexcept
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    view = glm::mat4(1.f);
-    //view = glm::translate(view, glm::vec3(0.f, 0.f, 0.f));
-
-    translation = glm::mat4(1.f);
-    translation = glm::translate(translation, glm::vec3(0.f, 0.f, -distance));
+    reset();
 }
 
 void Simulator3D::ShowWindow(bool* open) noexcept
@@ -106,19 +112,24 @@ void Simulator3D::ShowWindow(bool* open) noexcept
     constexpr float cubeSize = 0.75f;
 
     auto viewport = ImGui::GetMainViewport();
-    projection = glm::perspective(glm::radians(80.f), viewport->Size.x / viewport->Size.y, 0.1f, 100.0f); 
+    projection = glm::perspective(glm::radians(90.f), viewport->Size.x / viewport->Size.y, 0.1f, 100.0f); 
     
 
 
     ImGui::Begin("Simulator 3D", open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoDocking);
-    ImGui::GetWindowDrawList()->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
+    auto draw_list = ImGui::GetWindowDrawList();
+    draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
         Simulator3D* ctx = (Simulator3D*)cmd->UserCallbackData;
         ctx->render();
     }, this);
-    ImGui::GetWindowDrawList()->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
+    draw_list->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
 
-    //ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList());
-    ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
+
+    if (ImGui::Button("Reset", ImVec2(-1.f, 0.f))) {
+        reset();
+    }
+
+    ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList());
     ImGuizmo::SetRect(viewport->Pos.x, viewport->Pos.y, viewport->Size.x, viewport->Size.y);
 
     //float matrixTranslation[3], matrixRotation[3], matrixScale[3];
@@ -127,36 +138,54 @@ void Simulator3D::ShowWindow(bool* open) noexcept
     //ImGui::InputFloat3("Rt", matrixRotation);
     //ImGui::InputFloat3("Sc", matrixScale);
     //ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, glm::value_ptr(boxModel));
+    if (ImGui::Button("Move", ImVec2(-1.f, 0.f))) { TranslateEnabled = !TranslateEnabled; }
 
-    ImGuizmo::Manipulate(glm::value_ptr(view),
-        glm::value_ptr(projection),
-        ImGuizmo::OPERATION::BOUNDS,
-        ImGuizmo::MODE::LOCAL,
-        glm::value_ptr(translation), NULL, NULL);
-    //ImGuizmo::ViewManipulate(glm::value_ptr(view), 1.f, ImVec2(0.f, 0.f), ImVec2(300.f, 300.f), IM_COL32(0, 0, 0, 255));
+    if (TranslateEnabled) {
+        if (ImGuizmo::Manipulate(glm::value_ptr(view),
+            glm::value_ptr(projection),
+            ImGuizmo::OPERATION::TRANSLATE,
+            ImGuizmo::MODE::LOCAL,
+            glm::value_ptr(translation), NULL, NULL)) { 
+            auto g = ImGui::GetCurrentContext();
+            auto window = ImGui::GetCurrentWindow();
+            g->HoveredRootWindow = window;
+            g->HoveredWindow = window;
+            g->HoveredDockNode = window->DockNode;
+        }
+    }
     ImGui::End();
 
     float matrixTranslation[3], matrixRotation[3], matrixScale[3];
     ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(translation), matrixTranslation, matrixRotation, matrixScale);
 
 
+    // TODO: use more efficient way of doing getting this vector...
+    glm::vec3 direction;
+    {
+        glm::mat4 directionMtx(1.f);
+        directionMtx = glm::rotate(directionMtx, glm::radians(roll), glm::vec3(0.f, 0.f, 1.f));
+        directionMtx = glm::rotate(directionMtx, glm::radians(yaw), glm::vec3(0.f, 1.f, 0.f));
+        directionMtx = glm::rotate(directionMtx, glm::radians(pitch), glm::vec3(1.f, 0.f, 0.f));
+        direction = glm::vec3(directionMtx[1][0], directionMtx[1][1], directionMtx[1][2]);
+        direction = glm::normalize(direction);
+    }
+    
+    constexpr float antiZBufferFight = 0.005f;
+
+    const float cubeHeight = (length + cubeSize) * ((scriptPos) / 100.f);
     // container model matrix
     containerModel = glm::mat4(1.f);
-    containerModel = glm::translate(containerModel, glm::vec3(matrixTranslation[0], matrixTranslation[1], matrixTranslation[2]));
+    containerModel = glm::translate(containerModel, ((direction * ((cubeHeight + antiZBufferFight)/2.f))) + glm::vec3(matrixTranslation[0], matrixTranslation[1], matrixTranslation[2]));
     containerModel = glm::rotate(containerModel, glm::radians(roll), glm::vec3(0.f, 0.f, 1.f));
     containerModel = glm::rotate(containerModel, glm::radians(yaw), glm::vec3(0.f, 1.f, 0.f));
     containerModel = glm::rotate(containerModel, glm::radians(pitch), glm::vec3(1.f, 0.f, 0.f));
     
-    glm::vec3 direction = glm::vec3(boxModel[1][0], boxModel[1][1], boxModel[1][2]);
-    direction = glm::normalize(direction);
 
-    containerModel = glm::scale(containerModel, glm::vec3(cubeSize * 1.05f, length + cubeSize, cubeSize * 1.05f));
-
+    containerModel = glm::scale(containerModel, glm::vec3(cubeSize, (length+cubeSize) - cubeHeight, cubeSize)*1.01f);
 
     // box model matrix
     boxModel = glm::mat4(1.f);
-    const float cubeHeight = length * ((scriptPos) / 100.f);
-    boxModel = glm::translate(boxModel, (direction * (cubeHeight/2.f)) + glm::vec3(matrixTranslation[0], matrixTranslation[1], matrixTranslation[2]) - (direction * ((length+(cubeSize))/2.f)));
+    boxModel = glm::translate(boxModel, (-(direction * ((length + cubeSize) - (cubeHeight - antiZBufferFight)))/2.f) + glm::vec3(matrixTranslation[0], matrixTranslation[1], matrixTranslation[2]));
     boxModel = glm::rotate(boxModel, glm::radians(roll), glm::vec3(0.f, 0.f, 1.f));
     boxModel = glm::rotate(boxModel, glm::radians(yaw), glm::vec3(0.f, 1.f, 0.f));
     boxModel = glm::rotate(boxModel, glm::radians(pitch), glm::vec3(1.f, 0.f, 0.f));
@@ -165,11 +194,13 @@ void Simulator3D::ShowWindow(bool* open) noexcept
 
 void Simulator3D::render() noexcept
 {
-    constexpr float color[4] { 1.0f, 0.5f, 0.31f, 1.f };
+    if (!Enabled) return;
+    constexpr float color[4] { 1.0f, 0.5f, 0.31f, 0.6f };
     constexpr float colorContainer[4]{ 0.5f, 0.5f, 1.f, 0.4f };
 
     constexpr float pos[3] {0.f, 0.f, -1.f };
-
+    
+    glClear(GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
 
     lightShader->use();
