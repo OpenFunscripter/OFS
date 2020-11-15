@@ -25,6 +25,13 @@ static Simulator3D sim3d;
 // TODO: test imgui cursor api instead of SDL2
 // BUG: linux save screenshot segmenation fault
 
+// TODO: improve performance of zoomed out waveform rendering
+
+// TODO: improve shift click add action with simulator
+//       it bugs out if the simulator is on the same height as the script timeline
+
+// TODO: allow to hide loaded scripts in script timeline
+
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
 constexpr std::array<const char*, 6> SupportedVideoExtensions {
@@ -70,7 +77,7 @@ bool OpenFunscripter::imgui_setup() noexcept
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
-    io.ConfigWindowsMoveFromTitleBarOnly = false;
+    io.ConfigWindowsMoveFromTitleBarOnly = true;
     io.ConfigViewportsNoDecoration = false;
     io.ConfigViewportsNoAutoMerge = false;
     io.ConfigViewportsNoTaskBarIcon = false;
@@ -168,6 +175,7 @@ OpenFunscripter::~OpenFunscripter()
     scripting.reset();
     controllerInput.reset();
     specialFunctions.reset();
+    for (auto&& script : LoadedFunscripts) { script.reset(); }
     events.reset();
 
     settings->saveSettings();
@@ -309,6 +317,20 @@ bool OpenFunscripter::setup()
     SetCursorType(SDL_SYSTEM_CURSOR_ARROW);
 
     SDL_ShowWindow(window);
+
+#ifndef NDEBUG
+    auto roll = std::make_unique<Funscript>();
+    roll->open(R"(E:\funscript\multi-axis\Kimber Lee - Beautiful Young Cocksucker Takes Load.roll.funscript)");
+    LoadedFunscripts.emplace_back(std::move(roll));
+
+    auto pitch = std::make_unique<Funscript>();
+    pitch->open(R"(E:\funscript\multi-axis\Kimber Lee - Beautiful Young Cocksucker Takes Load.pitch.funscript)");
+    LoadedFunscripts.emplace_back(std::move(pitch));
+
+    auto twist = std::make_unique<Funscript>();
+    twist->open(R"(E:\funscript\multi-axis\Kimber Lee - Beautiful Young Cocksucker Takes Load.twist.funscript)");
+    LoadedFunscripts.emplace_back(std::move(twist));
+#endif
     return true;
 }
 
@@ -470,7 +492,7 @@ void OpenFunscripter::register_bindings()
             }
         );
         cycle_loaded_forward_scripts.key = Keybinding(
-            SDLK_PAGEUP,
+            SDLK_PAGEDOWN,
             0
         );
 
@@ -485,7 +507,7 @@ void OpenFunscripter::register_bindings()
             }
         );
         cycle_loaded_backward_scripts.key = Keybinding(
-            SDLK_PAGEDOWN,
+            SDLK_PAGEUP,
             0
         );
 

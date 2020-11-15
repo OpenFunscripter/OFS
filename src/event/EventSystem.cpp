@@ -37,7 +37,7 @@ void EventSystem::setup()
 	Subscribe(SingleShotEvent, EVENT_SYSTEM_BIND(this, &EventSystem::SingleShotHandler));
 }
 
-void EventSystem::PushEvent(SDL_Event& event)
+void EventSystem::PushEvent(SDL_Event& event) noexcept
 {
 	for (auto& handler : handlers) {
 		if (handler.eventType == event.type)
@@ -45,13 +45,13 @@ void EventSystem::PushEvent(SDL_Event& event)
 	}
 }
 
-void EventSystem::Subscribe(int32_t eventType, void* listener, EventHandlerFunc&& handler)
+void EventSystem::Subscribe(int32_t eventType, void* listener, EventHandlerFunc&& handler) noexcept
 {
 	// this excects the listener to never relocate
 	handlers.emplace_back(eventType, listener, handler);
 }
 
-void EventSystem::Unsubscribe(int32_t eventType, void* listener)
+void EventSystem::Unsubscribe(int32_t eventType, void* listener) noexcept
 {
 	// this excects the listener to never relocate
 	auto it = std::find_if(handlers.begin(), handlers.end(),
@@ -66,4 +66,12 @@ void EventSystem::Unsubscribe(int32_t eventType, void* listener)
 		LOGF_ERROR("Failed to unsubscribe event. \"%d\"", eventType);
 		FUN_ASSERT(false, "please investigate");
 	}
+}
+
+void EventSystem::UnsubscribeAll(void* listener) noexcept
+{
+	auto it = handlers.erase(std::remove_if(handlers.begin(), handlers.end(),
+		[listener](auto&& h) {
+			return h.listener == listener;
+		}), handlers.end());
 }
