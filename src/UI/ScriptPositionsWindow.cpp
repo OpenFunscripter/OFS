@@ -65,7 +65,7 @@ void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
 	if (PositionsItemHovered) {
 		if (button.clicks == 2) {
 			// seek to position double click
-			float rel_x = (mousePos.x - canvas_pos.x) / canvas_size.x;
+			float rel_x = (mousePos.x - active_canvas_pos.x) / active_canvas_size.x;
 			int32_t seekToMs = offset_ms + (frameSizeMs * rel_x);
 			OpenFunscripter::ptr->player.setPosition(seekToMs, false);
 			return;
@@ -97,26 +97,27 @@ void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
 			}
 
 			// shift click an action into the window
-			auto action = getActionForPoint(mousePos, app->player.getFrameTimeMs());
-			auto edit = app->script().GetActionAtTime(action.at, app->player.getFrameTimeMs());
-			app->script().undoSystem->Snapshot(StateType::ADD_ACTION);
-			if (edit != nullptr) { app->script().RemoveAction(*edit); }
-			app->script().AddAction(action);
+			auto action = getActionForPoint(active_canvas_pos, active_canvas_size, mousePos, app->player.getFrameTimeMs());
+			auto edit = app->ActiveFunscript()->GetActionAtTime(action.at, app->player.getFrameTimeMs());
+			app->ActiveFunscript()->undoSystem->Snapshot(StateType::ADD_ACTION);
+			if (edit != nullptr) { app->ActiveFunscript()->RemoveAction(*edit); }
+			app->ActiveFunscript()->AddAction(action);
 		}
-		else if (PositionsItemHovered) {
-			if (clickedAction != nullptr) { 
-				static ActionClickedEventArgs args;
-				args = std::tuple<SDL_Event, FunscriptAction>(ev, *clickedAction);
-				SDL_Event notify;
-				notify.type = EventSystem::FunscriptActionClickedEvent;
-				notify.user.data1 = &args;
-				SDL_PushEvent(&notify);
-				return; 
-			}
+		// clicking an action  fires an event
+		else if (PositionsItemHovered && clickedAction != nullptr) {
+			static ActionClickedEventArgs args;
+			args = std::tuple<SDL_Event, FunscriptAction>(ev, *clickedAction);
+			SDL_Event notify;
+			notify.type = EventSystem::FunscriptActionClickedEvent;
+			notify.user.data1 = &args;
+			SDL_PushEvent(&notify);
+		}
+		// selecting only works in the active timeline
+		else if (ImRect(active_canvas_pos, active_canvas_pos + active_canvas_size).Contains(ImGui::GetMousePos())) {
 			// start drag selection
-			ImRect rect(canvas_pos, canvas_pos + canvas_size);
+			ImRect rect(active_canvas_pos, active_canvas_pos + active_canvas_size);
 			IsSelecting = true;
-			rel_x1 = (mousePos.x - canvas_pos.x) / rect.GetWidth();
+			rel_x1 = (mousePos.x - active_canvas_pos.x) / rect.GetWidth();
 			rel_x2 = rel_x1;
 		}
 	}
@@ -143,7 +144,7 @@ void ScriptPositionsWindow::mouse_drag(SDL_Event& ev)
 {
 	auto& motion = ev.motion;
 	if (IsSelecting) {
-		rel_x2 = (ImGui::GetMousePos().x - canvas_pos.x) / canvas_size.x;
+		rel_x2 = (ImGui::GetMousePos().x - active_canvas_pos.x) / active_canvas_size.x;
 	}
 	else if (IsMoving) {
 		auto app = OpenFunscripter::ptr;
@@ -151,7 +152,7 @@ void ScriptPositionsWindow::mouse_drag(SDL_Event& ev)
 		auto mousePos = ImGui::GetMousePos();
 		auto frameTime = app->player.getFrameTimeMs();
 		auto& toBeMoved = app->script().Selection()[0];
-		auto newAction = getActionForPoint(mousePos, frameTime);
+		auto newAction = getActionForPoint(active_canvas_pos, active_canvas_size, mousePos, frameTime);
 		if (newAction.at != toBeMoved.at || newAction.pos != toBeMoved.pos) {
 			const FunscriptAction* nearbyAction = nullptr;
 			if ((newAction.at - toBeMoved.at) > 0) {
@@ -189,8 +190,7 @@ void ScriptPositionsWindow::mouse_scroll(SDL_Event& ev)
 {
 	auto& wheel = ev.wheel;
 	constexpr float scrollPercent = 0.10f;
-	ImRect rect(canvas_pos, canvas_pos + canvas_size);
-	if (rect.Contains(ImGui::GetMousePos())) {
+	if (PositionsItemHovered) {
 		WindowSizeSeconds *= 1 + (scrollPercent * -wheel.y);
 		WindowSizeSeconds = Util::Clamp(WindowSizeSeconds, MIN_WINDOW_SIZE, MAX_WINDOW_SIZE);
 	}
@@ -205,25 +205,34 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 
 	ActionScreenCoordinates.clear();
 	ActionPositionWindow.clear();
+	SelectedActionScreenCoordinates.clear();
 
 	ImGui::Begin(PositionsId, open, ImGuiWindowFlags_None);
 	auto draw_list = ImGui::GetWindowDrawList();
+	PositionsItemHovered = ImGui::IsWindowHovered();
 
 	const auto availSize = ImGui::GetContentRegionAvail() - ImVec2(0.f , style.WindowPadding.y + (style.ItemSpacing.y * 4.f));
 	const auto startCursor = ImGui::GetCursorScreenPos();
 
+	ImVec2 canvas_pos;
+	ImVec2 canvas_size;
 	for (auto&& scriptPtr : app->LoadedFunscripts) {
 		auto& script = *scriptPtr;
 		canvas_pos = ImGui::GetCursorScreenPos();
 		canvas_size = ImVec2(availSize.x, availSize.y / (float)app->LoadedFunscripts.size());
 		const bool IsActivated = app->LoadedFunscripts.size() > 1 ? scriptPtr.get() == app->ActiveFunscript().get() : false;
 		
-		if (IsActivated) {
+		if (app->LoadedFunscripts.size() == 1) {
+			active_canvas_pos = canvas_pos;
+			active_canvas_size = canvas_size;
+		} else if (IsActivated) {
+			active_canvas_pos = canvas_pos;
+			active_canvas_size = canvas_size;
 			constexpr float activatedBorderThicknes = 5.f;
 			draw_list->AddRect(
 				canvas_pos - ImVec2(activatedBorderThicknes, activatedBorderThicknes),
 				ImVec2(canvas_pos.x + canvas_size.x, canvas_pos.y + canvas_size.y) + ImVec2(activatedBorderThicknes, activatedBorderThicknes),
-				script.HasSelection() ? ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_SliderGrabActive]) : IM_COL32(0, 180, 0, 255),
+				IM_COL32(0, 180, 0, 255),
 				0.f, ImDrawCornerFlags_All,
 				activatedBorderThicknes
 			);
@@ -354,13 +363,13 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				draw_list->_Path.Size = tmp;
 				draw_list->PathStroke(col, false, 5.f);
 			};
-			auto pathRawSection = [this](auto draw_list, auto rawActions, int32_t fromIndex, int32_t toIndex) {
+			auto pathRawSection = [this, canvas_pos, canvas_size](auto draw_list, auto rawActions, int32_t fromIndex, int32_t toIndex) {
 				float frameTimeMs = OpenFunscripter::ptr->player.getFrameTimeMs();
 				for (int i = fromIndex; i < toIndex; i++) {
 					auto action = rawActions[i];
 					if (action.frame_no >= 0) {
 						action.at = i * frameTimeMs;
-						auto point = getPointForAction(FunscriptAction(action.at, action.pos));
+						auto point = getPointForAction(canvas_pos, canvas_size, FunscriptAction(action.at, action.pos));
 						draw_list->PathLineTo(point);
 					}
 				}
@@ -416,13 +425,13 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				for (; startIt != endIt; startIt++) {
 					auto& action = *startIt;
 
-					auto p1 = getPointForAction(action);
+					auto p1 = getPointForAction(canvas_pos, canvas_size, action);
 					ActionScreenCoordinates.emplace_back(p1);
 					ActionPositionWindow.emplace_back(action);
 
 					if (prevAction != nullptr) {
 						// draw line
-						auto p2 = getPointForAction(*prevAction);
+						auto p2 = getPointForAction(canvas_pos, canvas_size, *prevAction);
 						// calculate speed relative to maximum speed
 						float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.at - prevAction->at) / 1000.0f)) / max_speed_per_seconds, 0.f, 1.f);
 						ImColor speed_color;
@@ -436,11 +445,6 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				}
 			}
 
-			// draw points on top of lines
-			for (auto& p : ActionScreenCoordinates) {
-				draw_list->AddCircleFilled(p, 7.0, IM_COL32(0, 0, 0, 255), 12); // border
-				draw_list->AddCircleFilled(p, 5.0, IM_COL32(255, 0, 0, 255), 12);
-			}
 
 			if (script.HasSelection()) {
 				auto startIt = std::find_if(script.Selection().begin(), script.Selection().end(),
@@ -453,20 +457,19 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				if (endIt != script.Selection().end())
 					endIt += 1;
 
-				constexpr auto selectedDots = IM_COL32(11, 252, 3, 255);
 				constexpr auto selectedLines = IM_COL32(3, 194, 252, 255);
 
 				const FunscriptAction* prev_action = nullptr;
 				for (; startIt != endIt; startIt++) {
 					auto&& action = *startIt;
-					auto point = getPointForAction(action);
+					auto point = getPointForAction(canvas_pos, canvas_size, action);
 
 					if (prev_action != nullptr) {
 						// draw highlight line
-						draw_list->AddLine(getPointForAction(*prev_action), point, selectedLines, 3.0f);
+						draw_list->AddLine(getPointForAction(canvas_pos, canvas_size, *prev_action), point, selectedLines, 3.0f);
 					}
-					// draw highlight point
-					draw_list->AddCircleFilled(point, 5.0, selectedDots, 12);
+					
+					SelectedActionScreenCoordinates.emplace_back(point);
 					prev_action = &action;
 				}
 			}
@@ -490,7 +493,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		// selection box
 		constexpr auto selectColor = IM_COL32(3, 252, 207, 255);
 		constexpr auto selectColorBackground = IM_COL32(3, 252, 207, 100);
-		if (IsSelecting) {
+		if (IsSelecting && (scriptPtr.get() == app->ActiveFunscript().get())) {
 			draw_list->AddRectFilled(canvas_pos + ImVec2(canvas_size.x * rel_x1, 0), canvas_pos + ImVec2(canvas_size.x * rel_x2, canvas_size.y), selectColorBackground);
 			draw_list->AddLine(canvas_pos + ImVec2(canvas_size.x * rel_x1, 0), canvas_pos + ImVec2(canvas_size.x * rel_x1, canvas_size.y), selectColor, 3.0f);
 			draw_list->AddLine(canvas_pos + ImVec2(canvas_size.x * rel_x2, 0), canvas_pos + ImVec2(canvas_size.x * rel_x2, canvas_size.y), selectColor, 3.0f);
@@ -509,7 +512,6 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		ImVec2 newCursor(canvas_pos.x, canvas_pos.y + canvas_size.y + (style.ItemSpacing.y * 2.f));
 		if (newCursor.y < (startCursor.y + availSize.y)) { ImGui::SetCursorScreenPos(newCursor); }
 
-		PositionsItemHovered = ImGui::IsWindowHovered(); //ImGui::IsItemHovered();
 
 		// right click context menu
 		if (ImGui::BeginPopupContextItem())
@@ -641,6 +643,18 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 			}
 			ImGui::EndPopup();
 		}
+	}
+
+	// draw points on top of lines
+	for (auto&& p : ActionScreenCoordinates) {
+		draw_list->AddCircleFilled(p, 7.0, IM_COL32(0, 0, 0, 255), 12); // border
+		draw_list->AddCircleFilled(p, 5.0, IM_COL32(255, 0, 0, 255), 12);
+	}
+
+	// draw selected points
+	for (auto&& p : SelectedActionScreenCoordinates) {
+		constexpr auto selectedDots = IM_COL32(11, 252, 3, 255);
+		draw_list->AddCircleFilled(p, 5.0, selectedDots, 12);
 	}
 
 	ImGui::End();

@@ -25,8 +25,8 @@ class ScriptPositionsWindow
 	std::vector<float> audio_waveform_avg;
 	bool ffmpegInProgress = false;
 
-	ImVec2 canvas_pos;
-	ImVec2 canvas_size;
+	ImVec2 active_canvas_pos;
+	ImVec2 active_canvas_size;
 	float offset_ms;
 	float frameSizeMs;
 	bool IsSelecting = false;
@@ -40,7 +40,7 @@ class ScriptPositionsWindow
 	void mouse_drag(SDL_Event& ev);
 	void mouse_scroll(SDL_Event& ev);
 
-	inline ImVec2 getPointForAction(FunscriptAction action) noexcept {
+	inline ImVec2 getPointForAction(ImVec2 canvas_pos, ImVec2 canvas_size, FunscriptAction action) noexcept {
 		float relative_x = (float)(action.at - offset_ms) / frameSizeMs;
 		float x = (canvas_size.x) * relative_x;
 		float y = (canvas_size.y) * (1 - (action.pos / 100.0));
@@ -49,7 +49,7 @@ class ScriptPositionsWindow
 		return ImVec2(x, y);
 	}
 
-	inline FunscriptAction getActionForPoint(const ImVec2& point, float frameTime) noexcept {
+	inline FunscriptAction getActionForPoint(ImVec2 canvas_pos, ImVec2 canvas_size, const ImVec2& point, float frameTime) noexcept {
 		ImVec2 localCoord;
 		localCoord = point - canvas_pos;
 		float relative_x = localCoord.x / canvas_size.x;
@@ -65,6 +65,7 @@ class ScriptPositionsWindow
 
 	std::vector<FunscriptAction> ActionPositionWindow;
 	std::vector<ImVec2> ActionScreenCoordinates;
+	std::vector<ImVec2> SelectedActionScreenCoordinates;
 	
 	void FfmpegAudioProcessingFinished(SDL_Event& ev);
 

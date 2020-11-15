@@ -21,6 +21,13 @@
 // TODO: test imgui cursor api instead of SDL2
 // BUG: linux save screenshot segmenation fault
 
+// TODO: improve performance of zoomed out waveform rendering
+
+// TODO: improve shift click add action with simulator
+//       it bugs out if the simulator is on the same height as the script timeline
+
+// TODO: allow to hide loaded scripts in script timeline
+
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
 constexpr std::array<const char*, 6> SupportedVideoExtensions {
@@ -480,7 +487,7 @@ void OpenFunscripter::register_bindings()
             }
         );
         cycle_loaded_forward_scripts.key = Keybinding(
-            SDLK_PAGEUP,
+            SDLK_PAGEDOWN,
             0
         );
 
@@ -495,7 +502,7 @@ void OpenFunscripter::register_bindings()
             }
         );
         cycle_loaded_backward_scripts.key = Keybinding(
-            SDLK_PAGEDOWN,
+            SDLK_PAGEUP,
             0
         );
 
