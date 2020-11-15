@@ -5,8 +5,6 @@
 #include "imgui.h"
 #include "ImGuizmo.h"
 
-// TODO: draw simulator as callback of videoplayer
-
 // cube pos + normals
 constexpr float vertices[] = {
     -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -117,12 +115,12 @@ void Simulator3D::ShowWindow(bool* open) noexcept
 
 
     ImGui::Begin("Simulator 3D", open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoDocking);
-    auto draw_list = ImGui::GetWindowDrawList();
-    draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
-        Simulator3D* ctx = (Simulator3D*)cmd->UserCallbackData;
-        ctx->render();
-    }, this);
-    draw_list->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
+    //auto draw_list = ImGui::GetWindowDrawList();
+    //draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
+    //    Simulator3D* ctx = (Simulator3D*)cmd->UserCallbackData;
+    //    ctx->render();
+    //}, this);
+    //draw_list->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
 
 
     if (ImGui::Button("Reset", ImVec2(-1.f, 0.f))) {
@@ -202,6 +200,7 @@ void Simulator3D::render() noexcept
     
     glClear(GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
+
 
     lightShader->use();
     lightShader->LightPos(&pos[0]);

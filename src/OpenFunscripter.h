@@ -20,6 +20,7 @@
 #include "ControllerInput.h"
 #include "GradientBar.h"
 #include "SpecialFunctions.h"
+#include "Simulator3D.h"
 
 #include <memory>
 #include <array>
@@ -118,6 +119,8 @@ public:
 	std::unique_ptr<EventSystem> events;
 	std::unique_ptr<ControllerInput> controllerInput;
 	std::unique_ptr<OpenFunscripterSettings> settings;
+	std::unique_ptr<Simulator3D> sim3D;
+
 	int32_t ActiveFunscriptIdx = 0;
 	std::vector<std::unique_ptr<Funscript>> LoadedFunscripts;
 

@@ -12,10 +12,6 @@
 #include "imgui_stdlib.h"
 #include "imgui_internal.h"
 
-#include "Simulator3D.h"
-
-static Simulator3D sim3d;
-
 // FIX: Add type checking to the deserialization. 
 //      I assume it would crash if a field is specified but doesn't have the correct type.
 
@@ -310,7 +306,8 @@ bool OpenFunscripter::setup()
     controllerInput = std::make_unique<ControllerInput>();
     controllerInput->setup();
     simulator.setup();
-    sim3d.setup();
+    sim3D = std::make_unique<Simulator3D>();
+    sim3D->setup();
 
     // init cursors
     SDL_FreeCursor(SDL_GetCursor());
@@ -1300,7 +1297,7 @@ int OpenFunscripter::run() noexcept
             simulator.ShowSimulator(&settings->data().show_simulator);
             ShowStatisticsWindow(&settings->data().show_statistics);
             if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { ActiveFunscript()->save(); }
-            sim3d.ShowWindow(NULL);
+            sim3D->ShowWindow(NULL);
             scripting->DrawScriptingMode(NULL);
 
             if (keybinds.ShowBindingWindow()) {

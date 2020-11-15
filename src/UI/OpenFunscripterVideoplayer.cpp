@@ -432,6 +432,7 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 				break;
 			}
 
+			auto draw_list = ImGui::GetWindowDrawList();
 			if (settings.activeMode == VideoMode::VR_MODE) {
 				if (videoHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !dragStarted) {
 					dragStarted = true;
@@ -446,7 +447,7 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 				}
 
 				player_viewport = ImGui::GetCurrentWindowRead()->Viewport;
-				ImGui::GetWindowDrawList()->AddCallback(
+				draw_list->AddCallback(
 					[](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
 						auto& ctx = *(VideoplayerWindow*)cmd->UserCallbackData;
 
@@ -470,9 +471,10 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 						ctx.vr_shader->AspectRatio(ctx.video_draw_size.x / ctx.video_draw_size.y);
 					}, this);
 				ImGui::Image((void*)(intptr_t)render_texture, ImGui::GetContentRegionAvail(), uv0, uv1);
+				draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
+					OpenFunscripter::ptr->sim3D->render();
+				}, this);
 				video_draw_size = ImGui::GetItemRectSize();
-				// TODO: ImDrawCallback_ResetRenderState unnecessary. instead just reset the shader
-				ImGui::GetWindowDrawList()->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
 			}
 			else {
 				videoSize = videoSize * ImVec2(settings.zoom_factor, settings.zoom_factor);
@@ -489,7 +491,11 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 					settings.current_translation = settings.prev_translation + ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
 				}
 				ImGui::Image((void*)(intptr_t)render_texture, videoSize, uv0, uv1);
+				draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
+					OpenFunscripter::ptr->sim3D->render();
+				}, this);
 			}
+			draw_list->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
 			videoHovered = ImGui::IsItemHovered() && ImGui::IsWindowHovered();
 			video_draw_size = ImGui::GetItemRectSize();
 
