@@ -8,6 +8,7 @@
 
 #include "stb_sprintf.h"
 
+#include "ImGuizmo.h"
 #include "imgui_stdlib.h"
 #include "imgui_internal.h"
 
@@ -31,6 +32,8 @@ static Simulator3D sim3d;
 //       it bugs out if the simulator is on the same height as the script timeline
 
 // TODO: allow to hide loaded scripts in script timeline
+
+// BUG: script timeline selection works even when not hovered
 
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
@@ -330,6 +333,18 @@ bool OpenFunscripter::setup()
     auto twist = std::make_unique<Funscript>();
     twist->open(R"(E:\funscript\multi-axis\Kimber Lee - Beautiful Young Cocksucker Takes Load.twist.funscript)");
     LoadedFunscripts.emplace_back(std::move(twist));
+
+    //auto roll = std::make_unique<Funscript>();
+    //roll->open(R"(E:\funscript\multi-axis\crush\Cherry Crush Ball Sucker POV.roll.funscript)");
+    //app->LoadedFunscripts.emplace_back(std::move(roll));
+
+    //auto pitch = std::make_unique<Funscript>();
+    //pitch->open(R"(E:\funscript\multi-axis\crush\Cherry Crush Ball Sucker POV.pitch.funscript)");
+    //app->LoadedFunscripts.emplace_back(std::move(pitch));
+
+    //auto twist = std::make_unique<Funscript>();
+    //twist->open(R"(E:\funscript\multi-axis\crush\Cherry Crush Ball Sucker POV.twist.funscript)");
+    //app->LoadedFunscripts.emplace_back(std::move(twist));
 #endif
     return true;
 }
@@ -1086,6 +1101,7 @@ void OpenFunscripter::new_frame() noexcept
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame(window);
     ImGui::NewFrame();
+    ImGuizmo::BeginFrame();
 }
 
 void OpenFunscripter::render() noexcept
@@ -1480,8 +1496,8 @@ int OpenFunscripter::run() noexcept
 
             player.DrawVideoPlayer(NULL);
         }
+        sim3d.ShowWindow(NULL);
         render();
-        sim3d.render();
         SDL_GL_SwapWindow(window);
     }
 	return 0;

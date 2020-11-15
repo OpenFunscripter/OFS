@@ -38,11 +38,23 @@ target_compile_definitions(imgui PUBLIC "IMGUI_DEFINE_MATH_OPERATORS")
 target_compile_definitions(imgui PUBLIC "IMGUI_DISABLE_OBSOLETE_FUNCTIONS")
 #target_compile_definitions(imgui PUBLIC "IMGUI_DEBUG_PARANOID")
 
+# ================
+# = IMGUI_STDLIB =
+# ================
 add_library(imgui_stdlib STATIC "imgui/misc/cpp/imgui_stdlib.cpp" "imgui/misc/cpp/imgui_stdlib.h")
 target_include_directories(imgui_stdlib PUBLIC "imgui/misc/cpp")
 target_link_libraries(imgui_stdlib PUBLIC imgui)
 
-# ========
+
+# ============
+# = ImGuizmo =
+# ============
+file (GLOB ImGuizmo_SOURCES ImGuizmo/*.cpp)
+file (GLOB ImGuizmo_HEADERS ImGuizmo/*.h)
+add_library(ImGuizmo STATIC ${ImGuizmo_SOURCES} ${ImGuizmo_HEADERS})
+target_include_directories(imgui PUBLIC "ImGuizmo/")
+target_link_libraries(ImGuizmo PUBLIC imgui)
+
 # = SDL2 =
 # ========
 set(SDL_SHARED OFF CACHE BOOL "" FORCE)

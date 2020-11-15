@@ -51,6 +51,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   tinyfiledialogs
   utf8::cpp
   glm
+  ImGuizmo
 )
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
