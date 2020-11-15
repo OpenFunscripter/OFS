@@ -107,7 +107,7 @@ public:
 	~OpenFunscripter();
 
 	KeybindingSystem keybinds;
-	//ScriptPositionsWindow scriptPositions;
+	ScriptPositionsWindow scriptPositions;
 	VideoplayerWindow player;
 	ScriptSimulator simulator;
 

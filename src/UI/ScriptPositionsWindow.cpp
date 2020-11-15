@@ -14,19 +14,13 @@
 #define MINIMP3_IMPLEMENTATION
 #include "minimp3_ex.h"
 
-float ScriptPositionsWindow::WindowSizeSeconds = 5.f;
-bool ScriptPositionsWindow::ffmpegInProgress = false;
-bool ScriptPositionsWindow::ShowAudioWaveform = false;
-bool ScriptPositionsWindow::ShowLoadedGhosts = false;
-std::vector<float> ScriptPositionsWindow::audio_waveform_avg;
-
 void ScriptPositionsWindow::updateSelection(bool clear)
 {
 	float min = std::min(rel_x1, rel_x2);
 	float max = std::max(rel_x1, rel_x2);
 	int selection_start_ms = offset_ms + (frameSizeMs * min);
 	int selection_end_ms = offset_ms + (frameSizeMs * max);
-	ctx->SelectTime(selection_start_ms, selection_end_ms, clear);
+	OpenFunscripter::script().SelectTime(selection_start_ms, selection_end_ms, clear);
 }
 
 void ScriptPositionsWindow::FfmpegAudioProcessingFinished(SDL_Event& ev)
@@ -36,8 +30,7 @@ void ScriptPositionsWindow::FfmpegAudioProcessingFinished(SDL_Event& ev)
 	LOG_INFO("Audio processing complete.");
 }
 
-ScriptPositionsWindow::ScriptPositionsWindow(Funscript* script)
-	: ctx(script)
+void ScriptPositionsWindow::setup()
 {
 	auto app = OpenFunscripter::ptr;
 	app->events->Subscribe(SDL_MOUSEBUTTONDOWN, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_pressed));
@@ -45,6 +38,7 @@ ScriptPositionsWindow::ScriptPositionsWindow(Funscript* script)
 	app->events->Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_drag));
 	app->events->Subscribe(SDL_MOUSEBUTTONUP, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_released));
 	app->events->Subscribe(EventSystem::FfmpegAudioProcessingFinished, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::FfmpegAudioProcessingFinished));
+
 	std::array<ImColor, 4> heatColor{
 		IM_COL32(0xFF, 0xFF, 0xFF, 0xFF),
 		IM_COL32(0x66, 0xff, 0x00, 0xFF),
@@ -59,12 +53,6 @@ ScriptPositionsWindow::ScriptPositionsWindow(Funscript* script)
 	}
 	speedGradient.refreshCache();
 
-}
-
-ScriptPositionsWindow::~ScriptPositionsWindow()
-{
-	auto app = OpenFunscripter::ptr;
-	app->events->UnsubscribeAll(this);
 }
 
 void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
@@ -101,19 +89,19 @@ void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
 			auto app = OpenFunscripter::ptr;
 			if (clickedAction != nullptr) {
 				// start move
-				ctx->ClearSelection();
-				ctx->SetSelection(*clickedAction, true);
+				app->script().ClearSelection();
+				app->script().SetSelection(*clickedAction, true);
 				IsMoving = true;
-				ctx->undoSystem->Snapshot(StateType::MOUSE_MOVE_ACTION);
+				app->script().undoSystem->Snapshot(StateType::MOUSE_MOVE_ACTION);
 				return;
 			}
 
 			// shift click an action into the window
 			auto action = getActionForPoint(mousePos, app->player.getFrameTimeMs());
 			auto edit = app->script().GetActionAtTime(action.at, app->player.getFrameTimeMs());
-			ctx->undoSystem->Snapshot(StateType::ADD_ACTION);
+			app->script().undoSystem->Snapshot(StateType::ADD_ACTION);
 			if (edit != nullptr) { app->script().RemoveAction(*edit); }
-			ctx->AddAction(action);
+			app->script().AddAction(action);
 		}
 		else if (PositionsItemHovered) {
 			if (clickedAction != nullptr) { 
@@ -133,7 +121,7 @@ void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
 		}
 	}
 	else if (button.button == SDL_BUTTON_MIDDLE) {
-		ctx->ClearSelection();
+		OpenFunscripter::script().ClearSelection();
 	}
 }
 
@@ -162,12 +150,12 @@ void ScriptPositionsWindow::mouse_drag(SDL_Event& ev)
 		if (!app->script().HasSelection()) { IsMoving = false; return; }
 		auto mousePos = ImGui::GetMousePos();
 		auto frameTime = app->player.getFrameTimeMs();
-		auto& toBeMoved = ctx->Selection()[0];
+		auto& toBeMoved = app->script().Selection()[0];
 		auto newAction = getActionForPoint(mousePos, frameTime);
 		if (newAction.at != toBeMoved.at || newAction.pos != toBeMoved.pos) {
 			const FunscriptAction* nearbyAction = nullptr;
 			if ((newAction.at - toBeMoved.at) > 0) {
-				nearbyAction = ctx->GetNextActionAhead(toBeMoved.at);
+				nearbyAction = app->script().GetNextActionAhead(toBeMoved.at);
 				if (nearbyAction != nullptr) {
 					if (std::abs(nearbyAction->at - newAction.at) > frameTime) {
 						nearbyAction = nullptr;
@@ -175,7 +163,7 @@ void ScriptPositionsWindow::mouse_drag(SDL_Event& ev)
 				}
 			}
 			else if((newAction.at - toBeMoved.at) < 0) {
-				nearbyAction = ctx->GetPreviousActionBehind(toBeMoved.at);
+				nearbyAction = app->script().GetPreviousActionBehind(toBeMoved.at);
 				if (nearbyAction != nullptr) {
 					if (std::abs(nearbyAction->at - newAction.at) > frameTime) {
 						nearbyAction = nullptr;
@@ -184,13 +172,13 @@ void ScriptPositionsWindow::mouse_drag(SDL_Event& ev)
 			}
 
 			if (nearbyAction == nullptr) {
-				ctx->RemoveAction(toBeMoved);
-				ctx->ClearSelection();
-				ctx->AddAction(newAction);
-				ctx->SetSelection(newAction, true);
+				app->script().RemoveAction(toBeMoved);
+				app->script().ClearSelection();
+				app->script().AddAction(newAction);
+				app->script().SetSelection(newAction, true);
 			}
 			else {
-				ctx->ClearSelection();
+				app->script().ClearSelection();
 				IsMoving = false;
 			}
 		}
@@ -210,475 +198,452 @@ void ScriptPositionsWindow::mouse_scroll(SDL_Event& ev)
 
 void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositionMs)
 {
-
 	auto app = OpenFunscripter::ptr;
-	auto& script = *ctx;
+	auto& style = ImGui::GetStyle();
 	frameSizeMs = WindowSizeSeconds * 1000.0;
 	offset_ms = currentPositionMs - (frameSizeMs / 2.0);
 
 	ActionScreenCoordinates.clear();
 	ActionPositionWindow.clear();
 
-	const bool IsActivated = app->LoadedFunscripts.size() > 1 && ctx == app->ActiveFunscript().get();
-	if (IsActivated) {
-		constexpr auto activeColor = IM_COL32(0, 150, 0, 255);
-		ImGui::PushStyleColor(ImGuiCol_ChildBg, activeColor);
-		ImGui::PushStyleColor(ImGuiCol_WindowBg, activeColor);
-	}
-	ImGui::Begin(ctx->metadata.title.c_str() /*PositionsId*/, open, ImGuiWindowFlags_None);
+	ImGui::Begin(PositionsId, open, ImGuiWindowFlags_None);
 	auto draw_list = ImGui::GetWindowDrawList();
 
-	canvas_pos = ImGui::GetCursorScreenPos();
-	canvas_size = ImGui::GetContentRegionAvail();
-	auto& style = ImGui::GetStyle();
-	const ImGuiID itemID = ImGui::GetID(ctx->metadata.title.c_str()/* "###ScriptPositions"*/);
-	ImRect itemBB(canvas_pos, canvas_pos + canvas_size);
-	ImGui::ItemAdd(itemBB, itemID);
-	float frameTime = app->player.getFrameTimeMs();
-	bool IsPaused = app->player.isPaused();
+	const auto availSize = ImGui::GetContentRegionAvail() - ImVec2(0.f , style.WindowPadding.y + (style.ItemSpacing.y * 4.f));
+	const auto startCursor = ImGui::GetCursorScreenPos();
 
-	draw_list->AddRectFilledMultiColor(canvas_pos, ImVec2(canvas_pos.x + canvas_size.x, canvas_pos.y + canvas_size.y),
-		IM_COL32(0, 0, 50, 255), IM_COL32(0, 0, 50, 255),
-		IM_COL32(0, 0, 20, 255), IM_COL32(0, 0, 20, 255)
-	);
+	for (auto&& scriptPtr : app->LoadedFunscripts) {
+		auto& script = *scriptPtr;
+		canvas_pos = ImGui::GetCursorScreenPos();
+		canvas_size = ImVec2(availSize.x, availSize.y / (float)app->LoadedFunscripts.size());
+		const bool IsActivated = app->LoadedFunscripts.size() > 1 ? scriptPtr.get() == app->ActiveFunscript().get() : false;
+		
+		if (IsActivated) {
+			constexpr float activatedBorderThicknes = 5.f;
+			draw_list->AddRect(
+				canvas_pos - ImVec2(activatedBorderThicknes, activatedBorderThicknes),
+				ImVec2(canvas_pos.x + canvas_size.x, canvas_pos.y + canvas_size.y) + ImVec2(activatedBorderThicknes, activatedBorderThicknes),
+				script.HasSelection() ? ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_SliderGrabActive]) : IM_COL32(0, 180, 0, 255),
+				0.f, ImDrawCornerFlags_All,
+				activatedBorderThicknes
+			);
+		}
+		ImVec2 newCursor(canvas_pos.x, canvas_pos.y + canvas_size.y + (style.ItemSpacing.y*2.f));
+		if (newCursor.y < (startCursor.y + availSize.y)) { ImGui::SetCursorScreenPos(newCursor); }
+	}
+	ImGui::SetCursorScreenPos(startCursor);
+	for (auto&& scriptPtr : app->LoadedFunscripts) {
+		auto& script = *scriptPtr;
+		canvas_pos = ImGui::GetCursorScreenPos();
+		canvas_size = ImVec2(availSize.x, availSize.y / (float)app->LoadedFunscripts.size());
+		const ImGuiID itemID = ImGui::GetID(script.metadata.title.c_str());
+		ImRect itemBB(canvas_pos, canvas_pos + canvas_size);
+		ImGui::ItemAdd(itemBB, itemID);
+		float frameTime = app->player.getFrameTimeMs();
+		bool IsPaused = app->player.isPaused();
 
-
-	// height indicators
-	for (int i = 0; i < 9; i++) {
-		auto color = (i == 4) ? IM_COL32(150, 150, 150, 255) : IM_COL32(80, 80, 80, 255);
-		auto thickness = (i == 4) ? 2.f : 1.0f;
-		draw_list->AddLine(
-			canvas_pos + ImVec2(0.0, (canvas_size.y / 10.f) * (i + 1)),
-			canvas_pos + ImVec2(canvas_size.x, (canvas_size.y / 10.f) * (i + 1)),
-			color,
-			thickness
+		draw_list->AddRectFilledMultiColor(canvas_pos, ImVec2(canvas_pos.x + canvas_size.x, canvas_pos.y + canvas_size.y),
+			IM_COL32(0, 0, 50, 255), IM_COL32(0, 0, 50, 255),
+			IM_COL32(0, 0, 20, 255), IM_COL32(0, 0, 20, 255)
 		);
-	}
 
-	float visibleFrames = frameSizeMs / frameTime;
-	constexpr float maxVisibleFrames = 400.f;
-	if (visibleFrames <= (maxVisibleFrames * 0.75f)) {
-		//render frame dividers
-		float offset = -std::fmod(offset_ms, frameTime);
-		const int lineCount = visibleFrames + 2;
-		int alpha = 255 * (1.f - (visibleFrames / maxVisibleFrames));
-		for (int i = 0; i < lineCount; i++) {
+		// height indicators
+		for (int i = 0; i < 9; i++) {
+			auto color = (i == 4) ? IM_COL32(150, 150, 150, 255) : IM_COL32(80, 80, 80, 255);
+			auto thickness = (i == 4) ? 2.f : 1.0f;
 			draw_list->AddLine(
-				canvas_pos + ImVec2(((offset + (i * frameTime)) / frameSizeMs) * canvas_size.x, 0.f),
-				canvas_pos + ImVec2(((offset + (i * frameTime)) / frameSizeMs) * canvas_size.x, canvas_size.y),
-				IM_COL32(80, 80, 80, alpha),
-				1.f
+				canvas_pos + ImVec2(0.0, (canvas_size.y / 10.f) * (i + 1)),
+				canvas_pos + ImVec2(canvas_size.x, (canvas_size.y / 10.f) * (i + 1)),
+				color,
+				thickness
 			);
 		}
 
-		// out of sync line
-		if (IsPaused || app->player.getSpeed() <= 0.1) {
-			float realFrameTime = app->player.getRealCurrentPositionMs() - offset_ms;
-			draw_list->AddLine(
-				canvas_pos + ImVec2((realFrameTime / frameSizeMs) * canvas_size.x, 0.f),
-				canvas_pos + ImVec2((realFrameTime / frameSizeMs) * canvas_size.x, canvas_size.y),
-				IM_COL32(255, 0, 0, alpha),
-				1.f
-			);
-		}
-	}
-
-	// time dividers
-	constexpr float maxVisibleTime = 200.f;
-	const float timeIntervalMs = std::round(app->player.getFps() * 0.1f) * app->player.getFrameTimeMs();
-	const float visibleTimeIntervals = frameSizeMs / timeIntervalMs;
-	if (visibleTimeIntervals <= (maxVisibleTime * 0.8f)) {
-		float offset = -std::fmod(offset_ms, timeIntervalMs);
-		const int lineCount = visibleTimeIntervals+2;
-		int alpha = 255 * (1.f - (visibleTimeIntervals / maxVisibleTime));
-		for (int i = 0; i < lineCount; i++) {
-			draw_list->AddLine(
-				canvas_pos + ImVec2(((offset + (i * timeIntervalMs)) / frameSizeMs) * canvas_size.x, 0.f),
-				canvas_pos + ImVec2(((offset + (i * timeIntervalMs)) / frameSizeMs) * canvas_size.x, canvas_size.y),
-				IM_COL32(80, 80, 80, alpha),
-				3.f
-			);
-		}
-	}
-
-	// border
-	const float borderThicknes = 1.f;
-	draw_list->AddRect(
-		canvas_pos,
-		ImVec2(canvas_pos.x + canvas_size.x, canvas_pos.y + canvas_size.y),
-		script.HasSelection() ? ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_SliderGrabActive]) : IM_COL32(255, 255, 255, 255),
-		0.f, ImDrawCornerFlags_All,
-		borderThicknes
-	);
-
-	if (ShowAudioWaveform) {
-		const float durationMs = app->player.getDuration() * 1000.f;
-		const float rel_start = offset_ms / durationMs;
-		const float rel_end = ((float)(offset_ms)+frameSizeMs) / durationMs;
-
-		auto& audio_waveform = audio_waveform_avg;
-
-		const float start_index = rel_start * audio_waveform.size();
-		const float end_index = Util::Clamp<float>((rel_end * audio_waveform.size()), 0.f, audio_waveform.size());
-		const int total_samples = end_index - start_index;
-
-		const float line_width = (1.f / total_samples) * canvas_size.x + 0.75f; // 0.75 pixel padding prevents ugly spacing between lines
-		for (int i = start_index; i < (int)end_index; i++) {
-			const float total_pos_x = ((((float)i - start_index) / (float)total_samples)) * canvas_size.x;
-			float total_len;
-			if (i < 0)
-				total_len = 0.f;
-			else
-				total_len = canvas_size.y * audio_waveform[i] * ScaleAudio;
-			draw_list->AddLine(
-				canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) + (total_len / 2.f)),
-				canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) - (total_len / 2.f)),
-				/*IM_COL32(245, 176, 66, 255)*/ IM_COL32(227, 66, 52, 255), line_width);
-		}
-	}
-
-	// render raw actions
-	const FunscriptAction* prevAction = nullptr;
-	if (script.Raw().HasRecording() && RecordingMode != RecordingRenderMode::None) {
-		auto pathStroke = [](auto draw_list, uint32_t col) {
-			// sort of a hack ...
-			// PathStroke sets  _Path.Size = 0
-			// so we reset it in order to draw the same path twice
-			auto tmp = draw_list->_Path.Size;
-			draw_list->PathStroke(IM_COL32(0, 0, 0, 255), false, 7.0f);
-			draw_list->_Path.Size = tmp;
-			draw_list->PathStroke(col, false, 5.f);
-		};
-		auto pathRawSection = [this](auto draw_list, auto rawActions, int32_t fromIndex, int32_t toIndex) {
-			float frameTimeMs = OpenFunscripter::ptr->player.getFrameTimeMs();
-			for (int i = fromIndex; i < toIndex; i++) {
-				auto action = rawActions[i];
-				if (action.frame_no >= 0) {
-					action.at = i * frameTimeMs;
-					auto point = getPointForAction(FunscriptAction(action.at, action.pos));
-					draw_list->PathLineTo(point);
-				}
+		float visibleFrames = frameSizeMs / frameTime;
+		const float maxVisibleFrames = 400.f;
+		if (visibleFrames <= (maxVisibleFrames * 0.75f)) {
+			//render frame dividers
+			float offset = -std::fmod(offset_ms, frameTime);
+			const int lineCount = visibleFrames + 2;
+			int alpha = 255 * (1.f - (visibleFrames / maxVisibleFrames));
+			for (int i = 0; i < lineCount; i++) {
+				draw_list->AddLine(
+					canvas_pos + ImVec2(((offset + (i * frameTime)) / frameSizeMs) * canvas_size.x, 0.f),
+					canvas_pos + ImVec2(((offset + (i * frameTime)) / frameSizeMs) * canvas_size.x, canvas_size.y),
+					IM_COL32(80, 80, 80, alpha),
+					1.f
+				);
 			}
-		};
 
-		switch (RecordingMode) {
-		case RecordingRenderMode::All:
-		{
-			for(int i=0; i < script.Raw().Recordings.size(); i++) {
-				auto& recording = script.Raw().Recordings[i];
-
-				int32_t startIndex = Util::Clamp<int32_t>((offset_ms / frameTime), 0, recording.RawActions.size());
-				int32_t endIndex = Util::Clamp<int32_t>(((float)offset_ms + frameSizeMs) / frameTime, startIndex, recording.RawActions.size());
-
-				pathRawSection(draw_list, recording.RawActions, startIndex, endIndex);
-				if (i != script.Raw().RecordingIdx) {
-					pathStroke(draw_list, IM_COL32(255, 0, 0, 180));
-				}
-				else {
-					pathStroke(draw_list, IM_COL32(0, 255, 0, 180));
-				}
+			// out of sync line
+			if (IsPaused || app->player.getSpeed() <= 0.1) {
+				float realFrameTime = app->player.getRealCurrentPositionMs() - offset_ms;
+				draw_list->AddLine(
+					canvas_pos + ImVec2((realFrameTime / frameSizeMs) * canvas_size.x, 0.f),
+					canvas_pos + ImVec2((realFrameTime / frameSizeMs) * canvas_size.x, canvas_size.y),
+					IM_COL32(255, 0, 0, alpha),
+					1.f
+				);
 			}
-			break;
 		}
-		case RecordingRenderMode::ActiveOnly: 
-		{
-			auto& recording = script.ActiveRecording();
 
-			int32_t startIndex = Util::Clamp<int32_t>((offset_ms / frameTime), 0, recording.size());
-			int32_t endIndex = Util::Clamp<int32_t>(((float)offset_ms + frameSizeMs) / frameTime, startIndex, recording.size());
-
-			pathRawSection(draw_list, recording, startIndex, endIndex);
-			pathStroke(draw_list, IM_COL32(0, 255, 0, 180));
-			break;
+		// time dividers
+		const float timeIntervalMs = std::round(app->player.getFps() * 0.1f) * app->player.getFrameTimeMs();
+		const float visibleTimeIntervals = frameSizeMs / timeIntervalMs;
+		if (visibleTimeIntervals <= (maxVisibleFrames * 0.75f)) {
+			float offset = -std::fmod(offset_ms, timeIntervalMs);
+			const int lineCount = visibleTimeIntervals+2;
+			int alpha = 255 * (1.f - (visibleTimeIntervals / maxVisibleFrames));
+			for (int i = 0; i < lineCount; i++) {
+				draw_list->AddLine(
+					canvas_pos + ImVec2(((offset + (i * timeIntervalMs)) / frameSizeMs) * canvas_size.x, 0.f),
+					canvas_pos + ImVec2(((offset + (i * timeIntervalMs)) / frameSizeMs) * canvas_size.x, canvas_size.y),
+					IM_COL32(80, 80, 80, alpha),
+					3.f
+				);
+			}
 		}
+
+		// border
+		constexpr float borderThicknes = 1.f;
+		draw_list->AddRect(
+			canvas_pos,
+			ImVec2(canvas_pos.x + canvas_size.x, canvas_pos.y + canvas_size.y),
+			script.HasSelection() ? ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_SliderGrabActive]) : IM_COL32(255, 255, 255, 255),
+			0.f, ImDrawCornerFlags_All,
+			borderThicknes
+		);
+
+
+
+		if (ShowAudioWaveform) {
+			const float durationMs = app->player.getDuration() * 1000.f;
+			const float rel_start = offset_ms / durationMs;
+			const float rel_end = ((float)(offset_ms)+frameSizeMs) / durationMs;
+
+			auto& audio_waveform = audio_waveform_avg;
+
+			const float start_index = rel_start * audio_waveform.size();
+			const float end_index = Util::Clamp<float>((rel_end * audio_waveform.size()), 0.f, audio_waveform.size());
+			const int total_samples = end_index - start_index;
+
+			const float line_width = (1.f / total_samples) * canvas_size.x + 0.75f; // 0.75 pixel padding prevents ugly spacing between lines
+			for (int i = start_index; i < (int)end_index; i++) {
+				const float total_pos_x = ((((float)i - start_index) / (float)total_samples)) * canvas_size.x;
+				float total_len;
+				if (i < 0)
+					total_len = 0.f;
+				else
+					total_len = canvas_size.y * audio_waveform[i] * ScaleAudio;
+				draw_list->AddLine(
+					canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) + (total_len / 2.f)),
+					canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) - (total_len / 2.f)),
+					/*IM_COL32(245, 176, 66, 255)*/ IM_COL32(227, 66, 52, 255), line_width);
+			}
 		}
-	}
 
-	if (ShowLoadedGhosts) {
-		for (auto&& loadedScript : app->LoadedFunscripts) {
-			auto& loaded = *loadedScript;
-			auto startIt = std::find_if(loaded.Actions().begin(), loaded.Actions().end(),
-				[&](auto& act) { return act.at >= offset_ms; });
-			if (startIt != loaded.Actions().begin())
-				startIt -= 1;
+		// render raw actions
+		const FunscriptAction* prevAction = nullptr;
+		if (script.Raw().HasRecording() && RecordingMode != RecordingRenderMode::None) {
+			auto pathStroke = [](auto draw_list, uint32_t col) {
+				// sort of a hack ...
+				// PathStroke sets  _Path.Size = 0
+				// so we reset it in order to draw the same path twice
+				auto tmp = draw_list->_Path.Size;
+				draw_list->PathStroke(IM_COL32(0, 0, 0, 255), false, 7.0f);
+				draw_list->_Path.Size = tmp;
+				draw_list->PathStroke(col, false, 5.f);
+			};
+			auto pathRawSection = [this](auto draw_list, auto rawActions, int32_t fromIndex, int32_t toIndex) {
+				float frameTimeMs = OpenFunscripter::ptr->player.getFrameTimeMs();
+				for (int i = fromIndex; i < toIndex; i++) {
+					auto action = rawActions[i];
+					if (action.frame_no >= 0) {
+						action.at = i * frameTimeMs;
+						auto point = getPointForAction(FunscriptAction(action.at, action.pos));
+						draw_list->PathLineTo(point);
+					}
+				}
+			};
 
-			auto endIt = std::find_if(startIt, loaded.Actions().end(),
-				[&](auto& act) { return act.at >= offset_ms + frameSizeMs; });
-			if (endIt != loaded.Actions().end())
-				endIt += 1;
+			switch (RecordingMode) {
+			case RecordingRenderMode::All:
+			{
+				for(int i=0; i < script.Raw().Recordings.size(); i++) {
+					auto& recording = script.Raw().Recordings[i];
 
-			const FunscriptAction* prevAction = nullptr;
-			for (; startIt != endIt; startIt++) {
-				auto& action = *startIt;
+					int32_t startIndex = Util::Clamp<int32_t>((offset_ms / frameTime), 0, recording.RawActions.size());
+					int32_t endIndex = Util::Clamp<int32_t>(((float)offset_ms + frameSizeMs) / frameTime, startIndex, recording.RawActions.size());
 
-				//auto p1 = getPointForAction(action);
-				//ActionScreenCoordinates.emplace_back(p1);
-				//ActionPositionWindow.emplace_back(action);
+					pathRawSection(draw_list, recording.RawActions, startIndex, endIndex);
+					if (i != script.Raw().RecordingIdx) {
+						pathStroke(draw_list, IM_COL32(255, 0, 0, 180));
+					}
+					else {
+						pathStroke(draw_list, IM_COL32(0, 255, 0, 180));
+					}
+				}
+				break;
+			}
+			case RecordingRenderMode::ActiveOnly: 
+			{
+				auto& recording = script.ActiveRecording();
 
-				if (prevAction != nullptr) {
+				int32_t startIndex = Util::Clamp<int32_t>((offset_ms / frameTime), 0, recording.size());
+				int32_t endIndex = Util::Clamp<int32_t>(((float)offset_ms + frameSizeMs) / frameTime, startIndex, recording.size());
+
+				pathRawSection(draw_list, recording, startIndex, endIndex);
+				pathStroke(draw_list, IM_COL32(0, 255, 0, 180));
+				break;
+			}
+			}
+		}
+
+		if (script.Actions().size() > 0) {
+			// render normal actions
+			if (ShowRegularActions) {
+				auto startIt = std::find_if(script.Actions().begin(), script.Actions().end(),
+					[&](auto& act) { return act.at >= offset_ms; });
+				if (startIt != script.Actions().begin())
+					startIt -= 1;
+
+				auto endIt = std::find_if(startIt, script.Actions().end(),
+					[&](auto& act) { return act.at >= offset_ms + frameSizeMs; });
+				if (endIt != script.Actions().end())
+					endIt += 1;
+
+				const FunscriptAction* prevAction = nullptr;
+				for (; startIt != endIt; startIt++) {
+					auto& action = *startIt;
+
 					auto p1 = getPointForAction(action);
-					// draw line
-					auto p2 = getPointForAction(*prevAction);
-					// calculate speed relative to maximum speed
-					//float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.at - prevAction->at) / 1000.0f)) / max_speed_per_seconds, 0.f, 1.f);
-					//ImColor speed_color;
-					//speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
-					//speed_color.Value.w = 0.6f;
-					draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
-					//draw_list->AddLine(p1, p2, speed_color, 3.0f);
-					draw_list->AddLine(p1, p2, IM_COL32(255, 255, 255, 255 * 0.6f), 3.f);
-				}
+					ActionScreenCoordinates.emplace_back(p1);
+					ActionPositionWindow.emplace_back(action);
 
-				prevAction = &action;
+					if (prevAction != nullptr) {
+						// draw line
+						auto p2 = getPointForAction(*prevAction);
+						// calculate speed relative to maximum speed
+						float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.at - prevAction->at) / 1000.0f)) / max_speed_per_seconds, 0.f, 1.f);
+						ImColor speed_color;
+						speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
+						speed_color.Value.w = 1.f;
+						draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
+						draw_list->AddLine(p1, p2, speed_color, 3.0f);
+					}
+
+					prevAction = &action;
+				}
+			}
+
+			// draw points on top of lines
+			for (auto& p : ActionScreenCoordinates) {
+				draw_list->AddCircleFilled(p, 7.0, IM_COL32(0, 0, 0, 255), 12); // border
+				draw_list->AddCircleFilled(p, 5.0, IM_COL32(255, 0, 0, 255), 12);
+			}
+
+			if (script.HasSelection()) {
+				auto startIt = std::find_if(script.Selection().begin(), script.Selection().end(),
+					[&](auto& act) { return act.at >= offset_ms; });
+				if (startIt != script.Selection().begin())
+					startIt -= 1;
+
+				auto endIt = std::find_if(startIt, script.Selection().end(),
+					[&](auto& act) { return act.at >= offset_ms + frameSizeMs; });
+				if (endIt != script.Selection().end())
+					endIt += 1;
+
+				constexpr auto selectedDots = IM_COL32(11, 252, 3, 255);
+				constexpr auto selectedLines = IM_COL32(3, 194, 252, 255);
+
+				const FunscriptAction* prev_action = nullptr;
+				for (; startIt != endIt; startIt++) {
+					auto&& action = *startIt;
+					auto point = getPointForAction(action);
+
+					if (prev_action != nullptr) {
+						// draw highlight line
+						draw_list->AddLine(getPointForAction(*prev_action), point, selectedLines, 3.0f);
+					}
+					// draw highlight point
+					draw_list->AddCircleFilled(point, 5.0, selectedDots, 12);
+					prev_action = &action;
+				}
 			}
 		}
-	}
 
-	if (script.Actions().size() > 0) {
-		// render normal actions
-		if (ShowRegularActions) {
-			auto startIt = std::find_if(script.Actions().begin(), script.Actions().end(),
-				[&](auto& act) { return act.at >= offset_ms; });
-			if (startIt != script.Actions().begin())
-				startIt -= 1;
-
-			auto endIt = std::find_if(startIt, script.Actions().end(),
-				[&](auto& act) { return act.at >= offset_ms + frameSizeMs; });
-			if (endIt != script.Actions().end())
-				endIt += 1;
-
-			const FunscriptAction* prevAction = nullptr;
-			for (; startIt != endIt; startIt++) {
-				auto& action = *startIt;
-
-				auto p1 = getPointForAction(action);
-				ActionScreenCoordinates.emplace_back(p1);
-				ActionPositionWindow.emplace_back(action);
-
-				if (prevAction != nullptr) {
-					// draw line
-					auto p2 = getPointForAction(*prevAction);
-					// calculate speed relative to maximum speed
-					float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.at - prevAction->at) / 1000.0f)) / max_speed_per_seconds, 0.f, 1.f);
-					ImColor speed_color;
-					speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
-					speed_color.Value.w = 1.f;
-					draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
-					draw_list->AddLine(p1, p2, speed_color, 3.0f);
-				}
-
-				prevAction = &action;
-			}
-		}
-
-		// draw points on top of lines
-		for (auto& p : ActionScreenCoordinates) {
-			draw_list->AddCircleFilled(p, 7.0, IM_COL32(0, 0, 0, 255), 12); // border
-			draw_list->AddCircleFilled(p, 5.0, IM_COL32(255, 0, 0, 255), 12);
-		}
-
-		if (script.HasSelection()) {
-			auto startIt = std::find_if(script.Selection().begin(), script.Selection().end(),
-				[&](auto& act) { return act.at >= offset_ms; });
-			if (startIt != script.Selection().begin())
-				startIt -= 1;
-
-			auto endIt = std::find_if(startIt, script.Selection().end(),
-				[&](auto& act) { return act.at >= offset_ms + frameSizeMs; });
-			if (endIt != script.Selection().end())
-				endIt += 1;
-
-			constexpr auto selectedDots = IM_COL32(11, 252, 3, 255);
-			constexpr auto selectedLines = IM_COL32(3, 194, 252, 255);
-
-			const FunscriptAction* prev_action = nullptr;
-			for (; startIt != endIt; startIt++) {
-				auto&& action = *startIt;
-				auto point = getPointForAction(action);
-
-				if (prev_action != nullptr) {
-					// draw highlight line
-					draw_list->AddLine(getPointForAction(*prev_action), point, selectedLines, 3.0f);
-				}
-				// draw highlight point
-				draw_list->AddCircleFilled(point, 5.0, selectedDots, 12);
-				prev_action = &action;
-			}
-		}
-	}
-
-	char tmp[16];
-	stbsp_snprintf(tmp, sizeof(tmp), "%.2f seconds", WindowSizeSeconds);
-	auto textSize = ImGui::CalcTextSize(tmp);
-	draw_list->AddText(
-		canvas_pos + ImVec2(style.FramePadding.x, canvas_size.y - textSize.y - style.FramePadding.y),
-		ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]),
-		tmp
-	);
-
-	// current position indicator -> |
-	draw_list->AddLine(
-		canvas_pos + ImVec2(canvas_size.x / 2.f, 0),
-		canvas_pos + ImVec2(canvas_size.x / 2.f, canvas_size.y),
-		IM_COL32(255, 255, 255, 255), 3.0f);
-
-	// selection box
-	constexpr auto selectColor = IM_COL32(3, 252, 207, 255);
-	constexpr auto selectColorBackground = IM_COL32(3, 252, 207, 100);
-	if (IsSelecting) {
-		draw_list->AddRectFilled(canvas_pos + ImVec2(canvas_size.x * rel_x1, 0), canvas_pos + ImVec2(canvas_size.x * rel_x2, canvas_size.y), selectColorBackground);
-		draw_list->AddLine(canvas_pos + ImVec2(canvas_size.x * rel_x1, 0), canvas_pos + ImVec2(canvas_size.x * rel_x1, canvas_size.y), selectColor, 3.0f);
-		draw_list->AddLine(canvas_pos + ImVec2(canvas_size.x * rel_x2, 0), canvas_pos + ImVec2(canvas_size.x * rel_x2, canvas_size.y), selectColor, 3.0f);
-	}
-
-	// TODO: refactor this
-	// selectionStart currently used for controller select
-	if (startSelectionMs >= 0) {
-		float startSelectRel = (startSelectionMs - offset_ms) / frameSizeMs;
-		draw_list->AddLine(
-			canvas_pos + ImVec2(canvas_size.x * startSelectRel, 0),
-			canvas_pos + ImVec2(canvas_size.x * startSelectRel, canvas_size.y),
-			selectColor, 3.0f
+		char tmp[16];
+		stbsp_snprintf(tmp, sizeof(tmp), "%.2f seconds", WindowSizeSeconds);
+		auto textSize = ImGui::CalcTextSize(tmp);
+		draw_list->AddText(
+			canvas_pos + ImVec2(style.FramePadding.x, canvas_size.y - textSize.y - style.FramePadding.y),
+			ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]),
+			tmp
 		);
-	}
 
-	PositionsItemHovered = ImGui::IsWindowHovered(); //ImGui::IsItemHovered();
+		// current position indicator -> |
+		draw_list->AddLine(
+			canvas_pos + ImVec2(canvas_size.x / 2.f, 0),
+			canvas_pos + ImVec2(canvas_size.x / 2.f, canvas_size.y),
+			IM_COL32(255, 255, 255, 255), 3.0f);
 
-	// right click context menu
-	if (ImGui::BeginPopupContextItem())
-	{
-		if (ImGui::BeginMenu("Scripts")) {
-			if (ImGui::BeginCombo("##ActiveScript", ctx->metadata.title.c_str())) {
-				auto selectable = [](std::unique_ptr<Funscript>& script) {
-					if (ImGui::Selectable(script->metadata.title.c_str()) || ImGui::IsItemHovered()) {
-						auto app = OpenFunscripter::ptr;
-						if (app->ActiveFunscript() != script) {
-							return true;
-						}
-					}
-					return false;
-				};
-				for (int i = 0; i < app->LoadedFunscripts.size(); i++) {
-					auto&& script = app->LoadedFunscripts[i];
-					if (selectable(script)) {
-						app->ActiveFunscriptIdx = i;
-						app->UpdateNewActiveScript();
-					}
-				}
-				ImGui::EndCombo();
-			}
-			ImGui::EndMenu();
+		// selection box
+		constexpr auto selectColor = IM_COL32(3, 252, 207, 255);
+		constexpr auto selectColorBackground = IM_COL32(3, 252, 207, 100);
+		if (IsSelecting) {
+			draw_list->AddRectFilled(canvas_pos + ImVec2(canvas_size.x * rel_x1, 0), canvas_pos + ImVec2(canvas_size.x * rel_x2, canvas_size.y), selectColorBackground);
+			draw_list->AddLine(canvas_pos + ImVec2(canvas_size.x * rel_x1, 0), canvas_pos + ImVec2(canvas_size.x * rel_x1, canvas_size.y), selectColor, 3.0f);
+			draw_list->AddLine(canvas_pos + ImVec2(canvas_size.x * rel_x2, 0), canvas_pos + ImVec2(canvas_size.x * rel_x2, canvas_size.y), selectColor, 3.0f);
 		}
-		if (ImGui::BeginMenu("Rendering")) {
-			ImGui::MenuItem("Draw actions", NULL, &ShowRegularActions);
-			ImGui::Combo("Recording", (int32_t*)&RecordingMode, "No\0All\0Active\0");
-			ImGui::EndMenu();
+
+		// TODO: refactor this
+		// selectionStart currently used for controller select
+		if (startSelectionMs >= 0) {
+			float startSelectRel = (startSelectionMs - offset_ms) / frameSizeMs;
+			draw_list->AddLine(
+				canvas_pos + ImVec2(canvas_size.x * startSelectRel, 0),
+				canvas_pos + ImVec2(canvas_size.x * startSelectRel, canvas_size.y),
+				selectColor, 3.0f
+			);
 		}
-		if (ImGui::BeginMenu("Audio waveform")) {
-			ImGui::SliderFloat("Waveform scale", &ScaleAudio, 0.25f, 10.f);
-			if (ImGui::MenuItem("Enable waveform", NULL, &ShowAudioWaveform, !ffmpegInProgress)) {}
-			if (ImGui::MenuItem(ffmpegInProgress ? "Processing audio..." : "Update waveform", NULL, false, !ffmpegInProgress)) {
-				if (!ffmpegInProgress) {
-					ShowAudioWaveform = false; // gets switched true after processing
-					ffmpegInProgress = true;
+		ImVec2 newCursor(canvas_pos.x, canvas_pos.y + canvas_size.y + (style.ItemSpacing.y * 2.f));
+		if (newCursor.y < (startCursor.y + availSize.y)) { ImGui::SetCursorScreenPos(newCursor); }
 
-					auto ffmpegThread = [](void* userData) -> int {
-						auto& ctx = *((ScriptPositionsWindow*)userData);
+		PositionsItemHovered = ImGui::IsWindowHovered(); //ImGui::IsItemHovered();
 
-						std::error_code ec;
-						auto base_path = Util::Basepath();
-#if WIN32
-						auto ffmpeg_path = base_path / "ffmpeg.exe";
-#else
-						auto ffmpeg_path = std::filesystem::path("ffmpeg");
-#endif
-						auto output_path = Util::Prefpath("tmp");
-						if (!Util::CreateDirectories(output_path)) {
-							return 0;
-						}
-						output_path = (std::filesystem::path(output_path) / "audio.mp3").string();
-						auto video_path = OpenFunscripter::ptr->player.getVideoPath();
-
-						bool succ = OutputAudioFile(ffmpeg_path.string().c_str(), video_path, output_path.c_str());
-						if (!succ) {
-							LOGF_ERROR("Failed to output mp3 from video. (ffmpeg_path: \"%s\")", ffmpeg_path.string().c_str());
-							ctx.ShowAudioWaveform = false;
-							ctx.ffmpegInProgress = false;
-							return 0;
-						}
-
-						mp3dec_t mp3d;
-						mp3dec_file_info_t info;
-
-						if (mp3dec_load(&mp3d, output_path.c_str(), &info, NULL, NULL))
-						{
-							LOGF_ERROR("failed to load \"%s\"", output_path.c_str());
-							ctx.ShowAudioWaveform = false;
-							ctx.ffmpegInProgress = false;
-							return 0;
-						}
-
-						const int samples_per_line = info.hz / 256.f; // controls the resolution
-
-						FUN_ASSERT(info.channels == 1, "expected one audio channels");
-						// create one vector of floats for each requested channel
-						ctx.audio_waveform_avg.clear();
-						ctx.audio_waveform_avg.reserve((info.samples / samples_per_line) + 1);
-
-						// for each requested channel
-						for (size_t offset = 0; offset < info.samples; offset += samples_per_line)
-						{
-							int sample_count = (info.samples - offset >= samples_per_line)
-								? samples_per_line
-								: info.samples - offset;
-
-							float average(0);
-							for (int i = offset; i < offset + sample_count; i++)
-							{
-								float sample = info.buffer[i];
-								float abs_sample = std::abs(sample);
-								average += abs_sample;
-							}
-							average /= sample_count;
-							ctx.audio_waveform_avg.push_back(average);
-						}
-
-						auto map2range = [](float x, float in_min, float in_max, float out_min, float out_max)
-						{
-							return Util::Clamp<float>(
-								out_min + (out_max - out_min) * (x - in_min) / (in_max - in_min),
-								out_min,
-								out_max
-								);
-						};
-
-						auto min = std::min_element(ctx.audio_waveform_avg.begin(), ctx.audio_waveform_avg.end());
-						auto max = std::max_element(ctx.audio_waveform_avg.begin(), ctx.audio_waveform_avg.end());
-						if (*min != 0.f || *max != 1.f) {
-							for (auto& val : ctx.audio_waveform_avg)
-							{
-								val = map2range(val, *min, *max, 0.f, 1.f);
+		// right click context menu
+		if (ImGui::BeginPopupContextItem())
+		{
+			if (ImGui::BeginMenu("Scripts")) {
+				if (ImGui::BeginCombo("##ActiveScript", app->ActiveFunscript()->metadata.title.c_str())) {
+					auto selectable = [](std::unique_ptr<Funscript>& script) {
+						if (ImGui::Selectable(script->metadata.title.c_str()) || ImGui::IsItemHovered()) {
+							auto app = OpenFunscripter::ptr;
+							if (app->ActiveFunscript() != script) {
+								return true;
 							}
 						}
-						free(info.buffer);
-						SDL_Event ev;
-						ev.type = EventSystem::FfmpegAudioProcessingFinished;
-						SDL_PushEvent(&ev);
-						return 0;
+						return false;
 					};
-					auto handle = SDL_CreateThread(ffmpegThread, "OpenFunscripterFfmpegThread", this);
-					SDL_DetachThread(handle);
+					for (int i = 0; i < app->LoadedFunscripts.size(); i++) {
+						auto&& script = app->LoadedFunscripts[i];
+						if (selectable(script)) {
+							app->ActiveFunscriptIdx = i;
+							app->UpdateNewActiveScript();
+						}
+					}
+					ImGui::EndCombo();
 				}
+				ImGui::EndMenu();
 			}
-			ImGui::EndMenu();
+			if (ImGui::BeginMenu("Rendering")) {
+				ImGui::MenuItem("Draw actions", NULL, &ShowRegularActions);
+				ImGui::Combo("Recording", (int32_t*)&RecordingMode, "No\0All\0Active\0");
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Audio waveform")) {
+				ImGui::SliderFloat("Waveform scale", &ScaleAudio, 0.25f, 10.f);
+				if (ImGui::MenuItem("Enable waveform", NULL, &ShowAudioWaveform, !ffmpegInProgress)) {}
+				if (ImGui::MenuItem(ffmpegInProgress ? "Processing audio..." : "Update waveform", NULL, false, !ffmpegInProgress)) {
+					if (!ffmpegInProgress) {
+						ShowAudioWaveform = false; // gets switched true after processing
+						ffmpegInProgress = true;
+
+						auto ffmpegThread = [](void* userData) -> int {
+							auto& ctx = *((ScriptPositionsWindow*)userData);
+
+							std::error_code ec;
+							auto base_path = Util::Basepath();
+	#if WIN32
+							auto ffmpeg_path = base_path / "ffmpeg.exe";
+	#else
+							auto ffmpeg_path = std::filesystem::path("ffmpeg");
+	#endif
+							auto output_path = Util::Prefpath("tmp");
+							if (!Util::CreateDirectories(output_path)) {
+								return 0;
+							}
+							output_path = (std::filesystem::path(output_path) / "audio.mp3").string();
+							auto video_path = OpenFunscripter::ptr->player.getVideoPath();
+
+							bool succ = OutputAudioFile(ffmpeg_path.string().c_str(), video_path, output_path.c_str());
+							if (!succ) {
+								LOGF_ERROR("Failed to output mp3 from video. (ffmpeg_path: \"%s\")", ffmpeg_path.string().c_str());
+								ctx.ShowAudioWaveform = false;
+								ctx.ffmpegInProgress = false;
+								return 0;
+							}
+
+							mp3dec_t mp3d;
+							mp3dec_file_info_t info;
+
+							if (mp3dec_load(&mp3d, output_path.c_str(), &info, NULL, NULL))
+							{
+								LOGF_ERROR("failed to load \"%s\"", output_path.c_str());
+								ctx.ShowAudioWaveform = false;
+								ctx.ffmpegInProgress = false;
+								return 0;
+							}
+
+							const int samples_per_line = info.hz / 256.f; // controls the resolution
+
+							FUN_ASSERT(info.channels == 1, "expected one audio channels");
+							// create one vector of floats for each requested channel
+							ctx.audio_waveform_avg.clear();
+							ctx.audio_waveform_avg.reserve((info.samples / samples_per_line) + 1);
+
+							// for each requested channel
+							for (size_t offset = 0; offset < info.samples; offset += samples_per_line)
+							{
+								int sample_count = (info.samples - offset >= samples_per_line)
+									? samples_per_line
+									: info.samples - offset;
+
+								float average(0);
+								for (int i = offset; i < offset + sample_count; i++)
+								{
+									float sample = info.buffer[i];
+									float abs_sample = std::abs(sample);
+									average += abs_sample;
+								}
+								average /= sample_count;
+								ctx.audio_waveform_avg.push_back(average);
+							}
+
+							auto map2range = [](float x, float in_min, float in_max, float out_min, float out_max)
+							{
+								return Util::Clamp<float>(
+									out_min + (out_max - out_min) * (x - in_min) / (in_max - in_min),
+									out_min,
+									out_max
+									);
+							};
+
+							auto min = std::min_element(ctx.audio_waveform_avg.begin(), ctx.audio_waveform_avg.end());
+							auto max = std::max_element(ctx.audio_waveform_avg.begin(), ctx.audio_waveform_avg.end());
+							if (*min != 0.f || *max != 1.f) {
+								for (auto& val : ctx.audio_waveform_avg)
+								{
+									val = map2range(val, *min, *max, 0.f, 1.f);
+								}
+							}
+							free(info.buffer);
+							SDL_Event ev;
+							ev.type = EventSystem::FfmpegAudioProcessingFinished;
+							SDL_PushEvent(&ev);
+							return 0;
+						};
+						auto handle = SDL_CreateThread(ffmpegThread, "OpenFunscripterFfmpegThread", this);
+						SDL_DetachThread(handle);
+					}
+				}
+				ImGui::EndMenu();
+			}
+			ImGui::EndPopup();
 		}
-		ImGui::EndPopup();
 	}
 
 	ImGui::End();
-	if (IsActivated) {
-		ImGui::PopStyleColor(2);
-	}
 }
 
 bool OutputAudioFile(const char* ffmpeg_path, const char* video_path, const char* output_path) {

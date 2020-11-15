@@ -18,13 +18,12 @@ static bool OutputAudioFile(const char* ffmpeg_path, const char* video_path, con
 
 class ScriptPositionsWindow
 {
-	Funscript* ctx = nullptr;
 	ImGradient speedGradient;
 	// used for calculating stroke color with speedGradient
 	const float max_speed_per_seconds = 530.f; // arbitrarily choosen maximum tuned for coloring
 	
-	static std::vector<float> audio_waveform_avg;
-	static bool ffmpegInProgress;
+	std::vector<float> audio_waveform_avg;
+	bool ffmpegInProgress = false;
 
 	ImVec2 canvas_pos;
 	ImVec2 canvas_size;
@@ -78,18 +77,16 @@ class ScriptPositionsWindow
 
 	RecordingRenderMode RecordingMode = RecordingRenderMode::All;
 	bool ShowRegularActions = true;
-	static bool ShowAudioWaveform;
-	static bool ShowLoadedGhosts;
+	bool ShowAudioWaveform = false;
 	float ScaleAudio = 1.f;
+	float WindowSizeSeconds = 5.f;
 	int32_t startSelectionMs = -1;
-	static float WindowSizeSeconds;
 public:
 	static constexpr const char* PositionsId = "Positions";
-	ScriptPositionsWindow(Funscript* script);
-	~ScriptPositionsWindow();
 
-	static constexpr float MAX_WINDOW_SIZE = 60.f; // this limit is arbitrary and not enforced
-	static constexpr float MIN_WINDOW_SIZE = 1.f; // this limit is also arbitrary and not enforced
+	const float MAX_WINDOW_SIZE = 60.f; // this limit is arbitrary and not enforced
+	const float MIN_WINDOW_SIZE = 1.f; // this limit is also arbitrary and not enforced
+	void setup();
 
 	inline void ClearAudioWaveform() noexcept { audio_waveform_avg.clear(); }
 	inline void setStartSelection(int32_t ms) noexcept { startSelectionMs = ms; }
