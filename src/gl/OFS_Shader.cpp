@@ -113,3 +113,7 @@ void LightingShader::LightPos(const float* vec3) noexcept
 {
 	glUniform3fv(glGetUniformLocation(program, "lightPos"), 1, vec3);
 }
+
+void LightingShader::ViewPos(const float* vec3) noexcept {
+	glUniform3fv(glGetUniformLocation(program, "viewPos"), 1, vec3);
+}

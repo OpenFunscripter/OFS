@@ -155,4 +155,5 @@ public:
 	void ViewMtx(const float* mat4) noexcept;
 	void ObjectColor(const float* vec4) noexcept;
 	void LightPos(const float* vec3) noexcept;
+	void ViewPos(const float* vec3) noexcept;
 };
