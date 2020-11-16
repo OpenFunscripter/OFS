@@ -119,7 +119,7 @@ void Simulator3D::ShowWindow(bool* open) noexcept
     auto viewport = ImGui::GetMainViewport();
     projection = glm::perspective(glm::radians(90.f), viewport->Size.x / viewport->Size.y, 0.1f, 100.0f); 
     
-    ImGui::Begin("Simulator 3D", open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoDocking);
+    ImGui::Begin("Simulator 3D", open, ImGuiWindowFlags_None);
 
     if (ImGui::Button("Reset", ImVec2(-1.f, 0.f))) {
         reset();
