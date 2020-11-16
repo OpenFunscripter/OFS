@@ -125,6 +125,9 @@ void Simulator3D::ShowWindow(bool* open) noexcept
         reset();
     }
 
+    ImGui::ColorEdit4("Box", &boxColor.Value.x);
+    ImGui::ColorEdit4("Container", &containerColor.Value.x);
+
     ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList());
     ImGuizmo::SetRect(viewport->Pos.x, viewport->Pos.y, viewport->Size.x, viewport->Size.y);
 
@@ -221,22 +224,19 @@ void Simulator3D::ShowWindow(bool* open) noexcept
 void Simulator3D::render() noexcept
 {
     if (!Enabled) return;
-    constexpr float color[4] { 1.0f, 0.5f, 0.31f, 0.7f };
-    constexpr float colorContainer[4]{ 0.5f, 0.5f, 1.f, 0.4f };
-
-    constexpr float pos[3] {0.f, 0.f, -1.f };
+    constexpr float lightPos[3] {0.f, 0.f, -1.f };
     
     glClear(GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
 
 
     lightShader->use();
-    lightShader->LightPos(&pos[0]);
+    lightShader->LightPos(&lightPos[0]);
     lightShader->ProjectionMtx(glm::value_ptr(projection));
     lightShader->ViewMtx(glm::value_ptr(view));
     lightShader->ViewPos(glm::value_ptr(viewPos));
 
-    lightShader->ObjectColor(&color[0]);
+    lightShader->ObjectColor(&boxColor.Value.x);
     lightShader->ModelMtx(glm::value_ptr(boxModel));
 
     // render the cube
@@ -246,7 +246,7 @@ void Simulator3D::render() noexcept
     //glEnable(GL_BLEND);
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    lightShader->ObjectColor(colorContainer);
+    lightShader->ObjectColor(&containerColor.Value.x);
     lightShader->ModelMtx(glm::value_ptr(containerModel));
     glBindVertexArray(cubeVAO);
     glDrawArrays(GL_TRIANGLES, 0, 36);

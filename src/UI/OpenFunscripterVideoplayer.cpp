@@ -472,7 +472,8 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 					}, this);
 				ImGui::Image((void*)(intptr_t)render_texture, ImGui::GetContentRegionAvail(), uv0, uv1);
 				draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
-					OpenFunscripter::ptr->sim3D->render();
+					auto& sim3D = OpenFunscripter::ptr->sim3D;
+					sim3D->render();				
 				}, this);
 				video_draw_size = ImGui::GetItemRectSize();
 			}
@@ -492,7 +493,8 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 				}
 				ImGui::Image((void*)(intptr_t)render_texture, videoSize, uv0, uv1);
 				draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
-					OpenFunscripter::ptr->sim3D->render();
+					auto& sim3D = OpenFunscripter::ptr->sim3D;
+					sim3D->render();
 				}, this);
 			}
 			draw_list->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
