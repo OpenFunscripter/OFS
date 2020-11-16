@@ -160,8 +160,9 @@ public:
 	void NotifyActionsChanged() noexcept;
 
 	std::unique_ptr<UndoSystem> undoSystem;
-
 	std::string current_path;
+	bool Enabled = true;
+
 	inline void rollback(const FunscriptData& data) noexcept { this->data = data; NotifyActionsChanged(); }
 
 	void update() noexcept;

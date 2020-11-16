@@ -498,9 +498,11 @@ void OpenFunscripter::register_bindings()
             "Cycle forward loaded scripts",
             true,
             [&](void*) {
-                ActiveFunscriptIdx++;
-                ActiveFunscriptIdx %= LoadedFunscripts.size();
-                UpdateNewActiveScript();
+                do {
+                    ActiveFunscriptIdx++;
+                    ActiveFunscriptIdx %= LoadedFunscripts.size();
+                } while (!ActiveFunscript()->Enabled);
+                UpdateNewActiveScript(ActiveFunscriptIdx);
             }
         );
         cycle_loaded_forward_scripts.key = Keybinding(
@@ -513,9 +515,11 @@ void OpenFunscripter::register_bindings()
             "Cycle backward loaded scripts",
             true,
             [&](void*) {
-                ActiveFunscriptIdx--;
-                ActiveFunscriptIdx %= LoadedFunscripts.size();
-                UpdateNewActiveScript();
+                do {
+                    ActiveFunscriptIdx--;
+                    ActiveFunscriptIdx %= LoadedFunscripts.size();
+                } while (!ActiveFunscript()->Enabled);
+                UpdateNewActiveScript(ActiveFunscriptIdx);
             }
         );
         cycle_loaded_backward_scripts.key = Keybinding(
@@ -1601,8 +1605,9 @@ bool OpenFunscripter::openFile(const std::string& file)
     return result;
 }
 
-void OpenFunscripter::UpdateNewActiveScript() noexcept
+void OpenFunscripter::UpdateNewActiveScript(int32_t activeIndex) noexcept
 {
+    ActiveFunscriptIdx = activeIndex;
     updateTitle();
     ActiveFunscript()->NotifyActionsChanged();
 }
@@ -1895,7 +1900,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 if (unloadIndex >= 0) {
                     LoadedFunscripts.erase(LoadedFunscripts.begin() + unloadIndex);
                     if (ActiveFunscriptIdx > 0) { ActiveFunscriptIdx--; }
-                    UpdateNewActiveScript();
+                    UpdateNewActiveScript(ActiveFunscriptIdx);
                 }
                 ImGui::EndMenu();
             }
@@ -2410,18 +2415,19 @@ void OpenFunscripter::ShowStatisticsWindow(bool* open) noexcept
 {
     if (!*open) return;
     ImGui::Begin(StatisticsId, open, ImGuiWindowFlags_None);
-    const FunscriptAction* behind = ActiveFunscript()->GetActionAtTime(player.getCurrentPositionMs(), 0);
-    const FunscriptAction* front = nullptr;
-    if (behind != nullptr) {
-        front = ActiveFunscript()->GetNextActionAhead(player.getCurrentPositionMs() + 1);
+    const int32_t currentMs = std::round(player.getCurrentPositionMs());
+    const FunscriptAction* front = ActiveFunscript()->GetActionAtTime(currentMs, 0);
+    const FunscriptAction* behind = nullptr;
+    if (front != nullptr) {
+        behind = ActiveFunscript()->GetPreviousActionBehind(front->at);
     }
     else {
-        behind = ActiveFunscript()->GetPreviousActionBehind(player.getCurrentPositionMs());
-        front = ActiveFunscript()->GetNextActionAhead(player.getCurrentPositionMs());
+        behind = ActiveFunscript()->GetPreviousActionBehind(currentMs);
+        front = ActiveFunscript()->GetNextActionAhead(currentMs);
     }
 
     if (behind != nullptr) {
-        ImGui::Text("Interval: %d ms", (int32_t)player.getCurrentPositionMs() - behind->at);
+        ImGui::Text("Interval: %d ms", currentMs - behind->at);
         if (front != nullptr) {
             int32_t duration = front->at - behind->at;
             int32_t length = front->pos - behind->pos;

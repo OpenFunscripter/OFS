@@ -48,6 +48,8 @@ private:
 	bool updateTimelineGradient = false;
 	char tmp_buf[2][32];
 
+	int32_t ActiveFunscriptIdx = 0;
+
 	void register_bindings();
 
 	void update() noexcept;
@@ -121,7 +123,6 @@ public:
 	std::unique_ptr<OpenFunscripterSettings> settings;
 	std::unique_ptr<Simulator3D> sim3D;
 
-	int32_t ActiveFunscriptIdx = 0;
 	std::vector<std::unique_ptr<Funscript>> LoadedFunscripts;
 
 	bool setup();
@@ -133,7 +134,9 @@ public:
 		FUN_ASSERT(ScriptLoaded(), "No script loaded");
 		return LoadedFunscripts[ActiveFunscriptIdx]; 
 	}
-	void UpdateNewActiveScript() noexcept;
+
+	void UpdateNewActiveScript(int32_t activeIndex) noexcept;
+	int32_t ActiveFunscriptIndex() const { return ActiveFunscriptIdx; }
 
 	static inline Funscript& script() noexcept { return *OpenFunscripter::ptr->ActiveFunscript(); }
 	static void SetCursorType(SDL_SystemCursor id) noexcept;

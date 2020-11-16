@@ -211,13 +211,18 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	auto draw_list = ImGui::GetWindowDrawList();
 	PositionsItemHovered = ImGui::IsWindowHovered();
 
-	int32_t loadedScriptCount = app->LoadedFunscripts.size();
+	//int32_t loadedScriptCount = app->LoadedFunscripts.size();
+	int32_t loadedScriptCount = 0;
+	for (auto&& script : app->LoadedFunscripts) {
+		if (script->Enabled) { loadedScriptCount++; }
+	}
 	const auto availSize = ImGui::GetContentRegionAvail() - ImVec2(0.f , style.ItemSpacing.y*((float)loadedScriptCount-1));
 	const auto startCursor = ImGui::GetCursorScreenPos();
 
 	ImVec2 canvas_pos;
 	ImVec2 canvas_size;
 	for (auto&& scriptPtr : app->LoadedFunscripts) {
+		if (!scriptPtr->Enabled) { continue; }
 		auto& script = *scriptPtr;
 		canvas_pos = ImGui::GetCursorScreenPos();
 		canvas_size = ImVec2(availSize.x, availSize.y / (float)loadedScriptCount);
@@ -243,6 +248,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	}
 	ImGui::SetCursorScreenPos(startCursor);
 	for (auto&& scriptPtr : app->LoadedFunscripts) {
+		if (!scriptPtr->Enabled) { continue; }
 		auto& script = *scriptPtr;
 		canvas_pos = ImGui::GetCursorScreenPos();
 		canvas_size = ImVec2(availSize.x, availSize.y / (float)loadedScriptCount);
@@ -518,24 +524,20 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		if (ImGui::BeginPopupContextItem())
 		{
 			if (ImGui::BeginMenu("Scripts")) {
-				if (ImGui::BeginCombo("##ActiveScript", app->ActiveFunscript()->metadata.title.c_str())) {
-					auto selectable = [](std::unique_ptr<Funscript>& script) {
-						if (ImGui::Selectable(script->metadata.title.c_str()) || ImGui::IsItemHovered()) {
-							auto app = OpenFunscripter::ptr;
-							if (app->ActiveFunscript() != script) {
-								return true;
+				for (auto&& script : app->LoadedFunscripts) {
+					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, loadedScriptCount == 1 && script->Enabled);
+					if (ImGui::Checkbox(script->metadata.title.c_str(), &script->Enabled) && !script->Enabled) {
+						if (script.get() == app->ActiveFunscript().get()) {
+							// find a enabled script which can be set active
+							for (int i = 0; i < app->LoadedFunscripts.size(); i++) {
+								if (app->LoadedFunscripts[i]->Enabled) {
+									app->UpdateNewActiveScript(i);
+									break;
+								}
 							}
 						}
-						return false;
-					};
-					for (int i = 0; i < app->LoadedFunscripts.size(); i++) {
-						auto&& script = app->LoadedFunscripts[i];
-						if (selectable(script)) {
-							app->ActiveFunscriptIdx = i;
-							app->UpdateNewActiveScript();
-						}
 					}
-					ImGui::EndCombo();
+					ImGui::PopItemFlag();
 				}
 				ImGui::EndMenu();
 			}
