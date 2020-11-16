@@ -211,7 +211,8 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	auto draw_list = ImGui::GetWindowDrawList();
 	PositionsItemHovered = ImGui::IsWindowHovered();
 
-	const auto availSize = ImGui::GetContentRegionAvail() - ImVec2(0.f , style.WindowPadding.y + (style.ItemSpacing.y * 4.f));
+	int32_t loadedScriptCount = app->LoadedFunscripts.size();
+	const auto availSize = ImGui::GetContentRegionAvail() - ImVec2(0.f , style.ItemSpacing.y*((float)loadedScriptCount-1));
 	const auto startCursor = ImGui::GetCursorScreenPos();
 
 	ImVec2 canvas_pos;
@@ -219,10 +220,10 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	for (auto&& scriptPtr : app->LoadedFunscripts) {
 		auto& script = *scriptPtr;
 		canvas_pos = ImGui::GetCursorScreenPos();
-		canvas_size = ImVec2(availSize.x, availSize.y / (float)app->LoadedFunscripts.size());
-		const bool IsActivated = app->LoadedFunscripts.size() > 1 ? scriptPtr.get() == app->ActiveFunscript().get() : false;
+		canvas_size = ImVec2(availSize.x, availSize.y / (float)loadedScriptCount);
+		const bool IsActivated = loadedScriptCount ? scriptPtr.get() == app->ActiveFunscript().get() : false;
 		
-		if (app->LoadedFunscripts.size() == 1) {
+		if (loadedScriptCount == 1) {
 			active_canvas_pos = canvas_pos;
 			active_canvas_size = canvas_size;
 		} else if (IsActivated) {
@@ -237,14 +238,14 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				activatedBorderThicknes
 			);
 		}
-		ImVec2 newCursor(canvas_pos.x, canvas_pos.y + canvas_size.y + (style.ItemSpacing.y*2.f));
+		ImVec2 newCursor(canvas_pos.x, canvas_pos.y + canvas_size.y + style.ItemSpacing.y);
 		if (newCursor.y < (startCursor.y + availSize.y)) { ImGui::SetCursorScreenPos(newCursor); }
 	}
 	ImGui::SetCursorScreenPos(startCursor);
 	for (auto&& scriptPtr : app->LoadedFunscripts) {
 		auto& script = *scriptPtr;
 		canvas_pos = ImGui::GetCursorScreenPos();
-		canvas_size = ImVec2(availSize.x, availSize.y / (float)app->LoadedFunscripts.size());
+		canvas_size = ImVec2(availSize.x, availSize.y / (float)loadedScriptCount);
 		const ImGuiID itemID = ImGui::GetID(script.metadata.title.c_str());
 		ImRect itemBB(canvas_pos, canvas_pos + canvas_size);
 		ImGui::ItemAdd(itemBB, itemID);
@@ -347,7 +348,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				draw_list->AddLine(
 					canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) + (total_len / 2.f)),
 					canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) - (total_len / 2.f)),
-					/*IM_COL32(245, 176, 66, 255)*/ IM_COL32(227, 66, 52, 255), line_width);
+					IM_COL32(227, 66, 52, 255), line_width);
 			}
 		}
 
@@ -509,7 +510,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				selectColor, 3.0f
 			);
 		}
-		ImVec2 newCursor(canvas_pos.x, canvas_pos.y + canvas_size.y + (style.ItemSpacing.y * 2.f));
+		ImVec2 newCursor(canvas_pos.x, canvas_pos.y + canvas_size.y + style.ItemSpacing.y);
 		if (newCursor.y < (startCursor.y + availSize.y)) { ImGui::SetCursorScreenPos(newCursor); }
 
 
