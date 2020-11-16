@@ -531,7 +531,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 							// find a enabled script which can be set active
 							for (int i = 0; i < app->LoadedFunscripts.size(); i++) {
 								if (app->LoadedFunscripts[i]->Enabled) {
-									app->ActiveFunscriptIdx = i;
+									app->UpdateNewActiveScript(i);
 									break;
 								}
 							}

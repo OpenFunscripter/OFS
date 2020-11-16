@@ -485,7 +485,7 @@ void OpenFunscripter::register_bindings()
                     ActiveFunscriptIdx++;
                     ActiveFunscriptIdx %= LoadedFunscripts.size();
                 } while (!ActiveFunscript()->Enabled);
-                UpdateNewActiveScript();
+                UpdateNewActiveScript(ActiveFunscriptIdx);
             }
         );
         cycle_loaded_forward_scripts.key = Keybinding(
@@ -502,7 +502,7 @@ void OpenFunscripter::register_bindings()
                     ActiveFunscriptIdx--;
                     ActiveFunscriptIdx %= LoadedFunscripts.size();
                 } while (!ActiveFunscript()->Enabled);
-                UpdateNewActiveScript();
+                UpdateNewActiveScript(ActiveFunscriptIdx);
             }
         );
         cycle_loaded_backward_scripts.key = Keybinding(
@@ -1586,8 +1586,9 @@ bool OpenFunscripter::openFile(const std::string& file)
     return result;
 }
 
-void OpenFunscripter::UpdateNewActiveScript() noexcept
+void OpenFunscripter::UpdateNewActiveScript(int32_t activeIndex) noexcept
 {
+    ActiveFunscriptIdx = activeIndex;
     updateTitle();
     ActiveFunscript()->NotifyActionsChanged();
 }
@@ -1880,7 +1881,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 if (unloadIndex >= 0) {
                     LoadedFunscripts.erase(LoadedFunscripts.begin() + unloadIndex);
                     if (ActiveFunscriptIdx > 0) { ActiveFunscriptIdx--; }
-                    UpdateNewActiveScript();
+                    UpdateNewActiveScript(ActiveFunscriptIdx);
                 }
                 ImGui::EndMenu();
             }
