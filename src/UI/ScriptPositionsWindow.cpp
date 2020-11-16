@@ -276,7 +276,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		}
 
 		float visibleFrames = frameSizeMs / frameTime;
-		const float maxVisibleFrames = 400.f;
+		constexpr float maxVisibleFrames = 400.f;
 		if (visibleFrames <= (maxVisibleFrames * 0.75f)) {
 			//render frame dividers
 			float offset = -std::fmod(offset_ms, frameTime);
@@ -304,12 +304,13 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		}
 
 		// time dividers
+		constexpr float maxVisibleTimeDividers = 150.f;
 		const float timeIntervalMs = std::round(app->player.getFps() * 0.1f) * app->player.getFrameTimeMs();
 		const float visibleTimeIntervals = frameSizeMs / timeIntervalMs;
-		if (visibleTimeIntervals <= (maxVisibleFrames * 0.75f)) {
+		if (visibleTimeIntervals <= (maxVisibleTimeDividers * 0.8f)) {
 			float offset = -std::fmod(offset_ms, timeIntervalMs);
 			const int lineCount = visibleTimeIntervals+2;
-			int alpha = 255 * (1.f - (visibleTimeIntervals / maxVisibleFrames));
+			int alpha = 255 * (1.f - (visibleTimeIntervals / maxVisibleTimeDividers));
 			for (int i = 0; i < lineCount; i++) {
 				draw_list->AddLine(
 					canvas_pos + ImVec2(((offset + (i * timeIntervalMs)) / frameSizeMs) * canvas_size.x, 0.f),
