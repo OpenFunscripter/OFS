@@ -2391,18 +2391,19 @@ void OpenFunscripter::ShowStatisticsWindow(bool* open) noexcept
 {
     if (!*open) return;
     ImGui::Begin(StatisticsId, open, ImGuiWindowFlags_None);
-    const FunscriptAction* behind = ActiveFunscript()->GetActionAtTime(player.getCurrentPositionMs(), 0);
-    const FunscriptAction* front = nullptr;
-    if (behind != nullptr) {
-        front = ActiveFunscript()->GetNextActionAhead(player.getCurrentPositionMs() + 1);
+    const int32_t currentMs = std::round(player.getCurrentPositionMs());
+    const FunscriptAction* front = ActiveFunscript()->GetActionAtTime(currentMs, 0);
+    const FunscriptAction* behind = nullptr;
+    if (front != nullptr) {
+        behind = ActiveFunscript()->GetPreviousActionBehind(front->at);
     }
     else {
-        behind = ActiveFunscript()->GetPreviousActionBehind(player.getCurrentPositionMs());
-        front = ActiveFunscript()->GetNextActionAhead(player.getCurrentPositionMs());
+        behind = ActiveFunscript()->GetPreviousActionBehind(currentMs);
+        front = ActiveFunscript()->GetNextActionAhead(currentMs);
     }
 
     if (behind != nullptr) {
-        ImGui::Text("Interval: %d ms", (int32_t)player.getCurrentPositionMs() - behind->at);
+        ImGui::Text("Interval: %d ms", currentMs - behind->at);
         if (front != nullptr) {
             int32_t duration = front->at - behind->at;
             int32_t length = front->pos - behind->pos;
