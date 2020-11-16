@@ -481,8 +481,10 @@ void OpenFunscripter::register_bindings()
             "Cycle forward loaded scripts",
             true,
             [&](void*) {
-                ActiveFunscriptIdx++;
-                ActiveFunscriptIdx %= LoadedFunscripts.size();
+                do {
+                    ActiveFunscriptIdx++;
+                    ActiveFunscriptIdx %= LoadedFunscripts.size();
+                } while (!ActiveFunscript()->Enabled);
                 UpdateNewActiveScript();
             }
         );
@@ -496,8 +498,10 @@ void OpenFunscripter::register_bindings()
             "Cycle backward loaded scripts",
             true,
             [&](void*) {
-                ActiveFunscriptIdx--;
-                ActiveFunscriptIdx %= LoadedFunscripts.size();
+                do {
+                    ActiveFunscriptIdx--;
+                    ActiveFunscriptIdx %= LoadedFunscripts.size();
+                } while (!ActiveFunscript()->Enabled);
                 UpdateNewActiveScript();
             }
         );
