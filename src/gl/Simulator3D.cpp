@@ -88,6 +88,7 @@ void Simulator3D::setup() noexcept
 
 void Simulator3D::ShowWindow(bool* open) noexcept
 {
+    if (!*open) { return; }
     auto app = OpenFunscripter::ptr;
     float currentMs = app->player.getCurrentPositionMsInterp();
     float roll = 0.f;
@@ -223,7 +224,7 @@ void Simulator3D::ShowWindow(bool* open) noexcept
 
 void Simulator3D::render() noexcept
 {
-    if (!Enabled) return;
+    if (!OpenFunscripter::ptr->settings->data().show_simulator_3d) return;
     constexpr float lightPos[3] {0.f, 0.f, -1.f };
     
     glClear(GL_DEPTH_BUFFER_BIT);

@@ -1301,7 +1301,7 @@ int OpenFunscripter::run() noexcept
             simulator.ShowSimulator(&settings->data().show_simulator);
             ShowStatisticsWindow(&settings->data().show_statistics);
             if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { ActiveFunscript()->save(); }
-            sim3D->ShowWindow(NULL);
+            sim3D->ShowWindow(&settings->data().show_simulator_3d);
             scripting->DrawScriptingMode(NULL);
 
             if (keybinds.ShowBindingWindow()) {
@@ -2131,6 +2131,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem(StatisticsId, NULL, &settings->data().show_statistics)) {}
             if (ImGui::MenuItem(UndoSystem::UndoHistoryId, NULL, &settings->data().show_history)) {}
             if (ImGui::MenuItem(ScriptSimulator::SimulatorId, NULL, &settings->data().show_simulator)) { settings->saveSettings(); }
+            if (ImGui::MenuItem("Simulator 3D", NULL, &settings->data().show_simulator_3d)) { settings->saveSettings(); }
             if (ImGui::MenuItem("Metadata", NULL, &ShowMetadataEditor)) {}
             if (ImGui::MenuItem("Action editor", NULL, &settings->data().show_action_editor)) {}
             if (ImGui::MenuItem(SpecialFunctionsWindow::SpecialFunctionsId, NULL, &settings->data().show_special_functions)) {}
