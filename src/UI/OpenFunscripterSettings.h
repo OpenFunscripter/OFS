@@ -38,6 +38,7 @@ private:
 		bool always_show_bookmark_labels = false;
 		bool draw_video= true;
 		bool show_simulator = true;
+		bool show_simulator_3d = false;
 		bool show_statistics = true;
 		bool show_history = true;
 		bool show_special_functions = false;
@@ -60,6 +61,7 @@ private:
 			OFS_REFLECT(always_show_bookmark_labels, ar);
 			OFS_REFLECT(draw_video, ar);
 			OFS_REFLECT(show_simulator, ar);
+			OFS_REFLECT(show_simulator_3d, ar);
 			OFS_REFLECT(show_statistics, ar);
 			OFS_REFLECT(show_history, ar);
 			OFS_REFLECT(show_special_functions, ar);

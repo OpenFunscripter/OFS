@@ -113,12 +113,14 @@ void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
 			SDL_PushEvent(&notify);
 		}
 		// selecting only works in the active timeline
-		else if (ImRect(active_canvas_pos, active_canvas_pos + active_canvas_size).Contains(ImGui::GetMousePos())) {
-			// start drag selection
+		else if (PositionsItemHovered) {
 			ImRect rect(active_canvas_pos, active_canvas_pos + active_canvas_size);
-			IsSelecting = true;
-			rel_x1 = (mousePos.x - active_canvas_pos.x) / rect.GetWidth();
-			rel_x2 = rel_x1;
+			if (rect.Contains(ImGui::GetMousePos())) {
+				// start drag selection
+				IsSelecting = true;
+				rel_x1 = (mousePos.x - active_canvas_pos.x) / rect.GetWidth();
+				rel_x2 = rel_x1;
+			}
 		}
 	}
 	else if (button.button == SDL_BUTTON_MIDDLE) {

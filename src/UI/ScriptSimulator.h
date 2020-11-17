@@ -58,8 +58,6 @@ public:
 	} simulator;
 	bool SimulateRawActions = false;
 
-	ScriptSimulator() {}
-
 	void MouseMovement(SDL_Event& ev);
 	void MouseDown(SDL_Event& ev);
 

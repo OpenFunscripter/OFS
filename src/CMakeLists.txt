@@ -23,6 +23,7 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "event/EventSystem.cpp"
 
   "gl/OFS_Shader.cpp"
+  "gl/Simulator3D.cpp"
 
   "imgui_impl/imgui_impl_opengl3.cpp"
   "imgui_impl/imgui_impl_sdl.cpp" 
@@ -49,6 +50,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   SDL2main
   tinyfiledialogs
   utf8::cpp
+  glm
+  ImGuizmo
+  ImGuizmoQuat
 )
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC

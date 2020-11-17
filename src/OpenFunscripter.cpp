@@ -8,6 +8,7 @@
 
 #include "stb_sprintf.h"
 
+#include "ImGuizmo.h"
 #include "imgui_stdlib.h"
 #include "imgui_internal.h"
 
@@ -27,6 +28,8 @@
 //       it bugs out if the simulator is on the same height as the script timeline
 
 // TODO: allow to hide loaded scripts in script timeline
+
+// BUG: script timeline selection works even when not hovered
 
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
@@ -302,7 +305,9 @@ bool OpenFunscripter::setup()
     controllerInput = std::make_unique<ControllerInput>();
     controllerInput->setup();
     simulator.setup();
-    
+    sim3D = std::make_unique<Simulator3D>();
+    sim3D->setup();
+
     SDL_ShowWindow(window);
 
 #ifndef NDEBUG
@@ -317,6 +322,18 @@ bool OpenFunscripter::setup()
     auto twist = std::make_unique<Funscript>();
     twist->open(R"(E:\funscript\multi-axis\Kimber Lee - Beautiful Young Cocksucker Takes Load.twist.funscript)");
     LoadedFunscripts.emplace_back(std::move(twist));
+
+    //auto roll = std::make_unique<Funscript>();
+    //roll->open(R"(E:\funscript\multi-axis\crush\Cherry Crush Ball Sucker POV.roll.funscript)");
+    //app->LoadedFunscripts.emplace_back(std::move(roll));
+
+    //auto pitch = std::make_unique<Funscript>();
+    //pitch->open(R"(E:\funscript\multi-axis\crush\Cherry Crush Ball Sucker POV.pitch.funscript)");
+    //app->LoadedFunscripts.emplace_back(std::move(pitch));
+
+    //auto twist = std::make_unique<Funscript>();
+    //twist->open(R"(E:\funscript\multi-axis\crush\Cherry Crush Ball Sucker POV.twist.funscript)");
+    //app->LoadedFunscripts.emplace_back(std::move(twist));
 #endif
     return true;
 }
@@ -1071,12 +1088,13 @@ void OpenFunscripter::new_frame() noexcept
     ImGuiIO& io = ImGui::GetIO();
     glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
     glClearColor(0.1f, 0.1f, 0.1f, 1.f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame(window);
     ImGui::NewFrame();
+    ImGuizmo::BeginFrame();
 }
 
 void OpenFunscripter::render() noexcept
@@ -1274,7 +1292,7 @@ int OpenFunscripter::run() noexcept
             simulator.ShowSimulator(&settings->data().show_simulator);
             ShowStatisticsWindow(&settings->data().show_statistics);
             if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { ActiveFunscript()->save(); }
-
+            sim3D->ShowWindow(&settings->data().show_simulator_3d);
             scripting->DrawScriptingMode(NULL);
 
             if (keybinds.ShowBindingWindow()) {
@@ -1470,6 +1488,7 @@ int OpenFunscripter::run() noexcept
 
             player.DrawVideoPlayer(NULL);
         }
+
         render();
         SDL_GL_SwapWindow(window);
     }
@@ -2104,6 +2123,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem(StatisticsId, NULL, &settings->data().show_statistics)) {}
             if (ImGui::MenuItem(UndoSystem::UndoHistoryId, NULL, &settings->data().show_history)) {}
             if (ImGui::MenuItem(ScriptSimulator::SimulatorId, NULL, &settings->data().show_simulator)) { settings->saveSettings(); }
+            if (ImGui::MenuItem("Simulator 3D", NULL, &settings->data().show_simulator_3d)) { settings->saveSettings(); }
             if (ImGui::MenuItem("Metadata", NULL, &ShowMetadataEditor)) {}
             if (ImGui::MenuItem("Action editor", NULL, &settings->data().show_action_editor)) {}
             if (ImGui::MenuItem(SpecialFunctionsWindow::SpecialFunctionsId, NULL, &settings->data().show_special_functions)) {}
