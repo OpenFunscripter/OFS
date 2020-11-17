@@ -52,6 +52,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   utf8::cpp
   glm
   ImGuizmo
+  ImGuizmoQuat
 )
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC

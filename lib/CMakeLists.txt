@@ -32,6 +32,7 @@ file (GLOB IMGUI_HEADERS imgui/**.h)
 add_library(imgui STATIC ${IMGUI_SOURCES} ${IMGUI_HEADERS})
 # set_property(TARGET imgui PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(imgui PUBLIC "imgui/")
+#target_include_directories(imgui PUBLIC "/")
 target_compile_definitions(imgui PUBLIC "IMGUI_USE_STB_SPRINTF")
 target_include_directories(imgui PUBLIC "stb/")
 target_compile_definitions(imgui PUBLIC "IMGUI_DEFINE_MATH_OPERATORS")
@@ -52,9 +53,21 @@ target_link_libraries(imgui_stdlib PUBLIC imgui)
 file (GLOB ImGuizmo_SOURCES ImGuizmo/*.cpp)
 file (GLOB ImGuizmo_HEADERS ImGuizmo/*.h)
 add_library(ImGuizmo STATIC ${ImGuizmo_SOURCES} ${ImGuizmo_HEADERS})
-target_include_directories(imgui PUBLIC "ImGuizmo/")
+target_include_directories(ImGuizmo PUBLIC "ImGuizmo/")
 target_link_libraries(ImGuizmo PUBLIC imgui)
 
+# ============
+# = ImGuizmo =
+# ============
+file (GLOB ImGuizmoQuat_SOURCES imGuIZMO_Quat/imGuIZMO.quat/*.cpp)
+file (GLOB ImGuizmoQuat_HEADERS imGuIZMO_Quat/imGuIZMO.quat//*.h)
+add_library(ImGuizmoQuat STATIC ${ImGuizmoQuat_SOURCES} ${ImGuizmoQuat_HEADERS})
+target_include_directories(ImGuizmoQuat PUBLIC "imGuIZMO_Quat/imGuIZMO.quat/")
+target_link_libraries(ImGuizmoQuat PUBLIC imgui glm)
+target_compile_definitions(ImGuizmoQuat PUBLIC "IMGUIZMO_IMGUI_FOLDER=" "VGIZMO_USES_GLM" )
+
+
+# ========
 # = SDL2 =
 # ========
 set(SDL_SHARED OFF CACHE BOOL "" FORCE)

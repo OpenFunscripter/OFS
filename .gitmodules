@@ -19,3 +19,6 @@
 [submodule "lib/ImGuizmo"]
 	path = lib/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo.git
+[submodule "lib/imGuIZMO_Quat"]
+	path = lib/imGuIZMO_Quat
+	url = https://github.com/BrutPitt/imGuIZMO.quat.git
