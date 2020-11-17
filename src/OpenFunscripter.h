@@ -136,5 +136,5 @@ public:
 	inline int32_t ActiveFunscriptIndex() const { return ActiveFunscriptIdx; }
 
 	static inline Funscript& script() noexcept { return *OpenFunscripter::ptr->ActiveFunscript(); }
-	static void SetCursorType(SDL_SystemCursor id) noexcept;
+	static void SetCursorType(ImGuiMouseCursor id) noexcept;
 };

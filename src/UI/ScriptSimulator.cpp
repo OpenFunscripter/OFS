@@ -314,7 +314,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
         float barCenterDistance = Distance(mouse, barCenter);
 
         if (p1Distance <= (simulator.Width / 2.f)) {
-            OpenFunscripter::SetCursorType(SDL_SYSTEM_CURSOR_HAND);
+            OpenFunscripter::SetCursorType(ImGuiMouseCursor_Hand);
             g->HoveredWindow = window;
             g->HoveredDockNode = window->DockNode;
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
@@ -323,7 +323,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
             }
         }
         else if (p2Distance <= (simulator.Width/2.f)) {
-            OpenFunscripter::SetCursorType(SDL_SYSTEM_CURSOR_HAND);
+            OpenFunscripter::SetCursorType(ImGuiMouseCursor_Hand);
             g->HoveredWindow = window;
             g->HoveredDockNode = window->DockNode;
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
@@ -332,7 +332,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
             }
         }
         else if (barCenterDistance <= (simulator.Width / 2.f)) {
-            OpenFunscripter::SetCursorType(SDL_SYSTEM_CURSOR_SIZEALL);
+            OpenFunscripter::SetCursorType(ImGuiMouseCursor_ResizeAll);
             g->HoveredWindow = window;
             g->HoveredDockNode = window->DockNode;
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {

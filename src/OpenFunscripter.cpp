@@ -51,7 +51,6 @@ ImFont* OpenFunscripter::DefaultFont2 = nullptr;
 
 constexpr const char* glsl_version = "#version 150";
 
-static SDL_Cursor* SystemCursors[SDL_NUM_SYSTEM_CURSORS];
 
 static ImGuiID MainDockspaceID;
 constexpr const char* StatisticsId = "Statistics";
@@ -304,13 +303,6 @@ bool OpenFunscripter::setup()
     controllerInput->setup();
     simulator.setup();
     
-    // init cursors
-    SDL_FreeCursor(SDL_GetCursor());
-    for (int i = 0; i < SDL_NUM_SYSTEM_CURSORS; i++) {
-        SystemCursors[i] = SDL_CreateSystemCursor((SDL_SystemCursor)i);
-    }
-    SetCursorType(SDL_SYSTEM_CURSOR_ARROW);
-
     SDL_ShowWindow(window);
 
 #ifndef NDEBUG
@@ -1173,7 +1165,6 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
 }
 
 void OpenFunscripter::update() noexcept {
-    OpenFunscripter::SetCursorType(SDL_SYSTEM_CURSOR_ARROW);
     ActiveFunscript()->update();
     ControllerInput::UpdateControllers();
     scripting->update();
@@ -1496,9 +1487,10 @@ void OpenFunscripter::shutdown() noexcept
     SDL_Quit();
 }
 
-void OpenFunscripter::SetCursorType(SDL_SystemCursor id) noexcept
+void OpenFunscripter::SetCursorType(ImGuiMouseCursor id) noexcept
 {
-    SDL_SetCursor(SystemCursors[id]);
+    //SDL_SetCursor(SystemCursors[id]);
+    ImGui::SetMouseCursor(id);
 }
 
 
