@@ -69,6 +69,8 @@ void Simulator3D::reset() noexcept
     lightPos = glm::vec3(0.f, 0.f, 0.f);
 
     Zoom = 3.f;
+    imguiGizmo::setDirectionColor(ImVec4(0.5, 1.0, 0.3, 1.0));
+    ImGuizmo::SetOrthographic(true);
 }
 
 void Simulator3D::setup() noexcept
@@ -132,7 +134,6 @@ void Simulator3D::ShowWindow(bool* open) noexcept
     }
 
 
-    ImGuizmo::SetOrthographic(true);
     ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList());
     ImGuizmo::SetRect(viewport->Pos.x, viewport->Pos.y, viewport->Size.x, viewport->Size.y);
 
@@ -152,8 +153,6 @@ void Simulator3D::ShowWindow(bool* open) noexcept
     }
 
     ImGui::SliderFloat("Distance", &Zoom, 0.1f, MaxZoom);
-    //ImGui::SliderFloat3("Light", glm::value_ptr(lightPos), -2.f, 2.f);
-
 
     // TODO: use more efficient way of doing getting this vector...
     glm::vec3 direction;
@@ -166,8 +165,8 @@ void Simulator3D::ShowWindow(bool* open) noexcept
         direction = glm::normalize(direction);
     }
     ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-    imguiGizmo::setDirectionColor(ImVec4(0.5, 1.0, 0.3, 1.0)); // change ArrowDirection color
-    ImGui::gizmo3D("Direction", -direction, ImGui::GetContentRegionAvail().x, imguiGizmo::modeDirection | imguiGizmo::modeDirPlane);
+    
+    ImGui::gizmo3D("Direction", direction, ImGui::GetContentRegionAvail().x, imguiGizmo::modeDirection);
     ImGui::PopItemFlag();
 
     if (ImGui::CollapsingHeader("Settings")) {
