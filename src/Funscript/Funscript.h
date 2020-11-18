@@ -217,6 +217,8 @@ public:
 	void RemoveAction(FunscriptAction action, bool checkInvalidSelection = true) noexcept;
 	void RemoveActions(const std::vector<FunscriptAction>& actions) noexcept;
 
+	std::vector<FunscriptAction> GetLastStroke(int32_t time_ms) noexcept;
+
 	// bookmarks
 	inline const std::vector<Funscript::Bookmark>& Bookmarks() const noexcept { return scriptSettings.Bookmarks; }
 	inline void AddBookmark(const Funscript::Bookmark& bookmark) noexcept { 

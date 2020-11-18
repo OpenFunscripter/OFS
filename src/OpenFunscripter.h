@@ -72,6 +72,7 @@ private:
 	void equalizeSelection() noexcept;
 	void invertSelection() noexcept;
 	void isolateAction() noexcept;
+	void repeatLastStroke() noexcept;
 
 	void saveScripts() noexcept;
 	void saveHeatmap(const char* path, int width, int height);

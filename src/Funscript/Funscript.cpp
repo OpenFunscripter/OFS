@@ -423,7 +423,7 @@ void Funscript::PasteAction(FunscriptAction paste, int32_t error_ms) noexcept
 
 void Funscript::checkForInvalidatedActions() noexcept
 {
-	auto it = std::remove_if(data.selection.begin(), data.selection.end(), [&](auto& selected) {
+	auto it = std::remove_if(data.selection.begin(), data.selection.end(), [&](auto&& selected) {
 		auto found = getAction(selected);
 		if (found == nullptr)
 			return true;
@@ -448,9 +448,57 @@ void Funscript::RemoveAction(FunscriptAction action, bool checkInvalidSelection)
 
 void Funscript::RemoveActions(const std::vector<FunscriptAction>& removeActions) noexcept
 {
-	for (auto& action : removeActions)
+	for (auto&& action : removeActions)
 		RemoveAction(action, false);
 	NotifyActionsChanged(true);
+}
+
+std::vector<FunscriptAction> Funscript::GetLastStroke(int32_t time_ms) noexcept
+{
+	// TODO: refactor...
+	// assuming "*it" is a peak bottom or peak top
+	// if you went up it would return a down stroke and if you went down it would return a up stroke
+	auto it = std::min_element(data.Actions.begin(), data.Actions.end(),
+		[&](auto&& a, auto&& b) {
+			return std::abs(a.at - time_ms) < std::abs(b.at - time_ms);
+		});
+	if (it == data.Actions.end() || it-2 == data.Actions.begin()) return std::vector<FunscriptAction>(0);
+
+	std::vector<FunscriptAction> stroke;
+	stroke.reserve(5);
+
+	// search previous stroke
+	bool goingUp = (it - 1)->pos > it->pos;
+	int32_t prevPos = (it-1)->pos;
+	for (auto searchIt = it-1; searchIt != data.Actions.begin(); searchIt--) {
+		if ((searchIt - 1)->pos > prevPos != goingUp) {
+			break;
+		}
+		else if ((searchIt - 1)->pos == prevPos) {
+			break;
+		}
+		prevPos = (searchIt - 1)->pos;
+		it = searchIt;
+	}
+
+	it--;
+	goingUp = !goingUp;
+	prevPos = it->pos;
+	stroke.emplace_back(*it);
+	it--;
+	for (;; it--) {
+		bool up = it->pos > prevPos;
+		if (up != goingUp) {
+			break;
+		}
+		else if (it->pos == prevPos) {
+			break;
+		}
+		stroke.emplace_back(*it);
+		prevPos = it->pos;
+		if (it == data.Actions.begin()) break;
+	}
+	return stroke;
 }
 
 void Funscript::RangeExtendSelection(int32_t rangeExtend) noexcept

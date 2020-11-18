@@ -927,6 +927,18 @@ void OpenFunscripter::register_bindings()
             SDLK_r,
             0
         );
+
+        auto& repeat_stroke = group.bindings.emplace_back(
+            "repeat_stroke",
+            "Repeat stroke",
+            true,
+            [&](void*) { repeatLastStroke(); }
+        );
+        repeat_stroke.key = Keybinding(
+            SDLK_HOME,
+            0
+        );
+
         keybinds.registerBinding(group);
     }
 
@@ -1173,6 +1185,7 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
         player.setSpeed(ActiveFunscript()->scriptSettings.player->playback_speed);
         player.setVolume(ActiveFunscript()->scriptSettings.player->volume);
     }
+    ActiveFunscript()->NotifyActionsChanged(false);
 
     auto name = Util::Filename(player.getVideoPath());
     ActiveFunscript()->metadata.title = name;
@@ -1790,6 +1803,21 @@ void OpenFunscripter::isolateAction() noexcept
         else if (prev != nullptr) { ActiveFunscript()->RemoveAction(*prev); }
         else if (next != nullptr) { ActiveFunscript()->RemoveAction(*next); }
 
+    }
+}
+
+void OpenFunscripter::repeatLastStroke() noexcept
+{
+    auto stroke = ActiveFunscript()->GetLastStroke(player.getCurrentPositionMsInterp());
+    if (stroke.size() > 1) {
+        int32_t offset_ms = player.getCurrentPositionMsInterp() - stroke.back().at;
+        ActiveFunscript()->undoSystem->Snapshot(StateType::PASTE_COPIED_ACTIONS);
+        for(int i=stroke.size()-1; i >= 0; i--) {
+            auto action = stroke[i];
+            action.at += offset_ms;
+            ActiveFunscript()->PasteAction(action, player.getFrameTimeMs());
+        }
+        player.setPosition(stroke.front().at + offset_ms);
     }
 }
 
