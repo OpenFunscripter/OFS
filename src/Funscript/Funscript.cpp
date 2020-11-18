@@ -200,9 +200,6 @@ bool Funscript::open(const std::string& file)
 
 void Funscript::save(const std::string& path, bool override_location)
 {
-	if (override_location) {
-		current_path = path;
-	}
 
 	setScriptTemplate();
 	saveSettings();
@@ -226,7 +223,10 @@ void Funscript::save(const std::string& path, bool override_location)
 		actions.emplace_back(std::move(actionObj));
 	}
 
-	unsavedEdits = false;
+	if (override_location) {
+		current_path = path;
+		unsavedEdits = false;
+	}
 	startSaveThread(path, std::move(Json));
 }
 

@@ -1826,6 +1826,18 @@ void OpenFunscripter::saveActiveScriptAs()
 void OpenFunscripter::ShowMainMenuBar() noexcept
 {
 #define BINDING_STRING(binding) keybinds.getBindingString(binding).c_str()  
+    
+    ImColor alertCol(ImGui::GetStyle().Colors[ImGuiCol_MenuBarBg]);
+    std::chrono::duration<float> saveDuration;
+    if (player.isLoaded() && ActiveFunscript()->HasUnsavedEdits()) {
+        saveDuration = std::chrono::system_clock::now() - ActiveFunscript()->EditTime();
+        const float timeUnit = saveDuration.count() / 60.f;
+        if (timeUnit >= 5.f) {
+            alertCol = ImLerp(alertCol.Value, ImColor(IM_COL32(184, 33, 22, 255)).Value, std::max(std::sin(saveDuration.count()), 0.f));
+        }
+    }
+
+    ImGui::PushStyleColor(ImGuiCol_MenuBarBg, alertCol.Value);
     if (ImGui::BeginMainMenuBar())
     {
         ImVec2 region = ImGui::GetContentRegionAvail();
@@ -2184,16 +2196,14 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::Text(ICON_GAMEPAD " " ICON_LONG_ARROW_RIGHT " %s", (navmodeActive) ? "Navigation" : "Scripting");
         }
         if (player.isLoaded() && ActiveFunscript()->HasUnsavedEdits()) {
+            const float timeUnit = saveDuration.count() / 60.f;
             ImGui::SameLine(region.x - ImGui::GetFontSize()*12);
-            std::chrono::duration<float> duration = std::chrono::system_clock::now() - ActiveFunscript()->EditTime();
-            ImColor col(ImGui::GetStyle().Colors[ImGuiCol_Text]);
-            if (duration.count() > (60.f*5.f)) {
-                col = IM_COL32(255, 0, 0, 255);
-            }
-            ImGui::TextColored(col,"last saved %d minutes ago", (int)(duration.count() / 60.f));
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() - std::abs(std::sin(saveDuration.count() * std::floor(timeUnit))*(region.x * 0.005f)));
+            ImGui::TextColored(ImGui::GetStyle().Colors[ImGuiCol_Text], "last saved %d minutes ago", (int)(timeUnit));
         }
         ImGui::EndMainMenuBar();
     }
+    ImGui::PopStyleColor(1);
 #undef BINDING_STRING
 }
 

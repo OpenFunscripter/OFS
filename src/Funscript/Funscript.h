@@ -177,7 +177,7 @@ public:
 	void update() noexcept;
 
 	bool open(const std::string& file);
-	void save() { save(current_path, false); }
+	void save() { save(current_path, true); }
 	void save(const std::string& path, bool override_location = true);
 	void saveMinium(const std::string& path) noexcept;
 
