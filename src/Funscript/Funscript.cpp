@@ -13,7 +13,7 @@
 
 Funscript::Funscript() 
 {
-	NotifyActionsChanged();
+	NotifyActionsChanged(false);
 	saveMutex = SDL_CreateMutex();
 	undoSystem = std::make_unique<UndoSystem>(this);
 }
@@ -45,11 +45,6 @@ void Funscript::setScriptTemplate() noexcept
 	Json["inverted"] = false;
 	Json["range"] = 90; // I think this is mostly ignored anyway
 	Json["OpenFunscripter"] = nlohmann::json::object();
-}
-
-void Funscript::NotifyActionsChanged() noexcept
-{
-	funscriptChanged = true;
 }
 
 void Funscript::NotifySelectionChanged() noexcept
@@ -199,7 +194,7 @@ bool Funscript::open(const std::string& file)
 			.string();
 	}
 
-	NotifyActionsChanged();
+	NotifyActionsChanged(false);
 	return true;
 }
 
@@ -231,6 +226,7 @@ void Funscript::save(const std::string& path, bool override_location)
 		actions.emplace_back(std::move(actionObj));
 	}
 
+	unsavedEdits = false;
 	startSaveThread(path, std::move(Json));
 }
 
@@ -398,7 +394,7 @@ bool Funscript::EditAction(FunscriptAction oldAction, FunscriptAction newAction)
 		act->at = newAction.at;
 		act->pos = newAction.pos;
 		checkForInvalidatedActions();
-		NotifyActionsChanged();
+		NotifyActionsChanged(true);
 		return true;
 	}
 	return false;
@@ -422,7 +418,7 @@ void Funscript::PasteAction(FunscriptAction paste, int32_t error_ms) noexcept
 		RemoveAction(*act);
 	}
 	AddAction(paste);
-	NotifyActionsChanged();
+	NotifyActionsChanged(true);
 }
 
 void Funscript::checkForInvalidatedActions() noexcept
@@ -444,7 +440,7 @@ void Funscript::RemoveAction(FunscriptAction action, bool checkInvalidSelection)
 	auto it = std::find(data.Actions.begin(), data.Actions.end(), action);
 	if (it != data.Actions.end()) {
 		data.Actions.erase(it);
-		NotifyActionsChanged();
+		NotifyActionsChanged(true);
 
 		if (checkInvalidSelection) { checkForInvalidatedActions(); }
 	}
@@ -454,7 +450,7 @@ void Funscript::RemoveActions(const std::vector<FunscriptAction>& removeActions)
 {
 	for (auto& action : removeActions)
 		RemoveAction(action, false);
-	NotifyActionsChanged();
+	NotifyActionsChanged(true);
 }
 
 void Funscript::RangeExtendSelection(int32_t rangeExtend) noexcept
@@ -695,7 +691,7 @@ void Funscript::moveActionsTime(std::vector<FunscriptAction*> moving, int32_t ti
 	for (auto move : moving) {
 		move->at += time_offset;
 	}
-	NotifyActionsChanged();
+	NotifyActionsChanged(true);
 }
 
 void Funscript::moveActionsPosition(std::vector<FunscriptAction*> moving, int32_t pos_offset)
@@ -705,7 +701,7 @@ void Funscript::moveActionsPosition(std::vector<FunscriptAction*> moving, int32_
 		move->pos += pos_offset;
 		move->pos = Util::Clamp(move->pos, 0, 100);
 	}
-	NotifyActionsChanged();
+	NotifyActionsChanged(true);
 }
 
 void Funscript::MoveSelectionTime(int32_t time_offset) noexcept
@@ -754,7 +750,7 @@ void Funscript::MoveSelectionTime(int32_t time_offset) noexcept
 		move->at += time_offset;
 		data.selection.emplace_back(*move);
 	}
-	NotifyActionsChanged();
+	NotifyActionsChanged(true);
 }
 
 void Funscript::MoveSelectionPosition(int32_t pos_offset) noexcept
@@ -783,7 +779,7 @@ void Funscript::MoveSelectionPosition(int32_t pos_offset) noexcept
 		move->pos = Util::Clamp(move->pos, 0, 100);
 		data.selection.emplace_back(*move);
 	}
-	NotifyActionsChanged();
+	NotifyActionsChanged(true);
 }
 
 void Funscript::EqualizeSelection() noexcept

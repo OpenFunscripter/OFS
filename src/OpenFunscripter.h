@@ -41,7 +41,6 @@ private:
 	
 	std::vector<FunscriptAction> CopiedSelection;
 
-	std::chrono::system_clock::time_point last_save_time;
 	std::chrono::system_clock::time_point last_backup;
 
 	ImGradient TimelineGradient;

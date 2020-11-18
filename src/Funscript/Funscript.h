@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <chrono>
 #include "OpenFunscripterUtil.h"
 #include "OpenFunscripterVideoplayer.h"
 #include "SDL_mutex.h"
@@ -112,8 +113,10 @@ public:
 private:
 	nlohmann::json Json;
 	nlohmann::json BaseLoaded;
+	std::chrono::system_clock::time_point editTime;
 	bool scriptOpened = false;
 	bool funscriptChanged = false; // used to fire only one event every frame a change occurs
+	bool unsavedEdits = false; // used to track if the script has unsaved changes
 	bool selectionChanged = false;
 	SDL_mutex* saveMutex = nullptr;
 
@@ -142,7 +145,7 @@ private:
 			return newAction.at < action.at;
 			});
 		actions.insert(it, newAction);
-		NotifyActionsChanged();
+		NotifyActionsChanged(true);
 	}
 
 	void NotifySelectionChanged() noexcept;
@@ -157,13 +160,19 @@ public:
 	Funscript();
 	~Funscript();
 
-	void NotifyActionsChanged() noexcept;
+	inline void NotifyActionsChanged(bool isEdit) noexcept {
+		funscriptChanged = true;
+		if (isEdit && !unsavedEdits) {
+			unsavedEdits = true;
+			editTime = std::chrono::system_clock::now();
+		}
+	}
 
 	std::unique_ptr<UndoSystem> undoSystem;
 	std::string current_path;
 	bool Enabled = true;
 
-	inline void rollback(const FunscriptData& data) noexcept { this->data = data; NotifyActionsChanged(); }
+	inline void rollback(const FunscriptData& data) noexcept { this->data = data; NotifyActionsChanged(true); }
 
 	void update() noexcept;
 
@@ -217,6 +226,8 @@ public:
 		);
 	}
 
+	inline bool HasUnsavedEdits() const { return unsavedEdits; }
+	inline const std::chrono::system_clock::time_point& EditTime() const { return editTime; }
 
 	// recording stuff
 	inline FunscriptRawData& Raw() { return rawData; }

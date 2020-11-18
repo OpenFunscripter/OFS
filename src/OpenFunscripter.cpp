@@ -311,17 +311,17 @@ bool OpenFunscripter::setup()
     SDL_ShowWindow(window);
 
 #ifndef NDEBUG
-    auto roll = std::make_unique<Funscript>();
-    roll->open(R"(E:\funscript\multi-axis\Kimber Lee - Beautiful Young Cocksucker Takes Load.roll.funscript)");
-    LoadedFunscripts.emplace_back(std::move(roll));
+    //auto roll = std::make_unique<Funscript>();
+    //roll->open(R"(E:\funscript\multi-axis\Kimber Lee - Beautiful Young Cocksucker Takes Load.roll.funscript)");
+    //LoadedFunscripts.emplace_back(std::move(roll));
 
-    auto pitch = std::make_unique<Funscript>();
-    pitch->open(R"(E:\funscript\multi-axis\Kimber Lee - Beautiful Young Cocksucker Takes Load.pitch.funscript)");
-    LoadedFunscripts.emplace_back(std::move(pitch));
+    //auto pitch = std::make_unique<Funscript>();
+    //pitch->open(R"(E:\funscript\multi-axis\Kimber Lee - Beautiful Young Cocksucker Takes Load.pitch.funscript)");
+    //LoadedFunscripts.emplace_back(std::move(pitch));
 
-    auto twist = std::make_unique<Funscript>();
-    twist->open(R"(E:\funscript\multi-axis\Kimber Lee - Beautiful Young Cocksucker Takes Load.twist.funscript)");
-    LoadedFunscripts.emplace_back(std::move(twist));
+    //auto twist = std::make_unique<Funscript>();
+    //twist->open(R"(E:\funscript\multi-axis\Kimber Lee - Beautiful Young Cocksucker Takes Load.twist.funscript)");
+    //LoadedFunscripts.emplace_back(std::move(twist));
 
     //auto roll = std::make_unique<Funscript>();
     //roll->open(R"(E:\funscript\multi-axis\crush\Cherry Crush Ball Sucker POV.roll.funscript)");
@@ -1173,7 +1173,6 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
         player.setSpeed(ActiveFunscript()->scriptSettings.player->playback_speed);
         player.setVolume(ActiveFunscript()->scriptSettings.player->volume);
     }
-    ActiveFunscript()->NotifyActionsChanged();
 
     auto name = Util::Filename(player.getVideoPath());
     ActiveFunscript()->metadata.title = name;
@@ -1591,7 +1590,6 @@ bool OpenFunscripter::openFile(const std::string& file)
     settings->data().last_path = last_path.string();
     settings->saveSettings();
 
-    last_save_time = std::chrono::system_clock::now();
     last_backup = std::chrono::system_clock::now();
 
     return result;
@@ -1601,7 +1599,7 @@ void OpenFunscripter::UpdateNewActiveScript(int32_t activeIndex) noexcept
 {
     ActiveFunscriptIdx = activeIndex;
     updateTitle();
-    ActiveFunscript()->NotifyActionsChanged();
+    ActiveFunscript()->NotifyActionsChanged(false);
 }
 
 void OpenFunscripter::updateTitle() noexcept
@@ -1624,7 +1622,6 @@ void OpenFunscripter::saveScripts() noexcept
         script->scriptSettings.last_pos_ms = player.getCurrentPositionMs();
         script->save();
     }
-    last_save_time = std::chrono::system_clock::now();
 }
 
 void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
@@ -2186,9 +2183,9 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             bool navmodeActive = ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_NavEnableGamepad;
             ImGui::Text(ICON_GAMEPAD " " ICON_LONG_ARROW_RIGHT " %s", (navmodeActive) ? "Navigation" : "Scripting");
         }
-        if (player.isLoaded()) {
+        if (player.isLoaded() && ActiveFunscript()->HasUnsavedEdits()) {
             ImGui::SameLine(region.x - ImGui::GetFontSize()*12);
-            std::chrono::duration<float> duration = std::chrono::system_clock::now() - last_save_time;
+            std::chrono::duration<float> duration = std::chrono::system_clock::now() - ActiveFunscript()->EditTime();
             ImColor col(ImGui::GetStyle().Colors[ImGuiCol_Text]);
             if (duration.count() > (60.f*5.f)) {
                 col = IM_COL32(255, 0, 0, 255);
