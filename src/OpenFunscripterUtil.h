@@ -110,7 +110,7 @@ public:
 			SDL_RWread(handle, buffer, sizeof(char), size);
 			buffer[size] = '\0';
 			if (size > 0) {
-				j = nlohmann::json::parse(std::string(buffer, size), nullptr, false, false);
+				j = nlohmann::json::parse(std::string(buffer, size), nullptr, false, true);
 				*success = !j.is_discarded();
 			}
 			SDL_RWclose(handle);

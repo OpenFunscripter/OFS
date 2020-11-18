@@ -29,7 +29,7 @@
 
 // TODO: allow to hide loaded scripts in script timeline
 
-// BUG: script timeline selection works even when not hovered
+// BUG: loading script without video breaks everything
 
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
