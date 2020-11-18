@@ -165,8 +165,9 @@ bool Funscript::open(const std::string& file)
 	scriptOpened = true;
 
 	nlohmann::json json;
-	json = Util::LoadJson(file);
-	if (!json.is_object() && json["actions"].is_array()) {
+	json = Util::LoadJson(file, &scriptOpened);
+
+	if (!scriptOpened || !json.is_object() && json["actions"].is_array()) {
 		LOGF_ERROR("Failed to parse funscript. \"%s\"", file.c_str());
 		return false;
 	}

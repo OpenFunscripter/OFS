@@ -13,11 +13,20 @@
 OpenFunscripterSettings::OpenFunscripterSettings(const std::string& keybinds, const std::string& config)
 	: keybinds_path(keybinds), config_path(config)
 {
+	bool success = false;
 	if (Util::FileExists(keybinds)) {
-		keybindsObj = Util::LoadJson(keybinds);
+		keybindsObj = Util::LoadJson(keybinds, &success);
+		if (!success) { 
+			LOGF_ERROR("Failed to parse config @ \"%s\"", keybinds.c_str());
+			keybindsObj.clear(); 
+		}
 	}
 	if (Util::FileExists(config)) {
-		configObj = Util::LoadJson(config);
+		configObj = Util::LoadJson(config, &success);
+		if (!success) {
+			LOGF_ERROR("Failed to parse config @ \"%s\"", config.c_str());
+			configObj.clear();
+		}
 	}
 
 	scripterSettings.simulator = &OpenFunscripter::ptr->simulator.simulator;

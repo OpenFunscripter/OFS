@@ -100,8 +100,8 @@ public:
 		return std::max(std::min(val, max), min);
 	}
 
-	inline static auto LoadJson(const std::string& file) { return LoadJson(file.c_str()); }
-	inline static nlohmann::json LoadJson(const char* file) {
+	inline static auto LoadJson(const std::string& file, bool* success) { return LoadJson(file.c_str(), success); }
+	inline static nlohmann::json LoadJson(const char* file, bool* success) {
 		auto handle = SDL_RWFromFile(file, "rb");
 		nlohmann::json j;
 		if (handle != nullptr) {
@@ -110,7 +110,8 @@ public:
 			SDL_RWread(handle, buffer, sizeof(char), size);
 			buffer[size] = '\0';
 			if (size > 0) {
-				j = nlohmann::json::parse(std::string(buffer, size));
+				j = nlohmann::json::parse(std::string(buffer, size), nullptr, false, false);
+				*success = !j.is_discarded();
 			}
 			SDL_RWclose(handle);
 			delete[] buffer;
