@@ -1355,6 +1355,7 @@ int OpenFunscripter::run() noexcept
                 ImGui::NextColumn();
                 ImGui::SetNextItemWidth(-1);
                 if (ImGui::SliderFloat("##Volume", &player.settings.volume, 0.0f, 1.0f)) {
+                    player.settings.volume = Util::Clamp(player.settings.volume, 0.0f, 1.f);
                     player.setVolume(player.settings.volume);
                     if (player.settings.volume > 0.0f)
                         mute = false;
