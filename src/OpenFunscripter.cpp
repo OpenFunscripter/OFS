@@ -19,7 +19,6 @@
 // TODO: make heatmap generation more sophisticated
 
 // TODO: keybindings "in use" checking should ignore setting the same key/button to itself
-// TODO: test imgui cursor api instead of SDL2
 // BUG: linux save screenshot segmenation fault
 
 // TODO: improve performance of zoomed out waveform rendering
@@ -27,10 +26,8 @@
 // TODO: improve shift click add action with simulator
 //       it bugs out if the simulator is on the same height as the script timeline
 
-// TODO: allow to hide loaded scripts in script timeline
-
 // BUG: loading script without video breaks everything
-// TODO: look into locking simulator at video position
+// TODO: look into positioning simulator relative to video position
 
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
