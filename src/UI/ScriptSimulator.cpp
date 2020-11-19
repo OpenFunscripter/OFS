@@ -131,13 +131,13 @@ void ScriptSimulator::ShowSimulator(bool* open)
             ImGui::ColorEdit4("Front", &simulator.Front.Value.x);
             ImGui::ColorEdit4("Back", &simulator.Back.Value.x);
             ImGui::ColorEdit4("Indicator", &simulator.Indicator.Value.x);
-            if (ImGui::InputFloat("Width", &simulator.Width)) {
+            if (ImGui::DragFloat("Width", &simulator.Width)) {
                 simulator.Width = Util::Clamp<float>(simulator.Width, 0.f, 1000.f);
             }
-            if (ImGui::InputFloat("Border", &simulator.BorderWidth)) {
+            if (ImGui::DragFloat("Border", &simulator.BorderWidth)) {
                 simulator.BorderWidth = Util::Clamp<float>(simulator.BorderWidth, 0.f, 1000.f);
             }
-            ImGui::InputFloat("Line", &simulator.LineWidth);
+            ImGui::DragFloat("Line", &simulator.LineWidth);
             if (ImGui::SliderFloat("Opacity", &simulator.GlobalOpacity, 0.f, 1.f)) {
                 simulator.GlobalOpacity = Util::Clamp<float>(simulator.GlobalOpacity, 0.f, 1.f);
             }
