@@ -462,7 +462,7 @@ std::vector<FunscriptAction> Funscript::GetLastStroke(int32_t time_ms) noexcept
 		[&](auto&& a, auto&& b) {
 			return std::abs(a.at - time_ms) < std::abs(b.at - time_ms);
 		});
-	if (it == data.Actions.end() || it-2 == data.Actions.begin()) return std::vector<FunscriptAction>(0);
+	if (it == data.Actions.end() || it-1 == data.Actions.begin()) return std::vector<FunscriptAction>(0);
 
 	std::vector<FunscriptAction> stroke;
 	stroke.reserve(5);
@@ -474,7 +474,7 @@ std::vector<FunscriptAction> Funscript::GetLastStroke(int32_t time_ms) noexcept
 		if ((searchIt - 1)->pos > prevPos != goingUp) {
 			break;
 		}
-		else if ((searchIt - 1)->pos == prevPos) {
+		else if ((searchIt - 1)->pos == prevPos && (searchIt-1)->pos != searchIt->pos) {
 			break;
 		}
 		prevPos = (searchIt - 1)->pos;
@@ -482,6 +482,7 @@ std::vector<FunscriptAction> Funscript::GetLastStroke(int32_t time_ms) noexcept
 	}
 
 	it--;
+	if (it == data.Actions.begin()) return std::vector<FunscriptAction>(0);
 	goingUp = !goingUp;
 	prevPos = it->pos;
 	stroke.emplace_back(*it);

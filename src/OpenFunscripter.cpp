@@ -30,6 +30,7 @@
 // TODO: allow to hide loaded scripts in script timeline
 
 // BUG: loading script without video breaks everything
+// TODO: look into locking simulator at video position
 
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
