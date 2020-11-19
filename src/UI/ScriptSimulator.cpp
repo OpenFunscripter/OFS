@@ -131,11 +131,16 @@ void ScriptSimulator::ShowSimulator(bool* open)
             ImGui::ColorEdit4("Front", &simulator.Front.Value.x);
             ImGui::ColorEdit4("Back", &simulator.Back.Value.x);
             ImGui::ColorEdit4("Indicator", &simulator.Indicator.Value.x);
-            ImGui::InputFloat("Width", &simulator.Width);
-            ImGui::InputFloat("Border", &simulator.BorderWidth);
+            if (ImGui::InputFloat("Width", &simulator.Width)) {
+                simulator.Width = Util::Clamp<float>(simulator.Width, 0.f, 1000.f);
+            }
+            if (ImGui::InputFloat("Border", &simulator.BorderWidth)) {
+                simulator.BorderWidth = Util::Clamp<float>(simulator.BorderWidth, 0.f, 1000.f);
+            }
             ImGui::InputFloat("Line", &simulator.LineWidth);
-            ImGui::SliderFloat("Opacity", &simulator.GlobalOpacity, 0.f, 1.f);
-            simulator.GlobalOpacity = Util::Clamp<float>(simulator.GlobalOpacity, 0.f, 1.f);
+            if (ImGui::SliderFloat("Opacity", &simulator.GlobalOpacity, 0.f, 1.f)) {
+                simulator.GlobalOpacity = Util::Clamp<float>(simulator.GlobalOpacity, 0.f, 1.f);
+            }
             ImGui::Checkbox("Indicators", &simulator.EnableIndicators);
             ImGui::SameLine(); 
             ImGui::Checkbox("Lines", &simulator.EnableHeightLines);
@@ -149,8 +154,6 @@ void ScriptSimulator::ShowSimulator(bool* open)
             EnableVanilla = true;
         }
         Util::Tooltip("Switch to vanilla simulator.");
-        simulator.BorderWidth = Util::Clamp<float>(simulator.BorderWidth, 0.f, 1000.f);
-        simulator.Width = Util::Clamp<float>(simulator.Width, 0.f, 1000.f);
 
         // Because the simulator is always drawn on top
         // we don't draw if there is a popup modal
