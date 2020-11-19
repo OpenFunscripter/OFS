@@ -343,21 +343,23 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 			auto& audio_waveform = audio_waveform_avg;
 
 			int32_t start_index = rel_start * (float)audio_waveform.size();
-			int32_t end_index = Util::Clamp<int32_t>(rel_end * (float)audio_waveform.size(), 0, audio_waveform.size());
+			int32_t end_index = rel_end * (float)audio_waveform.size();
 			const int total_samples = end_index - start_index;
-			const int line_merge = 1 + (total_samples / 1500);
+			const int line_merge = 1 + (total_samples / 2000);
 			const int actual_total_samples = total_samples / line_merge;
+			//LOGF_INFO("total_samples=%d actual_total_samples=%d", total_samples, actual_total_samples);
 
 			const float line_width = ((1.f / ((float)actual_total_samples)) * canvas_size.x) + 0.75f;
 			start_index -= start_index % line_merge;
 			end_index -= end_index % line_merge;
 			end_index += line_merge;
 
-			for (int i = start_index; i < end_index-(line_merge-1); i+=line_merge) {
+			for (int i = start_index; i < end_index-(line_merge+line_merge); i+=line_merge) {
 				const float total_pos_x = ((((float)i - start_index) / (float)total_samples)) * canvas_size.x;
 				float total_len;
-				if (i < 0) {
+				if (i < 0 || (i+line_merge) >= audio_waveform.size()) {
 					total_len = 0.f;
+					continue;
 				}
 				else {
 					float sample = audio_waveform[i];
@@ -366,6 +368,9 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 						sample = std::max(sample, audio_waveform[i + x]);
 					}
 					total_len = canvas_size.y * sample * ScaleAudio;
+					if (total_len < 2.f) { 
+						continue; 
+					}
 				}
 				draw_list->AddLine(
 					canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) + (total_len / 2.f)),
@@ -606,7 +611,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 								return 0;
 							}
 
-							const int samples_per_line = info.hz / 256.f; // controls the resolution
+							const int samples_per_line = info.hz / 1024.f; // controls the resolution
 
 							FUN_ASSERT(info.channels == 1, "expected one audio channels");
 							// create one vector of floats for each requested channel
@@ -640,6 +645,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 									);
 							};
 
+							ctx.audio_waveform_avg.shrink_to_fit();
 							auto min = std::min_element(ctx.audio_waveform_avg.begin(), ctx.audio_waveform_avg.end());
 							auto max = std::max_element(ctx.audio_waveform_avg.begin(), ctx.audio_waveform_avg.end());
 							if (*min != 0.f || *max != 1.f) {

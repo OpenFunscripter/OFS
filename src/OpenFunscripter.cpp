@@ -12,6 +12,8 @@
 #include "imgui_stdlib.h"
 #include "imgui_internal.h"
 
+// TODO: reduce memory usage when generating waveform data
+
 // FIX: Add type checking to the deserialization. 
 //      I assume it would crash if a field is specified but doesn't have the correct type.
 
