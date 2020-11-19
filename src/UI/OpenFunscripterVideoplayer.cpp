@@ -570,11 +570,14 @@ void VideoplayerWindow::saveFrameToImage(const std::string& directory)
 	double time = getCurrentPositionSeconds();
 	Util::FormatTime(tmp.data(), tmp.size(), time, true);
 	std::replace(tmp.begin(), tmp.end(), ':', '_');
-	ss << directory << '\\' << filename << '_' << tmp.data() << ".png";
+
+	ss << filename << '_' << tmp.data() << ".png";
 	if(!Util::CreateDirectories(directory)) {
 		return;
 	}
-	std::string finalPath = ss.str();
+	std::filesystem::path dir(directory);
+	dir.make_preferred();
+	std::string finalPath = (dir / ss.str()).string();
 	const char* cmd[]{ "screenshot-to-file", finalPath.c_str(), NULL };
 	mpv_command_async(mpv, 0, cmd);
 }
