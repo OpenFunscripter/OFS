@@ -360,19 +360,10 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 					total_len = 0.f;
 				}
 				else {
-					constexpr bool averageSample = false; // peak is much better
 					float sample = audio_waveform[i];
 					for (int x = 1; x < line_merge; x++) { 
-						if constexpr (averageSample) {
-							sample += audio_waveform[i + x]; 
-						}
-						else {
-							// find peak
-							sample = std::max(sample, audio_waveform[i + x]);
-						}
-					}
-					if constexpr (averageSample) {
-						sample /= (float)line_merge;
+						// find peak
+						sample = std::max(sample, audio_waveform[i + x]);
 					}
 					total_len = canvas_size.y * sample * ScaleAudio;
 				}
