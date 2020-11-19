@@ -342,18 +342,41 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 
 			auto& audio_waveform = audio_waveform_avg;
 
-			const float start_index = rel_start * audio_waveform.size();
-			const float end_index = Util::Clamp<float>((rel_end * audio_waveform.size()), 0.f, audio_waveform.size());
+			int32_t start_index = rel_start * (float)audio_waveform.size();
+			int32_t end_index = Util::Clamp<int32_t>(rel_end * (float)audio_waveform.size(), 0, audio_waveform.size());
 			const int total_samples = end_index - start_index;
+			const int line_merge = 1 + (total_samples / 1500);
+			const int actual_total_samples = total_samples / line_merge;
+			LOGF_INFO("total_samples=%d actual_total_samples=%d", total_samples, actual_total_samples);
 
-			const float line_width = (1.f / total_samples) * canvas_size.x + 0.75f; // 0.75 pixel padding prevents ugly spacing between lines
-			for (int i = start_index; i < (int)end_index; i++) {
+			const float line_width = ((1.f / ((float)actual_total_samples)) * canvas_size.x) + 0.75f;
+			start_index -= start_index % line_merge;
+			end_index -= end_index % line_merge;
+			end_index += line_merge;
+
+			for (int i = start_index; i < end_index-(line_merge-1); i+=line_merge) {
 				const float total_pos_x = ((((float)i - start_index) / (float)total_samples)) * canvas_size.x;
 				float total_len;
-				if (i < 0)
+				if (i < 0) {
 					total_len = 0.f;
-				else
-					total_len = canvas_size.y * audio_waveform[i] * ScaleAudio;
+				}
+				else {
+					constexpr bool averageSample = false; // peak is much better
+					float sample = audio_waveform[i];
+					for (int x = 1; x < line_merge; x++) { 
+						if constexpr (averageSample) {
+							sample += audio_waveform[i + x]; 
+						}
+						else {
+							// find peak
+							sample = std::max(sample, audio_waveform[i + x]);
+						}
+					}
+					if constexpr (averageSample) {
+						sample /= (float)line_merge;
+					}
+					total_len = canvas_size.y * sample * ScaleAudio;
+				}
 				draw_list->AddLine(
 					canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) + (total_len / 2.f)),
 					canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) - (total_len / 2.f)),
