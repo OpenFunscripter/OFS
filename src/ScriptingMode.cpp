@@ -451,10 +451,11 @@ void RecordingImpl::DrawModeSettings()
 
 
         if (GeneratedRecording.RawActions.size() > 0 && app->script().undoSystem->MatchUndoTop(StateType::GENERATE_ACTIONS)) {
+
             ImGui::Spacing();
             ImGui::Text("%s", "Tweaking");
-            if (ImGui::DragFloat("Epsilon", &epsilon, 0.2f, 0.f, 200.f)) {
-                epsilon = Util::Clamp<float>(epsilon, 0.f, 200.f);
+            if (ImGui::DragFloat("Epsilon", &epsilon, 0.2f, 0.f, 500.f)) {
+                epsilon = Util::Clamp<float>(epsilon, 0.f, 500.f);
                 app->script().undoSystem->Undo();
                 app->script().undoSystem->Snapshot(StateType::GENERATE_ACTIONS);
                 std::vector<FunscriptRawAction> simplified;
