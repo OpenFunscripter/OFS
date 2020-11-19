@@ -1,0 +1,34 @@
+name: snapcraft_dry_run
+
+# Controls when the action will run. Workflow runs when manually triggered using the UI
+# or API.
+on:
+  workflow_dispatch:
+  
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  crafting:
+    runs-on: ubuntu-latest
+    env:
+      SNAP_NAME: "Unknown"     
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+          fetch-depth: 0
+          
+
+      - name: Install Snapcraft
+        uses: samuelmeuli/action-snapcraft@v1
+        with:
+            use_lxd: true
+
+      - name: Build
+        run: |
+          sg lxd -c 'snapcraft --use-lxd'
+      
+      - name: Get snap name
+        run: |
+          echo "SNAP_NAME=$(ls *.snap)" >> $GITHUB_ENV
