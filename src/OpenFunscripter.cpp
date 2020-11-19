@@ -18,7 +18,6 @@
 // TODO: use a ringbuffer in the undosystem
 // TODO: make heatmap generation more sophisticated
 
-// TODO: keybindings "in use" checking should ignore setting the same key/button to itself
 // BUG: linux save screenshot segmenation fault
 
 // TODO: improve performance of zoomed out waveform rendering

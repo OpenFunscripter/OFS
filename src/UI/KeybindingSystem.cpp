@@ -117,12 +117,18 @@ void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
         for (auto&& group : ActiveBindings.groups) {
             for (auto&& binding : group.bindings) {
                 if (binding.key.key == key.keysym.sym && binding.key.modifiers == modstate) {
+                    if (binding.identifier == currentlyChanging->identifier) {
+                        // the binding is being set to the key it already has which is fine
+                        goto breaking_out_of_nested_loop_lol;
+                    }
                     LOGF_INFO("Key already bound for \"%s\"", binding.description.c_str());
                     currentlyHeldKeys.str("");
                     return;
                 }
             }
         }
+
+        breaking_out_of_nested_loop_lol:
 
         addKeyString(SDL_GetKeyName(key.keysym.sym));
         currentlyChanging->key.key = key.keysym.sym;
@@ -204,11 +210,16 @@ void KeybindingSystem::ControllerButtonDown(SDL_Event& ev) noexcept
         for (auto&& group : ActiveBindings.groups) {
             for (auto&& binding : group.bindings) {
                 if (binding.controller.button == cbutton.button) {
+                    if (binding.identifier == currentlyChanging->identifier) {
+                        // the binding is being set to the key it already has which is fine
+                        goto breaking_out_of_nested_loop_lol;
+                    }
                     LOGF_INFO("The button is already bound for \"%s\"", binding.description.c_str());
                     return;
                 }
             }
         }
+        breaking_out_of_nested_loop_lol:
         currentlyChanging->controller.button = cbutton.button;
         currentlyChanging = nullptr;
         return;
