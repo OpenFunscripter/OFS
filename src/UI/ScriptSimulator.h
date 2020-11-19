@@ -33,6 +33,7 @@ public:
 		ImColor Indicator = IM_COL32(0xFF, 0x4F, 0x6C, 0xFF);
 		float Width = 120.f;
 		float BorderWidth = 8.f;
+		float LineWidth = 4.f;
 		float GlobalOpacity = 0.75f;
 		bool EnableIndicators = true;
 		bool EnablePosition = false;
@@ -45,6 +46,7 @@ public:
 			OFS_REFLECT(P2, ar);
 			OFS_REFLECT(Width, ar);
 			OFS_REFLECT(BorderWidth, ar);
+			OFS_REFLECT(LineWidth, ar);
 			OFS_REFLECT(Text, ar);
 			OFS_REFLECT(Front, ar);
 			OFS_REFLECT(Back, ar);

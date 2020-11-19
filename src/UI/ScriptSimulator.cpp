@@ -131,8 +131,9 @@ void ScriptSimulator::ShowSimulator(bool* open)
             ImGui::ColorEdit4("Front", &simulator.Front.Value.x);
             ImGui::ColorEdit4("Back", &simulator.Back.Value.x);
             ImGui::ColorEdit4("Indicator", &simulator.Indicator.Value.x);
-            ImGui::DragFloat("Width", &simulator.Width);
-            ImGui::DragFloat("Border", &simulator.BorderWidth);
+            ImGui::InputFloat("Width", &simulator.Width);
+            ImGui::InputFloat("Border", &simulator.BorderWidth);
+            ImGui::InputFloat("Line", &simulator.LineWidth);
             ImGui::SliderFloat("Opacity", &simulator.GlobalOpacity, 0.f, 1.f);
             simulator.GlobalOpacity = Util::Clamp<float>(simulator.GlobalOpacity, 0.f, 1.f);
             ImGui::Checkbox("Indicators", &simulator.EnableIndicators);
@@ -205,7 +206,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
                     indicator1,
                     indicator2,
                     GetColor(simulator.Border),
-                    simulator.BorderWidth / 3.f
+                    simulator.LineWidth
                 );
             }
         }
@@ -240,7 +241,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
                         indicator1,
                         indicator2,
                         GetColor(simulator.Indicator),
-                        simulator.BorderWidth/2.f
+                        simulator.LineWidth
                     );
                     stbsp_snprintf(tmp, sizeof(tmp), "%d", previousAction->pos);
                     auto textOffset = ImGui::CalcTextSize(tmp);
@@ -265,7 +266,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
                         indicator1,
                         indicator2,
                         GetColor(simulator.Indicator),
-                        simulator.BorderWidth / 2.f
+                        simulator.LineWidth
                     );
                     stbsp_snprintf(tmp, sizeof(tmp), "%d", nextAction->pos);
                     auto textOffset = ImGui::CalcTextSize(tmp);
@@ -276,13 +277,15 @@ void ScriptSimulator::ShowSimulator(bool* open)
         }
 
         // BORDER
-        auto borderOffset = perpendicular * (simulator.Width / 2.f);
-        front_draw->AddQuad(
-            offset + simulator.P1 - borderOffset, offset + simulator.P1 + borderOffset,
-            offset + simulator.P2 + borderOffset, offset + simulator.P2 - borderOffset,
-            GetColor(simulator.Border),
-            simulator.BorderWidth
-        );
+        if (simulator.BorderWidth > 0.f) {
+            auto borderOffset = perpendicular * (simulator.Width / 2.f);
+            front_draw->AddQuad(
+                offset + simulator.P1 - borderOffset, offset + simulator.P1 + borderOffset,
+                offset + simulator.P2 + borderOffset, offset + simulator.P2 - borderOffset,
+                GetColor(simulator.Border),
+                simulator.BorderWidth
+            );
+        }
 
 
         // TEXT
