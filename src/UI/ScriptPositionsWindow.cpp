@@ -347,7 +347,6 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 			const int total_samples = end_index - start_index;
 			const int line_merge = 1 + (total_samples / 1500);
 			const int actual_total_samples = total_samples / line_merge;
-			LOGF_INFO("total_samples=%d actual_total_samples=%d", total_samples, actual_total_samples);
 
 			const float line_width = ((1.f / ((float)actual_total_samples)) * canvas_size.x) + 0.75f;
 			start_index -= start_index % line_merge;
