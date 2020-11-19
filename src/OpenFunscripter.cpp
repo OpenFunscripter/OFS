@@ -20,8 +20,6 @@
 
 // BUG: linux save screenshot segmenation fault
 
-// TODO: improve performance of zoomed out waveform rendering
-
 // TODO: improve shift click add action with simulator
 //       it bugs out if the simulator is on the same height as the script timeline
 
