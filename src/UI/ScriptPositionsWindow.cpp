@@ -342,22 +342,62 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 
 			auto& audio_waveform = audio_waveform_avg;
 
-			const float start_index = rel_start * audio_waveform.size();
-			const float end_index = Util::Clamp<float>((rel_end * audio_waveform.size()), 0.f, audio_waveform.size());
+			int32_t start_index = std::floor(rel_start * audio_waveform.size());
+			int32_t end_index = Util::Clamp<int32_t>(std::floor(rel_end * audio_waveform.size()), 0, audio_waveform.size());
 			const int total_samples = end_index - start_index;
 
-			const float line_width = (1.f / total_samples) * canvas_size.x + 0.75f; // 0.75 pixel padding prevents ugly spacing between lines
-			for (int i = start_index; i < (int)end_index; i++) {
-				const float total_pos_x = ((((float)i - start_index) / (float)total_samples)) * canvas_size.x;
-				float total_len;
-				if (i < 0)
-					total_len = 0.f;
-				else
-					total_len = canvas_size.y * audio_waveform[i] * ScaleAudio;
-				draw_list->AddLine(
-					canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) + (total_len / 2.f)),
-					canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) - (total_len / 2.f)),
-					IM_COL32(227, 66, 52, 255), line_width);
+			float line_width = (1.f / total_samples) * canvas_size.x + 0.75f; // 0.75 pixel padding prevents ugly spacing between lines
+			if (line_width >= 2.f) {
+				for (int i = start_index; i < end_index; i++) {
+					const float total_pos_x = ((((float)i - start_index) / (float)total_samples)) * canvas_size.x;
+					float total_len;
+					if (i < 0)
+						total_len = 0.f;
+					else
+						total_len = canvas_size.y * audio_waveform[i] * ScaleAudio;
+					draw_list->AddLine(
+						canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) + (total_len / 2.f)),
+						canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) - (total_len / 2.f)),
+						IM_COL32(227, 66, 52, 255), line_width);
+				}
+			}
+			else if (line_width >= 1.f && line_width < 2.f) {
+				line_width *= 3.f;
+				start_index -= start_index % 3;
+				end_index -= end_index % 3;
+				end_index += 3;
+
+				for (int i = start_index; i < (end_index-2); i += 3) {
+					const float total_pos_x = ((((float)i - start_index) / (float)total_samples)) * canvas_size.x;
+					float total_len;
+					if (i < 0)
+						total_len = 0.f;
+					else
+						total_len = canvas_size.y * ((audio_waveform[i] + audio_waveform[i+1] + audio_waveform[i + 2])/3.f) * ScaleAudio;
+					draw_list->AddLine(
+						canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) + (total_len / 2.f)),
+						canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) - (total_len / 2.f)),
+						IM_COL32(227, 66, 52, 255), line_width);
+				}
+			}
+			else {
+				line_width *= 5.f;
+				start_index -= start_index % 5;
+				end_index -= end_index % 5;
+				end_index += 5;
+
+				for (int i = start_index; i < (end_index - 4); i += 5) {
+					const float total_pos_x = ((((float)i - start_index) / (float)total_samples)) * canvas_size.x;
+					float total_len;
+					if (i < 0)
+						total_len = 0.f;
+					else
+						total_len = canvas_size.y * ((audio_waveform[i] + audio_waveform[i + 1] + audio_waveform[i + 2] + audio_waveform[i + 3] + audio_waveform[i + 4]) / 5.f) * ScaleAudio;
+					draw_list->AddLine(
+						canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) + (total_len / 2.f)),
+						canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) - (total_len / 2.f)),
+						IM_COL32(227, 66, 52, 255), line_width);
+				}
 			}
 		}
 
