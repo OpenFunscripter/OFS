@@ -563,15 +563,6 @@ void VideoplayerWindow::openVideo(const std::string& file)
 
 void VideoplayerWindow::saveFrameToImage(const std::string& directory)
 {
-	// there's probably a builtin screenshot function in libmpv 
-	// I should probably use that instead
-	static ScreenshotSavingThreadData threadData{0};
-	if (threadData.dataBuffer != nullptr) return; // saving in progress
-
-	if(!Util::CreateDirectories(directory)) {
-		return;
-	}
-
 	std::stringstream ss;
 	std::filesystem::path currentFile(getVideoPath());
 	std::string filename = currentFile.filename().replace_extension("").string();
@@ -579,44 +570,13 @@ void VideoplayerWindow::saveFrameToImage(const std::string& directory)
 	double time = getCurrentPositionSeconds();
 	Util::FormatTime(tmp.data(), tmp.size(), time, true);
 	std::replace(tmp.begin(), tmp.end(), ':', '_');
-	ss << filename << '_' << tmp.data() << '-' << ".png";
-	
-	GLint drawFboId = 0, readFboId = 0;
-	glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
-
-	int rowPack;
-	glGetIntegerv(GL_PACK_ALIGNMENT, &rowPack);
-	glPixelStorei(GL_PACK_ALIGNMENT, 1);
-
-	const size_t buff_size = MpvData.video_width * MpvData.video_height * 3;
-	threadData.dataBuffer = new uint8_t[buff_size];
-	threadData.w = MpvData.video_width;
-	threadData.h = MpvData.video_height;
-	threadData.filename = (std::filesystem::path(directory) / ss.str()).string();
-
-	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_obj);
-	glReadnPixels(0, 0, MpvData.video_width, MpvData.video_height, GL_RGB, GL_UNSIGNED_BYTE, buff_size, threadData.dataBuffer);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, drawFboId);
-
-	glPixelStorei(GL_PACK_ALIGNMENT, rowPack);
-
-	auto saveThread = [](void* user) -> int {
-		auto ctx = (ScreenshotSavingThreadData*)user;
-		stbi_flip_vertically_on_write(true);
-		stbi_write_png(ctx->filename.c_str(),
-			ctx->w, ctx->h,
-			3, ctx->dataBuffer, 0
-		);
-
-		delete[] ctx->dataBuffer;
-		ctx->dataBuffer = nullptr;
-		return 0;
-	};
-
-
-	auto handle = SDL_CreateThread(saveThread, "SaveVideoFrameThread", &threadData);
-	SDL_DetachThread(handle);
+	ss << directory << '\\' << filename << '_' << tmp.data() << ".png";
+	if(!Util::CreateDirectories(directory)) {
+		return;
+	}
+	std::string finalPath = ss.str();
+	const char* cmd[]{ "screenshot-to-file", finalPath.c_str(), NULL };
+	mpv_command_async(mpv, 0, cmd);
 }
 
 void VideoplayerWindow::setVolume(float volume) noexcept
