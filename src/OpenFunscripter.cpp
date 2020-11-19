@@ -1812,7 +1812,7 @@ void OpenFunscripter::repeatLastStroke() noexcept
     auto stroke = ActiveFunscript()->GetLastStroke(player.getCurrentPositionMsInterp());
     if (stroke.size() > 1) {
         int32_t offset_ms = player.getCurrentPositionMsInterp() - stroke.back().at;
-        ActiveFunscript()->undoSystem->Snapshot(StateType::PASTE_COPIED_ACTIONS);
+        ActiveFunscript()->undoSystem->Snapshot(StateType::REPEAT_STROKE);
         for(int i=stroke.size()-1; i >= 0; i--) {
             auto action = stroke[i];
             action.at += offset_ms;
