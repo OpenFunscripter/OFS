@@ -2222,9 +2222,8 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
         }
         if (player.isLoaded() && ActiveFunscript()->HasUnsavedEdits()) {
             const float timeUnit = saveDuration.count() / 60.f;
-            ImGui::SameLine(region.x - ImGui::GetFontSize()*12);
-            ImGui::SetCursorPosX(ImGui::GetCursorPosX() - std::abs(std::sin(saveDuration.count() * std::floor(timeUnit))*(region.x * 0.005f)));
-            ImGui::TextColored(ImGui::GetStyle().Colors[ImGuiCol_Text], "last saved %d minutes ago", (int)(timeUnit));
+            ImGui::SameLine(region.x - ImGui::GetFontSize()*13.5f);
+            ImGui::TextColored(ImGui::GetStyle().Colors[ImGuiCol_Text], "unsaved changes %d minutes ago", (int)(timeUnit));
         }
         ImGui::EndMainMenuBar();
     }
