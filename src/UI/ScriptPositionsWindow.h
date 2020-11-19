@@ -67,6 +67,13 @@ class ScriptPositionsWindow
 	std::vector<ImVec2> ActionScreenCoordinates;
 	std::vector<ImVec2> SelectedActionScreenCoordinates;
 	
+	struct ColoredLine {
+		ImVec2 p1;
+		ImVec2 p2;
+		uint32_t color;
+	};
+	std::vector<ColoredLine> ColoredLines;
+
 	void FfmpegAudioProcessingFinished(SDL_Event& ev);
 
 	// ATTENTION: no reordering

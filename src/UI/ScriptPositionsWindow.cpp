@@ -379,7 +379,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 			}
 		}
 
-		// render raw actions
+		// render recordings
 		const FunscriptAction* prevAction = nullptr;
 		if (script.Raw().HasRecording() && RecordingMode != RecordingRenderMode::None) {
 			auto pathStroke = [](auto draw_list, uint32_t col) {
@@ -441,16 +441,20 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 			if (ShowRegularActions) {
 				auto startIt = std::find_if(script.Actions().begin(), script.Actions().end(),
 					[&](auto& act) { return act.at >= offset_ms; });
-				if (startIt != script.Actions().begin())
+				if (startIt != script.Actions().begin()) {
 					startIt -= 1;
+				}
 
 				auto endIt = std::find_if(startIt, script.Actions().end(),
 					[&](auto& act) { return act.at >= offset_ms + frameSizeMs; });
-				if (endIt != script.Actions().end())
+				if (endIt != script.Actions().end()) {
 					endIt += 1;
+				}
+
+				ColoredLines.clear();
 
 				const FunscriptAction* prevAction = nullptr;
-				for (; startIt != endIt; startIt++) {
+				for(; startIt != endIt; startIt++) {
 					auto& action = *startIt;
 
 					auto p1 = getPointForAction(canvas_pos, canvas_size, action);
@@ -466,10 +470,15 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 						speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
 						speed_color.Value.w = 1.f;
 						draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
-						draw_list->AddLine(p1, p2, speed_color, 3.0f);
+						ColoredLines.emplace_back(std::move(ColoredLine{ p1, p2, ImGui::ColorConvertFloat4ToU32(speed_color) }));
 					}
 
 					prevAction = &action;
+				}
+
+				// this is so that the black background line gets rendered first
+				for (auto&& line : ColoredLines) {
+					draw_list->AddLine(line.p1, line.p2, line.color, 3.f);
 				}
 			}
 
@@ -672,14 +681,14 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 
 	// draw points on top of lines
 	for (auto&& p : ActionScreenCoordinates) {
-		draw_list->AddCircleFilled(p, 7.0, IM_COL32(0, 0, 0, 255), 12); // border
-		draw_list->AddCircleFilled(p, 5.0, IM_COL32(255, 0, 0, 255), 12);
+		draw_list->AddCircleFilled(p, 7.0, IM_COL32(0, 0, 0, 255), 8); // border
+		draw_list->AddCircleFilled(p, 5.0, IM_COL32(255, 0, 0, 255), 8);
 	}
 
 	// draw selected points
 	for (auto&& p : SelectedActionScreenCoordinates) {
 		constexpr auto selectedDots = IM_COL32(11, 252, 3, 255);
-		draw_list->AddCircleFilled(p, 5.0, selectedDots, 12);
+		draw_list->AddCircleFilled(p, 5.0, selectedDots, 8);
 	}
 
 	ImGui::End();
