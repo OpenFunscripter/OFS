@@ -20,8 +20,6 @@
 // TODO: use a ringbuffer in the undosystem
 // TODO: make heatmap generation more sophisticated
 
-// BUG: linux save screenshot segmenation fault
-
 // TODO: improve shift click add action with simulator
 //       it bugs out if the simulator is on the same height as the script timeline
 
@@ -51,7 +49,6 @@ ImFont* OpenFunscripter::DefaultFont2 = nullptr;
 
 constexpr const char* glsl_version = "#version 150";
 
-
 static ImGuiID MainDockspaceID;
 constexpr const char* StatisticsId = "Statistics";
 constexpr const char* PlayerTimeId = "Time";
@@ -60,7 +57,6 @@ constexpr const char* ActionEditorId = "Action editor";
 
 constexpr int DefaultWidth = 1920;
 constexpr int DefaultHeight= 1080;
-
 
 bool OpenFunscripter::imgui_setup() noexcept
 {
