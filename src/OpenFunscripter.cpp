@@ -1671,10 +1671,9 @@ void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
         SDL_FillRect(surface, &rect, ImGui::ColorConvertFloat4ToU32(color));
         relPos += relStep;
     }
-    SDL_SaveBMP(surface, path);
+    Util::SavePNG(path, surface->pixels, surface->w, surface->h, 4, true);
 
     if (mustLock) { SDL_UnlockSurface(surface); }
-
     SDL_FreeSurface(surface);
 }
 
@@ -1987,7 +1986,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
 
             ImGui::Separator();
             static int heatmapWidth = 2000;
-            static int heatmapHeight = 200;
+            static int heatmapHeight = 50;
             ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.f);
             ImGui::InputInt("##width", &heatmapWidth); ImGui::SameLine();
             ImGui::Text("%s", "x"); ImGui::SameLine();
@@ -1995,7 +1994,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::InputInt("##height", &heatmapHeight);
             if (ImGui::MenuItem("Save heatmap")) { 
                 char buf[1024];
-                stbsp_snprintf(buf, sizeof(buf), "%s_Heatmap.bmp", ActiveFunscript()->metadata.title.c_str());
+                stbsp_snprintf(buf, sizeof(buf), "%s_Heatmap.png", ActiveFunscript()->metadata.title.c_str());
                 auto heatmapPath = Util::Prefpath("screenshot");
                 if (Util::CreateDirectories(heatmapPath)) {
                     heatmapPath = (std::filesystem::path(heatmapPath) / buf).string();

@@ -250,3 +250,13 @@ std::string Util::Utf16ToUtf8(const std::wstring& str) noexcept
 	utf8::unchecked::utf16to8(str.begin(), str.end(), std::back_inserter(result));
 	return result;
 }
+
+bool Util::SavePNG(const std::string& path, void* buffer, int32_t width, int32_t height, int32_t channels, bool flipVertical) noexcept
+{
+	stbi_flip_vertically_on_write(flipVertical);
+	bool success = stbi_write_png(path.c_str(),
+		width, height,
+		channels, buffer, 0
+	);
+	return success;
+}
