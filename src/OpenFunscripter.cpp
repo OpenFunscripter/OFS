@@ -2501,6 +2501,14 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position) noe
 
     bool item_hovered = ImGui::IsItemHovered();
 
+
+
+    const float current_pos_x = frame_bb.Min.x + frame_bb.GetWidth() * (*position);
+    const float offset_progress_h = h / 5.f;
+    const float offset_progress_w = current_pos_x - frame_bb.Min.x;
+    draw_list->AddRectFilled(frame_bb.Min + ImVec2(-1.f, offset_progress_h), frame_bb.Min + ImVec2(offset_progress_w, frame_bb.GetHeight()) + ImVec2(0.f, offset_progress_h), ImColor(style.Colors[ImGuiCol_PlotLinesHovered]));
+    draw_list->AddRectFilled(frame_bb.Min + ImVec2(offset_progress_w, offset_progress_h), frame_bb.Max + ImVec2(1.f, offset_progress_h), IM_COL32(150, 150, 150, 255));
+
     // bookmarks
     for (auto& bookmark : ActiveFunscript()->scriptSettings.Bookmarks) {
         const float rectWidth = 7.f;
@@ -2513,7 +2521,7 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position) noe
         //auto bookmarkId = ImGui::GetID(bookmark.name.c_str());
         //ImGui::ItemAdd(rect, bookmarkId);
 
-        draw_list->AddRectFilled(p1, p2, ImColor(style.Colors[ImGuiCol_PlotHistogram]), 8.f);
+        draw_list->AddRectFilled(p1, p2, ImColor(style.Colors[ImGuiCol_Text]), 8.f);
 
         if (item_hovered || settings->data().always_show_bookmark_labels) {
             auto size = ImGui::CalcTextSize(bookmark.name.c_str());
@@ -2523,9 +2531,17 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position) noe
         }
     }
 
+    // position highlight
+    ImVec2 p1(current_pos_x, frame_bb.Min.y);
+    ImVec2 p2(current_pos_x, frame_bb.Max.y);
+    constexpr float timeline_pos_cursor_w = 5.f;
+    draw_list->AddLine(p1+ImVec2(0.f, h/3.f), p2+ImVec2(0.f, h/3.f), IM_COL32(255, 0, 0, 255), timeline_pos_cursor_w/2.f);
+    
+
     ImGradient::DrawGradientBar(&TimelineGradient, frame_bb.Min, frame_bb.GetWidth(), frame_bb.GetHeight());
 
-    const float timeline_pos_cursor_w = 5.f;
+
+
     const ImColor timeline_cursor_back = IM_COL32(255, 255, 255, 255);
     const ImColor timeline_cursor_front = IM_COL32(0, 0, 0, 255);
     static bool dragging = false;
@@ -2564,10 +2580,10 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position) noe
         dragging = false;
     }
 
-    const float current_pos_x = frame_bb.Min.x + frame_bb.GetWidth() * (*position);
-    draw_list->AddLine(ImVec2(current_pos_x, frame_bb.Min.y), ImVec2(current_pos_x, frame_bb.Max.y), timeline_cursor_back, timeline_pos_cursor_w);
-    draw_list->AddLine(ImVec2(current_pos_x, frame_bb.Min.y), ImVec2(current_pos_x, frame_bb.Max.y), timeline_cursor_front, timeline_pos_cursor_w / 2.f);
+    draw_list->AddLine(p1, p2, timeline_cursor_back, timeline_pos_cursor_w);
+    draw_list->AddLine(p1, p2, timeline_cursor_front, timeline_pos_cursor_w / 2.f);
 
+    
     const float min_val = 0.f;
     const float max_val = 1.f;
     if (change) { *position = Util::Clamp(*position, min_val, max_val); }
