@@ -469,6 +469,7 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 						ctx.vr_shader->Rotation(&ctx.settings.current_vr_rotation.x);
 						ctx.vr_shader->Zoom(ctx.settings.vr_zoom);
 						ctx.vr_shader->AspectRatio(ctx.video_draw_size.x / ctx.video_draw_size.y);
+						// TODO: set this somewhere else get rid of the branch
 						if (ctx.MpvData.video_height > 0) {
 							ctx.vr_shader->VideoAspectRatio(ctx.MpvData.video_width /(float)ctx.MpvData.video_height);
 						}
