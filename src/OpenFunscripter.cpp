@@ -1805,10 +1805,20 @@ void OpenFunscripter::repeatLastStroke() noexcept
     if (stroke.size() > 1) {
         int32_t offset_ms = player.getCurrentPositionMsInterp() - stroke.back().at;
         ActiveFunscript()->undoSystem->Snapshot(StateType::REPEAT_STROKE);
-        for(int i=stroke.size()-2; i >= 0; i--) {
-            auto action = stroke[i];
-            action.at += offset_ms;
-            ActiveFunscript()->PasteAction(action, player.getFrameTimeMs());
+        auto action = ActiveFunscript()->GetActionAtTime(player.getCurrentPositionMsInterp(), player.getFrameTimeMs());
+        if (action != nullptr) {
+            for(int i=stroke.size()-2; i >= 0; i--) {
+                auto action = stroke[i];
+                action.at += offset_ms;
+                ActiveFunscript()->PasteAction(action, player.getFrameTimeMs());
+            }
+        }
+        else {
+            for (int i = stroke.size()-1; i >= 0; i--) {
+                auto action = stroke[i];
+                action.at += offset_ms;
+                ActiveFunscript()->PasteAction(action, player.getFrameTimeMs());
+            }
         }
         player.setPosition(stroke.front().at + offset_ms);
     }
