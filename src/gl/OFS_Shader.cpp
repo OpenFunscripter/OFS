@@ -73,6 +73,10 @@ void VrShader::Zoom(float zoom) noexcept
 	glUniform1f(glGetUniformLocation(program, "zoom"), zoom);
 }
 
+void VrShader::VideoAspectRatio(float aspect) noexcept {
+	glUniform1f(glGetUniformLocation(program, "video_aspect_ratio"), aspect);
+}
+
 void VrShader::AspectRatio(float aspect) noexcept
 {
 	glUniform1f(glGetUniformLocation(program, "aspect_ratio"), aspect);
