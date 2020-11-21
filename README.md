@@ -9,15 +9,14 @@ The project is based on OpenGL, SDL2, ImGui, & libmpv ( and I'm kind of proud of
 1. clone the repository
 2. run `git submodule update --init --recursive`
 3. Run cmake and compile ( on windows just use visual studio 2019 with cmake support )
-4. Copy the data directory next to the executable.
-5. - On Windows make sure to copy the mpv-1.dll into the same directory as the executable. 
-   - On Linux you'll need pkg-config & libmpv installed
 
+Known linux dependencies to just compile are `build-essential libmpv-dev libglvnd-dev`.  
+To compile something which runs on x11 and wayland other stuff is needed the snap includes support for both.
 
 ### Windows libmpv binaries used
 Currently using: [mpv-dev-x86_64-20200816-git-7f67c52.7z (it's part of the repository)](https://sourceforge.net/projects/mpv-player-windows/files/libmpv/)
 
 
 ### Platforms
-I have built this successfully for Linux & Windows in theory OSX should work as well but I can't test that.  
-I will probably only provide binaries for Windows.
+I'm providing windows binaries and a linux snap package.  
+In theory OSX should work as well but I lack the hardware to set any of that up.
