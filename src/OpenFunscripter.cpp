@@ -25,6 +25,7 @@
 
 // BUG: loading script without video breaks everything
 // TODO: look into positioning simulator relative to video position
+// TODO: extend "range extender" functionality ( only extend bottom/top, range reducer )
 
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
