@@ -8,6 +8,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#if WIN32
+#define STBI_WINDOWS_UTF8
+#endif
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
@@ -178,7 +181,7 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
 	auto thread = [](void* ctx) -> int32_t {
 		auto data = (SaveFileDialogThreadData*)ctx;
 
-		auto dialogPath = std::filesystem::path(data->path);
+		auto dialogPath = Util::PathFromString(data->path);
 		if (std::filesystem::is_directory(dialogPath) && !std::filesystem::exists(dialogPath)) {
 			data->path = "";
 		}
@@ -191,7 +194,7 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
 		}
 
 		auto result = tinyfd_saveFileDialog(data->title.c_str(), data->path.c_str(), data->filters.size(), data->filters.data(), !data->filterText.empty() ? data->filterText.c_str() : NULL);
-		FUN_ASSERT(result, "Is this correct?");
+		FUN_ASSERT(result, "Ignore this if you pressed cancel.");
 		auto saveDialogResult = new FileDialogResult;
 		if (result != nullptr) {
 			saveDialogResult->files.emplace_back(result);
@@ -249,6 +252,29 @@ std::string Util::Utf16ToUtf8(const std::wstring& str) noexcept
 	result.reserve(utf8::unchecked::distance(str.begin(), str.end()));
 	utf8::unchecked::utf16to8(str.begin(), str.end(), std::back_inserter(result));
 	return result;
+}
+
+std::filesystem::path Util::PathFromString(const std::string& str) noexcept
+{
+	std::filesystem::path result;
+#if WIN32
+	auto wideString = Util::Utf8ToUtf16(str);
+	result = std::filesystem::path(wideString);
+#else
+	result = std::filesystem::path(str);
+#endif
+	result.make_preferred();
+	return result;
+}
+
+void Util::ConcatPathSafe(std::filesystem::path& path, const std::string& element) noexcept
+{
+	// I don't know if this is safe lol
+#if WIN32
+	path /= Util::Utf8ToUtf16(element);
+#else
+	path /= element;
+#endif
 }
 
 bool Util::SavePNG(const std::string& path, void* buffer, int32_t width, int32_t height, int32_t channels, bool flipVertical) noexcept

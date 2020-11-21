@@ -263,5 +263,8 @@ public:
 	static std::wstring Utf8ToUtf16(const std::string& str) noexcept;
 	static std::string Utf16ToUtf8(const std::wstring& str) noexcept;
 
+	static std::filesystem::path PathFromString(const std::string& str) noexcept;
+	static void ConcatPathSafe(std::filesystem::path& path, const std::string& element) noexcept;
+
 	static bool SavePNG(const std::string& path, void* buffer, int32_t width, int32_t height, int32_t channels = 3, bool flipVertical = true) noexcept;
 };

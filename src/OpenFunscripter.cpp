@@ -1992,21 +1992,28 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             }
 
             ImGui::Separator();
-            static int heatmapWidth = 2000;
-            static int heatmapHeight = 50;
+
             ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.f);
-            ImGui::InputInt("##width", &heatmapWidth); ImGui::SameLine();
+            ImGui::InputInt("##width", &settings->data().heatmapSettings.defaultWidth); ImGui::SameLine();
             ImGui::Text("%s", "x"); ImGui::SameLine();
             ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.f);
-            ImGui::InputInt("##height", &heatmapHeight);
+            ImGui::InputInt("##height", &settings->data().heatmapSettings.defaultHeight);
             if (ImGui::MenuItem("Save heatmap")) { 
-                char buf[1024];
-                stbsp_snprintf(buf, sizeof(buf), "%s_Heatmap.png", ActiveFunscript()->metadata.title.c_str());
-                auto heatmapPath = Util::Prefpath("screenshot");
-                if (Util::CreateDirectories(heatmapPath)) {
-                    heatmapPath = (std::filesystem::path(heatmapPath) / buf).string();
-                    saveHeatmap(heatmapPath.c_str(), heatmapWidth, heatmapHeight);
-                }
+                std::string filename = ActiveFunscript()->metadata.title + "_Heatmap.png";
+                auto defaultPath = Util::PathFromString(settings->data().heatmapSettings.defaultPath);
+                Util::ConcatPathSafe(defaultPath, filename);
+                Util::SaveFileDialog("Save heatmap", defaultPath.u8string(),
+                    [this](auto& result) {
+                        if (result.files.size() > 0) {
+                            auto savePath = Util::PathFromString(result.files.front());
+                            if (savePath.has_filename()) {
+                                saveHeatmap(result.files.front().c_str(), settings->data().heatmapSettings.defaultWidth, settings->data().heatmapSettings.defaultHeight);
+                                savePath.replace_filename("");
+                                settings->data().heatmapSettings.defaultPath = savePath.u8string();
+                            }
+
+                        }
+                    }, {"*.png"}, "PNG");
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Undo", BINDING_STRING("undo"), false, !ActiveFunscript()->undoSystem->UndoEmpty())) {

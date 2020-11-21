@@ -45,6 +45,18 @@ private:
 		bool show_action_editor = false;
 		bool force_hw_decoding = false;
 
+		struct HeatmapSettings {
+			int32_t defaultWidth = 2000;
+			int32_t defaultHeight = 50;
+			std::string defaultPath = "./";
+			template <class Archive>
+			inline void reflect(Archive& ar) {
+				OFS_REFLECT(defaultWidth, ar);
+				OFS_REFLECT(defaultHeight, ar);
+				OFS_REFLECT(defaultPath, ar);
+			}
+		} heatmapSettings;
+
 		std::vector<RecentFile> recentFiles;
 		ScriptSimulator::SimulatorSettings* simulator;
 		template <class Archive>
@@ -70,6 +82,7 @@ private:
 			OFS_REFLECT(fast_step_amount, ar);
 			OFS_REFLECT(force_hw_decoding, ar);
 			OFS_REFLECT(recentFiles, ar);
+			OFS_REFLECT(heatmapSettings, ar);
 			OFS_REFLECT_PTR(simulator, ar);
 		}
 	} scripterSettings;
