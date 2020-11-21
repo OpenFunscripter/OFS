@@ -1806,6 +1806,7 @@ void OpenFunscripter::repeatLastStroke() noexcept
         int32_t offset_ms = player.getCurrentPositionMsInterp() - stroke.back().at;
         ActiveFunscript()->undoSystem->Snapshot(StateType::REPEAT_STROKE);
         auto action = ActiveFunscript()->GetActionAtTime(player.getCurrentPositionMsInterp(), player.getFrameTimeMs());
+        // if we are on top of an action we ignore the first action of the last stroke
         if (action != nullptr) {
             for(int i=stroke.size()-2; i >= 0; i--) {
                 auto action = stroke[i];

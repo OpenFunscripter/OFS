@@ -69,5 +69,9 @@ void FunctionRangeExtender::DrawUI() noexcept
             ctx().RangeExtendSelection(rangeExtend);
         }
     }
+    else
+    {
+        ImGui::Text("Select atleast 5 actions to extend.");
+    }
 }
 
