@@ -35,6 +35,8 @@ enum class StateType : int32_t {
 	RANGE_EXTEND = 18,
 
 	REPEAT_STROKE = 19,
+
+	MOVE_ACTION_TO_CURRENT_POS = 20,
 	// add more here & update stateStrings in UndoSystem.cpp
 
 

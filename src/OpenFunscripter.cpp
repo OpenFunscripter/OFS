@@ -26,6 +26,7 @@
 // BUG: loading script without video breaks everything
 // TODO: look into positioning simulator relative to video position
 // TODO: extend "range extender" functionality ( only extend bottom/top, range reducer )
+// TODO: render simulator relative to video position & zoom
 
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
@@ -884,6 +885,24 @@ void OpenFunscripter::register_bindings()
             SDLK_DOWN,
             KMOD_SHIFT
         );
+
+        auto& move_action_to_current_pos = group.bindings.emplace_back(
+            "move_action_to_current_pos",
+            "Move to current position",
+            true,
+            [&](void*) {
+                auto closest = ActiveFunscript()->GetClosestAction(player.getCurrentPositionMsInterp());
+                if (closest != nullptr) {
+                    ActiveFunscript()->undoSystem->Snapshot(StateType::MOVE_ACTION_TO_CURRENT_POS);
+                    ActiveFunscript()->EditAction(*closest, FunscriptAction(player.getCurrentPositionMsInterp(), closest->pos));
+                }
+            }
+        );
+        move_action_to_current_pos.key = Keybinding(
+            SDLK_END,
+            0
+        );
+
         keybinds.registerBinding(group);
     }
     // FUNCTIONS

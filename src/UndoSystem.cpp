@@ -32,6 +32,8 @@ static std::array<const std::string, (int32_t)StateType::TOTAL_UNDOSTATE_TYPES> 
 	"Range extend",
 
 	"Repeat stroke",
+
+	"Move to current position"
 };
 
 void UndoSystem::SnapshotRedo(StateType type) noexcept
