@@ -44,6 +44,8 @@ public:
 		void* ctx = nullptr;
 		SingleShotEventHandler handler;
 	};
+	// this event + SingleShotEventData + SingleShotHandler allows execute arbitrary code
+	// back on the main thread comming from another. currently this is used to return filepaths from file dialogs.
 	static int32_t SingleShotEvent;
 
 	void setup();

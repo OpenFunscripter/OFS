@@ -28,6 +28,10 @@
 // TODO: extend "range extender" functionality ( only extend bottom/top, range reducer )
 // TODO: render simulator relative to video position & zoom
 
+// TODO: tempo/BPM snapping mode 
+//       render frame dividers & time dividers in a virtual method on the scripting mode
+//       that way I can render different things in the script timeline dependent on the scripting mode
+
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
 constexpr std::array<const char*, 6> SupportedVideoExtensions {
