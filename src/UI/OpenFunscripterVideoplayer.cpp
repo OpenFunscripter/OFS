@@ -78,8 +78,11 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev)
 			continue;
 		}
 		case MPV_EVENT_FILE_LOADED:
-			MpvData.video_loaded = true; 		
+		{
+			MpvData.video_loaded = true; 	
+			notifyVideoLoaded();
 			continue;
+		}
 		case MPV_EVENT_PROPERTY_CHANGE:
 		{
 			mpv_event_property* prop = (mpv_event_property*)mp_event->data;

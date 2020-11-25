@@ -333,6 +333,7 @@ bool OpenFunscripter::setup()
     //auto twist = std::make_unique<Funscript>();
     //twist->open(R"(E:\funscript\multi-axis\crush\Cherry Crush Ball Sucker POV.twist.funscript)");
     //app->LoadedFunscripts.emplace_back(std::move(twist));
+    scripting->setMode(ScriptingModeEnum::TEMPO);
 #endif
     return true;
 }
@@ -566,7 +567,7 @@ void OpenFunscripter::register_bindings()
             "prev_frame",
             "Previous frame",
             false,
-            [&](void*) { player.previousFrame(); }
+            [&](void*) { scripting->PreviousFrame(); }
         );
         prev_frame.key = Keybinding(
             SDLK_LEFT,
@@ -581,7 +582,7 @@ void OpenFunscripter::register_bindings()
             "next_frame",
             "Next frame",
             false,
-            [&](void*) { player.nextFrame(); }
+            [&](void*) { scripting->NextFrame(); }
         );
         next_frame.key = Keybinding(
             SDLK_RIGHT,
@@ -1340,7 +1341,7 @@ int OpenFunscripter::run() noexcept
                     // Playback controls
                     ImGui::Columns(5, 0, false);
                     if (ImGui::Button(ICON_STEP_BACKWARD /*"<"*/, ImVec2(-1, 0))) {
-                        player.previousFrame();
+                        scripting->PreviousFrame();
                     }
                     ImGui::NextColumn();
                     if (ImGui::Button(ICON_BACKWARD /*"<<"*/, ImVec2(-1, 0))) {
@@ -1359,7 +1360,7 @@ int OpenFunscripter::run() noexcept
                     ImGui::NextColumn();
 
                     if (ImGui::Button(ICON_STEP_FORWARD /*">"*/, ImVec2(-1, 0))) {
-                        player.nextFrame();
+                        scripting->NextFrame();
                     }
                     ImGui::NextColumn();
 

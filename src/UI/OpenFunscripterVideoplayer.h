@@ -174,6 +174,7 @@ public:
 
 	void setVolume(float volume) noexcept;
 	inline void setPosition(int32_t time_ms, bool pausesVideo = false) noexcept {
+		time_ms = Util::Clamp<int32_t>(time_ms, 0, getDuration() * 1000.f);
 		float rel_pos = ((float)time_ms) / (getDuration() * 1000.f);
 		setPosition(rel_pos, pausesVideo); 
 	}

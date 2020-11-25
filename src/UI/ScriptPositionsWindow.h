@@ -25,15 +25,17 @@ class ScriptPositionsWindow
 	std::vector<float> audio_waveform_avg;
 	bool ffmpegInProgress = false;
 
+public:
 	ImVec2 active_canvas_pos;
 	ImVec2 active_canvas_size;
 	float offset_ms;
-	float frameSizeMs;
+	float visibleSizeMs;
 	bool IsSelecting = false;
 	bool IsMoving = false;
 	bool PositionsItemHovered = false;
 	float rel_x1 = 0.0f;
 	float rel_x2 = 0.0f;
+private:
 
 	void mouse_pressed(SDL_Event& ev);
 	void mouse_released(SDL_Event& ev);
@@ -41,7 +43,7 @@ class ScriptPositionsWindow
 	void mouse_scroll(SDL_Event& ev);
 
 	inline ImVec2 getPointForAction(ImVec2 canvas_pos, ImVec2 canvas_size, FunscriptAction action) noexcept {
-		float relative_x = (float)(action.at - offset_ms) / frameSizeMs;
+		float relative_x = (float)(action.at - offset_ms) / visibleSizeMs;
 		float x = (canvas_size.x) * relative_x;
 		float y = (canvas_size.y) * (1 - (action.pos / 100.0));
 		x += canvas_pos.x;
@@ -54,7 +56,7 @@ class ScriptPositionsWindow
 		localCoord = point - canvas_pos;
 		float relative_x = localCoord.x / canvas_size.x;
 		float relative_y = localCoord.y / canvas_size.y;
-		float at_ms = offset_ms + (relative_x *frameSizeMs);
+		float at_ms = offset_ms + (relative_x * visibleSizeMs);
 		// fix frame alignment
 		at_ms =  std::max<float>((int32_t)(at_ms / frameTime) * frameTime, 0.f);
 		float pos = Util::Clamp<float>(100.f - (relative_y * 100.f), 0.f, 100.f);

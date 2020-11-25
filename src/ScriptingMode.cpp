@@ -1,12 +1,74 @@
 #include "ScriptingMode.h"
 
 #include "OpenFunscripter.h"
+#include "OpenFunscripterUtil.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"
 
 ScripingModeBaseImpl::ScripingModeBaseImpl()
 {
+}
+
+void ScripingModeBaseImpl::nextFrame() noexcept {
+    OpenFunscripter::ptr->player.nextFrame();
+}
+
+void ScripingModeBaseImpl::previousFrame() noexcept {
+    OpenFunscripter::ptr->player.previousFrame();
+}
+
+void ScripingModeBaseImpl::DrawScriptPositionContent(ImDrawList* draw_list, float visibleSizeMs, float offset_ms, ImVec2 canvas_pos, ImVec2 canvas_size) noexcept
+{
+    auto app = OpenFunscripter::ptr;
+    auto frameTime = app->player.getFrameTimeMs();
+
+    float visibleFrames = visibleSizeMs / frameTime;
+    constexpr float maxVisibleFrames = 400.f;
+    if (visibleFrames <= (maxVisibleFrames * 0.75f)) {
+        //render frame dividers
+        float offset = -std::fmod(offset_ms, frameTime);
+        const int lineCount = visibleFrames + 2;
+        int alpha = 255 * (1.f - (visibleFrames / maxVisibleFrames));
+        for (int i = 0; i < lineCount; i++) {
+            draw_list->AddLine(
+                canvas_pos + ImVec2(((offset + (i * frameTime)) / visibleSizeMs) * canvas_size.x, 0.f),
+                canvas_pos + ImVec2(((offset + (i * frameTime)) / visibleSizeMs) * canvas_size.x, canvas_size.y),
+                IM_COL32(80, 80, 80, alpha),
+                1.f
+            );
+        }
+
+        // out of sync line
+        if (app->player.isPaused() || app->player.getSpeed() <= 0.1) {
+            float realFrameTime = app->player.getRealCurrentPositionMs() - offset_ms;
+            draw_list->AddLine(
+                canvas_pos + ImVec2((realFrameTime / visibleSizeMs) * canvas_size.x, 0.f),
+                canvas_pos + ImVec2((realFrameTime / visibleSizeMs) * canvas_size.x, canvas_size.y),
+                IM_COL32(255, 0, 0, alpha),
+                1.f
+            );
+        }
+    }
+
+    // time dividers
+    constexpr float maxVisibleTimeDividers = 150.f;
+    const float timeIntervalMs = std::round(app->player.getFps() * 0.1f) * app->player.getFrameTimeMs();
+    const float visibleTimeIntervals = visibleSizeMs / timeIntervalMs;
+    if (visibleTimeIntervals <= (maxVisibleTimeDividers * 0.8f)) {
+        float offset = -std::fmod(offset_ms, timeIntervalMs);
+        const int lineCount = visibleTimeIntervals + 2;
+        int alpha = 255 * (1.f - (visibleTimeIntervals / maxVisibleTimeDividers));
+        for (int i = 0; i < lineCount; i++) {
+            draw_list->AddLine(
+                canvas_pos + ImVec2(((offset + (i * timeIntervalMs)) / visibleSizeMs) * canvas_size.x, 0.f),
+                canvas_pos + ImVec2(((offset + (i * timeIntervalMs)) / visibleSizeMs) * canvas_size.x, canvas_size.y),
+                IM_COL32(80, 80, 80, alpha),
+                3.f
+            );
+        }
+    }
+
 }
 
 inline Funscript& ScripingModeBaseImpl::ctx() {
@@ -28,6 +90,7 @@ void ScriptingMode::DrawScriptingMode(bool* open)
         "Alternating\0"
         "Dynamic injection\0"
         "Recording\0"
+        "Tempo\0"
         "\0")) {
         setMode(active_mode);
     }
@@ -56,6 +119,11 @@ void ScriptingMode::setMode(ScriptingModeEnum mode)
         impl = std::make_unique<RecordingImpl>();
         break;
     }
+    case ScriptingModeEnum::TEMPO:
+    {
+        impl = std::make_unique<TempoImpl>();
+        break;
+    }
     default:
     {
         impl = std::make_unique<DefaultModeImpl>();
@@ -64,7 +132,7 @@ void ScriptingMode::setMode(ScriptingModeEnum mode)
     }
 }
 
-void ScriptingMode::addEditAction(FunscriptAction action)
+void ScriptingMode::addEditAction(FunscriptAction action) noexcept
 {
     auto app = OpenFunscripter::ptr;
     auto ptr = OpenFunscripter::script().GetActionAtTime(action.at, app->player.getFrameTimeMs());
@@ -77,7 +145,7 @@ void ScriptingMode::addEditAction(FunscriptAction action)
 }
 
 // dynamic top injection
-void DynamicInjectionImpl::DrawModeSettings()
+void DynamicInjectionImpl::DrawModeSettings() noexcept
 {
     ImGui::SliderFloat("##Target speed (units/s)", &target_speed, min_speed, max_speed);
     Util::Tooltip("Target speed (units/s)");
@@ -99,7 +167,7 @@ void DynamicInjectionImpl::DrawModeSettings()
 }
 
 // dynamic injection
-void DynamicInjectionImpl::addAction(FunscriptAction action)
+void DynamicInjectionImpl::addAction(FunscriptAction action) noexcept
 {
     auto previous = ctx().GetPreviousActionBehind(action.at);
     if (previous != nullptr) {
@@ -113,7 +181,7 @@ void DynamicInjectionImpl::addAction(FunscriptAction action)
 }
 
 // alternating
-void AlternatingImpl::DrawModeSettings()
+void AlternatingImpl::DrawModeSettings() noexcept
 {
     ImGui::Checkbox("Fixed range", &fixed_range_enabled);
     if (fixed_range_enabled) {
@@ -140,7 +208,7 @@ void AlternatingImpl::DrawModeSettings()
     }
 }
 
-void AlternatingImpl::addAction(FunscriptAction action)
+void AlternatingImpl::addAction(FunscriptAction action) noexcept
 {
     auto previous = ctx().GetPreviousActionBehind(action.at);
     if (fixed_range_enabled) {
@@ -336,7 +404,7 @@ inline static void RamerDouglasPeucker(const std::vector<FunscriptRawAction>& po
 }
 
 
-void RecordingImpl::DrawModeSettings()
+void RecordingImpl::DrawModeSettings() noexcept
 {
 
     ImGui::Combo("Mode", (int*)&activeMode,
@@ -478,7 +546,7 @@ void RecordingImpl::DrawModeSettings()
     }
 }
 
-void RecordingImpl::addAction(FunscriptAction action)
+void RecordingImpl::addAction(FunscriptAction action) noexcept
 {
     // same as default
     ctx().AddAction(action);
@@ -491,3 +559,92 @@ void RecordingImpl::update() noexcept
         ctx().AddActionRaw(app->player.getCurrentFrameEstimate(), app->player.getCurrentPositionMs(), currentPos, app->player.getFrameTimeMs());
     }
 }
+
+
+// TEMPO implementation
+void TempoImpl::DrawModeSettings() noexcept
+{
+    ImGui::SliderInt("BPM", &bpm, 1, 500, "%d", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::DragFloat("Offset", &beat_offset_seconds, 0.001f, -1.f, 1.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+    
+
+    char buf[32];
+    stbsp_snprintf(buf, sizeof(buf), "%s beat snap", beatMultiplesStrings[multiIDX]);
+
+    if (ImGui::BeginCombo("Snap", buf, ImGuiComboFlags_PopupAlignLeft)) {
+        for (int i = 0; i < beatMultiples.size(); i++) {
+            stbsp_snprintf(buf, sizeof(buf), "%s beat snap", beatMultiplesStrings[i]);
+            if (ImGui::Selectable(buf)) {
+                multiIDX = i;
+            }
+            else if (ImGui::IsItemHovered()) {
+                multiIDX = i;
+            }
+        }
+        ImGui::EndCombo();
+    }
+}
+
+void TempoImpl::nextFrame() noexcept
+{
+    auto app = OpenFunscripter::ptr;
+    float beatTimeMs = ((60.f * 1000.f) / bpm) * beatMultiples[multiIDX];
+    float currentMs = app->player.getCurrentPositionMsInterp();
+    float offset = -std::fmod(currentMs, beatTimeMs) + (beat_offset_seconds * 1000.f);
+    int32_t newPositionMs = currentMs + offset;
+    if (std::abs(offset) <= 10.f) {
+        newPositionMs += beatTimeMs;
+    }
+    app->player.setPosition(newPositionMs);
+}
+
+void TempoImpl::previousFrame() noexcept
+{
+    auto app = OpenFunscripter::ptr;
+    float beatTimeMs = ((60.f * 1000.f) / bpm) * beatMultiples[multiIDX];
+    float currentMs = app->player.getCurrentPositionMsInterp();
+    float offset = -std::fmod(currentMs, beatTimeMs) + (beat_offset_seconds * 1000.f);
+    int32_t newPositionMs = currentMs + offset;
+    if (std::abs(offset) <= 10.f) {
+        newPositionMs -= beatTimeMs;
+    }
+    app->player.setPosition(newPositionMs);
+}
+
+void TempoImpl::DrawScriptPositionContent(ImDrawList* draw_list, float visibleSizeMs, float offset_ms, ImVec2 canvas_pos, ImVec2 canvas_size) noexcept
+{
+    auto app = OpenFunscripter::ptr;
+    //auto frameTime = app->player.getFrameTimeMs();
+
+    float beatTimeMs = (60.f * 1000.f) / bpm;
+    int32_t visibleBeats = visibleSizeMs / beatTimeMs;
+    float invisiblePreviousBeats = (app->player.getCurrentPositionMsInterp() - (visibleSizeMs/2.f)) / beatTimeMs;
+    if (visibleBeats <= 400.f) {
+        float offset = -std::fmod((float)offset_ms, beatTimeMs) + (beat_offset_seconds * 1000.f);
+        const int lineCount = visibleBeats + 2;
+        auto& style = ImGui::GetStyle();
+        char tmp[32];
+        for (int i = 0; i < lineCount; i++) {
+            int32_t beatIdx = ((int)invisiblePreviousBeats + i);
+            const bool isBeat = beatIdx % beatMultiples[multiIDX] == 0;
+            draw_list->AddLine(
+                canvas_pos + ImVec2(((offset + (i * beatTimeMs)) / visibleSizeMs) * canvas_size.x, 0.f),
+                canvas_pos + ImVec2(((offset + (i * beatTimeMs)) / visibleSizeMs) * canvas_size.x, canvas_size.y),
+                isBeat ? beatMultipleColor[multiIDX] : IM_COL32(80, 80, 80, 200),
+                isBeat ? 7.f : 3.f
+            );
+
+            if (isBeat) {
+                stbsp_snprintf(tmp, sizeof(tmp), "%d", beatIdx/beatMultiples[multiIDX]);
+                const float textOffsetX = app->settings->data().default_font_size / 2.f;
+                draw_list->AddText(OpenFunscripter::DefaultFont2, app->settings->data().default_font_size*2.f, 
+                    canvas_pos + ImVec2((((offset + (i * beatTimeMs)) / visibleSizeMs) * canvas_size.x) + textOffsetX , 0.f),
+                    ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]),
+                    tmp
+                );
+            }
+        }
+
+    }
+}
+
