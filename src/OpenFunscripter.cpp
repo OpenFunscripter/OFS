@@ -13,6 +13,7 @@
 #include "imgui_internal.h"
 
 // TODO: reduce memory usage when generating waveform data
+// TODO: look into alternating mode
 
 // FIX: Add type checking to the deserialization. 
 //      I assume it would crash if a field is specified but doesn't have the correct type.
@@ -24,7 +25,6 @@
 //       it bugs out if the simulator is on the same height as the script timeline
 
 // BUG: loading script without video breaks everything
-// TODO: look into positioning simulator relative to video position
 // TODO: extend "range extender" functionality ( only extend bottom/top, range reducer )
 // TODO: render simulator relative to video position & zoom
 
@@ -1716,7 +1716,7 @@ void OpenFunscripter::removeAction() noexcept
 void OpenFunscripter::addEditAction(int pos) noexcept
 {
     ActiveFunscript()->undoSystem->Snapshot(StateType::ADD_EDIT_ACTIONS);
-    scripting->addEditAction(FunscriptAction(player.getCurrentPositionMs(), pos));
+    scripting->addEditAction(FunscriptAction(player.getCurrentPositionMsInterp(), pos));
 }
 
 void OpenFunscripter::seekByTime(int32_t ms) noexcept
