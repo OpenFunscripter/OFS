@@ -591,9 +591,7 @@ void TempoImpl::nextFrame() noexcept
     float currentMs = app->player.getCurrentPositionMsInterp();
     float offset = -std::fmod(currentMs, beatTimeMs) + (beat_offset_seconds * 1000.f);
     int32_t newPositionMs = currentMs + offset;
-    if (std::abs(offset) <= 10.f) {
-        newPositionMs += beatTimeMs;
-    }
+    newPositionMs += beatTimeMs;
     app->player.setPosition(newPositionMs);
 }
 
