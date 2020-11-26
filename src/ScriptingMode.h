@@ -108,9 +108,10 @@ public:
 
 class TempoImpl : public ScripingModeBaseImpl {
 private:
-	int bpm = 151;
-	float beat_offset_seconds = 0.066f;
+	int bpm = 156;
+	float beat_offset_seconds = 0.014f;
 	int multiIDX = 1;
+	
 	static constexpr std::array<int32_t, 11> beatMultiples {
 		1, //???
 

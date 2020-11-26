@@ -68,7 +68,7 @@ void ScripingModeBaseImpl::DrawScriptPositionContent(ImDrawList* draw_list, floa
             );
         }
     }
-
+    app->scriptPositions.DrawAudioWaveform(draw_list, canvas_pos, canvas_size);
 }
 
 inline Funscript& ScripingModeBaseImpl::ctx() {
@@ -566,7 +566,6 @@ void TempoImpl::DrawModeSettings() noexcept
 {
     ImGui::SliderInt("BPM", &bpm, 1, 500, "%d", ImGuiSliderFlags_AlwaysClamp);
     ImGui::DragFloat("Offset", &beat_offset_seconds, 0.001f, -1.f, 1.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-    
 
     char buf[32];
     stbsp_snprintf(buf, sizeof(buf), "%s beat snap", beatMultiplesStrings[multiIDX]);
@@ -614,37 +613,47 @@ void TempoImpl::previousFrame() noexcept
 void TempoImpl::DrawScriptPositionContent(ImDrawList* draw_list, float visibleSizeMs, float offset_ms, ImVec2 canvas_pos, ImVec2 canvas_size) noexcept
 {
     auto app = OpenFunscripter::ptr;
+    app->scriptPositions.DrawAudioWaveform(draw_list, canvas_pos, canvas_size);
+
     //auto frameTime = app->player.getFrameTimeMs();
 
     float beatTimeMs = (60.f * 1000.f) / bpm;
     int32_t visibleBeats = visibleSizeMs / beatTimeMs;
-    float invisiblePreviousBeats = (app->player.getCurrentPositionMsInterp() - (visibleSizeMs/2.f)) / beatTimeMs;
-    if (visibleBeats <= 400.f) {
-        float offset = -std::fmod((float)offset_ms, beatTimeMs) + (beat_offset_seconds * 1000.f);
-        const int lineCount = visibleBeats + 2;
-        auto& style = ImGui::GetStyle();
-        char tmp[32];
-        for (int i = 0; i < lineCount; i++) {
-            int32_t beatIdx = ((int)invisiblePreviousBeats + i);
-            const bool isBeat = beatIdx % beatMultiples[multiIDX] == 0;
-            draw_list->AddLine(
-                canvas_pos + ImVec2(((offset + (i * beatTimeMs)) / visibleSizeMs) * canvas_size.x, 0.f),
-                canvas_pos + ImVec2(((offset + (i * beatTimeMs)) / visibleSizeMs) * canvas_size.x, canvas_size.y),
-                isBeat ? beatMultipleColor[multiIDX] : IM_COL32(80, 80, 80, 200),
-                isBeat ? 7.f : 3.f
-            );
-
-            if (isBeat) {
-                stbsp_snprintf(tmp, sizeof(tmp), "%d", beatIdx/beatMultiples[multiIDX]);
-                const float textOffsetX = app->settings->data().default_font_size / 2.f;
-                draw_list->AddText(OpenFunscripter::DefaultFont2, app->settings->data().default_font_size*2.f, 
-                    canvas_pos + ImVec2((((offset + (i * beatTimeMs)) / visibleSizeMs) * canvas_size.x) + textOffsetX , 0.f),
-                    ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]),
-                    tmp
-                );
-            }
-        }
-
+    int32_t invisiblePreviousBeats = offset_ms / beatTimeMs;
+    
+    static int32_t prevInvisiblePreviousBeats = 0;
+    if (prevInvisiblePreviousBeats != invisiblePreviousBeats) { 
+        LOGF_INFO("%d", invisiblePreviousBeats); 
     }
+    prevInvisiblePreviousBeats = invisiblePreviousBeats;
+
+    static bool playedSound = false;
+    static float oldOffset = 0.f;
+    float offset = -std::fmod(offset_ms, beatTimeMs) + (beat_offset_seconds * 1000.f);
+
+    const int lineCount = visibleBeats + 2;
+    auto& style = ImGui::GetStyle();
+    char tmp[32];
+    for (int i = 0; i < lineCount; i++) {
+        int32_t beatIdx = invisiblePreviousBeats + i;
+        const bool isBeat = beatIdx % beatMultiples[multiIDX] == 0;
+        draw_list->AddLine(
+            canvas_pos + ImVec2(((offset + (i * beatTimeMs)) / visibleSizeMs) * canvas_size.x, 0.f),
+            canvas_pos + ImVec2(((offset + (i * beatTimeMs)) / visibleSizeMs) * canvas_size.x, canvas_size.y),
+            isBeat ? beatMultipleColor[multiIDX] : IM_COL32(255, 255, 255, 120),
+            isBeat ? 7.f : 3.f
+        );
+
+        if (isBeat) {
+            stbsp_snprintf(tmp, sizeof(tmp), "%d", beatIdx/beatMultiples[multiIDX]);
+            const float textOffsetX = app->settings->data().default_font_size / 2.f;
+            draw_list->AddText(OpenFunscripter::DefaultFont2, app->settings->data().default_font_size*2.f, 
+                canvas_pos + ImVec2((((offset + (i * beatTimeMs)) / visibleSizeMs) * canvas_size.x) + textOffsetX , 0.f),
+                ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]),
+                tmp
+            );
+        }
+    }
+
 }
 

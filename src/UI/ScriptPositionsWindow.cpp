@@ -63,7 +63,7 @@ void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
 	FunscriptAction* clickedAction = nullptr;
 	
 	if (PositionsItemHovered) {
-		if (button.clicks == 2) {
+		if (button.button == SDL_BUTTON_LEFT && button.clicks == 2) {
 			// seek to position double click
 			float rel_x = (mousePos.x - active_canvas_pos.x) / active_canvas_size.x;
 			int32_t seekToMs = offset_ms + (visibleSizeMs * rel_x);
@@ -280,52 +280,8 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 
 		// draws mode specific things in the timeline
 		// by default it draws the frame and time dividers
+		// DrawAudioWaveform called in scripting mode to control the draw order. spaghetti
 		app->scripting->DrawScriptPositionContent(draw_list, visibleSizeMs, offset_ms, canvas_pos, canvas_size);
-
-		if (ShowAudioWaveform) {
-			const float durationMs = app->player.getDuration() * 1000.f;
-			const float rel_start = offset_ms / durationMs;
-			const float rel_end = ((float)(offset_ms)+visibleSizeMs) / durationMs;
-
-			auto& audio_waveform = audio_waveform_avg;
-
-			int32_t start_index = rel_start * (float)audio_waveform.size();
-			int32_t end_index = rel_end * (float)audio_waveform.size();
-			const int total_samples = end_index - start_index;
-			const int line_merge = 1 + (total_samples / 2000);
-			const int actual_total_samples = total_samples / line_merge;
-			//LOGF_INFO("total_samples=%d actual_total_samples=%d", total_samples, actual_total_samples);
-
-			const float line_width = ((1.f / ((float)actual_total_samples)) * canvas_size.x) + 0.75f;
-			start_index -= start_index % line_merge;
-			end_index -= end_index % line_merge;
-			end_index += line_merge;
-
-			for (int i = start_index; i < end_index-(line_merge+line_merge); i+=line_merge) {
-				const float total_pos_x = ((((float)i - start_index) / (float)total_samples)) * canvas_size.x;
-				float total_len;
-				if (i < 0 || (i+line_merge) >= audio_waveform.size()) {
-					total_len = 0.f;
-					continue;
-				}
-				else {
-					float sample = audio_waveform[i];
-					for (int x = 1; x < line_merge; x++) { 
-						// find peak
-						sample = std::max(sample, audio_waveform[i + x]);
-					}
-					total_len = canvas_size.y * sample * ScaleAudio;
-					if (total_len < 2.f) { 
-						continue; 
-					}
-				}
-				draw_list->AddLine(
-					canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) + (total_len / 2.f)),
-					canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) - (total_len / 2.f)),
-					IM_COL32(227, 66, 52, 255), line_width);
-			}
-		}
-
 
 		// border
 		constexpr float borderThicknes = 1.f;
@@ -658,6 +614,53 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	}
 
 	ImGui::End();
+}
+
+void ScriptPositionsWindow::DrawAudioWaveform(ImDrawList* draw_list, ImVec2 canvas_pos, ImVec2 canvas_size) noexcept
+{
+	if (ShowAudioWaveform) {
+		const float durationMs = OpenFunscripter::ptr->player.getDuration() * 1000.f;
+		const float rel_start = offset_ms / durationMs;
+		const float rel_end = ((float)(offset_ms)+visibleSizeMs) / durationMs;
+
+		auto& audio_waveform = audio_waveform_avg;
+
+		int32_t start_index = rel_start * (float)audio_waveform.size();
+		int32_t end_index = rel_end * (float)audio_waveform.size();
+		const int total_samples = end_index - start_index;
+		const int line_merge = 1 + (total_samples / 2000);
+		const int actual_total_samples = total_samples / line_merge;
+		//LOGF_INFO("total_samples=%d actual_total_samples=%d", total_samples, actual_total_samples);
+
+		const float line_width = ((1.f / ((float)actual_total_samples)) * canvas_size.x) + 0.75f;
+		start_index -= start_index % line_merge;
+		end_index -= end_index % line_merge;
+		end_index += line_merge;
+
+		for (int i = start_index; i < end_index - (line_merge + line_merge); i += line_merge) {
+			const float total_pos_x = ((((float)i - start_index) / (float)total_samples)) * canvas_size.x;
+			float total_len;
+			if (i < 0 || (i + line_merge) >= audio_waveform.size()) {
+				total_len = 0.f;
+				continue;
+			}
+			else {
+				float sample = audio_waveform[i];
+				for (int x = 1; x < line_merge; x++) {
+					// find peak
+					sample = std::max(sample, audio_waveform[i + x]);
+				}
+				total_len = canvas_size.y * sample * ScaleAudio;
+				if (total_len < 2.f) {
+					continue;
+				}
+			}
+			draw_list->AddLine(
+				canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) + (total_len / 2.f)),
+				canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) - (total_len / 2.f)),
+				IM_COL32(227, 66, 52, 255), line_width);
+		}
+	}
 }
 
 bool OutputAudioFile(const char* ffmpeg_path, const char* video_path, const char* output_path) {

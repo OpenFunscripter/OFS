@@ -161,7 +161,7 @@ public:
 		}
 		else {
 			std::chrono::duration<double> duration = std::chrono::high_resolution_clock::now() - smooth_time;
-			return (MpvData.percent_pos * MpvData.duration) + (duration.count() * MpvData.current_speed);
+			return getCurrentPositionSeconds() + (duration.count() * MpvData.current_speed);
 		}
 	}
 
