@@ -108,25 +108,23 @@ public:
 
 class TempoImpl : public ScripingModeBaseImpl {
 private:
-	int bpm = 156;
-	float beat_offset_seconds = 0.014f;
-	int multiIDX = 1;
+	int bpm = 158;
+	float beat_offset_seconds = 0.163f;
+	int multiIDX = 0;
 	
-	static constexpr std::array<int32_t, 11> beatMultiples {
-		1, //???
-
-		2,
-		4,
-		8,
-		12,
-		16,
-		24,
-		32,
-		48,
-		64,
-		192
+	static constexpr std::array<float, 10> beatMultiples {
+		1.f, 
+		1.f / 2.f,
+		1.f / 4.f,
+		1.f / 8.f,
+		1.f / 12.f,
+		1.f / 16.f,
+		1.f / 24.f,
+		1.f / 32.f,
+		1.f / 48.f,
+		1.f / 64.f,
 	};
-	static constexpr std::array<uint32_t, 11> beatMultipleColor {
+	static constexpr std::array<uint32_t, 10> beatMultipleColor {
 		IM_COL32(0xbb, 0xbe, 0xbc, 0xFF), // 1st ???
 
 		IM_COL32(0x53, 0xd3, 0xdf, 0xFF), // 2nds
@@ -138,10 +136,9 @@ private:
 		IM_COL32(0xe7, 0x97, 0x5c, 0xFF), // 32nds
 		IM_COL32(0xeb, 0x38, 0x99, 0xFF), // 48ths
 		IM_COL32(0x23, 0xd2, 0x54, 0xFF), // 64ths
-		IM_COL32(0xbb, 0xbe, 0xbc, 0xFF), // 192ths
 	};
-	static constexpr std::array<const char*, 11> beatMultiplesStrings {
-		"1st", //???
+	static constexpr std::array<const char*, 10> beatMultiplesStrings {
+		"whole", //???
 
 		"2nd",
 		"4th",
@@ -152,7 +149,6 @@ private:
 		"32nd",
 		"48th",
 		"64th",
-		"192nd"
 	};
 public:
 	virtual void DrawScriptPositionContent(ImDrawList* draw_list, float visibleSizeMs, float offset_ms, ImVec2 canvas_pos, ImVec2 canvas_size) noexcept override;

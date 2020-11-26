@@ -567,7 +567,11 @@ void OpenFunscripter::register_bindings()
             "prev_frame",
             "Previous frame",
             false,
-            [&](void*) { scripting->PreviousFrame(); }
+            [&](void*) { 
+                if (player.isPaused()) {
+                    scripting->PreviousFrame(); 
+                }
+            }
         );
         prev_frame.key = Keybinding(
             SDLK_LEFT,
@@ -582,7 +586,11 @@ void OpenFunscripter::register_bindings()
             "next_frame",
             "Next frame",
             false,
-            [&](void*) { scripting->NextFrame(); }
+            [&](void*) { 
+                if (player.isPaused()) {
+                    scripting->NextFrame(); 
+                }
+            }
         );
         next_frame.key = Keybinding(
             SDLK_RIGHT,
@@ -1341,7 +1349,9 @@ int OpenFunscripter::run() noexcept
                     // Playback controls
                     ImGui::Columns(5, 0, false);
                     if (ImGui::Button(ICON_STEP_BACKWARD /*"<"*/, ImVec2(-1, 0))) {
-                        scripting->PreviousFrame();
+                        if (player.isPaused()) {
+                            scripting->PreviousFrame();
+                        }
                     }
                     ImGui::NextColumn();
                     if (ImGui::Button(ICON_BACKWARD /*"<<"*/, ImVec2(-1, 0))) {
@@ -1360,7 +1370,9 @@ int OpenFunscripter::run() noexcept
                     ImGui::NextColumn();
 
                     if (ImGui::Button(ICON_STEP_FORWARD /*">"*/, ImVec2(-1, 0))) {
-                        scripting->NextFrame();
+                        if (player.isPaused()) {
+                            scripting->NextFrame();
+                        }
                     }
                     ImGui::NextColumn();
 
@@ -1793,12 +1805,14 @@ void OpenFunscripter::equalizeSelection() noexcept
 void OpenFunscripter::invertSelection() noexcept
 {
     if (!ActiveFunscript()->HasSelection()) {
-        ActiveFunscript()->undoSystem->Snapshot(StateType::INVERT_ACTIONS);
         // same hack as above 
         auto closest = ActiveFunscript()->GetClosestAction(player.getCurrentPositionMs());
-        ActiveFunscript()->SelectAction(*closest);
-        ActiveFunscript()->InvertSelection();
-        ActiveFunscript()->ClearSelection();
+        if (closest != nullptr) {
+            ActiveFunscript()->undoSystem->Snapshot(StateType::INVERT_ACTIONS);
+            ActiveFunscript()->SelectAction(*closest);
+            ActiveFunscript()->InvertSelection();
+            ActiveFunscript()->ClearSelection();
+        }
     }
     else if (ActiveFunscript()->Selection().size() >= 3) {
         ActiveFunscript()->undoSystem->Snapshot(StateType::INVERT_ACTIONS);

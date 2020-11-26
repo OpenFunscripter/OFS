@@ -564,15 +564,19 @@ void RecordingImpl::update() noexcept
 // TEMPO implementation
 void TempoImpl::DrawModeSettings() noexcept
 {
-    ImGui::SliderInt("BPM", &bpm, 1, 500, "%d", ImGuiSliderFlags_AlwaysClamp);
-    ImGui::DragFloat("Offset", &beat_offset_seconds, 0.001f, -1.f, 1.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+    auto app = OpenFunscripter::ptr;
+    if (ImGui::InputInt("BPM", &bpm, 1, 100)) {
+        bpm = std::max(1, bpm);
+    }
+
+    ImGui::DragFloat("Offset", &beat_offset_seconds, 0.001f, -10.f, 10.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
 
     char buf[32];
-    stbsp_snprintf(buf, sizeof(buf), "%s beat snap", beatMultiplesStrings[multiIDX]);
+    stbsp_snprintf(buf, sizeof(buf), "%s beat", beatMultiplesStrings[multiIDX]);
 
     if (ImGui::BeginCombo("Snap", buf, ImGuiComboFlags_PopupAlignLeft)) {
         for (int i = 0; i < beatMultiples.size(); i++) {
-            stbsp_snprintf(buf, sizeof(buf), "%s beat snap", beatMultiplesStrings[i]);
+            stbsp_snprintf(buf, sizeof(buf), "%s beat", beatMultiplesStrings[i]);
             if (ImGui::Selectable(buf)) {
                 multiIDX = i;
             }
@@ -582,6 +586,8 @@ void TempoImpl::DrawModeSettings() noexcept
         }
         ImGui::EndCombo();
     }
+
+    ImGui::Text("Interval: %dms", static_cast<int32_t>(((60.f * 1000.f) / bpm) * beatMultiples[multiIDX]));
 }
 
 void TempoImpl::nextFrame() noexcept
@@ -589,9 +595,11 @@ void TempoImpl::nextFrame() noexcept
     auto app = OpenFunscripter::ptr;
     float beatTimeMs = ((60.f * 1000.f) / bpm) * beatMultiples[multiIDX];
     float currentMs = app->player.getCurrentPositionMsInterp();
-    float offset = -std::fmod(currentMs, beatTimeMs) + (beat_offset_seconds * 1000.f);
-    int32_t newPositionMs = currentMs + offset;
-    newPositionMs += beatTimeMs;
+    int32_t beatIdx = currentMs / beatTimeMs;
+    beatIdx -= (beat_offset_seconds * 1000.f) / beatTimeMs;
+    beatIdx += 2;
+    int32_t newPositionMs = (beatIdx * beatTimeMs) + (beat_offset_seconds * 1000.f);
+
     app->player.setPosition(newPositionMs);
 }
 
@@ -600,11 +608,10 @@ void TempoImpl::previousFrame() noexcept
     auto app = OpenFunscripter::ptr;
     float beatTimeMs = ((60.f * 1000.f) / bpm) * beatMultiples[multiIDX];
     float currentMs = app->player.getCurrentPositionMsInterp();
-    float offset = -std::fmod(currentMs, beatTimeMs) + (beat_offset_seconds * 1000.f);
-    int32_t newPositionMs = currentMs + offset;
-    if (std::abs(offset) <= 10.f) {
-        newPositionMs -= beatTimeMs;
-    }
+    int32_t beatIdx = currentMs / beatTimeMs;
+    beatIdx -= (beat_offset_seconds * 1000.f) / beatTimeMs;
+    int32_t newPositionMs = (beatIdx * beatTimeMs) + (beat_offset_seconds * 1000.f);
+
     app->player.setPosition(newPositionMs);
 }
 
@@ -615,7 +622,7 @@ void TempoImpl::DrawScriptPositionContent(ImDrawList* draw_list, float visibleSi
 
     //auto frameTime = app->player.getFrameTimeMs();
 
-    float beatTimeMs = (60.f * 1000.f) / bpm;
+    float beatTimeMs = ((60.f * 1000.f) / bpm) * beatMultiples[multiIDX];
     int32_t visibleBeats = visibleSizeMs / beatTimeMs;
     int32_t invisiblePreviousBeats = offset_ms / beatTimeMs;
     
@@ -632,18 +639,20 @@ void TempoImpl::DrawScriptPositionContent(ImDrawList* draw_list, float visibleSi
     const int lineCount = visibleBeats + 2;
     auto& style = ImGui::GetStyle();
     char tmp[32];
-    for (int i = 0; i < lineCount; i++) {
+
+    int32_t lineOffset = (beat_offset_seconds * 1000.f) / beatTimeMs;
+    for (int i = -lineOffset; i < lineCount - lineOffset; i++) {
         int32_t beatIdx = invisiblePreviousBeats + i;
-        const bool isBeat = beatIdx % beatMultiples[multiIDX] == 0;
+        const bool isWholeBeat = beatIdx % (int32_t)(1.f/beatMultiples[multiIDX]) == 0;
         draw_list->AddLine(
             canvas_pos + ImVec2(((offset + (i * beatTimeMs)) / visibleSizeMs) * canvas_size.x, 0.f),
             canvas_pos + ImVec2(((offset + (i * beatTimeMs)) / visibleSizeMs) * canvas_size.x, canvas_size.y),
-            isBeat ? beatMultipleColor[multiIDX] : IM_COL32(255, 255, 255, 120),
-            isBeat ? 7.f : 3.f
+            isWholeBeat ? beatMultipleColor[multiIDX] : IM_COL32(255, 255, 255, 120),
+            isWholeBeat ? 7.f : 3.f
         );
 
-        if (isBeat) {
-            stbsp_snprintf(tmp, sizeof(tmp), "%d", beatIdx/beatMultiples[multiIDX]);
+        if (isWholeBeat) {
+            stbsp_snprintf(tmp, sizeof(tmp), "%d", beatIdx / (int32_t)(1.f / beatMultiples[multiIDX]));
             const float textOffsetX = app->settings->data().default_font_size / 2.f;
             draw_list->AddText(OpenFunscripter::DefaultFont2, app->settings->data().default_font_size*2.f, 
                 canvas_pos + ImVec2((((offset + (i * beatTimeMs)) / visibleSizeMs) * canvas_size.x) + textOffsetX , 0.f),
@@ -652,6 +661,5 @@ void TempoImpl::DrawScriptPositionContent(ImDrawList* draw_list, float visibleSi
             );
         }
     }
-
 }
 
