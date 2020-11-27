@@ -108,21 +108,21 @@ public:
 
 class TempoImpl : public ScripingModeBaseImpl {
 private:
-	int bpm = 158;
-	float beat_offset_seconds = 0.163f;
+	int bpm = 120;
+	float beat_offset_seconds = 0.f;
 	int multiIDX = 0;
 	
 	static constexpr std::array<float, 10> beatMultiples {
-		1.f, 
-		1.f / 2.f,
-		1.f / 4.f,
-		1.f / 8.f,
-		1.f / 12.f,
-		1.f / 16.f,
-		1.f / 24.f,
-		1.f / 32.f,
-		1.f / 48.f,
-		1.f / 64.f,
+		4.f * 1.f, 
+		4.f * (1.f / 2.f),
+		4.f * (1.f / 4.f),
+		4.f * (1.f / 8.f),
+		4.f * (1.f / 12.f),
+		4.f * (1.f / 16.f),
+		4.f * (1.f / 24.f),
+		4.f * (1.f / 32.f),
+		4.f * (1.f / 48.f),
+		4.f * (1.f / 64.f),
 	};
 	static constexpr std::array<uint32_t, 10> beatMultipleColor {
 		IM_COL32(0xbb, 0xbe, 0xbc, 0xFF), // 1st ???
@@ -138,17 +138,17 @@ private:
 		IM_COL32(0x23, 0xd2, 0x54, 0xFF), // 64ths
 	};
 	static constexpr std::array<const char*, 10> beatMultiplesStrings {
-		"whole", //???
+		"whole measures", //???
 
-		"2nd",
-		"4th",
-		"8th",
-		"12th",
-		"16th",
-		"24th",
-		"32nd",
-		"48th",
-		"64th",
+		"2nd measures",
+		"4th measures",
+		"8th measures",
+		"12th measures",
+		"16th measures",
+		"24th measures",
+		"32nd measures",
+		"48th measures",
+		"64th measures",
 	};
 public:
 	virtual void DrawScriptPositionContent(ImDrawList* draw_list, float visibleSizeMs, float offset_ms, ImVec2 canvas_pos, ImVec2 canvas_size) noexcept override;
