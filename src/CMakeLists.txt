@@ -86,7 +86,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	mpv
 	OpenGL
 )
-else(APPLE)
+elseif(APPLE)
 
 endif()
 
@@ -133,7 +133,7 @@ if(WIN32)
     target_compile_options(${PROJECT_NAME} PUBLIC /EHc- /GR-)
 	# target_compile_options(${PROJECT_NAME} PRIVATE /W2 /WX)
 	# target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
-else() # clang/gcc
+elseif(UNIX AND NOT APPLE) # clang/gcc
 	target_compile_options(${PROJECT_NAME} PUBLIC -fno-exceptions -fno-rtti)
 	target_compile_options(${PROJECT_NAME} PUBLIC -fpermissive)
 	# target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic -Werror 
@@ -141,7 +141,10 @@ else() # clang/gcc
 	# 	-Wno-error=unused-variable 
 	# 	-Wno-gnu-anonymous-struct
 	# 	-Wno-nested-anon-types
-	# ) 
+	# )
+elseif(APPLE)
+	target_compile_options(${PROJECT_NAME} PUBLIC -fno-rtti)
+	target_compile_options(${PROJECT_NAME} PUBLIC -fpermissive)
 endif()
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION "bin/")
