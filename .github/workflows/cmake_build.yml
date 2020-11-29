@@ -20,9 +20,8 @@ jobs:
 
     - name: Install Dependencies
       run: |
-        brew install libarchive
+        brew install --cask mpv
         brew install llvm
-        brew install mpv
         pkg-config
         
     - name: Create Build Environment
