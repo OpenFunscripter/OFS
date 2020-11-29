@@ -18,10 +18,14 @@ jobs:
         submodules: 'recursive'
         fetch-depth: 0
 
+    - name: MacPorts
+      uses: keepitsimpletech/actions/setup-macports@setup-macports/releases/v1
+      
     - name: Install Dependencies
       run: |
         brew install llvm
-        brew install --cask mpv
+        port version
+        sudo port install mpv +audiocd+bundle+dvd+libarchive+network+opengl+osd+python27+rubberband+x11+libmpv
         ls
 
         
