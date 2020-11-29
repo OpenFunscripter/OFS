@@ -21,14 +21,18 @@ jobs:
         submodules: 'recursive'
         fetch-depth: 0
 
-    - name: MacPorts
-      uses: TimOliver/actions/setup-macports@main
+    #- name: MacPorts
+    #  uses: TimOliver/actions/setup-macports@main
       
     - name: Install Dependencies
       run: |
+        wget -O MacPorts.pkg https://distfiles.macports.org/MacPorts/MacPorts-2.6.4-10.15-Catalina.pkg
+        sudo installer -pkg MacPorts.pkg -target /
+        which port
         brew install llvm
+        /opt/local/bin/port version
         port version
-        sudo port install mpv +audiocd+bundle+dvd+libarchive+network+opengl+osd+python27+rubberband+x11+libmpv
+        sudo port install mpv +audiocd+libarchive+network+opengl+osd+libmpv
         ls
        
         
