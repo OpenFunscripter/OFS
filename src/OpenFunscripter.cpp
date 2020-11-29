@@ -1733,7 +1733,7 @@ void OpenFunscripter::removeAction() noexcept
 void OpenFunscripter::addEditAction(int pos) noexcept
 {
     ActiveFunscript()->undoSystem->Snapshot(StateType::ADD_EDIT_ACTIONS);
-    scripting->addEditAction(FunscriptAction(player.getCurrentPositionMsInterp(), pos));
+    scripting->addEditAction(FunscriptAction(std::round(player.getCurrentPositionMsInterp()), pos));
 }
 
 void OpenFunscripter::seekByTime(int32_t ms) noexcept
