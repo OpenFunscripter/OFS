@@ -21,8 +21,7 @@ jobs:
     - name: Install Dependencies
       run: |
         brew install llvm
-        brew tap iina/homebrew-mpv-iina
-        brew install mpv-iina
+        brew install --cask mpv
         ls
 
         
