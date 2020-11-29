@@ -77,7 +77,7 @@ if(WIN32)
 	target_compile_definitions(${PROJECT_NAME} PUBLIC
 		"NOMINMAX"
 	)
-else()
+elseif(UNIX AND NOT APPLE)
 # linux etc. 
 find_package(PkgConfig REQUIRED) 
 pkg_check_modules(mpv REQUIRED IMPORTED_TARGET mpv)
@@ -86,6 +86,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	mpv
 	OpenGL
 )
+else(APPLE)
+
 endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE 
@@ -127,7 +129,7 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
 # warnings as errors
-if(MSVC)
+if(WIN32)
     target_compile_options(${PROJECT_NAME} PUBLIC /EHc- /GR-)
 	# target_compile_options(${PROJECT_NAME} PRIVATE /W2 /WX)
 	# target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
