@@ -27,7 +27,7 @@ void ScripingModeBaseImpl::DrawScriptPositionContent(ImDrawList* draw_list, floa
     constexpr float maxVisibleFrames = 400.f;
     if (visibleFrames <= (maxVisibleFrames * 0.75f)) {
         //render frame dividers
-        float offset = -std::fmod(offset_ms, frameTime);
+        float offset = -std::fmodf(offset_ms, frameTime);
         const int lineCount = visibleFrames + 2;
         int alpha = 255 * (1.f - (visibleFrames / maxVisibleFrames));
         for (int i = 0; i < lineCount; i++) {
@@ -56,7 +56,7 @@ void ScripingModeBaseImpl::DrawScriptPositionContent(ImDrawList* draw_list, floa
     const float timeIntervalMs = std::round(app->player.getFps() * 0.1f) * app->player.getFrameTimeMs();
     const float visibleTimeIntervals = visibleSizeMs / timeIntervalMs;
     if (visibleTimeIntervals <= (maxVisibleTimeDividers * 0.8f)) {
-        float offset = -std::fmod(offset_ms, timeIntervalMs);
+        float offset = -std::fmodf(offset_ms, timeIntervalMs);
         const int lineCount = visibleTimeIntervals + 2;
         int alpha = 255 * (1.f - (visibleTimeIntervals / maxVisibleTimeDividers));
         for (int i = 0; i < lineCount; i++) {
@@ -644,7 +644,7 @@ void TempoImpl::DrawScriptPositionContent(ImDrawList* draw_list, float visibleSi
 
     static bool playedSound = false;
     static float oldOffset = 0.f;
-    float offset = -std::fmod(offset_ms, beatTimeMs) + (beat_offset_seconds * 1000.f);
+    float offset = -std::fmodf(offset_ms, beatTimeMs) + (beat_offset_seconds * 1000.f);
 
     const int lineCount = visibleBeats + 2;
     auto& style = ImGui::GetStyle();

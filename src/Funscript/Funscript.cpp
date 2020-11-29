@@ -874,7 +874,7 @@ void Funscript::AlignWithFrameTimeSelection(float frameTimeMs) noexcept
 	RemoveSelectedActions();
 	for (auto& act : copySelection)
 	{
-		float offset = std::fmod<float>(act.at, frameTimeMs);
+		float offset = std::fmodf(act.at, frameTimeMs);
 		act.at -= (int)offset;
 		AddAction(act);
 	}
