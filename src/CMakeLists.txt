@@ -90,6 +90,11 @@ elseif(APPLE)
 find_package(PkgConfig REQUIRED) 
 pkg_check_modules(mpv REQUIRED IMPORTED_TARGET mpv)
 
+# THIS IS A HACK
+target_include_directories(${PROJECT_NAME} PUBLIC
+	"${CMAKE_SOURCE_DIR}/lib/libmpv/include/"
+)
+
 target_link_libraries(${PROJECT_NAME} PUBLIC
 	mpv
 	OpenGL
