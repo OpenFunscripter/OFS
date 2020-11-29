@@ -20,12 +20,12 @@ jobs:
 
     - name: Install Dependencies
       run: |
-        brew install libarchive
-        wget https://distfiles.macports.org/MacPorts/MacPorts-2.6.4-10.15-Catalina.pkg
-        sudo installer -pkg MacPorts-2.6.4-10.15-Catalina.pkg -target /
-        port install mpv -rubberband configure.args="--enable-libmpv-static --disable-lua --enable-libarchive --enable-libbluray --disable-swift --disable-rubberband"
         brew install llvm
-        brew install pkg-config
+        brew tap iina/homebrew-mpv-iina
+        brew install mpv-iina
+        ls
+
+        
         
     - name: Create Build Environment
       # Some projects don't allow in-source building, so create a separate build directory
