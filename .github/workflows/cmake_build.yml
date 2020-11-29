@@ -21,6 +21,8 @@ jobs:
     - name: Install Dependencies
       run: |
         brew install libarchive
+        wget https://distfiles.macports.org/MacPorts/MacPorts-2.6.4-10.15-Catalina.pkg
+        sudo installer -pkg MacPorts-2.6.4-10.15-Catalina.pkg -target /
         port install mpv -rubberband configure.args="--enable-libmpv-static --disable-lua --enable-libarchive --enable-libbluray --disable-swift --disable-rubberband"
         brew install llvm
         brew install pkg-config
