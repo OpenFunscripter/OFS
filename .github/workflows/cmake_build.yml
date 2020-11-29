@@ -20,7 +20,8 @@ jobs:
 
     - name: Install Dependencies
       run: |
-        brew install mpv
+        brew install libarchive
+        port install mpv -rubberband configure.args="--enable-libmpv-static --disable-lua --enable-libarchive --enable-libbluray --disable-swift --disable-rubberband"
         brew install llvm
         brew install pkg-config
         
