@@ -87,7 +87,13 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	OpenGL
 )
 elseif(APPLE)
+find_package(PkgConfig REQUIRED) 
+pkg_check_modules(mpv REQUIRED IMPORTED_TARGET mpv)
 
+target_link_libraries(${PROJECT_NAME} PUBLIC
+	mpv
+	OpenGL
+)
 endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE 
