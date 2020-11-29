@@ -55,6 +55,8 @@ file (GLOB ImGuizmo_HEADERS ImGuizmo/*.h)
 add_library(ImGuizmo STATIC ${ImGuizmo_SOURCES} ${ImGuizmo_HEADERS})
 target_include_directories(ImGuizmo PUBLIC "ImGuizmo/")
 target_link_libraries(ImGuizmo PUBLIC imgui)
+target_compile_features(ImGuizmo PUBLIC cxx_std_11)
+
 
 # ============
 # = ImGuizmo =
@@ -65,7 +67,7 @@ add_library(ImGuizmoQuat STATIC ${ImGuizmoQuat_SOURCES} ${ImGuizmoQuat_HEADERS})
 target_include_directories(ImGuizmoQuat PUBLIC "imGuIZMO_Quat/imGuIZMO.quat/")
 target_link_libraries(ImGuizmoQuat PUBLIC imgui glm)
 target_compile_definitions(ImGuizmoQuat PUBLIC "IMGUIZMO_IMGUI_FOLDER=" "VGIZMO_USES_GLM" )
-
+target_compile_features(ImGuizmoQuat PUBLIC cxx_std_11)
 
 # ========
 # = SDL2 =
