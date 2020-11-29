@@ -28,7 +28,6 @@ jobs:
       run: |
         wget -O MacPorts.pkg https://distfiles.macports.org/MacPorts/MacPorts-2.6.4-10.15-Catalina.pkg
         sudo installer -pkg MacPorts.pkg -target /
-        which port
         brew install llvm
         /opt/local/bin/port version
         port version
