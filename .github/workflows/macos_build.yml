@@ -46,9 +46,9 @@ jobs:
       # Execute the build.  You can specify a specific target with "--target <NAME>"
       run: |
         cmake --build . --config $BUILD_TYPE --target "OpenFunscripter"
-        find bin/
+        find OpenFunscripter/bin/
     
     - uses: actions/upload-artifact@v2
       with:
         name: build
-        path: "bin/*"
+        path: "OpenFunscripter/bin/*"

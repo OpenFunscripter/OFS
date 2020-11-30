@@ -48,7 +48,6 @@ jobs:
       # Execute the build.  You can specify a specific target with "--target <NAME>"
       run: |
         cmake --build . --config $BUILD_TYPE --target "OpenFunscripter"
-        find bin/
     
   linux:
     runs-on: ubuntu-20.04
