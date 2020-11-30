@@ -88,7 +88,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 )
 elseif(APPLE)
 target_include_directories(${PROJECT_NAME} PUBLIC
-	"/opt/local/include/mpv/"
+	"/opt/local/include/"
 )
 target_link_libraries(${PROJECT_NAME} PUBLIC
 	"/opt/local/lib/libmpv.dylib"
