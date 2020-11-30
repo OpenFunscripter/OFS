@@ -53,4 +53,5 @@ jobs:
     - uses: actions/upload-artifact@v2
       with:
         name: build
-        path: OpenFunscripter/bin
+        path: ${{ github.workspace }}\OpenFunscripter\bin
+        if-no-files-found: error
