@@ -11,18 +11,12 @@ env:
 jobs:
   macos:
     runs-on: macos-latest
-    
-    env:
-      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-      
+          
     steps:
     - uses: actions/checkout@v2
       with:
         submodules: 'recursive'
         fetch-depth: 0
-
-    #- name: MacPorts
-    #  uses: TimOliver/actions/setup-macports@main
       
     - name: Install Dependencies
       run: |
@@ -56,11 +50,6 @@ jobs:
         cmake --build . --config $BUILD_TYPE --target "OpenFunscripter"
         find bin/
     
-    - uses: actions/upload-artifact@v2
-      with:
-        name: build
-        path: "bin/*"
-
   linux:
     runs-on: ubuntu-20.04
     
