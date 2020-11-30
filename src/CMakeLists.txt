@@ -87,11 +87,11 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	OpenGL
 )
 elseif(APPLE)
-find_package(PkgConfig REQUIRED) 
-pkg_check_modules(libmpv REQUIRED IMPORTED_TARGET libmpv)
-
+target_include_directories(${PROJECT_NAME} PUBLIC
+	"/opt/local/include/mpv/"
+)
 target_link_libraries(${PROJECT_NAME} PUBLIC
-	libmpv
+	"/opt/local/lib/libmpv.dylib"
 	OpenGL
 )
 endif()
