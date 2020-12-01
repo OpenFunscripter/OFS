@@ -48,9 +48,7 @@ jobs:
         cmake --build . --config $BUILD_TYPE --target "OpenFunscripter"
         pwd
         cd ..
-        cp "/opt/local/lib/libmpv.dylib" "./OpenFunscripter/bin/"
-        cp "/opt/local/lib/libmpv.1.109.0.dylib" "./OpenFunscripter/bin/"
-        cp "/opt/local/lib/libmpv.1.dylib" "./OpenFunscripter/bin/"
+        cp "/opt/local/lib" "./OpenFunscripter/bin/"
         find "./OpenFunscripter/bin/"
     
     - uses: actions/upload-artifact@v2
