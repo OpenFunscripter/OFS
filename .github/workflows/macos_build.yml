@@ -48,7 +48,7 @@ jobs:
         cmake --build . --config $BUILD_TYPE --target "OpenFunscripter"
         pwd
         cd ..
-        cp "/opt/local/lib" "./OpenFunscripter/bin/"
+        cp -R "/opt/local/lib" "./OpenFunscripter/bin/"
         find "./OpenFunscripter/bin/"
     
     - uses: actions/upload-artifact@v2
