@@ -30,7 +30,6 @@ void ScriptingMode::DrawScriptingMode(bool* open) noexcept
         "Alternating\0"
         "Dynamic injection\0"
         "Recording\0"
-        "Tempo\0"
         "\0")) {
         setMode(active_mode);
     }
