@@ -200,6 +200,14 @@ bool Funscript::open(const std::string& file)
 
 void Funscript::save(const std::string& path, bool override_location)
 {
+	// check if this is the root script
+	if (OpenFunscripter::ptr->RootFunscript().get() == this) {
+		scriptSettings.associatedScripts.clear();
+		for (auto&& script : OpenFunscripter::ptr->LoadedFunscripts) {
+			if (script.get() == this) { continue; }
+			scriptSettings.associatedScripts.push_back(script->current_path);
+		}
+	}
 
 	setScriptTemplate();
 	saveSettings();

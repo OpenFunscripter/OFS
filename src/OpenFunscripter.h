@@ -135,6 +135,12 @@ public:
 		return LoadedFunscripts[ActiveFunscriptIdx]; 
 	}
 
+	inline std::unique_ptr<Funscript>& RootFunscript() noexcept {
+		FUN_ASSERT(ScriptLoaded(), "No script loaded");
+		// when multiple funscripts are loaded the root funscript will store paths to the associated scripts
+		return LoadedFunscripts[0];
+	}
+
 	void UpdateNewActiveScript(int32_t activeIndex) noexcept;
 	inline int32_t ActiveFunscriptIndex() const { return ActiveFunscriptIdx; }
 

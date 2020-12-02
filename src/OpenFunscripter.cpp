@@ -31,7 +31,6 @@
 // TODO: A keybind to jump to the closest point in time on any of the open scripts, rather than just the one I am actively editing (so I don’t have to toggle between tracks to sync up points). Ctrl+up/down might be good for this?
 // TODO: A keybind that places a point on all open scripts at once could be nice. Occasionally I want to do this to create synced points as a reference that I can quickly find again when I’m editing a different axis.
 // TODO: Indicator which script is which when multiple are loaded
-// TODO: Save all loaded scripts in the "root" script and open them automatically again when loaded
 // TODO: Change how twist is implemented in the 3D simulator
 
 
@@ -188,8 +187,6 @@ bool OpenFunscripter::setup()
     auto prefPath = Util::Prefpath("");
     Util::CreateDirectories(prefPath);
 
-
-
     settings = std::make_unique<OpenFunscripterSettings>(Util::Prefpath("keybinds.json"), Util::Prefpath("config.json"));
     
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
@@ -299,7 +296,7 @@ bool OpenFunscripter::setup()
         std::string last_script = settings->data().recentFiles.back().script_path;
         if (!last_script.empty())
             openFile(last_script);
-        if (!last_video.empty())
+        if (!last_video.empty() && player.isLoaded())
             openFile(last_video);
     }
 
@@ -367,6 +364,7 @@ void OpenFunscripter::clearLoadedScripts() noexcept
 {
     LoadedFunscripts.clear();
     LoadedFunscripts.emplace_back(std::move(std::make_unique<Funscript>()));
+    ActiveFunscriptIdx = 0;
 }
 
 void OpenFunscripter::register_bindings()
@@ -1569,11 +1567,11 @@ bool OpenFunscripter::openFile(const std::string& file)
     }
     else {
         video_path = file;
-        if (ScriptLoaded() && !Util::FileNamesMatch(video_path, ActiveFunscript()->current_path)) {
+        if (ScriptLoaded() && !Util::FileNamesMatch(video_path, RootFunscript()->current_path)) {
             funscript_path = base_path.string() + ".funscript";
         }
         else {
-            funscript_path = ActiveFunscript()->current_path;
+            funscript_path = RootFunscript()->current_path;
         }
     }
 
@@ -1588,20 +1586,28 @@ bool OpenFunscripter::openFile(const std::string& file)
     }
 
     auto openFunscript = [this](const std::string& file) -> bool {
-        ActiveFunscript() = std::make_unique<Funscript>();
-        ActiveFunscript()->undoSystem->ClearHistory();
+        RootFunscript() = std::make_unique<Funscript>();
+        RootFunscript()->undoSystem->ClearHistory();
         if (!Util::FileExists(file)) {
             return false;
         }
-        return ActiveFunscript()->open(file);
+        return RootFunscript()->open(file);
     };
 
     // try load funscript
     bool result = openFunscript(funscript_path);
     if (!result) {
         LOGF_WARN("Couldn't find funscript. \"%s\"", funscript_path.c_str());
+        return false;
     }
-    ActiveFunscript()->current_path = funscript_path;
+    for (auto&& associated : RootFunscript()->scriptSettings.associatedScripts) {
+        auto associated_script = std::make_unique<Funscript>();
+        if (associated_script->open(associated)) {
+            LoadedFunscripts.emplace_back(std::move(associated_script));
+        }
+    }
+
+    RootFunscript()->current_path = funscript_path;
 
     updateTitle();
 
