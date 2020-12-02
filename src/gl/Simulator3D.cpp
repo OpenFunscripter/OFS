@@ -117,10 +117,10 @@ void Simulator3D::ShowWindow(bool* open) noexcept
         pitch = app->LoadedFunscripts[pitchIndex]->GetPositionAtTime(currentMs) - 50.f;
         pitch = (pitchRange/2.f) * (pitch / 50.f);
     }
-    if (twistIndex >= 0 && twistIndex < loadedScriptsCount) {
-        yaw = app->LoadedFunscripts[twistIndex]->GetPositionAtTime(currentMs) - 50.f;
-        yaw = (twistRange/2.f) * (yaw / 50.f);
-    }
+    //if (twistIndex >= 0 && twistIndex < loadedScriptsCount) {
+    //    yaw = app->LoadedFunscripts[twistIndex]->GetPositionAtTime(currentMs) - 50.f;
+    //    yaw = (twistRange/2.f) * (yaw / 50.f);
+    //}
 
     auto viewport = ImGui::GetMainViewport();
     
@@ -195,7 +195,7 @@ void Simulator3D::ShowWindow(bool* open) noexcept
     ScriptCombo("Position", &posIndex);
     ScriptCombo("Roll", &rollIndex);
     ScriptCombo("Pitch", &pitchIndex);
-    ScriptCombo("Twist", &twistIndex);
+    //ScriptCombo("Twist", &twistIndex);
 
 
     ImGui::End();
