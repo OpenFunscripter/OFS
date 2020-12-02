@@ -10,67 +10,6 @@ ScripingModeBaseImpl::ScripingModeBaseImpl()
 {
 }
 
-void ScripingModeBaseImpl::nextFrame() noexcept {
-    OpenFunscripter::ptr->player.nextFrame();
-}
-
-void ScripingModeBaseImpl::previousFrame() noexcept {
-    OpenFunscripter::ptr->player.previousFrame();
-}
-
-void ScripingModeBaseImpl::DrawScriptPositionContent(ImDrawList* draw_list, float visibleSizeMs, float offset_ms, ImVec2 canvas_pos, ImVec2 canvas_size) noexcept
-{
-    auto app = OpenFunscripter::ptr;
-    auto frameTime = app->player.getFrameTimeMs();
-
-    float visibleFrames = visibleSizeMs / frameTime;
-    constexpr float maxVisibleFrames = 400.f;
-    if (visibleFrames <= (maxVisibleFrames * 0.75f)) {
-        //render frame dividers
-        float offset = -std::fmod(offset_ms, frameTime);
-        const int lineCount = visibleFrames + 2;
-        int alpha = 255 * (1.f - (visibleFrames / maxVisibleFrames));
-        for (int i = 0; i < lineCount; i++) {
-            draw_list->AddLine(
-                canvas_pos + ImVec2(((offset + (i * frameTime)) / visibleSizeMs) * canvas_size.x, 0.f),
-                canvas_pos + ImVec2(((offset + (i * frameTime)) / visibleSizeMs) * canvas_size.x, canvas_size.y),
-                IM_COL32(80, 80, 80, alpha),
-                1.f
-            );
-        }
-
-        // out of sync line
-        if (app->player.isPaused() || app->player.getSpeed() <= 0.1) {
-            float realFrameTime = app->player.getRealCurrentPositionMs() - offset_ms;
-            draw_list->AddLine(
-                canvas_pos + ImVec2((realFrameTime / visibleSizeMs) * canvas_size.x, 0.f),
-                canvas_pos + ImVec2((realFrameTime / visibleSizeMs) * canvas_size.x, canvas_size.y),
-                IM_COL32(255, 0, 0, alpha),
-                1.f
-            );
-        }
-    }
-
-    // time dividers
-    constexpr float maxVisibleTimeDividers = 150.f;
-    const float timeIntervalMs = std::round(app->player.getFps() * 0.1f) * app->player.getFrameTimeMs();
-    const float visibleTimeIntervals = visibleSizeMs / timeIntervalMs;
-    if (visibleTimeIntervals <= (maxVisibleTimeDividers * 0.8f)) {
-        float offset = -std::fmod(offset_ms, timeIntervalMs);
-        const int lineCount = visibleTimeIntervals + 2;
-        int alpha = 255 * (1.f - (visibleTimeIntervals / maxVisibleTimeDividers));
-        for (int i = 0; i < lineCount; i++) {
-            draw_list->AddLine(
-                canvas_pos + ImVec2(((offset + (i * timeIntervalMs)) / visibleSizeMs) * canvas_size.x, 0.f),
-                canvas_pos + ImVec2(((offset + (i * timeIntervalMs)) / visibleSizeMs) * canvas_size.x, canvas_size.y),
-                IM_COL32(80, 80, 80, alpha),
-                3.f
-            );
-        }
-    }
-    app->scriptPositions.DrawAudioWaveform(draw_list, canvas_pos, canvas_size);
-}
-
 inline Funscript& ScripingModeBaseImpl::ctx() {
     return OpenFunscripter::script();
 }
@@ -78,9 +17,10 @@ inline Funscript& ScripingModeBaseImpl::ctx() {
 void ScriptingMode::setup()
 {
     setMode(ScriptingModeEnum::DEFAULT_MODE);
+    setOverlay(ScriptingOverlayModes::FRAME);
 }
 
-void ScriptingMode::DrawScriptingMode(bool* open)
+void ScriptingMode::DrawScriptingMode(bool* open) noexcept
 {
 	ImGui::Begin(ScriptingModeId, open);
     ImGui::PushItemWidth(-1);
@@ -96,11 +36,25 @@ void ScriptingMode::DrawScriptingMode(bool* open)
     }
     Util::Tooltip("Scripting mode");
     impl->DrawModeSettings();
+
+    ImGui::Spacing();
+    ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal);
+    ImGui::Spacing();
+
+    if (ImGui::Combo("##OverlayMode", (int*)&active_overlay,
+        "Frame\0"
+        "Tempo\0"
+        "\0")) {
+        setOverlay(active_overlay);
+    }
+    Util::Tooltip("Scripting overlay");
+    overlay_impl->DrawSettings();
+
     ImGui::PopItemWidth();
 	ImGui::End();
 }
 
-void ScriptingMode::setMode(ScriptingModeEnum mode)
+void ScriptingMode::setMode(ScriptingModeEnum mode) noexcept
 {
     active_mode = mode;
     switch (mode) {
@@ -119,16 +73,27 @@ void ScriptingMode::setMode(ScriptingModeEnum mode)
         impl = std::make_unique<RecordingImpl>();
         break;
     }
-    case ScriptingModeEnum::TEMPO:
-    {
-        impl = std::make_unique<TempoImpl>();
-        break;
-    }
     default:
     {
         impl = std::make_unique<DefaultModeImpl>();
         break;
     }
+    }
+}
+
+void ScriptingMode::setOverlay(ScriptingOverlayModes mode) noexcept
+{
+    active_overlay = mode;
+    switch (mode)
+    {
+    case FRAME:
+        overlay_impl = std::make_unique<FrameOverlay>();
+        break;
+    case TEMPO:
+        overlay_impl = std::make_unique<TempoOverlay>();
+        break;
+    default:
+        break;
     }
 }
 
@@ -559,119 +524,3 @@ void RecordingImpl::update() noexcept
         ctx().AddActionRaw(app->player.getCurrentFrameEstimate(), app->player.getCurrentPositionMs(), currentPos, app->player.getFrameTimeMs());
     }
 }
-
-
-// TEMPO implementation
-void TempoImpl::DrawModeSettings() noexcept
-{
-    auto app = OpenFunscripter::ptr;
-    if (ImGui::InputInt("BPM", &bpm, 1, 100)) {
-        bpm = std::max(1, bpm);
-    }
-
-    ImGui::DragFloat("Offset", &beat_offset_seconds, 0.001f, -10.f, 10.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-
-    //char buf[32];
-    //stbsp_snprintf(buf, sizeof(buf), "%s", beatMultiplesStrings[multiIDX]);
-
-    if (ImGui::BeginCombo("Snap", beatMultiplesStrings[multiIDX], ImGuiComboFlags_PopupAlignLeft)) {
-        for (int i = 0; i < beatMultiples.size(); i++) {
-            //stbsp_snprintf(buf, sizeof(buf), "%s", beatMultiplesStrings[i]);
-            if (ImGui::Selectable(beatMultiplesStrings[i])) {
-                multiIDX = i;
-            }
-            else if (ImGui::IsItemHovered()) {
-                multiIDX = i;
-            }
-        }
-        ImGui::EndCombo();
-    }
-
-    ImGui::Text("Interval: %dms", static_cast<int32_t>(((60.f * 1000.f) / bpm) * beatMultiples[multiIDX]));
-}
-
-void TempoImpl::nextFrame() noexcept
-{
-    auto app = OpenFunscripter::ptr;
-    float beatTimeMs = ((60.f * 1000.f) / bpm) * beatMultiples[multiIDX];
-    float currentMs = app->player.getCurrentPositionMsInterp();
-    int32_t beatIdx = currentMs / beatTimeMs;
-    if (std::abs(beat_offset_seconds) >= 0.001f) {
-        beatIdx -= (beat_offset_seconds * 1000.f) / beatTimeMs;
-        beatIdx += 1;
-    }
-    beatIdx += 1;
-    int32_t newPositionMs = (beatIdx * beatTimeMs) + (beat_offset_seconds * 1000.f);
-
-    app->player.setPosition(newPositionMs);
-}
-
-void TempoImpl::previousFrame() noexcept
-{
-    auto app = OpenFunscripter::ptr;
-    float beatTimeMs = ((60.f * 1000.f) / bpm) * beatMultiples[multiIDX];
-    float currentMs = app->player.getCurrentPositionMsInterp();
-    int32_t beatIdx = currentMs / beatTimeMs;
-    if (std::abs(beat_offset_seconds) >= 0.001f) {
-        beatIdx -= (beat_offset_seconds * 1000.f) / beatTimeMs;
-    }
-    else {
-        beatIdx -= 1;
-    }
-    int32_t newPositionMs = (beatIdx * beatTimeMs) + (beat_offset_seconds * 1000.f);
-
-    app->player.setPosition(newPositionMs);
-}
-
-void TempoImpl::DrawScriptPositionContent(ImDrawList* draw_list, float visibleSizeMs, float offset_ms, ImVec2 canvas_pos, ImVec2 canvas_size) noexcept
-{
-    auto app = OpenFunscripter::ptr;
-    app->scriptPositions.DrawAudioWaveform(draw_list, canvas_pos, canvas_size);
-
-    //auto frameTime = app->player.getFrameTimeMs();
-
-    float beatTimeMs = ((60.f * 1000.f) / bpm) * beatMultiples[multiIDX];
-    int32_t visibleBeats = visibleSizeMs / beatTimeMs;
-    int32_t invisiblePreviousBeats = offset_ms / beatTimeMs;
-    
-#ifndef NDEBUG
-    static int32_t prevInvisiblePreviousBeats = 0;
-    if (prevInvisiblePreviousBeats != invisiblePreviousBeats) { 
-        LOGF_INFO("%d", invisiblePreviousBeats); 
-    }
-    prevInvisiblePreviousBeats = invisiblePreviousBeats;
-#endif
-
-    static bool playedSound = false;
-    static float oldOffset = 0.f;
-    float offset = -std::fmod(offset_ms, beatTimeMs) + (beat_offset_seconds * 1000.f);
-
-    const int lineCount = visibleBeats + 2;
-    auto& style = ImGui::GetStyle();
-    char tmp[32];
-
-    int32_t lineOffset = (beat_offset_seconds * 1000.f) / beatTimeMs;
-    for (int i = -lineOffset; i < lineCount - lineOffset; i++) {
-        int32_t beatIdx = invisiblePreviousBeats + i;
-        const int32_t thing = (int32_t)(1.f / ((beatMultiples[multiIDX]/4.f)));
-        //const bool isWholeMeasure = thing == 0 ? true : beatIdx % thing == 0;
-        const bool isWholeMeasure = beatIdx % thing == 0;
-        draw_list->AddLine(
-            canvas_pos + ImVec2(((offset + (i * beatTimeMs)) / visibleSizeMs) * canvas_size.x, 0.f),
-            canvas_pos + ImVec2(((offset + (i * beatTimeMs)) / visibleSizeMs) * canvas_size.x, canvas_size.y),
-            isWholeMeasure ? beatMultipleColor[multiIDX] : IM_COL32(255, 255, 255, 180),
-            isWholeMeasure ? 7.f : 3.f
-        );
-
-        if (isWholeMeasure) {
-            stbsp_snprintf(tmp, sizeof(tmp), "%d", thing == 0 ? beatIdx : beatIdx / thing);
-            const float textOffsetX = app->settings->data().default_font_size / 2.f;
-            draw_list->AddText(OpenFunscripter::DefaultFont2, app->settings->data().default_font_size*2.f, 
-                canvas_pos + ImVec2((((offset + (i * beatTimeMs)) / visibleSizeMs) * canvas_size.x) + textOffsetX , 0.f),
-                ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]),
-                tmp
-            );
-        }
-    }
-}
-

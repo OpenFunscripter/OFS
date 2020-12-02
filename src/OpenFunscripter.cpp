@@ -333,7 +333,7 @@ bool OpenFunscripter::setup()
     //auto twist = std::make_unique<Funscript>();
     //twist->open(R"(E:\funscript\multi-axis\crush\Cherry Crush Ball Sucker POV.twist.funscript)");
     //app->LoadedFunscripts.emplace_back(std::move(twist));
-    scripting->setMode(ScriptingModeEnum::TEMPO);
+    scripting->setOverlay(ScriptingOverlayModes::TEMPO);
 #endif
     return true;
 }

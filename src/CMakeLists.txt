@@ -19,6 +19,7 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "UI/OpenFunscripterVideoplayer.cpp"
   "UI/ScriptSimulator.cpp"
   "UI/SpecialFunctions.cpp"
+  "UI/ScriptPositionsOverlayMode.cpp"
 
   "event/EventSystem.cpp"
 
