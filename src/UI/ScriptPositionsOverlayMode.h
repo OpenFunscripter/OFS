@@ -13,6 +13,7 @@ enum ScriptingOverlayModes : int32_t {
 class BaseOverlay {
 private:
 public:
+	virtual ~BaseOverlay() noexcept {}
 	virtual void DrawSettings() noexcept = 0;
 	virtual void DrawScriptPositionContent(ImDrawList* draw_list, float visibleSizeMs, float offset_ms, ImVec2 canvas_pos, ImVec2 canvas_size) noexcept;
 	virtual void nextFrame() noexcept;
@@ -28,10 +29,6 @@ public:
 
 class TempoOverlay : public BaseOverlay {
 private:
-	int bpm = 120;
-	float beat_offset_seconds = 0.f;
-	int multiIDX = 0;
-
 	static constexpr std::array<float, 10> beatMultiples{
 		4.f * 1.f,
 		4.f * (1.f / 2.f),

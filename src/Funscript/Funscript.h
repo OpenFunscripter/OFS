@@ -72,8 +72,24 @@ public:
 		int32_t last_pos_ms = 0;
 		VideoplayerWindow::OFS_VideoPlayerSettings* player = nullptr;
 
+		struct TempoModeSettings {
+			int bpm = 100;
+			float beat_offset_seconds = 0.f;
+			int multiIDX = 0;
+			
+			template <class Archive>
+			inline void reflect(Archive& ar) {
+				OFS_REFLECT(bpm, ar);
+				OFS_REFLECT(beat_offset_seconds, ar);
+				OFS_REFLECT(multiIDX, ar);
+			}
+
+		} tempoSettings;
+
+
 		template <class Archive>
 		inline void reflect(Archive& ar) {
+			OFS_REFLECT(tempoSettings, ar); 
 			OFS_REFLECT(Bookmarks, ar);
 			OFS_REFLECT(last_pos_ms, ar);
 			OFS_REFLECT_PTR(player, ar);

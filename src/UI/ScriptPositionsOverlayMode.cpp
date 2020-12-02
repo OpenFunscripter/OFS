@@ -18,39 +18,42 @@ void BaseOverlay::previousFrame() noexcept
 void TempoOverlay::DrawSettings() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    if (ImGui::InputInt("BPM", &bpm, 1, 100)) {
-        bpm = std::max(1, bpm);
+    auto& tempo = app->ActiveFunscript()->scriptSettings.tempoSettings;
+    if (ImGui::InputInt("BPM", &tempo.bpm, 1, 100)) {
+        tempo.bpm = std::max(1, tempo.bpm);
     }
 
-    ImGui::DragFloat("Offset", &beat_offset_seconds, 0.001f, -10.f, 10.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::DragFloat("Offset", &tempo.beat_offset_seconds, 0.001f, -10.f, 10.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
 
     //char buf[32];
     //stbsp_snprintf(buf, sizeof(buf), "%s", beatMultiplesStrings[multiIDX]);
 
-    if (ImGui::BeginCombo("Snap", beatMultiplesStrings[multiIDX], ImGuiComboFlags_PopupAlignLeft)) {
+    if (ImGui::BeginCombo("Snap", beatMultiplesStrings[tempo.multiIDX], ImGuiComboFlags_PopupAlignLeft)) {
         for (int i = 0; i < beatMultiples.size(); i++) {
             //stbsp_snprintf(buf, sizeof(buf), "%s", beatMultiplesStrings[i]);
             if (ImGui::Selectable(beatMultiplesStrings[i])) {
-                multiIDX = i;
+                tempo.multiIDX = i;
             }
             else if (ImGui::IsItemHovered()) {
-                multiIDX = i;
+                tempo.multiIDX = i;
             }
         }
         ImGui::EndCombo();
     }
 
-    ImGui::Text("Interval: %dms", static_cast<int32_t>(((60.f * 1000.f) / bpm) * beatMultiples[multiIDX]));
+    ImGui::Text("Interval: %dms", static_cast<int32_t>(((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX]));
 }
 
 void TempoOverlay::DrawScriptPositionContent(ImDrawList* draw_list, float visibleSizeMs, float offset_ms, ImVec2 canvas_pos, ImVec2 canvas_size) noexcept
 {
     auto app = OpenFunscripter::ptr;
+    auto& tempo = app->ActiveFunscript()->scriptSettings.tempoSettings;
+
     app->scriptPositions.DrawAudioWaveform(draw_list, canvas_pos, canvas_size);
 
     //auto frameTime = app->player.getFrameTimeMs();
 
-    float beatTimeMs = ((60.f * 1000.f) / bpm) * beatMultiples[multiIDX];
+    float beatTimeMs = ((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX];
     int32_t visibleBeats = visibleSizeMs / beatTimeMs;
     int32_t invisiblePreviousBeats = offset_ms / beatTimeMs;
 
@@ -64,22 +67,26 @@ void TempoOverlay::DrawScriptPositionContent(ImDrawList* draw_list, float visibl
 
     static bool playedSound = false;
     static float oldOffset = 0.f;
-    float offset = -std::fmod(offset_ms, beatTimeMs) + (beat_offset_seconds * 1000.f);
+    float offset = -std::fmod(offset_ms, beatTimeMs) + (tempo.beat_offset_seconds * 1000.f);
+    if (std::abs(std::abs(offset) - beatTimeMs) <= 0.1f) {
+        // this prevents a bug where the measures get offset by one "unit"
+        offset = 0.f; 
+    }
 
     const int lineCount = visibleBeats + 2;
     auto& style = ImGui::GetStyle();
     char tmp[32];
 
-    int32_t lineOffset = (beat_offset_seconds * 1000.f) / beatTimeMs;
+    int32_t lineOffset = (tempo.beat_offset_seconds * 1000.f) / beatTimeMs;
     for (int i = -lineOffset; i < lineCount - lineOffset; i++) {
         int32_t beatIdx = invisiblePreviousBeats + i;
-        const int32_t thing = (int32_t)(1.f / ((beatMultiples[multiIDX] / 4.f)));
-        //const bool isWholeMeasure = thing == 0 ? true : beatIdx % thing == 0;
+        const int32_t thing = (int32_t)(1.f / ((beatMultiples[tempo.multiIDX] / 4.f)));
         const bool isWholeMeasure = beatIdx % thing == 0;
+
         draw_list->AddLine(
             canvas_pos + ImVec2(((offset + (i * beatTimeMs)) / visibleSizeMs) * canvas_size.x, 0.f),
             canvas_pos + ImVec2(((offset + (i * beatTimeMs)) / visibleSizeMs) * canvas_size.x, canvas_size.y),
-            isWholeMeasure ? beatMultipleColor[multiIDX] : IM_COL32(255, 255, 255, 180),
+            isWholeMeasure ? beatMultipleColor[tempo.multiIDX] : IM_COL32(255, 255, 255, 180),
             isWholeMeasure ? 7.f : 3.f
         );
 
@@ -98,15 +105,17 @@ void TempoOverlay::DrawScriptPositionContent(ImDrawList* draw_list, float visibl
 void TempoOverlay::nextFrame() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    float beatTimeMs = ((60.f * 1000.f) / bpm) * beatMultiples[multiIDX];
+    auto& tempo = app->ActiveFunscript()->scriptSettings.tempoSettings;
+
+    float beatTimeMs = ((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX];
     float currentMs = app->player.getCurrentPositionMsInterp();
     int32_t beatIdx = currentMs / beatTimeMs;
-    if (std::abs(beat_offset_seconds) >= 0.001f) {
-        beatIdx -= (beat_offset_seconds * 1000.f) / beatTimeMs;
+    if (std::abs(tempo.beat_offset_seconds) >= 0.001f) {
+        beatIdx -= (tempo.beat_offset_seconds * 1000.f) / beatTimeMs;
         beatIdx += 1;
     }
     beatIdx += 1;
-    int32_t newPositionMs = (beatIdx * beatTimeMs) + (beat_offset_seconds * 1000.f);
+    int32_t newPositionMs = (beatIdx * beatTimeMs) + (tempo.beat_offset_seconds * 1000.f);
 
     app->player.setPosition(newPositionMs);
 }
@@ -114,16 +123,18 @@ void TempoOverlay::nextFrame() noexcept
 void TempoOverlay::previousFrame() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    float beatTimeMs = ((60.f * 1000.f) / bpm) * beatMultiples[multiIDX];
+    auto& tempo = app->ActiveFunscript()->scriptSettings.tempoSettings;
+
+    float beatTimeMs = ((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX];
     float currentMs = app->player.getCurrentPositionMsInterp();
     int32_t beatIdx = currentMs / beatTimeMs;
-    if (std::abs(beat_offset_seconds) >= 0.001f) {
-        beatIdx -= (beat_offset_seconds * 1000.f) / beatTimeMs;
+    if (std::abs(tempo.beat_offset_seconds) >= 0.001f) {
+        beatIdx -= (tempo.beat_offset_seconds * 1000.f) / beatTimeMs;
     }
     else {
         beatIdx -= 1;
     }
-    int32_t newPositionMs = (beatIdx * beatTimeMs) + (beat_offset_seconds * 1000.f);
+    int32_t newPositionMs = (beatIdx * beatTimeMs) + (tempo.beat_offset_seconds * 1000.f);
 
     app->player.setPosition(newPositionMs);
 }
