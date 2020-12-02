@@ -13,7 +13,6 @@
 #include "imgui_internal.h"
 
 // TODO: reduce memory usage when generating waveform data
-// TODO: look into alternating mode
 
 // FIX: Add type checking to the deserialization. 
 //      I assume it would crash if a field is specified but doesn't have the correct type.
@@ -28,9 +27,13 @@
 // TODO: extend "range extender" functionality ( only extend bottom/top, range reducer )
 // TODO: render simulator relative to video position & zoom
 
-// TODO: tempo/BPM snapping mode 
-//       render frame dividers & time dividers in a virtual method on the scripting mode
-//       that way I can render different things in the script timeline dependent on the scripting mode
+// TODO: Allow for re-selecting none in the 3D simulator selection tabs. If a script loads into an axis but it is the wrong axis I can’t set ot back to “none”. I have to either reopen OFS or create blank track as a placeholder.
+// TODO: A keybind to jump to the closest point in time on any of the open scripts, rather than just the one I am actively editing (so I don’t have to toggle between tracks to sync up points). Ctrl+up/down might be good for this?
+// TODO: A keybind that places a point on all open scripts at once could be nice. Occasionally I want to do this to create synced points as a reference that I can quickly find again when I’m editing a different axis.
+// TODO: Indicator which script is which when multiple are loaded
+// TODO: Save all loaded scripts in the "root" script and open them automatically again when loaded
+// TODO: Change how twist is implemented in the 3D simulator
+
 
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
