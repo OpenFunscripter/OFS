@@ -44,6 +44,7 @@ private:
 		bool show_special_functions = false;
 		bool show_action_editor = false;
 		bool force_hw_decoding = false;
+		bool mirror_mode = false;
 
 		struct HeatmapSettings {
 			int32_t defaultWidth = 2000;
@@ -83,6 +84,7 @@ private:
 			OFS_REFLECT(force_hw_decoding, ar);
 			OFS_REFLECT(recentFiles, ar);
 			OFS_REFLECT(heatmapSettings, ar);
+			OFS_REFLECT(mirror_mode, ar);
 			OFS_REFLECT_PTR(simulator, ar);
 		}
 	} scripterSettings;

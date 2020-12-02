@@ -33,6 +33,8 @@
 // TODO: Indicator which script is which when multiple are loaded
 // TODO: Change how twist is implemented in the 3D simulator
 
+// TODO: add "empty" overlay
+
 // BUG: Simulator 3D move widget doesn't show when settings window is in a separate platform window/viewport
 
 // the video player supports a lot more than these
@@ -616,7 +618,16 @@ void OpenFunscripter::register_bindings()
             "undo",
             "Undo",
             false,
-            [&](void*) { ActiveFunscript()->undoSystem->Undo(); }
+            [&](void*) { 
+                if (settings->data().mirror_mode) {
+                    for (auto&& script : LoadedFunscripts) {
+                        script->undoSystem->Undo();
+                    }
+                }
+                else {
+                    ActiveFunscript()->undoSystem->Undo(); 
+                }
+            }
         );
         undo.key = Keybinding(
             SDLK_z,
@@ -627,7 +638,16 @@ void OpenFunscripter::register_bindings()
             "redo",
             "Redo",
             false,
-            [&](void*) { ActiveFunscript()->undoSystem->Redo(); }
+            [&](void*) { 
+                if (settings->data().mirror_mode) {
+                    for (auto&& script : LoadedFunscripts) {
+                        script->undoSystem->Redo();
+                    }
+                }
+                else {
+                    ActiveFunscript()->undoSystem->Redo(); 
+                }
+            }
         ); 
         redo.key = Keybinding(
             SDLK_y,
@@ -1702,22 +1722,44 @@ void OpenFunscripter::removeAction(FunscriptAction action) noexcept
 
 void OpenFunscripter::removeAction() noexcept
 {
-    if (ActiveFunscript()->HasSelection()) {
-        ActiveFunscript()->undoSystem->Snapshot(StateType::REMOVE_SELECTION);
-        ActiveFunscript()->RemoveSelectedActions();
+    if (settings->data().mirror_mode) {
+        for (auto&& script : LoadedFunscripts) {
+            auto action = script->GetClosestAction(player.getCurrentPositionMs());
+            if (action != nullptr) {
+                script->undoSystem->Snapshot(StateType::REMOVE_ACTION);
+                script->RemoveAction(*action);
+            }
+        }
     }
     else {
-        auto action = ActiveFunscript()->GetClosestAction(player.getCurrentPositionMs());
-        if (action != nullptr) {
-            removeAction(*action); // snapshoted in here
+        if (ActiveFunscript()->HasSelection()) {
+            ActiveFunscript()->undoSystem->Snapshot(StateType::REMOVE_SELECTION);
+            ActiveFunscript()->RemoveSelectedActions();
+        }
+        else {
+            auto action = ActiveFunscript()->GetClosestAction(player.getCurrentPositionMs());
+            if (action != nullptr) {
+                removeAction(*action); // snapshoted in here
+            }
         }
     }
 }
 
 void OpenFunscripter::addEditAction(int pos) noexcept
 {
-    ActiveFunscript()->undoSystem->Snapshot(StateType::ADD_EDIT_ACTIONS);
-    scripting->addEditAction(FunscriptAction(std::round(player.getCurrentPositionMsInterp()), pos));
+    if (settings->data().mirror_mode) {
+        int32_t currentActiveScriptIdx = ActiveFunscriptIndex();
+        for (int i = 0; i < LoadedFunscripts.size(); i++) {
+            UpdateNewActiveScript(i);
+            ActiveFunscript()->undoSystem->Snapshot(StateType::ADD_EDIT_ACTIONS);
+            scripting->addEditAction(FunscriptAction(std::round(player.getCurrentPositionMsInterp()), pos));
+        }
+        UpdateNewActiveScript(currentActiveScriptIdx);
+    }
+    else {
+        ActiveFunscript()->undoSystem->Snapshot(StateType::ADD_EDIT_ACTIONS);
+        scripting->addEditAction(FunscriptAction(std::round(player.getCurrentPositionMsInterp()), pos));
+    }
 }
 
 void OpenFunscripter::seekByTime(int32_t ms) noexcept
@@ -2040,10 +2082,24 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Undo", BINDING_STRING("undo"), false, !ActiveFunscript()->undoSystem->UndoEmpty())) {
-                ActiveFunscript()->undoSystem->Undo();
+                if (settings->data().mirror_mode) {
+                    for (auto&& script : LoadedFunscripts) {
+                        script->undoSystem->Undo();
+                    }
+                }
+                else {
+                    ActiveFunscript()->undoSystem->Undo();
+                }
             }
             if (ImGui::MenuItem("Redo", BINDING_STRING("redo"), false, !ActiveFunscript()->undoSystem->RedoEmpty())) {
-                ActiveFunscript()->undoSystem->Redo();
+                if (settings->data().mirror_mode) {
+                    for (auto&& script : LoadedFunscripts) {
+                        script->undoSystem->Redo();
+                    }
+                }
+                else {
+                    ActiveFunscript()->undoSystem->Redo();
+                }
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Cut", BINDING_STRING("cut"), false, ActiveFunscript()->HasSelection())) {

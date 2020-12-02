@@ -48,8 +48,16 @@ void ScriptingMode::DrawScriptingMode(bool* open) noexcept
     }
     Util::Tooltip("Scripting overlay");
     overlay_impl->DrawSettings();
-
     ImGui::PopItemWidth();
+
+    if (OpenFunscripter::ptr->LoadedFunscripts.size() > 1) {
+        ImGui::Checkbox("Mirror mode", &OpenFunscripter::ptr->settings->data().mirror_mode);
+        Util::Tooltip("Mirrors add/edit/remove action as well as undo & redo across all loaded scripts.");
+    }
+    else {
+        OpenFunscripter::ptr->settings->data().mirror_mode = false;
+    }
+
 	ImGui::End();
 }
 
