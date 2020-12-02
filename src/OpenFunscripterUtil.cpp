@@ -254,6 +254,16 @@ std::string Util::Utf16ToUtf8(const std::wstring& str) noexcept
 	return result;
 }
 
+int32_t Util::Utf8Length(const std::string& str) noexcept
+{
+	if (!utf8::is_valid(str.begin(), str.end())) {
+		LOGF_ERROR("%s is not valid utf8", str.c_str());
+		return 0;
+	}
+
+	return utf8::unchecked::distance(str.begin(), str.end());
+}
+
 std::filesystem::path Util::PathFromString(const std::string& str) noexcept
 {
 	std::filesystem::path result;

@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <array>
 
+#include "Funscript.h"
 #include "imgui.h"
 
 // ATTENTION: no reordering
@@ -11,27 +12,40 @@ enum ScriptingOverlayModes : int32_t {
 	EMPTY,
 };
 
+struct OverlayDrawingCtx {
+	int32_t scriptIdx;
+	int32_t drawnScriptCount;
+	ImDrawList* draw_list;
+	float visibleSizeMs;
+	float offset_ms;
+	ImVec2 canvas_pos;
+	ImVec2 canvas_size;
+};
+
 class BaseOverlay {
-private:
+protected:
+	bool RenderedOnce = false;
 public:
 	virtual ~BaseOverlay() noexcept {}
 	virtual void DrawSettings() noexcept = 0;
-	virtual void DrawScriptPositionContent(ImDrawList* draw_list, float visibleSizeMs, float offset_ms, ImVec2 canvas_pos, ImVec2 canvas_size) noexcept;
+
+	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept;
 	virtual void nextFrame() noexcept;
 	virtual void previousFrame() noexcept;
+	virtual void update() noexcept { RenderedOnce = false; }
 };
 
 class EmptyOverlay : public BaseOverlay {
 public:
 	virtual void DrawSettings() noexcept override {}
-	virtual void DrawScriptPositionContent(ImDrawList* draw_list, float visibleSizeMs, float offset_ms, ImVec2 canvas_pos, ImVec2 canvas_size) noexcept override {}
+	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept {};
 };
 
 class FrameOverlay : public BaseOverlay {
 
 public:
 	virtual void DrawSettings() noexcept override {}
-	virtual void DrawScriptPositionContent(ImDrawList* draw_list, float visibleSizeMs, float offset_ms, ImVec2 canvas_pos, ImVec2 canvas_size) noexcept override;
+	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept;
 };
 
 class TempoOverlay : public BaseOverlay {
@@ -76,7 +90,7 @@ private:
 	};
 public:
 	virtual void DrawSettings() noexcept override;
-	virtual void DrawScriptPositionContent(ImDrawList* draw_list, float visibleSizeMs, float offset_ms, ImVec2 canvas_pos, ImVec2 canvas_size) noexcept override;
+	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept;
 	virtual void nextFrame() noexcept override;
 	virtual void previousFrame() noexcept override;
 };

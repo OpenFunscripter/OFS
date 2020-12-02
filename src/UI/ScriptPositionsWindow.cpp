@@ -204,6 +204,11 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	auto& style = ImGui::GetStyle();
 	visibleSizeMs = WindowSizeSeconds * 1000.0;
 	offset_ms = currentPositionMs - (visibleSizeMs / 2.0);
+	
+	OverlayDrawingCtx drawingCtx;
+	drawingCtx.offset_ms = offset_ms;
+	drawingCtx.visibleSizeMs = visibleSizeMs;
+	
 
 	ActionScreenCoordinates.clear();
 	ActionPositionWindow.clear();
@@ -211,56 +216,60 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 
 	ImGui::Begin(PositionsId, open, ImGuiWindowFlags_None);
 	auto draw_list = ImGui::GetWindowDrawList();
+	drawingCtx.draw_list = draw_list;
 	PositionsItemHovered = ImGui::IsWindowHovered();
 
-	//int32_t loadedScriptCount = app->LoadedFunscripts.size();
-	int32_t loadedScriptCount = 0;
+	drawingCtx.drawnScriptCount = 0;
 	for (auto&& script : app->LoadedFunscripts) {
-		if (script->Enabled) { loadedScriptCount++; }
+		if (script->Enabled) { drawingCtx.drawnScriptCount++; }
 	}
-	const auto availSize = ImGui::GetContentRegionAvail() - ImVec2(0.f , style.ItemSpacing.y*((float)loadedScriptCount-1));
+	const auto availSize = ImGui::GetContentRegionAvail() - ImVec2(0.f , style.ItemSpacing.y*((float)drawingCtx.drawnScriptCount-1));
 	const auto startCursor = ImGui::GetCursorScreenPos();
 
-	ImVec2 canvas_pos;
-	ImVec2 canvas_size;
+	
 	for (auto&& scriptPtr : app->LoadedFunscripts) {
 		if (!scriptPtr->Enabled) { continue; }
 		auto& script = *scriptPtr;
-		canvas_pos = ImGui::GetCursorScreenPos();
-		canvas_size = ImVec2(availSize.x, availSize.y / (float)loadedScriptCount);
-		const bool IsActivated = loadedScriptCount ? scriptPtr.get() == app->ActiveFunscript().get() : false;
+		drawingCtx.canvas_pos = ImGui::GetCursorScreenPos();
+		drawingCtx.canvas_size = ImVec2(availSize.x, availSize.y / (float)drawingCtx.drawnScriptCount);
+		const bool IsActivated = drawingCtx.drawnScriptCount ? scriptPtr.get() == app->ActiveFunscript().get() : false;
 		
-		if (loadedScriptCount == 1) {
-			active_canvas_pos = canvas_pos;
-			active_canvas_size = canvas_size;
+		if (drawingCtx.drawnScriptCount == 1) {
+			active_canvas_pos = drawingCtx.canvas_pos;
+			active_canvas_size = drawingCtx.canvas_size;
 		} else if (IsActivated) {
-			active_canvas_pos = canvas_pos;
-			active_canvas_size = canvas_size;
+			active_canvas_pos = drawingCtx.canvas_pos;
+			active_canvas_size = drawingCtx.canvas_size;
 			constexpr float activatedBorderThicknes = 5.f;
 			draw_list->AddRect(
-				canvas_pos - ImVec2(activatedBorderThicknes, activatedBorderThicknes),
-				ImVec2(canvas_pos.x + canvas_size.x, canvas_pos.y + canvas_size.y) + ImVec2(activatedBorderThicknes, activatedBorderThicknes),
+				drawingCtx.canvas_pos - ImVec2(activatedBorderThicknes, activatedBorderThicknes),
+				ImVec2(drawingCtx.canvas_pos.x + drawingCtx.canvas_size.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y) + ImVec2(activatedBorderThicknes, activatedBorderThicknes),
 				IM_COL32(0, 180, 0, 255),
 				0.f, ImDrawCornerFlags_All,
 				activatedBorderThicknes
 			);
 		}
-		ImVec2 newCursor(canvas_pos.x, canvas_pos.y + canvas_size.y + style.ItemSpacing.y);
+		ImVec2 newCursor(drawingCtx.canvas_pos.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y + style.ItemSpacing.y);
 		if (newCursor.y < (startCursor.y + availSize.y)) { ImGui::SetCursorScreenPos(newCursor); }
 	}
+
+
 	ImGui::SetCursorScreenPos(startCursor);
-	for (auto&& scriptPtr : app->LoadedFunscripts) {
-		if (!scriptPtr->Enabled) { continue; }
-		auto& script = *scriptPtr;
-		canvas_pos = ImGui::GetCursorScreenPos();
-		canvas_size = ImVec2(availSize.x, availSize.y / (float)loadedScriptCount);
+	for(int i=0; i < app->LoadedFunscripts.size(); i++) {
+		auto& scriptPtr = app->LoadedFunscripts[i];
+		auto& script = *scriptPtr.get();
+		if (!script.Enabled) { continue; }
+		
+		drawingCtx.scriptIdx = i;
+		drawingCtx.canvas_pos = ImGui::GetCursorScreenPos();
+		drawingCtx.canvas_size = ImVec2(availSize.x, availSize.y / (float)drawingCtx.drawnScriptCount);
 		const ImGuiID itemID = ImGui::GetID(script.metadata.title.c_str());
-		ImRect itemBB(canvas_pos, canvas_pos + canvas_size);
+		ImRect itemBB(drawingCtx.canvas_pos, drawingCtx.canvas_pos + drawingCtx.canvas_size);
 		ImGui::ItemAdd(itemBB, itemID);
 		float frameTime = app->player.getFrameTimeMs();
 		bool IsPaused = app->player.isPaused();
 
-		draw_list->AddRectFilledMultiColor(canvas_pos, ImVec2(canvas_pos.x + canvas_size.x, canvas_pos.y + canvas_size.y),
+		draw_list->AddRectFilledMultiColor(drawingCtx.canvas_pos, ImVec2(drawingCtx.canvas_pos.x + drawingCtx.canvas_size.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y),
 			IM_COL32(0, 0, 50, 255), IM_COL32(0, 0, 50, 255),
 			IM_COL32(0, 0, 20, 255), IM_COL32(0, 0, 20, 255)
 		);
@@ -268,13 +277,13 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		// draws mode specific things in the timeline
 		// by default it draws the frame and time dividers
 		// DrawAudioWaveform called in scripting mode to control the draw order. spaghetti
-		app->scripting->DrawScriptPositionContent(draw_list, visibleSizeMs, offset_ms, canvas_pos, canvas_size);
+		app->scripting->DrawScriptPositionContent(drawingCtx);
 
 		// border
 		constexpr float borderThicknes = 1.f;
 		draw_list->AddRect(
-			canvas_pos,
-			ImVec2(canvas_pos.x + canvas_size.x, canvas_pos.y + canvas_size.y),
+			drawingCtx.canvas_pos,
+			ImVec2(drawingCtx.canvas_pos.x + drawingCtx.canvas_size.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y),
 			script.HasSelection() ? ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_SliderGrabActive]) : IM_COL32(255, 255, 255, 255),
 			0.f, ImDrawCornerFlags_All,
 			borderThicknes
@@ -292,13 +301,13 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				draw_list->_Path.Size = tmp;
 				draw_list->PathStroke(col, false, 5.f);
 			};
-			auto pathRawSection = [this, canvas_pos, canvas_size](auto draw_list, auto rawActions, int32_t fromIndex, int32_t toIndex) {
+			auto pathRawSection = [this, &drawingCtx](auto draw_list, auto rawActions, int32_t fromIndex, int32_t toIndex) {
 				float frameTimeMs = OpenFunscripter::ptr->player.getFrameTimeMs();
 				for (int i = fromIndex; i < toIndex; i++) {
 					auto action = rawActions[i];
 					if (action.frame_no >= 0) {
 						action.at = i * frameTimeMs;
-						auto point = getPointForAction(canvas_pos, canvas_size, FunscriptAction(action.at, action.pos));
+						auto point = getPointForAction(drawingCtx.canvas_pos, drawingCtx.canvas_size, FunscriptAction(action.at, action.pos));
 						draw_list->PathLineTo(point);
 					}
 				}
@@ -358,13 +367,13 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				for(; startIt != endIt; startIt++) {
 					auto& action = *startIt;
 
-					auto p1 = getPointForAction(canvas_pos, canvas_size, action);
+					auto p1 = getPointForAction(drawingCtx.canvas_pos, drawingCtx.canvas_size, action);
 					ActionScreenCoordinates.emplace_back(p1);
 					ActionPositionWindow.emplace_back(action);
 
 					if (prevAction != nullptr) {
 						// draw line
-						auto p2 = getPointForAction(canvas_pos, canvas_size, *prevAction);
+						auto p2 = getPointForAction(drawingCtx.canvas_pos, drawingCtx.canvas_size, *prevAction);
 						// calculate speed relative to maximum speed
 						float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.at - prevAction->at) / 1000.0f)) / max_speed_per_seconds, 0.f, 1.f);
 						ImColor speed_color;
@@ -400,11 +409,11 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				const FunscriptAction* prev_action = nullptr;
 				for (; startIt != endIt; startIt++) {
 					auto&& action = *startIt;
-					auto point = getPointForAction(canvas_pos, canvas_size, action);
+					auto point = getPointForAction(drawingCtx.canvas_pos, drawingCtx.canvas_size, action);
 
 					if (prev_action != nullptr) {
 						// draw highlight line
-						draw_list->AddLine(getPointForAction(canvas_pos, canvas_size, *prev_action), point, selectedLines, 3.0f);
+						draw_list->AddLine(getPointForAction(drawingCtx.canvas_pos, drawingCtx.canvas_size, *prev_action), point, selectedLines, 3.0f);
 					}
 					
 					SelectedActionScreenCoordinates.emplace_back(point);
@@ -413,28 +422,21 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 			}
 		}
 
-		char tmp[16];
-		stbsp_snprintf(tmp, sizeof(tmp), "%.2f seconds", WindowSizeSeconds);
-		auto textSize = ImGui::CalcTextSize(tmp);
-		draw_list->AddText(
-			canvas_pos + ImVec2(style.FramePadding.x, canvas_size.y - textSize.y - style.FramePadding.y),
-			ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]),
-			tmp
-		);
+
 
 		// current position indicator -> |
 		draw_list->AddLine(
-			canvas_pos + ImVec2(canvas_size.x / 2.f, 0),
-			canvas_pos + ImVec2(canvas_size.x / 2.f, canvas_size.y),
+			drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x / 2.f, 0),
+			drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x / 2.f, drawingCtx.canvas_size.y),
 			IM_COL32(255, 255, 255, 255), 3.0f);
 
 		// selection box
 		constexpr auto selectColor = IM_COL32(3, 252, 207, 255);
 		constexpr auto selectColorBackground = IM_COL32(3, 252, 207, 100);
 		if (IsSelecting && (scriptPtr.get() == app->ActiveFunscript().get())) {
-			draw_list->AddRectFilled(canvas_pos + ImVec2(canvas_size.x * rel_x1, 0), canvas_pos + ImVec2(canvas_size.x * rel_x2, canvas_size.y), selectColorBackground);
-			draw_list->AddLine(canvas_pos + ImVec2(canvas_size.x * rel_x1, 0), canvas_pos + ImVec2(canvas_size.x * rel_x1, canvas_size.y), selectColor, 3.0f);
-			draw_list->AddLine(canvas_pos + ImVec2(canvas_size.x * rel_x2, 0), canvas_pos + ImVec2(canvas_size.x * rel_x2, canvas_size.y), selectColor, 3.0f);
+			draw_list->AddRectFilled(drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * rel_x1, 0), drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * rel_x2, drawingCtx.canvas_size.y), selectColorBackground);
+			draw_list->AddLine(drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * rel_x1, 0), drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * rel_x1, drawingCtx.canvas_size.y), selectColor, 3.0f);
+			draw_list->AddLine(drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * rel_x2, 0), drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * rel_x2, drawingCtx.canvas_size.y), selectColor, 3.0f);
 		}
 
 		// TODO: refactor this
@@ -442,12 +444,12 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		if (startSelectionMs >= 0) {
 			float startSelectRel = (startSelectionMs - offset_ms) / visibleSizeMs;
 			draw_list->AddLine(
-				canvas_pos + ImVec2(canvas_size.x * startSelectRel, 0),
-				canvas_pos + ImVec2(canvas_size.x * startSelectRel, canvas_size.y),
+				drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * startSelectRel, 0),
+				drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * startSelectRel, drawingCtx.canvas_size.y),
 				selectColor, 3.0f
 			);
 		}
-		ImVec2 newCursor(canvas_pos.x, canvas_pos.y + canvas_size.y + style.ItemSpacing.y);
+		ImVec2 newCursor(drawingCtx.canvas_pos.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y + style.ItemSpacing.y);
 		if (newCursor.y < (startCursor.y + availSize.y)) { ImGui::SetCursorScreenPos(newCursor); }
 
 
@@ -456,7 +458,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		{
 			if (ImGui::BeginMenu("Scripts")) {
 				for (auto&& script : app->LoadedFunscripts) {
-					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, loadedScriptCount == 1 && script->Enabled);
+					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, drawingCtx.drawnScriptCount == 1 && script->Enabled);
 					if (ImGui::Checkbox(script->metadata.title.c_str(), &script->Enabled) && !script->Enabled) {
 						if (script.get() == app->ActiveFunscript().get()) {
 							// find a enabled script which can be set active

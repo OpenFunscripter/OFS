@@ -123,10 +123,11 @@ public:
 	void setOverlay(ScriptingOverlayModes mode) noexcept;
 	void addEditAction(FunscriptAction action) noexcept;
 	inline void addAction(FunscriptAction action) noexcept { impl->addAction(action); }
-	inline void DrawScriptPositionContent(ImDrawList* draw_list, float visibleSizeMs, float offset_ms, ImVec2 canvas_pos, ImVec2 canvas_size) noexcept { overlay_impl->DrawScriptPositionContent(draw_list, visibleSizeMs, offset_ms, canvas_pos, canvas_size); }
+	inline void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept { overlay_impl->DrawScriptPositionContent(ctx); }
 	inline void NextFrame() noexcept { overlay_impl->nextFrame(); }
 	inline void PreviousFrame() noexcept { overlay_impl->previousFrame(); }
-	inline void update() noexcept { impl->update(); }
-
-	inline const std::unique_ptr<BaseOverlay>& Overlay() const { return overlay_impl; }
+	inline void update() noexcept {
+		impl->update();
+		overlay_impl->update();
+	}
 };

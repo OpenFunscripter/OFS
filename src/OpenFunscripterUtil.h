@@ -263,6 +263,7 @@ public:
 
 	static std::wstring Utf8ToUtf16(const std::string& str) noexcept;
 	static std::string Utf16ToUtf8(const std::wstring& str) noexcept;
+	static int32_t Utf8Length(const std::string& str) noexcept;
 
 	static std::filesystem::path PathFromString(const std::string& str) noexcept;
 	static void ConcatPathSafe(std::filesystem::path& path, const std::string& element) noexcept;
