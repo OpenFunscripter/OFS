@@ -27,12 +27,13 @@
 // TODO: extend "range extender" functionality ( only extend bottom/top, range reducer )
 // TODO: render simulator relative to video position & zoom
 
-// TODO: Allow for re-selecting none in the 3D simulator selection tabs. If a script loads into an axis but it is the wrong axis I can’t set ot back to “none”. I have to either reopen OFS or create blank track as a placeholder.
+
 // TODO: A keybind to jump to the closest point in time on any of the open scripts, rather than just the one I am actively editing (so I don’t have to toggle between tracks to sync up points). Ctrl+up/down might be good for this?
 // TODO: A keybind that places a point on all open scripts at once could be nice. Occasionally I want to do this to create synced points as a reference that I can quickly find again when I’m editing a different axis.
 // TODO: Indicator which script is which when multiple are loaded
 // TODO: Change how twist is implemented in the 3D simulator
 
+// BUG: Simulator 3D move widget doesn't show when settings window is in a separate platform window/viewport
 
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts

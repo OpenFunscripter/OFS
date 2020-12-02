@@ -106,18 +106,18 @@ void Simulator3D::ShowWindow(bool* open) noexcept
     float scriptPos = 0.f;
     int32_t loadedScriptsCount = app->LoadedFunscripts.size();
     
-    if (posIndex < loadedScriptsCount) {
+    if (posIndex >= 0 && posIndex < loadedScriptsCount) {
         scriptPos = app->LoadedFunscripts[posIndex]->GetPositionAtTime(currentMs);
     }
-    if (rollIndex < loadedScriptsCount) {
+    if (rollIndex >= 0 && rollIndex < loadedScriptsCount) {
         roll = app->LoadedFunscripts[rollIndex]->GetPositionAtTime(currentMs) - 50.f;
         roll = (rollRange/2.f) * (roll / 50.f);
     }
-    if (pitchIndex < loadedScriptsCount) {
+    if (pitchIndex >= 0 && pitchIndex < loadedScriptsCount) {
         pitch = app->LoadedFunscripts[pitchIndex]->GetPositionAtTime(currentMs) - 50.f;
         pitch = (pitchRange/2.f) * (pitch / 50.f);
     }
-    if (twistIndex < loadedScriptsCount) {
+    if (twistIndex >= 0 && twistIndex < loadedScriptsCount) {
         yaw = app->LoadedFunscripts[twistIndex]->GetPositionAtTime(currentMs) - 50.f;
         yaw = (twistRange/2.f) * (yaw / 50.f);
     }
@@ -180,10 +180,12 @@ void Simulator3D::ShowWindow(bool* open) noexcept
     auto ScriptCombo = [](auto Id, int32_t* index) {
         auto app = OpenFunscripter::ptr;
         int32_t loadedScriptCount = app->LoadedFunscripts.size();
-        if (ImGui::BeginCombo(Id, *index < loadedScriptCount ? app->LoadedFunscripts[*index]->metadata.title.c_str() : "none", ImGuiComboFlags_PopupAlignLeft)) {
-            for (int i = 0; i < app->LoadedFunscripts.size(); i++) {
-                auto&& script = app->LoadedFunscripts[i];
-                if (ImGui::Selectable(script->metadata.title.c_str()) || ImGui::IsItemHovered()) {
+        if (ImGui::BeginCombo(Id, *index >= 0 && *index < loadedScriptCount ? app->LoadedFunscripts[*index]->metadata.title.c_str() : "None", ImGuiComboFlags_PopupAlignLeft)) {
+            if (ImGui::Selectable("None", *index < 0) || ImGui::IsItemHovered()) {
+                *index = -1;
+            }
+            for (int i = 0; i < loadedScriptCount; i++) {
+                if (ImGui::Selectable(app->LoadedFunscripts[i]->metadata.title.c_str(), *index == i) || ImGui::IsItemHovered()) {
                     *index = i;
                 }
             }
