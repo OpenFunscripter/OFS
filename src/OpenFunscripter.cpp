@@ -32,6 +32,11 @@
 
 // BUG: Simulator 3D move widget doesn't show when settings window is in a separate platform window/viewport
 
+// TODO: get rid of the recording concept
+//       only use recordings internally and when a recording stops
+//       paste recorded actions directly into the script.
+//       then make it so that RamerDouglasPeucker can be used on any selection
+
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
 constexpr std::array<const char*, 6> SupportedVideoExtensions {
