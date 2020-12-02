@@ -70,7 +70,7 @@ private:
 		double real_percent_pos = 0.0;
 		double current_speed = 1.0;
 		double average_frame_time = 0.0167;
-		double fps = 0;
+		double fps = 30.f;
 
 		int64_t total_num_frames = 0;
 		int64_t paused = false;

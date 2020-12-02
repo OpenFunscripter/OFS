@@ -25,12 +25,8 @@ void TempoOverlay::DrawSettings() noexcept
 
     ImGui::DragFloat("Offset", &tempo.beat_offset_seconds, 0.001f, -10.f, 10.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
 
-    //char buf[32];
-    //stbsp_snprintf(buf, sizeof(buf), "%s", beatMultiplesStrings[multiIDX]);
-
     if (ImGui::BeginCombo("Snap", beatMultiplesStrings[tempo.multiIDX], ImGuiComboFlags_PopupAlignLeft)) {
         for (int i = 0; i < beatMultiples.size(); i++) {
-            //stbsp_snprintf(buf, sizeof(buf), "%s", beatMultiplesStrings[i]);
             if (ImGui::Selectable(beatMultiplesStrings[i])) {
                 tempo.multiIDX = i;
             }
@@ -50,8 +46,6 @@ void TempoOverlay::DrawScriptPositionContent(ImDrawList* draw_list, float visibl
     auto& tempo = app->ActiveFunscript()->scriptSettings.tempoSettings;
 
     app->scriptPositions.DrawAudioWaveform(draw_list, canvas_pos, canvas_size);
-
-    //auto frameTime = app->player.getFrameTimeMs();
 
     float beatTimeMs = ((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX];
     int32_t visibleBeats = visibleSizeMs / beatTimeMs;

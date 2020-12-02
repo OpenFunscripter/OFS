@@ -553,14 +553,11 @@ void VideoplayerWindow::addSpeed(float speed) noexcept
 void VideoplayerWindow::openVideo(const std::string& file)
 {
 	LOGF_INFO("Opening video: \"%s\"", file.c_str());
-	MpvData.video_loaded = false;
-
 	closeVideo();
 
 	const char* cmd[] = { "loadfile", file.c_str(), NULL };
 	mpv_command_async(mpv, 0, cmd);
-	MpvData.video_width = 0;
-	MpvData.video_height = 0;
+	MpvData = MpvDataCache();
 
 	setPaused(true);
 	setVolume(settings.volume);

@@ -309,32 +309,6 @@ bool OpenFunscripter::setup()
 
     SDL_ShowWindow(window);
 
-#ifndef NDEBUG
-    //auto roll = std::make_unique<Funscript>();
-    //roll->open(R"(E:\funscript\multi-axis\Kimber Lee - Beautiful Young Cocksucker Takes Load.roll.funscript)");
-    //LoadedFunscripts.emplace_back(std::move(roll));
-
-    //auto pitch = std::make_unique<Funscript>();
-    //pitch->open(R"(E:\funscript\multi-axis\Kimber Lee - Beautiful Young Cocksucker Takes Load.pitch.funscript)");
-    //LoadedFunscripts.emplace_back(std::move(pitch));
-
-    //auto twist = std::make_unique<Funscript>();
-    //twist->open(R"(E:\funscript\multi-axis\Kimber Lee - Beautiful Young Cocksucker Takes Load.twist.funscript)");
-    //LoadedFunscripts.emplace_back(std::move(twist));
-
-    //auto roll = std::make_unique<Funscript>();
-    //roll->open(R"(E:\funscript\multi-axis\crush\Cherry Crush Ball Sucker POV.roll.funscript)");
-    //app->LoadedFunscripts.emplace_back(std::move(roll));
-
-    //auto pitch = std::make_unique<Funscript>();
-    //pitch->open(R"(E:\funscript\multi-axis\crush\Cherry Crush Ball Sucker POV.pitch.funscript)");
-    //app->LoadedFunscripts.emplace_back(std::move(pitch));
-
-    //auto twist = std::make_unique<Funscript>();
-    //twist->open(R"(E:\funscript\multi-axis\crush\Cherry Crush Ball Sucker POV.twist.funscript)");
-    //app->LoadedFunscripts.emplace_back(std::move(twist));
-    scripting->setOverlay(ScriptingOverlayModes::TEMPO);
-#endif
     return true;
 }
 
