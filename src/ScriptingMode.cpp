@@ -43,6 +43,7 @@ void ScriptingMode::DrawScriptingMode(bool* open) noexcept
     if (ImGui::Combo("##OverlayMode", (int*)&active_overlay,
         "Frame\0"
         "Tempo\0"
+        "None\0"
         "\0")) {
         setOverlay(active_overlay);
     }
@@ -51,6 +52,9 @@ void ScriptingMode::DrawScriptingMode(bool* open) noexcept
     ImGui::PopItemWidth();
 
     if (OpenFunscripter::ptr->LoadedFunscripts.size() > 1) {
+        ImGui::Spacing();
+        ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal);
+        ImGui::Spacing();
         ImGui::Checkbox("Mirror mode", &OpenFunscripter::ptr->settings->data().mirror_mode);
         Util::Tooltip("Mirrors add/edit/remove action as well as undo & redo across all loaded scripts.");
     }
@@ -98,6 +102,9 @@ void ScriptingMode::setOverlay(ScriptingOverlayModes mode) noexcept
         break;
     case TEMPO:
         overlay_impl = std::make_unique<TempoOverlay>();
+        break;
+    case EMPTY:
+        overlay_impl = std::make_unique<EmptyOverlay>();
         break;
     default:
         break;

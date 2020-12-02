@@ -3,6 +3,17 @@
 
 void BaseOverlay::DrawScriptPositionContent(ImDrawList* draw_list, float visibleSizeMs, float offset_ms, ImVec2 canvas_pos, ImVec2 canvas_size) noexcept
 {
+    // height indicators
+    for (int i = 0; i < 9; i++) {
+        auto color = (i == 4) ? IM_COL32(150, 150, 150, 255) : IM_COL32(80, 80, 80, 255);
+        auto thickness = (i == 4) ? 2.f : 1.0f;
+        draw_list->AddLine(
+            canvas_pos + ImVec2(0.0, (canvas_size.y / 10.f) * (i + 1)),
+            canvas_pos + ImVec2(canvas_size.x, (canvas_size.y / 10.f) * (i + 1)),
+            color,
+            thickness
+        );
+    }
 }
 
 void BaseOverlay::nextFrame() noexcept
@@ -42,6 +53,7 @@ void TempoOverlay::DrawSettings() noexcept
 
 void TempoOverlay::DrawScriptPositionContent(ImDrawList* draw_list, float visibleSizeMs, float offset_ms, ImVec2 canvas_pos, ImVec2 canvas_size) noexcept
 {
+    BaseOverlay::DrawScriptPositionContent(draw_list, visibleSizeMs, offset_ms, canvas_pos, canvas_size);
     auto app = OpenFunscripter::ptr;
     auto& tempo = app->ActiveFunscript()->scriptSettings.tempoSettings;
 
@@ -135,6 +147,7 @@ void TempoOverlay::previousFrame() noexcept
 
 void FrameOverlay::DrawScriptPositionContent(ImDrawList* draw_list, float visibleSizeMs, float offset_ms, ImVec2 canvas_pos, ImVec2 canvas_size) noexcept
 {
+    BaseOverlay::DrawScriptPositionContent(draw_list, visibleSizeMs, offset_ms, canvas_pos, canvas_size);
     auto app = OpenFunscripter::ptr;
     auto frameTime = app->player.getFrameTimeMs();
 

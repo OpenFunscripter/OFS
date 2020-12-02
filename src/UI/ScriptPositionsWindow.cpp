@@ -265,19 +265,6 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 			IM_COL32(0, 0, 20, 255), IM_COL32(0, 0, 20, 255)
 		);
 
-		// height indicators
-		for (int i = 0; i < 9; i++) {
-			auto color = (i == 4) ? IM_COL32(150, 150, 150, 255) : IM_COL32(80, 80, 80, 255);
-			auto thickness = (i == 4) ? 2.f : 1.0f;
-			draw_list->AddLine(
-				canvas_pos + ImVec2(0.0, (canvas_size.y / 10.f) * (i + 1)),
-				canvas_pos + ImVec2(canvas_size.x, (canvas_size.y / 10.f) * (i + 1)),
-				color,
-				thickness
-			);
-		}
-
-
 		// draws mode specific things in the timeline
 		// by default it draws the frame and time dividers
 		// DrawAudioWaveform called in scripting mode to control the draw order. spaghetti

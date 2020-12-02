@@ -127,4 +127,6 @@ public:
 	inline void NextFrame() noexcept { overlay_impl->nextFrame(); }
 	inline void PreviousFrame() noexcept { overlay_impl->previousFrame(); }
 	inline void update() noexcept { impl->update(); }
+
+	inline const std::unique_ptr<BaseOverlay>& Overlay() const { return overlay_impl; }
 };

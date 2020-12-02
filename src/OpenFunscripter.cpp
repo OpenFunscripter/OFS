@@ -29,11 +29,8 @@
 
 
 // TODO: A keybind to jump to the closest point in time on any of the open scripts, rather than just the one I am actively editing (so I don’t have to toggle between tracks to sync up points). Ctrl+up/down might be good for this?
-// TODO: A keybind that places a point on all open scripts at once could be nice. Occasionally I want to do this to create synced points as a reference that I can quickly find again when I’m editing a different axis.
 // TODO: Indicator which script is which when multiple are loaded
 // TODO: Change how twist is implemented in the 3D simulator
-
-// TODO: add "empty" overlay
 
 // BUG: Simulator 3D move widget doesn't show when settings window is in a separate platform window/viewport
 
@@ -509,7 +506,7 @@ void OpenFunscripter::register_bindings()
             "Previous action",
             false,
             [&](void*) {
-                auto action = ActiveFunscript()->GetPreviousActionBehind(player.getCurrentPositionMs() - 1.f);
+                auto action = ActiveFunscript()->GetPreviousActionBehind(player.getCurrentPositionMsInterp() - 1.f);
                 if (action != nullptr) player.setPosition(action->at);
             }
         );
@@ -527,7 +524,7 @@ void OpenFunscripter::register_bindings()
             "Next action",
             false,
             [&](void*) {
-                auto action = ActiveFunscript()->GetNextActionAhead(player.getCurrentPositionMs() + 1.f);
+                auto action = ActiveFunscript()->GetNextActionAhead(player.getCurrentPositionMsInterp() + 1.f);
                 if (action != nullptr) player.setPosition(action->at);
             }
         );
@@ -538,6 +535,65 @@ void OpenFunscripter::register_bindings()
         next_action.controller = ControllerBinding(
             SDL_CONTROLLER_BUTTON_DPAD_UP,
             false
+        );
+
+        auto& prev_action_multi = group.bindings.emplace_back(
+            "prev_action_multi",
+            "Previous action (multi)",
+            false,
+            [&](void*) {
+                bool foundAction = false;
+                int32_t closestMs = std::numeric_limits<int32_t>::max();
+                int32_t currentMs = std::round(player.getCurrentPositionMsInterp());
+
+                for(int i=0; i < LoadedFunscripts.size(); i++) {
+                    auto& script = LoadedFunscripts[i];
+                    auto action = script->GetPreviousActionBehind(currentMs - 1);
+                    if (action != nullptr) {
+                        if (std::abs(currentMs - action->at) < std::abs(currentMs - closestMs)) {
+                            foundAction = true;
+                            closestMs = action->at;
+                            UpdateNewActiveScript(i);
+                        }
+                    }
+                }
+                if (foundAction) {
+                    player.setPosition(closestMs);
+                }
+            }
+        );
+        prev_action_multi.key = Keybinding(
+            SDLK_DOWN,
+            KMOD_CTRL
+        );
+
+        auto& next_action_multi = group.bindings.emplace_back(
+            "next_action_multi",
+            "Next action (multi)",
+            false,
+            [&](void*) {
+                bool foundAction = false;
+                int32_t closestMs = std::numeric_limits<int32_t>::max();
+                int32_t currentMs = std::round(player.getCurrentPositionMsInterp());
+                for (int i = 0; i < LoadedFunscripts.size(); i++) {
+                    auto& script = LoadedFunscripts[i];
+                    auto action = script->GetNextActionAhead(currentMs + 1);
+                    if (action != nullptr) {
+                        if (std::abs(currentMs - action->at) < std::abs(currentMs - closestMs)) {
+                            foundAction = true;
+                            closestMs = action->at;
+                            UpdateNewActiveScript(i);
+                        }
+                    }
+                }
+                if (foundAction) {
+                    player.setPosition(closestMs);
+                }
+            }
+        );
+        next_action_multi.key = Keybinding(
+            SDLK_UP,
+            KMOD_CTRL
         );
 
         // FRAME CONTROL

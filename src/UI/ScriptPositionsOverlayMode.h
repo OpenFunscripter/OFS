@@ -7,7 +7,8 @@
 // ATTENTION: no reordering
 enum ScriptingOverlayModes : int32_t {
 	FRAME,
-	TEMPO
+	TEMPO,
+	EMPTY,
 };
 
 class BaseOverlay {
@@ -18,6 +19,12 @@ public:
 	virtual void DrawScriptPositionContent(ImDrawList* draw_list, float visibleSizeMs, float offset_ms, ImVec2 canvas_pos, ImVec2 canvas_size) noexcept;
 	virtual void nextFrame() noexcept;
 	virtual void previousFrame() noexcept;
+};
+
+class EmptyOverlay : public BaseOverlay {
+public:
+	virtual void DrawSettings() noexcept override {}
+	virtual void DrawScriptPositionContent(ImDrawList* draw_list, float visibleSizeMs, float offset_ms, ImVec2 canvas_pos, ImVec2 canvas_size) noexcept override {}
 };
 
 class FrameOverlay : public BaseOverlay {
