@@ -2422,12 +2422,20 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
     
     ImGui::Text("%s", "Tags");
     static std::string newTag;
-    ImGui::InputText("##Tag", &newTag); ImGui::SameLine(); 
-    if (ImGui::Button("Add", ImVec2(-1.f, 0.f))) { 
+    auto addTag = [&metadata](std::string& newTag) {
         Util::trim(newTag);
         if (!newTag.empty()) {
             metadata.tags.emplace_back(newTag); newTag.clear();
         }
+        ImGui::ActivateItem(ImGui::GetID("##Tag"));
+    };
+
+    if (ImGui::InputText("##Tag", &newTag, ImGuiInputTextFlags_EnterReturnsTrue)) {
+        addTag(newTag);
+    };
+    ImGui::SameLine();
+    if (ImGui::Button("Add", ImVec2(-1.f, 0.f))) { 
+        addTag(newTag);
     }
     
     auto& style = ImGui::GetStyle();
@@ -2458,12 +2466,19 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
 
     ImGui::Text("%s", "Performers");
     static std::string newPerformer;
-    ImGui::InputText("##Performer", &newPerformer); ImGui::SameLine();
-    if (ImGui::Button("Add##Performer", ImVec2(-1.f, 0.f))) {
+    auto addPerformer = [&metadata](std::string& newPerformer) {
         Util::trim(newPerformer);
         if (!newPerformer.empty()) {
             metadata.performers.emplace_back(newPerformer); newPerformer.clear(); 
         }
+        ImGui::ActivateItem(ImGui::GetID("##Performer"));
+    };
+    if (ImGui::InputText("##Performer", &newPerformer, ImGuiInputTextFlags_EnterReturnsTrue)) {
+        addPerformer(newPerformer);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Add##Performer", ImVec2(-1.f, 0.f))) {
+        addPerformer(newPerformer);
     }
 
     availableWidth = ImGui::GetContentRegionAvail().x;
