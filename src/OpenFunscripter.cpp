@@ -2420,7 +2420,7 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
         }
     }
     
-    ImGui::Text("%s", "Tags");
+    ImGui::TextUnformatted("Tags");
     static std::string newTag;
     auto addTag = [&metadata](std::string& newTag) {
         Util::trim(newTag);
@@ -2464,7 +2464,7 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
         removeIndex = -1;
     }
 
-    ImGui::Text("%s", "Performers");
+    ImGui::TextUnformatted("Performers");
     static std::string newPerformer;
     auto addPerformer = [&metadata](std::string& newPerformer) {
         Util::trim(newPerformer);
