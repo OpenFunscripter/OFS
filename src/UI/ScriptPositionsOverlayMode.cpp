@@ -139,10 +139,9 @@ void TempoOverlay::nextFrame() noexcept
 
     float beatTimeMs = ((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX];
     float currentMs = app->player.getCurrentPositionMsInterp();
-    int32_t beatIdx = std::round(currentMs / beatTimeMs);
+    int32_t beatIdx = std::ceil(currentMs / beatTimeMs);
     if (std::abs(tempo.beat_offset_seconds) >= 0.001f) {
         beatIdx -= (tempo.beat_offset_seconds * 1000.f) / beatTimeMs;
-        beatIdx += 1;
     }
     beatIdx += 1;
     int32_t newPositionMs = (beatIdx * beatTimeMs) + (tempo.beat_offset_seconds * 1000.f);
@@ -157,13 +156,11 @@ void TempoOverlay::previousFrame() noexcept
 
     float beatTimeMs = ((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX];
     float currentMs = app->player.getCurrentPositionMsInterp();
-    int32_t beatIdx = std::round(currentMs / beatTimeMs);
+    int32_t beatIdx = std::ceil(currentMs / beatTimeMs);
     if (std::abs(tempo.beat_offset_seconds) >= 0.001f) {
         beatIdx -= (tempo.beat_offset_seconds * 1000.f) / beatTimeMs;
     }
-    else {
-        beatIdx -= 1;
-    }
+    beatIdx -= 1;    
     int32_t newPositionMs = (beatIdx * beatTimeMs) + (tempo.beat_offset_seconds * 1000.f);
 
     app->player.setPosition(newPositionMs);
