@@ -2423,6 +2423,30 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
         }
     }
     
+    auto renderTagButtons = [](std::vector<std::string>& tags)
+    {
+        auto availableWidth = ImGui::GetContentRegionAvail().x;
+        int removeIndex = -1;
+        for (int i = 0; i < tags.size(); i++) {
+            ImGui::PushID(i);
+            auto& tag = tags[i];
+
+            if (ImGui::Button(tag.c_str())) {
+                removeIndex = i;
+            }
+            auto nextLineCursor = ImGui::GetCursorPos();
+            ImGui::SameLine();
+            if (ImGui::GetCursorPosX() + ImGui::GetItemRectSize().x >= availableWidth) {
+                ImGui::SetCursorPos(nextLineCursor);
+            }
+
+            ImGui::PopID();
+        }
+        if (removeIndex != -1) {
+            tags.erase(tags.begin() + removeIndex);
+        }
+    };
+
     ImGui::TextUnformatted("Tags");
     static std::string newTag;
     auto addTag = [&metadata](std::string& newTag) {
@@ -2443,29 +2467,8 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
     
     auto& style = ImGui::GetStyle();
 
-    auto availableWidth = ImGui::GetContentRegionAvail().x;
-
-    int removeIndex = -1;
-    for (int i = 0; i < metadata.tags.size(); i++) {
-        ImGui::PushID(i);
-        auto& tag = metadata.tags[i];
-        
-        if (ImGui::Button(tag.c_str())) {
-            removeIndex = i;
-        }
-        auto nextLineCursor = ImGui::GetCursorPos();
-        ImGui::SameLine();
-        if (ImGui::GetCursorPosX() + ImGui::GetItemRectSize().x >= availableWidth) {
-            ImGui::SetCursorPos(nextLineCursor);
-        }
-
-        ImGui::PopID();
-    }
+    renderTagButtons(metadata.tags);
     ImGui::NewLine();
-    if (removeIndex != -1) {
-        metadata.tags.erase(metadata.tags.begin() + removeIndex);
-        removeIndex = -1;
-    }
 
     ImGui::TextUnformatted("Performers");
     static std::string newPerformer;
@@ -2484,28 +2487,9 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
         addPerformer(newPerformer);
     }
 
-    availableWidth = ImGui::GetContentRegionAvail().x;
 
-    for (int i = 0; i < metadata.performers.size(); i++) {
-        ImGui::PushID(i);
-        auto& performer = metadata.performers[i];
-
-        if (ImGui::Button(performer.c_str())) {
-            removeIndex = i;
-        }
-
-        auto nextLineCursor = ImGui::GetCursorPos();
-        ImGui::SameLine();
-        if (ImGui::GetCursorPosX() + ImGui::GetItemRectSize().x >= availableWidth) {
-            ImGui::SetCursorPos(nextLineCursor);
-        }
-        ImGui::PopID();
-    }
+    renderTagButtons(metadata.performers);
     ImGui::NewLine();
-    if (removeIndex != -1) {
-        metadata.performers.erase(metadata.performers.begin() + removeIndex);
-        removeIndex = -1;
-    }
     
     if (ImGui::Button("Save", ImVec2(-1.f, 0.f))) { save = true; }
     Util::ForceMinumumWindowSize(ImGui::GetCurrentWindow());
