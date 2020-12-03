@@ -16,11 +16,12 @@ void SpecialFunctionsWindow::SetFunction(SpecialFunctions functionEnum) noexcept
 void SpecialFunctionsWindow::ShowFunctionsWindow(bool* open) noexcept
 {
 	if (open != nullptr && !(*open)) { return; }
-	ImGui::Begin(SpecialFunctionsId, open, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::Begin(SpecialFunctionsId, open, ImGuiWindowFlags_None);
 	ImGui::SetNextItemWidth(-1.f);
 	ImGui::Combo("##Functions", (int32_t*)&currentFunction, "Range extender\0\0");
 	ImGui::Spacing();
 	function->DrawUI();
+    Util::ForceMinumumWindowSize(ImGui::GetCurrentWindow());
 	ImGui::End();
 }
 

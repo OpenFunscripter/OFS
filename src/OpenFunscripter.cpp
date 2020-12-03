@@ -2386,7 +2386,7 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
     if (!*open) return false;
     bool save = false;
     auto& metadata = ActiveFunscript()->metadata;
-    ImGui::Begin("Metadata Editor", open, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking);
+    ImGui::Begin("Metadata Editor", open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoDocking);
     ImGui::LabelText("Title", "%s", metadata.title.c_str());
     Util::FormatTime(tmp_buf[0], sizeof(tmp_buf), metadata.duration, false);
     ImGui::LabelText("Duration", "%s", tmp_buf[0]);
@@ -2417,6 +2417,9 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
                 metadata.license = "Paid";
                 break;
             }
+        }
+        if (!metadata.license.empty()) {
+            ImGui::SameLine(); ImGui::Text("-> \"%s\"", metadata.license.c_str());
         }
     }
     
@@ -2505,6 +2508,7 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
     }
     
     if (ImGui::Button("Save", ImVec2(-1.f, 0.f))) { save = true; }
+    Util::ForceMinumumWindowSize(ImGui::GetCurrentWindow());
     ImGui::End();
     return save;
 }

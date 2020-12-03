@@ -196,7 +196,8 @@ public:
 		return path1.filename() == path2.filename();
 	}
 
-	static void Tooltip(const char* tip);
+	static void Tooltip(const char* tip) noexcept;
+	static void ForceMinumumWindowSize(class ImGuiWindow* window) noexcept;
 
 	// http://www.martinbroadhurst.com/how-to-trim-a-stdstring.html
 	static std::string& ltrim(std::string& str, const std::string& chars = "\t\n\v\f\r ")

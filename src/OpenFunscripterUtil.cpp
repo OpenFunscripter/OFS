@@ -17,6 +17,7 @@
 #include "glad/glad.h"
 
 #include "imgui.h"
+#include "imgui_internal.h"
 
 #include "tinyfiledialogs.h"
 
@@ -83,13 +84,26 @@ int Util::OpenUrl(const char* url)
 	return 1;
 }
 
-void Util::Tooltip(const char* tip)
+void Util::Tooltip(const char* tip) noexcept
 {
 	if (ImGui::IsItemHovered()) {
 		ImGui::BeginTooltip();
 		ImGui::Text("%s", tip);
 		ImGui::EndTooltip();
 	}
+}
+
+void Util::ForceMinumumWindowSize(ImGuiWindow* window) noexcept
+{
+	auto expectedSize = ImGui::CalcWindowExpectedSize(window);
+	auto actualSize = ImGui::GetWindowSize();
+	if (expectedSize.x > actualSize.x) {
+		actualSize.x = expectedSize.x;
+	}
+	if (expectedSize.y > actualSize.y || expectedSize.y < actualSize.y) {
+		actualSize.y = expectedSize.y;
+	}
+	ImGui::SetWindowSize(actualSize, ImGuiCond_Always);
 }
 
 void Util::OpenFileDialog(const std::string& title, const std::string& path, FileDialogResultHandler&& handler, bool multiple, const std::vector<const char*>& filters, const std::string& filterText) noexcept
