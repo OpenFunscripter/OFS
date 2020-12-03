@@ -2,6 +2,7 @@
 
 #include "Funscript.h"
 #include "GradientBar.h"
+#include "ScriptPositionsOverlayMode.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -102,5 +103,7 @@ public:
 	inline void setStartSelection(int32_t ms) noexcept { startSelectionMs = ms; }
 	inline int32_t selectionStart() const noexcept { return startSelectionMs; }
 	void ShowScriptPositions(bool* open, float currentPositionMs);
-	void DrawAudioWaveform(ImDrawList* draw_list, ImVec2 canvas_pos, ImVec2 canvas_size) noexcept;
+
+	void DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept;
+	void DrawActions(const OverlayDrawingCtx& ctx) noexcept;
 };

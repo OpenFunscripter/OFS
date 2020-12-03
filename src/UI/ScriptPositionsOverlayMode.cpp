@@ -75,11 +75,12 @@ void TempoOverlay::DrawSettings() noexcept
 
 void TempoOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept
 {
-    BaseOverlay::DrawScriptPositionContent(ctx);
     auto app = OpenFunscripter::ptr;
     auto& tempo = app->ActiveFunscript()->scriptSettings.tempoSettings;
 
-    app->scriptPositions.DrawAudioWaveform(ctx.draw_list, ctx.canvas_pos, ctx.canvas_size);
+    BaseOverlay::DrawScriptPositionContent(ctx);
+    app->scriptPositions.DrawAudioWaveform(ctx);
+    app->scriptPositions.DrawActions(ctx);
 
     float beatTimeMs = ((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX];
     int32_t visibleBeats = ctx.visibleSizeMs / beatTimeMs;
@@ -128,7 +129,6 @@ void TempoOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
             );
         }
     }
-    
     RenderedOnce = true;
 }
 
@@ -217,6 +217,12 @@ void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
         }
     }
     BaseOverlay::DrawScriptPositionContent(ctx);
-    app->scriptPositions.DrawAudioWaveform(ctx.draw_list, ctx.canvas_pos, ctx.canvas_size);
+    app->scriptPositions.DrawAudioWaveform(ctx);
+    app->scriptPositions.DrawActions(ctx);
     RenderedOnce = true;
+}
+
+void EmptyOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept
+{
+    OpenFunscripter::ptr->scriptPositions.DrawActions(ctx);
 }

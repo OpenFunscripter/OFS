@@ -38,7 +38,7 @@ public:
 class EmptyOverlay : public BaseOverlay {
 public:
 	virtual void DrawSettings() noexcept override {}
-	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept {};
+	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept;
 };
 
 class FrameOverlay : public BaseOverlay {
