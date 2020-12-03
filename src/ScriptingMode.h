@@ -128,6 +128,5 @@ public:
 	inline void PreviousFrame() noexcept { overlay_impl->previousFrame(); }
 	inline void update() noexcept {
 		impl->update();
-		overlay_impl->update();
 	}
 };

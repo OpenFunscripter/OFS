@@ -23,29 +23,29 @@ struct OverlayDrawingCtx {
 };
 
 class BaseOverlay {
-protected:
-	bool RenderedOnce = false;
 public:
 	virtual ~BaseOverlay() noexcept {}
-	virtual void DrawSettings() noexcept = 0;
+	virtual void DrawSettings() noexcept {};
 
-	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept;
+	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept {}
 	virtual void nextFrame() noexcept;
 	virtual void previousFrame() noexcept;
-	virtual void update() noexcept { RenderedOnce = false; }
+
+	static void DrawSecondsLabel(const OverlayDrawingCtx& ctx) noexcept;
+	static void DrawHeightLines(const OverlayDrawingCtx& ctx) noexcept;
+	static void DrawScriptLabel(const OverlayDrawingCtx& ctx) noexcept;
 };
 
 class EmptyOverlay : public BaseOverlay {
 public:
-	virtual void DrawSettings() noexcept override {}
-	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept;
+	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept override;
 };
+
 
 class FrameOverlay : public BaseOverlay {
 
 public:
-	virtual void DrawSettings() noexcept override {}
-	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept;
+	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept override;
 };
 
 class TempoOverlay : public BaseOverlay {
@@ -90,7 +90,7 @@ private:
 	};
 public:
 	virtual void DrawSettings() noexcept override;
-	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept;
+	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept override;
 	virtual void nextFrame() noexcept override;
 	virtual void previousFrame() noexcept override;
 };

@@ -1,43 +1,6 @@
 #include "ScriptPositionsOverlayMode.h"
 #include "OpenFunscripter.h"
 
-void BaseOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept
-{
-    // height indicators
-    for (int i = 0; i < 9; i++) {
-        auto color = (i == 4) ? IM_COL32(150, 150, 150, 255) : IM_COL32(80, 80, 80, 255);
-        auto thickness = (i == 4) ? 2.f : 1.0f;
-        ctx.draw_list->AddLine(
-            ctx.canvas_pos + ImVec2(0.0, (ctx.canvas_size.y / 10.f) * (i + 1)),
-            ctx.canvas_pos + ImVec2(ctx.canvas_size.x, (ctx.canvas_size.y / 10.f) * (i + 1)),
-            color,
-            thickness
-        );
-    }
-
-    auto& style = ImGui::GetStyle();
-    auto app = OpenFunscripter::ptr;
-    if (app->LoadedFunscripts.size() > 1) {
-        auto& title = app->LoadedFunscripts[ctx.scriptIdx]->metadata.title;
-        auto textSize = ImGui::CalcTextSize(title.c_str());
-        ctx.draw_list->AddText(
-            ctx.canvas_pos + ctx.canvas_size - style.FramePadding - textSize,
-            ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]),
-            title.c_str()
-        );
-    }
-    if (ctx.scriptIdx == ctx.drawnScriptCount-1) {
-        char tmp[16];
-        stbsp_snprintf(tmp, sizeof(tmp), "%.2f seconds", ctx.visibleSizeMs/1000.f);
-        auto textSize = ImGui::CalcTextSize(tmp);
-        ctx.draw_list->AddText(
-            ctx.canvas_pos + ImVec2(style.FramePadding.x, ctx.canvas_size.y - textSize.y - style.FramePadding.y),
-            ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]),
-            tmp
-        );
-    }
-}
-
 void BaseOverlay::nextFrame() noexcept
 {
 	OpenFunscripter::ptr->player.nextFrame();
@@ -78,9 +41,11 @@ void TempoOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
     auto app = OpenFunscripter::ptr;
     auto& tempo = app->ActiveFunscript()->scriptSettings.tempoSettings;
 
-    BaseOverlay::DrawScriptPositionContent(ctx);
+    BaseOverlay::DrawHeightLines(ctx);
     app->scriptPositions.DrawAudioWaveform(ctx);
     app->scriptPositions.DrawActions(ctx);
+    BaseOverlay::DrawSecondsLabel(ctx);
+    BaseOverlay::DrawScriptLabel(ctx);
 
     float beatTimeMs = ((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX];
     int32_t visibleBeats = ctx.visibleSizeMs / beatTimeMs;
@@ -129,7 +94,6 @@ void TempoOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
             );
         }
     }
-    RenderedOnce = true;
 }
 
 void TempoOverlay::nextFrame() noexcept
@@ -216,13 +180,60 @@ void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
             );
         }
     }
-    BaseOverlay::DrawScriptPositionContent(ctx);
+    BaseOverlay::DrawHeightLines(ctx);
     app->scriptPositions.DrawAudioWaveform(ctx);
     app->scriptPositions.DrawActions(ctx);
-    RenderedOnce = true;
+    BaseOverlay::DrawSecondsLabel(ctx);
+    BaseOverlay::DrawScriptLabel(ctx);
 }
 
 void EmptyOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept
 {
     OpenFunscripter::ptr->scriptPositions.DrawActions(ctx);
+}
+
+
+void BaseOverlay::DrawSecondsLabel(const OverlayDrawingCtx& ctx) noexcept
+{
+    auto& style = ImGui::GetStyle();
+    if (ctx.scriptIdx == ctx.drawnScriptCount - 1) {
+        char tmp[16];
+        stbsp_snprintf(tmp, sizeof(tmp), "%.2f seconds", ctx.visibleSizeMs / 1000.f);
+        auto textSize = ImGui::CalcTextSize(tmp);
+        ctx.draw_list->AddText(
+            ctx.canvas_pos + ImVec2(style.FramePadding.x, ctx.canvas_size.y - textSize.y - style.FramePadding.y),
+            ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]),
+            tmp
+        );
+    }
+}
+
+void BaseOverlay::DrawHeightLines(const OverlayDrawingCtx& ctx) noexcept
+{
+    // height indicators
+    for (int i = 0; i < 9; i++) {
+        auto color = (i == 4) ? IM_COL32(150, 150, 150, 255) : IM_COL32(80, 80, 80, 255);
+        auto thickness = (i == 4) ? 2.f : 1.0f;
+        ctx.draw_list->AddLine(
+            ctx.canvas_pos + ImVec2(0.0, (ctx.canvas_size.y / 10.f) * (i + 1)),
+            ctx.canvas_pos + ImVec2(ctx.canvas_size.x, (ctx.canvas_size.y / 10.f) * (i + 1)),
+            color,
+            thickness
+        );
+    }
+}
+
+void BaseOverlay::DrawScriptLabel(const OverlayDrawingCtx& ctx) noexcept
+{
+    auto& style = ImGui::GetStyle();
+    auto app = OpenFunscripter::ptr;
+    if (app->LoadedFunscripts.size() > 1) {
+        auto& title = app->LoadedFunscripts[ctx.scriptIdx]->metadata.title;
+        auto textSize = ImGui::CalcTextSize(title.c_str());
+        ctx.draw_list->AddText(
+            ctx.canvas_pos + ctx.canvas_size - style.FramePadding - textSize,
+            ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]),
+            title.c_str()
+        );
+    }
 }
