@@ -614,7 +614,7 @@ void VideoplayerWindow::nextFrame() noexcept
 {
 	if (isPaused()) {
 		// use same method as previousFrame for consistency
-		float relSeek = ((getFrameTimeMs() * 1.001f) / 1000.f);
+		float relSeek = ((getFrameTimeMs() * 1.000001f) / 1000.f);
 		MpvData.percent_pos += (relSeek / MpvData.duration);
 		MpvData.percent_pos = Util::Clamp(MpvData.percent_pos, 0.0, 1.0);
 
@@ -630,7 +630,7 @@ void VideoplayerWindow::previousFrame() noexcept
 	if (isPaused()) {
 		// this seeks much faster
 		// https://github.com/mpv-player/mpv/issues/4019#issuecomment-358641908
-		float relSeek = ((getFrameTimeMs() * 1.001f) / 1000.f);
+		float relSeek = ((getFrameTimeMs() * 1.000001f) / 1000.f);
 		MpvData.percent_pos -= (relSeek / MpvData.duration);
 		MpvData.percent_pos = Util::Clamp(MpvData.percent_pos, 0.0, 1.0);
 
@@ -644,7 +644,7 @@ void VideoplayerWindow::previousFrame() noexcept
 void VideoplayerWindow::relativeFrameSeek(int32_t seek) noexcept
 {
 	if (isPaused()) {
-		float relSeek = ((getFrameTimeMs() * 1.001f) / 1000.f) * seek;
+		float relSeek = ((getFrameTimeMs() * 1.000001f) / 1000.f) * seek;
 		MpvData.percent_pos += (relSeek / MpvData.duration);
 		MpvData.percent_pos = Util::Clamp(MpvData.percent_pos, 0.0, 1.0);
 
