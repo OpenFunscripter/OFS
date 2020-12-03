@@ -556,7 +556,6 @@ void OpenFunscripter::register_bindings()
                         if (std::abs(currentMs - action->at) < std::abs(currentMs - closestMs)) {
                             foundAction = true;
                             closestMs = action->at;
-                            UpdateNewActiveScript(i);
                         }
                     }
                 }
@@ -585,7 +584,6 @@ void OpenFunscripter::register_bindings()
                         if (std::abs(currentMs - action->at) < std::abs(currentMs - closestMs)) {
                             foundAction = true;
                             closestMs = action->at;
-                            UpdateNewActiveScript(i);
                         }
                     }
                 }
