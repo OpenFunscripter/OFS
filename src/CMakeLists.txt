@@ -151,6 +151,9 @@ elseif(UNIX AND NOT APPLE) # clang/gcc
 elseif(APPLE)
 	target_compile_options(${PROJECT_NAME} PUBLIC -fno-rtti)
 	target_compile_options(${PROJECT_NAME} PUBLIC -fpermissive)
+	
+	set(CPACK_GENERATOR "DRAGNDROP")
+	include(CPack)
 endif()
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION "bin/")
