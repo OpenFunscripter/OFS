@@ -157,7 +157,7 @@ elseif(APPLE)
 	target_compile_options(${PROJECT_NAME} PUBLIC -fpermissive)
 	
 
-	install(TARGETS ${PROJECT_NAME}
+	install(TARGET ${PROJECT_NAME}
 		BUNDLE DESTINATION . COMPONENT Runtime
 		RUNTIME DESTINATION bin COMPONENT Runtime
     )
