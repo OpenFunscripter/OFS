@@ -46,6 +46,11 @@ jobs:
       # Execute the build.  You can specify a specific target with "--target <NAME>"
       run: |
         cmake --build . --config $BUILD_TYPE --target "OpenFunscripter"
+        mkdir build
+        cd build
+        cmake ..
+        cpack -G DragNDrop
+        cd ..
         pwd
         cd ..
         cp -R "/opt/local/lib" "./OpenFunscripter/bin/"
