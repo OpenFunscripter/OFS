@@ -172,8 +172,6 @@ elseif(APPLE)
 	install(CODE "include(BundleUtilities)
 		fixup_bundle(\"${APPS}\" \"\" \"${DIRS}\")")
 
-	set(CPACK_GENERATOR "DRAGNDROP")
-	include(CPack)
 endif()
 
 
