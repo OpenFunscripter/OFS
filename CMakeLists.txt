@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 if(APPLE)
 set(CPACK_GENERATOR "DRAGNDROP")
+include(InstallRequiredSystemLibraries)
 include(CPack)
 endif()
 
