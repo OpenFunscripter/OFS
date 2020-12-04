@@ -152,6 +152,21 @@ elseif(APPLE)
 	target_compile_options(${PROJECT_NAME} PUBLIC -fno-rtti)
 	target_compile_options(${PROJECT_NAME} PUBLIC -fpermissive)
 	
+
+	install(TARGETS ${PROJECT_NAME}
+		BUNDLE DESTINATION . COMPONENT Runtime
+		RUNTIME DESTINATION bin COMPONENT Runtime
+    )
+
+	# Note Mac specific extension .app
+	set(APPS "\${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}.app")
+
+	# Directories to look for dependencies
+	set(DIRS ${CMAKE_BINARY_DIR})
+
+	install(CODE "include(BundleUtilities)
+		fixup_bundle(\"${APPS}\" \"\" \"${DIRS}\")")
+
 	set(CPACK_GENERATOR "DRAGNDROP")
 	include(CPack)
 endif()
