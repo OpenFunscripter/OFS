@@ -49,7 +49,7 @@ jobs:
         mkdir build
         cd build
         cmake ..       
-        cpack -G DragNDrop
+        cpack --verbose -G DragNDrop
         cd ..
         pwd
         cd ..

@@ -1,3 +1,9 @@
+if(APPLE)
+set(CPACK_GENERATOR "DRAGNDROP")
+include(InstallRequiredSystemLibraries)
+include(CPack)
+endif()
+
 project(OpenFunscripter)
 
 
