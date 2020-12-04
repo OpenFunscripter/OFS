@@ -34,7 +34,11 @@ if(WIN32)
 	set(OPEN_FUNSCRIPTER_SOURCES ${OPEN_FUNSCRIPTER_SOURCES} "${CMAKE_SOURCE_DIR}/icon.rc")
 endif()
 
+if(APPLE)
+add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${OPEN_FUNSCRIPTER_SOURCES})
+else()
 add_executable(${PROJECT_NAME} ${OPEN_FUNSCRIPTER_SOURCES})
+endif()
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
 
 # copy data directory
