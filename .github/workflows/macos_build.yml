@@ -49,7 +49,7 @@ jobs:
         mkdir build
         cd build
         cmake ..       
-        cpack --verbose -G DragNDrop
+        cpack --verbose --debug -D CPACK_PACKAGE_NAME OpenFunscripter -G DragNDrop
         cd ..
         pwd
         cd ..
