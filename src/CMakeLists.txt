@@ -152,12 +152,13 @@ elseif(UNIX AND NOT APPLE) # clang/gcc
 	# 	-Wno-gnu-anonymous-struct
 	# 	-Wno-nested-anon-types
 	# )
+	install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION "bin/")
 elseif(APPLE)
 	target_compile_options(${PROJECT_NAME} PUBLIC -fno-rtti)
 	target_compile_options(${PROJECT_NAME} PUBLIC -fpermissive)
 	
 
-	install(TARGET ${PROJECT_NAME}
+	install(TARGETS ${PROJECT_NAME}
 		BUNDLE DESTINATION . COMPONENT Runtime
 		RUNTIME DESTINATION bin COMPONENT Runtime
     )
@@ -175,7 +176,6 @@ elseif(APPLE)
 	include(CPack)
 endif()
 
-install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION "bin/")
 
 if(OFS_SNAP_IMAGE)
 # this is awful
