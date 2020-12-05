@@ -245,7 +245,6 @@ RecordingImpl::~RecordingImpl()
 {
     auto app = OpenFunscripter::ptr;
     app->events->Unsubscribe(SDL_CONTROLLERAXISMOTION, this);
-    //app->simulator.SimulateRawActions = false;
 }
 
 void RecordingImpl::ControllerAxisMotion(SDL_Event& ev)

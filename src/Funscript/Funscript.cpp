@@ -354,7 +354,7 @@ void Funscript::AddActionSafe(FunscriptAction newAction) noexcept
 	}
 	else
 	{
-		LOGF_WARN("Failed to add action because there's already an action with at %d ms", newAction.at);
+		LOGF_WARN("Failed to add action because there's already an action at %d ms", newAction.at);
 	}
 }
 
