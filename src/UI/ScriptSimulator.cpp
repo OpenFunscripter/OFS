@@ -131,19 +131,29 @@ void ScriptSimulator::ShowSimulator(bool* open)
             ImGui::ColorEdit4("Front", &simulator.Front.Value.x);
             ImGui::ColorEdit4("Back", &simulator.Back.Value.x);
             ImGui::ColorEdit4("Indicator", &simulator.Indicator.Value.x);
+            ImGui::ColorEdit4("Lines", &simulator.ExtraLines.Value.x);
+
             if (ImGui::DragFloat("Width", &simulator.Width)) {
                 simulator.Width = Util::Clamp<float>(simulator.Width, 0.f, 1000.f);
             }
-            if (ImGui::DragFloat("Border", &simulator.BorderWidth)) {
+            if (ImGui::DragFloat("Border", &simulator.BorderWidth, 0.5f)) {
                 simulator.BorderWidth = Util::Clamp<float>(simulator.BorderWidth, 0.f, 1000.f);
             }
-            ImGui::DragFloat("Line", &simulator.LineWidth);
+            ImGui::DragFloat("Line", &simulator.LineWidth, 0.5f);
             if (ImGui::SliderFloat("Opacity", &simulator.GlobalOpacity, 0.f, 1.f)) {
                 simulator.GlobalOpacity = Util::Clamp<float>(simulator.GlobalOpacity, 0.f, 1.f);
             }
+
+            if (ImGui::DragFloat("Lines2", &simulator.ExtraLineWidth, 0.5f)) {
+                simulator.ExtraLineWidth = Util::Clamp<float>(simulator.ExtraLineWidth, 0.5f, 1000.f);
+            }
+
             ImGui::Checkbox("Indicators", &simulator.EnableIndicators);
             ImGui::SameLine(); 
             ImGui::Checkbox("Lines", &simulator.EnableHeightLines);
+            if (ImGui::InputInt("Extra lines", &simulator.ExtraLinesCount, 1, 2)) {
+                simulator.ExtraLinesCount = Util::Clamp(simulator.ExtraLinesCount, 0, 10);
+            }
             ImGui::Checkbox("Show position", &simulator.EnablePosition);
         }
 
@@ -190,6 +200,17 @@ void ScriptSimulator::ShowSimulator(bool* open)
             simulator.Width - simulator.BorderWidth + 1.f
         );
 
+        // BORDER
+        if (simulator.BorderWidth > 0.f) {
+            auto borderOffset = perpendicular * (simulator.Width / 2.f);
+            front_draw->AddQuad(
+                offset + simulator.P1 - borderOffset, offset + simulator.P1 + borderOffset,
+                offset + simulator.P2 + borderOffset, offset + simulator.P2 - borderOffset,
+                GetColor(simulator.Border),
+                simulator.BorderWidth
+            );
+        }
+
         // HEIGHT LINES
         if (simulator.EnableHeightLines) {
             for (int i = 1; i < 10; i++) {
@@ -208,8 +229,52 @@ void ScriptSimulator::ShowSimulator(bool* open)
                 front_draw->AddLine(
                     indicator1,
                     indicator2,
-                    GetColor(simulator.Border),
+                    GetColor(simulator.ExtraLines),
                     simulator.LineWidth
+                );
+            }
+
+        }
+        if (simulator.ExtraLinesCount > 0) {
+            // extra height lines
+            for (int i = -simulator.ExtraLinesCount; i < 1; i++) {
+                float pos = i * 10.f;
+                auto indicator1 =
+                    barP2
+                    + (direction * distance * (pos / 100.f))
+                    - (perpendicular * (simulator.Width / 2.f))
+                    + (perpendicular * (simulator.BorderWidth / 2.f));
+                auto indicator2 =
+                    barP2
+                    + (direction * distance * (pos / 100.f))
+                    + (perpendicular * (simulator.Width / 2.f))
+                    - (perpendicular * (simulator.BorderWidth / 2.f));
+
+                front_draw->AddLine(
+                    indicator1,
+                    indicator2,
+                    GetColor(simulator.ExtraLines),
+                    simulator.ExtraLineWidth
+                );
+            }
+            for (int i = 10; i < (11+simulator.ExtraLinesCount); i++) {
+                float pos = i * 10.f;
+                auto indicator1 =
+                    barP2
+                    + (direction * distance * (pos / 100.f))
+                    - (perpendicular * (simulator.Width / 2.f))
+                    + (perpendicular * (simulator.BorderWidth / 2.f));
+                auto indicator2 =
+                    barP2
+                    + (direction * distance * (pos / 100.f))
+                    + (perpendicular * (simulator.Width / 2.f))
+                    - (perpendicular * (simulator.BorderWidth / 2.f));
+
+                front_draw->AddLine(
+                    indicator1,
+                    indicator2,
+                    GetColor(simulator.ExtraLines),
+                    simulator.ExtraLineWidth
                 );
             }
         }
@@ -277,17 +342,6 @@ void ScriptSimulator::ShowSimulator(bool* open)
                     front_draw->AddText(indicatorCenter - textOffset, GetColor(simulator.Text), tmp);
                 }
             }
-        }
-
-        // BORDER
-        if (simulator.BorderWidth > 0.f) {
-            auto borderOffset = perpendicular * (simulator.Width / 2.f);
-            front_draw->AddQuad(
-                offset + simulator.P1 - borderOffset, offset + simulator.P1 + borderOffset,
-                offset + simulator.P2 + borderOffset, offset + simulator.P2 - borderOffset,
-                GetColor(simulator.Border),
-                simulator.BorderWidth
-            );
         }
 
 
