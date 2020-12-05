@@ -1,9 +1,3 @@
-if(APPLE)
-set(CPACK_GENERATOR "DRAGNDROP")
-include(InstallRequiredSystemLibraries)
-include(CPack)
-endif()
-
 project(OpenFunscripter)
 
 
@@ -52,6 +46,20 @@ add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
 					COMMAND ${CMAKE_COMMAND} -E copy_directory
 					${CMAKE_SOURCE_DIR}/data $<TARGET_FILE_DIR:${PROJECT_NAME}>"/data")
 
+if(EMSCRIPTEN)
+target_link_libraries(${PROJECT_NAME} PUBLIC
+  nlohmann_json
+  imgui
+  imgui_stdlib
+  SDL2-static
+  SDL2main
+  tinyfiledialogs
+  utf8::cpp
+  glm
+  ImGuizmo
+  ImGuizmoQuat
+)
+else()
 target_link_libraries(${PROJECT_NAME} PUBLIC
   nlohmann_json
   imgui
@@ -65,6 +73,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   ImGuizmo
   ImGuizmoQuat
 )
+endif()
+
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
 	"JSON_NOEXCEPTION"
@@ -88,7 +98,7 @@ if(WIN32)
 	target_compile_definitions(${PROJECT_NAME} PUBLIC
 		"NOMINMAX"
 	)
-elseif(UNIX AND NOT APPLE)
+elseif(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
 # linux etc. 
 find_package(PkgConfig REQUIRED) 
 pkg_check_modules(mpv REQUIRED IMPORTED_TARGET mpv)
@@ -97,6 +107,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	mpv
 	OpenGL
 )
+elseif(EMSCRIPTEN)
+    set(CMAKE_EXECUTABLE_SUFFIX ".html")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_SDL=2 --embed-file ../data")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s USE_SDL=2 --embed-file ../data")
 elseif(APPLE)
 target_include_directories(${PROJECT_NAME} PUBLIC
 	"/opt/local/include/"
@@ -163,21 +177,8 @@ elseif(APPLE)
 	target_compile_options(${PROJECT_NAME} PUBLIC -fno-rtti)
 	target_compile_options(${PROJECT_NAME} PUBLIC -fpermissive)
 	
-
-	install(TARGETS ${PROJECT_NAME}
-		BUNDLE DESTINATION . COMPONENT Runtime
-		RUNTIME DESTINATION bin COMPONENT Runtime
-    )
-
 	# Note Mac specific extension .app
 	set(APPS "\${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}.app")
-
-	# Directories to look for dependencies
-	set(DIRS ${CMAKE_BINARY_DIR})
-
-	install(CODE "include(BundleUtilities)
-		fixup_bundle(\"${APPS}\" \"\" \"${DIRS}\")")
-
 endif()
 
 
