@@ -299,7 +299,7 @@ bool OpenFunscripter::setup()
         std::string last_script = settings->data().recentFiles.back().script_path;
         if (!last_script.empty())
             openFile(last_script);
-        if (!last_video.empty() && player.isLoaded())
+        if (!last_video.empty() && !player.isLoaded())
             openFile(last_video);
     }
 
@@ -1676,7 +1676,7 @@ bool OpenFunscripter::openFile(const std::string& file)
     bool result = openFunscript(funscript_path);
     if (!result) {
         LOGF_WARN("Couldn't find funscript. \"%s\"", funscript_path.c_str());
-        return false;
+        // do not return false here future me
     }
     for (auto&& associated : RootFunscript()->scriptSettings.associatedScripts) {
         auto associated_script = std::make_unique<Funscript>();
