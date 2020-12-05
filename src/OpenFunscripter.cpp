@@ -738,6 +738,17 @@ void OpenFunscripter::register_bindings()
             KMOD_CTRL
         );
 
+        auto& paste_exact = group.bindings.emplace_back(
+            "paste_exact",
+            "Paste exact",
+            true,
+            [&](void*) {pasteSelectionExact(); }
+        );
+        paste_exact.key = Keybinding(
+            SDLK_v,
+            KMOD_CTRL | KMOD_SHIFT
+        );
+
         auto& cut = group.bindings.emplace_back(
             "cut",
             "Cut",
@@ -769,6 +780,17 @@ void OpenFunscripter::register_bindings()
         deselect_all.key = Keybinding(
             SDLK_d,
             KMOD_CTRL
+        );
+
+        auto& toggle_mirror_mode = group.bindings.emplace_back(
+            "toggle_mirror_mode",
+            "Toggle mirror mode",
+            true,
+            [&](void*) { if (LoadedFunscripts.size() > 0) { settings->data().mirror_mode = !settings->data().mirror_mode; }}
+        );
+        toggle_mirror_mode.key = Keybinding(
+            SDLK_PRINTSCREEN,
+            0
         );
 
         // SCREENSHOT VIDEO
@@ -1857,10 +1879,19 @@ void OpenFunscripter::pasteSelection() noexcept
     // NOTE: assumes CopiedSelection is ordered by time
     int offset_ms = std::round(player.getCurrentPositionMsInterp()) - CopiedSelection.begin()->at;
 
-    for (auto& action : CopiedSelection) {
-        ActiveFunscript()->PasteAction(FunscriptAction(action.at + offset_ms, action.pos), player.getFrameTimeMs());
+    for (auto&& action : CopiedSelection) {
+        ActiveFunscript()->PasteAction(FunscriptAction(action.at + offset_ms, action.pos), 1);
     }
     player.setPosition((CopiedSelection.end() - 1)->at + offset_ms);
+}
+
+void OpenFunscripter::pasteSelectionExact() noexcept {
+    if (CopiedSelection.size() == 0) return;
+    // paste without altering timestamps
+    ActiveFunscript()->undoSystem->Snapshot(StateType::PASTE_COPIED_ACTIONS);
+    for (auto&& action : CopiedSelection) {
+        ActiveFunscript()->PasteAction(action, 1);
+    }
 }
 
 void OpenFunscripter::equalizeSelection() noexcept

@@ -43,10 +43,9 @@ public:
 
 class SpecialFunctionsWindow {
 	std::unique_ptr<FunctionBase> function;
-	SpecialFunctions currentFunction = SpecialFunctions::RANGE_EXTENDER;
 public:
 	static constexpr const char* SpecialFunctionsId = "Special functions";
-	SpecialFunctionsWindow() { SetFunction(currentFunction); }
+	SpecialFunctionsWindow() noexcept;
 	void SetFunction(SpecialFunctions functionEnum) noexcept;
 	void ShowFunctionsWindow(bool* open) noexcept;
 };

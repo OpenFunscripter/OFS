@@ -232,8 +232,6 @@ void AlternatingImpl::addAction(FunscriptAction action) noexcept
     ctx().AddAction(action);
 }
 
-
-
 // recording
 RecordingImpl::RecordingImpl()
 {
@@ -402,14 +400,21 @@ void RecordingImpl::update() noexcept
     else if (recordingJustStopped) {
         recordingJustStopped = false;
         GeneratedRecording.endTimeMs = app->player.getCurrentPositionMs();
-        for (auto&& action : GeneratedRecording.RawActions) {
-            if (action.at >= GeneratedRecording.startTimeMs && action.at <= GeneratedRecording.endTimeMs) {
-                if (app->settings->data().mirror_mode) {
-                    for (auto&& script : app->LoadedFunscripts) {
+
+        if (app->settings->data().mirror_mode) {
+            for (auto&& script : app->LoadedFunscripts) {
+                script->undoSystem->Snapshot(StateType::GENERATE_ACTIONS);
+                for (auto&& action : GeneratedRecording.RawActions) {
+                    if (action.at >= GeneratedRecording.startTimeMs && action.at <= GeneratedRecording.endTimeMs) {
                         script->AddActionSafe(action);
                     }
                 }
-                else {
+            }
+        }
+        else {
+            ctx().undoSystem->Snapshot(StateType::GENERATE_ACTIONS);
+            for (auto&& action : GeneratedRecording.RawActions) {
+                if (action.at >= GeneratedRecording.startTimeMs && action.at <= GeneratedRecording.endTimeMs) {
                     ctx().AddActionSafe(action);
                 }
             }

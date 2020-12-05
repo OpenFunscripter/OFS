@@ -2,6 +2,11 @@
 #include "OpenFunscripter.h"
 #include "imgui.h"
 
+SpecialFunctionsWindow::SpecialFunctionsWindow() noexcept
+{
+    SetFunction((SpecialFunctions)OpenFunscripter::ptr->settings->data().currentSpecialFunction);
+}
+
 void SpecialFunctionsWindow::SetFunction(SpecialFunctions functionEnum) noexcept
 {
 	switch (functionEnum) {
@@ -21,11 +26,11 @@ void SpecialFunctionsWindow::ShowFunctionsWindow(bool* open) noexcept
 	if (open != nullptr && !(*open)) { return; }
 	ImGui::Begin(SpecialFunctionsId, open, ImGuiWindowFlags_None);
 	ImGui::SetNextItemWidth(-1.f);
-    if (ImGui::Combo("##Functions", (int32_t*)&currentFunction,
+    if (ImGui::Combo("##Functions", (int32_t*)&OpenFunscripter::ptr->settings->data().currentSpecialFunction,
         "Range extender\0"
         "Simplify (Ramer-Douglas-Peucker)\0"
         "\0")) {
-        SetFunction(currentFunction);
+        SetFunction((SpecialFunctions)OpenFunscripter::ptr->settings->data().currentSpecialFunction);
     }
 	ImGui::Spacing();
 	function->DrawUI();

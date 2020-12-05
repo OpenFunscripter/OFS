@@ -69,6 +69,7 @@ private:
 	void cutSelection() noexcept;
 	void copySelection() noexcept;
 	void pasteSelection() noexcept;
+	void pasteSelectionExact() noexcept;
 	void equalizeSelection() noexcept;
 	void invertSelection() noexcept;
 	void isolateAction() noexcept;

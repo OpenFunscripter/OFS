@@ -46,6 +46,8 @@ private:
 		bool force_hw_decoding = false;
 		bool mirror_mode = false;
 
+		int32_t currentSpecialFunction = 0; // SpecialFunctions::RANGE_EXTENDER;
+
 		struct HeatmapSettings {
 			int32_t defaultWidth = 2000;
 			int32_t defaultHeight = 50;
@@ -85,6 +87,7 @@ private:
 			OFS_REFLECT(recentFiles, ar);
 			OFS_REFLECT(heatmapSettings, ar);
 			OFS_REFLECT(mirror_mode, ar);
+			OFS_REFLECT(currentSpecialFunction, ar);
 			OFS_REFLECT_PTR(simulator, ar);
 		}
 	} scripterSettings;
