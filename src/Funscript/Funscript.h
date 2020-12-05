@@ -20,41 +20,6 @@ public:
 		std::vector<FunscriptAction> Actions;
 		std::vector<FunscriptAction> selection;
 	};
-
-	struct FunscriptRawData {
-		struct Recording {
-			std::vector<FunscriptRawAction> RawActions;
-			
-			template <class Archive>
-			inline void reflect(Archive& ar) {
-				OFS_REFLECT(RawActions, ar);
-			}
-		};
-
-		int32_t RecordingIdx = 0;
-		std::vector<Recording> Recordings;
-		
-		inline bool HasRecording() const { return Recordings.size() > 0; }
-		
-		inline Recording& Active() { 
-			FUN_ASSERT(HasRecording(), "no recording");
-			return Recordings[RecordingIdx]; 
-		}
-		
-		inline void NewRecording(int32_t frame_no) {
-			Recordings.emplace_back();
-			Recordings.back().RawActions.resize(frame_no);
-			RecordingIdx = Recordings.size() - 1;
-		}
-
-		inline void RemoveActiveRecording() {
-			if (!HasRecording()) return;
-			Recordings.erase(Recordings.begin() + RecordingIdx);
-			if (RecordingIdx > 0 && RecordingIdx >= Recordings.size() - 1) {
-				RecordingIdx--;
-			}
-		}
-	};
 	
 	struct Bookmark {
 		int32_t at;
@@ -143,7 +108,6 @@ private:
 	void checkForInvalidatedActions() noexcept;
 	
 	FunscriptData data;
-	FunscriptRawData rawData;
 	
 	FunscriptAction* getAction(FunscriptAction action) noexcept;
 	FunscriptAction* getActionAtTime(std::vector<FunscriptAction>& actions, int32_t time_ms, uint32_t error_ms) noexcept;
@@ -206,10 +170,6 @@ public:
 	const FunscriptData& Data() const noexcept { return data; }
 	const std::vector<FunscriptAction>& Selection() const noexcept { return data.selection; }
 	const std::vector<FunscriptAction>& Actions() const noexcept { return data.Actions; }
-	const std::vector<FunscriptRawAction>& ActiveRecording() const noexcept { 
-		FUN_ASSERT(rawData.HasRecording(), "no recording");
-		return rawData.Recordings[rawData.RecordingIdx].RawActions; 
-	}
 
 	inline const FunscriptAction* GetAction(FunscriptAction action) noexcept { return getAction(action); }
 	inline const FunscriptAction* GetActionAtTime(int32_t time_ms, uint32_t error_ms) noexcept { return getActionAtTime(data.Actions, time_ms, error_ms); }
@@ -218,17 +178,10 @@ public:
 	inline const FunscriptAction* GetClosestAction(int32_t time_ms) noexcept { return getActionAtTime(data.Actions, time_ms, std::numeric_limits<uint32_t>::max()); }
 
 	float GetPositionAtTime(int32_t time_ms) noexcept;
-	float GetRawPositionAtFrame(int32_t frame_no) noexcept;
 	
 	inline void AddAction(FunscriptAction newAction) noexcept { addAction(data.Actions, newAction); }
-	inline void AddActionRaw(int32_t frame_no, int32_t at, int32_t pos, float frameTimeMs) noexcept {
-		if (!rawData.HasRecording()) { return; }
-		auto& recording = rawData.Active();
-		if (frame_no >= recording.RawActions.size()) return;
-		recording.RawActions[frame_no].at = at - frameTimeMs;
-		recording.RawActions[frame_no].frame_no = frame_no;
-		recording.RawActions[frame_no].pos = pos;
-	}
+	void AddActionSafe(FunscriptAction newAction) noexcept;
+
 	bool EditAction(FunscriptAction oldAction, FunscriptAction newAction) noexcept;
 	void AddEditAction(FunscriptAction action, float frameTimeMs) noexcept;
 	void PasteAction(FunscriptAction paste, int32_t error_ms) noexcept;
@@ -248,9 +201,6 @@ public:
 
 	inline bool HasUnsavedEdits() const { return unsavedEdits; }
 	inline const std::chrono::system_clock::time_point& EditTime() const { return editTime; }
-
-	// recording stuff
-	inline FunscriptRawData& Raw() { return rawData; }
 
 	// selection api
 	void RangeExtendSelection(int32_t rangeExtend) noexcept;

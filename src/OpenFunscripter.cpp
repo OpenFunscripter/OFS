@@ -299,7 +299,7 @@ bool OpenFunscripter::setup()
         std::string last_script = settings->data().recentFiles.back().script_path;
         if (!last_script.empty())
             openFile(last_script);
-        if (!last_video.empty() && !player.isLoaded())
+        if (!last_video.empty() && player.isLoaded())
             openFile(last_video);
     }
 
@@ -311,6 +311,10 @@ bool OpenFunscripter::setup()
     sim3D->setup();
 
     SDL_ShowWindow(window);
+
+#ifndef NDEBUG
+    scripting->setMode(ScriptingModeEnum::RECORDING);
+#endif
 
     return true;
 }

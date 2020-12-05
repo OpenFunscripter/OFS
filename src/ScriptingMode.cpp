@@ -238,14 +238,14 @@ void AlternatingImpl::addAction(FunscriptAction action) noexcept
 RecordingImpl::RecordingImpl()
 {
     auto app = OpenFunscripter::ptr;
-    app->events->Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerAxisMotion));
+    app->events->Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerAxisMotion)); 
 }
 
 RecordingImpl::~RecordingImpl()
 {
     auto app = OpenFunscripter::ptr;
     app->events->Unsubscribe(SDL_CONTROLLERAXISMOTION, this);
-    app->simulator.SimulateRawActions = false;
+    //app->simulator.SimulateRawActions = false;
 }
 
 void RecordingImpl::ControllerAxisMotion(SDL_Event& ev)
@@ -313,76 +313,6 @@ void RecordingImpl::ControllerAxisMotion(SDL_Event& ev)
     }
 }
 
-inline static double PerpendicularDistance(const FunscriptRawAction pt, const FunscriptRawAction lineStart, const FunscriptRawAction lineEnd)
-{
-    double dx = (double)lineEnd.at - lineStart.at;
-    double dy = (double)lineEnd.pos - lineStart.pos;
-
-    //Normalise
-    double mag = std::sqrt(dx*dx + dy*dy);
-    if (mag > 0.0)
-    {
-        dx /= mag; dy /= mag;
-    }
-
-    double pvx = (double)pt.at - lineStart.at;
-    double pvy = (double)pt.pos - lineStart.pos;
-
-    //Get dot product (project pv onto normalized direction)
-    double pvdot = dx * pvx + dy * pvy;
-
-    //Scale line direction vector
-    double dsx = pvdot * dx;
-    double dsy = pvdot * dy;
-
-    //Subtract this from pv
-    double ax = pvx - dsx;
-    double ay = pvy - dsy;
-
-    return std::sqrt(ax*ax + ay*ay);
-}
-
-inline static void RamerDouglasPeucker(const std::vector<FunscriptRawAction>& pointList, double epsilon, std::vector<FunscriptRawAction>& out)
-{
-    // Find the point with the maximum distance from line between start and end
-    double dmax = 0.0;
-    size_t index = 0;
-    size_t end = pointList.size() - 1;
-    for (size_t i = 1; i < end; i++)
-    {
-        double d = PerpendicularDistance(pointList[i], pointList[0], pointList[end]);
-        if (d > dmax)
-        {
-            index = i;
-            dmax = d;
-        }
-    }
-
-    // If max distance is greater than epsilon, recursively simplify
-    if (dmax > epsilon)
-    {
-        // Recursive call
-        std::vector<FunscriptRawAction> recResults1;
-        std::vector<FunscriptRawAction> recResults2;
-        std::vector<FunscriptRawAction> firstLine(pointList.begin(), pointList.begin() + index + 1);
-        std::vector<FunscriptRawAction> lastLine(pointList.begin() + index, pointList.end());
-        RamerDouglasPeucker(firstLine, epsilon, recResults1);
-        RamerDouglasPeucker(lastLine, epsilon, recResults2);
-
-        // Build the result list
-        out.assign(recResults1.begin(), recResults1.end() - 1);
-        out.insert(out.end(), recResults2.begin(), recResults2.end());
-    }
-    else
-    {
-        //Just return start and end points
-        out.clear();
-        out.push_back(pointList[0]);
-        out.push_back(pointList[end]);
-    }
-}
-
-
 void RecordingImpl::DrawModeSettings() noexcept
 {
 
@@ -427,16 +357,14 @@ void RecordingImpl::DrawModeSettings() noexcept
     auto app = OpenFunscripter::ptr;
     bool playing = !app->player.isPaused();
     if (automaticRecording && playing && recordingActive != playing) {
-        recordingActive = true;
-        app->simulator.SimulateRawActions = true;
         rollingBackupTmp = app->RollingBackup;
         app->RollingBackup = false;
-        ctx().Raw().NewRecording(app->player.getTotalNumFrames());
+        recordingJustStarted = true;
     }
     else if (!playing && recordingActive) {
         recordingActive = false;
         app->RollingBackup = rollingBackupTmp;
-        app->simulator.SimulateRawActions = false;
+        recordingJustStopped = true;
     }
 
     if (recordingActive && playing) {
@@ -448,81 +376,7 @@ void RecordingImpl::DrawModeSettings() noexcept
         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
         ImGui::Text("%s", "Recording paused");
         ImGui::PopStyleColor();
-    }
-    
-    if (ImGui::Button("Recordings", ImVec2(-1.f, 0.f))) { OpenRecordingsWindow = !OpenRecordingsWindow; }
-    
-    if (OpenRecordingsWindow) {
-        ImGui::Begin("Recordings", &OpenRecordingsWindow, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking);
-        ImGui::Text("Total recordings: %ld", ctx().Raw().Recordings.size());
-       
-        if (ctx().Raw().Recordings.size() > 0 && GeneratedRecording.RawActions.size() == 0) {
-            ImGui::NewLine();
-            if (ImGui::Button("Delete selected (Can't be undone)", ImVec2(-1.f, 0.f))) {
-                ctx().Raw().RemoveActiveRecording();
-            }
-            ImGui::NewLine();
-            int count = 0;
-            char tmp[32];
-            stbsp_snprintf(tmp, sizeof(tmp), "Recording %d#", ctx().Raw().RecordingIdx);
-            if (ImGui::BeginCombo("Selected", tmp)) {
-                for (auto&& recording : ctx().Raw().Recordings) {
-                    stbsp_snprintf(tmp, sizeof(tmp), "Recording %d#", count);
-                    const bool is_selected = (ctx().Raw().RecordingIdx == count);
-
-                    if (ImGui::Selectable(tmp, is_selected) || ImGui::IsItemHovered()) {
-                        ctx().Raw().RecordingIdx = count;
-                    }
-
-                    if (is_selected)
-                        ImGui::SetItemDefaultFocus();
-                    count++;
-                }
-                ImGui::EndCombo();
-            }
-
-            ctx().Raw().RecordingIdx = Util::Clamp<int32_t>(ctx().Raw().RecordingIdx, 0, ctx().Raw().Recordings.size()-1);
-
-            if (ImGui::Button("Generate actions from recording", ImVec2(-1.f, 0.f))) {
-                app->script().undoSystem->Snapshot(StateType::GENERATE_ACTIONS);
-                std::vector<FunscriptRawAction> simplified;
-                GeneratedRecording.RawActions = ctx().Raw().Active().RawActions;
-                RamerDouglasPeucker(GeneratedRecording.RawActions, epsilon, simplified);
-                for (auto&& act : simplified) {
-                    if (act.at >= 0) {
-                        ctx().AddEditAction(FunscriptAction(act.at, act.pos), app->player.getFrameTimeMs()/4.f);
-                    }
-                }
-            }
-        }
-
-
-        if (GeneratedRecording.RawActions.size() > 0 && app->script().undoSystem->MatchUndoTop(StateType::GENERATE_ACTIONS)) {
-
-            ImGui::Spacing();
-            ImGui::Text("%s", "Tweaking");
-            if (ImGui::DragFloat("Epsilon", &epsilon, 0.2f, 0.f, 500.f)) {
-                epsilon = Util::Clamp<float>(epsilon, 0.f, 500.f);
-                app->script().undoSystem->Undo();
-                app->script().undoSystem->Snapshot(StateType::GENERATE_ACTIONS);
-                std::vector<FunscriptRawAction> simplified;
-                RamerDouglasPeucker(GeneratedRecording.RawActions, epsilon, simplified);
-                for (auto&& act : simplified) {
-                    if (act.at >= 0) {
-                        ctx().AddEditAction(FunscriptAction(act.at, act.pos), app->player.getFrameTimeMs()/4.f);
-                    }
-                }
-            }
-            if (ImGui::Button("Finalize", ImVec2(-1.f, 0.f))) {
-                GeneratedRecording.RawActions.clear();
-            }
-        }
-        else {
-            GeneratedRecording.RawActions.clear();
-        }
-
-        ImGui::End();
-    }
+    }   
 }
 
 void RecordingImpl::addAction(FunscriptAction action) noexcept
@@ -535,6 +389,32 @@ void RecordingImpl::update() noexcept
 {
     auto app = OpenFunscripter::ptr;
     if (recordingActive) {
-        ctx().AddActionRaw(app->player.getCurrentFrameEstimate(), app->player.getCurrentPositionMs(), currentPos, app->player.getFrameTimeMs());
+        uint32_t frameEstimate = app->player.getCurrentFrameEstimate();
+        GeneratedRecording.RawActions[frameEstimate] = std::move(FunscriptAction(app->player.getCurrentPositionMs(), currentPos));
+        app->simulator.positionOverride = currentPos;
+    }
+    else if (recordingJustStarted) {
+        recordingJustStarted = false;
+        recordingActive = true;
+        GeneratedRecording.RawActions.clear();
+        GeneratedRecording.startTimeMs = app->player.getCurrentPositionMs();
+        GeneratedRecording.RawActions.resize(app->player.getTotalNumFrames());
+    }
+    else if (recordingJustStopped) {
+        recordingJustStopped = false;
+        GeneratedRecording.endTimeMs = app->player.getCurrentPositionMs();
+        for (auto&& action : GeneratedRecording.RawActions) {
+            if (action.at >= GeneratedRecording.startTimeMs && action.at <= GeneratedRecording.endTimeMs) {
+                if (app->settings->data().mirror_mode) {
+                    for (auto&& script : app->LoadedFunscripts) {
+                        script->AddActionSafe(action);
+                    }
+                }
+                else {
+                    ctx().AddActionSafe(action);
+                }
+            }
+        }
+        GeneratedRecording.RawActions.clear();
     }
 }

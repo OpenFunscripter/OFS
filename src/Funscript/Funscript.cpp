@@ -71,23 +71,6 @@ void Funscript::loadSettings() noexcept
 	if (Json.contains("OpenFunscripter")) {
 		auto& settings = Json["OpenFunscripter"];
 		OFS::serializer::load(&scriptSettings, &settings);
-
-		OFS::unpacker upkg(&Json["OpenFunscripter"]);
-		OFS_REFLECT_NAMED(Recordings, rawData.Recordings, upkg);
-		
-		// fix action position in the array -> index == frame_no
-		std::vector<Funscript::FunscriptRawData::Recording> Fixed;
-		for (auto&& rec : rawData.Recordings) {
-			Funscript::FunscriptRawData::Recording recording;
-			for (auto&& raw : rec.RawActions) {
-				if (raw.frame_no > 0) {
-					recording.RawActions.resize(raw.frame_no + 1);
-					recording.RawActions[raw.frame_no] = raw;
-				}
-			}
-			Fixed.emplace_back(std::move(recording));
-		}
-		rawData.Recordings = std::move(Fixed);
 	}
 }
 
@@ -95,21 +78,6 @@ void Funscript::saveSettings() noexcept
 {
 	scriptSettings.player = &OpenFunscripter::ptr->player.settings;
 	OFS::serializer::save(&scriptSettings, &Json["OpenFunscripter"]);
-
-	// filter all empty actions to serialize
-	std::vector<Funscript::FunscriptRawData::Recording> filtered;
-	for (auto&& rec : rawData.Recordings) {
-		Funscript::FunscriptRawData::Recording filteredRecording;
-		filteredRecording.RawActions.reserve(rec.RawActions.size());
-		for (auto&& raw : rec.RawActions) {
-			if (raw.frame_no > 0) {
-				filteredRecording.RawActions.emplace_back(raw);
-			}
-		}
-		filtered.emplace_back(std::move(filteredRecording));
-	}
-	OFS::archiver ar(&Json["OpenFunscripter"]);
-	OFS_REFLECT_NAMED(Recordings, filtered, ar);
 }
 
 void Funscript::startSaveThread(const std::string& path, nlohmann::json&& json) noexcept
@@ -310,30 +278,6 @@ float Funscript::GetPositionAtTime(int32_t time_ms) noexcept
 	return data.Actions.back().pos;
 }
 
-float Funscript::GetRawPositionAtFrame(int32_t frame_no) noexcept
-{
-	auto& recording = rawData.Active();
-	if (frame_no >= recording.RawActions.size()) return 0;
-	// this is stupid
-	auto pos = recording.RawActions[frame_no].pos;
-	if (pos >= 0) { 
-		return pos; 
-	}
-	else if((frame_no + 1) < recording.RawActions.size()) {
-		pos = recording.RawActions[frame_no + 1].pos;
-		if (pos >= 0) {
-			return pos;
-		}
-		else if((frame_no - 1) >= 0) {
-			pos = recording.RawActions[frame_no - 1].pos;
-			if (pos >= 0) {
-				return pos;
-			}
-		}
-	}
-	return 0;
-}
-
 FunscriptAction* Funscript::getAction(FunscriptAction action) noexcept
 {
 	auto it = std::find(data.Actions.begin(), data.Actions.end(), action);
@@ -392,6 +336,26 @@ FunscriptAction* Funscript::getPreviousActionBehind(int32_t time_ms) noexcept
 		return &(*it);
 
 	return nullptr;
+}
+
+void Funscript::AddActionSafe(FunscriptAction newAction) noexcept
+{
+	auto it = std::find_if(data.Actions.begin(), data.Actions.end(), [&](auto&& action) {
+		return newAction.at < action.at;
+		});
+	// checks if there's already an action with the same timestamp
+	auto safety = std::find_if(it > data.Actions.begin() ? it - 1 : data.Actions.begin(), data.Actions.end(),
+		[&](auto&& action) {
+			return newAction.at == action.at;
+		});
+	if (safety == data.Actions.end()) {
+		data.Actions.insert(it, newAction);
+		NotifyActionsChanged(true);
+	}
+	else
+	{
+		LOGF_WARN("Failed to add action because there's already an action with at %d ms", newAction.at);
+	}
 }
 
 bool Funscript::EditAction(FunscriptAction oldAction, FunscriptAction newAction) noexcept

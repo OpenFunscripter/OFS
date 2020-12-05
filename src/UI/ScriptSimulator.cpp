@@ -74,19 +74,15 @@ void ScriptSimulator::CenterSimulator()
 void ScriptSimulator::ShowSimulator(bool* open) 
 {
     if (*open) {
-        auto ptr = OpenFunscripter::ptr;
+        auto app = OpenFunscripter::ptr;
         float currentPos = 0;
 
-        if (!SimulateRawActions) {
-            currentPos = ptr->ActiveFunscript()->GetPositionAtTime(ptr->player.getCurrentPositionMsInterp());
+        if (positionOverride >= 0.f) {
+            currentPos = positionOverride;
+            positionOverride = -1.f;
         }
         else {
-            if (ptr->ActiveFunscript()->Raw().HasRecording()) {
-                currentPos = ptr->ActiveFunscript()->GetRawPositionAtFrame(ptr->player.getCurrentFrameEstimate());
-            }
-            else {
-                SimulateRawActions = false;
-            }
+            currentPos = app->ActiveFunscript()->GetPositionAtTime(app->player.getCurrentPositionMsInterp());
         }
 
         if (EnableVanilla) {
@@ -157,9 +153,6 @@ void ScriptSimulator::ShowSimulator(bool* open)
             ImGui::Checkbox("Show position", &simulator.EnablePosition);
         }
 
-        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, !ptr->ActiveFunscript()->Raw().HasRecording());
-        ImGui::Checkbox("Simulate raw actions", &SimulateRawActions); ImGui::SameLine();
-        ImGui::PopItemFlag();
         if (ImGui::Button("Vanilla")) {
             EnableVanilla = true;
         }
@@ -281,7 +274,6 @@ void ScriptSimulator::ShowSimulator(bool* open)
 
         // INDICATORS
         if (simulator.EnableIndicators) {
-            auto app = OpenFunscripter::ptr;
             auto previousAction = app->ActiveFunscript()->GetActionAtTime(app->player.getCurrentPositionMs(), app->player.getFrameTimeMs());
             if (previousAction == nullptr) {
                 previousAction = app->ActiveFunscript()->GetPreviousActionBehind(app->player.getCurrentPositionMs());

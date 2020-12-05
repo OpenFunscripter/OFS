@@ -66,7 +66,8 @@ public:
 			OFS_REFLECT(ExtraLinesCount, ar);
 		}
 	} simulator;
-	bool SimulateRawActions = false;
+
+	float positionOverride = -1.f;
 
 	void MouseMovement(SDL_Event& ev);
 	void MouseDown(SDL_Event& ev);

@@ -291,7 +291,10 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 
 		// render recordings
 		const FunscriptAction* prevAction = nullptr;
-		if (script.Raw().HasRecording() && RecordingMode != RecordingRenderMode::None) {
+		if (app->scripting->mode() == ScriptingModeEnum::RECORDING) {
+			auto& recordingMode = app->scripting->CurrentImpl();
+			auto& recording = static_cast<RecordingImpl*>(recordingMode.get())->GeneratedRecording.RawActions;
+
 			auto pathStroke = [](auto draw_list, uint32_t col) {
 				// sort of a hack ...
 				// PathStroke sets  _Path.Size = 0
@@ -302,51 +305,20 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				draw_list->PathStroke(col, false, 5.f);
 			};
 			auto pathRawSection = [this, &drawingCtx](auto draw_list, auto rawActions, int32_t fromIndex, int32_t toIndex) {
-				float frameTimeMs = OpenFunscripter::ptr->player.getFrameTimeMs();
 				for (int i = fromIndex; i < toIndex; i++) {
 					auto action = rawActions[i];
-					if (action.frame_no >= 0) {
-						action.at = i * frameTimeMs;
-						auto point = getPointForAction(drawingCtx.canvas_pos, drawingCtx.canvas_size, FunscriptAction(action.at, action.pos));
+					if (action.at >= 0) {
+						auto point = getPointForAction(drawingCtx.canvas_pos, drawingCtx.canvas_size, action);
 						draw_list->PathLineTo(point);
 					}
 				}
 			};
+			int32_t startIndex = Util::Clamp<int32_t>((offset_ms / frameTime), 0, recording.size());
+			int32_t endIndex = Util::Clamp<int32_t>(((float)offset_ms + visibleSizeMs) / frameTime, startIndex, recording.size());
 
-			switch (RecordingMode) {
-			case RecordingRenderMode::All:
-			{
-				for(int i=0; i < script.Raw().Recordings.size(); i++) {
-					auto& recording = script.Raw().Recordings[i];
-
-					int32_t startIndex = Util::Clamp<int32_t>((offset_ms / frameTime), 0, recording.RawActions.size());
-					int32_t endIndex = Util::Clamp<int32_t>(((float)offset_ms + visibleSizeMs) / frameTime, startIndex, recording.RawActions.size());
-
-					pathRawSection(draw_list, recording.RawActions, startIndex, endIndex);
-					if (i != script.Raw().RecordingIdx) {
-						pathStroke(draw_list, IM_COL32(255, 0, 0, 180));
-					}
-					else {
-						pathStroke(draw_list, IM_COL32(0, 255, 0, 180));
-					}
-				}
-				break;
-			}
-			case RecordingRenderMode::ActiveOnly: 
-			{
-				auto& recording = script.ActiveRecording();
-
-				int32_t startIndex = Util::Clamp<int32_t>((offset_ms / frameTime), 0, recording.size());
-				int32_t endIndex = Util::Clamp<int32_t>(((float)offset_ms + visibleSizeMs) / frameTime, startIndex, recording.size());
-
-				pathRawSection(draw_list, recording, startIndex, endIndex);
-				pathStroke(draw_list, IM_COL32(0, 255, 0, 180));
-				break;
-			}
-			}
+			pathRawSection(draw_list, recording, startIndex, endIndex);
+			pathStroke(draw_list, IM_COL32(0, 255, 0, 180));
 		}
-
-
 
 
 		// current position indicator -> |
@@ -401,7 +373,6 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 			}
 			if (ImGui::BeginMenu("Rendering")) {
 				ImGui::MenuItem("Draw actions", NULL, &ShowRegularActions);
-				ImGui::Combo("Recording", (int32_t*)&RecordingMode, "No\0All\0Active\0");
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("Audio waveform")) {

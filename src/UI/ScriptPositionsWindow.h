@@ -79,14 +79,6 @@ private:
 
 	void FfmpegAudioProcessingFinished(SDL_Event& ev);
 
-	// ATTENTION: no reordering
-	enum RecordingRenderMode : int32_t {
-		None,
-		All,
-		ActiveOnly,
-	};
-
-	RecordingRenderMode RecordingMode = RecordingRenderMode::All;
 	bool ShowRegularActions = true;
 	bool ShowAudioWaveform = false;
 	float ScaleAudio = 1.f;

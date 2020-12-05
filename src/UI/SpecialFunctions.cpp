@@ -84,13 +84,10 @@ void FunctionRangeExtender::DrawUI() noexcept
     }
 }
 
-
-
 RamerDouglasPeucker::RamerDouglasPeucker()
 {
     auto app = OpenFunscripter::ptr;
     app->events->Subscribe(EventSystem::FunscriptSelectionChangedEvent, EVENT_SYSTEM_BIND(this, &RamerDouglasPeucker::SelectionChanged));
-
 }
 
 RamerDouglasPeucker::~RamerDouglasPeucker()
@@ -180,7 +177,7 @@ void RamerDouglasPeucker::DrawUI() noexcept
     auto app = OpenFunscripter::ptr;
     auto undoSystem = app->script().undoSystem.get();
     if (app->script().SelectionSize() > 4 || (undoSystem->MatchUndoTop(StateType::SIMPLIFY))) {
-        if (ImGui::SliderFloat("Epsilon", &epsilon, 0.1f, 1000.f, "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
+        if (ImGui::DragFloat("Epsilon", &epsilon, 0.1f, 0.1f, 1000.f)) {
             
             if (createUndoState ||
                 !undoSystem->MatchUndoTop(StateType::SIMPLIFY)) {
@@ -191,7 +188,6 @@ void RamerDouglasPeucker::DrawUI() noexcept
                 undoSystem->Snapshot(StateType::SIMPLIFY);
             }
             createUndoState = false;
-            //ctx().RangeExtendSelection(rangeExtend);
             auto selection = ctx().Selection();
             ctx().RemoveSelectedActions();
             std::vector<FunscriptAction> newActions;
