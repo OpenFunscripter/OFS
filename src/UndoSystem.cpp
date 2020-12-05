@@ -33,7 +33,9 @@ static std::array<const std::string, (int32_t)StateType::TOTAL_UNDOSTATE_TYPES> 
 
 	"Repeat stroke",
 
-	"Move to current position"
+	"Move to current position",
+
+	"Simplify",
 };
 
 void UndoSystem::SnapshotRedo(StateType type) noexcept

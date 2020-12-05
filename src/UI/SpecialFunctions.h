@@ -3,9 +3,11 @@
 #include <memory>
 #include "Funscript.h"
 
+// ATTENTION: no reordering
 enum SpecialFunctions : int32_t
 {
 	RANGE_EXTENDER,
+	RAMER_DOUGLAS_PEUCKER, // simplification
 	TOTAL_FUNCTIONS_COUNT
 };
 
@@ -24,6 +26,17 @@ class FunctionRangeExtender : public FunctionBase
 public:
 	FunctionRangeExtender();
 	virtual ~FunctionRangeExtender();
+	void SelectionChanged(SDL_Event& ev) noexcept;
+	virtual void DrawUI() noexcept override;
+};
+
+class RamerDouglasPeucker : public FunctionBase
+{
+	float epsilon = 0.0f;
+	bool createUndoState = true;
+public:
+	RamerDouglasPeucker();
+	virtual ~RamerDouglasPeucker();
 	void SelectionChanged(SDL_Event& ev) noexcept;
 	virtual void DrawUI() noexcept override;
 };

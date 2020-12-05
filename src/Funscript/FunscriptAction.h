@@ -5,18 +5,26 @@
 #include <cstdint>
 #include <limits>
 
+enum ActionFlags : uint16_t {
+	None = 0x0,
+	//MAX = 0x1 << 15
+};
+
 struct FunscriptAction
 {
+public:
 	int32_t at;
-	int32_t pos;
+	int16_t pos;
+	uint16_t flags; // unused
 
 	FunscriptAction() noexcept
-		: at(std::numeric_limits<int32_t>::min()), pos(std::numeric_limits<int32_t>::min()) {}
+		: at(std::numeric_limits<int32_t>::min()), pos(std::numeric_limits<int32_t>::min()), flags(ActionFlags::None) {}
 
 	FunscriptAction(int32_t at, int32_t pos) noexcept
 	{
 		this->at = at;
 		this->pos = pos;
+		this->flags = ActionFlags::None;
 	}
 
 	inline bool operator==(FunscriptAction b) const noexcept {

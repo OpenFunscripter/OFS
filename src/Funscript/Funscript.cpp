@@ -756,7 +756,7 @@ void Funscript::moveActionsPosition(std::vector<FunscriptAction*> moving, int32_
 	ClearSelection();
 	for (auto move : moving) {
 		move->pos += pos_offset;
-		move->pos = Util::Clamp(move->pos, 0, 100);
+		move->pos = Util::Clamp<int16_t>(move->pos, 0, 100);
 	}
 	NotifyActionsChanged(true);
 }
@@ -833,7 +833,7 @@ void Funscript::MoveSelectionPosition(int32_t pos_offset) noexcept
 	ClearSelection();
 	for (auto move : moving) {
 		move->pos += pos_offset;
-		move->pos = Util::Clamp(move->pos, 0, 100);
+		move->pos = Util::Clamp<int16_t>(move->pos, 0, 100);
 		data.selection.emplace_back(*move);
 	}
 	NotifyActionsChanged(true);
