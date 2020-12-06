@@ -171,7 +171,7 @@ bool OpenFunscripter::imgui_setup() noexcept
         DefaultFont2 = io.Fonts->AddFontFromFileTTF(roboto.c_str(), settings->data().default_font_size * 2.0f, &config);
     }
     io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
-
+    
     // Upload texture to graphics system
     GLuint font_tex;
     glGenTextures(1, &font_tex);
@@ -1457,6 +1457,16 @@ void OpenFunscripter::step() noexcept {
         #endif
         scripting->DrawScriptingMode(NULL);
 
+        #ifdef EMSCRIPTEN
+        ImGui::Begin("Emscripten");
+        static std::string javascript = "alert('hi!')";
+        if(ImGui::InputText("xss", &javascript, ImGuiInputTextFlags_EnterReturnsTrue) || ImGui::Button("Confirm")) {
+            emscripten_run_script(javascript.c_str());
+            javascript.clear();
+        }         
+        ImGui::End();
+        #endif
+
         if (keybinds.ShowBindingWindow()) {
             settings->saveKeybinds(keybinds.getBindings());
         }
@@ -1671,7 +1681,7 @@ int OpenFunscripter::run() noexcept
         step();
     }
     #else
-        emscripten_set_main_loop(ems_loop, 0, true);
+        emscripten_set_main_loop(ems_loop, 60, true);
     #endif
 	return 0;
 }

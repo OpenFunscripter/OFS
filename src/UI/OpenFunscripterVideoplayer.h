@@ -74,7 +74,7 @@ private:
 		double fps = 30.f;
 
 		int64_t total_num_frames = 0;
-		int64_t paused = false;
+		int64_t paused = true;
 		int64_t video_width = 0;
 		int64_t video_height = 0;
 
@@ -206,17 +206,6 @@ class VideoplayerWindow
 public:
 	VideoplayerWindow();
 	~VideoplayerWindow();
-private:
-	bool redraw_video = false;
-	uint32_t framebuffer_obj = 0;
-	uint32_t render_texture = 0;
-	
-	//std::unique_ptr<class VrShader> vr_shader;
-	ImGuiViewport* player_viewport;
-	
-	ImVec2 video_draw_size;
-	ImVec2 viewport_pos;
-
 	struct MpvDataCache {
 		double duration = 0.0;
 		double percent_pos = 0.0;
@@ -226,13 +215,23 @@ private:
 		double fps = 30.f;
 
 		int64_t total_num_frames = 0;
-		int64_t paused = false;
-		int64_t video_width = 0;
-		int64_t video_height = 0;
+		int64_t paused = true;
+		int64_t video_width = 1920;
+		int64_t video_height = 1080;
 
 		bool video_loaded = false;
 		const char* file_path = nullptr;
 	} MpvData;
+private:
+	bool redraw_video = false;
+	uint32_t render_texture = 0;
+
+	//std::unique_ptr<class VrShader> vr_shader;
+	ImGuiViewport* player_viewport;
+
+	ImVec2 video_draw_size;
+	ImVec2 viewport_pos;
+
 
 	char tmp_buf[32];
 	float base_scale_factor = 1.f;
