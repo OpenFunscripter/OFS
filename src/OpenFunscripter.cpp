@@ -12,6 +12,10 @@
 #include "imgui_stdlib.h"
 #include "imgui_internal.h"
 
+#ifdef EMSCRIPTEN
+#include <emscripten.h>
+#endif
+
 // TODO: reduce memory usage when generating waveform data
 
 // FIX: Add type checking to the deserialization. 
@@ -55,7 +59,11 @@ constexpr std::array<const char*, 4> SupportedAudioExtensions{
 OpenFunscripter* OpenFunscripter::ptr = nullptr;
 ImFont* OpenFunscripter::DefaultFont2 = nullptr;
 
+#ifndef EMSCRIPTEN
 constexpr const char* glsl_version = "#version 150";
+#else
+constexpr const char* glsl_version = "#version 100";
+#endif
 
 static ImGuiID MainDockspaceID;
 constexpr const char* StatisticsId = "Statistics";
@@ -70,19 +78,26 @@ bool OpenFunscripter::imgui_setup() noexcept
 {
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
+    if(!ImGui::CreateContext()) {
+        return false;
+    }
+
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
+    #ifndef EMSCRIPTEN
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+    #endif
     io.ConfigWindowsMoveFromTitleBarOnly = true;
     io.ConfigViewportsNoDecoration = false;
     io.ConfigViewportsNoAutoMerge = false;
     io.ConfigViewportsNoTaskBarIcon = false;
     
+    #ifndef EMSCRIPTEN
     static auto imguiIniPath = Util::Prefpath("imgui.ini");
     io.IniFilename = imguiIniPath.c_str();
+    #endif
 
     ImGui::StyleColorsDark();
 
@@ -96,10 +111,12 @@ bool OpenFunscripter::imgui_setup() noexcept
 
     // Setup Platform/Renderer bindings
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
+    LOGF_DEBUG("init imgui with glsl: %s", glsl_version);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // LOAD FONTS
-    auto roboto = Util::Resource("fonts/RobotoMono-Regular.ttf");
+    #ifndef EMSCRIPTEN
+    auto roboto = Util::Resource("fonts/RobotoMono-Regular.ttf");    
     auto fontawesome = Util::Resource("fonts/fontawesome-webfont.ttf");
     auto noto_jp = Util::Resource("fonts/NotoSansJP-Regular.otf");
 
@@ -161,10 +178,13 @@ bool OpenFunscripter::imgui_setup() noexcept
     glBindTexture(GL_TEXTURE_2D, font_tex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    #ifndef EMSCRIPTEN
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    #endif
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
     io.Fonts->TexID = (void*)(intptr_t)font_tex;
+    #endif
     return true;
 }
 
@@ -182,6 +202,8 @@ OpenFunscripter::~OpenFunscripter()
 
 bool OpenFunscripter::setup()
 {
+    SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
+    LOG_DEBUG("entered setup()");
     FUN_ASSERT(ptr == nullptr, "there can only be one instance");
     ptr = this;
     auto prefPath = Util::Prefpath("");
@@ -189,22 +211,29 @@ bool OpenFunscripter::setup()
 
     settings = std::make_unique<OpenFunscripterSettings>(Util::Prefpath("keybinds.json"), Util::Prefpath("config.json"));
     
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
+    LOG_DEBUG("trying to init sdl");
+    if (SDL_Init(SDL_INIT_VIDEO /*| SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER*/) != 0)
     {
         LOGF_ERROR("Error: %s\n", SDL_GetError());
         return false;
     }
-
-    SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
+    LOG_DEBUG("SDL init done!");
 
 #if __APPLE__
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG); // Always required on Mac according to imgui example
 #else
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0 /*| SDL_GL_CONTEXT_DEBUG_FLAG*/);
 #endif
+
+#ifndef EMSCRIPTEN
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+#else
+   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+#endif
 
     // antialiasing
     // this caused problems in my linux testing
@@ -217,27 +246,36 @@ bool OpenFunscripter::setup()
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
+    LOG_DEBUG("trying to create window");
     window = SDL_CreateWindow(
         "OpenFunscripter " FUN_LATEST_GIT_TAG "@" FUN_LATEST_GIT_HASH,
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         DefaultWidth, DefaultHeight,
-        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN
+        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI /* | SDL_WINDOW_HIDDEN*/
     );
+    LOG_DEBUG("created window");
+
+    #ifndef EMSCRIPTEN
     SDL_Rect display;
     int windowDisplay = SDL_GetWindowDisplayIndex(window);
     SDL_GetDisplayBounds(windowDisplay, &display);
     if (DefaultWidth >= display.w || DefaultHeight >= display.h) {
         SDL_MaximizeWindow(window);
     }
+    #endif
     
+    LOG_DEBUG("trying to create gl context");
     gl_context = SDL_GL_CreateContext(window);
     SDL_GL_MakeCurrent(window, gl_context);
     SDL_GL_SetSwapInterval(1); // Enable vsync
-    
+    LOG_DEBUG("created gl context");
+
+    #ifndef EMSCRIPTEN
     if (gladLoadGL() == 0) {
         LOG_ERROR("Failed to load glad.");
         return false;
     }
+    #endif
     
     if (!imgui_setup()) {
         LOG_ERROR("Failed to setup ImGui");
@@ -267,6 +305,7 @@ bool OpenFunscripter::setup()
     //    stbi_image_free(image_data);
     //}
 
+    LOG_DEBUG("more init");
     // register custom events with sdl
     events = std::make_unique<EventSystem>();
     events->setup();
@@ -304,13 +343,16 @@ bool OpenFunscripter::setup()
     controllerInput = std::make_unique<ControllerInput>();
     controllerInput->setup();
     simulator.setup();
+
+    #ifndef EMSCRIPTEN
     sim3D = std::make_unique<Simulator3D>();
     sim3D->setup();
+    #endif
 
     SDL_ShowWindow(window);
 
 #ifndef NDEBUG
-    scripting->setMode(ScriptingModeEnum::RECORDING);
+    //scripting->setMode(ScriptingModeEnum::RECORDING);
 #endif
 
     return true;
@@ -1219,6 +1261,7 @@ void OpenFunscripter::render() noexcept
     // Update and Render additional Platform Windows
     // (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
     //  For this specific demo app we could also call SDL_GL_MakeCurrent(window, gl_context) directly)
+    #ifndef EMSCRIPTEN
     ImGuiIO& io = ImGui::GetIO();
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
@@ -1228,6 +1271,7 @@ void OpenFunscripter::render() noexcept
         ImGui::RenderPlatformWindowsDefault();
         SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
     }
+    #endif
 }
 
 void OpenFunscripter::process_events() noexcept
@@ -1388,229 +1432,247 @@ void OpenFunscripter::rollingBackup() noexcept
     }
 }
 
-int OpenFunscripter::run() noexcept
-{
+#ifdef EMSCRIPTEN
+static void ems_loop() {
+    OpenFunscripter::ptr->step();
+}
+#endif
+
+void OpenFunscripter::step() noexcept {
+
+    process_events();
+    update();
     new_frame();
-    setupDefaultLayout(false);
-    render();
-    while (!exit_app) {
-        process_events();
-        update();
-        new_frame();
-        {
-            // IMGUI HERE
-            CreateDockspace();
-            ShowAboutWindow(&ShowAbout);
-            specialFunctions->ShowFunctionsWindow(&settings->data().show_special_functions);
-            ActiveFunscript()->undoSystem->ShowUndoRedoHistory(&settings->data().show_history);
-            simulator.ShowSimulator(&settings->data().show_simulator);
-            ShowStatisticsWindow(&settings->data().show_statistics);
-            if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { ActiveFunscript()->save(); }
-            sim3D->ShowWindow(&settings->data().show_simulator_3d);
-            scripting->DrawScriptingMode(NULL);
+    {
+        // IMGUI HERE
+        CreateDockspace();
+        ShowAboutWindow(&ShowAbout);
+        specialFunctions->ShowFunctionsWindow(&settings->data().show_special_functions);
+        ActiveFunscript()->undoSystem->ShowUndoRedoHistory(&settings->data().show_history);
+        simulator.ShowSimulator(&settings->data().show_simulator);
+        ShowStatisticsWindow(&settings->data().show_statistics);
+        if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { ActiveFunscript()->save(); }
+        #ifndef EMSCRIPTEN
+        sim3D->ShowWindow(&settings->data().show_simulator_3d);
+        #endif
+        scripting->DrawScriptingMode(NULL);
 
-            if (keybinds.ShowBindingWindow()) {
-                settings->saveKeybinds(keybinds.getBindings());
-            }
+        if (keybinds.ShowBindingWindow()) {
+            settings->saveKeybinds(keybinds.getBindings());
+        }
 
-            if (settings->ShowPreferenceWindow()) {
-                settings->saveSettings();
-            }
+        if (settings->ShowPreferenceWindow()) {
+            settings->saveSettings();
+        }
 
-            if (player.isLoaded()) {
-                {
-                    ImGui::Begin(PlayerControlId);
-                
-                    const int seek_ms = 3000;
-                    // Playback controls
-                    ImGui::Columns(5, 0, false);
-                    if (ImGui::Button(ICON_STEP_BACKWARD /*"<"*/, ImVec2(-1, 0))) {
-                        if (player.isPaused()) {
-                            scripting->PreviousFrame();
-                        }
+        if (player.isLoaded()) {
+            {
+                ImGui::Begin(PlayerControlId);
+            
+                const int seek_ms = 3000;
+                // Playback controls
+                ImGui::Columns(5, 0, false);
+                if (ImGui::Button(ICON_STEP_BACKWARD /*"<"*/, ImVec2(-1, 0))) {
+                    if (player.isPaused()) {
+                        scripting->PreviousFrame();
                     }
-                    ImGui::NextColumn();
-                    if (ImGui::Button(ICON_BACKWARD /*"<<"*/, ImVec2(-1, 0))) {
-                        seekByTime(-seek_ms);
-                    }
-                    ImGui::NextColumn();
-
-                    if (ImGui::Button((player.isPaused()) ? ICON_PLAY : ICON_PAUSE, ImVec2(-1, 0))) {
-                        player.togglePlay();
-                    }
-                    ImGui::NextColumn();
-
-                    if (ImGui::Button(ICON_FORWARD /*">>"*/, ImVec2(-1, 0))) {
-                        seekByTime(seek_ms);
-                    }
-                    ImGui::NextColumn();
-
-                    if (ImGui::Button(ICON_STEP_FORWARD /*">"*/, ImVec2(-1, 0))) {
-                        if (player.isPaused()) {
-                            scripting->NextFrame();
-                        }
-                    }
-                    ImGui::NextColumn();
-
-                static bool mute = false;
-                ImGui::Columns(2, 0, false);
-                if (ImGui::Checkbox(mute ? ICON_VOLUME_OFF : ICON_VOLUME_UP, &mute)) {
-                    if (mute)
-                        player.setVolume(0.0f);
-                    else
-                        player.setVolume(player.settings.volume);
                 }
-                ImGui::SetColumnWidth(0, ImGui::GetItemRectSize().x + 10);
                 ImGui::NextColumn();
-                ImGui::SetNextItemWidth(-1);
-                if (ImGui::SliderFloat("##Volume", &player.settings.volume, 0.0f, 1.0f)) {
-                    player.settings.volume = Util::Clamp(player.settings.volume, 0.0f, 1.f);
+                if (ImGui::Button(ICON_BACKWARD /*"<<"*/, ImVec2(-1, 0))) {
+                    seekByTime(-seek_ms);
+                }
+                ImGui::NextColumn();
+
+                if (ImGui::Button((player.isPaused()) ? ICON_PLAY : ICON_PAUSE, ImVec2(-1, 0))) {
+                    player.togglePlay();
+                }
+                ImGui::NextColumn();
+
+                if (ImGui::Button(ICON_FORWARD /*">>"*/, ImVec2(-1, 0))) {
+                    seekByTime(seek_ms);
+                }
+                ImGui::NextColumn();
+
+                if (ImGui::Button(ICON_STEP_FORWARD /*">"*/, ImVec2(-1, 0))) {
+                    if (player.isPaused()) {
+                        scripting->NextFrame();
+                    }
+                }
+                ImGui::NextColumn();
+
+            static bool mute = false;
+            ImGui::Columns(2, 0, false);
+            if (ImGui::Checkbox(mute ? ICON_VOLUME_OFF : ICON_VOLUME_UP, &mute)) {
+                if (mute)
+                    player.setVolume(0.0f);
+                else
                     player.setVolume(player.settings.volume);
-                    if (player.settings.volume > 0.0f)
-                        mute = false;
-                }
-                ImGui::NextColumn();
-                ImGui::End();
             }
+            ImGui::SetColumnWidth(0, ImGui::GetItemRectSize().x + 10);
+            ImGui::NextColumn();
+            ImGui::SetNextItemWidth(-1);
+            if (ImGui::SliderFloat("##Volume", &player.settings.volume, 0.0f, 1.0f)) {
+                player.settings.volume = Util::Clamp(player.settings.volume, 0.0f, 1.f);
+                player.setVolume(player.settings.volume);
+                if (player.settings.volume > 0.0f)
+                    mute = false;
+            }
+            ImGui::NextColumn();
+            ImGui::End();
+        }
+            {
+                ImGui::Begin(PlayerTimeId);
+
+                static float actualPlaybackSpeed = 1.0f;
                 {
-                    ImGui::Begin(PlayerTimeId);
+                    const double speedCalcUpdateFrequency = 1.0;
+                    static uint32_t start_time = SDL_GetTicks();
+                    static float lastPlayerPosition = 0.0f;
+                    if (!player.isPaused()) {
+                        if ((SDL_GetTicks() - start_time) / 1000.0f >= speedCalcUpdateFrequency) {
+                            double duration = player.getDuration();
+                            double position = player.getPosition();
+                            double expectedStep = speedCalcUpdateFrequency / duration;
+                            double actualStep = std::abs(position - lastPlayerPosition);
+                            actualPlaybackSpeed = actualStep / expectedStep;
 
-                    static float actualPlaybackSpeed = 1.0f;
-                    {
-                        const double speedCalcUpdateFrequency = 1.0;
-                        static uint32_t start_time = SDL_GetTicks();
-                        static float lastPlayerPosition = 0.0f;
-                        if (!player.isPaused()) {
-                            if ((SDL_GetTicks() - start_time) / 1000.0f >= speedCalcUpdateFrequency) {
-                                double duration = player.getDuration();
-                                double position = player.getPosition();
-                                double expectedStep = speedCalcUpdateFrequency / duration;
-                                double actualStep = std::abs(position - lastPlayerPosition);
-                                actualPlaybackSpeed = actualStep / expectedStep;
-
-                                lastPlayerPosition = player.getPosition();
-                                start_time = SDL_GetTicks();
-                            }
-                        }
-                        else {
                             lastPlayerPosition = player.getPosition();
                             start_time = SDL_GetTicks();
                         }
                     }
-
-                    ImGui::Columns(5, 0, false);
-                    {
-                        // format total duration
-                        // this doesn't need to be done every frame
-                        Util::FormatTime(tmp_buf[1], sizeof(tmp_buf[1]), player.getDuration(), true);
-
-                        double time_seconds = player.getCurrentPositionSecondsInterp();
-                        Util::FormatTime(tmp_buf[0], sizeof(tmp_buf[0]), time_seconds, true);
-                        ImGui::Text(" %s / %s (x%.03f)", tmp_buf[0], tmp_buf[1], actualPlaybackSpeed);
-                        ImGui::NextColumn();
+                    else {
+                        lastPlayerPosition = player.getPosition();
+                        start_time = SDL_GetTicks();
                     }
-
-                    auto& style = ImGui::GetStyle();
-                    ImGui::SetColumnWidth(0, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
-
-                    if (ImGui::Button("1x", ImVec2(0, 0))) {
-                        player.setSpeed(1.f);
-                    }
-                    ImGui::SetColumnWidth(1, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
-                    ImGui::NextColumn();
-
-                    if (ImGui::Button("-10%", ImVec2(0, 0))) {
-                        player.addSpeed(-0.10);
-                    }
-                    ImGui::SetColumnWidth(2, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
-                    ImGui::NextColumn();
-
-                    if (ImGui::Button("+10%", ImVec2(0, 0))) {
-                        player.addSpeed(0.10);
-                    }
-                    ImGui::SetColumnWidth(3, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
-                    ImGui::NextColumn();
-
-                    ImGui::SetNextItemWidth(-1.f);
-                    if (ImGui::SliderFloat("##Speed", &player.settings.playback_speed, player.minPlaybackSpeed, player.maxPlaybackSpeed)) {
-                        player.setSpeed(player.settings.playback_speed);
-                    }
-                    Util::Tooltip("Speed");
-
-                    ImGui::Columns(1, 0, false);
-
-                    float position = player.getPosition();
-                    static bool hasSeeked = false;
-                    if (DrawTimelineWidget("Timeline", &position)) {
-                        if (!player.isPaused()) {
-                            hasSeeked = true;
-                        }
-                        player.setPosition(position, true);
-                    }
-                    if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && hasSeeked) {
-                        player.setPaused(false);
-                        hasSeeked = false;
-                    }
-
-                    scriptPositions.ShowScriptPositions(NULL, player.getCurrentPositionMsInterp());
-                    ImGui::End();
                 }
-                if(settings->data().show_action_editor)
+
+                ImGui::Columns(5, 0, false);
                 {
-                    ImGui::Begin(ActionEditorId, &settings->data().show_action_editor);
-                    if (player.isPaused()) {
-                        auto scriptAction = ActiveFunscript()->GetActionAtTime(player.getCurrentPositionMsInterp(), player.getFrameTimeMs());
+                    // format total duration
+                    // this doesn't need to be done every frame
+                    Util::FormatTime(tmp_buf[1], sizeof(tmp_buf[1]), player.getDuration(), true);
 
-                        if (scriptAction == nullptr)
-                        {
-                            // create action
-                            static int newActionPosition = 0;
-                            ImGui::SliderInt("Position", &newActionPosition, 0, 100);
-                            if (ImGui::Button("New Action")) {
-                                addEditAction(newActionPosition);
-                            }
-                        }
-                    }
-
-                    ImGui::Separator();
-                    ImGui::Columns(1, 0, false);
-                    if (ImGui::Button("100", ImVec2(-1, 0))) {
-                        addEditAction(100);
-                    }
-                    for (int i = 9; i != 0; i--) {
-                        if (i % 3 == 0) {
-                            ImGui::Columns(3, 0, false);
-                        }
-                        sprintf(tmp_buf[0], "%d", i * 10);
-                        if (ImGui::Button(tmp_buf[0], ImVec2(-1, 0))) {
-                            addEditAction(i * 10);
-                        }
-                        ImGui::NextColumn();
-                    }
-                    ImGui::Columns(1, 0, false);
-                    if (ImGui::Button("0", ImVec2(-1, 0))) {
-                        addEditAction(0);
-                    }
-
-                    ImGui::Separator();
-                    ImGui::End();
+                    double time_seconds = player.getCurrentPositionSecondsInterp();
+                    Util::FormatTime(tmp_buf[0], sizeof(tmp_buf[0]), time_seconds, true);
+                    ImGui::Text(" %s / %s (x%.03f)", tmp_buf[0], tmp_buf[1], actualPlaybackSpeed);
+                    ImGui::NextColumn();
                 }
-            }
 
-            if (DebugDemo) {
-                ImGui::ShowDemoWindow(&DebugDemo);
-            }
+                auto& style = ImGui::GetStyle();
+                ImGui::SetColumnWidth(0, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
 
-            if (DebugMetrics) {
-                ImGui::ShowMetricsWindow(&DebugMetrics);
-            }
+                if (ImGui::Button("1x", ImVec2(0, 0))) {
+                    player.setSpeed(1.f);
+                }
+                ImGui::SetColumnWidth(1, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
+                ImGui::NextColumn();
 
-            player.DrawVideoPlayer(NULL);
+                if (ImGui::Button("-10%", ImVec2(0, 0))) {
+                    player.addSpeed(-0.10);
+                }
+                ImGui::SetColumnWidth(2, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
+                ImGui::NextColumn();
+
+                if (ImGui::Button("+10%", ImVec2(0, 0))) {
+                    player.addSpeed(0.10);
+                }
+                ImGui::SetColumnWidth(3, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
+                ImGui::NextColumn();
+
+                ImGui::SetNextItemWidth(-1.f);
+                if (ImGui::SliderFloat("##Speed", &player.settings.playback_speed, player.minPlaybackSpeed, player.maxPlaybackSpeed)) {
+                    player.setSpeed(player.settings.playback_speed);
+                }
+                Util::Tooltip("Speed");
+
+                ImGui::Columns(1, 0, false);
+
+                float position = player.getPosition();
+                static bool hasSeeked = false;
+                if (DrawTimelineWidget("Timeline", &position)) {
+                    if (!player.isPaused()) {
+                        hasSeeked = true;
+                    }
+                    player.setPosition(position, true);
+                }
+                if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && hasSeeked) {
+                    player.setPaused(false);
+                    hasSeeked = false;
+                }
+
+                scriptPositions.ShowScriptPositions(NULL, player.getCurrentPositionMsInterp());
+                ImGui::End();
+            }
+            if(settings->data().show_action_editor)
+            {
+                ImGui::Begin(ActionEditorId, &settings->data().show_action_editor);
+                if (player.isPaused()) {
+                    auto scriptAction = ActiveFunscript()->GetActionAtTime(player.getCurrentPositionMsInterp(), player.getFrameTimeMs());
+
+                    if (scriptAction == nullptr)
+                    {
+                        // create action
+                        static int newActionPosition = 0;
+                        ImGui::SliderInt("Position", &newActionPosition, 0, 100);
+                        if (ImGui::Button("New Action")) {
+                            addEditAction(newActionPosition);
+                        }
+                    }
+                }
+
+                ImGui::Separator();
+                ImGui::Columns(1, 0, false);
+                if (ImGui::Button("100", ImVec2(-1, 0))) {
+                    addEditAction(100);
+                }
+                for (int i = 9; i != 0; i--) {
+                    if (i % 3 == 0) {
+                        ImGui::Columns(3, 0, false);
+                    }
+                    sprintf(tmp_buf[0], "%d", i * 10);
+                    if (ImGui::Button(tmp_buf[0], ImVec2(-1, 0))) {
+                        addEditAction(i * 10);
+                    }
+                    ImGui::NextColumn();
+                }
+                ImGui::Columns(1, 0, false);
+                if (ImGui::Button("0", ImVec2(-1, 0))) {
+                    addEditAction(0);
+                }
+
+                ImGui::Separator();
+                ImGui::End();
+            }
         }
 
-        render();
-        SDL_GL_SwapWindow(window);
+        if (DebugDemo) {
+            ImGui::ShowDemoWindow(&DebugDemo);
+        }
+
+        if (DebugMetrics) {
+            ImGui::ShowMetricsWindow(&DebugMetrics);
+        }
+
+        player.DrawVideoPlayer(NULL);
     }
+
+    render();
+    SDL_GL_SwapWindow(window);
+}
+
+int OpenFunscripter::run() noexcept
+{
+    LOG_DEBUG("Welcom to the cumzone");
+    new_frame();
+    setupDefaultLayout(false);
+    render();
+    #ifndef EMSCRIPTEN
+    while (!exit_app) {
+        step();
+    }
+    #else
+        emscripten_set_main_loop(ems_loop, 0, true);
+    #endif
 	return 0;
 }
 

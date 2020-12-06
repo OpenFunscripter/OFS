@@ -14,7 +14,11 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+#ifdef __EMSCRIPTEN__
+#include "SDL_opengles2.h"
+#else
 #include "glad/glad.h"
+#endif
 
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -44,7 +48,9 @@ bool Util::LoadTextureFromFile(const char* filename, unsigned int* out_texture, 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Upload pixels into texture
+	#ifndef EMSCRIPTEN
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+	#endif
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_width, image_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
 	stbi_image_free(image_data);
 

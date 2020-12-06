@@ -16,7 +16,7 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "UI/KeybindingSystem.cpp"
   "UI/GradientBar.cpp"
   "UI/ScriptPositionsWindow.cpp"
-  "UI/OpenFunscripterVideoplayer.cpp"
+  
   "UI/ScriptSimulator.cpp"
   "UI/SpecialFunctions.cpp"
   "UI/ScriptPositionsOverlayMode.cpp"
@@ -24,11 +24,19 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "event/EventSystem.cpp"
 
   "gl/OFS_Shader.cpp"
-  "gl/Simulator3D.cpp"
-
+  
   "imgui_impl/imgui_impl_opengl3.cpp"
   "imgui_impl/imgui_impl_sdl.cpp" 
+  )
+  
+  if(EMSCRIPTEN)
+  set(OPEN_FUNSCRIPTER_SOURCES ${OPEN_FUNSCRIPTER_SOURCES} "emscripten/OFS_EMS_Player.cpp")
+  else()
+  set(OPEN_FUNSCRIPTER_SOURCES ${OPEN_FUNSCRIPTER_SOURCES} 
+    "UI/OpenFunscripterVideoplayer.cpp"
+    "gl/Simulator3D.cpp"
 )
+endif()
 
 if(WIN32)
 	set(OPEN_FUNSCRIPTER_SOURCES ${OPEN_FUNSCRIPTER_SOURCES} "${CMAKE_SOURCE_DIR}/icon.rc")
@@ -47,12 +55,13 @@ add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
 					${CMAKE_SOURCE_DIR}/data $<TARGET_FILE_DIR:${PROJECT_NAME}>"/data")
 
 if(EMSCRIPTEN)
+message("=================> Welcome to the Cum Zone")
 target_link_libraries(${PROJECT_NAME} PUBLIC
   nlohmann_json
   imgui
   imgui_stdlib
-  SDL2-static
-  SDL2main
+  #SDL2-static
+  #SDL2main
   tinyfiledialogs
   utf8::cpp
   glm
@@ -108,9 +117,18 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	OpenGL
 )
 elseif(EMSCRIPTEN)
-    set(CMAKE_EXECUTABLE_SUFFIX ".html")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_SDL=2 --embed-file ../data")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s USE_SDL=2 --embed-file ../data")
+#    set(EMSCRIPTEN_FLAGS
+#       "-s WASM=1\
+#       -s ERROR_ON_UNDEFINED_SYMBOLS=0\
+#       -s USE_SDL=2\
+#       -s FULL_ES2=1\
+#       -s USE_PTHREADS=1\
+#       --embed-file ${CMAKE_SOURCE_DIR}/data"
+#    )
+#    set(CMAKE_EXECUTABLE_SUFFIX ".html")
+#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EMSCRIPTEN_FLAGS}")
+#    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${EMSCRIPTEN_FLAGS}")
+#    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
 elseif(APPLE)
 target_include_directories(${PROJECT_NAME} PUBLIC
 	"/opt/local/include/"
@@ -164,8 +182,11 @@ if(WIN32)
 	# target_compile_options(${PROJECT_NAME} PRIVATE /W2 /WX)
 	# target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
 elseif(UNIX AND NOT APPLE) # clang/gcc
-	target_compile_options(${PROJECT_NAME} PUBLIC -fno-exceptions -fno-rtti)
-	target_compile_options(${PROJECT_NAME} PUBLIC -fpermissive)
+	target_compile_options(${PROJECT_NAME} PUBLIC -fno-rtti)
+  target_compile_options(${PROJECT_NAME} PUBLIC -fpermissive)
+  target_compile_options(${PROJECT_NAME} PRIVATE -g -fsanitize=undefined)
+  target_link_options(${PROJECT_NAME} PRIVATE -g -fsanitize=undefined)
+
 	# target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic -Werror 
 	# 	-Wno-error=unused-parameter 
 	# 	-Wno-error=unused-variable 
