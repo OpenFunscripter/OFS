@@ -51,17 +51,19 @@ void ScriptingMode::DrawScriptingMode(bool* open) noexcept
     overlay_impl->DrawSettings();
     ImGui::PopItemWidth();
 
-    if (OpenFunscripter::ptr->LoadedFunscripts.size() > 1) {
-        ImGui::Spacing();
-        ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal);
-        ImGui::Spacing();
+    ImGui::Spacing();
+    ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal);
+    ImGui::Spacing();
+    auto app = OpenFunscripter::ptr;
+    ImGui::DragInt("Offset (ms)", &app->settings->data().action_insert_delay_ms);
+    Util::Tooltip("Applies an offset to actions inserted while the video is playing.\n- : inserts earlier\n+ : inserts later");
+    if (app->LoadedFunscripts.size() > 1) {
         ImGui::Checkbox("Mirror mode", &OpenFunscripter::ptr->settings->data().mirror_mode);
         Util::Tooltip("Mirrors add/edit/remove action as well as undo & redo across all loaded scripts.");
     }
     else {
-        OpenFunscripter::ptr->settings->data().mirror_mode = false;
+        app->settings->data().mirror_mode = false;
     }
-
 	ImGui::End();
 }
 
@@ -114,6 +116,10 @@ void ScriptingMode::setOverlay(ScriptingOverlayModes mode) noexcept
 void ScriptingMode::addEditAction(FunscriptAction action) noexcept
 {
     auto app = OpenFunscripter::ptr;
+    if (!app->player.isPaused()) {
+        // apply offset
+        action.at += app->settings->data().action_insert_delay_ms;
+    }
     auto ptr = OpenFunscripter::script().GetActionAtTime(action.at, app->player.getFrameTimeMs());
     if (ptr != nullptr) {
         app->ActiveFunscript()->EditAction(*ptr, FunscriptAction(ptr->at, action.pos));
