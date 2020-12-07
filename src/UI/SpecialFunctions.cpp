@@ -182,8 +182,8 @@ void RamerDouglasPeucker::DrawUI() noexcept
     auto app = OpenFunscripter::ptr;
     auto undoSystem = app->script().undoSystem.get();
     if (app->script().SelectionSize() > 4 || (undoSystem->MatchUndoTop(StateType::SIMPLIFY))) {
-        if (ImGui::DragFloat("Epsilon", &epsilon, 0.1f, 0.1f, 1000.f)) {
-            
+        if (ImGui::DragFloat("Epsilon", &epsilon, 0.1f)) {
+            epsilon = std::max(epsilon, 0.f);
             if (createUndoState ||
                 !undoSystem->MatchUndoTop(StateType::SIMPLIFY)) {
                 undoSystem->Snapshot(StateType::SIMPLIFY);

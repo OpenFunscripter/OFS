@@ -267,7 +267,7 @@ bool OpenFunscripter::setup()
     LOG_DEBUG("trying to create gl context");
     gl_context = SDL_GL_CreateContext(window);
     SDL_GL_MakeCurrent(window, gl_context);
-    SDL_GL_SetSwapInterval(1); // Enable vsync
+    SDL_GL_SetSwapInterval(settings->data().vsync);
     LOG_DEBUG("created gl context");
 
     #ifndef EMSCRIPTEN
@@ -1678,7 +1678,10 @@ int OpenFunscripter::run() noexcept
     render();
     #ifndef EMSCRIPTEN
     while (!exit_app) {
+        const int32_t maxFrameTicks = std::round(1000.0 / settings->data().framerateLimit);
+        auto tickStart = SDL_GetTicks();
         step();
+        while (!settings->data().vsync && SDL_GetTicks() - tickStart < maxFrameTicks) { }
     }
     #else
         emscripten_set_main_loop(ems_loop, 60, true);
@@ -1874,7 +1877,7 @@ void OpenFunscripter::removeAction(FunscriptAction action) noexcept
 
 void OpenFunscripter::removeAction() noexcept
 {
-    if (settings->data().mirror_mode) {
+    if (settings->data().mirror_mode && !ActiveFunscript()->HasSelection()) {
         for (auto&& script : LoadedFunscripts) {
             auto action = script->GetClosestAction(player.getCurrentPositionMsInterp());
             if (action != nullptr) {

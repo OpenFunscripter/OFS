@@ -84,11 +84,23 @@ bool OpenFunscripterSettings::ShowPreferenceWindow()
 
 	if (ImGui::BeginPopupModal("Preferences", &ShowWindow, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		if (ImGui::InputInt("Font size", (int*)&scripterSettings.default_font_size, 1, 1))
+		if (ImGui::Checkbox("Vsync", (bool*)&scripterSettings.vsync)) {
+			scripterSettings.vsync = Util::Clamp(scripterSettings.vsync, 0, 1); // just in case...
+			SDL_GL_SetSwapInterval(scripterSettings.vsync);
 			save = true;
+		}
+		ImGui::SameLine();
+		if (ImGui::InputInt("Frame limit", &scripterSettings.framerateLimit, 1, 10)) {
+			scripterSettings.framerateLimit = Util::Clamp(scripterSettings.framerateLimit, 30, 300);
+			save = true;
+		}
+		if (ImGui::InputInt("Font size", (int*)&scripterSettings.default_font_size, 1, 1)) {
+			save = true;
+		}
 		Util::Tooltip("Requires program restart to take effect");
-		if (ImGui::Checkbox("Force hardware decoding (Requires program restart)", &scripterSettings.force_hw_decoding))
+		if (ImGui::Checkbox("Force hardware decoding (Requires program restart)", &scripterSettings.force_hw_decoding)) {
 			save = true;
+		}
 		Util::Tooltip("Use this for really high resolution video 4K+ VR videos for example.");
 
 		if (ImGui::InputInt("Fast frame step", &scripterSettings.fast_step_amount, 1, 1)) {
