@@ -19,10 +19,6 @@ static bool OutputAudioFile(const char* ffmpeg_path, const char* video_path, con
 
 class ScriptPositionsWindow
 {
-	ImGradient speedGradient;
-	// used for calculating stroke color with speedGradient
-	const float max_speed_per_seconds = 530.f; // arbitrarily choosen maximum tuned for coloring
-	
 	std::vector<float> audio_waveform_avg;
 	bool ffmpegInProgress = false;
 
@@ -65,18 +61,6 @@ private:
 	}
 
 	void updateSelection(bool clear);
-
-	std::vector<FunscriptAction> ActionPositionWindow;
-	std::vector<ImVec2> ActionScreenCoordinates;
-	std::vector<ImVec2> SelectedActionScreenCoordinates;
-	
-	struct ColoredLine {
-		ImVec2 p1;
-		ImVec2 p2;
-		uint32_t color;
-	};
-	std::vector<ColoredLine> ColoredLines;
-
 	void FfmpegAudioProcessingFinished(SDL_Event& ev);
 
 	bool ShowRegularActions = true;
@@ -97,5 +81,5 @@ public:
 	void ShowScriptPositions(bool* open, float currentPositionMs);
 
 	void DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept;
-	void DrawActions(const OverlayDrawingCtx& ctx) noexcept;
+	//void DrawActions(const OverlayDrawingCtx& ctx) noexcept;
 };

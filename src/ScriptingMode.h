@@ -29,8 +29,6 @@ public:
 		ctx().AddAction(action);
 	}
 
-
-
 	virtual void update() noexcept {};
 };
 
@@ -136,7 +134,9 @@ public:
 	inline void PreviousFrame() noexcept { overlay_impl->previousFrame(); }
 	inline void update() noexcept {
 		impl->update();
+		overlay_impl->update();
 	}
 
 	inline const std::unique_ptr<ScripingModeBaseImpl>& CurrentImpl() const { return impl; }
+	inline const std::unique_ptr<BaseOverlay>& Overlay() const { return overlay_impl; }
 };

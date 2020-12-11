@@ -38,21 +38,6 @@ void ScriptPositionsWindow::setup()
 	app->events->Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_drag));
 	app->events->Subscribe(SDL_MOUSEBUTTONUP, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_released));
 	app->events->Subscribe(EventSystem::FfmpegAudioProcessingFinished, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::FfmpegAudioProcessingFinished));
-
-	std::array<ImColor, 4> heatColor{
-		IM_COL32(0xFF, 0xFF, 0xFF, 0xFF),
-		IM_COL32(0x66, 0xff, 0x00, 0xFF),
-		IM_COL32(0xFF, 0xff, 0x00, 0xFF),
-		IM_COL32(0xFF, 0x00, 0x00, 0xFF),
-	};
-
-	float pos = 0.0f;
-	for (auto& col : heatColor) {
-		speedGradient.addMark(pos, col);
-		pos += (1.f / (heatColor.size() - 1));
-	}
-	speedGradient.refreshCache();
-
 }
 
 void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
@@ -61,7 +46,8 @@ void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
 	auto mousePos = ImGui::GetMousePos();
 	auto modstate = SDL_GetModState();
 	FunscriptAction* clickedAction = nullptr;
-	
+	auto app = OpenFunscripter::ptr;
+
 	if (PositionsItemHovered) {
 		if (button.button == SDL_BUTTON_LEFT && button.clicks == 2) {
 			// seek to position double click
@@ -73,11 +59,11 @@ void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
 
 		// test if an action has been clicked
 		int index = 0;
-		for (auto& vert : ActionScreenCoordinates) {
+		for (auto& vert : app->scripting->Overlay()->ActionScreenCoordinates) {
 			const ImVec2 size(10, 10);
 			ImRect rect(vert - size, vert + size);
 			if (rect.Contains(mousePos)) {
-				clickedAction = &ActionPositionWindow[index];
+				clickedAction = &app->scripting->Overlay()->ActionPositionWindow[index];
 				break;
 			}
 			index++;
@@ -210,9 +196,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	drawingCtx.visibleSizeMs = visibleSizeMs;
 	
 
-	ActionScreenCoordinates.clear();
-	ActionPositionWindow.clear();
-	SelectedActionScreenCoordinates.clear();
+
 
 	ImGui::Begin(PositionsId, open, ImGuiWindowFlags_None);
 	auto draw_list = ImGui::GetWindowDrawList();
@@ -273,6 +257,21 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 			IM_COL32(0, 0, 50, 255), IM_COL32(0, 0, 50, 255),
 			IM_COL32(0, 0, 20, 255), IM_COL32(0, 0, 20, 255)
 		);
+
+		auto startIt = std::find_if(script.Actions().begin(), script.Actions().end(),
+		    [&](auto& act) { return act.at >= offset_ms; });
+		if (startIt != script.Actions().begin()) {
+		    startIt -= 1;
+		}
+
+		auto endIt = std::find_if(startIt, script.Actions().end(),
+		    [&](auto& act) { return act.at >= offset_ms + visibleSizeMs; });
+		if (endIt != script.Actions().end()) {
+		    endIt += 1;
+		}
+		drawingCtx.actionFromIdx = std::distance(script.Actions().begin(), startIt);
+		drawingCtx.actionToIdx = std::distance(script.Actions().begin(), endIt);
+
 
 		// draws mode specific things in the timeline
 		// by default it draws the frame and time dividers
@@ -487,13 +486,13 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	}
 
 	// draw points on top of lines
-	for (auto&& p : ActionScreenCoordinates) {
+	for (auto&& p : app->scripting->Overlay()->ActionScreenCoordinates) {
 		draw_list->AddCircleFilled(p, 7.0, IM_COL32(0, 0, 0, 255), 8); // border
 		draw_list->AddCircleFilled(p, 5.0, IM_COL32(255, 0, 0, 255), 8);
 	}
 
 	// draw selected points
-	for (auto&& p : SelectedActionScreenCoordinates) {
+	for (auto&& p : app->scripting->Overlay()->SelectedActionScreenCoordinates) {
 		constexpr auto selectedDots = IM_COL32(11, 252, 3, 255);
 		draw_list->AddCircleFilled(p, 5.0, selectedDots, 8);
 	}
@@ -501,87 +500,86 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	ImGui::End();
 }
 
-void ScriptPositionsWindow::DrawActions(const OverlayDrawingCtx& drawingCtx) noexcept
-{
-	auto& script = *OpenFunscripter::ptr->LoadedFunscripts[drawingCtx.scriptIdx];
-	auto draw_list = drawingCtx.draw_list;
-	if (script.Actions().size() > 0) {
-		// render normal actions
-		if (ShowRegularActions) {
-			auto startIt = std::find_if(script.Actions().begin(), script.Actions().end(),
-				[&](auto& act) { return act.at >= offset_ms; });
-			if (startIt != script.Actions().begin()) {
-				startIt -= 1;
-			}
-
-			auto endIt = std::find_if(startIt, script.Actions().end(),
-				[&](auto& act) { return act.at >= offset_ms + visibleSizeMs; });
-			if (endIt != script.Actions().end()) {
-				endIt += 1;
-			}
-
-			ColoredLines.clear();
-
-			const FunscriptAction* prevAction = nullptr;
-			for (; startIt != endIt; startIt++) {
-				auto& action = *startIt;
-
-				auto p1 = getPointForAction(drawingCtx.canvas_pos, drawingCtx.canvas_size, action);
-				ActionScreenCoordinates.emplace_back(p1);
-				ActionPositionWindow.emplace_back(action);
-
-				if (prevAction != nullptr) {
-					// draw line
-					auto p2 = getPointForAction(drawingCtx.canvas_pos, drawingCtx.canvas_size, *prevAction);
-					// calculate speed relative to maximum speed
-					float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.at - prevAction->at) / 1000.0f)) / max_speed_per_seconds, 0.f, 1.f);
-					ImColor speed_color;
-					speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
-					speed_color.Value.w = 1.f;
-					draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
-					ColoredLines.emplace_back(std::move(ColoredLine{ p1, p2, ImGui::ColorConvertFloat4ToU32(speed_color) }));
-				}
-
-				prevAction = &action;
-			}
-
-			// this is so that the black background line gets rendered first
-			for (auto&& line : ColoredLines) {
-				draw_list->AddLine(line.p1, line.p2, line.color, 3.f);
-			}
-		}
-
-
-		if (script.HasSelection()) {
-			auto startIt = std::find_if(script.Selection().begin(), script.Selection().end(),
-				[&](auto& act) { return act.at >= offset_ms; });
-			if (startIt != script.Selection().begin())
-				startIt -= 1;
-
-			auto endIt = std::find_if(startIt, script.Selection().end(),
-				[&](auto& act) { return act.at >= offset_ms + visibleSizeMs; });
-			if (endIt != script.Selection().end())
-				endIt += 1;
-
-			constexpr auto selectedLines = IM_COL32(3, 194, 252, 255);
-
-			const FunscriptAction* prev_action = nullptr;
-			for (; startIt != endIt; startIt++) {
-				auto&& action = *startIt;
-				auto point = getPointForAction(drawingCtx.canvas_pos, drawingCtx.canvas_size, action);
-
-				if (prev_action != nullptr) {
-					// draw highlight line
-					draw_list->AddLine(getPointForAction(drawingCtx.canvas_pos, drawingCtx.canvas_size, *prev_action), point, selectedLines, 3.0f);
-				}
-
-				SelectedActionScreenCoordinates.emplace_back(point);
-				prev_action = &action;
-			}
-		}
-	}
-
-}
+//void ScriptPositionsWindow::DrawActions(const OverlayDrawingCtx& drawingCtx) noexcept
+//{
+//	auto& script = *OpenFunscripter::ptr->LoadedFunscripts[drawingCtx.scriptIdx];
+//	auto draw_list = drawingCtx.draw_list;
+//	if (script.Actions().size() > 0) {
+//		// render normal actions
+//		if (ShowRegularActions) {
+//			auto startIt = std::find_if(script.Actions().begin(), script.Actions().end(),
+//				[&](auto& act) { return act.at >= offset_ms; });
+//			if (startIt != script.Actions().begin()) {
+//				startIt -= 1;
+//			}
+//
+//			auto endIt = std::find_if(startIt, script.Actions().end(),
+//				[&](auto& act) { return act.at >= offset_ms + visibleSizeMs; });
+//			if (endIt != script.Actions().end()) {
+//				endIt += 1;
+//			}
+//
+//			ColoredLines.clear();
+//
+//			const FunscriptAction* prevAction = nullptr;
+//			for (; startIt != endIt; startIt++) {
+//				auto& action = *startIt;
+//
+//				auto p1 = getPointForAction(drawingCtx.canvas_pos, drawingCtx.canvas_size, action);
+//				ActionScreenCoordinates.emplace_back(p1);
+//				ActionPositionWindow.emplace_back(action);
+//
+//				if (prevAction != nullptr) {
+//					// draw line
+//					auto p2 = getPointForAction(drawingCtx.canvas_pos, drawingCtx.canvas_size, *prevAction);
+//					// calculate speed relative to maximum speed
+//					float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.at - prevAction->at) / 1000.0f)) / max_speed_per_seconds, 0.f, 1.f);
+//					ImColor speed_color;
+//					speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
+//					speed_color.Value.w = 1.f;
+//					draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
+//					ColoredLines.emplace_back(std::move(ColoredLine{ p1, p2, ImGui::ColorConvertFloat4ToU32(speed_color) }));
+//				}
+//
+//				prevAction = &action;
+//			}
+//
+//			// this is so that the black background line gets rendered first
+//			for (auto&& line : ColoredLines) {
+//				draw_list->AddLine(line.p1, line.p2, line.color, 3.f);
+//			}
+//		}
+//
+//
+//		if (script.HasSelection()) {
+//			auto startIt = std::find_if(script.Selection().begin(), script.Selection().end(),
+//				[&](auto& act) { return act.at >= offset_ms; });
+//			if (startIt != script.Selection().begin())
+//				startIt -= 1;
+//
+//			auto endIt = std::find_if(startIt, script.Selection().end(),
+//				[&](auto& act) { return act.at >= offset_ms + visibleSizeMs; });
+//			if (endIt != script.Selection().end())
+//				endIt += 1;
+//
+//			constexpr auto selectedLines = IM_COL32(3, 194, 252, 255);
+//
+//			const FunscriptAction* prev_action = nullptr;
+//			for (; startIt != endIt; startIt++) {
+//				auto&& action = *startIt;
+//				auto point = getPointForAction(drawingCtx.canvas_pos, drawingCtx.canvas_size, action);
+//
+//				if (prev_action != nullptr) {
+//					// draw highlight line
+//					draw_list->AddLine(getPointForAction(drawingCtx.canvas_pos, drawingCtx.canvas_size, *prev_action), point, selectedLines, 3.0f);
+//				}
+//
+//				SelectedActionScreenCoordinates.emplace_back(point);
+//				prev_action = &action;
+//			}
+//		}
+//	}
+//}
 
 void ScriptPositionsWindow::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 {
