@@ -252,7 +252,7 @@ void Funscript::saveMinium(const std::string& path) noexcept
 	startSaveThread(path, std::move(Json));
 }
 
-float Funscript::GetPositionAtTime(int32_t time_ms) noexcept
+float Funscript::GetPositionAtTime(int32_t time_ms, bool easing) noexcept
 {
 	if (data.Actions.size() == 0) {	return 0; } 
 	else if (data.Actions.size() == 1) return data.Actions[0].pos;
@@ -260,12 +260,20 @@ float Funscript::GetPositionAtTime(int32_t time_ms) noexcept
 	for (int i = 0; i < data.Actions.size()-1; i++) {
 		auto& action = data.Actions[i];
 		auto& next = data.Actions[i + 1];
-		
+
 		if (time_ms > action.at && time_ms < next.at) {
 			// interpolate position
 			int32_t last_pos = action.pos;
 			float diff = next.pos - action.pos;
 			float progress = (float)(time_ms - action.at) / (next.at - action.at);
+			
+			if (easing) {
+				//function easeInOutCubic(x: number) : number{
+				//    return x < 0.5 ? 4 * x * x * x : 1 - pow(-2 * x + 2, 3) / 2;
+				//}
+				progress = progress < 0.5f ? 4.f * progress * progress * progress : 1.f - std::pow(-2.f * progress + 2.f, 3.f) / 2.f;
+			}
+
 			float interp = last_pos +(progress * (float)diff);
 			return interp;
 		}

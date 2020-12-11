@@ -11,7 +11,7 @@ std::vector<ImVec2> BaseOverlay::SelectedActionScreenCoordinates;
 std::vector<ImVec2> BaseOverlay::ActionScreenCoordinates;
 std::vector<FunscriptAction> BaseOverlay::ActionPositionWindow;
 bool BaseOverlay::SplineLines = false;
-float BaseOverlay::SplineEasing = 2.5f;
+float BaseOverlay::SplineEasing = 1.5f;
 
 BaseOverlay::BaseOverlay() noexcept
 {
@@ -42,9 +42,11 @@ void BaseOverlay::update() noexcept
 void BaseOverlay::DrawSettings() noexcept
 {
     ImGui::Checkbox("Spline", &SplineLines);
+#ifndef NDEBUG
     ImGui::SameLine();
     ImGui::DragFloat("Easing", &SplineEasing, 0.01f, 1.0f, 100.f);
     Util::Tooltip("Easing");
+#endif
 }
 
 void BaseOverlay::nextFrame() noexcept
@@ -59,6 +61,7 @@ void BaseOverlay::previousFrame() noexcept
 
 void TempoOverlay::DrawSettings() noexcept
 {
+    BaseOverlay::DrawSettings();
     auto app = OpenFunscripter::ptr;
     auto& tempo = app->ActiveFunscript()->scriptSettings.tempoSettings;
     if (ImGui::InputInt("BPM", &tempo.bpm, 1, 100)) {

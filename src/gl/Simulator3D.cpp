@@ -106,15 +106,17 @@ void Simulator3D::ShowWindow(bool* open) noexcept
     float scriptPos = 0.f;
     int32_t loadedScriptsCount = app->LoadedFunscripts.size();
     
+    bool easing = app->scripting->Overlay()->SplineLines;
+
     if (posIndex >= 0 && posIndex < loadedScriptsCount) {
-        scriptPos = app->LoadedFunscripts[posIndex]->GetPositionAtTime(currentMs);
+        scriptPos = app->LoadedFunscripts[posIndex]->GetPositionAtTime(currentMs, easing);
     }
     if (rollIndex >= 0 && rollIndex < loadedScriptsCount) {
-        roll = app->LoadedFunscripts[rollIndex]->GetPositionAtTime(currentMs) - 50.f;
+        roll = app->LoadedFunscripts[rollIndex]->GetPositionAtTime(currentMs, easing) - 50.f;
         roll = (rollRange/2.f) * (roll / 50.f);
     }
     if (pitchIndex >= 0 && pitchIndex < loadedScriptsCount) {
-        pitch = app->LoadedFunscripts[pitchIndex]->GetPositionAtTime(currentMs) - 50.f;
+        pitch = app->LoadedFunscripts[pitchIndex]->GetPositionAtTime(currentMs, easing) - 50.f;
         pitch = (pitchRange/2.f) * (pitch / 50.f);
     }
     //if (twistIndex >= 0 && twistIndex < loadedScriptsCount) {

@@ -177,7 +177,7 @@ public:
 	inline const FunscriptAction* GetPreviousActionBehind(int32_t time_ms) noexcept { return getPreviousActionBehind(time_ms); }
 	inline const FunscriptAction* GetClosestAction(int32_t time_ms) noexcept { return getActionAtTime(data.Actions, time_ms, std::numeric_limits<uint32_t>::max()); }
 
-	float GetPositionAtTime(int32_t time_ms) noexcept;
+	float GetPositionAtTime(int32_t time_ms, bool easing) noexcept;
 	
 	inline void AddAction(FunscriptAction newAction) noexcept { addAction(data.Actions, newAction); }
 	void AddActionSafe(FunscriptAction newAction) noexcept;
