@@ -370,10 +370,11 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 				}
 				ImGui::EndMenu();
 			}
+#ifndef NDEBUG
 			if (ImGui::BeginMenu("Rendering")) {
-				ImGui::MenuItem("Draw actions", NULL, &ShowRegularActions);
 				ImGui::EndMenu();
 			}
+#endif
 			if (ImGui::BeginMenu("Audio waveform")) {
 				ImGui::SliderFloat("Waveform scale", &ScaleAudio, 0.25f, 10.f);
 				if (ImGui::MenuItem("Enable waveform", NULL, &ShowAudioWaveform, !ffmpegInProgress)) {}

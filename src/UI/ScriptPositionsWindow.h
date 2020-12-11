@@ -63,7 +63,6 @@ private:
 	void updateSelection(bool clear);
 	void FfmpegAudioProcessingFinished(SDL_Event& ev);
 
-	bool ShowRegularActions = true;
 	bool ShowAudioWaveform = false;
 	float ScaleAudio = 1.f;
 	float WindowSizeSeconds = 5.f;
@@ -81,5 +80,4 @@ public:
 	void ShowScriptPositions(bool* open, float currentPositionMs);
 
 	void DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept;
-	//void DrawActions(const OverlayDrawingCtx& ctx) noexcept;
 };
