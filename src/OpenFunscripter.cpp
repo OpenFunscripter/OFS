@@ -12,10 +12,6 @@
 #include "imgui_stdlib.h"
 #include "imgui_internal.h"
 
-#ifdef EMSCRIPTEN
-#include <emscripten.h>
-#endif
-
 // TODO: reduce memory usage when generating waveform data
 
 // FIX: Add type checking to the deserialization. 
@@ -59,11 +55,7 @@ constexpr std::array<const char*, 4> SupportedAudioExtensions{
 OpenFunscripter* OpenFunscripter::ptr = nullptr;
 ImFont* OpenFunscripter::DefaultFont2 = nullptr;
 
-#ifndef EMSCRIPTEN
 constexpr const char* glsl_version = "#version 150";
-#else
-constexpr const char* glsl_version = "#version 100";
-#endif
 
 static ImGuiID MainDockspaceID;
 constexpr const char* StatisticsId = "Statistics";
@@ -86,19 +78,15 @@ bool OpenFunscripter::imgui_setup() noexcept
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
-    #ifndef EMSCRIPTEN
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
-    #endif
     io.ConfigWindowsMoveFromTitleBarOnly = true;
     io.ConfigViewportsNoDecoration = false;
     io.ConfigViewportsNoAutoMerge = false;
     io.ConfigViewportsNoTaskBarIcon = false;
     
-    #ifndef EMSCRIPTEN
     static auto imguiIniPath = Util::Prefpath("imgui.ini");
     io.IniFilename = imguiIniPath.c_str();
-    #endif
-
+    
     ImGui::StyleColorsDark();
 
     // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
@@ -115,7 +103,6 @@ bool OpenFunscripter::imgui_setup() noexcept
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // LOAD FONTS
-    #ifndef EMSCRIPTEN
     auto roboto = Util::Resource("fonts/RobotoMono-Regular.ttf");    
     auto fontawesome = Util::Resource("fonts/fontawesome-webfont.ttf");
     auto noto_jp = Util::Resource("fonts/NotoSansJP-Regular.otf");
@@ -178,13 +165,11 @@ bool OpenFunscripter::imgui_setup() noexcept
     glBindTexture(GL_TEXTURE_2D, font_tex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    #ifndef EMSCRIPTEN
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    #endif
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
     io.Fonts->TexID = (void*)(intptr_t)font_tex;
-    #endif
+  
     return true;
 }
 
@@ -225,15 +210,9 @@ bool OpenFunscripter::setup()
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0 /*| SDL_GL_CONTEXT_DEBUG_FLAG*/);
 #endif
 
-#ifndef EMSCRIPTEN
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-#else
-   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-#endif
 
     // antialiasing
     // this caused problems in my linux testing
@@ -255,14 +234,12 @@ bool OpenFunscripter::setup()
     );
     LOG_DEBUG("created window");
 
-    #ifndef EMSCRIPTEN
     SDL_Rect display;
     int windowDisplay = SDL_GetWindowDisplayIndex(window);
     SDL_GetDisplayBounds(windowDisplay, &display);
     if (DefaultWidth >= display.w || DefaultHeight >= display.h) {
         SDL_MaximizeWindow(window);
     }
-    #endif
     
     LOG_DEBUG("trying to create gl context");
     gl_context = SDL_GL_CreateContext(window);
@@ -270,12 +247,10 @@ bool OpenFunscripter::setup()
     SDL_GL_SetSwapInterval(settings->data().vsync);
     LOG_DEBUG("created gl context");
 
-    #ifndef EMSCRIPTEN
     if (gladLoadGL() == 0) {
         LOG_ERROR("Failed to load glad.");
         return false;
     }
-    #endif
     
     if (!imgui_setup()) {
         LOG_ERROR("Failed to setup ImGui");
@@ -344,10 +319,8 @@ bool OpenFunscripter::setup()
     controllerInput->setup();
     simulator.setup();
 
-    #ifndef EMSCRIPTEN
     sim3D = std::make_unique<Simulator3D>();
     sim3D->setup();
-    #endif
 
     SDL_ShowWindow(window);
 
@@ -1261,7 +1234,6 @@ void OpenFunscripter::render() noexcept
     // Update and Render additional Platform Windows
     // (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
     //  For this specific demo app we could also call SDL_GL_MakeCurrent(window, gl_context) directly)
-    #ifndef EMSCRIPTEN
     ImGuiIO& io = ImGui::GetIO();
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
@@ -1271,7 +1243,6 @@ void OpenFunscripter::render() noexcept
         ImGui::RenderPlatformWindowsDefault();
         SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
     }
-    #endif
 }
 
 void OpenFunscripter::process_events() noexcept
@@ -1432,12 +1403,6 @@ void OpenFunscripter::rollingBackup() noexcept
     }
 }
 
-#ifdef EMSCRIPTEN
-static void ems_loop() {
-    OpenFunscripter::ptr->step();
-}
-#endif
-
 void OpenFunscripter::step() noexcept {
 
     process_events();
@@ -1452,20 +1417,8 @@ void OpenFunscripter::step() noexcept {
         simulator.ShowSimulator(&settings->data().show_simulator);
         ShowStatisticsWindow(&settings->data().show_statistics);
         if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { ActiveFunscript()->save(); }
-        #ifndef EMSCRIPTEN
         sim3D->ShowWindow(&settings->data().show_simulator_3d);
-        #endif
         scripting->DrawScriptingMode(NULL);
-
-        #ifdef EMSCRIPTEN
-        ImGui::Begin("Emscripten");
-        static std::string javascript = "alert('hi!')";
-        if(ImGui::InputText("xss", &javascript, ImGuiInputTextFlags_EnterReturnsTrue) || ImGui::Button("Confirm")) {
-            emscripten_run_script(javascript.c_str());
-            javascript.clear();
-        }         
-        ImGui::End();
-        #endif
 
         if (keybinds.ShowBindingWindow()) {
             settings->saveKeybinds(keybinds.getBindings());
@@ -1676,16 +1629,12 @@ int OpenFunscripter::run() noexcept
     new_frame();
     setupDefaultLayout(false);
     render();
-    #ifndef EMSCRIPTEN
     while (!exit_app) {
         const int32_t maxFrameTicks = std::round(1000.0 / settings->data().framerateLimit);
         auto tickStart = SDL_GetTicks();
         step();
         while (!settings->data().vsync && SDL_GetTicks() - tickStart < maxFrameTicks) { }
     }
-    #else
-        emscripten_set_main_loop(ems_loop, 60, true);
-    #endif
 	return 0;
 }
 

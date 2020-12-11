@@ -1,11 +1,7 @@
 #include "OFS_Shader.h"
 #include "OpenFunscripterUtil.h"
 
-#ifdef EMSCRIPTEN
-#include "SDL_opengles2.h"
-#else
 #include "glad/glad.h"
-#endif
 
 ShaderBase::ShaderBase(const char* vtx_shader, const char* frag_shader)
 {

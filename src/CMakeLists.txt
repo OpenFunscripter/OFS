@@ -29,14 +29,11 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "imgui_impl/imgui_impl_sdl.cpp" 
   )
   
-  if(EMSCRIPTEN)
-  set(OPEN_FUNSCRIPTER_SOURCES ${OPEN_FUNSCRIPTER_SOURCES} "emscripten/OFS_EMS_Player.cpp")
-  else()
-  set(OPEN_FUNSCRIPTER_SOURCES ${OPEN_FUNSCRIPTER_SOURCES} 
-    "UI/OpenFunscripterVideoplayer.cpp"
-    "gl/Simulator3D.cpp"
+
+set(OPEN_FUNSCRIPTER_SOURCES ${OPEN_FUNSCRIPTER_SOURCES} 
+	"UI/OpenFunscripterVideoplayer.cpp"
+	"gl/Simulator3D.cpp"
 )
-endif()
 
 if(WIN32)
 	set(OPEN_FUNSCRIPTER_SOURCES ${OPEN_FUNSCRIPTER_SOURCES} "${CMAKE_SOURCE_DIR}/icon.rc")
@@ -54,21 +51,7 @@ add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
 					COMMAND ${CMAKE_COMMAND} -E copy_directory
 					${CMAKE_SOURCE_DIR}/data $<TARGET_FILE_DIR:${PROJECT_NAME}>"/data")
 
-if(EMSCRIPTEN)
-message("=================> Welcome to the Cum Zone")
-target_link_libraries(${PROJECT_NAME} PUBLIC
-  nlohmann_json
-  imgui
-  imgui_stdlib
-  #SDL2-static
-  #SDL2main
-  tinyfiledialogs
-  utf8::cpp
-  glm
-  ImGuizmo
-  ImGuizmoQuat
-)
-else()
+
 target_link_libraries(${PROJECT_NAME} PUBLIC
   nlohmann_json
   imgui
@@ -82,8 +65,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   ImGuizmo
   ImGuizmoQuat
 )
-endif()
-
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
 	"JSON_NOEXCEPTION"
@@ -116,19 +97,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	mpv
 	OpenGL
 )
-elseif(EMSCRIPTEN)
-#    set(EMSCRIPTEN_FLAGS
-#       "-s WASM=1\
-#       -s ERROR_ON_UNDEFINED_SYMBOLS=0\
-#       -s USE_SDL=2\
-#       -s FULL_ES2=1\
-#       -s USE_PTHREADS=1\
-#       --embed-file ${CMAKE_SOURCE_DIR}/data"
-#    )
-#    set(CMAKE_EXECUTABLE_SUFFIX ".html")
-#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EMSCRIPTEN_FLAGS}")
-#    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${EMSCRIPTEN_FLAGS}")
-#    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
 elseif(APPLE)
 target_include_directories(${PROJECT_NAME} PUBLIC
 	"/opt/local/include/"

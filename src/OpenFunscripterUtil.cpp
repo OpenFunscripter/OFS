@@ -14,18 +14,14 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-#ifdef __EMSCRIPTEN__
-#include "SDL_opengles2.h"
-#else
+
 #include "glad/glad.h"
-#endif
 
 #include "imgui.h"
 #include "imgui_internal.h"
 
-#ifndef EMSCRIPTEN
 #include "tinyfiledialogs.h"
-#endif
+
 
 // we pretend whre on a lower standard because the cpp11 header wants to throw desperately and doesn't compile with -fno-exceptions
 #define UTF_CPP_CPLUSPLUS 199711L 
@@ -50,9 +46,7 @@ bool Util::LoadTextureFromFile(const char* filename, unsigned int* out_texture, 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Upload pixels into texture
-	#ifndef EMSCRIPTEN
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-	#endif
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_width, image_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
 	stbi_image_free(image_data);
 
@@ -143,8 +137,6 @@ void Util::OpenFileDialog(const std::string& title, const std::string& path, Fil
 			wc_str.push_back(wfilters.back().c_str());
 		}
 		auto result = tinyfd_utf16to8(tinyfd_openFileDialogW(wtitle.c_str(), wpath.c_str(), wc_str.size(), wc_str.data(), wfilterText.empty() ? NULL : wfilterText.c_str(), data->multiple));
-#elif EMSCRIPTEN
-		auto result = "";
 #else
 		auto result = tinyfd_openFileDialog(data->title.c_str(), data->path.c_str(), data->filters.size(), data->filters.data(), data->filterText.empty() ? NULL : data->filterText.c_str(), data->multiple);
 #endif
@@ -217,11 +209,7 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
 			}
 		}
 
-		#ifndef EMSCRIPTEN
 		auto result = tinyfd_saveFileDialog(data->title.c_str(), data->path.c_str(), data->filters.size(), data->filters.data(), !data->filterText.empty() ? data->filterText.c_str() : NULL);
-		#else
-		auto result = "emscripten";
-		#endif
 
 		FUN_ASSERT(result, "Ignore this if you pressed cancel.");
 		auto saveDialogResult = new FileDialogResult;

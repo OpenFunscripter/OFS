@@ -2,12 +2,9 @@
 
 #include "SDL.h"
 
-#ifdef __EMSCRIPTEN__
-#include "SDL_opengles2.h"
-#else
+
 #include "glad/glad.h"
 #include "Simulator3D.h"
-#endif
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
@@ -128,9 +125,7 @@ public:
 	std::unique_ptr<ControllerInput> controllerInput;
 	std::unique_ptr<OpenFunscripterSettings> settings;
 
-	#ifndef EMSCRIPTEN
 	std::unique_ptr<Simulator3D> sim3D;
-	#endif
 
 	std::vector<std::unique_ptr<Funscript>> LoadedFunscripts;
 
