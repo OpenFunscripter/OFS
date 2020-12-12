@@ -30,7 +30,8 @@ function ScriptToString(self)
 	return result
 end
 
--- internal use only
+-- can be used to temporarily store generated actions
+-- before adding them to CurrenScript
 function Funscript:new(o)
    o = o or {}
    setmetatable(o, self)
@@ -110,4 +111,12 @@ Clipboard = Funscript:new() -- contains the currently copied actions. this is re
 -- utility functions
 function round(x)
    return x>=0 and math.floor(x+0.5) or math.ceil(x-0.5)
- end
+end
+
+function clamp(val, min_value, max_value)
+   return math.min(math.max(val, min_value), max_value)
+end
+
+function lerp(a,b,t) 
+   return a * (1-t) + b * t 
+end

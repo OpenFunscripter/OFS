@@ -58,6 +58,7 @@ private:
 		std::vector<FunscriptAction> collected;
 		std::vector<FunscriptAction> selection;
 	} Thread;
+
 	std::vector<std::string> scripts;
 	bool createUndoState = true;
 

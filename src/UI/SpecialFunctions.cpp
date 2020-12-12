@@ -9,6 +9,7 @@
 #include <sstream>
 
 #include "SDL_thread.h"
+#include "SDL_atomic.h"
 
 SpecialFunctionsWindow::SpecialFunctionsWindow() noexcept
 {
@@ -233,6 +234,7 @@ CustomLua::CustomLua() noexcept
     else {
         LOG_ERROR("Failed to create lua vm.");
     }
+
 }
 
 CustomLua::~CustomLua() noexcept
@@ -249,6 +251,7 @@ void CustomLua::SelectionChanged(SDL_Event& ev) noexcept
         createUndoState = true;
     }
 }
+
 
 void CustomLua::updateScripts() noexcept
 {
@@ -275,8 +278,43 @@ void CustomLua::updateScripts() noexcept
     }
 }
 
+static std::string LuaConsoleBuffer;
+static SDL_SpinLock SpinLock = 0;
+static void WriteToConsole(const std::string& str) noexcept
+{
+    SDL_AtomicLock(&SpinLock);
+    LuaConsoleBuffer += str;
+    LuaConsoleBuffer += "\n";
+    SDL_AtomicUnlock(&SpinLock);
+}
+
+static int LuaPrint(lua_State* L) noexcept
+{
+    int nargs = lua_gettop(L);
+    
+    std::stringstream ss;
+    for (int i = 1; i <= nargs; ++i) {
+         ss << lua_tostring(L, i);
+    }
+    ss << std::endl;
+
+    SDL_AtomicLock(&SpinLock);
+    LuaConsoleBuffer += ss.str();
+    SDL_AtomicUnlock(&SpinLock);
+    return 0;
+}
+
+static const struct luaL_Reg printlib[] = {
+  {"print", LuaPrint},
+  {NULL, NULL} /* end of array */
+};
+
 void CustomLua::resetVM() noexcept
 {
+    SDL_AtomicLock(&SpinLock);
+    LuaConsoleBuffer.clear();
+    SDL_AtomicUnlock(&SpinLock);
+
     auto& L = Thread.L;
     if (L != nullptr) {
         lua_close(L);
@@ -284,12 +322,19 @@ void CustomLua::resetVM() noexcept
     }
     L = luaL_newstate();
     if (L != nullptr) {
+        char tmp[1024];
         luaL_openlibs(L);
+        // override print
+        lua_getglobal(L, "_G");
+        luaL_setfuncs(L, printlib, 0);
+        lua_pop(L, 1);
 
         auto initScript = Util::Resource("lua/funscript.lua");
         int result = luaL_dofile(L, initScript.c_str());
         if (result > 0) {
-            LOGF_ERROR("lua init script error: %s", lua_tostring(L, -1));
+            stbsp_snprintf(tmp, sizeof(tmp), "lua init script error: %s", lua_tostring(L, -1));
+            WriteToConsole(tmp);
+            LOG_ERROR(tmp);
         }
 
         auto app = OpenFunscripter::ptr;
@@ -298,7 +343,6 @@ void CustomLua::resetVM() noexcept
 
         // HACK: this has awful performance like 15000 actions block for 5+ seconds...
         std::stringstream builder;
-        char tmp[1024];
         for (auto&& action : actions) {
             stbsp_snprintf(tmp, sizeof(tmp), "CurrentScript:AddAction(%d, %d, %s)\n",
                 action.at,
@@ -332,27 +376,37 @@ void CustomLua::runScript(const std::string& path) noexcept
     auto luaThread = [](void* user) -> int {
         LuaThread& data = *(LuaThread*)user;
 
-        LOG_INFO("============= SETUP =============");
-        LOG_INFO("Loading script into lua...");
+        WriteToConsole("============= SETUP =============");
+        WriteToConsole("Loading script into lua...");
         auto startTime = std::chrono::high_resolution_clock::now();
         luaL_dostring(data.L, data.setupScript.c_str());
         auto endTime = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-        LOGF_INFO("setup time: %ld ms", duration.count());
+      
+        char tmp[1024];
+        stbsp_snprintf(tmp, sizeof(tmp), "setup time: %ld ms", duration.count());
+        WriteToConsole(tmp);
 
-        LOGF_INFO("path: %s", data.path.c_str());
-        LOG_INFO("============= RUN LUA =============");
+        stbsp_snprintf(tmp, sizeof(tmp), "path: %s", data.path.c_str());
+        WriteToConsole(tmp);
+
+        WriteToConsole("============= RUN LUA =============");
         startTime = std::chrono::high_resolution_clock::now();
         data.result = luaL_dofile(data.L, data.path.c_str());
-        LOGF_INFO("lua result: %d", data.result);
+        stbsp_snprintf(tmp, sizeof(tmp), "lua result: %d", data.result);
+        WriteToConsole(tmp);
+
         if (data.result > 0) {
-            LOGF_ERROR("lua error: %s", lua_tostring(data.L, -1));
+            stbsp_snprintf(tmp, sizeof(tmp), "lua error: %s", lua_tostring(data.L, -1));
+            WriteToConsole(tmp);
+            LOG_ERROR(tmp);
             data.running = false;
         }
         else {
             endTime = std::chrono::high_resolution_clock::now();
             duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-            LOGF_INFO("execution time: %ld ms", duration.count());
+            stbsp_snprintf(tmp, sizeof(tmp), "execution time: %ld ms", duration.count());
+            WriteToConsole(tmp);
 
             data.collected.clear();
             data.selection.clear();
@@ -374,9 +428,13 @@ void CustomLua::runScript(const std::string& path) noexcept
                         script->SelectAll();
                         script->RemoveSelectedActions();
                         for (auto&& act : data.collected) {
+                            act.at = std::max(0, act.at);
+                            act.pos = Util::Clamp<int16_t>(act.pos, 0, 100);
                             script->AddActionSafe(act);
                         }
                         for (auto&& act : data.selection) {
+                            act.at = std::max(0, act.at);
+                            act.pos = Util::Clamp<int16_t>(act.pos, 0, 100);
                             script->SetSelection(act, true);
                         }
                     }
@@ -395,7 +453,7 @@ void CustomLua::runScript(const std::string& path) noexcept
                 SDL_PushEvent(&ev);
             }
         }
-        LOG_INFO("================ END ===============\n\n");
+        WriteToConsole("================ END ===============");
         return 0;
     };
     Thread.currentScriptIdx = OpenFunscripter::ptr->ActiveFunscriptIndex();
@@ -492,4 +550,11 @@ void CustomLua::DrawUI() noexcept
         }
     }
     ImGui::Spacing(); ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal); ImGui::Spacing();
+
+    SDL_AtomicLock(&SpinLock);
+    ImGui::InputTextMultiline("##Console", &LuaConsoleBuffer, ImVec2(-1.f, -1.f), ImGuiInputTextFlags_ReadOnly);
+    SDL_AtomicUnlock(&SpinLock);
+    if (Thread.running) {
+        ImGui::SetScrollHereY();
+    }
 }
