@@ -22,12 +22,12 @@ Funscript = {}
 
 -- tostring function for funscript
 function ScriptToString(self)
-	local result = "actions: "
-	for i,v in ipairs(self.actions) do
-		result = result..tostring(v)
-		result = result..";\n"
-	end
-	return result
+   local result = "actions: "
+   for i,v in ipairs(self.actions) do
+      result = result..tostring(v)
+      result = result..";\n"
+   end
+   return result
 end
 
 -- can be used to temporarily store generated actions
@@ -44,13 +44,13 @@ end
 
 -- removes all actions
 function Funscript:Clear()
-	self.actions = {}
+   self.actions = {}
 end
 
 -- adds an action
 function Funscript:AddAction(at, pos, selected)
-	local newAction = Action:new()
-	newAction.at = at
+   local newAction = Action:new()
+   newAction.at = at
    newAction.pos = pos
    newAction.selected = selected or false
 
