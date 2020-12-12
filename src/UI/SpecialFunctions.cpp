@@ -1,10 +1,14 @@
 #include "SpecialFunctions.h"
 #include "OpenFunscripter.h"
 #include "imgui.h"
+#include "imgui_stdlib.h"
 
 #include "OFS_Lua.h"
 
 #include <filesystem>
+#include <sstream>
+
+#include "SDL_thread.h"
 
 SpecialFunctionsWindow::SpecialFunctionsWindow() noexcept
 {
@@ -223,7 +227,7 @@ CustomLua::CustomLua() noexcept
     auto app = OpenFunscripter::ptr;
     app->events->Subscribe(EventSystem::FunscriptSelectionChangedEvent, EVENT_SYSTEM_BIND(this, &CustomLua::SelectionChanged));
     resetVM();
-    if (L != nullptr) {
+    if (Thread.L != nullptr) {
         updateScripts();
     }
     else {
@@ -233,8 +237,8 @@ CustomLua::CustomLua() noexcept
 
 CustomLua::~CustomLua() noexcept
 {
-    if (L != nullptr) {
-        lua_close(L);
+    if (Thread.L != nullptr) {
+        lua_close(Thread.L);
     }
     OpenFunscripter::ptr->events->UnsubscribeAll(this);
 }
@@ -262,7 +266,10 @@ void CustomLua::updateScripts() noexcept
         name.replace_extension("");
 
         auto extension = it->path().extension().u8string();
-        if (!filename.empty() && extension == ".lua" && name != "funscript") {
+        if (!filename.empty() && extension == ".lua") {
+#ifdef NDEBUG
+            if (name == "funscript") { continue; }
+#endif
             scripts.emplace_back(std::move(filename));
         }
     }
@@ -270,6 +277,7 @@ void CustomLua::updateScripts() noexcept
 
 void CustomLua::resetVM() noexcept
 {
+    auto& L = Thread.L;
     if (L != nullptr) {
         lua_close(L);
         L = nullptr;
@@ -278,59 +286,126 @@ void CustomLua::resetVM() noexcept
     if (L != nullptr) {
         luaL_openlibs(L);
 
-        /*
-        auto newarray = [](lua_State* L) -> int {
-            int n = luaL_checkinteger(L, 1);
-            size_t nbytes = n * sizeof(FunscriptAction);
-            FunscriptAction* a = (FunscriptAction*)lua_newuserdata(L, nbytes);
-            return 1; 
-        };
-        lua_pushcfunction(L, newarray);
-        lua_setglobal(L, "newarray");
-        */
         auto initScript = Util::Resource("lua/funscript.lua");
         int result = luaL_dofile(L, initScript.c_str());
         if (result > 0) {
             LOGF_ERROR("lua init script error: %s", lua_tostring(L, -1));
         }
 
-        // HACK
-        auto& actions = OpenFunscripter::ptr->ActiveFunscript()->Actions();
+        auto app = OpenFunscripter::ptr;
+        auto& script = app->ActiveFunscript();
+        auto& actions = script->Actions();
+
+        // HACK: this has awful performance like 15000 actions block for 5+ seconds...
+        std::stringstream builder;
         char tmp[1024];
         for (auto&& action : actions) {
-            stbsp_snprintf(tmp, sizeof(tmp), "CurrentScript:AddAction(%d, %d)", action.at, action.pos);
-            luaL_dostring(L, tmp);
+            stbsp_snprintf(tmp, sizeof(tmp), "CurrentScript:AddAction(%d, %d, %s)\n",
+                action.at,
+                action.pos,
+                script->IsSelected(action) ? "true" : "false"
+            );
+            builder << tmp;
         }
+        for (auto&& action : app->FunscriptClipboard()) {
+            stbsp_snprintf(tmp, sizeof(tmp), "Clipboard:AddAction(%d, %d, false)\n",
+                action.at,
+                action.pos
+            );
+            builder << tmp;
+        }
+        stbsp_snprintf(tmp, sizeof(tmp), "CurrentTimeMs=%lf\n", app->player.getCurrentPositionMsInterp());
+        builder << tmp;
+        stbsp_snprintf(tmp, sizeof(tmp), "FrameTimeMs=%lf\n", app->player.getFrameTimeMs());
+        builder << tmp;
+            
+        Thread.setupScript = builder.str();
     }
 }
 
-bool CustomLua::runScript(const std::string& path) noexcept
+void CustomLua::runScript(const std::string& path) noexcept
 {
+    if (Thread.running) return;
+    Thread.running = true; 
+
     resetVM();
-    LOGF_INFO("path: %s", path.c_str());
-    LOG_INFO("============= RUN LUA =============");
-    auto startTime = std::chrono::high_resolution_clock::now();
-    int result = luaL_dofile(L, path.c_str());
-    LOGF_INFO("lua result: %d", result);
-    if (result > 0) {
-        LOGF_ERROR("lua error: %s", lua_tostring(L, -1));
-    }
-    else {
+    auto luaThread = [](void* user) -> int {
+        LuaThread& data = *(LuaThread*)user;
+
+        LOG_INFO("============= SETUP =============");
+        LOG_INFO("Loading script into lua...");
+        auto startTime = std::chrono::high_resolution_clock::now();
+        luaL_dostring(data.L, data.setupScript.c_str());
         auto endTime = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-        LOGF_INFO("execution time: %ld ms", duration.count());
-        collectScript();
-    }
-    LOG_INFO("================ END ===============");
-    return result > 0;
+        LOGF_INFO("setup time: %ld ms", duration.count());
+
+        LOGF_INFO("path: %s", data.path.c_str());
+        LOG_INFO("============= RUN LUA =============");
+        startTime = std::chrono::high_resolution_clock::now();
+        data.result = luaL_dofile(data.L, data.path.c_str());
+        LOGF_INFO("lua result: %d", data.result);
+        if (data.result > 0) {
+            LOGF_ERROR("lua error: %s", lua_tostring(data.L, -1));
+            data.running = false;
+        }
+        else {
+            endTime = std::chrono::high_resolution_clock::now();
+            duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+            LOGF_INFO("execution time: %ld ms", duration.count());
+
+            data.collected.clear();
+            data.selection.clear();
+            if (CollectScript(data, data.L)) {
+                // fire event to the main thread
+                auto eventData = new EventSystem::SingleShotEventData;
+                eventData->ctx = &data;
+                
+                eventData->handler = [](void* ctx) {
+                    // script finished handler
+                    // this code executes on the main thread during event processing
+                    LuaThread& data = *(LuaThread*)ctx;
+
+                    auto app = OpenFunscripter::ptr;
+                    if (data.currentScriptIdx < app->LoadedFunscripts.size()) {
+                        auto& script = app->LoadedFunscripts[data.currentScriptIdx];
+                        script->undoSystem->Snapshot(StateType::CUSTOM_LUA);
+                        // TODO: HACK
+                        script->SelectAll();
+                        script->RemoveSelectedActions();
+                        for (auto&& act : data.collected) {
+                            script->AddActionSafe(act);
+                        }
+                        for (auto&& act : data.selection) {
+                            script->SetSelection(act, true);
+                        }
+                    }
+                    app->player.setPosition(data.NewPositionMs);
+
+                    data.collected.clear();
+                    data.collected.shrink_to_fit();
+                    data.selection.clear();
+                    data.selection.shrink_to_fit();
+                    data.running = false;
+                };
+
+                SDL_Event ev;
+                ev.type = EventSystem::SingleShotEvent;
+                ev.user.data1 = eventData;
+                SDL_PushEvent(&ev);
+            }
+        }
+        LOG_INFO("================ END ===============\n\n");
+        return 0;
+    };
+    Thread.currentScriptIdx = OpenFunscripter::ptr->ActiveFunscriptIndex();
+    Thread.path = path;
+    auto thread = SDL_CreateThread(luaThread, "CustomLuaScript", &Thread);
+    SDL_DetachThread(thread);
 }
 
-void CustomLua::collectScript() noexcept
+bool CustomLua::CollectScript(LuaThread& thread, lua_State* L) noexcept
 {
-    auto app = OpenFunscripter::ptr;
-    std::vector<FunscriptAction> collectedScript;
-    collectedScript.reserve(app->ActiveFunscript()->Actions().size());
-
     lua_getglobal(L, "CurrentScript");
     // global
     if (lua_istable(L, -1)) {
@@ -343,13 +418,15 @@ void CustomLua::collectScript() noexcept
                 if (lua_istable(L, -1)) {
                     int32_t at;
                     int32_t pos;
+                    bool selected;
+
                     lua_getfield(L, -1, "at");
                     if (lua_isnumber(L, -1)) {
                         at = lua_tonumber(L, -1);
                     }
                     else {
-                        LOG_ERROR("Abort. Couldn't read \"at\" timestamp value.");
-                        return;
+                        LOG_ERROR("Abort. Couldn't read \"at\" timestamp property.");
+                        return false;
                     }
                     lua_pop(L, 1); // pop at
 
@@ -358,26 +435,41 @@ void CustomLua::collectScript() noexcept
                         pos = lua_tonumber(L, -1);
                     }
                     else {
-                        LOG_ERROR("Abort. Couldn't read position value.");
-                        return;
+                        LOG_ERROR("Abort. Couldn't read position property.");
+                        return false;
                     }
                     lua_pop(L, 1); // pop pos
-                    collectedScript.emplace_back(std::move(FunscriptAction(at, pos)));
+
+                    lua_getfield(L, -1, "selected");
+                    if (lua_isboolean(L, -1)) {
+                        selected = lua_toboolean(L, -1);
+                    }
+                    else {
+                        LOG_ERROR("Abort. Couldn't read selected property.");
+                        return false;
+                    }
+                    lua_pop(L, 1); // pop selected
+
+                    thread.collected.push_back(FunscriptAction(at, pos));
+                    if (selected) {
+                        thread.selection.push_back(FunscriptAction(at, pos));
+                    }
                 }
                 lua_pop(L, 1); // pop action
             }
+            lua_pop(L, 2); // pop CurrentScript.actions & CurrentScript
+            lua_getglobal(L, "CurrentTimeMs");
+            if (lua_isnumber(L, -1)) {
+                thread.NewPositionMs = lua_tonumber(L, -1);
+            }
+            else {
+                LOG_ERROR("Abort. Couldn't read CurrentTimeMs property.");
+                return false;
+            }
+            return true;
         }
     }
-
-    // TODO: MASSIVE HACK!!!   
-    app->ActiveFunscript()->undoSystem->Snapshot(StateType::CUSTOM_LUA);
-    app->ActiveFunscript()->SelectAll();
-    app->ActiveFunscript()->RemoveSelectedActions();
-    for (auto&& action : collectedScript) {
-        action.at = std::max(0, action.at);
-        action.pos = Util::Clamp<int16_t>(action.pos, 0, 100);
-        app->ActiveFunscript()->AddActionSafe(action);
-    }
+    return false;
 }
 
 void CustomLua::DrawUI() noexcept
@@ -386,12 +478,18 @@ void CustomLua::DrawUI() noexcept
     ImGui::SameLine();
     if (ImGui::Button("Script directory")) { Util::OpenFileExplorer(Util::Resource("lua").c_str()); }
     ImGui::Spacing(); ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal); ImGui::Spacing();
-    for (auto&& script : scripts) {
-        if (ImGui::Button(script.c_str())) {
-            auto pathString = Util::Resource("lua");
-            auto scriptPath = Util::PathFromString(pathString);
-            Util::ConcatPathSafe(scriptPath, script);
-            runScript(scriptPath.u8string());
+    if (Thread.running) {
+        ImGui::TextUnformatted("Running script...");
+    }
+    else {
+        for (auto&& script : scripts) {
+            if (ImGui::Button(script.c_str())) {
+                auto pathString = Util::Resource("lua");
+                auto scriptPath = Util::PathFromString(pathString);
+                Util::ConcatPathSafe(scriptPath, script);
+                runScript(scriptPath.u8string());
+            }
         }
     }
+    ImGui::Spacing(); ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal); ImGui::Spacing();
 }

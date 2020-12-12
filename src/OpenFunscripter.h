@@ -151,4 +151,6 @@ public:
 
 	static inline Funscript& script() noexcept { return *OpenFunscripter::ptr->ActiveFunscript(); }
 	static void SetCursorType(ImGuiMouseCursor id) noexcept;
+
+	inline const std::vector<FunscriptAction>& FunscriptClipboard() const { return CopiedSelection; }
 };

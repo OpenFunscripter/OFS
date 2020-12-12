@@ -811,6 +811,12 @@ void Funscript::MoveSelectionPosition(int32_t pos_offset) noexcept
 	NotifyActionsChanged(true);
 }
 
+bool Funscript::IsSelected(FunscriptAction action) noexcept
+{
+	auto it = std::find(data.selection.begin(), data.selection.end(), action);
+	return it != data.selection.end();
+}
+
 void Funscript::EqualizeSelection() noexcept
 {
 	if (data.selection.size() < 3) return;

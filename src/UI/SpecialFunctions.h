@@ -45,14 +45,26 @@ public:
 class CustomLua : public FunctionBase 
 {
 private:
-	struct lua_State* L = nullptr;
+	//struct lua_State* L = nullptr;
+	struct LuaThread {
+		struct lua_State* L = nullptr;
+		std::string path;
+		std::string setupScript;
+		int result = 0;
+		bool running = false;
+		int32_t currentScriptIdx = 0;
+
+		int32_t NewPositionMs = 0;
+		std::vector<FunscriptAction> collected;
+		std::vector<FunscriptAction> selection;
+	} Thread;
 	std::vector<std::string> scripts;
 	bool createUndoState = true;
 
 	void updateScripts() noexcept;
 	void resetVM() noexcept;
-	bool runScript(const std::string& path) noexcept;
-	void collectScript() noexcept;
+	void runScript(const std::string& path) noexcept;
+	static bool CollectScript(LuaThread& thread, struct lua_State* L) noexcept;
 public:
 	CustomLua() noexcept;
 	virtual ~CustomLua() noexcept;
