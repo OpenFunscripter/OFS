@@ -39,6 +39,7 @@ enum class StateType : int32_t {
 	MOVE_ACTION_TO_CURRENT_POS = 20,
 	
 	SIMPLIFY = 21,
+	CUSTOM_LUA = 22,
 	// add more here & update stateStrings in UndoSystem.cpp
 
 

@@ -22,3 +22,6 @@
 [submodule "lib/imGuIZMO_Quat"]
 	path = lib/imGuIZMO_Quat
 	url = https://github.com/BrutPitt/imGuIZMO.quat.git
+[submodule "lib/lua"]
+	path = lib/lua
+	url = https://github.com/lua/lua.git

@@ -64,6 +64,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   glm
   ImGuizmo
   ImGuizmoQuat
+  lua
 )
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
@@ -113,6 +114,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	"${PROJECT_SOURCE_DIR}/event/"
 	"${PROJECT_SOURCE_DIR}/Funscript/"
 	"${PROJECT_SOURCE_DIR}/gl/"
+	"${PROJECT_SOURCE_DIR}/lua/"
 	"${CMAKE_SOURCE_DIR}/lib/minimp3/"
 )
 

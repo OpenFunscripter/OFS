@@ -24,6 +24,55 @@ target_include_directories(glad PUBLIC "glad/include/")
 # ==========
 add_subdirectory("glm")
 
+
+# ==========
+# == LUA ===
+# ==========
+set (LUA_SOURCES 
+	"lua/lauxlib.c"
+	"lua/lbaselib.c"
+	"lua/ltablib.c"
+	"lua/lutf8lib.c"
+
+	"lua/lmathlib.c"
+	"lua/lstrlib.c"
+	"lua/loadlib.c"
+	"lua/loslib.c"
+	"lua/liolib.c"
+	"lua/ldblib.c"
+	"lua/lcorolib.c"
+
+	"lua/lapi.c"
+	"lua/lstate.c"
+	"lua/ldebug.c"
+	"lua/lzio.c"
+	"lua/llex.c"
+	"lua/lvm.c"
+	"lua/ldump.c"
+	"lua/ltm.c"
+	"lua/lstring.c"
+	"lua/lopcodes.c"
+	"lua/lobject.c"
+	"lua/lmem.c"
+	"lua/linit.c"
+	"lua/ltable.c"
+	"lua/lctype.c"
+	"lua/ldo.c"
+	"lua/lfunc.c"
+	"lua/lundump.c"
+	"lua/lgc.c"
+	"lua/lparser.c"
+	"lua/lcode.c"
+)
+set (LUA_HEADERS 
+	"lua/lua.h"
+	"lua/lauxlib.h"
+	"lua/lualib.h"
+)
+add_library(lua STATIC ${LUA_SOURCES} ${LUA_HEADERS})
+set_target_properties(lua PROPERTIES LINKER_LANGUAGE C)
+target_include_directories(lua PUBLIC "lua/")
+
 # =========
 # = IMGUI =
 # =========
@@ -58,9 +107,9 @@ target_link_libraries(ImGuizmo PUBLIC imgui)
 target_compile_features(ImGuizmo PUBLIC cxx_std_11)
 
 
-# ============
-# = ImGuizmo =
-# ============
+# =================
+# = imGuIZMO_Quat =
+# =================
 file (GLOB ImGuizmoQuat_SOURCES imGuIZMO_Quat/imGuIZMO.quat/*.cpp)
 file (GLOB ImGuizmoQuat_HEADERS imGuIZMO_Quat/imGuIZMO.quat//*.h)
 add_library(ImGuizmoQuat STATIC ${ImGuizmoQuat_SOURCES} ${ImGuizmoQuat_HEADERS})

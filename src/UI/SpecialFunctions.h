@@ -8,6 +8,7 @@ enum SpecialFunctions : int32_t
 {
 	RANGE_EXTENDER,
 	RAMER_DOUGLAS_PEUCKER, // simplification
+	CUSTOM_LUA_FUNCTIONS,
 	TOTAL_FUNCTIONS_COUNT
 };
 
@@ -15,7 +16,7 @@ class FunctionBase {
 protected:
 	inline Funscript& ctx() noexcept;
 public:
-	virtual ~FunctionBase() {}
+	virtual ~FunctionBase() noexcept {}
 	virtual void DrawUI() noexcept = 0;
 };
 
@@ -24,8 +25,8 @@ class FunctionRangeExtender : public FunctionBase
 	int32_t rangeExtend = 0;
 	bool createUndoState = true;
 public:
-	FunctionRangeExtender();
-	virtual ~FunctionRangeExtender();
+	FunctionRangeExtender() noexcept;
+	virtual ~FunctionRangeExtender() noexcept;
 	void SelectionChanged(SDL_Event& ev) noexcept;
 	virtual void DrawUI() noexcept override;
 };
@@ -35,8 +36,26 @@ class RamerDouglasPeucker : public FunctionBase
 	float epsilon = 0.0f;
 	bool createUndoState = true;
 public:
-	RamerDouglasPeucker();
-	virtual ~RamerDouglasPeucker();
+	RamerDouglasPeucker() noexcept;
+	virtual ~RamerDouglasPeucker() noexcept;
+	void SelectionChanged(SDL_Event& ev) noexcept;
+	virtual void DrawUI() noexcept override;
+};
+
+class CustomLua : public FunctionBase 
+{
+private:
+	struct lua_State* L = nullptr;
+	std::vector<std::string> scripts;
+	bool createUndoState = true;
+
+	void updateScripts() noexcept;
+	void resetVM() noexcept;
+	bool runScript(const std::string& path) noexcept;
+	void collectScript() noexcept;
+public:
+	CustomLua() noexcept;
+	virtual ~CustomLua() noexcept;
 	void SelectionChanged(SDL_Event& ev) noexcept;
 	virtual void DrawUI() noexcept override;
 };

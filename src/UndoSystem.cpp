@@ -36,6 +36,7 @@ static std::array<const std::string, (int32_t)StateType::TOTAL_UNDOSTATE_TYPES> 
 	"Move to current position",
 
 	"Simplify",
+	"Lua script",
 };
 
 void UndoSystem::SnapshotRedo(StateType type) noexcept
