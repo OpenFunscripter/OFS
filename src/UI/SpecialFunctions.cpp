@@ -266,6 +266,7 @@ CustomLua::~CustomLua() noexcept
 {
     if (Thread.L != nullptr) {
         lua_close(Thread.L);
+        Thread.L = nullptr;
     }
     OpenFunscripter::ptr->events->UnsubscribeAll(this);
 }
@@ -338,19 +339,18 @@ void CustomLua::resetVM() noexcept
     SDL_AtomicUnlock(&SpinLock);
     WriteToConsole("Running " LUA_VERSION " ...");
     
-    auto& L = Thread.L;
-    if (L != nullptr) {
-        lua_close(L);
-        L = nullptr;
+    if (Thread.L != nullptr) {
+        lua_close(Thread.L);
+        Thread.L = nullptr;
     }
-    L = luaL_newstate();
-    if (L != nullptr) {
+    Thread.L = luaL_newstate();
+    if (Thread.L != nullptr) {
         char tmp[1024];
-        luaL_openlibs(L);
+        luaL_openlibs(Thread.L);
         // override print
-        lua_getglobal(L, "_G");
-        luaL_setfuncs(L, printlib, 0);
-        lua_pop(L, 1);
+        lua_getglobal(Thread.L, "_G");
+        luaL_setfuncs(Thread.L, printlib, 0);
+        lua_pop(Thread.L, 1);
 
         auto LuaSetProgress = [](lua_State* L) -> int {
             if (lua_isnumber(L, 1)) {
@@ -359,13 +359,13 @@ void CustomLua::resetVM() noexcept
             }
             return 0;
         };
-        lua_pushcfunction(L, LuaSetProgress);
-        lua_setglobal(L, "SetProgress");
+        lua_pushcfunction(Thread.L, LuaSetProgress);
+        lua_setglobal(Thread.L, "SetProgress");
 
         auto initScript = Util::Resource("lua/funscript.lua");
-        int result = luaL_dofile(L, initScript.c_str());
+        int result = luaL_dofile(Thread.L, initScript.c_str());
         if (result > 0) {
-            stbsp_snprintf(tmp, sizeof(tmp), "lua init script error: %s", lua_tostring(L, -1));
+            stbsp_snprintf(tmp, sizeof(tmp), "lua init script error: %s", lua_tostring(Thread.L, -1));
             WriteToConsole(tmp);
             LOG_ERROR(tmp);
         }
