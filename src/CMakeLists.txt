@@ -153,9 +153,10 @@ if(WIN32)
 	# target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
 elseif(UNIX AND NOT APPLE) # clang/gcc
 	target_compile_options(${PROJECT_NAME} PUBLIC -fno-rtti)
-  target_compile_options(${PROJECT_NAME} PUBLIC -fpermissive)
-  target_compile_options(${PROJECT_NAME} PRIVATE -g -fsanitize=undefined)
-  target_link_options(${PROJECT_NAME} PRIVATE -g -fsanitize=undefined)
+    target_compile_options(${PROJECT_NAME} PUBLIC -fpermissive)
+    
+	#target_compile_options(${PROJECT_NAME} PRIVATE -g -fsanitize=undefined)
+    #target_link_options(${PROJECT_NAME} PRIVATE -g -fsanitize=undefined)
 
 	# target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic -Werror 
 	# 	-Wno-error=unused-parameter 

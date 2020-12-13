@@ -20,7 +20,7 @@ public:
 	uint16_t flags; // unused
 
 	FunscriptAction() noexcept
-		: at(std::numeric_limits<int32_t>::min()), pos(std::numeric_limits<int32_t>::min()), flags(ActionFlags::None) {}
+		: at(std::numeric_limits<int32_t>::min()), pos(std::numeric_limits<int16_t>::min()), flags(ActionFlags::None) {}
 
 	FunscriptAction(int32_t at, int32_t pos) noexcept
 	{
