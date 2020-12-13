@@ -52,6 +52,7 @@ struct FunscriptActionHashfunction
 {
 	inline std::size_t operator()(FunscriptAction s) const noexcept
 	{
+		static_assert(sizeof(FunscriptAction) == sizeof(int64_t));
 		return *(int64_t*)&s;
 	}
 };
