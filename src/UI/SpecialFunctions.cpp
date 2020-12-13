@@ -471,6 +471,9 @@ bool CollectScript(LuaThread& thread, lua_State* L) noexcept
                     }
                     lua_pop(L, 1); // pop selected
 
+                    pos = Util::Clamp(pos, 0, 100);
+                    at = std::max(at, 0);
+
                     thread.collected.insert(FunscriptAction(at, pos));
                     if (selected) {
                         thread.selection.insert(FunscriptAction(at, pos));
