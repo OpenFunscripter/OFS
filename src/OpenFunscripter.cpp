@@ -1316,7 +1316,7 @@ void OpenFunscripter::update() noexcept {
     ControllerInput::UpdateControllers();
     scripting->update();
 
-    if (AutoBackup) {
+    if (AutoBackup && player.isPaused()) {
         autoBackup();
     }
 }
