@@ -1609,7 +1609,6 @@ void OpenFunscripter::step() noexcept {
 
 int OpenFunscripter::run() noexcept
 {
-    LOG_DEBUG("Welcom to the cumzone");
     new_frame();
     setupDefaultLayout(false);
     render();
@@ -1635,7 +1634,6 @@ void OpenFunscripter::shutdown() noexcept
 
 void OpenFunscripter::SetCursorType(ImGuiMouseCursor id) noexcept
 {
-    //SDL_SetCursor(SystemCursors[id]);
     ImGui::SetMouseCursor(id);
 }
 
