@@ -21,6 +21,12 @@ for idx, action in ipairs(CurrentScript.actions) do
       action.at = math.max(action.at, 0)
 
       -- clamp position between 0 and 100
-      action.pos = clamp(action.pos, 0, 100)
+      action.pos = clamp(action.pos, 0, 100)     
+   end
+
+   -- update progress bar every 100 actions
+   if idx % 100 == 0 then
+      -- SetProgress expects a number between 0 and 1
+      SetProgress(idx / #CurrentScript.actions)
    end
 end

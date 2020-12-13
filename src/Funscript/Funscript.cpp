@@ -482,6 +482,14 @@ std::vector<FunscriptAction> Funscript::GetLastStroke(int32_t time_ms) noexcept
 	return stroke;
 }
 
+void Funscript::SetActions(const std::vector<FunscriptAction>& override_with) noexcept
+{
+	data.Actions.clear();
+	data.Actions.assign(override_with.begin(), override_with.end());
+	sortActions(data.Actions);
+	NotifyActionsChanged(true);
+}
+
 void Funscript::RangeExtendSelection(int32_t rangeExtend) noexcept
 {
 	auto ExtendRange = [](std::vector<FunscriptAction*>& actions, int32_t rangeExtend) -> void {
@@ -595,6 +603,7 @@ void Funscript::SetSelection(FunscriptAction action, bool selected) noexcept
 	}
 	else if(!is_selected && selected) {
 		data.selection.emplace_back(action);
+		sortSelection();
 	}
 	NotifySelectionChanged();
 }
@@ -809,6 +818,23 @@ void Funscript::MoveSelectionPosition(int32_t pos_offset) noexcept
 		data.selection.emplace_back(*move);
 	}
 	NotifyActionsChanged(true);
+}
+
+void Funscript::SetSelection(const std::vector<FunscriptAction>& action_to_select, bool unsafe) noexcept
+{
+	ClearSelection();
+	for (auto&& action : action_to_select) {
+		if (unsafe) {
+			data.selection.emplace_back(action);
+		}
+		else {
+			auto it = std::find(data.Actions.begin(), data.Actions.end(), action);
+			if (it != data.Actions.end()) {
+				data.selection.emplace_back(action);
+			}
+		}
+	}
+	sortSelection();
 }
 
 bool Funscript::IsSelected(FunscriptAction action) noexcept

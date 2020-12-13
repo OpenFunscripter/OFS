@@ -190,6 +190,8 @@ public:
 
 	std::vector<FunscriptAction> GetLastStroke(int32_t time_ms) noexcept;
 
+	void SetActions(const std::vector<FunscriptAction>& override_with) noexcept;
+
 	// bookmarks
 	inline const std::vector<Funscript::Bookmark>& Bookmarks() const noexcept { return scriptSettings.Bookmarks; }
 	inline void AddBookmark(const Funscript::Bookmark& bookmark) noexcept { 
@@ -221,6 +223,7 @@ public:
 	inline void ClearSelection() noexcept { data.selection.clear(); }
 	inline const FunscriptAction* GetClosestActionSelection(int32_t time_ms) noexcept { return getActionAtTime(data.selection, time_ms, std::numeric_limits<int32_t>::max()); }
 	
+	void SetSelection(const std::vector<FunscriptAction>& action_to_select, bool unsafe) noexcept;
 	bool IsSelected(FunscriptAction action) noexcept;
 
 	void EqualizeSelection() noexcept;

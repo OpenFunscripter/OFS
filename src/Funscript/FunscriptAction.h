@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <limits>
 
+#include<functional>
+
 enum ActionFlags : uint16_t {
 	None = 0x0,
 	//MAX = 0x1 << 15
@@ -43,5 +45,13 @@ public:
 	inline void reflect(Archive& ar) {
 		OFS_REFLECT(at, ar);
 		OFS_REFLECT(pos, ar);
+	}
+};
+
+struct FunscriptActionHashfunction
+{
+	inline std::size_t operator()(FunscriptAction s) const noexcept
+	{
+		return *(int64_t*)&s;
 	}
 };

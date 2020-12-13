@@ -1,7 +1,6 @@
 -- frequency every n frames
 -- round(100/FrameTimeMs) makes it roughly so that one point every 100 ms gets placed
-local point_frequency = round(100 / FrameTimeMs)
-
+local point_frequency = 100 / FrameTimeMs
 
 -- create a container to hold added actions temporarily
 -- since we can't add actions as we are iterating the script
@@ -38,7 +37,7 @@ for idx, action in ipairs(CurrentScript.actions) do
         -- amount of points to add between previous_action and action
         point_count = round(duration / (FrameTimeMs * point_frequency))-1
         
-        -- generate points betweem previous_action and action       
+        -- generate points between previous_action and action       
         for i=1, point_count, 1 do
             progress = i/(point_count+1)
             
@@ -46,13 +45,18 @@ for idx, action in ipairs(CurrentScript.actions) do
             interpolated_pos = round(easeInOutCubic(previous_action.pos, action.pos, progress))
 
             -- store new action in TmpScript
-            TmpScript:AddAction(time_ms, interpolated_pos)
+            -- this is faster than "AddAction"
+            -- since we don't have to care about the order in which actions are stored
+            -- in this case
+            TmpScript:AddActionUnordered(time_ms, interpolated_pos)
+            -- TmpScript:AddAction(time_ms, interpolated_pos) -- terrible performance. use only when temporal order matters
         end
     end
 
-    -- print progress every 100 actions
+    -- update progress bar every 100 actions
     if idx % 100 == 0 then
-        print("progress: " .. idx / #CurrentScript.actions)
+        -- SetProgress expects a number between 0 and 1
+        SetProgress(idx / #CurrentScript.actions)
     end
     previous_action = action
 
@@ -62,8 +66,16 @@ end
 -- copy actions from the temporary container to the CurrentScript
 print("adding easing points")
 for idx, action in ipairs(TmpScript.actions) do
-    CurrentScript:AddAction(action.at, action.pos, true) -- mark all added actions as selected
+
+    -- AddAction defined in funscript.lua searches all the actions to find the place where to insert to keep the actions ordered by time
+    -- but we don't actually need to keep the order which is why AddActionUnordered
+    -- when OFS loads the data back it will reorder them
+    CurrentScript:AddActionUnordered(action.at, action.pos, true) -- mark all added actions as selected
+    -- CurrentScript:AddAction(action.at, action.pos, true) -- terrible performance. use only when temporal order matters
+
+
     if idx % 100 == 0 then
-        print("progress: " .. idx / #TmpScript.actions)
+        -- SetProgress expects a number between 0 and 1
+        SetProgress(idx / #TmpScript.actions)
     end
 end

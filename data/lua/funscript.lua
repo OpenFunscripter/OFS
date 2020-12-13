@@ -47,7 +47,7 @@ function Funscript:Clear()
    self.actions = {}
 end
 
--- adds an action
+-- adds an action & makes sure it's in temporal order
 function Funscript:AddAction(at, pos, selected)
    local newAction = Action:new()
    newAction.at = at
@@ -73,6 +73,20 @@ function Funscript:AddAction(at, pos, selected)
       print("ERROR: failed to add action at: " .. at)
    end
 end
+
+
+-- adds action & ignores ordering
+-- OFS will order them correctly after the script ran
+-- using this function when order doesn't matter greatly improves performance
+function Funscript:AddActionUnordered(at, pos, selected)
+   local newAction = Action:new()
+   newAction.at = at
+   newAction.pos = pos
+   newAction.selected = selected or false
+
+   table.insert(self.actions, newAction)
+end
+
 
 -- removes an action at a given index
 function Funscript:RemoveAction(idx) 
