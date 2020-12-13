@@ -2810,16 +2810,28 @@ void OpenFunscripter::UpdateTimelineGradient(ImGradient& grad)
     }
     HeatMap.refreshCache();
 
-    auto getSegments = [](const std::vector<FunscriptAction>& actions, int32_t gapDurationMs) -> std::vector<std::vector<FunscriptAction>> {
+    auto getSegments = [](const std::vector<FunscriptAction>& actions, int32_t gapDurationMs) -> std::vector<std::vector<FunscriptAction>> {       
+        int prev_direction = 0; // 0 neutral 0< up 0> down
         std::vector<std::vector<FunscriptAction>> segments;
         {
-            FunscriptAction previous(0, -1);
+            FunscriptAction previous(0, 0);
 
             for (auto& action : actions)
             {
                 if (previous.pos == action.pos) { 
                     continue;
                 }
+                
+                // filter out actions which don't change direction
+                int direction = action.pos - previous.pos;
+                if (direction > 0 && prev_direction > 0) {
+                    continue;
+                }
+                else if (direction < 0 && prev_direction < 0) {
+                    continue;
+                }
+
+                prev_direction = direction;
 
                 if (action.at - previous.at >= gapDurationMs) {
                     segments.emplace_back();
