@@ -332,6 +332,22 @@ static const struct luaL_Reg printlib[] = {
   {NULL, NULL} /* end of array */
 };
 
+static int LuaDoFile(lua_State* L, const char* path) {
+    // luaL_dofile doesn't handle spaces in paths ...
+    auto handle = SDL_RWFromFile(path, "r");
+    if (handle != nullptr) {
+        size_t buf_size = SDL_RWsize(handle);
+        char* buffer = new char[buf_size+1];
+        SDL_RWread(handle, buffer, sizeof(char), buf_size);
+        buffer[buf_size] = '\0';
+        SDL_RWclose(handle);
+        int result = luaL_dostring(L, buffer);
+        delete[] buffer;
+        return result;
+    }
+    return -1;
+}
+
 void CustomLua::resetVM() noexcept
 {
     SDL_AtomicLock(&SpinLock);
@@ -363,7 +379,9 @@ void CustomLua::resetVM() noexcept
         lua_setglobal(Thread.L, "SetProgress");
 
         auto initScript = Util::Resource("lua/funscript.lua");
-        int result = luaL_dofile(Thread.L, initScript.c_str());
+        
+        int result = LuaDoFile(Thread.L, initScript.c_str());
+
         if (result > 0) {
             stbsp_snprintf(tmp, sizeof(tmp), "lua init script error: %s", lua_tostring(Thread.L, -1));
             WriteToConsole(tmp);
@@ -523,7 +541,7 @@ void CustomLua::runScript(const std::string& path) noexcept
 
         WriteToConsole("============= RUN LUA =============");
         startTime = std::chrono::high_resolution_clock::now();
-        data.result = luaL_dofile(data.L, data.path.c_str());
+        data.result = LuaDoFile(data.L, data.path.c_str());
         stbsp_snprintf(tmp, sizeof(tmp), "lua result: %d", data.result);
         WriteToConsole(tmp);
 

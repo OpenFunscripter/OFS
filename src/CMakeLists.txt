@@ -49,7 +49,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
 # copy data directory
 add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
 					COMMAND ${CMAKE_COMMAND} -E copy_directory
-					${CMAKE_SOURCE_DIR}/data $<TARGET_FILE_DIR:${PROJECT_NAME}>"/data")
+					"${CMAKE_SOURCE_DIR}/data/" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/data")
 
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
@@ -75,7 +75,7 @@ if(WIN32)
 	# copy mpv-1.dll to bin dir
 	add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy
-                   "${CMAKE_SOURCE_DIR}/lib/libmpv/mpv-1.dll" $<TARGET_FILE_DIR:${PROJECT_NAME}>"/mpv-1.dll")
+                   "${CMAKE_SOURCE_DIR}/lib/libmpv/mpv-1.dll" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/mpv-1.dll")
 	target_include_directories(${PROJECT_NAME} PRIVATE 
 		"${CMAKE_SOURCE_DIR}/lib/libmpv/include"
 	)
