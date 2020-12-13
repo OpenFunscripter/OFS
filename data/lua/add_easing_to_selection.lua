@@ -42,7 +42,7 @@ for idx, action in ipairs(CurrentScript.actions) do
             progress = i/(point_count+1)
             
             time_ms = round(previous_action.at + (i*FrameTimeMs * point_frequency))
-            interpolated_pos = round(easeInOutCubic(previous_action.pos, action.pos, progress))
+            interpolated_pos = easeInOutCubic(previous_action.pos, action.pos, progress)
 
             -- store new action in TmpScript
             -- this is faster than "AddAction"
