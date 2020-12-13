@@ -322,7 +322,14 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
 
                 if (prev_action != nullptr) {
                     // draw highlight line
-                    ctx.draw_list->AddLine(getPointForAction(ctx, *prev_action), point, selectedLines, 3.0f);
+                    if (SplineLines) {
+                        auto p1 = getPointForAction(ctx, *prev_action);
+                        float splineEasing = (p1.x - point.x) / SplineEasing;
+                        ctx.draw_list->AddBezierCurve(p1, p1 - ImVec2(splineEasing, 0.f), point + ImVec2(splineEasing, 0.f), point, selectedLines, 3.0f);
+                    }
+                    else {
+                        ctx.draw_list->AddLine(getPointForAction(ctx, *prev_action), point, selectedLines, 3.0f);
+                    }
                 }
 
                 SelectedActionScreenCoordinates.emplace_back(point);
