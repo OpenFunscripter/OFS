@@ -90,7 +90,7 @@ void Util::Tooltip(const char* tip) noexcept
 {
 	if (ImGui::IsItemHovered()) {
 		ImGui::BeginTooltip();
-		ImGui::Text("%s", tip);
+		ImGui::TextUnformatted(tip);
 		ImGui::EndTooltip();
 	}
 }

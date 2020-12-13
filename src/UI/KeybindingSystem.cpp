@@ -387,7 +387,7 @@ bool KeybindingSystem::ShowBindingWindow()
                     auto& binding = *bindingPtr;
 
                     ImGui::PushID(id++);
-                    ImGui::Text("%s", binding.description.c_str()); ImGui::NextColumn();
+                    ImGui::TextUnformatted(binding.description.c_str()); ImGui::NextColumn();
                     if(ImGui::Button(!binding.key.key_str.empty() ? binding.key.key_str.c_str() : "-- Not set --", ImVec2(-1.f, 0.f))) {
                         changingController = false;
                         currentlyChanging = &binding;

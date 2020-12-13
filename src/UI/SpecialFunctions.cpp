@@ -327,7 +327,7 @@ static int LuaPrint(lua_State* L) noexcept
     return 0;
 }
 
-static const struct luaL_Reg printlib[] = {
+static constexpr struct luaL_Reg printlib[] = {
   {"print", LuaPrint},
   {NULL, NULL} /* end of array */
 };

@@ -2157,7 +2157,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
 
             ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.f);
             ImGui::InputInt("##width", &settings->data().heatmapSettings.defaultWidth); ImGui::SameLine();
-            ImGui::Text("%s", "x"); ImGui::SameLine();
+            ImGui::TextUnformatted("x"); ImGui::SameLine();
             ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.f);
             ImGui::InputInt("##height", &settings->data().heatmapSettings.defaultHeight);
             if (ImGui::MenuItem("Save heatmap")) { 
@@ -2620,7 +2620,7 @@ void OpenFunscripter::ShowAboutWindow(bool* open) noexcept
         | ImGuiWindowFlags_NoDocking
         | ImGuiWindowFlags_NoCollapse
     );
-    ImGui::Text("%s", "OpenFunscripter " FUN_LATEST_GIT_TAG);
+    ImGui::TextUnformatted("OpenFunscripter " FUN_LATEST_GIT_TAG);
     ImGui::Text("Commit: %s", FUN_LATEST_GIT_HASH);
     if (ImGui::Button("Latest release " ICON_GITHUB, ImVec2(-1.f, 0.f))) {
         Util::OpenUrl("https://github.com/gagax1234/OpenFunscripter/releases/latest");

@@ -327,7 +327,7 @@ void RecordingImpl::DrawModeSettings() noexcept
     switch (activeMode) {
     case RecordingMode::Controller:
     {
-        ImGui::Text("%s", "Controller deadzone");
+        ImGui::TextUnformatted("Controller deadzone");
         ImGui::SliderInt("Deadzone", &ControllerDeadzone, 0, std::numeric_limits<int16_t>::max());
         ImGui::Checkbox("Center", &controllerCenter);
         if (controllerCenter) {
@@ -350,7 +350,7 @@ void RecordingImpl::DrawModeSettings() noexcept
     if (inverted) { 
         currentPos = std::abs(currentPos - 100); 
     }
-    ImGui::Text("%s", "Position"); 
+    ImGui::TextUnformatted("Position"); 
     ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
     ImGui::SliderInt("##Pos", &currentPos, 0, 100);
     ImGui::PopItemFlag();
@@ -372,12 +372,12 @@ void RecordingImpl::DrawModeSettings() noexcept
 
     if (recordingActive && playing) {
         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 255, 0, 255));
-        ImGui::Text("%s", "Recording active");
+        ImGui::TextUnformatted("Recording active");
         ImGui::PopStyleColor();
     }
     else {
         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
-        ImGui::Text("%s", "Recording paused");
+        ImGui::TextUnformatted("Recording paused");
         ImGui::PopStyleColor();
     }   
 }
