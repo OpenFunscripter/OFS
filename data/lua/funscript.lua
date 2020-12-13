@@ -115,6 +115,29 @@ function Funscript:DeselectAll()
    end
 end
 
+
+-- returns the closest action or nil after the given time in milliseconds
+function Funscript:GetClosestActionAfter(time_ms)
+   for i,v in ipairs(self.actions) do
+      if v.at > time_ms then
+         return v
+      end
+   end
+
+   return nil
+end
+
+-- returns the closest action or nil before the given time in milliseconds
+function Funscript:GetClosestActionBefore(time_ms)
+   for i, v in ipairs(self.actions) do
+      if v.at > time_ms then
+         return self.actions[i-1]
+      end
+   end
+
+   return nil
+end
+
 -- context variables
 CurrentScript = Funscript:new() -- the currently active funscript.
 CurrentTimeMs = 0 -- holds the current player time in ms. can also set the current position
