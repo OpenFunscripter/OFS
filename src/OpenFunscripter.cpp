@@ -1316,12 +1316,12 @@ void OpenFunscripter::update() noexcept {
     ControllerInput::UpdateControllers();
     scripting->update();
 
-    if (RollingBackup) {
-        rollingBackup();
+    if (AutoBackup) {
+        autoBackup();
     }
 }
 
-void OpenFunscripter::rollingBackup() noexcept
+void OpenFunscripter::autoBackup() noexcept
 {
     if (ActiveFunscript()->current_path.empty()) { return; }
     std::chrono::duration<float> timeSinceBackup = std::chrono::system_clock::now() - last_backup;
@@ -1356,50 +1356,34 @@ void OpenFunscripter::rollingBackup() noexcept
             continue;
         }
 
-        stbsp_snprintf(path_buf, sizeof(path_buf), "Backup_%d.funscript", SDL_GetTicks());
-        auto savePath = scriptBackupDir / path_buf;
-        LOGF_INFO("Backup at \"%s\"", savePath.u8string().c_str());
-        script->save(savePath.u8string().c_str(), false);
+        char time_buf[64];
+        auto time = std::chrono::system_clock::now();
+        auto in_time_t = std::chrono::system_clock::to_time_t(time);
+        auto tm = std::localtime(&in_time_t);
+        stbsp_snprintf(path_buf, sizeof(path_buf), "%s_%02d-%02d-%02d.funscript.backup", 
+            scriptBackupDir.filename().u8string().c_str(), 
+            tm->tm_hour,
+            tm->tm_hour,
+            tm->tm_min
+        );
 
-        // delete oldest backup
-        auto count_files = [](const std::filesystem::path& path) -> std::size_t
-        {
-            std::error_code ec;
-            auto safe_iterator = std::filesystem::directory_iterator(path, ec);
-            auto count = (std::size_t)std::distance(safe_iterator, std::filesystem::end(safe_iterator));
-            if (ec) {
-                LOGF_ERROR("Failed to count files %s", ec.message().c_str());
-                LOGF_ERROR("Path: \"%s\"", path.string().c_str());
-                return 0;
-            }
-            return count;
-        };
-        auto get_oldest_file = [](const std::filesystem::path& path) {
-            std::error_code ec;
-            auto iterator = std::filesystem::directory_iterator(path, ec);
-            std::filesystem::directory_iterator oldest = std::filesystem::directory_iterator(path, ec);
-            for (auto it = std::filesystem::begin(iterator); it != std::filesystem::end(iterator); it++) {
-                auto path1 = it->path();
-                auto path2 = oldest->path();
-                auto time1 = std::filesystem::last_write_time(path1, ec).time_since_epoch().count();
-                auto time2 = std::filesystem::last_write_time(path2, ec).time_since_epoch().count();
-                if (time1 < time2) {
-                    oldest = it;
-                }
-            }
-            return oldest;
-        };
-        if (count_files(scriptBackupDir) > 5) {
-            auto oldest_backup = get_oldest_file(scriptBackupDir);
-            std::error_code ec;
-            if ((*oldest_backup).path().extension() == ".funscript") {
-                LOGF_INFO("Removing old backup: \"%s\"", (*oldest_backup).path().u8string().c_str());
-                std::filesystem::remove(*oldest_backup, ec);
-                if (ec) {
-                    LOGF_INFO("Failed to remove old backup\n%s", ec.message().c_str());
+        std::error_code ec;
+        auto iterator = std::filesystem::directory_iterator(scriptBackupDir, ec);
+        for (auto it = std::filesystem::begin(iterator); it != std::filesystem::end(iterator); it++) {
+            if (it->path().has_extension()) {
+                if (it->path().extension() == ".backup") {
+                    LOGF_INFO("Removing \"%s\"", it->path().u8string().c_str());
+                    std::filesystem::remove(it->path(), ec);
+                    if (ec) {
+                        LOGF_ERROR("%s", ec.message().c_str());
+                    }
                 }
             }
         }
+
+        auto savePath = scriptBackupDir / path_buf;
+        LOGF_INFO("Backup at \"%s\"", savePath.u8string().c_str());
+        script->save(savePath.u8string().c_str(), false);
     }
 }
 
@@ -2150,7 +2134,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             }
             Util::Tooltip("Saves the bare minium.");
             ImGui::Separator();
-            if (ImGui::MenuItem("Enable rolling backup", NULL, &RollingBackup)) {}
+            if (ImGui::MenuItem("Enable auto backup", NULL, &AutoBackup)) {}
             if (ImGui::MenuItem("Open backup directory")) {
                 Util::OpenFileExplorer(Util::Prefpath("backup").c_str());
             }

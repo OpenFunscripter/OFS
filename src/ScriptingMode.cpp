@@ -360,13 +360,13 @@ void RecordingImpl::DrawModeSettings() noexcept
     auto app = OpenFunscripter::ptr;
     bool playing = !app->player.isPaused();
     if (automaticRecording && playing && recordingActive != playing) {
-        rollingBackupTmp = app->RollingBackup;
-        app->RollingBackup = false;
+        autoBackupTmp = app->AutoBackup;
+        app->AutoBackup = false;
         recordingJustStarted = true;
     }
     else if (!playing && recordingActive) {
         recordingActive = false;
-        app->RollingBackup = rollingBackupTmp;
+        app->AutoBackup = autoBackupTmp;
         recordingJustStopped = true;
     }
 

@@ -56,7 +56,7 @@ private:
 	void update() noexcept;
 	void new_frame() noexcept;
 	void render() noexcept;
-	void rollingBackup() noexcept;
+	void autoBackup() noexcept;
 
 	bool imgui_setup() noexcept;
 	void process_events() noexcept;
@@ -117,7 +117,7 @@ public:
 	VideoplayerWindow player;
 	ScriptSimulator simulator;
 
-	bool RollingBackup = true;
+	bool AutoBackup = true;
 
 	std::unique_ptr<SpecialFunctionsWindow> specialFunctions;
 	std::unique_ptr<ScriptingMode> scripting;

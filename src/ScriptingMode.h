@@ -78,7 +78,7 @@ private:
 	bool automaticRecording = true;
 	bool inverted = false;
 
-	bool rollingBackupTmp = false;
+	bool autoBackupTmp = false;
 	float epsilon = 0.f;
 
 	struct Recording {
