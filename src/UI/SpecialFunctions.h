@@ -45,7 +45,11 @@ public:
 class CustomLua : public FunctionBase 
 {
 private:
-	std::vector<std::string> scripts;
+	struct LuaScript {
+		std::string name;
+		std::string absolutePath;
+	};
+	std::vector<LuaScript> scripts;
 	bool createUndoState = true;
 
 	void updateScripts() noexcept;

@@ -280,27 +280,39 @@ void CustomLua::SelectionChanged(SDL_Event& ev) noexcept
 
 void CustomLua::updateScripts() noexcept
 {
-    auto luaPathString = Util::Resource("lua");
-    auto luaPath = Util::PathFromString(luaPathString);
-    Util::CreateDirectories(luaPathString);
+    auto luaCorePathString = Util::Resource("lua");
+    auto luaUserPathString = Util::Prefpath("lua");
+
+    auto luaCorePath = Util::PathFromString(luaCorePathString);
+    auto luaUserPath = Util::PathFromString(luaUserPathString);
+    Util::CreateDirectories(luaCorePath);
+    Util::CreateDirectories(luaUserPath);
 
     scripts.clear();
 
-    std::error_code ec;
-    auto iterator = std::filesystem::directory_iterator(luaPath, ec);
-    for (auto it = std::filesystem::begin(iterator); it != std::filesystem::end(iterator); it++) {
-        auto filename = it->path().filename().u8string();
-        auto name = it->path().filename();
-        name.replace_extension("");
+    auto gatherScriptsInPath = [&](const std::filesystem::path& path) {
+        std::error_code ec;
+        auto iterator = std::filesystem::directory_iterator(path, ec);
+        for (auto it = std::filesystem::begin(iterator); it != std::filesystem::end(iterator); it++) {
+            auto filename = it->path().filename().u8string();
+            auto name = it->path().filename();
+            name.replace_extension("");
 
-        auto extension = it->path().extension().u8string();
-        if (!filename.empty() && extension == ".lua") {
-#ifdef NDEBUG
-            if (name == "funscript") { continue; }
-#endif
-            scripts.emplace_back(std::move(filename));
+            auto extension = it->path().extension().u8string();
+            if (!filename.empty() && extension == ".lua") {
+    #ifdef NDEBUG
+                if (name == "funscript") { continue; }
+    #endif
+                LuaScript newScript;
+                newScript.name = std::move(filename);
+                newScript.absolutePath = it->path().u8string();
+                scripts.emplace_back(newScript);
+            }
         }
-    }
+    };
+
+    gatherScriptsInPath(luaCorePath);
+    gatherScriptsInPath(luaUserPath);
 }
 
 static void WriteToConsole(const std::string& str) noexcept
@@ -612,29 +624,20 @@ void CustomLua::DrawUI() noexcept
     if (ImGui::Button("Reload scripts", ImVec2(-1.f, 0.f))) { updateScripts(); }
     Util::Tooltip("Reload scripts in the script directory.\nOnly has to be pressed when deleting or adding files.");
 
-    if (ImGui::Button("Script directory", ImVec2(-1.f, 0.f))) { Util::OpenFileExplorer(Util::Resource("lua").c_str()); }
+    if (ImGui::Button("Script directory", ImVec2(-1.f, 0.f))) { Util::OpenFileExplorer(Util::Prefpath("lua").c_str()); }
     ImGui::Spacing(); ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal); ImGui::Spacing();
     if (Thread.running) {
         ImGui::TextUnformatted("Running script...");
         ImGui::ProgressBar(Thread.progress);
     }
     else {
-        auto getPath = [this](const std::string& str) {
-            auto pathString = Util::Resource("lua");
-            auto scriptPath = Util::PathFromString(pathString);
-            Util::ConcatPathSafe(scriptPath, str);
-            return scriptPath;
-        };
-
         for (auto&& script : scripts) {
             ImGui::SetNextItemOpen(false, ImGuiCond_Always);
-            if (ImGui::CollapsingHeader(script.c_str())) {
-                auto scriptPath = getPath(script);
-                runScript(scriptPath.u8string());
+            if (ImGui::CollapsingHeader(script.name.c_str())) {
+                runScript(script.absolutePath);
             }
             if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
-                auto scriptPath = getPath(script);
-                Util::OpenUrl(scriptPath.u8string().c_str());
+                Util::OpenUrl(script.absolutePath.c_str());
             }
             ImGui::SameLine();
             ImGui::TextDisabled("(?)");
