@@ -88,6 +88,8 @@ target_compile_definitions(imgui PUBLIC "IMGUI_USE_STB_SPRINTF")
 target_include_directories(imgui PUBLIC "stb/")
 target_compile_definitions(imgui PUBLIC "IMGUI_DEFINE_MATH_OPERATORS")
 target_compile_definitions(imgui PUBLIC "IMGUI_DISABLE_OBSOLETE_FUNCTIONS")
+
+target_compile_definitions(imgui PUBLIC "ImDrawIdx=unsigned int") # TODO: not do this???
 #target_compile_definitions(imgui PUBLIC "IMGUI_DEBUG_PARANOID")
 
 # ================
