@@ -142,6 +142,7 @@ end
 CurrentScript = Funscript:new() -- the currently active funscript.
 CurrentTimeMs = 0 -- holds the current player time in ms. can also set the current position
 FrameTimeMs = 0  -- holds the time of a single frame in ms 60 fps => 1/60 seconds
+TotalTimeMs = 0 -- hold the total time of the video in ms
 
 Clipboard = Funscript:new() -- contains the currently copied actions. this is readonly
 

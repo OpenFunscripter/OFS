@@ -446,6 +446,9 @@ void CustomLua::resetVM() noexcept
         builder << tmp;
         stbsp_snprintf(tmp, sizeof(tmp), "FrameTimeMs=%lf\n", app->player.getFrameTimeMs());
         builder << tmp;
+        stbsp_snprintf(tmp, sizeof(tmp), "TotalTimeMs=%lf\n", static_cast<float>(app->player.getDuration() * 1000.f));
+        builder << tmp;
+
 
         // reset progress for user script
         stbsp_snprintf(tmp, sizeof(tmp), "SetProgress(%f)\n", 0.f);
