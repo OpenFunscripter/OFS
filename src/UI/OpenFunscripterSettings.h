@@ -53,6 +53,8 @@ private:
 
 		int32_t currentSpecialFunction = 0; // SpecialFunctions::RANGE_EXTENDER;
 
+		int32_t buttonRepeatIntervalMs = 100;
+
 		struct HeatmapSettings {
 			int32_t defaultWidth = 2000;
 			int32_t defaultHeight = 50;
@@ -96,6 +98,7 @@ private:
 			OFS_REFLECT(currentSpecialFunction, ar);
 			OFS_REFLECT(vsync, ar);
 			OFS_REFLECT(framerateLimit, ar);
+			OFS_REFLECT(buttonRepeatIntervalMs, ar);
 			OFS_REFLECT_PTR(simulator, ar);
 		}
 	} scripterSettings;

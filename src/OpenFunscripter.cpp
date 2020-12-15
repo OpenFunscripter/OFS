@@ -2384,6 +2384,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
         if (ControllerInput::AnythingConnected()) {
             if (ImGui::BeginMenu("Controller")) {
                 ImGui::TextColored(ImColor(IM_COL32(0, 255, 0, 255)), "%s", "Controller connected!");
+                ImGui::DragInt("Repeat rate", &settings->data().buttonRepeatIntervalMs, 1, 25, 500, "%d", ImGuiSliderFlags_AlwaysClamp);
                 static int32_t selectedController = 0;
                 std::vector<const char*> padStrings;
                 for (int i = 0; i < ControllerInput::Controllers.size(); i++) {

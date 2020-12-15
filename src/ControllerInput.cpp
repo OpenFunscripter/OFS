@@ -100,11 +100,10 @@ void ControllerInput::setup()
 
 void ControllerInput::update() noexcept
 {
-	const int64_t ButtonRepeatMS = 50;
-
 	int buttonEnumVal = 0;
+	auto& settings = OpenFunscripter::ptr->settings->data();
 	for (auto&& button : ButtonsHeldDown) {
-		if (button > 0 && ((int64_t)SDL_GetTicks() - button) >= ButtonRepeatMS) {
+		if (button > 0 && ((int64_t)SDL_GetTicks() - button) >= settings.buttonRepeatIntervalMs) {
 			SDL_Event ev;
 			ev.type = EventSystem::ControllerButtonRepeat;
 			ev.cbutton.button = buttonEnumVal;
