@@ -69,6 +69,11 @@ public:
 			OFS_REFLECT(at, ar);
 			OFS_REFLECT(name, ar);
 			OFS_REFLECT(type, ar);
+			
+			// HACK: convert existing bookmarks to their correct type
+			if (type != BookmarkType::START_MARKER) {
+				UpdateType();
+			}
 		}
 	};
 
