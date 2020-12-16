@@ -45,6 +45,11 @@ public:
 
 			Util::trim(name);
 
+			if (Util::StringEqualsInsensitive(name, startMarker) || Util::StringEqualsInsensitive(name, endMarker)) {
+				type = BookmarkType::REGULAR;
+				return;
+			}
+
 			if (Util::EndswithInsensitive(name, startMarker)) {
 				type = BookmarkType::START_MARKER;
 				name.erase(name.end() - sizeof(startMarker) + 1, name.end());

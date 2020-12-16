@@ -217,6 +217,11 @@ public:
 		return ltrim(rtrim(str, chars), chars);
 	}
 
+	inline static bool StringEqualsInsensitive(const std::string& string1, const std::string string2) noexcept {
+		if (string1.length() != string2.length()) return false;
+		return ContainsInsensitive(string1, string2);
+	}
+
 	inline static bool ContainsInsensitive(const std::string& string1, const std::string& string2) noexcept {
 		auto it = std::search(
 			string1.begin(), string1.end(),
