@@ -504,6 +504,15 @@ bool CollectScriptOutputs(LuaThread& thread, lua_State* L) noexcept
     int32_t scriptCount = app->LoadedFunscripts.size();
     char tmp[1024];
 
+    int32_t size;
+    int32_t at;
+    int32_t pos;
+    bool selected;
+    
+    int32_t i;
+    int32_t actionCount;
+    int32_t actionIdx;
+
     thread.outputs.clear();
 
 #define CHECK_OR_FAIL(expr) if(!expr) goto failure
@@ -512,16 +521,15 @@ bool CollectScriptOutputs(LuaThread& thread, lua_State* L) noexcept
     // global
     CHECK_OR_FAIL(lua_istable(L, -1));
 
-    int32_t size = lua_rawlen(L, -1); // script count
+    size = lua_rawlen(L, -1); // script count
     if (size != scriptCount) {
         stbsp_snprintf(tmp, sizeof(tmp), "ERROR: LoadedScripts count doesn't match. expected %d got %d", scriptCount, size);
         WriteToConsole(tmp);
         goto failure;
     }
 
-
     // iterate scripts
-    for (int i = 1; i <= size; i++) {
+    for (i = 1; i <= size; i++) {
         auto& currentScript = thread.outputs.emplace_back();
 
         lua_rawgeti(L, -1, i); // push script
@@ -530,13 +538,10 @@ bool CollectScriptOutputs(LuaThread& thread, lua_State* L) noexcept
         lua_getfield(L, -1, "actions"); // push actions array
         CHECK_OR_FAIL(lua_istable(L, -1));
 
-        int32_t actionCount = lua_rawlen(L, -1);
-        for (int actionIdx = 1; actionIdx <= actionCount; actionIdx++) {
+        actionCount = lua_rawlen(L, -1);
+        for (actionIdx = 1; actionIdx <= actionCount; actionIdx++) {
             lua_rawgeti(L, -1, actionIdx); // push single action
             CHECK_OR_FAIL(lua_istable(L, -1));
-            int32_t at;
-            int32_t pos;
-            bool selected;
                 
             lua_getfield(L, -1, "at"); // push action
             CHECK_OR_FAIL(lua_isnumber(L, -1));
