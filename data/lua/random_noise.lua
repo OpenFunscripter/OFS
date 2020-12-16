@@ -3,8 +3,8 @@ local MinStrokeLen = 30
 local MaxStrokeLen = 100
 
 -- duration in ms
-local MinStrokeDuration = 100
-local MaxStrokeDuration = 500
+local MinStrokeDuration = 150
+local MaxStrokeDuration = 600
 
 
 local LastTimeMs = 0
@@ -19,13 +19,13 @@ while LastTimeMs < TotalTimeMs do
 	CurrentScript:AddActionUnordered(LastTimeMs, LastPos)
 	
 	if goingUp then
-		LastPos = LastPos + math.random(30, 100)
+		LastPos = LastPos + math.random(MinStrokeLen, MaxStrokeLen)
 	else
-		LastPos = LastPos - math.random(30, 100)
+		LastPos = LastPos - math.random(MinStrokeLen, MaxStrokeLen)
 	end
 	goingUp = not goingUp
 	LastPos = clamp(LastPos, 0, 100)
-	LastTimeMs = LastTimeMs + math.random(100, 500)
+	LastTimeMs = LastTimeMs + math.random(MinStrokeDuration, MaxStrokeDuration)
 
 	SetProgress(LastTimeMs / TotalTimeMs)
 end
