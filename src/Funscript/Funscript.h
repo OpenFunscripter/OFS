@@ -51,7 +51,8 @@ public:
 			}
 			else if (Util::EndswithInsensitive(name, endMarker)) {
 				type = BookmarkType::END_MARKER;
-				name.erase(name.end() - sizeof(endMarker) + 1, name.end());
+				// don't remove _end because it helps distinguish the to markers
+				//name.erase(name.end() - sizeof(endMarker) + 1, name.end());
 			}
 			else {
 				type = BookmarkType::REGULAR;
