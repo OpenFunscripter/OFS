@@ -15,7 +15,7 @@ Funscript::Funscript()
 {
 	NotifyActionsChanged(false);
 	saveMutex = SDL_CreateMutex();
-	undoSystem = std::make_unique<UndoSystem>(this);
+	undoSystem = std::make_unique<FunscriptUndoSystem>(this);
 }
 
 Funscript::~Funscript()
@@ -878,20 +878,6 @@ void Funscript::InvertSelection() noexcept
 	for (auto& act : copySelection)
 	{
 		act.pos = std::abs(act.pos - 100);
-		AddAction(act);
-	}
-	data.selection = copySelection;
-}
-
-void Funscript::AlignWithFrameTimeSelection(float frameTimeMs) noexcept
-{
-	if (data.selection.size() == 0) return;
-	auto copySelection = data.selection;
-	RemoveSelectedActions();
-	for (auto& act : copySelection)
-	{
-		float offset = std::fmod(act.at, frameTimeMs);
-		act.at -= (int)offset;
 		AddAction(act);
 	}
 	data.selection = copySelection;

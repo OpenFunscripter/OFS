@@ -11,7 +11,7 @@
 #include "OpenFunscripterVideoplayer.h"
 #include "SDL_mutex.h"
 
-class UndoSystem;
+class FunscriptUndoSystem;
 
 class Funscript
 {
@@ -195,7 +195,7 @@ public:
 		}
 	}
 
-	std::unique_ptr<UndoSystem> undoSystem;
+	std::unique_ptr<FunscriptUndoSystem> undoSystem;
 	std::string current_path;
 	bool Enabled = true;
 

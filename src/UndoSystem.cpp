@@ -1,5 +1,7 @@
 #include "UndoSystem.h"
 
+#include "OpenFunscripter.h"
+
 #include <array>
 
 // this array provides strings for the StateType enum
@@ -39,84 +41,66 @@ static std::array<const std::string, (int32_t)StateType::TOTAL_UNDOSTATE_TYPES> 
 	"Lua script",
 };
 
-void UndoSystem::SnapshotRedo(StateType type) noexcept
+const std::string& ScriptState::Message() const
 {
-	RedoStack.emplace_back(type, Script->Data());
+	return stateStrings[(int32_t)type];
 }
 
-void UndoSystem::ShowUndoRedoHistory(bool* open)
+void UndoSystem::Snapshot(StateType type, bool multi_script, bool clearRedo) noexcept
 {
-	if (*open) {
-		ImGui::SetNextWindowSizeConstraints(ImVec2(200, 100), ImVec2(200, 200));
-		ImGui::Begin(UndoHistoryId, open, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
-		ImGui::TextDisabled("Redo stack");
-		for (auto it = RedoStack.begin(); it != RedoStack.end(); it++) {
-			int count = 1;
-			auto copy_it = it;
-			while (++copy_it != RedoStack.end() && copy_it->type == it->type) {
-				count++;
-			}
-			it = copy_it - 1;
-
-			ImGui::BulletText("%s (%d)", (*it).Message().c_str(), count);
-		}
-		ImGui::Separator();
-		ImGui::TextDisabled("Undo stack");
-		for (auto it = UndoStack.rbegin(); it != UndoStack.rend(); it++) {
-			int count = 1;
-			auto copy_it = it;
-			while (++copy_it != UndoStack.rend() && copy_it->type == it->type) {
-				count++;
-			}
-			it = copy_it - 1;
-
-			ImGui::BulletText("%s (%d)", (*it).Message().c_str(), count);
-		}
-		ImGui::End();
-	}
-}
-
-void UndoSystem::Snapshot(StateType type, bool clearRedo) noexcept
-{
-	UndoStack.emplace_back(type, Script->Data());
+	auto app = OpenFunscripter::ptr;
+	UndoStack.emplace_back(multi_script); // tracking multi-script modifications
 
 	if (UndoStack.size() > OFS::MaxScriptStateInMemory) {
-		UndoStack.erase(UndoStack.begin()); // erase first action
+		UndoStack.erase(UndoStack.begin()); // erase first UndoContext
 	}
-	
+
 	// redo gets cleared after every snapshot
 	if (clearRedo && !RedoStack.empty())
 		ClearRedo();
+
+
+	if (multi_script) {
+		for (auto&& script : app->LoadedFunscripts) {
+			script->undoSystem->Snapshot(type, clearRedo);
+		}
+	}
+	else {
+		app->ActiveFunscript()->undoSystem->Snapshot(type, clearRedo);
+	}
 }
 
 void UndoSystem::Undo() noexcept
 {
-	if (UndoStack.empty()) return;
-	SnapshotRedo(UndoStack.back().type);
-	Script->rollback(UndoStack.back().Data()); // copy data
-	UndoStack.pop_back(); // pop of the stack
+	auto app = OpenFunscripter::ptr;
+	if (UndoStack.back().IsMultiscriptModification) {
+		for (auto&& script : app->LoadedFunscripts) {
+			script->undoSystem->Undo();
+		}
+	}
+	else {
+		app->ActiveFunscript()->undoSystem->Undo();
+	}
+	RedoStack.emplace_back(std::move(UndoStack.back()));
+	UndoStack.pop_back();
 }
 
 void UndoSystem::Redo() noexcept
 {
-	if (RedoStack.empty()) return;
-	Snapshot(RedoStack.back().type, false);
-	Script->rollback(RedoStack.back().Data()); // copy data
-	RedoStack.pop_back(); // pop of the stack
-}
-
-void UndoSystem::ClearHistory() noexcept
-{
-	UndoStack.clear();
-	RedoStack.clear();
+	auto app = OpenFunscripter::ptr;
+	if (RedoStack.back().IsMultiscriptModification) {
+		for (auto&& script : app->LoadedFunscripts) {
+			script->undoSystem->Redo();
+		}
+	}
+	else {
+		app->ActiveFunscript()->undoSystem->Redo();
+	}
+	UndoStack.emplace_back(std::move(RedoStack.back()));
+	RedoStack.pop_back();
 }
 
 void UndoSystem::ClearRedo() noexcept
 {
 	RedoStack.clear();
-}
-
-const std::string& ScriptState::Message() const
-{
-	return stateStrings[(int32_t)type];
 }

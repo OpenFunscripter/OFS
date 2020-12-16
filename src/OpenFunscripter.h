@@ -124,6 +124,7 @@ public:
 	std::unique_ptr<EventSystem> events;
 	std::unique_ptr<ControllerInput> controllerInput;
 	std::unique_ptr<OpenFunscripterSettings> settings;
+	std::unique_ptr<UndoSystem> undoSystem;
 
 	std::unique_ptr<Simulator3D> sim3D;
 

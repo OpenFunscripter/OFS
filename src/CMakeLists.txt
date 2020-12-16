@@ -5,8 +5,11 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "main.cpp"
   "OpenFunscripter.cpp"
   "UndoSystem.cpp"
+  
   "Funscript/FunscriptAction.cpp"
   "Funscript/Funscript.cpp"
+  "Funscript/FunscriptUndoSystem.cpp"
+
   "ControllerInput.cpp"
   "ScriptingMode.cpp"
   "OpenFunscripterUtil.cpp"

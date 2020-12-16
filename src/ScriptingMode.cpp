@@ -59,7 +59,7 @@ void ScriptingMode::DrawScriptingMode(bool* open) noexcept
     Util::Tooltip("Applies an offset to actions inserted while the video is playing.\n- : inserts earlier\n+ : inserts later");
     if (app->LoadedFunscripts.size() > 1) {
         ImGui::Checkbox("Mirror mode", &OpenFunscripter::ptr->settings->data().mirror_mode);
-        Util::Tooltip("Mirrors add/edit/remove action as well as undo & redo across all loaded scripts.");
+        Util::Tooltip("Mirrors add/edit/remove action across all loaded scripts.");
     }
     else {
         app->settings->data().mirror_mode = false;
@@ -408,8 +408,8 @@ void RecordingImpl::update() noexcept
         GeneratedRecording.endTimeMs = app->player.getCurrentPositionMs();
 
         if (app->settings->data().mirror_mode) {
+            app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, true);
             for (auto&& script : app->LoadedFunscripts) {
-                script->undoSystem->Snapshot(StateType::GENERATE_ACTIONS);
                 for (auto&& action : GeneratedRecording.RawActions) {
                     if (action.at >= GeneratedRecording.startTimeMs && action.at <= GeneratedRecording.endTimeMs) {
                         script->AddActionSafe(action);
@@ -418,7 +418,7 @@ void RecordingImpl::update() noexcept
             }
         }
         else {
-            ctx().undoSystem->Snapshot(StateType::GENERATE_ACTIONS);
+            app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, false);
             for (auto&& action : GeneratedRecording.RawActions) {
                 if (action.at >= GeneratedRecording.startTimeMs && action.at <= GeneratedRecording.endTimeMs) {
                     ctx().AddActionSafe(action);

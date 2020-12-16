@@ -82,17 +82,17 @@ void FunctionRangeExtender::SelectionChanged(SDL_Event& ev) noexcept
 void FunctionRangeExtender::DrawUI() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    auto undoSystem = app->script().undoSystem.get();
+    auto& undoSystem = app->ActiveFunscript()->undoSystem;
     if (app->script().SelectionSize() > 4 || (undoSystem->MatchUndoTop(StateType::RANGE_EXTEND))) {
         if (ImGui::SliderInt("Range", &rangeExtend, -50, 100)) {
             rangeExtend = Util::Clamp<int32_t>(rangeExtend, -50, 100);
             if (createUndoState || 
                 !undoSystem->MatchUndoTop(StateType::RANGE_EXTEND)) {
-                undoSystem->Snapshot(StateType::RANGE_EXTEND);
+                app->undoSystem->Snapshot(StateType::RANGE_EXTEND, false);
             }
             else {
-                undoSystem->Undo();
-                undoSystem->Snapshot(StateType::RANGE_EXTEND);
+                app->undoSystem->Undo();
+                app->undoSystem->Snapshot(StateType::RANGE_EXTEND, false);
             }
             createUndoState = false;
             ctx().RangeExtendSelection(rangeExtend);
@@ -195,18 +195,18 @@ inline static void RamerDouglasPeuckerAlgo(const std::vector<FunscriptAction>& p
 void RamerDouglasPeucker::DrawUI() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    auto undoSystem = app->script().undoSystem.get();
-    if (app->script().SelectionSize() > 4 || (undoSystem->MatchUndoTop(StateType::SIMPLIFY))) {
+    if (app->script().SelectionSize() > 4 || (app->script().undoSystem->MatchUndoTop(StateType::SIMPLIFY))) {
         if (ImGui::DragFloat("Epsilon", &epsilon, 0.1f)) {
             epsilon = std::max(epsilon, 0.f);
             if (createUndoState ||
-                !undoSystem->MatchUndoTop(StateType::SIMPLIFY)) {
-                undoSystem->Snapshot(StateType::SIMPLIFY);
+                !app->script().undoSystem->MatchUndoTop(StateType::SIMPLIFY)) {
+                // NOOP
             }
             else {
-                undoSystem->Undo();
-                undoSystem->Snapshot(StateType::SIMPLIFY);
+                app->undoSystem->Undo();
             }
+            app->undoSystem->Snapshot(StateType::SIMPLIFY, false);
+
             createUndoState = false;
             auto selection = ctx().Selection();
             ctx().RemoveSelectedActions();
@@ -630,11 +630,12 @@ void CustomLua::runScript(const std::string& path) noexcept
 
                     auto app = OpenFunscripter::ptr;
                     std::vector<FunscriptAction> tmpBuffer;
+                    app->undoSystem->Snapshot(StateType::CUSTOM_LUA, true);
+
                     for (int i = 0; i < app->LoadedFunscripts.size(); i++) {
                         auto& script = app->LoadedFunscripts[i];
                         auto& output = data.outputs[i];
 
-                        script->undoSystem->Snapshot(StateType::CUSTOM_LUA);
                         tmpBuffer.clear();
                         tmpBuffer.reserve(output.actions.size());
                         tmpBuffer.insert(tmpBuffer.end(), output.actions.begin(), output.actions.end());

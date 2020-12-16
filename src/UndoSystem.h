@@ -31,7 +31,7 @@ enum class StateType : int32_t {
 	BOTTOM_POINTS_ONLY = 15,
 
 	GENERATE_ACTIONS = 16,
-	FRAME_ALIGN = 17,
+	FRAME_ALIGN = 17, // unused
 	RANGE_EXTEND = 18,
 
 	REPEAT_STROKE = 19,
@@ -65,30 +65,56 @@ namespace OFS {
 	constexpr int32_t MaxScriptStateInMemory = 1000;
 }
 
-class UndoSystem
+// this is part of the funscript class
+class FunscriptUndoSystem
 {
+	friend class UndoSystem;
+
 	Funscript* Script = nullptr;
 	void SnapshotRedo(StateType type) noexcept;
 	// using vector as a stack...
 	// because std::stack can't be iterated
 	std::vector<ScriptState> UndoStack;
 	std::vector<ScriptState> RedoStack;
+
+	void Snapshot(StateType type, bool clearRedo = true) noexcept;
+	void Undo() noexcept;
+	void Redo() noexcept;
+	void ClearRedo() noexcept;
+
 public:
-	UndoSystem(Funscript* script) : Script(script) {
+	FunscriptUndoSystem(Funscript* script) : Script(script) {
 		FUN_ASSERT(script != nullptr, "no script");
 	}
 	static constexpr const char* UndoHistoryId = "Undo/Redo history";
 	void ShowUndoRedoHistory(bool* open);
 
-	void Snapshot(StateType type, bool clearRedo = true) noexcept;
-	void Undo() noexcept;
-	void Redo() noexcept;
-	void ClearHistory() noexcept;
-	void ClearRedo() noexcept;
-
-	//inline bool MatchUndoTop(const std::string& message) const noexcept { return !UndoEmpty() && UndoStack.back().Message == message; }
 	inline bool MatchUndoTop(StateType type) const noexcept { return !UndoEmpty() && UndoStack.back().type == type; }
 	inline bool UndoEmpty() const noexcept { return UndoStack.empty(); }
 	inline bool RedoEmpty() const noexcept { return RedoStack.empty(); }
 };
 
+
+// this manages undo/redo accross the whole app
+class UndoSystem
+{
+private:
+	struct UndoContext {
+		bool IsMultiscriptModification = false;
+
+		UndoContext() {}
+
+		UndoContext(bool multi)
+			: IsMultiscriptModification(multi)
+		{
+
+		}
+	};
+	std::vector<UndoContext> UndoStack;
+	std::vector<UndoContext> RedoStack;
+	void ClearRedo() noexcept;
+public:
+	void Snapshot(StateType type, bool multi_script, bool clearRedo = true) noexcept;
+	void Undo() noexcept;
+	void Redo() noexcept;
+};
