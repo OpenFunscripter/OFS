@@ -38,6 +38,7 @@ function Funscript:new(o)
    self.__index = self
    self.__tostring = ScriptToString
    
+   o.title = "" -- this is a readonly property filled in by OFS
    o.actions = {}
    return o
 end
@@ -140,6 +141,10 @@ end
 
 -- context variables
 CurrentScript = Funscript:new() -- the currently active funscript.
+
+CurrentScriptIdx = 0 -- the index of the currently active funscript. only relevant when multiple scripts are loaded
+LoadedScripts = {}  -- contains an array of all loaded scripts. should MUST NOT be reordered OFS expects them to come out in the order they came in
+
 CurrentTimeMs = 0 -- holds the current player time in ms. can also set the current position
 FrameTimeMs = 0  -- holds the time of a single frame in ms 60 fps => 1/60 seconds
 TotalTimeMs = 0 -- hold the total time of the video in ms
@@ -159,6 +164,6 @@ function clamp(val, min_value, max_value)
 end
 
 -- linear interpolation
-function lerp(a,b,t) 
-   return a * (1-t) + b * t 
+function lerp(start_val, end_val, t) 
+   return start_val * (1-t) + end_val * t 
 end

@@ -232,16 +232,18 @@ struct LuaThread {
     std::string setupScript;
     int result = 0;
     bool running = false;
-    int32_t currentScriptIdx = 0;
-    
-    int32_t ActionCount = 0;
+
+    int32_t TotalActionCount = 0;
     int32_t ClipboardCount = 0;
 
     float progress = 0.f;
 
     int32_t NewPositionMs = 0;
-    std::unordered_set<FunscriptAction, FunscriptActionHashfunction> collected;
-    std::unordered_set<FunscriptAction, FunscriptActionHashfunction> selection;
+    struct ScriptOutput {
+        std::unordered_set<FunscriptAction, FunscriptActionHashfunction> actions;
+        std::unordered_set<FunscriptAction, FunscriptActionHashfunction> selection;
+    };
+    std::vector<ScriptOutput> outputs;
 };
 
 static LuaThread Thread;
@@ -402,13 +404,17 @@ void CustomLua::resetVM() noexcept
 
         auto app = OpenFunscripter::ptr;
         auto& script = app->ActiveFunscript();
+        const int32_t scriptIndex = app->ActiveFunscriptIndex();
         auto& actions = script->Actions();
 
-        // HACK: this has awful performance like 15000 actions block for 5+ seconds...
         int32_t index = 0;
         int32_t totalWork = actions.size() + app->FunscriptClipboard().size();
 
-        Thread.ActionCount = actions.size();
+        Thread.TotalActionCount = 0;
+        for (auto&& script : app->LoadedFunscripts) {
+            Thread.TotalActionCount += script->Actions().size();
+        }
+        
         Thread.ClipboardCount = app->FunscriptClipboard().size();
 
         std::stringstream builder;
@@ -416,7 +422,7 @@ void CustomLua::resetVM() noexcept
             stbsp_snprintf(tmp, sizeof(tmp), "CurrentScript:AddActionUnordered(%d, %d, %s)\n",
                 action.at,
                 action.pos,
-                script->IsSelected(action) ? "true" : "false"
+                script->IsSelected(action) ? "true" : "false" // script->IsSelected is really slow. maybe for large selections checking an std::unordered_set  is probably alot faster
             );
             builder << tmp;
             
@@ -442,6 +448,40 @@ void CustomLua::resetVM() noexcept
                 builder << tmp;
             }
         }
+        stbsp_snprintf(tmp, sizeof(tmp), "CurrentScript.title=\"%s\"\n", script->metadata.title.c_str());
+        builder << tmp;
+
+        stbsp_snprintf(tmp, sizeof(tmp), "CurrentScriptIdx=%d\n", scriptIndex+1); // !!! lua indexing starts at 1 !!!
+        builder << tmp;
+
+
+        for (int i = 0; i < app->LoadedFunscripts.size(); i++) {
+            if (i == scriptIndex) { 
+                builder << "table.insert(LoadedScripts, CurrentScript)\n";
+                continue; 
+            }
+            auto& loadedScript = app->LoadedFunscripts[i];
+            builder << "table.insert(LoadedScripts, Funscript:new())\n";
+            // i+1 because lua indexing starts at 1 !!!
+            stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d].title = \"%s\"\n", i+1, loadedScript->metadata.title.c_str());
+            builder << tmp;
+
+            for (auto&& action : loadedScript->Actions()) {
+                stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d]:AddActionUnordered(%d, %d, %s)\n",
+                    i + 1, // !!! lua indexing starts at 1 !!!
+                    action.at,
+                    action.pos,
+                    loadedScript->IsSelected(action) ? "true" : "false" // script->IsSelected is really slow. maybe for large selections checking an std::unordered_set  is probably alot faster
+                );
+                builder << tmp;
+            }
+        }
+
+
+        stbsp_snprintf(tmp, sizeof(tmp), "CurrentScript.title=\"%s\"\n", script->metadata.title.c_str());
+        builder << tmp;
+
+
         stbsp_snprintf(tmp, sizeof(tmp), "CurrentTimeMs=%lf\n", app->player.getCurrentPositionMsInterp());
         builder << tmp;
         stbsp_snprintf(tmp, sizeof(tmp), "FrameTimeMs=%lf\n", app->player.getFrameTimeMs());
@@ -458,74 +498,80 @@ void CustomLua::resetVM() noexcept
     }
 }
 
-bool CollectScript(LuaThread& thread, lua_State* L) noexcept
+bool CollectScriptOutputs(LuaThread& thread, lua_State* L) noexcept
 {
-    lua_getglobal(L, "CurrentScript");
+    auto app = OpenFunscripter::ptr;
+    int32_t scriptCount = app->LoadedFunscripts.size();
+    char tmp[1024];
+
+    thread.outputs.clear();
+
+#define CHECK_OR_FAIL(expr) if(!expr) goto failure
+
+    lua_getglobal(L, "LoadedScripts");
     // global
-    if (lua_istable(L, -1)) {
-        lua_getfield(L, -1, "actions");
-        // CurrentScript.actions
-        if (lua_istable(L, -1)) {
-            int32_t size = lua_rawlen(L, -1);
-            for (int i = 1; i <= size; i++) {
-                lua_rawgeti(L, -1, i); // push action
-                if (lua_istable(L, -1)) {
-                    int32_t at;
-                    int32_t pos;
-                    bool selected;
+    CHECK_OR_FAIL(lua_istable(L, -1));
 
-                    lua_getfield(L, -1, "at");
-                    if (lua_isnumber(L, -1)) {
-                        at = lua_tonumber(L, -1);
-                    }
-                    else {
-                        LOG_ERROR("Abort. Couldn't read \"at\" timestamp property.");
-                        return false;
-                    }
-                    lua_pop(L, 1); // pop at
-
-                    lua_getfield(L, -1, "pos");
-                    if (lua_isnumber(L, -1)) {
-                        pos = lua_tonumber(L, -1);
-                    }
-                    else {
-                        LOG_ERROR("Abort. Couldn't read position property.");
-                        return false;
-                    }
-                    lua_pop(L, 1); // pop pos
-
-                    lua_getfield(L, -1, "selected");
-                    if (lua_isboolean(L, -1)) {
-                        selected = lua_toboolean(L, -1);
-                    }
-                    else {
-                        LOG_ERROR("Abort. Couldn't read selected property.");
-                        return false;
-                    }
-                    lua_pop(L, 1); // pop selected
-
-                    pos = Util::Clamp(pos, 0, 100);
-                    at = std::max(at, 0);
-
-                    thread.collected.insert(FunscriptAction(at, pos));
-                    if (selected) {
-                        thread.selection.insert(FunscriptAction(at, pos));
-                    }
-                }
-                lua_pop(L, 1); // pop action
-            }
-            lua_pop(L, 2); // pop CurrentScript.actions & CurrentScript
-            lua_getglobal(L, "CurrentTimeMs");
-            if (lua_isnumber(L, -1)) {
-                thread.NewPositionMs = lua_tonumber(L, -1);
-            }
-            else {
-                LOG_ERROR("Abort. Couldn't read CurrentTimeMs property.");
-                return false;
-            }
-            return true;
-        }
+    int32_t size = lua_rawlen(L, -1); // script count
+    if (size != scriptCount) {
+        stbsp_snprintf(tmp, sizeof(tmp), "ERROR: LoadedScripts count doesn't match. expected %d got %d", scriptCount, size);
+        WriteToConsole(tmp);
+        goto failure;
     }
+
+
+    // iterate scripts
+    for (int i = 1; i <= size; i++) {
+        auto& currentScript = thread.outputs.emplace_back();
+
+        lua_rawgeti(L, -1, i); // push script
+        CHECK_OR_FAIL(lua_istable(L, -1));
+
+        lua_getfield(L, -1, "actions"); // push actions array
+        CHECK_OR_FAIL(lua_istable(L, -1));
+
+        int32_t actionCount = lua_rawlen(L, -1);
+        for (int actionIdx = 1; actionIdx <= actionCount; actionIdx++) {
+            lua_rawgeti(L, -1, actionIdx); // push single action
+            CHECK_OR_FAIL(lua_istable(L, -1));
+            int32_t at;
+            int32_t pos;
+            bool selected;
+                
+            lua_getfield(L, -1, "at"); // push action
+            CHECK_OR_FAIL(lua_isnumber(L, -1));
+            at = lua_tonumber(L, -1);
+            lua_pop(L, 1); // pop at
+
+            lua_getfield(L, -1, "pos"); // push pos
+            CHECK_OR_FAIL(lua_isnumber(L, -1));
+            pos = lua_tonumber(L, -1);
+            lua_pop(L, 1); // pop pos
+
+            lua_getfield(L, -1, "selected"); // push selected
+            CHECK_OR_FAIL(lua_isboolean(L, -1));
+            selected = lua_toboolean(L, -1);
+            lua_pop(L, 1); // pop selected
+
+            pos = Util::Clamp(pos, 0, 100);
+            at = std::max(at, 0);
+
+            currentScript.actions.insert(FunscriptAction(at, pos));
+            if (selected) { currentScript.selection.insert(FunscriptAction(at, pos)); }
+
+            lua_pop(L, 1); // pop single action
+        }
+        lua_pop(L, 2); // pop actions array & script
+    }
+
+    lua_getglobal(L, "CurrentTimeMs");
+    CHECK_OR_FAIL(lua_isnumber(L, -1));
+    thread.NewPositionMs = lua_tonumber(L, -1);
+
+    return true;
+
+#undef CHECK_OR_FAIL
+    failure:
     return false;
 }
 
@@ -540,7 +586,7 @@ void CustomLua::runScript(const std::string& path) noexcept
         char tmp[1024];
 
         WriteToConsole("============= SETUP =============");
-        stbsp_snprintf(tmp, sizeof(tmp), "Loading %d actions\nand %d clipboard actions into lua...", Thread.ActionCount, Thread.ClipboardCount);
+        stbsp_snprintf(tmp, sizeof(tmp), "Loading %d actions\nand %d clipboard actions into lua...", Thread.TotalActionCount, Thread.ClipboardCount);
         WriteToConsole(tmp);
 
         auto startTime = std::chrono::high_resolution_clock::now();
@@ -572,9 +618,7 @@ void CustomLua::runScript(const std::string& path) noexcept
             stbsp_snprintf(tmp, sizeof(tmp), "execution time: %ld ms", duration.count());
             WriteToConsole(tmp);
 
-            data.collected.clear();
-            data.selection.clear();
-            if (CollectScript(data, data.L)) {
+            if (CollectScriptOutputs(data, data.L)) {
                 // fire event to the main thread
                 auto eventData = new EventSystem::SingleShotEventData;
                 eventData->ctx = &data;
@@ -585,24 +629,23 @@ void CustomLua::runScript(const std::string& path) noexcept
                     LuaThread& data = *(LuaThread*)ctx;
 
                     auto app = OpenFunscripter::ptr;
-                    if (data.currentScriptIdx < app->LoadedFunscripts.size()) {
-                        auto& script = app->LoadedFunscripts[data.currentScriptIdx];
+                    std::vector<FunscriptAction> tmpBuffer;
+                    for (int i = 0; i < app->LoadedFunscripts.size(); i++) {
+                        auto& script = app->LoadedFunscripts[i];
+                        auto& output = data.outputs[i];
+
                         script->undoSystem->Snapshot(StateType::CUSTOM_LUA);
-
-                        std::vector<FunscriptAction> tmpBuffer;
-                        tmpBuffer.reserve(data.collected.size());
-
-                        tmpBuffer.insert(tmpBuffer.end(), data.collected.begin(), data.collected.end());
+                        tmpBuffer.clear();
+                        tmpBuffer.reserve(output.actions.size());
+                        tmpBuffer.insert(tmpBuffer.end(), output.actions.begin(), output.actions.end());
                         script->SetActions(tmpBuffer);
 
                         tmpBuffer.clear();
-                        tmpBuffer.insert(tmpBuffer.end(), data.selection.begin(), data.selection.end());
+                        tmpBuffer.insert(tmpBuffer.end(), output.selection.begin(), output.selection.end());
                         script->SetSelection(tmpBuffer, true);
                     }
-                    app->player.setPosition(data.NewPositionMs);
 
-                    data.collected.clear();
-                    data.selection.clear();
+                    app->player.setPosition(data.NewPositionMs);
                     data.running = false;
                 };
 
@@ -611,11 +654,14 @@ void CustomLua::runScript(const std::string& path) noexcept
                 ev.user.data1 = eventData;
                 SDL_PushEvent(&ev);
             }
+            else {
+                WriteToConsole("ERROR: Failed to read script outputs.");
+                data.running = false;
+            }
         }
         WriteToConsole("================ END ===============");
         return 0;
     };
-    Thread.currentScriptIdx = OpenFunscripter::ptr->ActiveFunscriptIndex();
     Thread.path = path;
     auto thread = SDL_CreateThread(luaThread, "CustomLuaScript", &Thread);
     SDL_DetachThread(thread);
