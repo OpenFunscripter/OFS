@@ -2287,30 +2287,29 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
         if (ImGui::BeginMenu("Bookmarks")) {
             static std::string bookmarkName;
             auto& bookmarks = ActiveFunscript()->scriptSettings.Bookmarks;
+            int32_t currentPositionMs = player.getCurrentPositionMsInterp();
             auto editBookmark = std::find_if(bookmarks.begin(), bookmarks.end(),
-                [&](auto& mark) {
-                    constexpr int threshold = 15000;
-                    int32_t current = player.getCurrentPositionMsInterp();
-                    return std::abs(mark.at - current) <= threshold;
+                [=](auto& mark) {
+                    constexpr int thresholdMs = 3000;
+                    return std::abs(mark.at - currentPositionMs) <= thresholdMs;
                 });
             if (editBookmark != bookmarks.end()) {
-                ImGui::InputText("Name", &(*editBookmark).name);
+                if (ImGui::InputText("Name", &(*editBookmark).name)) {
+                    editBookmark->UpdateType();
+                }
                 if (ImGui::MenuItem("Delete")) {
                     bookmarks.erase(editBookmark);
                 }
             }
             else {
-                ImGui::InputText("Name", &bookmarkName);
-                if (ImGui::MenuItem("Add Bookmark")) {
-                    Funscript::Bookmark bookmark;
-                    bookmark.at = player.getCurrentPositionMsInterp();
+                if (ImGui::InputText("Name", &bookmarkName, ImGuiInputTextFlags_EnterReturnsTrue) || ImGui::MenuItem("Add Bookmark")) {
                     if (bookmarkName.empty())
                     {
                         std::stringstream ss;
                         ss << ActiveFunscript()->Bookmarks().size() + 1 << '#';
                         bookmarkName = ss.str();
                     }
-                    bookmark.name = bookmarkName;
+                    Funscript::Bookmark bookmark(bookmarkName, player.getCurrentPositionMsInterp());
                     bookmarkName = "";
                     ActiveFunscript()->AddBookmark(bookmark);
                 }
@@ -2690,9 +2689,7 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position) noe
         UpdateTimelineGradient(TimelineGradient);
     }
 
-    bool item_hovered = ImGui::IsItemHovered();
-
-
+    const bool item_hovered = ImGui::IsItemHovered();
 
     const float current_pos_x = frame_bb.Min.x + frame_bb.GetWidth() * (*position);
     const float offset_progress_h = h / 5.f;
@@ -2701,16 +2698,49 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position) noe
     draw_list->AddRectFilled(frame_bb.Min + ImVec2(offset_progress_w, offset_progress_h), frame_bb.Max + ImVec2(1.f, offset_progress_h), IM_COL32(150, 150, 150, 255));
 
     // bookmarks
-    for (auto& bookmark : ActiveFunscript()->scriptSettings.Bookmarks) {
-        const float rectWidth = 7.f;
+    for(int i = 0; i < ActiveFunscript()->scriptSettings.Bookmarks.size(); i++) {
+        auto& bookmark = ActiveFunscript()->scriptSettings.Bookmarks[i];
+        auto nextBookmarkPtr = i+1 < ActiveFunscript()->scriptSettings.Bookmarks.size() ? &ActiveFunscript()->scriptSettings.Bookmarks[i + 1] : nullptr;
 
+        constexpr float rectWidth = 7.f;
+        const float fontSize = ImGui::GetFontSize();
+        const uint32_t textColor = ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]);
+
+        // if an end_marker appears before a start marker we render it as if was a regular bookmark
+        if (bookmark.type == Funscript::Bookmark::BookmarkType::START_MARKER) {
+            if (i + 1 < ActiveFunscript()->scriptSettings.Bookmarks.size()
+                && nextBookmarkPtr != nullptr && nextBookmarkPtr->type == Funscript::Bookmark::BookmarkType::END_MARKER) {                   
+                    ImVec2 p1((frame_bb.Min.x + (frame_bb.GetWidth() * (bookmark.at / (player.getDuration() * 1000.0)))) - (rectWidth / 2.f), frame_bb.Min.y);
+                    ImVec2 p2(p1.x + rectWidth, frame_bb.Min.y + frame_bb.GetHeight() + (style.ItemSpacing.y * 3.0f));
+
+                    ImVec2 next_p1((frame_bb.Min.x + (frame_bb.GetWidth() * (nextBookmarkPtr->at / (player.getDuration() * 1000.0)))) - (rectWidth / 2.f), frame_bb.Min.y);
+                    ImVec2 next_p2(next_p1.x + rectWidth, frame_bb.Min.y + frame_bb.GetHeight() + (style.ItemSpacing.y * 3.0f));
+
+                  
+                    draw_list->AddRectFilled(
+                        p1 + ImVec2(rectWidth / 2.f, 0),
+                        next_p2 - ImVec2(rectWidth/2.f, -fontSize),
+                        IM_COL32(255, 0, 0, 100),
+                        8.f);
+
+                    draw_list->AddRectFilled(p1, p2, textColor, 8.f);
+                    draw_list->AddRectFilled(next_p1, next_p2, textColor, 8.f);
+
+                    if (item_hovered || settings->data().always_show_bookmark_labels) {
+                        auto size = ImGui::CalcTextSize(bookmark.name.c_str());
+                        size.x /= 2.f;
+                        size.y += 4.f;
+                        float offset = (next_p2.x - p1.x)/2.f;
+                        draw_list->AddText(next_p2 - ImVec2(offset, -fontSize) - size, textColor, bookmark.name.c_str());
+                    }
+
+                    i += 1; // skip end marker
+                    continue;
+            }
+        }
+        
         ImVec2 p1((frame_bb.Min.x + (frame_bb.GetWidth() * (bookmark.at / (player.getDuration() * 1000.0)))) - (rectWidth/2.f), frame_bb.Min.y);       
         ImVec2 p2(p1.x + rectWidth, frame_bb.Min.y + frame_bb.GetHeight() + (style.ItemSpacing.y * 3.0f));
-
-        //ImRect rect(p1, p2);
-        //ImGui::ItemSize(rect);
-        //auto bookmarkId = ImGui::GetID(bookmark.name.c_str());
-        //ImGui::ItemAdd(rect, bookmarkId);
 
         draw_list->AddRectFilled(p1, p2, ImColor(style.Colors[ImGuiCol_Text]), 8.f);
 
@@ -2718,7 +2748,7 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position) noe
             auto size = ImGui::CalcTextSize(bookmark.name.c_str());
             size.x /= 2.f;
             size.y /= 8.f;
-            draw_list->AddText(p2 - size, ImColor(style.Colors[ImGuiCol_Text]), bookmark.name.c_str());
+            draw_list->AddText(p2 - size, textColor, bookmark.name.c_str());
         }
     }
 
@@ -2727,11 +2757,8 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position) noe
     ImVec2 p2(current_pos_x, frame_bb.Max.y);
     constexpr float timeline_pos_cursor_w = 5.f;
     draw_list->AddLine(p1+ImVec2(0.f, h/3.f), p2+ImVec2(0.f, h/3.f), IM_COL32(255, 0, 0, 255), timeline_pos_cursor_w/2.f);
-    
 
     ImGradient::DrawGradientBar(&TimelineGradient, frame_bb.Min, frame_bb.GetWidth(), frame_bb.GetHeight());
-
-
 
     const ImColor timeline_cursor_back = IM_COL32(255, 255, 255, 255);
     const ImColor timeline_cursor_front = IM_COL32(0, 0, 0, 255);

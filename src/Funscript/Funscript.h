@@ -22,13 +22,47 @@ public:
 	};
 	
 	struct Bookmark {
+		enum BookmarkType {
+			REGULAR,
+			START_MARKER,
+			END_MARKER
+		};
 		int32_t at;
 		std::string name;
+		BookmarkType type = BookmarkType::REGULAR;
+
+		Bookmark() {}
+
+		Bookmark(const std::string& name, int32_t at)
+			: name(name), at(at)
+		{
+			UpdateType();
+		}
+
+		inline void UpdateType() noexcept {
+			constexpr char startMarker[] = "_start";
+			constexpr char endMarker[] = "_end";
+
+			Util::trim(name);
+
+			if (Util::EndswithInsensitive(name, startMarker)) {
+				type = BookmarkType::START_MARKER;
+				name.erase(name.end() - sizeof(startMarker) + 1, name.end());
+			}
+			else if (Util::EndswithInsensitive(name, endMarker)) {
+				type = BookmarkType::END_MARKER;
+				name.erase(name.end() - sizeof(endMarker) + 1, name.end());
+			}
+			else {
+				type = BookmarkType::REGULAR;
+			}
+		}
 
 		template <class Archive>
 		inline void reflect(Archive& ar) {
 			OFS_REFLECT(at, ar);
 			OFS_REFLECT(name, ar);
+			OFS_REFLECT(type, ar);
 		}
 	};
 
@@ -195,7 +229,7 @@ public:
 	// bookmarks
 	inline const std::vector<Funscript::Bookmark>& Bookmarks() const noexcept { return scriptSettings.Bookmarks; }
 	inline void AddBookmark(const Funscript::Bookmark& bookmark) noexcept { 
-		scriptSettings.Bookmarks.push_back(bookmark); 
+		scriptSettings.Bookmarks.emplace_back(bookmark); 
 		std::sort(scriptSettings.Bookmarks.begin(), scriptSettings.Bookmarks.end(),
 			[](auto& a, auto& b) { return a.at < b.at; }
 		);

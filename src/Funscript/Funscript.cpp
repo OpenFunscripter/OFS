@@ -94,7 +94,11 @@ void Funscript::startSaveThread(const std::string& path, nlohmann::json&& json) 
 	auto thread = [](void* user) -> int {
 		SaveThreadData* data = static_cast<SaveThreadData*>(user);
 		SDL_LockMutex(data->mutex);
+#ifdef NDEBUG
 		Util::WriteJson(data->jsonObj, data->path.c_str());
+#else
+		Util::WriteJson(data->jsonObj, data->path.c_str(), true);
+#endif
 		SDL_UnlockMutex(data->mutex);
 		delete data;
 		return 0;
