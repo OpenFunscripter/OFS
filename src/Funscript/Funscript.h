@@ -50,11 +50,11 @@ public:
 				return;
 			}
 
-			if (Util::EndswithInsensitive(name, startMarker)) {
+			if (Util::StringEndswith(name, startMarker)) {
 				type = BookmarkType::START_MARKER;
 				name.erase(name.end() - sizeof(startMarker) + 1, name.end());
 			}
-			else if (Util::EndswithInsensitive(name, endMarker)) {
+			else if (Util::StringEndswith(name, endMarker)) {
 				type = BookmarkType::END_MARKER;
 				// don't remove _end because it helps distinguish the to markers
 				//name.erase(name.end() - sizeof(endMarker) + 1, name.end());

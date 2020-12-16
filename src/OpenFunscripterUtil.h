@@ -231,7 +231,7 @@ public:
 		return (it != string1.end());
 	}
 
-	inline static bool EndswithInsensitive(const std::string& string, const std::string& ending) noexcept {
+	inline static bool StringEndswith(const std::string& string, const std::string& ending) noexcept {
 		if (string.length() >= ending.length()) {
 			return (0 == string.compare(string.length() - ending.length(), ending.length(), ending));
 		}

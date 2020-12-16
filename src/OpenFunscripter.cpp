@@ -2690,6 +2690,7 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position) noe
     }
 
     const bool item_hovered = ImGui::IsItemHovered();
+    const bool show_text = item_hovered || settings->data().always_show_bookmark_labels;
 
     const float current_pos_x = frame_bb.Min.x + frame_bb.GetWidth() * (*position);
     const float offset_progress_h = h / 5.f;
@@ -2715,18 +2716,19 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position) noe
 
                     ImVec2 next_p1((frame_bb.Min.x + (frame_bb.GetWidth() * (nextBookmarkPtr->at / (player.getDuration() * 1000.0)))) - (rectWidth / 2.f), frame_bb.Min.y);
                     ImVec2 next_p2(next_p1.x + rectWidth, frame_bb.Min.y + frame_bb.GetHeight() + (style.ItemSpacing.y * 3.0f));
-
-                  
-                    draw_list->AddRectFilled(
-                        p1 + ImVec2(rectWidth / 2.f, 0),
-                        next_p2 - ImVec2(rectWidth/2.f, -fontSize),
-                        IM_COL32(255, 0, 0, 100),
-                        8.f);
+                
+                    if (show_text) {
+                        draw_list->AddRectFilled(
+                            p1 + ImVec2(rectWidth / 2.f, 0),
+                            next_p2 - ImVec2(rectWidth/2.f, -fontSize),
+                            IM_COL32(255, 0, 0, 100),
+                            8.f);
+                    }
 
                     draw_list->AddRectFilled(p1, p2, textColor, 8.f);
                     draw_list->AddRectFilled(next_p1, next_p2, textColor, 8.f);
 
-                    if (item_hovered || settings->data().always_show_bookmark_labels) {
+                    if (show_text) {
                         auto size = ImGui::CalcTextSize(bookmark.name.c_str());
                         size.x /= 2.f;
                         size.y += 4.f;
@@ -2744,7 +2746,7 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position) noe
 
         draw_list->AddRectFilled(p1, p2, ImColor(style.Colors[ImGuiCol_Text]), 8.f);
 
-        if (item_hovered || settings->data().always_show_bookmark_labels) {
+        if (show_text) {
             auto size = ImGui::CalcTextSize(bookmark.name.c_str());
             size.x /= 2.f;
             size.y /= 8.f;
