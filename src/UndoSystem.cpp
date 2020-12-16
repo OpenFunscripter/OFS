@@ -72,6 +72,8 @@ void UndoSystem::Snapshot(StateType type, bool multi_script, bool clearRedo) noe
 
 void UndoSystem::Undo() noexcept
 {
+	if (UndoStack.empty()) return;
+
 	auto app = OpenFunscripter::ptr;
 	if (UndoStack.back().IsMultiscriptModification) {
 		for (auto&& script : app->LoadedFunscripts) {
@@ -81,12 +83,15 @@ void UndoSystem::Undo() noexcept
 	else {
 		app->ActiveFunscript()->undoSystem->Undo();
 	}
+
 	RedoStack.emplace_back(std::move(UndoStack.back()));
 	UndoStack.pop_back();
 }
 
 void UndoSystem::Redo() noexcept
 {
+	if (RedoStack.empty()) return;
+
 	auto app = OpenFunscripter::ptr;
 	if (RedoStack.back().IsMultiscriptModification) {
 		for (auto&& script : app->LoadedFunscripts) {
