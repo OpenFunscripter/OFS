@@ -148,7 +148,7 @@ void DynamicInjectionImpl::DrawModeSettings() noexcept
         top_bottom_direction = -1;
     }
     ImGui::NextColumn();
-
+    ImGui::Columns(1);
 }
 
 // dynamic injection

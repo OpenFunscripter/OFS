@@ -10,6 +10,6 @@ for scriptIdx, script in ipairs(LoadedScripts) do
     print(script.title)
     for actionIdx, action in ipairs(script.actions) do
         action.at = action.at + FrameTimeMs
-        action.pos = action.pos + 1
+        action.pos = action.pos + 10
     end
 end
