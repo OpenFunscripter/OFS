@@ -2796,9 +2796,11 @@ void OpenFunscripter::UpdateTimelineGradient(ImGradient& grad)
                 // filter out actions which don't change direction
                 int direction = action.pos - previous.pos;
                 if (direction > 0 && prev_direction > 0) {
+                    previous = action;
                     continue;
                 }
                 else if (direction < 0 && prev_direction < 0) {
+                    previous = action;
                     continue;
                 }
 
