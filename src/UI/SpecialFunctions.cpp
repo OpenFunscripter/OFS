@@ -892,15 +892,14 @@ void CustomLua::DrawUI() noexcept
         Util::OpenUrl("https://www.lua.org/manual/5.4/");
     }
 
+    ImGui::BeginChild("ConsoleBuffer", ImVec2(-1.f, 200.f));
     SDL_AtomicLock(&SpinLock);
-    if (Thread.running && ImGui::GetScrollY() < ImGui::GetScrollMaxY()) {
-        ImGui::SetScrollHereY(1.f);
-    }
     ImGui::TextWrapped("%s", LuaConsoleBuffer.c_str());
     SDL_AtomicUnlock(&SpinLock);
     if (Thread.running) {
-        ImGui::SetScrollHereY();
+        ImGui::SetScrollHereY(1.0f);
     }
+    ImGui::EndChild();
 }
 
 CustomLua::LuaScript::Settings::~Settings()
