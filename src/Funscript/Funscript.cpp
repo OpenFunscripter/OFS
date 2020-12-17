@@ -43,7 +43,7 @@ void Funscript::setScriptTemplate() noexcept
 	Json["actions"] = nlohmann::json::array();
 	Json["version"] = "1.0";
 	Json["inverted"] = false;
-	Json["range"] = 90; // I think this is mostly ignored anyway
+	Json["range"] = 100; // I think this is mostly ignored anyway
 	Json["OpenFunscripter"] = nlohmann::json::object();
 }
 

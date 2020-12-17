@@ -78,6 +78,7 @@ public:
 	};
 
 	struct Settings {
+		std::string version = "OFS " FUN_LATEST_GIT_TAG "@" FUN_LATEST_GIT_HASH;
 		std::vector<Bookmark> Bookmarks;
 		int32_t last_pos_ms = 0;
 		VideoplayerWindow::OFS_VideoPlayerSettings* player = nullptr;
@@ -100,6 +101,7 @@ public:
 
 		template <class Archive>
 		inline void reflect(Archive& ar) {
+			OFS_REFLECT(version, ar);
 			OFS_REFLECT(tempoSettings, ar); 
 			OFS_REFLECT(associatedScripts, ar);
 			OFS_REFLECT(Bookmarks, ar);

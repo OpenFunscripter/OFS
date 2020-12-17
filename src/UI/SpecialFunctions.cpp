@@ -826,14 +826,11 @@ void CustomLua::DrawUI() noexcept
 
     if (ImGui::Button("Script directory", ImVec2(-1.f, 0.f))) { Util::OpenFileExplorer(Util::Prefpath("lua").c_str()); }
     ImGui::Spacing(); ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal); ImGui::Spacing();
-    if (Thread.running) {
+    if (Thread.running && !Thread.dry_run) {
         ImGui::TextUnformatted("Running script...");
         ImGui::ProgressBar(Thread.progress);
     }
     else {
-        //ImGui::SameLine();
-        //ImGui::TextDisabled("Help (?)");
-        //Util::Tooltip("Left click to run.\nMiddle click to access settings.\nRight click to edit.");
         for(int i=0; i < scripts.size(); i++) {
             auto& script = scripts[i];
             ImGui::PushID(i);
@@ -868,20 +865,23 @@ void CustomLua::DrawUI() noexcept
                 else {
                     ImGui::TextDisabled("Script has no settings or they aren't loaded.");
                 }
-                if (ImGui::Button("Run")) {
+                ImGui::Button("Script", ImVec2(-1.f, 0.f));
+                Util::Tooltip("Left click to run.\nMiddle click to load settings.\nRight click to edit.");
+                if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+                    // run the script
                     runScript(&script);
                 }
-                ImGui::SameLine();
-                if (ImGui::Button("Reload settings")) {                 
-                    runScript(&script, true);
-                }
-                ImGui::SameLine();
-                if (ImGui::Button("Edit")) {
+                else if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
+                    // open file in default editor
                     Util::OpenUrl(script.absolutePath.c_str());
                 }
+                else if (ImGui::IsItemClicked(ImGuiMouseButton_Middle)) {
+                    // reload settings
+                    runScript(&script, true);
+                }
                 ImGui::Unindent();
-                ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal);
                 ImGui::Spacing();
+                ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal);
             }
             ImGui::PopID();
         }
