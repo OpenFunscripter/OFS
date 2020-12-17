@@ -88,7 +88,7 @@ bool OpenFunscripter::load_fonts(const char* font_override) noexcept
 
     ImFont* font = nullptr;
 
-    GLuint font_tex = (GLuint)io.Fonts->TexID;
+    GLuint font_tex = (GLuint)(intptr_t)io.Fonts->TexID;
     io.Fonts->Clear();
     io.Fonts->AddFontDefault();
 
