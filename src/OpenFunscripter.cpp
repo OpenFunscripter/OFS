@@ -28,6 +28,7 @@
 // TODO: render simulator relative to video position & zoom
 
 // TODO: binding Lua scripts to keys or buttons
+// TODO: lua script gui variables
 
 // TODO: Change how twist is implemented in the 3D simulator
 

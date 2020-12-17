@@ -1,16 +1,18 @@
-
--- -10 to +10 ms jitter
-local time_jitter_ms = 10 
-
--- -15 to +15 jitter 
-local pos_jitter = 15 
+ -- this needs to be called "Settings" and a global to work
+ Settings = {}
+ -- -10 to +10 ms jitter
+ Settings.time_jitter_ms = 10
+ -- -15 to +15 jitter 
+ Settings.pos_jitter = 15 
+ SetSettings(Settings)
+ -- anything using Settings needs to use it after "SetSettings"
 
 
 for idx, action in ipairs(CurrentScript.actions) do
    -- check if action is selected
    if action.selected then
-      local time_jitter_value = math.random(-time_jitter_ms, time_jitter_ms) 
-      local pos_jitter_value = math.random(-pos_jitter, pos_jitter)
+      local time_jitter_value = math.random(-Settings.time_jitter_ms, Settings.time_jitter_ms) 
+      local pos_jitter_value = math.random(-Settings.pos_jitter, Settings.pos_jitter)
 
       
       -- apply jitter

@@ -228,10 +228,12 @@ void RamerDouglasPeucker::DrawUI() noexcept
 
 struct LuaThread {
     lua_State* L = nullptr;
-    std::string path;
+    CustomLua::LuaScript* script = nullptr;
+    
     std::string setupScript;
     int result = 0;
     bool running = false;
+    bool dry_run = false;
 
     int32_t TotalActionCount = 0;
     int32_t ClipboardCount = 0;
@@ -331,7 +333,8 @@ static int LuaPrint(lua_State* L) noexcept
     
     std::stringstream ss;
     for (int i = 1; i <= nargs; ++i) {
-         ss << lua_tostring(L, i);
+         const char* str = lua_tostring(L, i);
+         if (str != nullptr) { ss << str; }
     }
     ss << std::endl;
 
@@ -391,6 +394,150 @@ void CustomLua::resetVM() noexcept
         };
         lua_pushcfunction(Thread.L, LuaSetProgress);
         lua_setglobal(Thread.L, "SetProgress");
+
+        auto LuaSetSettings = [](lua_State* L) -> int {
+            if (!Thread.dry_run && Thread.script->settings.values.size() > 0) {
+                char tmp[1024];
+                std::stringstream ss;
+                stbsp_snprintf(tmp, sizeof(tmp), "%s = {}\n", Thread.script->settings.name.c_str());
+                ss << tmp;
+                for (auto&& value : Thread.script->settings.values) {
+                    switch (value.type) {
+                    case LuaScript::Settings::Value::Type::Bool:
+                    {
+                        bool* b = (bool*)&Thread.script->settings.buffer[value.offset];
+                        stbsp_snprintf(tmp, sizeof(tmp), "%s.%s = %s\n", Thread.script->settings.name.c_str(),
+                            value.name.c_str(),
+                            *b ? "true" : "false");
+                        ss << tmp;
+                        break;
+                    }
+                    case LuaScript::Settings::Value::Type::Float:
+                    {
+                        float* f = (float*)&Thread.script->settings.buffer[value.offset];
+                        stbsp_snprintf(tmp, sizeof(tmp), "%s.%s = %f\n", Thread.script->settings.name.c_str(),
+                            value.name.c_str(),
+                            *f);
+                        ss << tmp;
+                        break;
+                    }
+                    case LuaScript::Settings::Value::Type::String:
+                    {
+                        std::string* s = (std::string*)&Thread.script->settings.buffer[value.offset];
+                        stbsp_snprintf(tmp, sizeof(tmp), "%s.%s = \"%s\"\n", Thread.script->settings.name.c_str(),
+                            value.name.c_str(),
+                            s->c_str());
+                        ss << tmp;
+                        break;
+                    }
+                    }
+                }
+                stbsp_snprintf(tmp, sizeof(tmp), "return %s\n", Thread.script->settings.name.c_str());
+                ss << tmp;
+                luaL_dostring(L, ss.str().c_str());
+            }
+            // only a dry_run will update settings
+            else if (lua_istable(L, 1)) {
+                // read all fields
+
+                if (Thread.script->settings.values.size() > 0) {
+                    Thread.script->settings.Free();
+                }
+                auto& settings = Thread.script->settings;
+                LuaScript::Settings::Value value;
+                int32_t buffer_offset = 0;
+                constexpr size_t alignement = 4;
+
+                lua_pushnil(L);
+
+                auto alignOffset = [](int32_t& offset, size_t alignement) {
+                    if (offset % alignement != 0) {
+                        offset += alignement - (offset % alignement);
+                    }
+                };
+                
+                while (lua_next(L, -2)) {
+                    // stack now contains: -1 => value; -2 => key; -3 => table
+                    // copy the key so that lua_tostring does not modify the original
+                    lua_pushvalue(L, -2);
+                    // stack now contains: -1 => key; -2 => value; -3 => key; -4 => table
+                    
+                    // TODO: validation of types
+                    const char* key = lua_tostring(L, -1);
+
+                    switch (lua_type(L, -2)) {
+                    case LUA_TBOOLEAN:
+                    {
+                        value.name = key;
+                        value.offset = buffer_offset;
+                        value.type = LuaScript::Settings::Value::Type::Bool;
+                        settings.values.push_back(value);
+
+                        buffer_offset += sizeof(bool);
+                        alignOffset(buffer_offset, alignement);
+                        settings.buffer.resize(buffer_offset);
+                        bool* b = (bool*)&settings.buffer[value.offset];
+                        *b = lua_toboolean(L, -2);
+                        break;
+                    }
+                    case LUA_TNUMBER:
+                    {
+                        value.name = key;
+                        value.offset = buffer_offset;
+                        value.type = LuaScript::Settings::Value::Type::Float;
+                        settings.values.push_back(value);
+
+                        buffer_offset += sizeof(float);
+                        alignOffset(buffer_offset, alignement);
+                        settings.buffer.resize(buffer_offset);
+                        float* number = (float*)&settings.buffer[value.offset];
+                        *number = lua_tonumber(L, -2);
+                        break;
+                    }
+                    case LUA_TSTRING:
+                    {
+                        value.name = key;
+                        value.offset = buffer_offset;
+                        value.type = LuaScript::Settings::Value::Type::String;
+                        settings.values.push_back(value);
+
+                        buffer_offset += sizeof(std::string);
+                        alignOffset(buffer_offset, alignement);
+                        settings.buffer.resize(buffer_offset);
+                        std::string* str = new (&settings.buffer[value.offset]) std::string();
+                        *str = lua_tostring(L, -2);
+                        break;
+                    }
+                    
+                    case LUA_TNIL:
+                        LOGF_WARN("Unknown type for %s setings variable.", key);
+                        break;
+
+                    case LUA_TTABLE:
+                    case LUA_TLIGHTUSERDATA:
+                    case LUA_TFUNCTION:
+                    case LUA_TUSERDATA:
+                    case LUA_TTHREAD:
+                    case LUA_TNONE:
+                    default:
+                        break;
+                    }
+                    const char* value = lua_tostring(L, -2);
+                    LOGF_INFO("found settings variable: %s => %s\n", key, value);
+                    // pop value + copy of key, leaving original key
+                    lua_pop(L, 2);
+                    // stack now contains: -1 => key; -2 => table
+                }
+                lua_pop(L, 1);
+                std::sort(Thread.script->settings.values.begin(), Thread.script->settings.values.end(),
+                    [](auto& val1, auto& val2) {
+                        return val1.name < val2.name;
+                    });
+            }
+            return 0;
+        };
+        lua_pushcfunction(Thread.L, LuaSetSettings);
+        lua_setglobal(Thread.L, "SetSettings");
 
         auto initScript = Util::Resource("lua/funscript.lua");
         
@@ -580,10 +727,12 @@ bool CollectScriptOutputs(LuaThread& thread, lua_State* L) noexcept
     return false;
 }
 
-void CustomLua::runScript(const std::string& path) noexcept
+void CustomLua::runScript(LuaScript* script, bool dry_run) noexcept
 {
     if (Thread.running) return;
     Thread.running = true; 
+    Thread.dry_run = dry_run;
+    Thread.script = script;
 
     resetVM();
     auto luaThread = [](void* user) -> int {
@@ -602,12 +751,12 @@ void CustomLua::runScript(const std::string& path) noexcept
         stbsp_snprintf(tmp, sizeof(tmp), "setup time: %ld ms", duration.count());
         WriteToConsole(tmp);
 
-        stbsp_snprintf(tmp, sizeof(tmp), "path: %s", data.path.c_str());
+        stbsp_snprintf(tmp, sizeof(tmp), "path: %s", data.script->absolutePath.c_str());
         WriteToConsole(tmp);
 
         WriteToConsole("============= RUN LUA =============");
         startTime = std::chrono::high_resolution_clock::now();
-        data.result = LuaDoFile(data.L, data.path.c_str());
+        data.result = LuaDoFile(data.L, data.script->absolutePath.c_str());
         stbsp_snprintf(tmp, sizeof(tmp), "lua result: %d", data.result);
         WriteToConsole(tmp);
 
@@ -622,6 +771,11 @@ void CustomLua::runScript(const std::string& path) noexcept
             duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
             stbsp_snprintf(tmp, sizeof(tmp), "execution time: %ld ms", duration.count());
             WriteToConsole(tmp);
+
+            if (data.dry_run) {
+                data.running = false;
+                return 0;
+            }
 
             if (CollectScriptOutputs(data, data.L)) {
                 // fire event to the main thread
@@ -660,7 +814,6 @@ void CustomLua::runScript(const std::string& path) noexcept
         WriteToConsole("================ END ===============");
         return 0;
     };
-    Thread.path = path;
     auto thread = SDL_CreateThread(luaThread, "CustomLuaScript", &Thread);
     SDL_DetachThread(thread);
 }
@@ -678,17 +831,59 @@ void CustomLua::DrawUI() noexcept
         ImGui::ProgressBar(Thread.progress);
     }
     else {
-        for (auto&& script : scripts) {
-            ImGui::SetNextItemOpen(false, ImGuiCond_Always);
+        //ImGui::SameLine();
+        //ImGui::TextDisabled("Help (?)");
+        //Util::Tooltip("Left click to run.\nMiddle click to access settings.\nRight click to edit.");
+        for(int i=0; i < scripts.size(); i++) {
+            auto& script = scripts[i];
+            ImGui::PushID(i);
+
             if (ImGui::CollapsingHeader(script.name.c_str())) {
-                runScript(script.absolutePath);
+                ImGui::Spacing();
+                ImGui::Indent();
+                if (script.settings.values.size() > 0) {
+                    for (auto& value : script.settings.values) {
+                        switch (value.type) {
+                        case LuaScript::Settings::Value::Type::Bool:
+                        {
+                            bool* b = (bool*)&script.settings.buffer[value.offset];
+                            ImGui::Checkbox(value.name.c_str(), b);
+                            break;
+                        }
+                        case LuaScript::Settings::Value::Type::Float:
+                        {
+                            float* f = (float*)&script.settings.buffer[value.offset];
+                            ImGui::InputFloat(value.name.c_str(), f);
+                            break;
+                        }
+                        case LuaScript::Settings::Value::Type::String:
+                        {
+                            std::string* s = (std::string*)&script.settings.buffer[value.offset];
+                            ImGui::InputText(value.name.c_str(), s);
+                            break;
+                        }
+                        }
+                    }
+                }
+                else {
+                    ImGui::TextDisabled("Script has no settings or they aren't loaded.");
+                }
+                if (ImGui::Button("Run")) {
+                    runScript(&script);
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Reload settings")) {                 
+                    runScript(&script, true);
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Edit")) {
+                    Util::OpenUrl(script.absolutePath.c_str());
+                }
+                ImGui::Unindent();
+                ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal);
+                ImGui::Spacing();
             }
-            if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
-                Util::OpenUrl(script.absolutePath.c_str());
-            }
-            ImGui::SameLine();
-            ImGui::TextDisabled("(?)");
-            Util::Tooltip("Left click to run.\nRight click to edit.");
+            ImGui::PopID();
         }
     }
     ImGui::Spacing(); ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal); ImGui::Spacing();
@@ -702,9 +897,13 @@ void CustomLua::DrawUI() noexcept
         ImGui::SetScrollHereY(1.f);
     }
     ImGui::TextWrapped("%s", LuaConsoleBuffer.c_str());
-    //ImGui::InputTextMultiline("##Console", &LuaConsoleBuffer, ImVec2(-1.f, -1.f), ImGuiInputTextFlags_ReadOnly);
     SDL_AtomicUnlock(&SpinLock);
     if (Thread.running) {
         ImGui::SetScrollHereY();
     }
+}
+
+CustomLua::LuaScript::Settings::~Settings()
+{
+    Free();
 }

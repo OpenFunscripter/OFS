@@ -44,17 +44,55 @@ public:
 
 class CustomLua : public FunctionBase 
 {
-private:
+public:
 	struct LuaScript {
 		std::string name;
 		std::string absolutePath;
+
+		struct Settings {
+			~Settings();
+
+			struct Value {
+				enum class Type : int32_t {
+					Nil, // invalid
+					Bool,
+					//Integer, // everything is a float for now
+					Float,
+					String
+				};
+
+				std::string name;
+				Type type = Type::Nil;
+				int32_t offset = 0;
+			};
+
+			// name of settings table
+			std::string name = "Settings"; 
+			std::vector<uint8_t> buffer;
+			std::vector<Value> values;
+
+			inline void Free() noexcept {
+				if (buffer.size() > 0) {
+					for (auto&& value : values) {
+						if (value.type == Settings::Value::Type::String) {
+							std::string* str = (std::string*)&buffer[value.offset];
+							str->~basic_string(); // requires explicit destruction since it might have heap allocated
+						}
+					}
+				}
+				buffer.clear();
+				values.clear();
+			}
+		} settings;
 	};
+private:
 	std::vector<LuaScript> scripts;
 	bool createUndoState = true;
+	bool showSettings = false;
 
 	void updateScripts() noexcept;
 	void resetVM() noexcept;
-	void runScript(const std::string& path) noexcept;
+	void runScript(LuaScript* script, bool dry_run = false) noexcept;
 public:
 	CustomLua() noexcept;
 	virtual ~CustomLua() noexcept;

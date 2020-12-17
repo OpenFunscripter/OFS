@@ -1,6 +1,12 @@
+ -- this needs to be called "Settings" and a global to work
+Settings = {}
+Settings.PointEveryMs = 100
+SetSettings(Settings)
+-- anything using Settings needs to use it after "SetSettings"
+
 -- frequency every n frames
 -- round(100/FrameTimeMs) makes it roughly so that one point every 100 ms gets placed
-local point_frequency = 100 / FrameTimeMs
+local point_frequency = Settings.PointEveryMs / FrameTimeMs
 
 -- create a container to hold added actions temporarily
 -- since we can't add actions as we are iterating the script
