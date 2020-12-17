@@ -58,6 +58,7 @@ private:
 	void render() noexcept;
 	void autoBackup() noexcept;
 
+	bool load_fonts(const char* font_override = nullptr) noexcept;
 	bool imgui_setup() noexcept;
 	void process_events() noexcept;
 
@@ -154,4 +155,6 @@ public:
 	static void SetCursorType(ImGuiMouseCursor id) noexcept;
 
 	inline const std::vector<FunscriptAction>& FunscriptClipboard() const { return CopiedSelection; }
+
+	inline bool LoadOverrideFont(const std::string& font) noexcept { return load_fonts(font.empty() ? nullptr : font.c_str()); }
 };

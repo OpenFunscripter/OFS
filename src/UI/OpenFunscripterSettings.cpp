@@ -84,6 +84,47 @@ bool OpenFunscripterSettings::ShowPreferenceWindow()
 
 	if (ImGui::BeginPopupModal("Preferences", &ShowWindow, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysAutoResize))
 	{
+		ImGui::InputText("Font", scripterSettings.font_override.empty() ? "Default font" : scripterSettings.font_override.c_str(),
+			scripterSettings.font_override.size(), ImGuiInputTextFlags_ReadOnly);
+		ImGui::SameLine();
+		if (ImGui::Button("Change")) {
+			Util::OpenFileDialog("Choose font", "",
+				[&](auto& result) {
+					if (result.files.size() > 0) {
+						scripterSettings.font_override = result.files.back();
+						if (!OpenFunscripter::ptr->LoadOverrideFont(scripterSettings.font_override)) {
+							scripterSettings.font_override = "";
+						}
+						else {
+							save = true;
+						}
+					}
+				}, false, { "*.ttf", "*.otf" }, "Fonts (*.ttf, *.otf)");
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Clear")) {
+			scripterSettings.font_override = "";
+			EventSystem::SingleShot([](void* ctx) {
+				// fonts can't be updated during a frame
+				// this updates the font during event processing
+				// which is not during the frame
+				auto app = OpenFunscripter::ptr;
+				app->LoadOverrideFont(app->settings->data().font_override);
+			}, nullptr);
+		}
+		
+		if (ImGui::InputInt("Font size", (int*)&scripterSettings.default_font_size, 1, 1)) {
+			scripterSettings.default_font_size = Util::Clamp(scripterSettings.default_font_size, 16, 48);
+			EventSystem::SingleShot([](void* ctx) {
+				// fonts can't be updated during a frame
+				// this updates the font during event processing
+				// which is not during the frame
+				auto app = OpenFunscripter::ptr;
+				app->LoadOverrideFont(app->settings->data().font_override);
+			}, nullptr);
+			save = true;
+		}
+
 		if (ImGui::Checkbox("Vsync", (bool*)&scripterSettings.vsync)) {
 			scripterSettings.vsync = Util::Clamp(scripterSettings.vsync, 0, 1); // just in case...
 			SDL_GL_SetSwapInterval(scripterSettings.vsync);
@@ -94,10 +135,6 @@ bool OpenFunscripterSettings::ShowPreferenceWindow()
 			scripterSettings.framerateLimit = Util::Clamp(scripterSettings.framerateLimit, 30, 300);
 			save = true;
 		}
-		if (ImGui::InputInt("Font size", (int*)&scripterSettings.default_font_size, 1, 1)) {
-			save = true;
-		}
-		Util::Tooltip("Requires program restart to take effect");
 		if (ImGui::Checkbox("Force hardware decoding (Requires program restart)", &scripterSettings.force_hw_decoding)) {
 			save = true;
 		}

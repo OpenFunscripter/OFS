@@ -54,6 +54,8 @@ public:
 	void Subscribe(int32_t eventType, void* listener, EventHandlerFunc&& handler) noexcept;
 	void Unsubscribe(int32_t eventType, void* listener) noexcept;
 	void UnsubscribeAll(void* listener) noexcept;
+
+	static void SingleShot(SingleShotEventHandler&& handler, void* ctx) noexcept;
 };
 
 #define EVENT_SYSTEM_BIND(listener, handler) listener, std::move(std::bind(handler, listener, std::placeholders::_1))

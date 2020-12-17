@@ -66,44 +66,12 @@ constexpr const char* ActionEditorId = "Action editor";
 constexpr int DefaultWidth = 1920;
 constexpr int DefaultHeight= 1080;
 
-bool OpenFunscripter::imgui_setup() noexcept
+bool OpenFunscripter::load_fonts(const char* font_override) noexcept
 {
-    // Setup Dear ImGui context
-    IMGUI_CHECKVERSION();
-    if(!ImGui::CreateContext()) {
-        return false;
-    }
-
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
-    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
-    io.ConfigWindowsMoveFromTitleBarOnly = true;
-    io.ConfigViewportsNoDecoration = false;
-    io.ConfigViewportsNoAutoMerge = false;
-    io.ConfigViewportsNoTaskBarIcon = false;
-    
-    static auto imguiIniPath = Util::Prefpath("imgui.ini");
-    io.IniFilename = imguiIniPath.c_str();
-    
-    ImGui::StyleColorsDark();
-
-    // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
-    ImGuiStyle& style = ImGui::GetStyle();
-    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-    {
-        style.WindowRounding = 0.0f;
-        style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-    }
-
-    // Setup Platform/Renderer bindings
-    ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
-    LOGF_DEBUG("init imgui with glsl: %s", glsl_version);
-    ImGui_ImplOpenGL3_Init(glsl_version);
+    auto& io = ImGui::GetIO();
 
     // LOAD FONTS
-    auto roboto = Util::Resource("fonts/RobotoMono-Regular.ttf");    
+    auto roboto = font_override ? font_override : Util::Resource("fonts/RobotoMono-Regular.ttf");    
     auto fontawesome = Util::Resource("fonts/fontawesome-webfont.ttf");
     auto noto_jp = Util::Resource("fonts/NotoSansJP-Regular.otf");
 
@@ -117,10 +85,17 @@ bool OpenFunscripter::imgui_setup() noexcept
     ImFontConfig config;
 
     ImFont* font = nullptr;
+
+    GLuint font_tex = (GLuint)io.Fonts->TexID;
     io.Fonts->Clear();
     io.Fonts->AddFontDefault();
 
     if (!Util::FileExists(roboto)) { 
+        LOGF_WARN("\"%s\" font is missing.", roboto.c_str());
+        roboto = Util::Resource("fonts/RobotoMono-Regular.ttf");
+    }
+
+    if (!Util::FileExists(roboto)) {
         LOGF_WARN("\"%s\" font is missing.", roboto.c_str());
     }
     else {
@@ -160,8 +135,9 @@ bool OpenFunscripter::imgui_setup() noexcept
     io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
     
     // Upload texture to graphics system
-    GLuint font_tex;
-    glGenTextures(1, &font_tex);
+    if (!font_tex) {
+        glGenTextures(1, &font_tex);
+    }
     glBindTexture(GL_TEXTURE_2D, font_tex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -169,6 +145,46 @@ bool OpenFunscripter::imgui_setup() noexcept
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
     io.Fonts->TexID = (void*)(intptr_t)font_tex;
+    return true;
+}
+
+bool OpenFunscripter::imgui_setup() noexcept
+{
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    if(!ImGui::CreateContext()) {
+        return false;
+    }
+
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+    io.ConfigWindowsMoveFromTitleBarOnly = true;
+    io.ConfigViewportsNoDecoration = false;
+    io.ConfigViewportsNoAutoMerge = false;
+    io.ConfigViewportsNoTaskBarIcon = false;
+    
+    static auto imguiIniPath = Util::Prefpath("imgui.ini");
+    io.IniFilename = imguiIniPath.c_str();
+    
+    ImGui::StyleColorsDark();
+
+    // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
+    ImGuiStyle& style = ImGui::GetStyle();
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        style.WindowRounding = 0.0f;
+        style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+    }
+
+    // Setup Platform/Renderer bindings
+    ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
+    LOGF_DEBUG("init imgui with glsl: %s", glsl_version);
+    ImGui_ImplOpenGL3_Init(glsl_version);
+
+    load_fonts(settings->data().font_override.empty() ? nullptr : settings->data().font_override.c_str());
   
     return true;
 }

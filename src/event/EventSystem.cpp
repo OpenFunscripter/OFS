@@ -75,3 +75,15 @@ void EventSystem::UnsubscribeAll(void* listener) noexcept
 			return h.listener == listener;
 		}), handlers.end());
 }
+
+void EventSystem::SingleShot(SingleShotEventHandler&& handler, void* ctx) noexcept
+{
+	// evData is freed after the event got processed
+	auto evData = new SingleShotEventData();
+	evData->ctx = ctx;
+	evData->handler = std::move(handler);
+	SDL_Event ev;
+	ev.type = EventSystem::SingleShotEvent;
+	ev.user.data1 = evData;
+	SDL_PushEvent(&ev);
+}

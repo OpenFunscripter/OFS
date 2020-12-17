@@ -625,10 +625,7 @@ void CustomLua::runScript(const std::string& path) noexcept
 
             if (CollectScriptOutputs(data, data.L)) {
                 // fire event to the main thread
-                auto eventData = new EventSystem::SingleShotEventData;
-                eventData->ctx = &data;
-                
-                eventData->handler = [](void* ctx) {
+                EventSystem::SingleShot([](void* ctx) {
                     // script finished handler
                     // this code executes on the main thread during event processing
                     LuaThread& data = *(LuaThread*)ctx;
@@ -653,12 +650,7 @@ void CustomLua::runScript(const std::string& path) noexcept
 
                     app->player.setPosition(data.NewPositionMs);
                     data.running = false;
-                };
-
-                SDL_Event ev;
-                ev.type = EventSystem::SingleShotEvent;
-                ev.user.data1 = eventData;
-                SDL_PushEvent(&ev);
+                }, &data);
             }
             else {
                 WriteToConsole("ERROR: Failed to read script outputs.");

@@ -33,6 +33,8 @@ private:
 	struct ScripterSettingsData {
 		std::string config_version = CurrentSettingsVersion;
 		std::string last_path;
+		std::string font_override;
+
 		int32_t default_font_size = 18;
 		int32_t fast_step_amount = 6;
 		bool always_show_bookmark_labels = false;
@@ -99,6 +101,7 @@ private:
 			OFS_REFLECT(vsync, ar);
 			OFS_REFLECT(framerateLimit, ar);
 			OFS_REFLECT(buttonRepeatIntervalMs, ar);
+			OFS_REFLECT(font_override, ar);
 			OFS_REFLECT_PTR(simulator, ar);
 		}
 	} scripterSettings;
