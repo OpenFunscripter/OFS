@@ -27,6 +27,7 @@
 // TODO: extend "range extender" functionality ( only extend bottom/top, range reducer )
 // TODO: render simulator relative to video position & zoom
 
+// TODO: binding Lua scripts to keys or buttons
 
 // TODO: Change how twist is implemented in the 3D simulator
 
