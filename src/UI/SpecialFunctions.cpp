@@ -886,7 +886,7 @@ void CustomLua::DrawUI() noexcept
             ImGui::PopID();
         }
     }
-    ImGui::Spacing(); ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal); ImGui::Spacing();
+    ImGui::Spacing();
     
     if (ImGui::Button("Open Lua documentation", ImVec2(-1.f, 0.f))) {
         Util::OpenUrl("https://www.lua.org/manual/5.4/");
