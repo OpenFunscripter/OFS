@@ -494,6 +494,27 @@ void Funscript::SetActions(const std::vector<FunscriptAction>& override_with) no
 	NotifyActionsChanged(true);
 }
 
+void Funscript::AddBookmark(const Funscript::Bookmark& bookmark) noexcept
+{
+	// when can create a bookmark "a" followed by "a_end" 
+	// this will set "a" as a start marker
+	if (bookmark.type == Funscript::Bookmark::BookmarkType::END_MARKER) {
+		auto& back = scriptSettings.Bookmarks.back();
+		if (back.type == Funscript::Bookmark::BookmarkType::REGULAR) {
+			auto name_copy = bookmark.name;
+			name_copy.erase(name_copy.end() - sizeof(Funscript::Bookmark::endMarker) + 1, name_copy.end());
+			if (Util::StringEqualsInsensitive(name_copy, back.name)) {
+				back.type = Funscript::Bookmark::BookmarkType::START_MARKER;
+			}
+		}
+	}
+
+	scriptSettings.Bookmarks.emplace_back(bookmark); 
+	std::sort(scriptSettings.Bookmarks.begin(), scriptSettings.Bookmarks.end(),
+		[](auto& a, auto& b) { return a.at < b.at; }
+	);
+}
+
 void Funscript::RangeExtendSelection(int32_t rangeExtend) noexcept
 {
 	auto ExtendRange = [](std::vector<FunscriptAction*>& actions, int32_t rangeExtend) -> void {

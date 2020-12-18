@@ -31,6 +31,8 @@ public:
 		std::string name;
 		BookmarkType type = BookmarkType::REGULAR;
 
+		static constexpr char startMarker[] = "_start";
+		static constexpr char endMarker[] = "_end";
 		Bookmark() {}
 
 		Bookmark(const std::string& name, int32_t at)
@@ -40,8 +42,6 @@ public:
 		}
 
 		inline void UpdateType() noexcept {
-			constexpr char startMarker[] = "_start";
-			constexpr char endMarker[] = "_end";
 
 			Util::trim(name);
 
@@ -241,12 +241,7 @@ public:
 
 	// bookmarks
 	inline const std::vector<Funscript::Bookmark>& Bookmarks() const noexcept { return scriptSettings.Bookmarks; }
-	inline void AddBookmark(const Funscript::Bookmark& bookmark) noexcept { 
-		scriptSettings.Bookmarks.emplace_back(bookmark); 
-		std::sort(scriptSettings.Bookmarks.begin(), scriptSettings.Bookmarks.end(),
-			[](auto& a, auto& b) { return a.at < b.at; }
-		);
-	}
+	void AddBookmark(const Funscript::Bookmark& bookmark) noexcept;
 
 	inline bool HasUnsavedEdits() const { return unsavedEdits; }
 	inline const std::chrono::system_clock::time_point& EditTime() const { return editTime; }
@@ -275,6 +270,5 @@ public:
 
 	void EqualizeSelection() noexcept;
 	void InvertSelection() noexcept;
-	void AlignWithFrameTimeSelection(float frameTimeMs) noexcept;
 };
 
