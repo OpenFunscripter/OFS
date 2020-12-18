@@ -241,7 +241,7 @@ public:
 
 	// bookmarks
 	inline const std::vector<Funscript::Bookmark>& Bookmarks() const noexcept { return scriptSettings.Bookmarks; }
-	void AddBookmark(const Funscript::Bookmark& bookmark) noexcept;
+	void AddBookmark(Funscript::Bookmark&& bookmark) noexcept;
 
 	inline bool HasUnsavedEdits() const { return unsavedEdits; }
 	inline const std::chrono::system_clock::time_point& EditTime() const { return editTime; }

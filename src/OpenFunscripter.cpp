@@ -2272,7 +2272,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     }
                     Funscript::Bookmark bookmark(bookmarkName, player.getCurrentPositionMsInterp());
                     bookmarkName = "";
-                    ActiveFunscript()->AddBookmark(bookmark);
+                    ActiveFunscript()->AddBookmark(std::move(bookmark));
                 }
             }
 

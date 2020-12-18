@@ -494,17 +494,34 @@ void Funscript::SetActions(const std::vector<FunscriptAction>& override_with) no
 	NotifyActionsChanged(true);
 }
 
-void Funscript::AddBookmark(const Funscript::Bookmark& bookmark) noexcept
+void Funscript::AddBookmark(Funscript::Bookmark&& bookmark) noexcept
 {
 	// when can create a bookmark "a" followed by "a_end" 
 	// this will set "a" as a start marker
-	if (bookmark.type == Funscript::Bookmark::BookmarkType::END_MARKER) {
-		auto& back = scriptSettings.Bookmarks.back();
-		if (back.type == Funscript::Bookmark::BookmarkType::REGULAR) {
-			auto name_copy = bookmark.name;
-			name_copy.erase(name_copy.end() - sizeof(Funscript::Bookmark::endMarker) + 1, name_copy.end());
-			if (Util::StringEqualsInsensitive(name_copy, back.name)) {
-				back.type = Funscript::Bookmark::BookmarkType::START_MARKER;
+	if (!scriptSettings.Bookmarks.empty()) {
+		auto it = std::find_if(scriptSettings.Bookmarks.begin(), scriptSettings.Bookmarks.end(),
+			[&](auto& mark) {
+				return mark.at > bookmark.at;
+		});
+		if (it != scriptSettings.Bookmarks.begin()) it--;
+
+		if (bookmark.type == Funscript::Bookmark::BookmarkType::END_MARKER) {
+			if (it->type == Funscript::Bookmark::BookmarkType::REGULAR) {
+				auto name_copy = bookmark.name;
+				name_copy.erase(name_copy.end() - sizeof(Funscript::Bookmark::endMarker) + 1, name_copy.end());
+				if (Util::StringEqualsInsensitive(name_copy, it->name)) {
+					it->type = Funscript::Bookmark::BookmarkType::START_MARKER;
+				}
+			}
+		}
+		else {
+			if (it + 1 != scriptSettings.Bookmarks.end() && it->type != Funscript::Bookmark::BookmarkType::END_MARKER) it++;
+			if (it->type == Funscript::Bookmark::BookmarkType::END_MARKER) {
+				auto name_copy = it->name;
+				name_copy.erase(name_copy.end() - sizeof(Funscript::Bookmark::endMarker) + 1, name_copy.end());
+				if (Util::StringEqualsInsensitive(name_copy, bookmark.name)) {
+					bookmark.type = Funscript::Bookmark::BookmarkType::START_MARKER;
+				}
 			}
 		}
 	}
