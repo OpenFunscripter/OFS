@@ -502,23 +502,18 @@ void VideoplayerWindow::draw2dVideo(ImDrawList* draw_list) noexcept
 
 void VideoplayerWindow::videoRightClickMenu() noexcept
 {
+#ifndef NDEBUG
 	if (ImGui::BeginPopupContextItem())
 	{
 		auto pos = ImGui::GetItemRectMin();
-		auto& vision = settings.visionBlock;
 
-		if (ImGui::BeginMenu("Block")) {
-			ImGui::MenuItem("Enable", 0, &vision.blockVision);
-			if (ImGui::MenuItem("Pos 1")) {
-				vision.blockRect.Min = pos;
-			}
-			if (ImGui::MenuItem("Pos 2")) {
-				vision.blockRect.Max = pos;
-			}
+		if (ImGui::BeginMenu("Empty")) {
+			ImGui::TextDisabled("it really do be empty");
 			ImGui::EndMenu();
 		}
 		ImGui::EndPopup();
 	}
+#endif
 }
 
 void VideoplayerWindow::DrawVideoPlayer(bool* open)
@@ -545,27 +540,6 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 
 			videoHovered = ImGui::IsItemHovered() && ImGui::IsWindowHovered();
 			video_draw_size = ImGui::GetItemRectSize();
-
-			auto& vision = settings.visionBlock;
-			if (vision.blockVision) {
-				const auto top_min = vision.blockRect.Min - ImVec2(video_draw_size.x, video_draw_size.y);
-				const auto top_max = vision.blockRect.Min + ImVec2(video_draw_size.x, 0.f);
-				draw_list->AddRectFilled(top_min, top_max, vision.blockColor);
-
-				const auto left_min = vision.blockRect.Min - ImVec2(video_draw_size.x, 0.f);
-				const auto left_max = vision.blockRect.Min + ImVec2(0.f, video_draw_size.y);
-				draw_list->AddRectFilled(left_min, left_max, vision.blockColor);
-
-				const auto right_min = vision.blockRect.Min + ImVec2(vision.blockRect.GetWidth(), 0.f);
-				const auto right_max = right_min + ImVec2(video_draw_size.x, video_draw_size.y);
-				draw_list->AddRectFilled(right_min, right_max, vision.blockColor);
-
-				const auto bottom_min = vision.blockRect.Min + ImVec2(0.f, vision.blockRect.GetHeight());
-				const auto bottom_max = vision.blockRect.Max + ImVec2(0.f, video_draw_size.y);
-				draw_list->AddRectFilled(bottom_min, bottom_max, vision.blockColor);
-
-				//draw_list->AddRectFilled(vision.blockRect.Min, vision.blockRect.Max, IM_COL32(255, 255, 255, 100));
-			}
 
 			// cancel drag
 			if ((dragStarted && !videoHovered) || ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {

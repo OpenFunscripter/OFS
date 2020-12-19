@@ -126,20 +126,6 @@ public:
 		float volume = 0.5f;
 		float playback_speed = 1.f;
 
-		
-		struct VisionBlock {
-			bool blockVision = true;
-			ImRect blockRect;
-			ImColor blockColor = IM_COL32(0, 0, 0, 255);
-
-			template<class Archive>
-			inline void reflect(Archive& ar) {
-				OFS_REFLECT(blockVision, ar);
-				OFS_REFLECT(blockRect, ar);
-				OFS_REFLECT(blockColor, ar);
-			}
-		} visionBlock;
-
 		template <class Archive>
 		inline void reflect(Archive& ar) {
 			OFS_REFLECT(activeMode, ar);
@@ -152,8 +138,6 @@ public:
 			OFS_REFLECT(current_translation, ar);
 			OFS_REFLECT(prev_translation, ar);
 			OFS_REFLECT(video_pos, ar);
-
-			OFS_REFLECT(visionBlock, ar);
 		}
 	};
 
