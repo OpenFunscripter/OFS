@@ -2,6 +2,7 @@
 
 #include "OpenFunscripter.h"
 #include "event/EventSystem.h"
+#include "OFS_ImGui.h"
 
 #include "imgui_internal.h"
 
@@ -390,6 +391,135 @@ void VideoplayerWindow::notifyVideoLoaded()
 	SDL_PushEvent(&ev);
 }
 
+void VideoplayerWindow::drawVrVideo(ImDrawList* draw_list) noexcept
+{
+	if (videoHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !dragStarted) {
+		dragStarted = true;
+	}
+	// apply drag to translation
+	else if (dragStarted && videoHovered)
+	{
+		settings.current_vr_rotation =
+			settings.prev_vr_rotation
+			+ (ImGui::GetMouseDragDelta(ImGuiMouseButton_Left) 
+				/ ImVec2((10000.f * settings.vr_zoom), (video_draw_size.y / video_draw_size.x) * 10000.f * settings.vr_zoom));
+	}
+
+	player_viewport = ImGui::GetCurrentWindowRead()->Viewport;
+	draw_list->AddCallback(
+		[](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
+			auto& ctx = *(VideoplayerWindow*)cmd->UserCallbackData;
+
+			auto draw_data = ctx.player_viewport->DrawData;
+			ctx.vr_shader->use();
+
+			float L = draw_data->DisplayPos.x;
+			float R = draw_data->DisplayPos.x + draw_data->DisplaySize.x;
+			float T = draw_data->DisplayPos.y;
+			float B = draw_data->DisplayPos.y + draw_data->DisplaySize.y;
+			const float ortho_projection[4][4] =
+			{
+				{ 2.0f / (R - L), 0.0f, 0.0f, 0.0f },
+				{ 0.0f, 2.0f / (T - B), 0.0f, 0.0f },
+				{ 0.0f, 0.0f, -1.0f, 0.0f },
+				{ (R + L) / (L - R),  (T + B) / (B - T),  0.0f,   1.0f },
+			};
+			ctx.vr_shader->ProjMtx(&ortho_projection[0][0]);
+			ctx.vr_shader->Rotation(&ctx.settings.current_vr_rotation.x);
+			ctx.vr_shader->Zoom(ctx.settings.vr_zoom);
+			ctx.vr_shader->AspectRatio(ctx.video_draw_size.x / ctx.video_draw_size.y);
+			// TODO: set this somewhere else get rid of the branch
+			if (ctx.MpvData.video_height > 0) {
+				ctx.vr_shader->VideoAspectRatio(ctx.MpvData.video_width /(float)ctx.MpvData.video_height);
+			}
+		}, this);
+	//ImGui::Image((void*)(intptr_t)render_texture, ImGui::GetContentRegionAvail(), ImVec2(0.f, 1.f),	ImVec2(1.f, 0.f));
+	OFS::ImageWithId(ImGui::GetID("videoImage"), (void*)(intptr_t)render_texture, ImGui::GetContentRegionAvail(), ImVec2(0.f, 1.f), ImVec2(1.f, 0.f));
+	videoRightClickMenu();
+	draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
+		auto& sim3D = OpenFunscripter::ptr->sim3D;
+		sim3D->render();				
+	}, this);
+	video_draw_size = ImGui::GetItemRectSize();
+}
+
+void VideoplayerWindow::draw2dVideo(ImDrawList* draw_list) noexcept
+{
+	ImVec2 videoSize(MpvData.video_width, MpvData.video_height);
+	ImVec2 dst = ImGui::GetContentRegionAvail();
+	base_scale_factor = std::min(dst.x / videoSize.x, dst.y / videoSize.y);
+	videoSize.x *= base_scale_factor;
+	videoSize.y *= base_scale_factor;
+
+	ImVec2 uv0(0.f, 1.f);
+	ImVec2 uv1(1.f, 0.f);
+
+	switch (settings.activeMode) {
+	case VideoMode::LEFT_PANE:
+		videoSize.x /= 2.f;
+		uv1.x = 0.5f;
+		break;
+	case VideoMode::RIGHT_PANE:
+		videoSize.x /= 2.f;
+		uv0.x = 0.5f;
+		break;
+	case VideoMode::TOP_PANE:
+		videoSize.y /= 2.f;
+		uv1.y = 0.5;
+		break;
+	case VideoMode::BOTTOM_PANE:
+		videoSize.y /= 2.f;
+		uv0.y = 0.5f;
+		break;
+	case VideoMode::VR_MODE:
+	case VideoMode::FULL:
+	default:
+		// nothing
+		break;
+	}
+
+	videoSize = videoSize * ImVec2(settings.zoom_factor, settings.zoom_factor);
+	settings.video_pos = (ImGui::GetWindowSize() - videoSize) * 0.5f + settings.current_translation;
+	ImGui::SetCursorPos(settings.video_pos);
+	// the videoHovered is one frame old but moving this up prevents flicker while dragging and zooming at the same time
+	// start video dragging
+	if (videoHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !dragStarted) {
+		dragStarted = true;
+	}
+	// apply drag to translation
+	else if(dragStarted && videoHovered)
+	{
+		settings.current_translation = settings.prev_translation + ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
+	}
+	//ImGui::Image((void*)(intptr_t)render_texture, videoSize, uv0, uv1);
+	OFS::ImageWithId(ImGui::GetID("videoImage"), (void*)(intptr_t)render_texture, videoSize, uv0, uv1);
+	videoRightClickMenu();
+	draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
+		auto& sim3D = OpenFunscripter::ptr->sim3D;
+		sim3D->render();
+	}, this);
+}
+
+void VideoplayerWindow::videoRightClickMenu() noexcept
+{
+	if (ImGui::BeginPopupContextItem())
+	{
+		auto pos = ImGui::GetItemRectMin();
+		auto& vision = settings.visionBlock;
+
+		if (ImGui::BeginMenu("Block")) {
+			ImGui::MenuItem("Enable", 0, &vision.blockVision);
+			if (ImGui::MenuItem("Pos 1")) {
+				vision.blockRect.Min = pos;
+			}
+			if (ImGui::MenuItem("Pos 2")) {
+				vision.blockRect.Max = pos;
+			}
+			ImGui::EndMenu();
+		}
+		ImGui::EndPopup();
+	}
+}
 
 void VideoplayerWindow::DrawVideoPlayer(bool* open)
 {
@@ -402,111 +532,40 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 		if (OpenFunscripter::ptr->settings->data().draw_video) {
 			viewport_pos = ImGui::GetWindowViewport()->Pos;
 
-			ImVec2 videoSize(MpvData.video_width, MpvData.video_height);
-			ImVec2 dst = ImGui::GetContentRegionAvail();
-			base_scale_factor = std::min(dst.x / videoSize.x, dst.y / videoSize.y);
-			videoSize.x *= base_scale_factor;
-			videoSize.y *= base_scale_factor;
-
-			ImVec2 uv0(0.f, 1.f);
-			ImVec2 uv1(1.f, 0.f);
-
-			switch (settings.activeMode) {
-			case VideoMode::LEFT_PANE:
-				videoSize.x /= 2.f;
-				uv1.x = 0.5f;
-				break;
-			case VideoMode::RIGHT_PANE:
-				videoSize.x /= 2.f;
-				uv0.x = 0.5f;
-				break;
-			case VideoMode::TOP_PANE:
-				videoSize.y /= 2.f;
-				uv1.y = 0.5;
-				break;
-			case VideoMode::BOTTOM_PANE:
-				videoSize.y /= 2.f;
-				uv0.y = 0.5f;
-				break;
-			case VideoMode::VR_MODE:
-			case VideoMode::FULL:
-			default:
-				// nothing
-				break;
-			}
 
 			auto draw_list = ImGui::GetWindowDrawList();
-			if (settings.activeMode == VideoMode::VR_MODE) {
-				if (videoHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !dragStarted) {
-					dragStarted = true;
-				}
-				// apply drag to translation
-				else if (dragStarted && videoHovered)
-				{
-					settings.current_vr_rotation =
-						settings.prev_vr_rotation
-						+ (ImGui::GetMouseDragDelta(ImGuiMouseButton_Left) 
-							/ ImVec2((10000.f * settings.vr_zoom), (video_draw_size.y / video_draw_size.x) * 10000.f * settings.vr_zoom));
-				}
-
-				player_viewport = ImGui::GetCurrentWindowRead()->Viewport;
-				draw_list->AddCallback(
-					[](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
-						auto& ctx = *(VideoplayerWindow*)cmd->UserCallbackData;
-
-						auto draw_data = ctx.player_viewport->DrawData;
-						ctx.vr_shader->use();
-
-						float L = draw_data->DisplayPos.x;
-						float R = draw_data->DisplayPos.x + draw_data->DisplaySize.x;
-						float T = draw_data->DisplayPos.y;
-						float B = draw_data->DisplayPos.y + draw_data->DisplaySize.y;
-						const float ortho_projection[4][4] =
-						{
-							{ 2.0f / (R - L), 0.0f, 0.0f, 0.0f },
-							{ 0.0f, 2.0f / (T - B), 0.0f, 0.0f },
-							{ 0.0f, 0.0f, -1.0f, 0.0f },
-							{ (R + L) / (L - R),  (T + B) / (B - T),  0.0f,   1.0f },
-						};
-						ctx.vr_shader->ProjMtx(&ortho_projection[0][0]);
-						ctx.vr_shader->Rotation(&ctx.settings.current_vr_rotation.x);
-						ctx.vr_shader->Zoom(ctx.settings.vr_zoom);
-						ctx.vr_shader->AspectRatio(ctx.video_draw_size.x / ctx.video_draw_size.y);
-						// TODO: set this somewhere else get rid of the branch
-						if (ctx.MpvData.video_height > 0) {
-							ctx.vr_shader->VideoAspectRatio(ctx.MpvData.video_width /(float)ctx.MpvData.video_height);
-						}
-					}, this);
-				ImGui::Image((void*)(intptr_t)render_texture, ImGui::GetContentRegionAvail(), uv0, uv1);
-				draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
-					auto& sim3D = OpenFunscripter::ptr->sim3D;
-					sim3D->render();				
-				}, this);
-				video_draw_size = ImGui::GetItemRectSize();
+			if (settings.activeMode != VideoMode::VR_MODE) {
+				draw2dVideo(draw_list);
 			}
 			else {
-				videoSize = videoSize * ImVec2(settings.zoom_factor, settings.zoom_factor);
-				settings.video_pos = (ImGui::GetWindowSize() - videoSize) * 0.5f + settings.current_translation;
-				ImGui::SetCursorPos(settings.video_pos);
-				// the videoHovered is one frame old but moving this up prevents flicker while dragging and zooming at the same time
-				// start video dragging
-				if (videoHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !dragStarted) {
-					dragStarted = true;
-				}
-				// apply drag to translation
-				else if(dragStarted && videoHovered)
-				{
-					settings.current_translation = settings.prev_translation + ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
-				}
-				ImGui::Image((void*)(intptr_t)render_texture, videoSize, uv0, uv1);
-				draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
-					auto& sim3D = OpenFunscripter::ptr->sim3D;
-					sim3D->render();
-				}, this);
+				drawVrVideo(draw_list);
 			}
+			// this reset is for the simulator 3d, vr mode or both
 			draw_list->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
+
 			videoHovered = ImGui::IsItemHovered() && ImGui::IsWindowHovered();
 			video_draw_size = ImGui::GetItemRectSize();
+
+			auto& vision = settings.visionBlock;
+			if (vision.blockVision) {
+				const auto top_min = vision.blockRect.Min - ImVec2(video_draw_size.x, video_draw_size.y);
+				const auto top_max = vision.blockRect.Min + ImVec2(video_draw_size.x, 0.f);
+				draw_list->AddRectFilled(top_min, top_max, vision.blockColor);
+
+				const auto left_min = vision.blockRect.Min - ImVec2(video_draw_size.x, 0.f);
+				const auto left_max = vision.blockRect.Min + ImVec2(0.f, video_draw_size.y);
+				draw_list->AddRectFilled(left_min, left_max, vision.blockColor);
+
+				const auto right_min = vision.blockRect.Min + ImVec2(vision.blockRect.GetWidth(), 0.f);
+				const auto right_max = right_min + ImVec2(video_draw_size.x, video_draw_size.y);
+				draw_list->AddRectFilled(right_min, right_max, vision.blockColor);
+
+				const auto bottom_min = vision.blockRect.Min + ImVec2(0.f, vision.blockRect.GetHeight());
+				const auto bottom_max = vision.blockRect.Max + ImVec2(0.f, video_draw_size.y);
+				draw_list->AddRectFilled(bottom_min, bottom_max, vision.blockColor);
+
+				//draw_list->AddRectFilled(vision.blockRect.Min, vision.blockRect.Max, IM_COL32(255, 255, 255, 100));
+			}
 
 			// cancel drag
 			if ((dragStarted && !videoHovered) || ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
@@ -516,8 +575,9 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open)
 			}
 
 			// recenter
-			if (videoHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
+			if (videoHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Middle)) {
 				resetTranslationAndZoom();
+			}
 		}
 		else {
 			if (ImGui::Button("Click to enable video")) {

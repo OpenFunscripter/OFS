@@ -19,6 +19,7 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "UI/KeybindingSystem.cpp"
   "UI/GradientBar.cpp"
   "UI/ScriptPositionsWindow.cpp"
+  "UI/OFS_ImGui.cpp"
   
   "UI/ScriptSimulator.cpp"
   "UI/SpecialFunctions.cpp"

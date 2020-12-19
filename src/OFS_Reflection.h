@@ -1,6 +1,7 @@
 #pragma once
 
 #include "imgui.h"
+#include "imgui_internal.h"
 
 #include <memory>
 
@@ -47,5 +48,14 @@ struct reflect_function<ImColor, Archive>
 		OFS_REFLECT_NAMED(y, obj.Value.y, ar);
 		OFS_REFLECT_NAMED(z, obj.Value.z, ar);
 		OFS_REFLECT_NAMED(w, obj.Value.w, ar);
+	}
+};
+
+template<typename Archive>
+struct reflect_function<ImRect, Archive>
+{
+	void reflect(ImRect& obj, Archive& ar) {
+		OFS_REFLECT_NAMED(Min, obj.Min, ar);
+		OFS_REFLECT_NAMED(Max, obj.Max, ar);
 	}
 };

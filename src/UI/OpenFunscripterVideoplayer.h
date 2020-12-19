@@ -2,6 +2,8 @@
 
 #include "SDL.h"
 #include "imgui.h"
+#include "imgui_internal.h"
+
 #include "OFS_Reflection.h"
 #include "OpenFunscripterUtil.h"
 #include "OFS_Shader.h"
@@ -92,6 +94,7 @@ private:
 	bool videoHovered = false;
 	bool dragStarted = false;
 
+
 	void MpvEvents(SDL_Event& ev);
 	void MpvRenderUpdate(SDL_Event& ev);
 
@@ -103,6 +106,10 @@ private:
 	void setup_vr_mode();
 
 	void notifyVideoLoaded();
+
+	void drawVrVideo(ImDrawList* draw_list) noexcept;
+	void draw2dVideo(ImDrawList* draw_list) noexcept;
+	void videoRightClickMenu() noexcept;
 public:
 	static constexpr const char* PlayerId = "Player";
 
@@ -119,6 +126,20 @@ public:
 		float volume = 0.5f;
 		float playback_speed = 1.f;
 
+		
+		struct VisionBlock {
+			bool blockVision = true;
+			ImRect blockRect;
+			ImColor blockColor = IM_COL32(0, 0, 0, 255);
+
+			template<class Archive>
+			inline void reflect(Archive& ar) {
+				OFS_REFLECT(blockVision, ar);
+				OFS_REFLECT(blockRect, ar);
+				OFS_REFLECT(blockColor, ar);
+			}
+		} visionBlock;
+
 		template <class Archive>
 		inline void reflect(Archive& ar) {
 			OFS_REFLECT(activeMode, ar);
@@ -131,6 +152,8 @@ public:
 			OFS_REFLECT(current_translation, ar);
 			OFS_REFLECT(prev_translation, ar);
 			OFS_REFLECT(video_pos, ar);
+
+			OFS_REFLECT(visionBlock, ar);
 		}
 	};
 
