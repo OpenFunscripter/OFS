@@ -2274,6 +2274,20 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     bookmarkName = "";
                     ActiveFunscript()->AddBookmark(std::move(bookmark));
                 }
+
+                auto& bookmarks = ActiveFunscript()->Bookmarks();
+                auto it = std::find_if(bookmarks.rbegin(), bookmarks.rend(),
+                    [&](auto& mark) {
+                        return mark.at < player.getCurrentPositionMsInterp();
+                    });
+                if (it != bookmarks.rend() && it->type != Funscript::Bookmark::BookmarkType::END_MARKER) {
+                    char tmp[512];
+                    stbsp_snprintf(tmp, sizeof(tmp), "Create interval for \"%s\"", it->name.c_str());
+                    if (ImGui::MenuItem(tmp)) {
+                        Funscript::Bookmark bookmark(it->name + "_end", player.getCurrentPositionMsInterp());
+                        ActiveFunscript()->AddBookmark(std::move(bookmark));
+                    }
+                }
             }
 
             if (ImGui::BeginMenu("Go to...")) {
