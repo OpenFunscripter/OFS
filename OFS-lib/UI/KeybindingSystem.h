@@ -5,11 +5,22 @@
 #include "OFS_Util.h"
 #include "SDL.h"
 
+#include "EventSystem.h"
+
 #include <string>
 #include <vector>
 #include <functional>
 #include <sstream>
 #include <unordered_map>
+
+
+class KeybindingEvents
+{
+public:
+	static int32_t ControllerButtonRepeat;
+
+	static void RegisterEvents() noexcept;
+};
 
 using BindingAction = std::function<void(void*)>;
 
@@ -112,8 +123,6 @@ class KeybindingSystem
 	bool ControllerOnly = false;
 	std::string filterString;
 
-	bool SetControllerSpeed = false;
-
 	void addKeyString(const char* name);
 	void addKeyString(char name);
 	Keybindings ActiveBindings;
@@ -126,17 +135,13 @@ class KeybindingSystem
 	void ControllerButtonDown(SDL_Event& ev) noexcept;
 
 	int32_t lastAxis = 0;
-	void ControllerAxis(SDL_Event& ev) noexcept;
 public:
 	bool ShowWindow = false;
 
-	void setup();
+	void setup(class EventSystem& events);
 	const std::string& getBindingString(const char* binding_id) noexcept;
 	const Keybindings& getBindings() const { return ActiveBindings; }
 	void setBindings(const Keybindings& bindings);
 	void registerBinding(const KeybindingGroup& group);
 	bool ShowBindingWindow();
-
-	// TODO: get this out of here including SetControllerSpeed, ControllerAxis & lastAxis
-	inline void SetControllerPlaybackSpeed() { SetControllerSpeed = true; }
 };

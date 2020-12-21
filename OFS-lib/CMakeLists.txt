@@ -9,6 +9,7 @@ set(OFS_LIB_SOURCES
 	"UI/GradientBar.cpp"
 	"UI/OFS_ImGui.cpp"
 	"UI/OFS_Videoplayer.cpp"
+	"UI/KeybindingSystem.cpp"
 
 	"imgui_impl/imgui_impl_opengl3.cpp"
 	"imgui_impl/imgui_impl_sdl.cpp" 
@@ -45,10 +46,6 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
 
 if(WIN32)
-	# copy mpv-1.dll to bin dir
-	add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy
-                   "${CMAKE_SOURCE_DIR}/lib/libmpv/mpv-1.dll" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/mpv-1.dll")
 	target_include_directories(${PROJECT_NAME} PRIVATE 
 		"${CMAKE_SOURCE_DIR}/lib/libmpv/include"
 	)
@@ -63,19 +60,19 @@ if(WIN32)
 		"NOMINMAX"
 	)
 elseif(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
-# linux etc. 
-find_package(PkgConfig REQUIRED) 
-pkg_check_modules(mpv REQUIRED IMPORTED_TARGET mpv)
+	# linux etc. 
+	find_package(PkgConfig REQUIRED) 
+	pkg_check_modules(mpv REQUIRED IMPORTED_TARGET mpv)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC
-	mpv
-	OpenGL
-)
+	target_link_libraries(${PROJECT_NAME} PUBLIC
+		mpv
+		OpenGL
+	)
 elseif(APPLE)
-target_include_directories(${PROJECT_NAME} PUBLIC
-	"/opt/local/include/"
-)
-target_link_libraries(${PROJECT_NAME} PUBLIC
-	"/opt/local/lib/libmpv.dylib"
-)
+	target_include_directories(${PROJECT_NAME} PUBLIC
+		"/opt/local/include/"
+	)
+	target_link_libraries(${PROJECT_NAME} PUBLIC
+		"/opt/local/lib/libmpv.dylib"
+	)
 endif()

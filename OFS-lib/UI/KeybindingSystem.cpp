@@ -1,6 +1,7 @@
 #include "KeybindingSystem.h"
 
-#include "OpenFunscripter.h"
+//#include "OpenFunscripter.h"
+#include "EventSystem.h"
 
 #include "imgui.h"
 #include "imgui_stdlib.h"
@@ -39,14 +40,11 @@ static const char* GetButtonString(int32_t button) {
     }
 }
 
-void KeybindingSystem::setup()
+void KeybindingSystem::setup(EventSystem& events)
 {
-    auto app = OpenFunscripter::ptr;
-    app->events->Subscribe(SDL_KEYDOWN, EVENT_SYSTEM_BIND(this, &KeybindingSystem::KeyPressed));
-    //app->events->Subscribe(SDL_CONTROLLERBUTTONUP, EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerButtonUp));
-    app->events->Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerAxis));
-    app->events->Subscribe(SDL_CONTROLLERBUTTONDOWN, EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerButtonDown));
-    app->events->Subscribe(OFS_Events::ControllerButtonRepeat, EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerButtonRepeat));
+    events.Subscribe(SDL_KEYDOWN, EVENT_SYSTEM_BIND(this, &KeybindingSystem::KeyPressed));
+    events.Subscribe(SDL_CONTROLLERBUTTONDOWN, EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerButtonDown));
+    events.Subscribe(KeybindingEvents::ControllerButtonRepeat, EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerButtonRepeat));
 }
 
 void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
@@ -228,28 +226,7 @@ void KeybindingSystem::ControllerButtonDown(SDL_Event& ev) noexcept
     ProcessControllerBindings(ev, false);
 }
 
-void KeybindingSystem::ControllerAxis(SDL_Event& ev) noexcept
-{
-    auto& caxis = ev.caxis;
-    if (SetControllerSpeed && caxis.axis == lastAxis && caxis.value <= 0) {
-        SetControllerSpeed = false; 
-        return;
-    }
 
-    if (caxis.value < 0) { return; }
-    if (SetControllerSpeed) { return; }
-    auto app = OpenFunscripter::ptr;
-    if (caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT) {
-        float speed = 1.f - (caxis.value / (float)std::numeric_limits<int16_t>::max());
-        app->player.setSpeed(speed);
-        lastAxis = caxis.axis;
-    }
-    else if (caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT) {
-        float speed = 1.f + (caxis.value / (float)std::numeric_limits<int16_t>::max());
-        app->player.setSpeed(speed);
-        lastAxis = caxis.axis;
-    }
-}
 
 void KeybindingSystem::addKeyString(const char* name)
 {
@@ -440,4 +417,10 @@ bool KeybindingSystem::ShowBindingWindow()
         ImGui::EndPopup();
     }
     return save;
+}
+
+int32_t KeybindingEvents::ControllerButtonRepeat = 0;
+void KeybindingEvents::RegisterEvents() noexcept
+{
+    ControllerButtonRepeat = SDL_RegisterEvents(1);
 }

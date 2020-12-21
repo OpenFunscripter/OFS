@@ -281,12 +281,13 @@ bool OpenFunscripter::setup()
     OFS_Events::RegisterEvents();
     FunscriptEvents::RegisterEvents();
     VideoEvents::RegisterEvents();
+    KeybindingEvents::RegisterEvents();
 
     OFS_ScriptSettings::player = &player.settings;
 
     undoSystem = std::make_unique<UndoSystem>();
 
-    keybinds.setup();
+    keybinds.setup(*events);
     register_bindings(); // needs to happen before setBindings
     keybinds.setBindings(settings->getKeybindings()); // override with user bindings
 
@@ -299,11 +300,11 @@ bool OpenFunscripter::setup()
         LOG_ERROR("Failed to init video player");
         return false;
     }
-
     events->Subscribe(FunscriptEvents::FunscriptActionsChangedEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FunscriptChanged));
     events->Subscribe(FunscriptEvents::FunscriptActionClickedEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FunscriptActionClicked));
     events->Subscribe(SDL_DROPFILE, EVENT_SYSTEM_BIND(this, &OpenFunscripter::DragNDrop));
     events->Subscribe(VideoEvents::MpvVideoLoaded, EVENT_SYSTEM_BIND(this, &OpenFunscripter::MpvVideoLoaded));
+    events->Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ControllerAxisPlaybackSpeed));
     
     if (!settings->data().recentFiles.empty()) {
         // cache these here because openFile overrides them
@@ -1186,7 +1187,7 @@ void OpenFunscripter::register_bindings()
             "Set current playback speed",
             true,
             [&](void*) {
-                keybinds.SetControllerPlaybackSpeed();
+                SetPlaybackSpeedController = true;
             }
         );
         set_playbackspeed_controller.controller = ControllerBinding(
@@ -1365,7 +1366,7 @@ void OpenFunscripter::autoBackup() noexcept
 
         auto savePath = scriptBackupDir / path_buf;
         LOGF_INFO("Backup at \"%s\"", savePath.u8string().c_str());
-        script->save<OFS_ScriptSettings>(savePath.u8string().c_str(), "OpenFunscripter", false);
+        saveScript(script.get(), savePath.u8string(), false);
     }
 }
 
@@ -1382,7 +1383,7 @@ void OpenFunscripter::step() noexcept {
         ActiveFunscript()->undoSystem->ShowUndoRedoHistory(&settings->data().show_history);
         simulator.ShowSimulator(&settings->data().show_simulator);
         ShowStatisticsWindow(&settings->data().show_statistics);
-        if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { ActiveFunscript()->save<OFS_ScriptSettings>("OpenFunscripter"); }
+        if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { saveScript(ActiveFunscript().get(), "", false); }
         sim3D->ShowWindow(&settings->data().show_simulator_3d);
         scripting->DrawScriptingMode(NULL);
 
@@ -1586,6 +1587,7 @@ void OpenFunscripter::step() noexcept {
     }
 
     render();
+    sim3D->render();
     SDL_GL_SwapWindow(window);
 }
 
@@ -1689,12 +1691,15 @@ bool OpenFunscripter::openFile(const std::string& file)
         // do not return false here future me
     }
 
-    //for (auto&& associated : RootFunscript()->scriptSettings.associatedScripts) {
-    //    auto associated_script = AllocFunscript();
-    //    if (associated_script->open(associated)) {
-    //        LoadedFunscripts.emplace_back(std::move(associated_script));
-    //    }
-    //}
+    if (result) {
+        auto& scriptSettings = RootFunscript()->Userdata<OFS_ScriptSettings>();
+        for (auto& associated : scriptSettings.associatedScripts) {
+            auto associated_script = std::make_unique<Funscript>();
+            if (associated_script->open<OFS_ScriptSettings>(associated, "OpenFunscripter")) {
+                LoadedFunscripts.emplace_back(std::move(associated_script));
+            }
+        }
+    }
 
     RootFunscript()->current_path = funscript_path;
 
@@ -1727,6 +1732,26 @@ void OpenFunscripter::updateTitle() noexcept
     SDL_SetWindowTitle(window, ss.str().c_str());
 }
 
+void OpenFunscripter::saveScript(Funscript* script, const std::string& path, bool override_location) noexcept
+{
+    if (script == RootFunscript().get()) {
+        // associate scripts
+        auto& scriptSettings = script->Userdata<OFS_ScriptSettings>();
+        scriptSettings.associatedScripts.clear();
+        for (auto& loadedScript : LoadedFunscripts) {
+            if (loadedScript.get() == script) { continue; }
+            scriptSettings.associatedScripts.emplace_back(loadedScript->current_path);
+        }
+    }
+
+    if (path.empty()) {
+        script->save<OFS_ScriptSettings>("OpenFunscripter");
+    }
+    else {
+        script->save<OFS_ScriptSettings>(path, "OpenFunscripter", override_location);
+    }
+}
+
 void OpenFunscripter::saveScripts() noexcept
 {
     for (auto&& script : LoadedFunscripts) {
@@ -1736,7 +1761,7 @@ void OpenFunscripter::saveScripts() noexcept
             .string();
         script->metadata.duration = player.getDuration();
         script->Userdata<OFS_ScriptSettings>().last_pos_ms = player.getCurrentPositionMs();
-        script->save<OFS_ScriptSettings>("OpenFunscripter");
+        saveScript(script.get(), "", false);
     }
 }
 
@@ -1989,7 +2014,7 @@ void OpenFunscripter::saveActiveScriptAs()
     Util::SaveFileDialog("Save", path.string(),
         [&](auto& result) {
             if (result.files.size() > 0) {
-                ActiveFunscript()->save<OFS_ScriptSettings>(result.files[0], "OpenFunscripter", true);
+                saveScript(ActiveFunscript().get(), result.files[0], true);
                 std::filesystem::path dir(result.files[0]);
                 dir.remove_filename();
                 settings->data().last_path = dir.string();
@@ -2922,3 +2947,27 @@ void OpenFunscripter::UpdateTimelineGradient(ImGradient& grad)
 }
 
 
+void OpenFunscripter::ControllerAxisPlaybackSpeed(SDL_Event& ev) noexcept
+{
+    static Uint8 lastAxis = 0;
+
+    auto& caxis = ev.caxis;
+    if (SetPlaybackSpeedController && caxis.axis == lastAxis && caxis.value <= 0) {
+        SetPlaybackSpeedController = false;
+        return;
+    }
+
+    if (caxis.value < 0) { return; }
+    if (SetPlaybackSpeedController) { return; }
+    auto app = OpenFunscripter::ptr;
+    if (caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT) {
+        float speed = 1.f - (caxis.value / (float)std::numeric_limits<int16_t>::max());
+        app->player.setSpeed(speed);
+        lastAxis = caxis.axis;
+    }
+    else if (caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT) {
+        float speed = 1.f + (caxis.value / (float)std::numeric_limits<int16_t>::max());
+        app->player.setSpeed(speed);
+        lastAxis = caxis.axis;
+    }
+}

@@ -1,7 +1,0 @@
-- player settings
-- script settings
-- associations
-
-- drawing 3d simulator somewhere else
-
-- hookup OFS_ScriptSetting::player somewhere else

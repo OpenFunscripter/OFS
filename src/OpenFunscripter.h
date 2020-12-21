@@ -72,6 +72,9 @@ private:
 
 	void MpvVideoLoaded(SDL_Event& ev) noexcept;
 
+	bool SetPlaybackSpeedController = false;
+	void ControllerAxisPlaybackSpeed(SDL_Event& ev) noexcept;
+
 	void cutSelection() noexcept;
 	void copySelection() noexcept;
 	void pasteSelection() noexcept;
@@ -81,7 +84,10 @@ private:
 	void isolateAction() noexcept;
 	void repeatLastStroke() noexcept;
 
+	
+	void saveScript(Funscript* script, const std::string& path, bool override_location) noexcept;
 	void saveScripts() noexcept;
+
 	void saveHeatmap(const char* path, int width, int height);
 	void updateTitle() noexcept;
 
