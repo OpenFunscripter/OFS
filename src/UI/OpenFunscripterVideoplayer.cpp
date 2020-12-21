@@ -37,7 +37,7 @@ static void on_mpv_render_update(void* ctx)
 	SDL_PushEvent(&event);
 }
 
-void VideoplayerWindow::MpvEvents(SDL_Event& ev)
+void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 {
 	while (1) {
 		mpv_event* mp_event = mpv_wait_event(mpv, 0);
@@ -170,7 +170,7 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev)
 	}
 }
 
-void VideoplayerWindow::MpvRenderUpdate(SDL_Event& ev)
+void VideoplayerWindow::MpvRenderUpdate(SDL_Event& ev) noexcept
 {
 	uint64_t flags = mpv_render_context_update(mpv_gl);
 	if (flags & MPV_RENDER_UPDATE_FRAME) {
@@ -178,7 +178,7 @@ void VideoplayerWindow::MpvRenderUpdate(SDL_Event& ev)
 	}
 }
 
-void VideoplayerWindow::observeProperties()
+void VideoplayerWindow::observeProperties() noexcept
 {
 	mpv_observe_property(mpv, MpvVideoHeight, "height", MPV_FORMAT_INT64);
 	mpv_observe_property(mpv, MpvVideoWidth, "width", MPV_FORMAT_INT64);
@@ -192,7 +192,7 @@ void VideoplayerWindow::observeProperties()
 	mpv_observe_property(mpv, MpvFramesPerSecond, "estimated-vf-fps", MPV_FORMAT_DOUBLE);
 }
 
-void VideoplayerWindow::renderToTexture()
+void VideoplayerWindow::renderToTexture() noexcept
 {
 	redraw_video = false;
 	mpv_opengl_fbo fbo{ 0 };
@@ -209,7 +209,7 @@ void VideoplayerWindow::renderToTexture()
 	mpv_render_context_render(mpv_gl, params);
 }
 
-void VideoplayerWindow::updateRenderTexture()
+void VideoplayerWindow::updateRenderTexture() noexcept
 {
 	if (framebuffer_obj == 0) {
 		glGenFramebuffers(1, &framebuffer_obj);
@@ -328,7 +328,7 @@ VideoplayerWindow::~VideoplayerWindow()
 	// TODO: free gl resources
 }
 
-void VideoplayerWindow::mouse_scroll(SDL_Event& ev)
+void VideoplayerWindow::mouse_scroll(SDL_Event& ev) noexcept
 {
 	auto scroll = ev.wheel;
 	if (videoHovered) {
@@ -377,14 +377,14 @@ void VideoplayerWindow::mouse_scroll(SDL_Event& ev)
 	}
 }
 
-void VideoplayerWindow::setup_vr_mode()
+void VideoplayerWindow::setup_vr_mode() noexcept
 {
 	// VR MODE
 	// setup shader
 	vr_shader = std::make_unique<VrShader>();
 }
 
-void VideoplayerWindow::notifyVideoLoaded()
+void VideoplayerWindow::notifyVideoLoaded() noexcept
 {
 	SDL_Event ev;
 	ev.type = EventSystem::MpvVideoLoaded;
@@ -516,7 +516,7 @@ void VideoplayerWindow::videoRightClickMenu() noexcept
 #endif
 }
 
-void VideoplayerWindow::DrawVideoPlayer(bool* open)
+void VideoplayerWindow::DrawVideoPlayer(bool* open) noexcept
 {
 	if (MpvData.video_loaded) {
 		ImGui::Begin(PlayerId, open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);

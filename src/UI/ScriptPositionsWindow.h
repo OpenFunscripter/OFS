@@ -77,7 +77,7 @@ public:
 	inline void ClearAudioWaveform() noexcept { audio_waveform_avg.clear(); }
 	inline void setStartSelection(int32_t ms) noexcept { startSelectionMs = ms; }
 	inline int32_t selectionStart() const noexcept { return startSelectionMs; }
-	void ShowScriptPositions(bool* open, float currentPositionMs);
+	void ShowScriptPositions(bool* open, float currentPositionMs) noexcept;
 
 	void DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept;
 };

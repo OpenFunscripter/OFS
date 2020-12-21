@@ -184,7 +184,7 @@ void ScriptPositionsWindow::mouse_scroll(SDL_Event& ev)
 	}
 }
 
-void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositionMs)
+void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositionMs) noexcept
 {
 	auto app = OpenFunscripter::ptr;
 	auto& style = ImGui::GetStyle();
@@ -195,9 +195,6 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	drawingCtx.offset_ms = offset_ms;
 	drawingCtx.visibleSizeMs = visibleSizeMs;
 	
-
-
-
 	ImGui::Begin(PositionsId, open, ImGuiWindowFlags_None);
 	auto draw_list = ImGui::GetWindowDrawList();
 	drawingCtx.draw_list = draw_list;

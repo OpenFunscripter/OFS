@@ -95,17 +95,17 @@ private:
 	bool dragStarted = false;
 
 
-	void MpvEvents(SDL_Event& ev);
-	void MpvRenderUpdate(SDL_Event& ev);
+	void MpvEvents(SDL_Event& ev) noexcept;
+	void MpvRenderUpdate(SDL_Event& ev) noexcept;
 
-	void observeProperties();
-	void renderToTexture();
-	void updateRenderTexture();
-	void mouse_scroll(SDL_Event& ev);
+	void observeProperties() noexcept;
+	void renderToTexture() noexcept;
+	void updateRenderTexture() noexcept;
+	void mouse_scroll(SDL_Event& ev) noexcept;
 
-	void setup_vr_mode();
+	void setup_vr_mode() noexcept;
 
-	void notifyVideoLoaded();
+	void notifyVideoLoaded() noexcept;
 
 	void drawVrVideo(ImDrawList* draw_list) noexcept;
 	void draw2dVideo(ImDrawList* draw_list) noexcept;
@@ -147,7 +147,7 @@ public:
 	OFS_VideoPlayerSettings settings;
 
 	bool setup();
-	void DrawVideoPlayer(bool* open);
+	void DrawVideoPlayer(bool* open) noexcept;
 
 	inline void resetTranslationAndZoom() noexcept {
 		settings.zoom_factor = 1.f;
