@@ -14,6 +14,8 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
 # ====================
 add_subdirectory("lib/")
 
+add_subdirectory("OFS-lib/")
+
 # ==============
 # ==== SRC ====
 # ==============

@@ -16,6 +16,7 @@
 #include "ScriptPositionsWindow.h"
 #include "OpenFunscripterVideoplayer.h"
 #include "UndoSystem.h"
+#include "FunscriptUndoSystem.h"
 #include "event/EventSystem.h"
 #include "GradientBar.h"
 #include "ScriptSimulator.h"
@@ -23,6 +24,7 @@
 #include "ControllerInput.h"
 #include "GradientBar.h"
 #include "SpecialFunctions.h"
+#include "OFS_ScriptSettings.h"
 
 #include <memory>
 #include <array>
@@ -137,7 +139,7 @@ public:
 	void shutdown() noexcept;
 
 	inline bool ScriptLoaded() const { return LoadedFunscripts.size() > 0; }
-	inline std::unique_ptr<Funscript>& ActiveFunscript() noexcept { 
+	inline std::unique_ptr<Funscript>& ActiveFunscript() noexcept {
 		FUN_ASSERT(ScriptLoaded(), "No script loaded");
 		return LoadedFunscripts[ActiveFunscriptIdx]; 
 	}

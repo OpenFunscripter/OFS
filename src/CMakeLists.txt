@@ -9,6 +9,7 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "Funscript/FunscriptAction.cpp"
   "Funscript/Funscript.cpp"
   "Funscript/FunscriptUndoSystem.cpp"
+  "Funscript/OFS_ScriptSettings.cpp"
 
   "ControllerInput.cpp"
   "ScriptingMode.cpp"

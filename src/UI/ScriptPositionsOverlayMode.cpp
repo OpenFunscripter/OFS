@@ -63,7 +63,7 @@ void TempoOverlay::DrawSettings() noexcept
 {
     BaseOverlay::DrawSettings();
     auto app = OpenFunscripter::ptr;
-    auto& tempo = app->ActiveFunscript()->scriptSettings.tempoSettings;
+    auto& tempo = app->ActiveFunscript()->Userdata<OFS_ScriptSettings>().tempoSettings;
     if (ImGui::InputInt("BPM", &tempo.bpm, 1, 100)) {
         tempo.bpm = std::max(1, tempo.bpm);
     }
@@ -88,7 +88,7 @@ void TempoOverlay::DrawSettings() noexcept
 void TempoOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept
 {
     auto app = OpenFunscripter::ptr;
-    auto& tempo = app->ActiveFunscript()->scriptSettings.tempoSettings;
+    auto& tempo = app->ActiveFunscript()->Userdata<OFS_ScriptSettings>().tempoSettings;
     BaseOverlay::DrawHeightLines(ctx);
     app->scriptPositions.DrawAudioWaveform(ctx);
     BaseOverlay::DrawActionLines(ctx);
@@ -147,7 +147,7 @@ void TempoOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
 void TempoOverlay::nextFrame() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    auto& tempo = app->ActiveFunscript()->scriptSettings.tempoSettings;
+    auto& tempo = app->ActiveFunscript()->Userdata<OFS_ScriptSettings>().tempoSettings;
 
     float beatTimeMs = ((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX];
     float currentMs = app->player.getCurrentPositionMsInterp();
@@ -164,7 +164,7 @@ void TempoOverlay::nextFrame() noexcept
 void TempoOverlay::previousFrame() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    auto& tempo = app->ActiveFunscript()->scriptSettings.tempoSettings;
+    auto& tempo = app->ActiveFunscript()->Userdata<OFS_ScriptSettings>().tempoSettings;
 
     float beatTimeMs = ((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX];
     float currentMs = app->player.getCurrentPositionMsInterp();

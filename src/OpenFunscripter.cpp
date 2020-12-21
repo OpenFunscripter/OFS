@@ -1,5 +1,4 @@
 ﻿#include "OpenFunscripter.h"
-
 #include "OpenFunscripterUtil.h"
 
 #include "GradientBar.h"
@@ -835,7 +834,7 @@ void OpenFunscripter::register_bindings()
         
         if (app->ActiveFunscript()->HasSelection()) {
             app->undoSystem->Snapshot(StateType::ACTIONS_MOVED, false);
-            app->ActiveFunscript()->MoveSelectionTime(time_ms);
+            app->ActiveFunscript()->MoveSelectionTime(time_ms, app->player.getFrameTimeMs());
         }
         else {
             auto closest = ptr->ActiveFunscript()->GetClosestAction(app->player.getCurrentPositionMsInterp());
@@ -850,7 +849,7 @@ void OpenFunscripter::register_bindings()
         auto app = OpenFunscripter::ptr;
         if (app->ActiveFunscript()->HasSelection()) {
             app->undoSystem->Snapshot(StateType::ACTIONS_MOVED, false);
-            app->ActiveFunscript()->MoveSelectionTime(time_ms);
+            app->ActiveFunscript()->MoveSelectionTime(time_ms, app->player.getFrameTimeMs());
             auto closest = ptr->ActiveFunscript()->GetClosestActionSelection(app->player.getCurrentPositionMsInterp());
             if (closest != nullptr) { app->player.setPosition(closest->at); }
             else { app->player.setPosition(app->ActiveFunscript()->Selection().front().at); }
@@ -1279,11 +1278,7 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
 {
     ActiveFunscript()->metadata.duration = player.getDuration();
     ActiveFunscript()->reserveActionMemory(player.getTotalNumFrames());
-    player.setPosition(ActiveFunscript()->scriptSettings.last_pos_ms);
-    if (ActiveFunscript()->scriptSettings.player != nullptr) {
-        player.setSpeed(ActiveFunscript()->scriptSettings.player->playback_speed);
-        player.setVolume(ActiveFunscript()->scriptSettings.player->volume);
-    }
+    player.setPosition(ActiveFunscript()->Userdata<OFS_ScriptSettings>().last_pos_ms);
     ActiveFunscript()->NotifyActionsChanged(false);
 
     auto name = Util::Filename(player.getVideoPath());
@@ -1365,7 +1360,7 @@ void OpenFunscripter::autoBackup() noexcept
 
         auto savePath = scriptBackupDir / path_buf;
         LOGF_INFO("Backup at \"%s\"", savePath.u8string().c_str());
-        script->save(savePath.u8string().c_str(), false);
+        script->save<OFS_ScriptSettings>(savePath.u8string().c_str(), "OpenFunscripter", false);
     }
 }
 
@@ -1382,7 +1377,7 @@ void OpenFunscripter::step() noexcept {
         ActiveFunscript()->undoSystem->ShowUndoRedoHistory(&settings->data().show_history);
         simulator.ShowSimulator(&settings->data().show_simulator);
         ShowStatisticsWindow(&settings->data().show_statistics);
-        if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { ActiveFunscript()->save(); }
+        if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { ActiveFunscript()->save<OFS_ScriptSettings>("OpenFunscripter"); }
         sim3D->ShowWindow(&settings->data().show_simulator_3d);
         scripting->DrawScriptingMode(NULL);
 
@@ -1679,7 +1674,7 @@ bool OpenFunscripter::openFile(const std::string& file)
         if (!Util::FileExists(file)) {
             return false;
         }
-        return RootFunscript()->open(file);
+        return RootFunscript()->open<OFS_ScriptSettings>(file, "OpenFunscripter");
     };
 
     // try load funscript
@@ -1688,12 +1683,13 @@ bool OpenFunscripter::openFile(const std::string& file)
         LOGF_WARN("Couldn't find funscript. \"%s\"", funscript_path.c_str());
         // do not return false here future me
     }
-    for (auto&& associated : RootFunscript()->scriptSettings.associatedScripts) {
-        auto associated_script = std::make_unique<Funscript>();
-        if (associated_script->open(associated)) {
-            LoadedFunscripts.emplace_back(std::move(associated_script));
-        }
-    }
+
+    //for (auto&& associated : RootFunscript()->scriptSettings.associatedScripts) {
+    //    auto associated_script = AllocFunscript();
+    //    if (associated_script->open(associated)) {
+    //        LoadedFunscripts.emplace_back(std::move(associated_script));
+    //    }
+    //}
 
     RootFunscript()->current_path = funscript_path;
 
@@ -1734,8 +1730,8 @@ void OpenFunscripter::saveScripts() noexcept
             .filename()
             .string();
         script->metadata.duration = player.getDuration();
-        script->scriptSettings.last_pos_ms = player.getCurrentPositionMs();
-        script->save();
+        script->Userdata<OFS_ScriptSettings>().last_pos_ms = player.getCurrentPositionMs();
+        script->save<OFS_ScriptSettings>("OpenFunscripter");
     }
 }
 
@@ -1988,7 +1984,7 @@ void OpenFunscripter::saveActiveScriptAs()
     Util::SaveFileDialog("Save", path.string(),
         [&](auto& result) {
             if (result.files.size() > 0) {
-                ActiveFunscript()->save(result.files[0], true);
+                ActiveFunscript()->save<OFS_ScriptSettings>(result.files[0], "OpenFunscripter", true);
                 std::filesystem::path dir(result.files[0]);
                 dir.remove_filename();
                 settings->data().last_path = dir.string();
@@ -2050,7 +2046,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                             if (result.files.size() > 0) {
                                 for (auto&& scriptPath : result.files) {
                                     auto newScript = std::make_unique<Funscript>();
-                                    if (newScript->open(scriptPath)) {
+                                    if (newScript->open<OFS_ScriptSettings>(scriptPath, "OpenFunscripter")) {
                                         auto app = OpenFunscripter::ptr;
                                         if (!fileAlreadyLoaded(scriptPath)) {
                                             newScript->current_path = scriptPath;
@@ -2157,10 +2153,10 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     }, {"*.png"}, "PNG");
             }
             ImGui::Separator();
-            if (ImGui::MenuItem("Undo", BINDING_STRING("undo"), false, !ActiveFunscript()->undoSystem->UndoEmpty())) {
+            if (ImGui::MenuItem("Undo", BINDING_STRING("undo"), false, !undoSystem->UndoEmpty())) {
                 undoSystem->Undo();
             }
-            if (ImGui::MenuItem("Redo", BINDING_STRING("redo"), false, !ActiveFunscript()->undoSystem->RedoEmpty())) {
+            if (ImGui::MenuItem("Redo", BINDING_STRING("redo"), false, !undoSystem->RedoEmpty())) {
                 undoSystem->Redo();
             }
             ImGui::Separator();
@@ -2247,19 +2243,19 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
         }
         if (ImGui::BeginMenu("Bookmarks")) {
             static std::string bookmarkName;
-            auto& bookmarks = ActiveFunscript()->scriptSettings.Bookmarks;
+            auto& scriptSettings = ActiveFunscript()->Userdata<OFS_ScriptSettings>();
             int32_t currentPositionMs = player.getCurrentPositionMsInterp();
-            auto editBookmark = std::find_if(bookmarks.begin(), bookmarks.end(),
+            auto editBookmark = std::find_if(scriptSettings.Bookmarks.begin(), scriptSettings.Bookmarks.end(),
                 [=](auto& mark) {
                     constexpr int thresholdMs = 3000;
                     return std::abs(mark.at - currentPositionMs) <= thresholdMs;
                 });
-            if (editBookmark != bookmarks.end()) {
+            if (editBookmark != scriptSettings.Bookmarks.end()) {
                 if (ImGui::InputText("Name", &(*editBookmark).name)) {
                     editBookmark->UpdateType();
                 }
                 if (ImGui::MenuItem("Delete")) {
-                    bookmarks.erase(editBookmark);
+                    scriptSettings.Bookmarks.erase(editBookmark);
                 }
             }
             else {
@@ -2267,35 +2263,36 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     if (bookmarkName.empty())
                     {
                         std::stringstream ss;
-                        ss << ActiveFunscript()->Bookmarks().size() + 1 << '#';
+                        ss << scriptSettings.Bookmarks.size() + 1 << '#';
                         bookmarkName = ss.str();
                     }
-                    Funscript::Bookmark bookmark(bookmarkName, player.getCurrentPositionMsInterp());
+
+                    OFS_ScriptSettings::Bookmark bookmark(bookmarkName, player.getCurrentPositionMsInterp());
                     bookmarkName = "";
-                    ActiveFunscript()->AddBookmark(std::move(bookmark));
+                    
+                    scriptSettings.AddBookmark(std::move(bookmark));
                 }
 
-                auto& bookmarks = ActiveFunscript()->Bookmarks();
-                auto it = std::find_if(bookmarks.rbegin(), bookmarks.rend(),
+                auto it = std::find_if(scriptSettings.Bookmarks.rbegin(), scriptSettings.Bookmarks.rend(),
                     [&](auto& mark) {
                         return mark.at < player.getCurrentPositionMsInterp();
                     });
-                if (it != bookmarks.rend() && it->type != Funscript::Bookmark::BookmarkType::END_MARKER) {
+                if (it != scriptSettings.Bookmarks.rend() && it->type != OFS_ScriptSettings::Bookmark::BookmarkType::END_MARKER) {
                     char tmp[512];
                     stbsp_snprintf(tmp, sizeof(tmp), "Create interval for \"%s\"", it->name.c_str());
                     if (ImGui::MenuItem(tmp)) {
-                        Funscript::Bookmark bookmark(it->name + "_end", player.getCurrentPositionMsInterp());
-                        ActiveFunscript()->AddBookmark(std::move(bookmark));
+                        OFS_ScriptSettings::Bookmark bookmark(it->name + "_end", player.getCurrentPositionMsInterp());
+                        scriptSettings.AddBookmark(std::move(bookmark));
                     }
                 }
             }
 
             if (ImGui::BeginMenu("Go to...")) {
-                if (ActiveFunscript()->Bookmarks().size() == 0) {
+                if (scriptSettings.Bookmarks.size() == 0) {
                     ImGui::TextDisabled("No bookmarks");
                 }
                 else {
-                    for (auto& mark : ActiveFunscript()->Bookmarks()) {
+                    for (auto& mark : scriptSettings.Bookmarks) {
                         if (ImGui::MenuItem(mark.name.c_str())) {
                             player.setPosition(mark.at);
                         }
@@ -2674,18 +2671,19 @@ bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position) noe
     draw_list->AddRectFilled(frame_bb.Min + ImVec2(offset_progress_w, offset_progress_h), frame_bb.Max + ImVec2(1.f, offset_progress_h), IM_COL32(150, 150, 150, 255));
 
     // bookmarks
-    for(int i = 0; i < ActiveFunscript()->scriptSettings.Bookmarks.size(); i++) {
-        auto& bookmark = ActiveFunscript()->scriptSettings.Bookmarks[i];
-        auto nextBookmarkPtr = i+1 < ActiveFunscript()->scriptSettings.Bookmarks.size() ? &ActiveFunscript()->scriptSettings.Bookmarks[i + 1] : nullptr;
+    auto& scriptSettings = ActiveFunscript()->Userdata<OFS_ScriptSettings>();
+    for(int i = 0; i < scriptSettings.Bookmarks.size(); i++) {
+        auto& bookmark = scriptSettings.Bookmarks[i];
+        auto nextBookmarkPtr = i+1 < scriptSettings.Bookmarks.size() ? &scriptSettings.Bookmarks[i + 1] : nullptr;
 
         constexpr float rectWidth = 7.f;
         const float fontSize = ImGui::GetFontSize();
         const uint32_t textColor = ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]);
 
         // if an end_marker appears before a start marker we render it as if was a regular bookmark
-        if (bookmark.type == Funscript::Bookmark::BookmarkType::START_MARKER) {
-            if (i + 1 < ActiveFunscript()->scriptSettings.Bookmarks.size()
-                && nextBookmarkPtr != nullptr && nextBookmarkPtr->type == Funscript::Bookmark::BookmarkType::END_MARKER) {                   
+        if (bookmark.type == OFS_ScriptSettings::Bookmark::BookmarkType::START_MARKER) {
+            if (i + 1 < scriptSettings.Bookmarks.size()
+                && nextBookmarkPtr != nullptr && nextBookmarkPtr->type == OFS_ScriptSettings::Bookmark::BookmarkType::END_MARKER) {                   
                     ImVec2 p1((frame_bb.Min.x + (frame_bb.GetWidth() * (bookmark.at / (player.getDuration() * 1000.0)))) - (rectWidth / 2.f), frame_bb.Min.y);
                     ImVec2 p2(p1.x + rectWidth, frame_bb.Min.y + frame_bb.GetHeight() + (style.ItemSpacing.y * 3.0f));
 

@@ -3,10 +3,14 @@
 #include "nlohmann/json.hpp"
 #include "FunscriptAction.h"
 #include "OFS_Reflection.h"
+#include "OFS_Serialization.h"
+
 #include <vector>
 #include <string>
 #include <memory>
 #include <chrono>
+#include <set>
+
 #include "OpenFunscripterUtil.h"
 #include "OpenFunscripterVideoplayer.h"
 #include "SDL_mutex.h"
@@ -20,95 +24,6 @@ public:
 		std::vector<FunscriptAction> Actions;
 		std::vector<FunscriptAction> selection;
 	};
-	
-	struct Bookmark {
-		enum BookmarkType {
-			REGULAR,
-			START_MARKER,
-			END_MARKER
-		};
-		int32_t at;
-		std::string name;
-		BookmarkType type = BookmarkType::REGULAR;
-
-		static constexpr char startMarker[] = "_start";
-		static constexpr char endMarker[] = "_end";
-		Bookmark() {}
-
-		Bookmark(const std::string& name, int32_t at)
-			: name(name), at(at)
-		{
-			UpdateType();
-		}
-
-		inline void UpdateType() noexcept {
-
-			Util::trim(name);
-
-			if (Util::StringEqualsInsensitive(name, startMarker) || Util::StringEqualsInsensitive(name, endMarker)) {
-				type = BookmarkType::REGULAR;
-				return;
-			}
-
-			if (Util::StringEndswith(name, startMarker)) {
-				type = BookmarkType::START_MARKER;
-				name.erase(name.end() - sizeof(startMarker) + 1, name.end());
-			}
-			else if (Util::StringEndswith(name, endMarker)) {
-				type = BookmarkType::END_MARKER;
-				// don't remove _end because it helps distinguish the to markers
-				//name.erase(name.end() - sizeof(endMarker) + 1, name.end());
-			}
-			else {
-				type = BookmarkType::REGULAR;
-			}
-		}
-
-		template <class Archive>
-		inline void reflect(Archive& ar) {
-			OFS_REFLECT(at, ar);
-			OFS_REFLECT(name, ar);
-			OFS_REFLECT(type, ar);
-			
-			// HACK: convert existing bookmarks to their correct type
-			if (type != BookmarkType::START_MARKER) {
-				UpdateType();
-			}
-		}
-	};
-
-	struct Settings {
-		std::string version = "OFS " FUN_LATEST_GIT_TAG "@" FUN_LATEST_GIT_HASH;
-		std::vector<Bookmark> Bookmarks;
-		int32_t last_pos_ms = 0;
-		VideoplayerWindow::OFS_VideoPlayerSettings* player = nullptr;
-		std::vector<std::string> associatedScripts;
-
-		struct TempoModeSettings {
-			int bpm = 100;
-			float beat_offset_seconds = 0.f;
-			int multiIDX = 0;
-			
-			template <class Archive>
-			inline void reflect(Archive& ar) {
-				OFS_REFLECT(bpm, ar);
-				OFS_REFLECT(beat_offset_seconds, ar);
-				OFS_REFLECT(multiIDX, ar);
-			}
-
-		} tempoSettings;
-
-
-		template <class Archive>
-		inline void reflect(Archive& ar) {
-			OFS_REFLECT(version, ar);
-			OFS_REFLECT(tempoSettings, ar); 
-			OFS_REFLECT(associatedScripts, ar);
-			OFS_REFLECT(Bookmarks, ar);
-			OFS_REFLECT(last_pos_ms, ar);
-			OFS_REFLECT_PTR(player, ar);
-		}
-	} scriptSettings;
 
 	struct Metadata {
 		std::string type = "basic";
@@ -140,6 +55,7 @@ public:
 
 	} metadata;
 
+	void* userdata = nullptr;
 private:
 	nlohmann::json Json;
 	nlohmann::json BaseLoaded;
@@ -181,8 +97,12 @@ private:
 
 	void loadMetadata() noexcept;
 	void saveMetadata() noexcept;
-	void loadSettings() noexcept;
-	void saveSettings() noexcept;
+
+	template<class UserSettings>
+	void loadSettings(const std::string& name, UserSettings* user) noexcept;
+
+	template<class UserSettings>
+	void saveSettings(const std::string& name, UserSettings* user) noexcept;
 
 	void startSaveThread(const std::string& path, nlohmann::json&& json) noexcept;
 public:
@@ -201,13 +121,25 @@ public:
 	std::string current_path;
 	bool Enabled = true;
 
+	template<class UserType>
+	inline UserType& Userdata() noexcept;
+
+	template<class UserType>
+	inline void AllocUser() noexcept;
+
 	inline void rollback(const FunscriptData& data) noexcept { this->data = data; NotifyActionsChanged(true); }
 
 	void update() noexcept;
 
-	bool open(const std::string& file);
-	void save() { save(current_path, true); }
-	void save(const std::string& path, bool override_location = true);
+	template<class UserType>
+	bool open(const std::string& file, const std::string& usersettings);
+
+	template<class UserType>
+	void save(const std::string& usersettings) noexcept { save<UserType>(current_path, usersettings, true); }
+
+	template<class UserType>
+	void save(const std::string& path, const std::string& usersettings, bool override_location = true);
+	
 	void saveMinium(const std::string& path) noexcept;
 
 	inline void reserveActionMemory(int32_t frameCount) { 
@@ -239,10 +171,6 @@ public:
 
 	void SetActions(const std::vector<FunscriptAction>& override_with) noexcept;
 
-	// bookmarks
-	inline const std::vector<Funscript::Bookmark>& Bookmarks() const noexcept { return scriptSettings.Bookmarks; }
-	void AddBookmark(Funscript::Bookmark&& bookmark) noexcept;
-
 	inline bool HasUnsavedEdits() const { return unsavedEdits; }
 	inline const std::chrono::system_clock::time_point& EditTime() const { return editTime; }
 
@@ -258,7 +186,7 @@ public:
 	void DeselectAction(FunscriptAction deselect) noexcept;
 	void SelectAll() noexcept;
 	void RemoveSelectedActions() noexcept;
-	void MoveSelectionTime(int32_t time_offset) noexcept;
+	void MoveSelectionTime(int32_t time_offset, float frameTimeMs) noexcept;
 	void MoveSelectionPosition(int32_t pos_offset) noexcept;
 	inline bool HasSelection() const noexcept { return data.selection.size() > 0; }
 	inline int32_t SelectionSize() const noexcept { return data.selection.size(); }
@@ -272,3 +200,111 @@ public:
 	void InvertSelection() noexcept;
 };
 
+
+template<class UserSettings>
+void Funscript::loadSettings(const std::string& name, UserSettings* user) noexcept {
+	if (Json.contains(name)) {
+		auto& settings = Json[name];
+		OFS::serializer::load(user, &settings);
+	}
+}
+
+template<class UserSettings>
+void Funscript::saveSettings(const std::string& name, UserSettings* user) noexcept
+{
+	OFS::serializer::save(user, &Json[name]);
+}
+
+template<class UserSettings>
+inline UserSettings& Funscript::Userdata() noexcept
+{
+	FUN_ASSERT(userdata, "userdata is null");
+	return *(UserSettings*)userdata;
+}
+
+template<class UserSettings>
+inline void Funscript::AllocUser() noexcept
+{
+	if (userdata != nullptr) {
+		delete userdata;
+	}
+	userdata = new UserSettings();
+}
+
+template<class UserSettings>
+inline bool Funscript::open(const std::string& file, const std::string& usersettings)
+{
+	current_path = file;
+	scriptOpened = true;
+
+	nlohmann::json json;
+	json = Util::LoadJson(file, &scriptOpened);
+
+	if (!scriptOpened || !json.is_object() && json["actions"].is_array()) {
+		LOGF_ERROR("Failed to parse funscript. \"%s\"", file.c_str());
+		return false;
+	}
+
+	setBaseScript(json);
+	Json = json;
+	auto actions = json["actions"];
+	data.Actions.clear();
+
+	std::set<FunscriptAction> actionSet;
+	if (actions.is_array()) {
+		for (auto& action : actions) {
+			int32_t time_ms = action["at"];
+			int32_t pos = action["pos"];
+			if (time_ms >= 0) {
+				actionSet.emplace(time_ms, pos);
+			}
+		}
+	}
+	data.Actions.assign(actionSet.begin(), actionSet.end());
+
+	loadMetadata();
+	AllocUser<UserSettings>();
+	loadSettings<UserSettings>(usersettings, static_cast<UserSettings*>(userdata));
+
+	if (metadata.title.empty()) {
+		metadata.title = std::filesystem::path(current_path)
+			.replace_extension("")
+			.filename()
+			.string();
+	}
+
+	NotifyActionsChanged(false);
+	return true;
+}
+
+template<class UserSettings>
+inline void Funscript::save(const std::string& path, const std::string& usersettings, bool override_location)
+{
+	setScriptTemplate();
+	saveMetadata();
+	saveSettings<UserSettings>(usersettings, static_cast<UserSettings*>(userdata));
+
+	auto& actions = Json["actions"];
+	actions.clear();
+
+	// make sure actions are sorted
+	sortActions(data.Actions);
+
+	for (auto& action : data.Actions) {
+		// a little validation just in case
+		if (action.at < 0)
+			continue;
+
+		nlohmann::json actionObj = {
+			{ "at", action.at },
+			{ "pos", Util::Clamp<int32_t>(action.pos, 0, 100) }
+		};
+		actions.emplace_back(std::move(actionObj));
+	}
+
+	if (override_location) {
+		current_path = path;
+		unsavedEdits = false;
+	}
+	startSaveThread(path, std::move(Json));
+}

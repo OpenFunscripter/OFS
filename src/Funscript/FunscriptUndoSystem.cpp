@@ -1,8 +1,8 @@
-#include "UndoSystem.h"
+#include "FunscriptUndoSystem.h"
 
 void FunscriptUndoSystem::SnapshotRedo(StateType type) noexcept
 {
-	RedoStack.emplace_back(type, Script->Data());
+	RedoStack.emplace_back(type, script->Data());
 }
 
 void FunscriptUndoSystem::ShowUndoRedoHistory(bool* open)
@@ -39,7 +39,7 @@ void FunscriptUndoSystem::ShowUndoRedoHistory(bool* open)
 
 void FunscriptUndoSystem::Snapshot(StateType type, bool clearRedo) noexcept
 {
-	UndoStack.emplace_back(type, Script->Data());
+	UndoStack.emplace_back(type, script->Data());
 
 	if (UndoStack.size() > OFS::MaxScriptStateInMemory) {
 		UndoStack.erase(UndoStack.begin()); // erase first action
@@ -54,7 +54,7 @@ void FunscriptUndoSystem::Undo() noexcept
 {
 	if (UndoStack.empty()) return;
 	SnapshotRedo(UndoStack.back().type);
-	Script->rollback(UndoStack.back().Data()); // copy data
+	script->rollback(UndoStack.back().Data()); // copy data
 	UndoStack.pop_back(); // pop of the stack
 }
 
@@ -62,7 +62,7 @@ void FunscriptUndoSystem::Redo() noexcept
 {
 	if (RedoStack.empty()) return;
 	Snapshot(RedoStack.back().type, false);
-	Script->rollback(RedoStack.back().Data()); // copy data
+	script->rollback(RedoStack.back().Data()); // copy data
 	RedoStack.pop_back(); // pop of the stack
 }
 

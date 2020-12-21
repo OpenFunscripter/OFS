@@ -4,8 +4,7 @@
 #include "OpenFunscripterUtil.h"
 #include "EventSystem.h"
 #include "OFS_Serialization.h"
-#include "OpenFunscripter.h"
-#include "UndoSystem.h"
+#include "FunscriptUndoSystem.h"
 
 #include <algorithm>
 #include <limits>
@@ -65,21 +64,6 @@ void Funscript::saveMetadata() noexcept
 	OFS::serializer::save(&metadata, &Json["metadata"]);
 }
 
-void Funscript::loadSettings() noexcept
-{
-	scriptSettings.player = &OpenFunscripter::ptr->player.settings;
-	if (Json.contains("OpenFunscripter")) {
-		auto& settings = Json["OpenFunscripter"];
-		OFS::serializer::load(&scriptSettings, &settings);
-	}
-}
-
-void Funscript::saveSettings() noexcept
-{
-	scriptSettings.player = &OpenFunscripter::ptr->player.settings;
-	OFS::serializer::save(&scriptSettings, &Json["OpenFunscripter"]);
-}
-
 void Funscript::startSaveThread(const std::string& path, nlohmann::json&& json) noexcept
 {
 	struct SaveThreadData {
@@ -124,90 +108,6 @@ void Funscript::update() noexcept
 		ev.type = EventSystem::FunscriptSelectionChangedEvent;
 		SDL_PushEvent(&ev);
 	}
-}
-
-bool Funscript::open(const std::string& file)
-{
-	current_path = file;
-	scriptOpened = true;
-
-	nlohmann::json json;
-	json = Util::LoadJson(file, &scriptOpened);
-
-	if (!scriptOpened || !json.is_object() && json["actions"].is_array()) {
-		LOGF_ERROR("Failed to parse funscript. \"%s\"", file.c_str());
-		return false;
-	}
-
-	setBaseScript(json);
-	Json = json;
-	auto actions = json["actions"];
-	data.Actions.clear();
-
-	std::set<FunscriptAction> actionSet;
-	if (actions.is_array()) {
-		for (auto& action : actions) {
-			int32_t time_ms = action["at"];
-			int32_t pos = action["pos"];
-			if (time_ms >= 0) {
-				actionSet.emplace(time_ms, pos);
-			}
-		}
-	}
-	data.Actions.assign(actionSet.begin(), actionSet.end());
-
-	loadSettings();
-	loadMetadata();
-
-	if (metadata.title.empty()) {
-		metadata.title = std::filesystem::path(current_path)
-			.replace_extension("")
-			.filename()
-			.string();
-	}
-
-	NotifyActionsChanged(false);
-	return true;
-}
-
-void Funscript::save(const std::string& path, bool override_location)
-{
-	// check if this is the root script
-	if (OpenFunscripter::ptr->RootFunscript().get() == this) {
-		scriptSettings.associatedScripts.clear();
-		for (auto&& script : OpenFunscripter::ptr->LoadedFunscripts) {
-			if (script.get() == this) { continue; }
-			scriptSettings.associatedScripts.push_back(script->current_path);
-		}
-	}
-
-	setScriptTemplate();
-	saveSettings();
-	saveMetadata();
-
-	auto& actions = Json["actions"];
-	actions.clear();
-
-	// make sure actions are sorted
-	sortActions(data.Actions);
-
-	for (auto& action : data.Actions) {
-		// a little validation just in case
-		if (action.at < 0)
-			continue;
-
-		nlohmann::json actionObj = {
-			{ "at", action.at },
-			{ "pos", Util::Clamp<int32_t>(action.pos, 0, 100) }
-		};
-		actions.emplace_back(std::move(actionObj));
-	}
-
-	if (override_location) {
-		current_path = path;
-		unsavedEdits = false;
-	}
-	startSaveThread(path, std::move(Json));
 }
 
 void Funscript::saveMinium(const std::string& path) noexcept
@@ -494,44 +394,6 @@ void Funscript::SetActions(const std::vector<FunscriptAction>& override_with) no
 	NotifyActionsChanged(true);
 }
 
-void Funscript::AddBookmark(Funscript::Bookmark&& bookmark) noexcept
-{
-	// when can create a bookmark "a" followed by "a_end" 
-	// this will set "a" as a start marker
-	if (!scriptSettings.Bookmarks.empty()) {
-		auto it = std::find_if(scriptSettings.Bookmarks.begin(), scriptSettings.Bookmarks.end(),
-			[&](auto& mark) {
-				return mark.at > bookmark.at;
-		});
-		if (it != scriptSettings.Bookmarks.begin()) it--;
-
-		if (bookmark.type == Funscript::Bookmark::BookmarkType::END_MARKER) {
-			if (it->type == Funscript::Bookmark::BookmarkType::REGULAR) {
-				auto name_copy = bookmark.name;
-				name_copy.erase(name_copy.end() - sizeof(Funscript::Bookmark::endMarker) + 1, name_copy.end());
-				if (Util::StringEqualsInsensitive(name_copy, it->name)) {
-					it->type = Funscript::Bookmark::BookmarkType::START_MARKER;
-				}
-			}
-		}
-		else {
-			if (it + 1 != scriptSettings.Bookmarks.end() && it->type != Funscript::Bookmark::BookmarkType::END_MARKER) it++;
-			if (it->type == Funscript::Bookmark::BookmarkType::END_MARKER) {
-				auto name_copy = it->name;
-				name_copy.erase(name_copy.end() - sizeof(Funscript::Bookmark::endMarker) + 1, name_copy.end());
-				if (Util::StringEqualsInsensitive(name_copy, bookmark.name)) {
-					bookmark.type = Funscript::Bookmark::BookmarkType::START_MARKER;
-				}
-			}
-		}
-	}
-
-	scriptSettings.Bookmarks.emplace_back(bookmark); 
-	std::sort(scriptSettings.Bookmarks.begin(), scriptSettings.Bookmarks.end(),
-		[](auto& a, auto& b) { return a.at < b.at; }
-	);
-}
-
 void Funscript::RangeExtendSelection(int32_t rangeExtend) noexcept
 {
 	auto ExtendRange = [](std::vector<FunscriptAction*>& actions, int32_t rangeExtend) -> void {
@@ -784,7 +646,7 @@ void Funscript::moveActionsPosition(std::vector<FunscriptAction*> moving, int32_
 	NotifyActionsChanged(true);
 }
 
-void Funscript::MoveSelectionTime(int32_t time_offset) noexcept
+void Funscript::MoveSelectionTime(int32_t time_offset, float frameTimeMs) noexcept
 {
 	if (!HasSelection()) return;
 	std::vector<FunscriptAction*> moving;
@@ -804,17 +666,16 @@ void Funscript::MoveSelectionTime(int32_t time_offset) noexcept
 	int32_t min_bound = 0;
 	int32_t max_bound = std::numeric_limits<int32_t>::max();
 
-	float frameTime = OpenFunscripter::ptr->player.getFrameTimeMs();
 	if (time_offset > 0) {
 		if (next != nullptr) {
-			max_bound = next->at - frameTime;
+			max_bound = next->at - frameTimeMs;
 			time_offset = std::min(time_offset, max_bound - data.selection.back().at);
 		}
 	}
 	else
 	{
 		if (prev != nullptr) {
-			min_bound = prev->at + frameTime;
+			min_bound = prev->at + frameTimeMs;
 			time_offset = std::max(time_offset, min_bound - data.selection.front().at);
 		}
 	}
