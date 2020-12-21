@@ -70,7 +70,7 @@ private:
 public:
 	static constexpr const char* PositionsId = "Positions";
 
-	const float MAX_WINDOW_SIZE = 60.f; // this limit is arbitrary and not enforced
+	const float MAX_WINDOW_SIZE = 300.f; // this limit is arbitrary and not enforced
 	const float MIN_WINDOW_SIZE = 1.f; // this limit is also arbitrary and not enforced
 	void setup();
 
