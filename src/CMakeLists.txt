@@ -6,20 +6,14 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "OpenFunscripter.cpp"
   "UndoSystem.cpp"
   
-  "Funscript/FunscriptAction.cpp"
-  "Funscript/Funscript.cpp"
-  "Funscript/FunscriptUndoSystem.cpp"
   "Funscript/OFS_ScriptSettings.cpp"
 
   "ControllerInput.cpp"
   "ScriptingMode.cpp"
-  "OFS_Serialization.cpp"
 
   "UI/OpenFunscripterSettings.cpp"
   "UI/KeybindingSystem.cpp"
-  "UI/GradientBar.cpp"
   "UI/ScriptPositionsWindow.cpp"
-  "UI/OFS_ImGui.cpp"
   
   "UI/ScriptSimulator.cpp"
   "UI/SpecialFunctions.cpp"
@@ -27,17 +21,9 @@ set(OPEN_FUNSCRIPTER_SOURCES
 
   "event/OFS_Events.cpp"
 
-  "gl/OFS_Shader.cpp"
-  
-  "imgui_impl/imgui_impl_opengl3.cpp"
-  "imgui_impl/imgui_impl_sdl.cpp" 
-  )
-  
-
-set(OPEN_FUNSCRIPTER_SOURCES ${OPEN_FUNSCRIPTER_SOURCES} 
-	"UI/OpenFunscripterVideoplayer.cpp"
-	"gl/Simulator3D.cpp"
+  "gl/Simulator3D.cpp"
 )
+
 
 if(WIN32)
 	set(OPEN_FUNSCRIPTER_SOURCES ${OPEN_FUNSCRIPTER_SOURCES} "${CMAKE_SOURCE_DIR}/icon.rc")
@@ -68,45 +54,8 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 	"JSON_NOEXCEPTION"
 )
 
-if(WIN32)
-	# copy mpv-1.dll to bin dir
-	add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy
-                   "${CMAKE_SOURCE_DIR}/lib/libmpv/mpv-1.dll" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/mpv-1.dll")
-	target_include_directories(${PROJECT_NAME} PRIVATE 
-		"${CMAKE_SOURCE_DIR}/lib/libmpv/include"
-	)
-	target_link_directories(${PROJECT_NAME} PUBLIC 
-		"${CMAKE_SOURCE_DIR}/lib/libmpv/"
-	)
-	target_link_libraries(${PROJECT_NAME} PUBLIC
-		# linking of libmpv can be improved but this works...
-		  mpv.lib
-	)
-	target_compile_definitions(${PROJECT_NAME} PUBLIC
-		"NOMINMAX"
-	)
-elseif(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
-# linux etc. 
-find_package(PkgConfig REQUIRED) 
-pkg_check_modules(mpv REQUIRED IMPORTED_TARGET mpv)
-
-target_link_libraries(${PROJECT_NAME} PUBLIC
-	mpv
-	OpenGL
-)
-elseif(APPLE)
-target_include_directories(${PROJECT_NAME} PUBLIC
-	"/opt/local/include/"
-)
-target_link_libraries(${PROJECT_NAME} PUBLIC
-	"/opt/local/lib/libmpv.dylib"
-)
-endif()
-
 target_include_directories(${PROJECT_NAME} PRIVATE 
 	"${PROJECT_SOURCE_DIR}/"
-	"${PROJECT_SOURCE_DIR}/imgui_impl/"
 	"${PROJECT_SOURCE_DIR}/UI/"
 	"${PROJECT_SOURCE_DIR}/Funscript/"
 	"${PROJECT_SOURCE_DIR}/gl/"

@@ -1,6 +1,6 @@
 #include "FunscriptUndoSystem.h"
 
-void FunscriptUndoSystem::SnapshotRedo(StateType type) noexcept
+void FunscriptUndoSystem::SnapshotRedo(int32_t type) noexcept
 {
 	RedoStack.emplace_back(type, script->Data());
 }
@@ -37,7 +37,7 @@ void FunscriptUndoSystem::ShowUndoRedoHistory(bool* open)
 	}
 }
 
-void FunscriptUndoSystem::Snapshot(StateType type, bool clearRedo) noexcept
+void FunscriptUndoSystem::Snapshot(int32_t type, bool clearRedo) noexcept
 {
 	UndoStack.emplace_back(type, script->Data());
 

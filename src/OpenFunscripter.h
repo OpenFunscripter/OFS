@@ -14,7 +14,7 @@
 #include "KeybindingSystem.h"
 #include "OpenFunscripterSettings.h"
 #include "ScriptPositionsWindow.h"
-#include "OpenFunscripterVideoplayer.h"
+#include "OFS_Videoplayer.h"
 #include "UndoSystem.h"
 #include "FunscriptUndoSystem.h"
 #include "EventSystem.h"

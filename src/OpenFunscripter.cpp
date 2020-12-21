@@ -282,6 +282,7 @@ bool OpenFunscripter::setup()
     FunscriptEvents::RegisterEvents();
     VideoEvents::RegisterEvents();
 
+    OFS_ScriptSettings::player = &player.settings;
 
     undoSystem = std::make_unique<UndoSystem>();
 
@@ -294,7 +295,7 @@ bool OpenFunscripter::setup()
 
     scripting = std::make_unique<ScriptingMode>();
     scripting->setup();
-    if (!player.setup()) {
+    if (!player.setup(*events, settings->data().force_hw_decoding)) {
         LOG_ERROR("Failed to init video player");
         return false;
     }
@@ -1581,7 +1582,7 @@ void OpenFunscripter::step() noexcept {
             ImGui::ShowMetricsWindow(&DebugMetrics);
         }
 
-        player.DrawVideoPlayer(NULL);
+        player.DrawVideoPlayer(NULL, &settings->data().draw_video);
     }
 
     render();

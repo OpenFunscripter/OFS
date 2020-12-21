@@ -7,7 +7,7 @@
 
 #include "OFS_Reflection.h"
 #include "OFS_Util.h"
-#include "OpenFunscripterVideoplayer.h"
+#include "OFS_Videoplayer.h"
 
 
 struct OFS_ScriptSettings {

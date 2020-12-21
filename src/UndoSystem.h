@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 
-enum class StateType : int32_t {
+enum StateType : int32_t {
 	ADD_EDIT_ACTIONS = 0,
 	ADD_EDIT_ACTION = 1,
 	ADD_ACTION = 2,
@@ -42,10 +42,6 @@ enum class StateType : int32_t {
 
 	TOTAL_UNDOSTATE_TYPES
 };
-
-namespace OFS {
-	constexpr int32_t MaxScriptStateInMemory = 1000;
-}
 
 // this manages undo/redo accross the whole app
 class UndoSystem

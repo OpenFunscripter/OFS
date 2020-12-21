@@ -1,6 +1,5 @@
-#include "OpenFunscripterVideoplayer.h"
+#include "OFS_Videoplayer.h"
 
-#include "OpenFunscripter.h"
 #include "EventSystem.h"
 #include "OFS_ImGui.h"
 
@@ -11,11 +10,14 @@
 
 #include <cstdlib>
 #include <filesystem>
+#include <sstream>
 
 #include "SDL.h"
 
 #include "stb_sprintf.h"
 #include "stb_image_write.h"
+
+#include "glad/glad.h"
 
 
 static void* get_proc_address_mpv(void* fn_ctx, const char* name)
@@ -242,16 +244,12 @@ void VideoplayerWindow::updateRenderTexture() noexcept
 	}
 }
 
-bool VideoplayerWindow::setup()
+bool VideoplayerWindow::setup(EventSystem& events, bool force_hw_decoding)
 {
-	auto app = OpenFunscripter::ptr;
-	app->events->Subscribe(VideoEvents::WakeupOnMpvEvents, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvEvents));
-	app->events->Subscribe(VideoEvents::WakeupOnMpvRenderUpdate, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvRenderUpdate));
-	app->events->Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::mouse_scroll));
+	events.Subscribe(VideoEvents::WakeupOnMpvEvents, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvEvents));
+	events.Subscribe(VideoEvents::WakeupOnMpvRenderUpdate, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvRenderUpdate));
+	events.Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::mouse_scroll));
 	
-	FUN_ASSERT(OFS_ScriptSettings::player == nullptr, "please fix");
-	OFS_ScriptSettings::player = &settings;
-
 	updateRenderTexture();
 
 	mpv = mpv_create();
@@ -262,7 +260,7 @@ bool VideoplayerWindow::setup()
 
 	bool suc;
 	// hardware decoding. only important when running 5k vr footage
-	if (OpenFunscripter::ptr->settings->data().force_hw_decoding) {
+	if (force_hw_decoding) {
 		suc = mpv_set_property_string(mpv, "hwdec", "auto-safe") == 0;
 		if (!suc)
 			LOG_WARN("failed to set mpv hardware decoding to \"auto-safe\"");
@@ -439,10 +437,6 @@ void VideoplayerWindow::drawVrVideo(ImDrawList* draw_list) noexcept
 	//ImGui::Image((void*)(intptr_t)render_texture, ImGui::GetContentRegionAvail(), ImVec2(0.f, 1.f),	ImVec2(1.f, 0.f));
 	OFS::ImageWithId(ImGui::GetID("videoImage"), (void*)(intptr_t)render_texture, ImGui::GetContentRegionAvail(), ImVec2(0.f, 1.f), ImVec2(1.f, 0.f));
 	videoRightClickMenu();
-	draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
-		auto& sim3D = OpenFunscripter::ptr->sim3D;
-		sim3D->render();				
-	}, this);
 	video_draw_size = ImGui::GetItemRectSize();
 }
 
@@ -497,10 +491,6 @@ void VideoplayerWindow::draw2dVideo(ImDrawList* draw_list) noexcept
 	//ImGui::Image((void*)(intptr_t)render_texture, videoSize, uv0, uv1);
 	OFS::ImageWithId(ImGui::GetID("videoImage"), (void*)(intptr_t)render_texture, videoSize, uv0, uv1);
 	videoRightClickMenu();
-	draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
-		auto& sim3D = OpenFunscripter::ptr->sim3D;
-		sim3D->render();
-	}, this);
 }
 
 void VideoplayerWindow::videoRightClickMenu() noexcept
@@ -519,7 +509,7 @@ void VideoplayerWindow::videoRightClickMenu() noexcept
 #endif
 }
 
-void VideoplayerWindow::DrawVideoPlayer(bool* open) noexcept
+void VideoplayerWindow::DrawVideoPlayer(bool* open, bool* draw_video) noexcept
 {
 	if (MpvData.video_loaded) {
 		ImGui::Begin(PlayerId, open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
@@ -527,7 +517,7 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open) noexcept
 		// this redraw has to happen even if the video isn't actually shown in the gui
 		if (redraw_video) { renderToTexture(); }
 
-		if (OpenFunscripter::ptr->settings->data().draw_video) {
+		if (*draw_video) {
 			viewport_pos = ImGui::GetWindowViewport()->Pos;
 
 
@@ -558,8 +548,7 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open) noexcept
 		}
 		else {
 			if (ImGui::Button("Click to enable video")) {
-				OpenFunscripter::ptr->settings->data().draw_video = true;
-				OpenFunscripter::ptr->settings->saveSettings();
+				*draw_video = true;
 			}
 		}
 		ImGui::End();

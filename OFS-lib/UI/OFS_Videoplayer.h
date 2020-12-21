@@ -155,8 +155,8 @@ public:
 
 	OFS_VideoPlayerSettings settings;
 
-	bool setup();
-	void DrawVideoPlayer(bool* open) noexcept;
+	bool setup(class EventSystem& events, bool force_hw_decoding);
+	void DrawVideoPlayer(bool* open, bool* draw_video) noexcept;
 
 	inline void resetTranslationAndZoom() noexcept {
 		settings.zoom_factor = 1.f;
