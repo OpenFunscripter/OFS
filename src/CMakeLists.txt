@@ -13,7 +13,6 @@ set(OPEN_FUNSCRIPTER_SOURCES
 
   "ControllerInput.cpp"
   "ScriptingMode.cpp"
-  "OpenFunscripterUtil.cpp"
   "OFS_Serialization.cpp"
 
   "UI/OpenFunscripterSettings.cpp"
@@ -26,7 +25,7 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "UI/SpecialFunctions.cpp"
   "UI/ScriptPositionsOverlayMode.cpp"
 
-  "event/EventSystem.cpp"
+  "event/OFS_Events.cpp"
 
   "gl/OFS_Shader.cpp"
   
@@ -58,18 +57,11 @@ add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
 
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
-  nlohmann_json
-  imgui
-  imgui_stdlib
-  glad
-  SDL2-static
-  SDL2main
-  tinyfiledialogs
-  utf8::cpp
   glm
   ImGuizmo
   ImGuizmoQuat
   lua
+  OFS_lib
 )
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
@@ -116,10 +108,10 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	"${PROJECT_SOURCE_DIR}/"
 	"${PROJECT_SOURCE_DIR}/imgui_impl/"
 	"${PROJECT_SOURCE_DIR}/UI/"
-	"${PROJECT_SOURCE_DIR}/event/"
 	"${PROJECT_SOURCE_DIR}/Funscript/"
 	"${PROJECT_SOURCE_DIR}/gl/"
 	"${PROJECT_SOURCE_DIR}/lua/"
+	"${PROJECT_SOURCE_DIR}/event/"
 	"${CMAKE_SOURCE_DIR}/lib/minimp3/"
 )
 

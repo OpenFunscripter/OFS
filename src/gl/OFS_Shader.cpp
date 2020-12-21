@@ -1,5 +1,5 @@
 #include "OFS_Shader.h"
-#include "OpenFunscripterUtil.h"
+#include "OFS_Util.h"
 
 #include "glad/glad.h"
 

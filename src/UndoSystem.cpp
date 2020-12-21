@@ -1,5 +1,5 @@
 #include "UndoSystem.h"
-
+#include "FunscriptUndoSystem.h"
 #include "OpenFunscripter.h"
 
 #include <array>

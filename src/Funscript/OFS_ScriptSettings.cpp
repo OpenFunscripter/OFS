@@ -1,6 +1,6 @@
 #include "OFS_ScriptSettings.h"
 
-#include "OpenFunscripterUtil.h"
+#include "OFS_Util.h"
 
 VideoplayerWindow::OFS_VideoPlayerSettings* OFS_ScriptSettings::player = nullptr;
 

@@ -1,7 +1,7 @@
 #include "OpenFunscripterVideoplayer.h"
 
 #include "OpenFunscripter.h"
-#include "event/EventSystem.h"
+#include "EventSystem.h"
 #include "OFS_ImGui.h"
 
 #include "imgui_internal.h"
@@ -26,14 +26,14 @@ static void* get_proc_address_mpv(void* fn_ctx, const char* name)
 static void on_mpv_events(void* ctx)
 {
 	SDL_Event event{ 0 };
-	event.type = EventSystem::WakeupOnMpvEvents;
+	event.type = VideoEvents::WakeupOnMpvEvents;
 	SDL_PushEvent(&event);
 }
 
 static void on_mpv_render_update(void* ctx)
 {
 	SDL_Event event{ 0 };
-	event.type = EventSystem::WakeupOnMpvRenderUpdate;
+	event.type = VideoEvents::WakeupOnMpvRenderUpdate;
 	SDL_PushEvent(&event);
 }
 
@@ -245,10 +245,13 @@ void VideoplayerWindow::updateRenderTexture() noexcept
 bool VideoplayerWindow::setup()
 {
 	auto app = OpenFunscripter::ptr;
-	app->events->Subscribe(EventSystem::WakeupOnMpvEvents, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvEvents));
-	app->events->Subscribe(EventSystem::WakeupOnMpvRenderUpdate, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvRenderUpdate));
+	app->events->Subscribe(VideoEvents::WakeupOnMpvEvents, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvEvents));
+	app->events->Subscribe(VideoEvents::WakeupOnMpvRenderUpdate, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvRenderUpdate));
 	app->events->Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::mouse_scroll));
 	
+	FUN_ASSERT(OFS_ScriptSettings::player == nullptr, "please fix");
+	OFS_ScriptSettings::player = &settings;
+
 	updateRenderTexture();
 
 	mpv = mpv_create();
@@ -387,7 +390,7 @@ void VideoplayerWindow::setup_vr_mode() noexcept
 void VideoplayerWindow::notifyVideoLoaded() noexcept
 {
 	SDL_Event ev;
-	ev.type = EventSystem::MpvVideoLoaded;
+	ev.type = VideoEvents::MpvVideoLoaded;
 	SDL_PushEvent(&ev);
 }
 
@@ -705,4 +708,16 @@ void VideoplayerWindow::closeVideo() noexcept
 	const char* cmd[] = { "stop", NULL };
 	mpv_command_async(mpv, 0, cmd);
 	MpvData.video_loaded = false;
+}
+
+
+int32_t VideoEvents::MpvVideoLoaded = 0;
+int32_t VideoEvents::WakeupOnMpvEvents = 0;
+int32_t VideoEvents::WakeupOnMpvRenderUpdate = 0;
+
+void VideoEvents::RegisterEvents() noexcept
+{
+	MpvVideoLoaded = SDL_RegisterEvents(1);
+	WakeupOnMpvEvents = SDL_RegisterEvents(1);
+	WakeupOnMpvRenderUpdate = SDL_RegisterEvents(1);
 }

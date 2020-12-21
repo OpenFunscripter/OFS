@@ -17,7 +17,7 @@
 #include "OpenFunscripterVideoplayer.h"
 #include "UndoSystem.h"
 #include "FunscriptUndoSystem.h"
-#include "event/EventSystem.h"
+#include "EventSystem.h"
 #include "GradientBar.h"
 #include "ScriptSimulator.h"
 #include "Funscript.h"
@@ -25,6 +25,7 @@
 #include "GradientBar.h"
 #include "SpecialFunctions.h"
 #include "OFS_ScriptSettings.h"
+#include "OFS_Events.h"
 
 #include <memory>
 #include <array>

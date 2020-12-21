@@ -5,7 +5,7 @@
 #include "imgui_internal.h"
 
 #include "OFS_Reflection.h"
-#include "OpenFunscripterUtil.h"
+#include "OFS_Util.h"
 #include "OFS_Shader.h"
 
 #include <string>
@@ -23,6 +23,15 @@ enum VideoMode : int32_t {
 	BOTTOM_PANE,
 	VR_MODE,
 	TOTAL_NUM_MODES,
+};
+
+class VideoEvents {
+public:
+	static int32_t WakeupOnMpvEvents;
+	static int32_t WakeupOnMpvRenderUpdate;
+	static int32_t MpvVideoLoaded;
+
+	static void RegisterEvents() noexcept;
 };
 
 class VideoplayerWindow

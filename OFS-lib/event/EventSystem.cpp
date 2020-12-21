@@ -1,18 +1,5 @@
 #include "EventSystem.h"
 
-int32_t EventSystem::FunscriptActionsChangedEvent = 0;
-int32_t EventSystem::FunscriptActionClickedEvent = 0;
-int32_t EventSystem::FunscriptSelectionChangedEvent = 0;
-
-int32_t EventSystem::WakeupOnMpvEvents = 0; 
-int32_t EventSystem::WakeupOnMpvRenderUpdate = 0;
-
-int32_t EventSystem::FfmpegAudioProcessingFinished = 0;
-
-int32_t EventSystem::MpvVideoLoaded = 0;
-
-int32_t EventSystem::ControllerButtonRepeat = 0;
-
 int32_t EventSystem::SingleShotEvent = 0;
 
 void EventSystem::SingleShotHandler(SDL_Event& ev) noexcept
@@ -24,14 +11,6 @@ void EventSystem::SingleShotHandler(SDL_Event& ev) noexcept
 
 void EventSystem::setup()
 {
-	FunscriptActionsChangedEvent = SDL_RegisterEvents(1);
-	FunscriptActionClickedEvent = SDL_RegisterEvents(1);
-	FunscriptSelectionChangedEvent = SDL_RegisterEvents(1);
-	WakeupOnMpvEvents = SDL_RegisterEvents(1);
-	WakeupOnMpvRenderUpdate = SDL_RegisterEvents(1);
-	FfmpegAudioProcessingFinished = SDL_RegisterEvents(1);
-	MpvVideoLoaded = SDL_RegisterEvents(1);
-	ControllerButtonRepeat = SDL_RegisterEvents(1);
 	SingleShotEvent = SDL_RegisterEvents(1);
 
 	Subscribe(SingleShotEvent, EVENT_SYSTEM_BIND(this, &EventSystem::SingleShotHandler));

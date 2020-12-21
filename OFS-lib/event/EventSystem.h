@@ -1,6 +1,6 @@
 #pragma once
-#include "OpenFunscripterUtil.h"
-#include "SDL.h"
+#include "OFS_Util.h"
+#include "SDL_events.h"
 
 #include <vector>
 #include <functional>
@@ -25,20 +25,6 @@ private:
 
 	void SingleShotHandler(SDL_Event& ev) noexcept;
 public:
-	// custom events
-	static int32_t FunscriptActionsChangedEvent;
-	static int32_t FunscriptActionClickedEvent;
-	static int32_t FunscriptSelectionChangedEvent;
-
-	static int32_t WakeupOnMpvEvents;
-	static int32_t WakeupOnMpvRenderUpdate;
-
-	static int32_t FfmpegAudioProcessingFinished;
-
-	static int32_t MpvVideoLoaded;
-
-	static int32_t ControllerButtonRepeat;
-
 	using SingleShotEventHandler = std::function<void(void*)>;
 	struct SingleShotEventData {
 		void* ctx = nullptr;

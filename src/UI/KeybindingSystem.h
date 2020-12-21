@@ -2,7 +2,7 @@
 
 
 #include "OFS_Reflection.h"
-#include "OpenFunscripterUtil.h"
+#include "OFS_Util.h"
 #include "SDL.h"
 
 #include <string>

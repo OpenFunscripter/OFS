@@ -1,5 +1,5 @@
 #include "OpenFunscripterSettings.h"
-#include "OpenFunscripterUtil.h"
+#include "OFS_Util.h"
 #include "OpenFunscripter.h"
 
 #include "OFS_Serialization.h"

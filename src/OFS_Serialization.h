@@ -3,6 +3,8 @@
 #include "OFS_Reflection.h"
 #include "nlohmann/json.hpp"
 
+#include "OFS_Util.h"
+
 namespace BlackMagic {
 
 	template <typename T, typename A>

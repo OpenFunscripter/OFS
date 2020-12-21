@@ -1,7 +1,7 @@
 #include "Funscript.h"
 
 #include "SDL.h"
-#include "OpenFunscripterUtil.h"
+#include "OFS_Util.h"
 #include "EventSystem.h"
 #include "OFS_Serialization.h"
 #include "FunscriptUndoSystem.h"
@@ -96,7 +96,7 @@ void Funscript::update() noexcept
 	if (funscriptChanged) {
 		funscriptChanged = false;
 		SDL_Event ev;
-		ev.type = EventSystem::FunscriptActionsChangedEvent;
+		ev.type = FunscriptEvents::FunscriptActionsChangedEvent;
 		SDL_PushEvent(&ev);
 
 		// TODO: find out how expensive this is on an already sorted array
@@ -105,7 +105,7 @@ void Funscript::update() noexcept
 	if (selectionChanged) {
 		selectionChanged = false;
 		SDL_Event ev;
-		ev.type = EventSystem::FunscriptSelectionChangedEvent;
+		ev.type = FunscriptEvents::FunscriptSelectionChangedEvent;
 		SDL_PushEvent(&ev);
 	}
 }
@@ -780,4 +780,15 @@ void Funscript::InvertSelection() noexcept
 		AddAction(act);
 	}
 	data.selection = copySelection;
+}
+
+int32_t FunscriptEvents::FunscriptActionsChangedEvent = 0;
+int32_t FunscriptEvents::FunscriptActionClickedEvent = 0;
+int32_t FunscriptEvents::FunscriptSelectionChangedEvent = 0;
+
+void FunscriptEvents::RegisterEvents() noexcept
+{
+	FunscriptActionsChangedEvent = SDL_RegisterEvents(1);
+	FunscriptActionClickedEvent = SDL_RegisterEvents(1);
+	FunscriptSelectionChangedEvent = SDL_RegisterEvents(1);
 }

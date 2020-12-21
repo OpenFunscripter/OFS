@@ -11,11 +11,20 @@
 #include <chrono>
 #include <set>
 
-#include "OpenFunscripterUtil.h"
-#include "OpenFunscripterVideoplayer.h"
+#include "OFS_Util.h"
 #include "SDL_mutex.h"
 
 class FunscriptUndoSystem;
+
+class FunscriptEvents
+{
+public:
+	static int32_t FunscriptActionsChangedEvent;
+	static int32_t FunscriptActionClickedEvent;
+	static int32_t FunscriptSelectionChangedEvent;
+
+	static void RegisterEvents() noexcept;
+};
 
 class Funscript
 {

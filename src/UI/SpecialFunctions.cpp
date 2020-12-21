@@ -1,5 +1,6 @@
 #include "SpecialFunctions.h"
 #include "OpenFunscripter.h"
+#include "FunscriptUndoSystem.h"
 #include "imgui.h"
 #include "imgui_stdlib.h"
 #include "imgui_internal.h"
@@ -62,13 +63,13 @@ inline Funscript& FunctionBase::ctx() noexcept
 FunctionRangeExtender::FunctionRangeExtender() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    app->events->Subscribe(EventSystem::FunscriptSelectionChangedEvent, EVENT_SYSTEM_BIND(this, &FunctionRangeExtender::SelectionChanged));
+    app->events->Subscribe(FunscriptEvents::FunscriptSelectionChangedEvent, EVENT_SYSTEM_BIND(this, &FunctionRangeExtender::SelectionChanged));
 }
 
 FunctionRangeExtender::~FunctionRangeExtender() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    app->events->Unsubscribe(EventSystem::FunscriptSelectionChangedEvent, this);
+    app->events->Unsubscribe(FunscriptEvents::FunscriptSelectionChangedEvent, this);
 }
 
 void FunctionRangeExtender::SelectionChanged(SDL_Event& ev) noexcept
@@ -107,7 +108,7 @@ void FunctionRangeExtender::DrawUI() noexcept
 RamerDouglasPeucker::RamerDouglasPeucker() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    app->events->Subscribe(EventSystem::FunscriptSelectionChangedEvent, EVENT_SYSTEM_BIND(this, &RamerDouglasPeucker::SelectionChanged));
+    app->events->Subscribe(FunscriptEvents::FunscriptSelectionChangedEvent, EVENT_SYSTEM_BIND(this, &RamerDouglasPeucker::SelectionChanged));
 }
 
 RamerDouglasPeucker::~RamerDouglasPeucker() noexcept
@@ -255,7 +256,7 @@ static SDL_SpinLock SpinLock = 0;
 CustomLua::CustomLua() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    app->events->Subscribe(EventSystem::FunscriptSelectionChangedEvent, EVENT_SYSTEM_BIND(this, &CustomLua::SelectionChanged));
+    app->events->Subscribe(FunscriptEvents::FunscriptSelectionChangedEvent, EVENT_SYSTEM_BIND(this, &CustomLua::SelectionChanged));
     resetVM();
     if (Thread.L != nullptr) {
         updateScripts();

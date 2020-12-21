@@ -1,7 +1,7 @@
 #include "ScriptingMode.h"
 
 #include "OpenFunscripter.h"
-#include "OpenFunscripterUtil.h"
+#include "OFS_Util.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"

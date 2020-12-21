@@ -37,7 +37,7 @@ void ScriptPositionsWindow::setup()
 	app->events->Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_scroll));
 	app->events->Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_drag));
 	app->events->Subscribe(SDL_MOUSEBUTTONUP, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_released));
-	app->events->Subscribe(EventSystem::FfmpegAudioProcessingFinished, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::FfmpegAudioProcessingFinished));
+	app->events->Subscribe(OFS_Events::FfmpegAudioProcessingFinished, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::FfmpegAudioProcessingFinished));
 }
 
 void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
@@ -94,7 +94,7 @@ void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
 			static ActionClickedEventArgs args;
 			args = std::tuple<SDL_Event, FunscriptAction>(ev, *clickedAction);
 			SDL_Event notify;
-			notify.type = EventSystem::FunscriptActionClickedEvent;
+			notify.type = FunscriptEvents::FunscriptActionClickedEvent;
 			notify.user.data1 = &args;
 			SDL_PushEvent(&notify);
 		}
@@ -469,7 +469,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 							}
 							free(info.buffer);
 							SDL_Event ev;
-							ev.type = EventSystem::FfmpegAudioProcessingFinished;
+							ev.type = OFS_Events::FfmpegAudioProcessingFinished;
 							SDL_PushEvent(&ev);
 							return 0;
 						};

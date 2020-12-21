@@ -1,5 +1,5 @@
 ﻿#include "OpenFunscripter.h"
-#include "OpenFunscripterUtil.h"
+#include "OFS_Util.h"
 
 #include "GradientBar.h"
 
@@ -275,9 +275,13 @@ bool OpenFunscripter::setup()
     }
 
     LOG_DEBUG("more init");
-    // register custom events with sdl
     events = std::make_unique<EventSystem>();
     events->setup();
+    // register custom events with sdl
+    OFS_Events::RegisterEvents();
+    FunscriptEvents::RegisterEvents();
+    VideoEvents::RegisterEvents();
+
 
     undoSystem = std::make_unique<UndoSystem>();
 
@@ -295,10 +299,10 @@ bool OpenFunscripter::setup()
         return false;
     }
 
-    events->Subscribe(EventSystem::FunscriptActionsChangedEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FunscriptChanged));
-    events->Subscribe(EventSystem::FunscriptActionClickedEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FunscriptActionClicked));
+    events->Subscribe(FunscriptEvents::FunscriptActionsChangedEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FunscriptChanged));
+    events->Subscribe(FunscriptEvents::FunscriptActionClickedEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FunscriptActionClicked));
     events->Subscribe(SDL_DROPFILE, EVENT_SYSTEM_BIND(this, &OpenFunscripter::DragNDrop));
-    events->Subscribe(EventSystem::MpvVideoLoaded, EVENT_SYSTEM_BIND(this, &OpenFunscripter::MpvVideoLoaded));
+    events->Subscribe(VideoEvents::MpvVideoLoaded, EVENT_SYSTEM_BIND(this, &OpenFunscripter::MpvVideoLoaded));
     
     if (!settings->data().recentFiles.empty()) {
         // cache these here because openFile overrides them

@@ -105,7 +105,7 @@ void ControllerInput::update() noexcept
 	for (auto&& button : ButtonsHeldDown) {
 		if (button > 0 && ((int64_t)SDL_GetTicks() - button) >= settings.buttonRepeatIntervalMs) {
 			SDL_Event ev;
-			ev.type = EventSystem::ControllerButtonRepeat;
+			ev.type = OFS_Events::ControllerButtonRepeat;
 			ev.cbutton.button = buttonEnumVal;
 			SDL_PushEvent(&ev);
 			button = SDL_GetTicks();

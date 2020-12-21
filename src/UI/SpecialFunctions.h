@@ -3,6 +3,8 @@
 #include <memory>
 #include "Funscript.h"
 
+#include "SDL_events.h"
+
 // ATTENTION: no reordering
 enum SpecialFunctions : int32_t
 {

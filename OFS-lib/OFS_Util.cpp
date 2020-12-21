@@ -1,4 +1,4 @@
-#include "OpenFunscripterUtil.h"
+#include "OFS_Util.h"
 
 #include "EventSystem.h"
 
