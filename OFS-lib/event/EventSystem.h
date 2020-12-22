@@ -36,11 +36,14 @@ public:
 
 	void setup();
 
+
 	void PushEvent(SDL_Event& event) noexcept;
 	void Subscribe(int32_t eventType, void* listener, EventHandlerFunc&& handler) noexcept;
 	void Unsubscribe(int32_t eventType, void* listener) noexcept;
 	void UnsubscribeAll(void* listener) noexcept;
 
+	// helper
+	static void PushEvent(int32_t type) noexcept;
 	static void SingleShot(SingleShotEventHandler&& handler, void* ctx) noexcept;
 };
 

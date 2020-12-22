@@ -101,6 +101,11 @@ public:
 		return std::max(std::min(val, max), min);
 	}
 
+	template<typename T>
+	inline static T Lerp(T startVal, T endVal, float t) {
+		return startVal + ((endVal - startVal) * t);
+	}
+
 	inline static auto LoadJson(const std::string& file, bool* success) { return LoadJson(file.c_str(), success); }
 	inline static nlohmann::json LoadJson(const char* file, bool* success) {
 		auto handle = SDL_RWFromFile(file, "rb");

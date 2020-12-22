@@ -25,6 +25,12 @@ target_include_directories(glad PUBLIC "glad/include/")
 add_subdirectory("glm")
 
 
+# ==============
+# == CSerial ===
+# ==============
+add_subdirectory("CSerial")
+
+
 # ==========
 # == LUA ===
 # ==========

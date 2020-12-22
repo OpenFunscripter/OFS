@@ -16,6 +16,13 @@ void EventSystem::setup()
 	Subscribe(SingleShotEvent, EVENT_SYSTEM_BIND(this, &EventSystem::SingleShotHandler));
 }
 
+void EventSystem::PushEvent(int32_t type) noexcept
+{
+	SDL_Event ev;
+	ev.type = type;
+	SDL_PushEvent(&ev);
+}
+
 void EventSystem::PushEvent(SDL_Event& event) noexcept
 {
 	for (auto& handler : handlers) {

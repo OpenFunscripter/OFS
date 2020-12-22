@@ -30,6 +30,8 @@ public:
 	static int32_t WakeupOnMpvEvents;
 	static int32_t WakeupOnMpvRenderUpdate;
 	static int32_t MpvVideoLoaded;
+	
+	static int32_t PlayPauseChanged;
 
 	static void RegisterEvents() noexcept;
 };

@@ -26,6 +26,7 @@
 #include "SpecialFunctions.h"
 #include "OFS_ScriptSettings.h"
 #include "OFS_Events.h"
+#include "OFS_Tcode.h"
 
 #include <memory>
 #include <array>
@@ -71,6 +72,7 @@ private:
 	void DragNDrop(SDL_Event& ev) noexcept;
 
 	void MpvVideoLoaded(SDL_Event& ev) noexcept;
+	void MpvPlayPauseChange(SDL_Event& ev) noexcept;
 
 	bool SetPlaybackSpeedController = false;
 	void ControllerAxisPlaybackSpeed(SDL_Event& ev) noexcept;
@@ -137,6 +139,8 @@ public:
 	std::unique_ptr<UndoSystem> undoSystem;
 
 	std::unique_ptr<Simulator3D> sim3D;
+
+	std::unique_ptr<TCodePlayer> tcode;
 
 	std::vector<std::unique_ptr<Funscript>> LoadedFunscripts;
 

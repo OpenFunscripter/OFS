@@ -159,6 +159,7 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 			case MpvPauseState:
 				MpvData.paused = *(int64_t*)prop->data;
 				smooth_time = std::chrono::high_resolution_clock::now();
+				EventSystem::PushEvent(VideoEvents::PlayPauseChanged);
 				break;
 			case MpvFilePath:
 				// I'm not sure if I own this memory :/
@@ -703,10 +704,12 @@ void VideoplayerWindow::closeVideo() noexcept
 int32_t VideoEvents::MpvVideoLoaded = 0;
 int32_t VideoEvents::WakeupOnMpvEvents = 0;
 int32_t VideoEvents::WakeupOnMpvRenderUpdate = 0;
+int32_t VideoEvents::PlayPauseChanged = 0;
 
 void VideoEvents::RegisterEvents() noexcept
 {
 	MpvVideoLoaded = SDL_RegisterEvents(1);
 	WakeupOnMpvEvents = SDL_RegisterEvents(1);
 	WakeupOnMpvRenderUpdate = SDL_RegisterEvents(1);
+	PlayPauseChanged = SDL_RegisterEvents(1);
 }

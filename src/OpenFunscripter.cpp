@@ -305,7 +305,8 @@ bool OpenFunscripter::setup()
     events->Subscribe(SDL_DROPFILE, EVENT_SYSTEM_BIND(this, &OpenFunscripter::DragNDrop));
     events->Subscribe(VideoEvents::MpvVideoLoaded, EVENT_SYSTEM_BIND(this, &OpenFunscripter::MpvVideoLoaded));
     events->Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ControllerAxisPlaybackSpeed));
-    
+    events->Subscribe(VideoEvents::PlayPauseChanged, EVENT_SYSTEM_BIND(this, &OpenFunscripter::MpvPlayPauseChange));
+
     if (!settings->data().recentFiles.empty()) {
         // cache these here because openFile overrides them
         std::string last_video = settings->data().recentFiles.back().video_path;
@@ -323,6 +324,8 @@ bool OpenFunscripter::setup()
 
     sim3D = std::make_unique<Simulator3D>();
     sim3D->setup();
+
+    tcode = std::make_unique<TCodePlayer>();
 
     SDL_ShowWindow(window);
 
@@ -1294,6 +1297,16 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
     scriptPositions.ClearAudioWaveform();
 }
 
+void OpenFunscripter::MpvPlayPauseChange(SDL_Event& ev) noexcept
+{
+    if (player.isPaused()) {
+        tcode->stop();
+    }
+    else {
+        tcode->play(player.getCurrentPositionMsInterp(), ActiveFunscript()->Data().Actions);
+    }
+}
+
 void OpenFunscripter::update() noexcept {
     ActiveFunscript()->update();
     ControllerInput::UpdateControllers();
@@ -1386,6 +1399,8 @@ void OpenFunscripter::step() noexcept {
         if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { saveScript(ActiveFunscript().get(), "", false); }
         sim3D->ShowWindow(&settings->data().show_simulator_3d);
         scripting->DrawScriptingMode(NULL);
+
+        tcode->DrawWindow(NULL);
 
         if (keybinds.ShowBindingWindow()) {
             settings->saveKeybinds(keybinds.getBindings());

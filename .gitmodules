@@ -25,3 +25,6 @@
 [submodule "lib/lua"]
 	path = lib/lua
 	url = https://github.com/lua/lua.git
+[submodule "lib/CSerial"]
+	path = lib/CSerial
+	url = https://github.com/rm5248/CSerial.git
