@@ -327,8 +327,6 @@ bool OpenFunscripter::setup()
     sim3D = std::make_unique<Simulator3D>();
     sim3D->setup();
 
-    tcode = std::make_unique<TCodePlayer>();
-
     SDL_ShowWindow(window);
 
 #ifndef NDEBUG
@@ -1302,12 +1300,7 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
 
 void OpenFunscripter::MpvPlayPauseChange(SDL_Event& ev) noexcept
 {
-    if (player.isPaused()) {
-        tcode->stop();
-    }
-    else {
-        tcode->play(player.getCurrentPositionMsInterp(), ActiveFunscript()->Data().Actions);
-    }
+
 }
 
 void OpenFunscripter::update() noexcept {
@@ -1402,8 +1395,6 @@ void OpenFunscripter::step() noexcept {
         if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { saveScript(ActiveFunscript().get(), "", false); }
         sim3D->ShowWindow(&settings->data().show_simulator_3d);
         scripting->DrawScriptingMode(NULL);
-
-        tcode->DrawWindow(NULL);
 
         if (keybinds.ShowBindingWindow()) {
             settings->saveKeybinds(keybinds.getBindings());
