@@ -95,7 +95,6 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 # c++17
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
-# warnings as errors
 if(WIN32)
     target_compile_options(${PROJECT_NAME} PUBLIC /EHc- /GR-)
 	# target_compile_options(${PROJECT_NAME} PRIVATE /W2 /WX)
