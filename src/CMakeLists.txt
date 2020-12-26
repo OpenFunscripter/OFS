@@ -42,9 +42,6 @@ add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
 
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
-  glm
-  ImGuizmo
-  ImGuizmoQuat
   lua
   OFS_lib
 )

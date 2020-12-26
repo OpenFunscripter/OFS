@@ -17,7 +17,7 @@ private:
 
 	unsigned int VBO = 0;
 	unsigned int cubeVAO = 0;
-	bool TranslateEnabled = false;
+	bool TranslateEnabled = true;
 
 	static constexpr float MaxZoom = 10.f;
 	float Zoom = 3.f;
