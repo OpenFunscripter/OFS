@@ -16,8 +16,8 @@ set(OFS_LIB_SOURCES
 
 	"gl/OFS_Shader.cpp"
 
+	"im3d/OFS_im3d.cpp"
 	"player/OFS_Tcode.cpp"
-
 	"OFS_Serialization.cpp"
 	"OFS_Util.cpp"
 )
@@ -29,9 +29,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	"${PROJECT_SOURCE_DIR}/UI/"
 	"${PROJECT_SOURCE_DIR}/imgui_impl/"
 	"${PROJECT_SOURCE_DIR}/gl/"
-	"${PROJECT_SOURCE_DIR}/player/"
+	"${PROJECT_SOURCE_DIR}/im3d/"
 	"${PROJECT_SOURCE_DIR}/"
-
+	"${PROJECT_SOURCE_DIR}/player/"
 	"${CMAKE_SOURCE_DIR}/lib/stb/"
 	"${CMAKE_SOURCE_DIR}/lib/CSerial/"
 )
@@ -46,6 +46,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	tinyfiledialogs
 	utf8::cpp
 	cserial_static
+	im3d
+	glm
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)

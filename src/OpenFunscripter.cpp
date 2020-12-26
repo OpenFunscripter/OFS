@@ -7,9 +7,10 @@
 
 #include "stb_sprintf.h"
 
-#include "ImGuizmo.h"
 #include "imgui_stdlib.h"
 #include "imgui_internal.h"
+
+#include "OFS_im3d.h"
 
 // TODO: reduce memory usage when generating waveform data
 
@@ -192,6 +193,7 @@ bool OpenFunscripter::imgui_setup() noexcept
 
 OpenFunscripter::~OpenFunscripter()
 {
+    OFS::Im3d_Shutdown();
     // needs a certain destruction order
     scripting.reset();
     controllerInput.reset();
@@ -333,6 +335,7 @@ bool OpenFunscripter::setup()
     //scripting->setMode(ScriptingModeEnum::RECORDING);
 #endif
 
+    OFS::Im3d_Init();
     return true;
 }
 
@@ -1213,7 +1216,7 @@ void OpenFunscripter::new_frame() noexcept
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame(window);
     ImGui::NewFrame();
-    ImGuizmo::BeginFrame();
+    OFS::Im3d_NewFrame();
 }
 
 void OpenFunscripter::render() noexcept
@@ -1603,6 +1606,7 @@ void OpenFunscripter::step() noexcept {
 
     render();
     sim3D->render();
+    OFS::Im3d_EndFrame();
     SDL_GL_SwapWindow(window);
 }
 

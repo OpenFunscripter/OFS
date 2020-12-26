@@ -3,9 +3,11 @@
 #include "OpenFunscripter.h"
 
 #include "imgui.h"
-#include "ImGuizmo.h"
 
-#include "imGuIZMOquat.h"
+#include "OFS_im3d.h"
+
+#include "glm/gtx/matrix_decompose.hpp"
+
 
 // cube pos + normals
 constexpr float vertices[] = {
@@ -69,8 +71,6 @@ void Simulator3D::reset() noexcept
     lightPos = glm::vec3(0.f, 0.f, 0.f);
 
     Zoom = 3.f;
-    imguiGizmo::setDirectionColor(ImVec4(0.5, 1.0, 0.3, 1.0));
-    ImGuizmo::SetOrthographic(true);
 }
 
 void Simulator3D::setup() noexcept
@@ -135,23 +135,11 @@ void Simulator3D::ShowWindow(bool* open) noexcept
         reset();
     }
 
-
-    ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList());
-    ImGuizmo::SetRect(viewport->Pos.x, viewport->Pos.y, viewport->Size.x, viewport->Size.y);
-
     if (ImGui::Button("Move", ImVec2(-1.f, 0.f))) { TranslateEnabled = !TranslateEnabled; }
+    glm::mat3 rot(1.f);
+    glm::vec3 scale(1.f);
     if (TranslateEnabled) {
-        if (ImGuizmo::Manipulate(glm::value_ptr(view),
-            glm::value_ptr(projection),
-            ImGuizmo::OPERATION::TRANSLATE,
-            ImGuizmo::MODE::WORLD,
-            glm::value_ptr(translation), NULL, NULL)) { 
-            auto g = ImGui::GetCurrentContext();
-            auto window = ImGui::GetCurrentWindow();
-            g->HoveredRootWindow = window;
-            g->HoveredWindow = window;
-            g->HoveredDockNode = window->DockNode;
-        }
+        Im3d::Gizmo("Move", glm::value_ptr(translation));
     }
 
     ImGui::SliderFloat("Distance", &Zoom, 0.1f, MaxZoom);
@@ -166,10 +154,6 @@ void Simulator3D::ShowWindow(bool* open) noexcept
         direction = glm::vec3(directionMtx[1][0], directionMtx[1][1], directionMtx[1][2]);
         direction = glm::normalize(direction);
     }
-    ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-    
-    ImGui::gizmo3D("Direction", direction, ImGui::GetContentRegionAvail().x, imguiGizmo::modeDirection);
-    ImGui::PopItemFlag();
 
     if (ImGui::CollapsingHeader("Settings")) {
         ImGui::ColorEdit4("Box", &boxColor.Value.x);
@@ -202,17 +186,21 @@ void Simulator3D::ShowWindow(bool* open) noexcept
 
     ImGui::End();
 
-
-    float matrixTranslation[3], matrixRotation[3], matrixScale[3];
-    ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(translation), matrixTranslation, matrixRotation, matrixScale);
-
+    glm::vec3 position; 
+    {
+        glm::vec3 scale;
+        glm::quat orientation;
+        glm::vec3 skew;
+        glm::vec4 perspec;
+        glm::decompose(translation, scale, orientation, position, skew, perspec);
+    }
     
     constexpr float antiZBufferFight = 0.005f;
 
     const float cubeHeight = (simLength + simCubeSize) * ((scriptPos) / 100.f);
     // container model matrix
     containerModel = glm::mat4(1.f);
-    containerModel = glm::translate(containerModel, ((direction * ((cubeHeight + antiZBufferFight)/2.f))) + glm::vec3(matrixTranslation[0], matrixTranslation[1], matrixTranslation[2]));
+    containerModel = glm::translate(containerModel, ((direction * ((cubeHeight + antiZBufferFight)/2.f))) + position);
     containerModel = glm::rotate(containerModel, glm::radians(roll), glm::vec3(0.f, 0.f, 1.f));
     containerModel = glm::rotate(containerModel, glm::radians(yaw), glm::vec3(0.f, 1.f, 0.f));
     containerModel = glm::rotate(containerModel, glm::radians(pitch), glm::vec3(1.f, 0.f, 0.f));
@@ -222,7 +210,7 @@ void Simulator3D::ShowWindow(bool* open) noexcept
 
     // box model matrix
     boxModel = glm::mat4(1.f);
-    boxModel = glm::translate(boxModel, (-(direction * ((simLength + simCubeSize) - (cubeHeight - antiZBufferFight)))/2.f) + glm::vec3(matrixTranslation[0], matrixTranslation[1], matrixTranslation[2]));
+    boxModel = glm::translate(boxModel, (-(direction * ((simLength + simCubeSize) - (cubeHeight - antiZBufferFight)))/2.f) + position);
     boxModel = glm::rotate(boxModel, glm::radians(roll), glm::vec3(0.f, 0.f, 1.f));
     boxModel = glm::rotate(boxModel, glm::radians(yaw), glm::vec3(0.f, 1.f, 0.f));
     boxModel = glm::rotate(boxModel, glm::radians(pitch), glm::vec3(1.f, 0.f, 0.f));

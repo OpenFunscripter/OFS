@@ -105,29 +105,6 @@ add_library(imgui_stdlib STATIC "imgui/misc/cpp/imgui_stdlib.cpp" "imgui/misc/cp
 target_include_directories(imgui_stdlib PUBLIC "imgui/misc/cpp")
 target_link_libraries(imgui_stdlib PUBLIC imgui)
 
-
-# ============
-# = ImGuizmo =
-# ============
-file (GLOB ImGuizmo_SOURCES ImGuizmo/*.cpp)
-file (GLOB ImGuizmo_HEADERS ImGuizmo/*.h)
-add_library(ImGuizmo STATIC ${ImGuizmo_SOURCES} ${ImGuizmo_HEADERS})
-target_include_directories(ImGuizmo PUBLIC "ImGuizmo/")
-target_link_libraries(ImGuizmo PUBLIC imgui)
-target_compile_features(ImGuizmo PUBLIC cxx_std_11)
-
-
-# =================
-# = imGuIZMO_Quat =
-# =================
-file (GLOB ImGuizmoQuat_SOURCES imGuIZMO_Quat/imGuIZMO.quat/*.cpp)
-file (GLOB ImGuizmoQuat_HEADERS imGuIZMO_Quat/imGuIZMO.quat//*.h)
-add_library(ImGuizmoQuat STATIC ${ImGuizmoQuat_SOURCES} ${ImGuizmoQuat_HEADERS})
-target_include_directories(ImGuizmoQuat PUBLIC "imGuIZMO_Quat/imGuIZMO.quat/")
-target_link_libraries(ImGuizmoQuat PUBLIC imgui glm)
-target_compile_definitions(ImGuizmoQuat PUBLIC "IMGUIZMO_IMGUI_FOLDER=" "VGIZMO_USES_GLM" )
-target_compile_features(ImGuizmoQuat PUBLIC cxx_std_11)
-
 # ========
 # = SDL2 =
 # ========
@@ -170,3 +147,19 @@ set(JSON_BuildTests OFF CACHE BOOL "" FORCE)
 set(JSON_MultipleHeaders ON CACHE BOOL "" FORCE)
 set(JSON_Install OFF CACHE BOOL "" FORCE)
 add_subdirectory("json/")
+
+
+# ============
+# === im3d ===
+# ============
+set(im3d_SOURCES
+	"im3d/im3d.cpp"
+)
+set(im3d_HEADERS
+	"im3d/im3d.h"
+	"im3d/im3d_config.h"
+	"im3d/im3d_math.h"
+)
+add_library(im3d STATIC ${im3d_SOURCES} ${im3d_HEADERS})
+target_include_directories(im3d PUBLIC "im3d")
+target_link_libraries(im3d PUBLIC glm)
