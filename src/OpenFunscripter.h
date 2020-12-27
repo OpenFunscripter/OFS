@@ -26,6 +26,7 @@
 #include "SpecialFunctions.h"
 #include "OFS_ScriptSettings.h"
 #include "OFS_Events.h"
+#include "OFS_VideoplayerControls.h"
 
 #include <memory>
 #include <array>
@@ -48,7 +49,6 @@ private:
 
 	std::chrono::system_clock::time_point last_backup;
 
-	ImGradient TimelineGradient;
 	bool updateTimelineGradient = false;
 	char tmp_buf[2][32];
 
@@ -95,15 +95,12 @@ private:
 	void removeAction() noexcept;
 	void addEditAction(int pos) noexcept;
 
-	void seekByTime(int32_t ms) noexcept;
-
 	void showOpenFileDialog();
 	void saveActiveScriptAs();
 	bool openFile(const std::string& file);
 	
 	void SetFullscreen(bool fullscreen);
 
-	void UpdateTimelineGradient(ImGradient& grad);
 
 	void setupDefaultLayout(bool force) noexcept;
 
@@ -113,7 +110,6 @@ private:
 	void CreateDockspace() noexcept;
 	void ShowAboutWindow(bool* open) noexcept;
 	void ShowStatisticsWindow(bool* open) noexcept;
-	bool DrawTimelineWidget(const char* label, float* position) noexcept;
 	void ShowMainMenuBar() noexcept;
 	bool ShowMetadataEditorWindow(bool* open) noexcept;
 public:
@@ -125,6 +121,7 @@ public:
 	KeybindingSystem keybinds;
 	ScriptPositionsWindow scriptPositions;
 	VideoplayerWindow player;
+	OFS_VideoplayerControls playerControls;
 	ScriptSimulator simulator;
 
 	bool AutoBackup = true;

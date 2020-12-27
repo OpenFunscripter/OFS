@@ -2,6 +2,7 @@
 #include "OFS_Util.h"
 
 #include "GradientBar.h"
+#include "FunscriptHeatmap.h"
 
 #include <filesystem>
 
@@ -12,29 +13,22 @@
 
 #include "OFS_im3d.h"
 
-// TODO: reduce memory usage when generating waveform data
-
 // FIX: Add type checking to the deserialization. 
 //      I assume it would crash if a field is specified but doesn't have the correct type.
-
+// TODO: reduce memory usage when generating waveform data
 // TODO: use a ringbuffer in the undosystem
-// TODO: make heatmap generation more sophisticated
-
 // TODO: improve shift click add action with simulator
 //       it bugs out if the simulator is on the same height as the script timeline
 
-// BUG: loading script without video breaks everything
 // TODO: extend "range extender" functionality ( only extend bottom/top, range reducer )
 // TODO: render simulator relative to video position & zoom
 
 // TODO: binding Lua scripts to keys or buttons
-// TODO: lua script gui variables
-
 // TODO: Change how twist is implemented in the 3D simulator
 
+// TODO: bring back bookmark rendering
 // BUG: Simulator 3D move widget doesn't show when settings window is in a separate platform window/viewport
-
-// BUG: scripts not getting unloaded when loading new video?
+// BUG: scripts not getting unloaded when loading new video when using drag'n drop
 
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
@@ -61,8 +55,6 @@ constexpr const char* glsl_version = "#version 150";
 
 static ImGuiID MainDockspaceID;
 constexpr const char* StatisticsId = "Statistics";
-constexpr const char* PlayerTimeId = "Time";
-constexpr const char* PlayerControlId = "Controls";
 constexpr const char* ActionEditorId = "Action editor";
 
 constexpr int DefaultWidth = 1920;
@@ -249,7 +241,7 @@ bool OpenFunscripter::setup()
         "OpenFunscripter " FUN_LATEST_GIT_TAG "@" FUN_LATEST_GIT_HASH,
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         DefaultWidth, DefaultHeight,
-        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI /* | SDL_WINDOW_HIDDEN*/
+        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN
     );
     LOG_DEBUG("created window");
 
@@ -326,13 +318,11 @@ bool OpenFunscripter::setup()
     sim3D = std::make_unique<Simulator3D>();
     sim3D->setup();
 
-    SDL_ShowWindow(window);
+    playerControls.player = &player;
 
-#ifndef NDEBUG
-    //scripting->setMode(ScriptingModeEnum::RECORDING);
-#endif
 
     OFS::Im3d_Init();
+    SDL_ShowWindow(window);
     return true;
 }
 
@@ -371,8 +361,8 @@ void OpenFunscripter::setupDefaultLayout(bool force) noexcept
         ImGui::DockBuilderGetNode(dock_player_control_id)->LocalFlags |= ImGuiDockNodeFlags_AutoHideTabBar;
 
         ImGui::DockBuilderDockWindow(VideoplayerWindow::PlayerId, dock_player_center_id);
-        ImGui::DockBuilderDockWindow(PlayerTimeId, dock_time_bottom_id);
-        ImGui::DockBuilderDockWindow(PlayerControlId, dock_player_control_id);
+        ImGui::DockBuilderDockWindow(OFS_VideoplayerControls::PlayerTimeId, dock_time_bottom_id);
+        ImGui::DockBuilderDockWindow(OFS_VideoplayerControls::PlayerControlId, dock_player_control_id);
         ImGui::DockBuilderDockWindow(ScriptPositionsWindow::PositionsId, dock_positions_id);
         ImGui::DockBuilderDockWindow(ScriptingMode::ScriptingModeId, dock_mode_right_id);
         ImGui::DockBuilderDockWindow(ScriptSimulator::SimulatorId, dock_simulator_right_id);
@@ -1114,7 +1104,7 @@ void OpenFunscripter::register_bindings()
             "seek_forward_second",
             "Forward 1 second",
             false,
-            [&](void*) { seekByTime(1000); }
+            [&](void*) { player.seekRelative(1000); }
         );
         seek_forward_second.controller = ControllerBinding(
             SDL_CONTROLLER_BUTTON_RIGHTSHOULDER,
@@ -1125,7 +1115,7 @@ void OpenFunscripter::register_bindings()
             "seek_backward_second",
             "Backward 1 second",
             false,
-            [&](void*) { seekByTime(-1000); }
+            [&](void*) { player.seekRelative(-1000); }
         );
         seek_backward_second.controller = ControllerBinding(
             SDL_CONTROLLER_BUTTON_LEFTSHOULDER,
@@ -1398,184 +1388,119 @@ void OpenFunscripter::step() noexcept {
             settings->saveSettings();
         }
 
-        if (player.isLoaded()) {
-            {
-                ImGui::Begin(PlayerControlId);
-            
-                const int seek_ms = 3000;
-                // Playback controls
-                ImGui::Columns(5, 0, false);
-                if (ImGui::Button(ICON_STEP_BACKWARD /*"<"*/, ImVec2(-1, 0))) {
-                    if (player.isPaused()) {
-                        scripting->PreviousFrame();
-                    }
-                }
-                ImGui::NextColumn();
-                if (ImGui::Button(ICON_BACKWARD /*"<<"*/, ImVec2(-1, 0))) {
-                    seekByTime(-seek_ms);
-                }
-                ImGui::NextColumn();
+        playerControls.DrawControls(NULL);
 
-                if (ImGui::Button((player.isPaused()) ? ICON_PLAY : ICON_PAUSE, ImVec2(-1, 0))) {
-                    player.togglePlay();
-                }
-                ImGui::NextColumn();
-
-                if (ImGui::Button(ICON_FORWARD /*">>"*/, ImVec2(-1, 0))) {
-                    seekByTime(seek_ms);
-                }
-                ImGui::NextColumn();
-
-                if (ImGui::Button(ICON_STEP_FORWARD /*">"*/, ImVec2(-1, 0))) {
-                    if (player.isPaused()) {
-                        scripting->NextFrame();
-                    }
-                }
-                ImGui::NextColumn();
-
-            static bool mute = false;
-            ImGui::Columns(2, 0, false);
-            if (ImGui::Checkbox(mute ? ICON_VOLUME_OFF : ICON_VOLUME_UP, &mute)) {
-                if (mute)
-                    player.setVolume(0.0f);
-                else
-                    player.setVolume(player.settings.volume);
-            }
-            ImGui::SetColumnWidth(0, ImGui::GetItemRectSize().x + 10);
-            ImGui::NextColumn();
-            ImGui::SetNextItemWidth(-1);
-            if (ImGui::SliderFloat("##Volume", &player.settings.volume, 0.0f, 1.0f)) {
-                player.settings.volume = Util::Clamp(player.settings.volume, 0.0f, 1.f);
-                player.setVolume(player.settings.volume);
-                if (player.settings.volume > 0.0f)
-                    mute = false;
-            }
-            ImGui::NextColumn();
-            ImGui::End();
+        if (updateTimelineGradient) {
+            updateTimelineGradient = false;
+            OFS::UpdateHeatmapGradient(player.getDuration()*1000.f, playerControls.TimelineGradient, ActiveFunscript()->Actions());
         }
-            {
-                ImGui::Begin(PlayerTimeId);
 
-                static float actualPlaybackSpeed = 1.0f;
-                {
-                    const double speedCalcUpdateFrequency = 1.0;
-                    static uint32_t start_time = SDL_GetTicks();
-                    static float lastPlayerPosition = 0.0f;
-                    if (!player.isPaused()) {
-                        if ((SDL_GetTicks() - start_time) / 1000.0f >= speedCalcUpdateFrequency) {
-                            double duration = player.getDuration();
-                            double position = player.getPosition();
-                            double expectedStep = speedCalcUpdateFrequency / duration;
-                            double actualStep = std::abs(position - lastPlayerPosition);
-                            actualPlaybackSpeed = actualStep / expectedStep;
 
-                            lastPlayerPosition = player.getPosition();
-                            start_time = SDL_GetTicks();
+        auto drawBookmarks = [&](ImDrawList* draw_list, const ImRect& frame_bb, bool item_hovered)
+        {
+            auto& style = ImGui::GetStyle();
+            bool show_text = item_hovered || settings->data().always_show_bookmark_labels;
+
+            // bookmarks
+            auto& scriptSettings = ActiveFunscript()->Userdata<OFS_ScriptSettings>();
+            for (int i = 0; i < scriptSettings.Bookmarks.size(); i++) {
+                auto& bookmark = scriptSettings.Bookmarks[i];
+                auto nextBookmarkPtr = i + 1 < scriptSettings.Bookmarks.size() ? &scriptSettings.Bookmarks[i + 1] : nullptr;
+
+                constexpr float rectWidth = 7.f;
+                const float fontSize = ImGui::GetFontSize();
+                const uint32_t textColor = ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]);
+
+                // if an end_marker appears before a start marker we render it as if was a regular bookmark
+                if (bookmark.type == OFS_ScriptSettings::Bookmark::BookmarkType::START_MARKER) {
+                    if (i + 1 < scriptSettings.Bookmarks.size()
+                        && nextBookmarkPtr != nullptr && nextBookmarkPtr->type == OFS_ScriptSettings::Bookmark::BookmarkType::END_MARKER) {
+                        ImVec2 p1((frame_bb.Min.x + (frame_bb.GetWidth() * (bookmark.at / (player.getDuration() * 1000.0)))) - (rectWidth / 2.f), frame_bb.Min.y);
+                        ImVec2 p2(p1.x + rectWidth, frame_bb.Min.y + frame_bb.GetHeight() + (style.ItemSpacing.y * 3.0f));
+
+                        ImVec2 next_p1((frame_bb.Min.x + (frame_bb.GetWidth() * (nextBookmarkPtr->at / (player.getDuration() * 1000.0)))) - (rectWidth / 2.f), frame_bb.Min.y);
+                        ImVec2 next_p2(next_p1.x + rectWidth, frame_bb.Min.y + frame_bb.GetHeight() + (style.ItemSpacing.y * 3.0f));
+
+                        if (show_text) {
+                            draw_list->AddRectFilled(
+                                p1 + ImVec2(rectWidth / 2.f, 0),
+                                next_p2 - ImVec2(rectWidth / 2.f, -fontSize),
+                                IM_COL32(255, 0, 0, 100),
+                                8.f);
                         }
-                    }
-                    else {
-                        lastPlayerPosition = player.getPosition();
-                        start_time = SDL_GetTicks();
-                    }
-                }
 
-                ImGui::Columns(5, 0, false);
-                {
-                    // format total duration
-                    // this doesn't need to be done every frame
-                    Util::FormatTime(tmp_buf[1], sizeof(tmp_buf[1]), player.getDuration(), true);
+                        draw_list->AddRectFilled(p1, p2, textColor, 8.f);
+                        draw_list->AddRectFilled(next_p1, next_p2, textColor, 8.f);
 
-                    double time_seconds = player.getCurrentPositionSecondsInterp();
-                    Util::FormatTime(tmp_buf[0], sizeof(tmp_buf[0]), time_seconds, true);
-                    ImGui::Text(" %s / %s (x%.03f)", tmp_buf[0], tmp_buf[1], actualPlaybackSpeed);
-                    ImGui::NextColumn();
-                }
-
-                auto& style = ImGui::GetStyle();
-                ImGui::SetColumnWidth(0, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
-
-                if (ImGui::Button("1x", ImVec2(0, 0))) {
-                    player.setSpeed(1.f);
-                }
-                ImGui::SetColumnWidth(1, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
-                ImGui::NextColumn();
-
-                if (ImGui::Button("-10%", ImVec2(0, 0))) {
-                    player.addSpeed(-0.10);
-                }
-                ImGui::SetColumnWidth(2, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
-                ImGui::NextColumn();
-
-                if (ImGui::Button("+10%", ImVec2(0, 0))) {
-                    player.addSpeed(0.10);
-                }
-                ImGui::SetColumnWidth(3, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
-                ImGui::NextColumn();
-
-                ImGui::SetNextItemWidth(-1.f);
-                if (ImGui::SliderFloat("##Speed", &player.settings.playback_speed, player.minPlaybackSpeed, player.maxPlaybackSpeed)) {
-                    player.setSpeed(player.settings.playback_speed);
-                }
-                Util::Tooltip("Speed");
-
-                ImGui::Columns(1, 0, false);
-
-                float position = player.getPosition();
-                static bool hasSeeked = false;
-                if (DrawTimelineWidget("Timeline", &position)) {
-                    if (!player.isPaused()) {
-                        hasSeeked = true;
-                    }
-                    player.setPosition(position, true);
-                }
-                if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && hasSeeked) {
-                    player.setPaused(false);
-                    hasSeeked = false;
-                }
-
-                scriptPositions.ShowScriptPositions(NULL, player.getCurrentPositionMsInterp());
-                ImGui::End();
-            }
-            if(settings->data().show_action_editor)
-            {
-                ImGui::Begin(ActionEditorId, &settings->data().show_action_editor);
-                if (player.isPaused()) {
-                    auto scriptAction = ActiveFunscript()->GetActionAtTime(player.getCurrentPositionMsInterp(), player.getFrameTimeMs());
-
-                    if (scriptAction == nullptr)
-                    {
-                        // create action
-                        static int newActionPosition = 0;
-                        ImGui::SliderInt("Position", &newActionPosition, 0, 100);
-                        if (ImGui::Button("New Action")) {
-                            addEditAction(newActionPosition);
+                        if (show_text) {
+                            auto size = ImGui::CalcTextSize(bookmark.name.c_str());
+                            size.x /= 2.f;
+                            size.y += 4.f;
+                            float offset = (next_p2.x - p1.x) / 2.f;
+                            draw_list->AddText(next_p2 - ImVec2(offset, -fontSize) - size, textColor, bookmark.name.c_str());
                         }
+
+                        i += 1; // skip end marker
+                        continue;
                     }
                 }
 
-                ImGui::Separator();
-                ImGui::Columns(1, 0, false);
-                if (ImGui::Button("100", ImVec2(-1, 0))) {
-                    addEditAction(100);
-                }
-                for (int i = 9; i != 0; i--) {
-                    if (i % 3 == 0) {
-                        ImGui::Columns(3, 0, false);
-                    }
-                    sprintf(tmp_buf[0], "%d", i * 10);
-                    if (ImGui::Button(tmp_buf[0], ImVec2(-1, 0))) {
-                        addEditAction(i * 10);
-                    }
-                    ImGui::NextColumn();
-                }
-                ImGui::Columns(1, 0, false);
-                if (ImGui::Button("0", ImVec2(-1, 0))) {
-                    addEditAction(0);
-                }
+                ImVec2 p1((frame_bb.Min.x + (frame_bb.GetWidth() * (bookmark.at / (player.getDuration() * 1000.0)))) - (rectWidth / 2.f), frame_bb.Min.y);
+                ImVec2 p2(p1.x + rectWidth, frame_bb.Min.y + frame_bb.GetHeight() + (style.ItemSpacing.y * 3.0f));
 
-                ImGui::Separator();
-                ImGui::End();
+                draw_list->AddRectFilled(p1, p2, ImColor(style.Colors[ImGuiCol_Text]), 8.f);
+
+                if (show_text) {
+                    auto size = ImGui::CalcTextSize(bookmark.name.c_str());
+                    size.x /= 2.f;
+                    size.y /= 8.f;
+                    draw_list->AddText(p2 - size, textColor, bookmark.name.c_str());
+                }
             }
+        };
+
+        playerControls.DrawTimeline(NULL, drawBookmarks);
+        scriptPositions.ShowScriptPositions(NULL, player.getCurrentPositionMsInterp());
+
+        if(settings->data().show_action_editor)
+        {
+            ImGui::Begin(ActionEditorId, &settings->data().show_action_editor);
+            if (player.isPaused()) {
+                auto scriptAction = ActiveFunscript()->GetActionAtTime(player.getCurrentPositionMsInterp(), player.getFrameTimeMs());
+
+                if (scriptAction == nullptr)
+                {
+                    // create action
+                    static int newActionPosition = 0;
+                    ImGui::SliderInt("Position", &newActionPosition, 0, 100);
+                    if (ImGui::Button("New Action")) {
+                        addEditAction(newActionPosition);
+                    }
+                }
+            }
+
+            ImGui::Separator();
+            ImGui::Columns(1, 0, false);
+            if (ImGui::Button("100", ImVec2(-1, 0))) {
+                addEditAction(100);
+            }
+            for (int i = 9; i != 0; i--) {
+                if (i % 3 == 0) {
+                    ImGui::Columns(3, 0, false);
+                }
+                sprintf(tmp_buf[0], "%d", i * 10);
+                if (ImGui::Button(tmp_buf[0], ImVec2(-1, 0))) {
+                    addEditAction(i * 10);
+                }
+                ImGui::NextColumn();
+            }
+            ImGui::Columns(1, 0, false);
+            if (ImGui::Button("0", ImVec2(-1, 0))) {
+                addEditAction(0);
+            }
+
+            ImGui::Separator();
+            ImGui::End();
         }
 
         if (DebugDemo) {
@@ -1801,7 +1726,7 @@ void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
     color.Value.w = 1.f;
     while (relPos <= 1.f) {
         rect.x = std::round(relPos * width);
-        TimelineGradient.computeColorAt(relPos, &color.Value.x);
+        playerControls.TimelineGradient.computeColorAt(relPos, &color.Value.x);
         SDL_FillRect(surface, &rect, ImGui::ColorConvertFloat4ToU32(color));
         relPos += relStep;
     }
@@ -1857,13 +1782,6 @@ void OpenFunscripter::addEditAction(int pos) noexcept
         undoSystem->Snapshot(StateType::ADD_EDIT_ACTIONS, false);
         scripting->addEditAction(FunscriptAction(std::round(player.getCurrentPositionMsInterp()), pos));
     }
-}
-
-void OpenFunscripter::seekByTime(int32_t ms) noexcept
-{
-    int32_t seek_to = player.getCurrentPositionMs() + ms;
-    seek_to = std::max(seek_to, 0);
-    player.setPosition(seek_to);
 }
 
 void OpenFunscripter::cutSelection() noexcept
@@ -2666,290 +2584,6 @@ void OpenFunscripter::ShowStatisticsWindow(bool* open) noexcept
     ImGui::End();
 
 }
-
-bool OpenFunscripter::DrawTimelineWidget(const char* label, float* position) noexcept
-{
-    bool change = false;
-
-    ImGuiWindow* window = ImGui::GetCurrentWindow();
-    auto draw_list = window->DrawList;
-
-    if (window->SkipItems)
-        return false;
-
-    ImGuiContext& g = *GImGui;
-    const ImGuiStyle& style = g.Style;
-    const ImGuiID id = window->GetID(label);
-    const float w = ImGui::GetContentRegionAvail().x;
-    const float h = ImGui::GetFontSize() * 1.5f;
-
-    const ImRect frame_bb(window->DC.CursorPos + style.FramePadding, window->DC.CursorPos + ImVec2(w, h) - style.FramePadding);
-    const ImRect total_bb(frame_bb.Min, frame_bb.Max);
-
-    ImGui::ItemSize(total_bb, style.FramePadding.y);
-    if (!ImGui::ItemAdd(total_bb, id, &frame_bb))
-        return false;
-
-    if (updateTimelineGradient) {
-        updateTimelineGradient = false;
-        UpdateTimelineGradient(TimelineGradient);
-    }
-
-    const bool item_hovered = ImGui::IsItemHovered();
-    const bool show_text = item_hovered || settings->data().always_show_bookmark_labels;
-
-    const float current_pos_x = frame_bb.Min.x + frame_bb.GetWidth() * (*position);
-    const float offset_progress_h = h / 5.f;
-    const float offset_progress_w = current_pos_x - frame_bb.Min.x;
-    draw_list->AddRectFilled(frame_bb.Min + ImVec2(-1.f, offset_progress_h), frame_bb.Min + ImVec2(offset_progress_w, frame_bb.GetHeight()) + ImVec2(0.f, offset_progress_h), ImColor(style.Colors[ImGuiCol_PlotLinesHovered]));
-    draw_list->AddRectFilled(frame_bb.Min + ImVec2(offset_progress_w, offset_progress_h), frame_bb.Max + ImVec2(1.f, offset_progress_h), IM_COL32(150, 150, 150, 255));
-
-    // bookmarks
-    auto& scriptSettings = ActiveFunscript()->Userdata<OFS_ScriptSettings>();
-    for(int i = 0; i < scriptSettings.Bookmarks.size(); i++) {
-        auto& bookmark = scriptSettings.Bookmarks[i];
-        auto nextBookmarkPtr = i+1 < scriptSettings.Bookmarks.size() ? &scriptSettings.Bookmarks[i + 1] : nullptr;
-
-        constexpr float rectWidth = 7.f;
-        const float fontSize = ImGui::GetFontSize();
-        const uint32_t textColor = ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]);
-
-        // if an end_marker appears before a start marker we render it as if was a regular bookmark
-        if (bookmark.type == OFS_ScriptSettings::Bookmark::BookmarkType::START_MARKER) {
-            if (i + 1 < scriptSettings.Bookmarks.size()
-                && nextBookmarkPtr != nullptr && nextBookmarkPtr->type == OFS_ScriptSettings::Bookmark::BookmarkType::END_MARKER) {                   
-                    ImVec2 p1((frame_bb.Min.x + (frame_bb.GetWidth() * (bookmark.at / (player.getDuration() * 1000.0)))) - (rectWidth / 2.f), frame_bb.Min.y);
-                    ImVec2 p2(p1.x + rectWidth, frame_bb.Min.y + frame_bb.GetHeight() + (style.ItemSpacing.y * 3.0f));
-
-                    ImVec2 next_p1((frame_bb.Min.x + (frame_bb.GetWidth() * (nextBookmarkPtr->at / (player.getDuration() * 1000.0)))) - (rectWidth / 2.f), frame_bb.Min.y);
-                    ImVec2 next_p2(next_p1.x + rectWidth, frame_bb.Min.y + frame_bb.GetHeight() + (style.ItemSpacing.y * 3.0f));
-                
-                    if (show_text) {
-                        draw_list->AddRectFilled(
-                            p1 + ImVec2(rectWidth / 2.f, 0),
-                            next_p2 - ImVec2(rectWidth/2.f, -fontSize),
-                            IM_COL32(255, 0, 0, 100),
-                            8.f);
-                    }
-
-                    draw_list->AddRectFilled(p1, p2, textColor, 8.f);
-                    draw_list->AddRectFilled(next_p1, next_p2, textColor, 8.f);
-
-                    if (show_text) {
-                        auto size = ImGui::CalcTextSize(bookmark.name.c_str());
-                        size.x /= 2.f;
-                        size.y += 4.f;
-                        float offset = (next_p2.x - p1.x)/2.f;
-                        draw_list->AddText(next_p2 - ImVec2(offset, -fontSize) - size, textColor, bookmark.name.c_str());
-                    }
-
-                    i += 1; // skip end marker
-                    continue;
-            }
-        }
-        
-        ImVec2 p1((frame_bb.Min.x + (frame_bb.GetWidth() * (bookmark.at / (player.getDuration() * 1000.0)))) - (rectWidth/2.f), frame_bb.Min.y);       
-        ImVec2 p2(p1.x + rectWidth, frame_bb.Min.y + frame_bb.GetHeight() + (style.ItemSpacing.y * 3.0f));
-
-        draw_list->AddRectFilled(p1, p2, ImColor(style.Colors[ImGuiCol_Text]), 8.f);
-
-        if (show_text) {
-            auto size = ImGui::CalcTextSize(bookmark.name.c_str());
-            size.x /= 2.f;
-            size.y /= 8.f;
-            draw_list->AddText(p2 - size, textColor, bookmark.name.c_str());
-        }
-    }
-
-    // position highlight
-    ImVec2 p1(current_pos_x, frame_bb.Min.y);
-    ImVec2 p2(current_pos_x, frame_bb.Max.y);
-    constexpr float timeline_pos_cursor_w = 5.f;
-    draw_list->AddLine(p1+ImVec2(0.f, h/3.f), p2+ImVec2(0.f, h/3.f), IM_COL32(255, 0, 0, 255), timeline_pos_cursor_w/2.f);
-
-    ImGradient::DrawGradientBar(&TimelineGradient, frame_bb.Min, frame_bb.GetWidth(), frame_bb.GetHeight());
-
-    const ImColor timeline_cursor_back = IM_COL32(255, 255, 255, 255);
-    const ImColor timeline_cursor_front = IM_COL32(0, 0, 0, 255);
-    static bool dragging = false;
-    auto mouse = ImGui::GetMousePos();
-    float rel_timeline_pos = ((mouse.x - frame_bb.Min.x) / frame_bb.GetWidth());
-
-    if (item_hovered) {
-        draw_list->AddLine(ImVec2(mouse.x, frame_bb.Min.y), ImVec2(mouse.x, frame_bb.Max.y), timeline_cursor_back, timeline_pos_cursor_w);
-        draw_list->AddLine(ImVec2(mouse.x, frame_bb.Min.y), ImVec2(mouse.x, frame_bb.Max.y), timeline_cursor_front, timeline_pos_cursor_w / 2.f);
-
-        ImGui::BeginTooltip();
-        {
-            double time_seconds = player.getDuration() * rel_timeline_pos;
-            double time_delta = time_seconds - player.getCurrentPositionSecondsInterp();
-            Util::FormatTime(tmp_buf[0], sizeof(tmp_buf[0]), time_seconds, false);
-            Util::FormatTime(tmp_buf[1], sizeof(tmp_buf[1]), (time_delta > 0) ? time_delta : -time_delta, false);
-            if (time_delta > 0)
-                ImGui::Text("%s (+%s)", tmp_buf[0], tmp_buf[1]);
-            else                                            
-                ImGui::Text("%s (-%s)", tmp_buf[0], tmp_buf[1]);
-        }
-        ImGui::EndTooltip();
-
-        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-            *position = rel_timeline_pos;
-            change = true;
-            dragging = true;
-        }
-    }
-
-    if (dragging && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-        *position = rel_timeline_pos;
-        change = true;
-    }
-    else {
-        dragging = false;
-    }
-
-    draw_list->AddLine(p1, p2, timeline_cursor_back, timeline_pos_cursor_w);
-    draw_list->AddLine(p1, p2, timeline_cursor_front, timeline_pos_cursor_w / 2.f);
-
-    
-    const float min_val = 0.f;
-    const float max_val = 1.f;
-    if (change) { *position = Util::Clamp(*position, min_val, max_val); }
-
-
-    return change;
-}
-
-void OpenFunscripter::UpdateTimelineGradient(ImGradient& grad)
-{
-    grad.clear();
-    grad.addMark(0.f, IM_COL32(0, 0, 0, 255));
-    grad.addMark(1.f, IM_COL32(0, 0, 0, 255));
-
-    if (ActiveFunscript()->Actions().size() == 0) {
-        return;
-    }
-
-    std::array<ImColor, 6> heatColor{
-        IM_COL32(0x00, 0x00, 0x00, 0xFF),
-        IM_COL32(0x1E, 0x90, 0xFF, 0xFF),
-        IM_COL32(0x00, 0xFF, 0xFF, 0xFF),
-        IM_COL32(0x00, 0xFF, 0x00, 0xFF),
-        IM_COL32(0xFF, 0xFF, 0x00, 0xFF),
-        IM_COL32(0xFF, 0x00, 0x00, 0xFF),
-    };
-
-
-    ImGradient HeatMap;
-    float pos = 0.0f;
-    for (auto& col : heatColor) {
-        HeatMap.addMark(pos, col);
-        pos += (1.f / (heatColor.size() - 1));
-    }
-    HeatMap.refreshCache();
-
-
-
-    auto getSegments = [](const std::vector<FunscriptAction>& actions, int32_t gapDurationMs) -> std::vector<std::vector<FunscriptAction>> {       
-        int prev_direction = 0; // 0 neutral 0< up 0> down
-        std::vector<std::vector<FunscriptAction>> segments;
-        {
-            FunscriptAction previous(0, 0);
-
-            for (auto& action : actions)
-            {
-                if (previous.pos == action.pos) { 
-                    continue;
-                }
-                
-                // filter out actions which don't change direction
-                int direction = action.pos - previous.pos;
-                if (direction > 0 && prev_direction > 0) {
-                    previous = action;
-                    continue;
-                }
-                else if (direction < 0 && prev_direction < 0) {
-                    previous = action;
-                    continue;
-                }
-
-                prev_direction = direction;
-
-                if (action.at - previous.at >= gapDurationMs) {
-                    segments.emplace_back();
-                }
-                if (segments.size() == 0) { segments.emplace_back(); }
-                segments.back().emplace_back(action);
-
-                previous = action;
-            }
-
-            return segments;
-        }
-    };
-
-
-    // this comes fairly close to what ScriptPlayer's heatmap looks like
-    const float totalDurationMs = player.getDuration() * 1000.0;
-    constexpr float kernel_size_ms = 2500.f;
-    constexpr float max_actions_in_kernel = 24.5f / (5.f / (kernel_size_ms/1000.f));
-
-    ImColor color(0.f, 0.f, 0.f, 1.f);
-    
-    constexpr int32_t max_samples = 3;
-    std::vector<float> samples;
-    samples.reserve(max_samples);
-
-    auto segments = getSegments(ActiveFunscript()->Actions(), 10000);
-    for (auto& segment : segments) {
-        const float durationMs = segment.back().at - segment.front().at;
-        float kernel_offset = segment.front().at;
-        grad.addMark(kernel_offset / totalDurationMs, IM_COL32(0, 0, 0, 255));
-        do {
-            int actions_in_kernel = 0;
-            float kernel_start = kernel_offset;
-            float kernel_end = kernel_offset + kernel_size_ms;
-
-            if (kernel_offset < segment.back().at)
-            {
-                for (int i = 0; i < segment.size(); i++) {
-                    auto& action = segment[i];
-                    if (action.at >= kernel_start && action.at <= kernel_end)
-                        actions_in_kernel++;
-                    else if (action.at > kernel_end)
-                        break;
-                }
-            }
-            kernel_offset += kernel_size_ms;
-
-            float actionsRelToMax = Util::Clamp((float)actions_in_kernel / max_actions_in_kernel, 0.0f, 1.0f);
-            if (samples.size() == max_samples+1) {
-                samples.erase(samples.begin());
-            }
-            samples.emplace_back(actionsRelToMax);
-
-            auto getAverage = [](std::vector<float>& samples) {
-                float result = 0.f;
-                for (auto&& sample : samples) {
-                    result += sample;
-                }
-                result /= (float)samples.size();
-                return result;
-            };
-
-            if (samples.size() > 1) {
-                actionsRelToMax = getAverage(samples);
-            }
-
-            HeatMap.getColorAt(actionsRelToMax, (float*)&color.Value);
-            float markPos = kernel_offset  / totalDurationMs;
-            grad.addMark(markPos, color);
-
-        } while (kernel_offset < (segment.front().at + durationMs));
-        grad.addMark((kernel_offset + 1.f) / totalDurationMs, IM_COL32(0, 0, 0, 255));
-    }
-    grad.refreshCache();
-}
-
 
 void OpenFunscripter::ControllerAxisPlaybackSpeed(SDL_Event& ev) noexcept
 {

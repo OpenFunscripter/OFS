@@ -5,11 +5,13 @@ set(OFS_LIB_SOURCES
 	"Funscript/Funscript.cpp"
 	"Funscript/FunscriptAction.cpp"
 	"Funscript/FunscriptUndoSystem.cpp"
+	"Funscript/FunscriptHeatmap.cpp"
 
 	"UI/GradientBar.cpp"
 	"UI/OFS_ImGui.cpp"
 	"UI/OFS_Videoplayer.cpp"
 	"UI/KeybindingSystem.cpp"
+	"UI/OFS_VideoplayerControls.cpp"
 
 	"imgui_impl/imgui_impl_opengl3.cpp"
 	"imgui_impl/imgui_impl_sdl.cpp" 
