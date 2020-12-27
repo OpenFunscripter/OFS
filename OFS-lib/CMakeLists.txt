@@ -41,6 +41,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	"${PROJECT_SOURCE_DIR}/player/"
 	"${CMAKE_SOURCE_DIR}/lib/stb/"
 	"${CMAKE_SOURCE_DIR}/lib/CSerial/"
+	"${CMAKE_SOURCE_DIR}/lib/minimp3/"
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
