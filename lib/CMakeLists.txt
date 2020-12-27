@@ -157,3 +157,4 @@ set(im3d_HEADERS
 add_library(im3d STATIC ${im3d_SOURCES} ${im3d_HEADERS})
 target_include_directories(im3d PUBLIC "im3d")
 target_link_libraries(im3d PUBLIC glm)
+target_compile_features(im3d PUBLIC cxx_std_17)
