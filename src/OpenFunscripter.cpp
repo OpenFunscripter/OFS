@@ -26,7 +26,6 @@
 // TODO: binding Lua scripts to keys or buttons
 // TODO: Change how twist is implemented in the 3D simulator
 
-// TODO: bring back bookmark rendering
 // BUG: Simulator 3D move widget doesn't show when settings window is in a separate platform window/viewport
 // BUG: scripts not getting unloaded when loading new video when using drag'n drop
 
@@ -286,7 +285,7 @@ bool OpenFunscripter::setup()
     register_bindings(); // needs to happen before setBindings
     keybinds.setBindings(settings->getKeybindings()); // override with user bindings
 
-    scriptPositions.setup(*events, &player);
+    scriptPositions.setup(*events, &player, undoSystem.get());
     clearLoadedScripts(); // initialized std::vector with one Funscript
 
     scripting = std::make_unique<ScriptingMode>();

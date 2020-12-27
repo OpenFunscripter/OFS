@@ -409,25 +409,23 @@ void RecordingImpl::update() noexcept
     auto app = OpenFunscripter::ptr;
     if (recordingActive) {
         uint32_t frameEstimate = app->player.getCurrentFrameEstimate();
-        GeneratedRecording.RawActions[frameEstimate] = std::move(FunscriptAction(app->player.getCurrentPositionMs(), currentPos));
+        app->scriptPositions.RecordingBuffer[frameEstimate] = std::move(FunscriptAction(app->player.getCurrentPositionMs(), currentPos));
         app->simulator.positionOverride = currentPos;
     }
     else if (recordingJustStarted) {
         recordingJustStarted = false;
         recordingActive = true;
-        GeneratedRecording.RawActions.clear();
-        GeneratedRecording.startTimeMs = app->player.getCurrentPositionMs();
-        GeneratedRecording.RawActions.resize(app->player.getTotalNumFrames());
+        app->scriptPositions.RecordingBuffer.clear();
+        app->scriptPositions.RecordingBuffer.resize(app->player.getTotalNumFrames());
     }
     else if (recordingJustStopped) {
         recordingJustStopped = false;
-        GeneratedRecording.endTimeMs = app->player.getCurrentPositionMs();
 
         if (app->settings->data().mirror_mode) {
             app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, true, app->ActiveFunscript().get());
             for (auto&& script : app->LoadedFunscripts) {
-                for (auto&& action : GeneratedRecording.RawActions) {
-                    if (action.at >= GeneratedRecording.startTimeMs && action.at <= GeneratedRecording.endTimeMs) {
+                for (auto&& action : app->scriptPositions.RecordingBuffer) {
+                    if (action.at >= 0) {
                         script->AddActionSafe(action);
                     }
                 }
@@ -435,12 +433,12 @@ void RecordingImpl::update() noexcept
         }
         else {
             app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, false, app->ActiveFunscript().get());
-            for (auto&& action : GeneratedRecording.RawActions) {
-                if (action.at >= GeneratedRecording.startTimeMs && action.at <= GeneratedRecording.endTimeMs) {
+            for (auto&& action : app->scriptPositions.RecordingBuffer) {
+                if (action.at >= 0) {
                     ctx().AddActionSafe(action);
                 }
             }
         }
-        GeneratedRecording.RawActions.clear();
+        app->scriptPositions.RecordingBuffer.clear();
     }
 }

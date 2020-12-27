@@ -82,18 +82,10 @@ private:
 	bool autoBackupTmp = false;
 	float epsilon = 0.f;
 
-	struct Recording {
-		int32_t startTimeMs;
-		int32_t endTimeMs;
-		std::vector<FunscriptAction> RawActions;
-	};
-
 	bool recordingActive = false;
 	bool recordingJustStopped = false;
 	bool recordingJustStarted = false;
 public:
-	Recording GeneratedRecording; 
-
 	// Attention: don't change order
 	enum RecordingMode : int32_t {
 		Mouse,

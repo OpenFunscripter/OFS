@@ -12,6 +12,7 @@
 #include <memory>
 #include <tuple>
 
+#include "OFS_UndoSystem.h"
 #include "EventSystem.h"
 #include "SDL_events.h"
 
@@ -57,6 +58,7 @@ public:
 	
 	Funscript* activeScript = nullptr;
 	VideoplayerWindow* player = nullptr;
+	UndoSystem* undoSystem = nullptr;
 private:
 
 	void mouse_pressed(SDL_Event& ev);
@@ -98,7 +100,7 @@ public:
 
 	const float MAX_WINDOW_SIZE = 300.f; // this limit is arbitrary and not enforced
 	const float MIN_WINDOW_SIZE = 1.f; // this limit is also arbitrary and not enforced
-	void setup(EventSystem& events, VideoplayerWindow* player);
+	void setup(EventSystem& events, VideoplayerWindow* player, UndoSystem* undo);
 
 	inline void ClearAudioWaveform() noexcept { audio_waveform_avg.clear(); }
 	inline void setStartSelection(int32_t ms) noexcept { startSelectionMs = ms; }

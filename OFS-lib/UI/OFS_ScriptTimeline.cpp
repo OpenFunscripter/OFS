@@ -50,9 +50,10 @@ void ScriptTimeline::FfmpegAudioProcessingFinished(SDL_Event& ev)
 	LOG_INFO("Audio processing complete.");
 }
 
-void ScriptTimeline::setup(EventSystem& events, VideoplayerWindow* player)
+void ScriptTimeline::setup(EventSystem& events, VideoplayerWindow* player, UndoSystem* undoSystem)
 {
 	this->player = player;
+	this->undoSystem = undoSystem;
 	events.Subscribe(SDL_MOUSEBUTTONDOWN, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouse_pressed));
 	events.Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouse_scroll));
 	events.Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouse_drag));
@@ -108,14 +109,14 @@ void ScriptTimeline::mouse_pressed(SDL_Event& ev)
 				activeScript->ClearSelection();
 				activeScript->SetSelection(*clickedAction, true);
 				IsMoving = true;
-				//app->undoSystem->Snapshot(StateType::MOUSE_MOVE_ACTION, false);
+				undoSystem->Snapshot(StateType::MOUSE_MOVE_ACTION, false, activeScript);
 				return;
 			}
 
 			// shift click an action into the window
 			auto action = getActionForPoint(active_canvas_pos, active_canvas_size, mousePos, player->getFrameTimeMs());
 			auto edit = activeScript->GetActionAtTime(action.at, player->getFrameTimeMs());
-			//app->undoSystem->Snapshot(StateType::ADD_ACTION, false);
+			undoSystem->Snapshot(StateType::ADD_ACTION, false, activeScript);
 			if (edit != nullptr) { activeScript->RemoveAction(*edit); }
 			activeScript->AddAction(action);
 		}
@@ -164,44 +165,43 @@ void ScriptTimeline::mouse_drag(SDL_Event& ev)
 	if (IsSelecting) {
 		rel_x2 = (ImGui::GetMousePos().x - active_canvas_pos.x) / active_canvas_size.x;
 	}
-	//else if (IsMoving) {
-	//	auto app = OpenFunscripter::ptr;
-	//	if (!app->script().HasSelection()) { IsMoving = false; return; }
-	//	auto mousePos = ImGui::GetMousePos();
-	//	auto frameTime = app->player.getFrameTimeMs();
-	//	auto& toBeMoved = app->script().Selection()[0];
-	//	auto newAction = getActionForPoint(active_canvas_pos, active_canvas_size, mousePos, frameTime);
-	//	if (newAction.at != toBeMoved.at || newAction.pos != toBeMoved.pos) {
-	//		const FunscriptAction* nearbyAction = nullptr;
-	//		if ((newAction.at - toBeMoved.at) > 0) {
-	//			nearbyAction = app->script().GetNextActionAhead(toBeMoved.at);
-	//			if (nearbyAction != nullptr) {
-	//				if (std::abs(nearbyAction->at - newAction.at) > frameTime) {
-	//					nearbyAction = nullptr;
-	//				}
-	//			}
-	//		}
-	//		else if((newAction.at - toBeMoved.at) < 0) {
-	//			nearbyAction = app->script().GetPreviousActionBehind(toBeMoved.at);
-	//			if (nearbyAction != nullptr) {
-	//				if (std::abs(nearbyAction->at - newAction.at) > frameTime) {
-	//					nearbyAction = nullptr;
-	//				}
- //				}
-	//		}
+	else if (IsMoving) {
+		if (!activeScript->HasSelection()) { IsMoving = false; return; }
+		auto mousePos = ImGui::GetMousePos();
+		auto frameTime = player->getFrameTimeMs();
+		auto& toBeMoved = activeScript->Selection()[0];
+		auto newAction = getActionForPoint(active_canvas_pos, active_canvas_size, mousePos, frameTime);
+		if (newAction.at != toBeMoved.at || newAction.pos != toBeMoved.pos) {
+			const FunscriptAction* nearbyAction = nullptr;
+			if ((newAction.at - toBeMoved.at) > 0) {
+				nearbyAction = activeScript->GetNextActionAhead(toBeMoved.at);
+				if (nearbyAction != nullptr) {
+					if (std::abs(nearbyAction->at - newAction.at) > frameTime) {
+						nearbyAction = nullptr;
+					}
+				}
+			}
+			else if((newAction.at - toBeMoved.at) < 0) {
+				nearbyAction = activeScript->GetPreviousActionBehind(toBeMoved.at);
+				if (nearbyAction != nullptr) {
+					if (std::abs(nearbyAction->at - newAction.at) > frameTime) {
+						nearbyAction = nullptr;
+					}
+ 				}
+			}
 
-	//		if (nearbyAction == nullptr) {
-	//			app->script().RemoveAction(toBeMoved);
-	//			app->script().ClearSelection();
-	//			app->script().AddAction(newAction);
-	//			app->script().SetSelection(newAction, true);
-	//		}
-	//		else {
-	//			app->script().ClearSelection();
-	//			IsMoving = false;
-	//		}
-	//	}
-	//}
+			if (nearbyAction == nullptr) {
+				activeScript->RemoveAction(toBeMoved);
+				activeScript->ClearSelection();
+				activeScript->AddAction(newAction);
+				activeScript->SetSelection(newAction, true);
+			}
+			else {
+				activeScript->ClearSelection();
+				IsMoving = false;
+			}
+		}
+	}
 }
 
 void ScriptTimeline::mouse_scroll(SDL_Event& ev)
