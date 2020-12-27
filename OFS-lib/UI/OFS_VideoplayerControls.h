@@ -24,6 +24,8 @@ public:
 	VideoplayerWindow* player = nullptr;
 	ImGradient TimelineGradient;
 
+	OFS_VideoplayerControls() noexcept;
+
 	bool DrawTimelineWidget(const char* label, float* position, TimelineCustomDrawFunc&& customDraw) noexcept;
 
 	void DrawTimeline(bool* open, TimelineCustomDrawFunc&& customDraw = [](ImDrawList*, const ImRect&, bool) {}) noexcept;

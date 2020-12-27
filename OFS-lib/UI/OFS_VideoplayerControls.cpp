@@ -3,6 +3,13 @@
 
 static char tmp_buf[2][32];
 
+OFS_VideoplayerControls::OFS_VideoplayerControls() noexcept
+{
+    TimelineGradient.addMark(0.f, IM_COL32_BLACK);
+    TimelineGradient.addMark(1.f, IM_COL32_BLACK);
+    TimelineGradient.refreshCache();
+}
+
 bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* position, TimelineCustomDrawFunc&& customDraw) noexcept
 {
     bool change = false;
@@ -177,60 +184,58 @@ void OFS_VideoplayerControls::DrawControls(bool* open) noexcept
 {
     FUN_ASSERT(player != nullptr, "nullptr");
 
-    if (player->isLoaded()) {
-        ImGui::Begin(PlayerControlId);
+    ImGui::Begin(PlayerControlId);
 
-        constexpr int seek_ms = 3000;
-        // Playback controls
-        ImGui::Columns(5, 0, false);
-        if (ImGui::Button(ICON_STEP_BACKWARD /*"<"*/, ImVec2(-1, 0))) {
-            if (player->isPaused()) {
-                player->previousFrame();
-            }
+    constexpr int seek_ms = 3000;
+    // Playback controls
+    ImGui::Columns(5, 0, false);
+    if (ImGui::Button(ICON_STEP_BACKWARD /*"<"*/, ImVec2(-1, 0))) {
+        if (player->isPaused()) {
+            player->previousFrame();
         }
-        ImGui::NextColumn();
-        if (ImGui::Button(ICON_BACKWARD /*"<<"*/, ImVec2(-1, 0))) {
-            player->seekRelative(-seek_ms);
-        }
-        ImGui::NextColumn();
-
-        if (ImGui::Button((player->isPaused()) ? ICON_PLAY : ICON_PAUSE, ImVec2(-1, 0))) {
-            player->togglePlay();
-        }
-        ImGui::NextColumn();
-
-        if (ImGui::Button(ICON_FORWARD /*">>"*/, ImVec2(-1, 0))) {
-            player->seekRelative(seek_ms);
-        }
-        ImGui::NextColumn();
-
-        if (ImGui::Button(ICON_STEP_FORWARD /*">"*/, ImVec2(-1, 0))) {
-            if (player->isPaused()) {
-                player->nextFrame();
-            }
-        }
-        ImGui::NextColumn();
-
-        ImGui::Columns(2, 0, false);
-        if (ImGui::Checkbox(mute ? ICON_VOLUME_OFF : ICON_VOLUME_UP, &mute)) {
-            if (mute) {
-                player->setVolume(0.0f);
-            }
-            else {
-                player->setVolume(player->settings.volume);
-            }
-        }
-        ImGui::SetColumnWidth(0, ImGui::GetItemRectSize().x + 10);
-        ImGui::NextColumn();
-        ImGui::SetNextItemWidth(-1);
-        if (ImGui::SliderFloat("##Volume", &player->settings.volume, 0.0f, 1.0f)) {
-            player->settings.volume = Util::Clamp(player->settings.volume, 0.0f, 1.f);
-            player->setVolume(player->settings.volume);
-            if (player->settings.volume > 0.0f) {
-                mute = false;
-            }
-        }
-        ImGui::NextColumn();
-        ImGui::End();
     }
+    ImGui::NextColumn();
+    if (ImGui::Button(ICON_BACKWARD /*"<<"*/, ImVec2(-1, 0))) {
+        player->seekRelative(-seek_ms);
+    }
+    ImGui::NextColumn();
+
+    if (ImGui::Button((player->isPaused()) ? ICON_PLAY : ICON_PAUSE, ImVec2(-1, 0))) {
+        player->togglePlay();
+    }
+    ImGui::NextColumn();
+
+    if (ImGui::Button(ICON_FORWARD /*">>"*/, ImVec2(-1, 0))) {
+        player->seekRelative(seek_ms);
+    }
+    ImGui::NextColumn();
+
+    if (ImGui::Button(ICON_STEP_FORWARD /*">"*/, ImVec2(-1, 0))) {
+        if (player->isPaused()) {
+            player->nextFrame();
+        }
+    }
+    ImGui::NextColumn();
+
+    ImGui::Columns(2, 0, false);
+    if (ImGui::Checkbox(mute ? ICON_VOLUME_OFF : ICON_VOLUME_UP, &mute)) {
+        if (mute) {
+            player->setVolume(0.0f);
+        }
+        else {
+            player->setVolume(player->settings.volume);
+        }
+    }
+    ImGui::SetColumnWidth(0, ImGui::GetItemRectSize().x + 10);
+    ImGui::NextColumn();
+    ImGui::SetNextItemWidth(-1);
+    if (ImGui::SliderFloat("##Volume", &player->settings.volume, 0.0f, 1.0f)) {
+        player->settings.volume = Util::Clamp(player->settings.volume, 0.0f, 1.f);
+        player->setVolume(player->settings.volume);
+        if (player->settings.volume > 0.0f) {
+            mute = false;
+        }
+    }
+    ImGui::NextColumn();
+    ImGui::End();
 }

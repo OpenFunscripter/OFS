@@ -8,6 +8,7 @@
 #include "OFS_Tcode.h"
 #include "OFS_Util.h"
 #include "OFS_Reflection.h"
+#include "OFS_VideoplayerControls.h"
 
 #include "SDL_events.h"
 
@@ -20,6 +21,8 @@ struct OFP_Settings {
 	float default_font_size = 18.f;
 	bool vsync = true;
 	bool show_video = true;
+
+	bool show_tcode = false;
 
 	template <class Archive>
 	inline void reflect(Archive& ar) {
@@ -67,7 +70,8 @@ public:
 	OFP_Settings settings;
 	KeybindingSystem keybinds;
 	VideoplayerWindow player;
-	
+	OFS_VideoplayerControls playerControls;
+
 	std::unique_ptr<EventSystem> events;
 	std::unique_ptr<TCodePlayer> tcode;
 

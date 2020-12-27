@@ -105,6 +105,8 @@ static struct TcodeThreadData {
 
 void TCodePlayer::DrawWindow(bool* open) noexcept
 {
+    if (!*open) return;
+
     ImGui::Begin("T-Code", open, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::Combo("Port", &current_port, [](void* data, int idx, const char** out_text) -> bool {
         const char** port_list = (const char**)data;

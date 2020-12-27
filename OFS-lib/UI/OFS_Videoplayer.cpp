@@ -319,6 +319,7 @@ bool VideoplayerWindow::setup(EventSystem& events, bool force_hw_decoding)
 	observeProperties();
 
 	setup_vr_mode();
+	setPaused(true);
 	return true;
 }
 
@@ -512,48 +513,46 @@ void VideoplayerWindow::videoRightClickMenu() noexcept
 
 void VideoplayerWindow::DrawVideoPlayer(bool* open, bool* draw_video) noexcept
 {
-	if (MpvData.video_loaded) {
-		ImGui::Begin(PlayerId, open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
+	ImGui::Begin(PlayerId, open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
 
-		// this redraw has to happen even if the video isn't actually shown in the gui
-		if (redraw_video) { renderToTexture(); }
+	// this redraw has to happen even if the video isn't actually shown in the gui
+	if (redraw_video) { renderToTexture(); }
 
-		if (*draw_video) {
-			viewport_pos = ImGui::GetWindowViewport()->Pos;
+	if (*draw_video) {
+		viewport_pos = ImGui::GetWindowViewport()->Pos;
 
 
-			auto draw_list = ImGui::GetWindowDrawList();
-			if (settings.activeMode != VideoMode::VR_MODE) {
-				draw2dVideo(draw_list);
-			}
-			else {
-				drawVrVideo(draw_list);
-			}
-			// this reset is for the simulator 3d, vr mode or both
-			draw_list->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
-
-			videoHovered = ImGui::IsItemHovered() && ImGui::IsWindowHovered();
-			video_draw_size = ImGui::GetItemRectSize();
-
-			// cancel drag
-			if ((dragStarted && !videoHovered) || ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
-				dragStarted = false;
-				settings.prev_translation = settings.current_translation;
-				settings.prev_vr_rotation = settings.current_vr_rotation;
-			}
-
-			// recenter
-			if (videoHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Middle)) {
-				resetTranslationAndZoom();
-			}
+		auto draw_list = ImGui::GetWindowDrawList();
+		if (settings.activeMode != VideoMode::VR_MODE) {
+			draw2dVideo(draw_list);
 		}
 		else {
-			if (ImGui::Button("Click to enable video")) {
-				*draw_video = true;
-			}
+			drawVrVideo(draw_list);
 		}
-		ImGui::End();
+		// this reset is for the simulator 3d, vr mode or both
+		draw_list->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
+
+		videoHovered = ImGui::IsItemHovered() && ImGui::IsWindowHovered();
+		video_draw_size = ImGui::GetItemRectSize();
+
+		// cancel drag
+		if ((dragStarted && !videoHovered) || ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+			dragStarted = false;
+			settings.prev_translation = settings.current_translation;
+			settings.prev_vr_rotation = settings.current_vr_rotation;
+		}
+
+		// recenter
+		if (videoHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Middle)) {
+			resetTranslationAndZoom();
+		}
 	}
+	else {
+		if (ImGui::Button("Click to enable video")) {
+			*draw_video = true;
+		}
+	}
+	ImGui::End();
 }
 
 void VideoplayerWindow::setSpeed(float speed) noexcept
@@ -640,6 +639,7 @@ void VideoplayerWindow::seekRelative(int32_t ms) noexcept
 
 void VideoplayerWindow::setPaused(bool paused) noexcept
 {
+	if (!paused && !isLoaded()) return;
 	MpvData.paused = paused;
 	mpv_set_property_async(mpv, 0, "pause", MPV_FORMAT_FLAG, &MpvData.paused);
 }
@@ -690,6 +690,7 @@ void VideoplayerWindow::relativeFrameSeek(int32_t seek) noexcept
 
 void VideoplayerWindow::togglePlay() noexcept
 {
+	if (!isLoaded()) return;
 	const char* cmd[]{ "cycle", "pause", NULL };
 	mpv_command_async(mpv, 0, cmd);
 }

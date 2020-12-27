@@ -1,6 +1,7 @@
 #include "OFP.h"
 
 #include "OFS_Util.h"
+#include "FunscriptHeatmap.h"
 
 #include "SDL.h"
 #include "imgui.h"
@@ -158,6 +159,8 @@ void OFP::ShowMainMenuBar() noexcept
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("View")) {
+            ImGui::MenuItem("T-Code", NULL, &settings.show_tcode);
+            ImGui::Separator();
             if (ImGui::MenuItem("Draw video", NULL, &settings.show_video)) { }
             if (ImGui::MenuItem("Reset video position", NULL)) { player.resetTranslationAndZoom(); }
             ImGui::Combo("Video Mode", (int32_t*)&player.settings.activeMode,
@@ -616,6 +619,8 @@ bool OFP::setup()
     events->Subscribe(VideoEvents::PlayPauseChanged, EVENT_SYSTEM_BIND(this, &OFP::MpvPlayPauseChange));
 
     clearLoadedScripts();
+    playerControls.player = &player;
+
     SDL_ShowWindow(window);
 	return result;
 }
@@ -640,7 +645,12 @@ void OFP::step() noexcept
         // IMGUI HERE
         CreateDockspace();
 
+        playerControls.DrawControls(NULL);
+        playerControls.DrawTimeline(NULL);
+
         if (keybinds.ShowBindingWindow()) { /*settings->saveKeybinds(keybinds.getBindings());*/ }
+
+        tcode->DrawWindow(&settings.show_tcode);
 
         if (DebugDemo) {
             ImGui::ShowDemoWindow(&DebugDemo);
@@ -764,8 +774,15 @@ void OFP::DragNDrop(SDL_Event& ev) noexcept
 
 void OFP::MpvVideoLoaded(SDL_Event& ev) noexcept
 {
+    OFS::UpdateHeatmapGradient(player.getDuration() * 1000.f, playerControls.TimelineGradient, RootFunscript()->Actions());
 }
 
 void OFP::MpvPlayPauseChange(SDL_Event& ev) noexcept
 {
+    if (player.isPaused()) {
+        tcode->stop();
+    }
+    else {
+        tcode->play(player.getCurrentPositionSecondsInterp(), RootFunscript()->Actions());
+    }
 }
