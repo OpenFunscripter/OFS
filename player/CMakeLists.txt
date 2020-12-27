@@ -21,6 +21,21 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
 
+string(REGEX REPLACE "\n$" "" LATEST_GIT_TAG "${LATEST_GIT_TAG}")
+set(LATEST_GIT_TAG "\"${LATEST_GIT_TAG}\"")
+message("Compiling with git tag: ${LATEST_GIT_TAG}")
+
+string(REGEX REPLACE "\n$" "" LATEST_GIT_HASH "${LATEST_GIT_HASH}")
+set(LATEST_GIT_HASH "\"${LATEST_GIT_HASH}\"")
+message("Compiling with git hash: ${LATEST_GIT_HASH}")
+
+target_compile_definitions(${PROJECT_NAME} PUBLIC 
+	"FUN_LATEST_GIT_TAG=${LATEST_GIT_TAG}"
+	"FUN_LATEST_GIT_HASH=${LATEST_GIT_HASH}"
+)
+
+
+
 if(WIN32)
     target_compile_options(${PROJECT_NAME} PUBLIC /EHc- /GR-)
 	# target_compile_options(${PROJECT_NAME} PRIVATE /W2 /WX)

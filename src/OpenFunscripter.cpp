@@ -329,10 +329,6 @@ bool OpenFunscripter::setup()
 
     SDL_ShowWindow(window);
 
-#ifndef NDEBUG
-    //scripting->setMode(ScriptingModeEnum::RECORDING);
-#endif
-
     OFS::Im3d_Init();
     return true;
 }
@@ -1630,7 +1626,6 @@ void OpenFunscripter::SetCursorType(ImGuiMouseCursor id) noexcept
 {
     ImGui::SetMouseCursor(id);
 }
-
 
 bool OpenFunscripter::openFile(const std::string& file)
 {
