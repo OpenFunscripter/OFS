@@ -221,8 +221,11 @@ void Simulator3D::render() noexcept
 {
     if (!OpenFunscripter::ptr->settings->data().show_simulator_3d) return;
     
-    glClear(GL_DEPTH_BUFFER_BIT);
+    auto viewport = ImGui::GetMainViewport();
+    glViewport(0, 0, viewport->Size.x, viewport->Size.y);
+    glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
 
     lightShader->use();
     lightShader->LightPos(glm::value_ptr(lightPos));
@@ -247,5 +250,5 @@ void Simulator3D::render() noexcept
 
 
     glDisable(GL_DEPTH_TEST);
-    //glDisable(GL_BLEND);
+    glDisable(GL_BLEND);
 }
