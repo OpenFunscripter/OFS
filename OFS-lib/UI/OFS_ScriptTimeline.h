@@ -3,6 +3,7 @@
 #include "Funscript.h"
 #include "GradientBar.h"
 #include "ScriptPositionsOverlayMode.h"
+#include "OFS_Videoplayer.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -11,13 +12,30 @@
 #include <memory>
 #include <tuple>
 
+#include "EventSystem.h"
 #include "SDL_events.h"
+
+class ScriptTimelineEvents {
+public:
+	static int32_t FfmpegAudioProcessingFinished;
+	static int32_t FunscriptActionClicked;
+	static int32_t ScriptpositionWindowDoubleClick;
+
+	struct SelectTime {
+		int32_t start_ms;
+		int32_t end_ms;
+		bool clear;
+	};
+	static int32_t FunscriptSelectTime;
+
+	static void RegisterEvents() noexcept;
+};
 
 using ActionClickedEventArgs = std::tuple<SDL_Event, FunscriptAction>;
 
 static bool OutputAudioFile(const char* ffmpeg_path, const char* video_path, const char* output_path);
 
-class ScriptPositionsWindow
+class ScriptTimeline
 {
 	std::vector<float> audio_waveform_avg;
 	bool ffmpegInProgress = false;
@@ -32,6 +50,13 @@ public:
 	bool PositionsItemHovered = false;
 	float rel_x1 = 0.0f;
 	float rel_x2 = 0.0f;
+
+	std::unique_ptr<BaseOverlay> overlay;
+
+	std::vector<FunscriptAction> RecordingBuffer;
+	
+	Funscript* activeScript = nullptr;
+	VideoplayerWindow* player = nullptr;
 private:
 
 	void mouse_pressed(SDL_Event& ev);
@@ -67,17 +92,18 @@ private:
 	float ScaleAudio = 1.f;
 	float WindowSizeSeconds = 5.f;
 	int32_t startSelectionMs = -1;
+
 public:
 	static constexpr const char* PositionsId = "Positions";
 
 	const float MAX_WINDOW_SIZE = 300.f; // this limit is arbitrary and not enforced
 	const float MIN_WINDOW_SIZE = 1.f; // this limit is also arbitrary and not enforced
-	void setup();
+	void setup(EventSystem& events, VideoplayerWindow* player);
 
 	inline void ClearAudioWaveform() noexcept { audio_waveform_avg.clear(); }
 	inline void setStartSelection(int32_t ms) noexcept { startSelectionMs = ms; }
 	inline int32_t selectionStart() const noexcept { return startSelectionMs; }
-	void ShowScriptPositions(bool* open, float currentPositionMs) noexcept;
+	void ShowScriptPositions(bool* open, const std::vector<std::unique_ptr<Funscript>>& scripts, Funscript* activeScript) noexcept;
 
 	void DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept;
 };

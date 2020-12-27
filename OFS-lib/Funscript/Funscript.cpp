@@ -783,12 +783,10 @@ void Funscript::InvertSelection() noexcept
 }
 
 int32_t FunscriptEvents::FunscriptActionsChangedEvent = 0;
-int32_t FunscriptEvents::FunscriptActionClickedEvent = 0;
 int32_t FunscriptEvents::FunscriptSelectionChangedEvent = 0;
 
 void FunscriptEvents::RegisterEvents() noexcept
 {
 	FunscriptActionsChangedEvent = SDL_RegisterEvents(1);
-	FunscriptActionClickedEvent = SDL_RegisterEvents(1);
 	FunscriptSelectionChangedEvent = SDL_RegisterEvents(1);
 }

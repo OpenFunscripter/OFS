@@ -106,7 +106,7 @@ void Simulator3D::ShowWindow(bool* open) noexcept
     float scriptPos = 0.f;
     int32_t loadedScriptsCount = app->LoadedFunscripts.size();
     
-    bool easing = app->scripting->Overlay()->SplineLines;
+    bool easing = app->scriptPositions.overlay->SplineLines;
 
     if (posIndex >= 0 && posIndex < loadedScriptsCount) {
         scriptPos = app->LoadedFunscripts[posIndex]->GetPositionAtTime(currentMs, easing);

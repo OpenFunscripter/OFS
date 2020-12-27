@@ -12,6 +12,9 @@ set(OFS_LIB_SOURCES
 	"UI/OFS_Videoplayer.cpp"
 	"UI/KeybindingSystem.cpp"
 	"UI/OFS_VideoplayerControls.cpp"
+	
+	"UI/OFS_ScriptTimeline.cpp"
+	"UI/ScriptPositionsOverlayMode.cpp"
 
 	"imgui_impl/imgui_impl_opengl3.cpp"
 	"imgui_impl/imgui_impl_sdl.cpp" 
@@ -19,6 +22,8 @@ set(OFS_LIB_SOURCES
 	"gl/OFS_Shader.cpp"
 
 	"im3d/OFS_im3d.cpp"
+
+	"OFS_UndoSystem.cpp"
 
 	"OFS_Serialization.cpp"
 	"OFS_Util.cpp"
@@ -34,6 +39,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	"${PROJECT_SOURCE_DIR}/im3d/"
 	"${PROJECT_SOURCE_DIR}/"
 	"${CMAKE_SOURCE_DIR}/lib/stb/"
+	"${CMAKE_SOURCE_DIR}/lib/minimp3/"
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC

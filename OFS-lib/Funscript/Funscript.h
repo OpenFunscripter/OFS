@@ -20,7 +20,6 @@ class FunscriptEvents
 {
 public:
 	static int32_t FunscriptActionsChangedEvent;
-	static int32_t FunscriptActionClickedEvent;
 	static int32_t FunscriptSelectionChangedEvent;
 
 	static void RegisterEvents() noexcept;
@@ -235,6 +234,7 @@ template<class UserSettings>
 inline void Funscript::AllocUser() noexcept
 {
 	if (userdata != nullptr) {
+		// FIX: this doesn't work
 		delete userdata;
 	}
 	userdata = new UserSettings();
