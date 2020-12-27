@@ -197,6 +197,8 @@ public:
 		setPosition(rel_pos, pausesVideo); 
 	}
 	void setPosition(float rel_pos, bool pausesVideo) noexcept;
+	void seekRelative(int32_t ms) noexcept;
+	
 	void setPaused(bool paused) noexcept;
 	void nextFrame() noexcept;
 	void previousFrame() noexcept;

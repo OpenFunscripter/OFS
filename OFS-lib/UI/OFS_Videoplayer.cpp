@@ -631,6 +631,13 @@ void VideoplayerWindow::setPosition(float pos, bool pausesVideo) noexcept
 	mpv_command_async(mpv, 0, cmd);
 }
 
+void VideoplayerWindow::seekRelative(int32_t ms) noexcept
+{
+	int32_t seek_to = getCurrentPositionMs() + ms;
+	seek_to = std::max(seek_to, 0);
+	setPosition(seek_to);
+}
+
 void VideoplayerWindow::setPaused(bool paused) noexcept
 {
 	MpvData.paused = paused;
