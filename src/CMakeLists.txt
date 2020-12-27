@@ -9,7 +9,6 @@ set(OPEN_FUNSCRIPTER_SOURCES
   
   "UI/OpenFunscripterSettings.cpp"
 
-  "ControllerInput.cpp"
   "ScriptingMode.cpp"
   
   "UI/ScriptSimulator.cpp"

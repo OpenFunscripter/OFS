@@ -24,6 +24,7 @@ set(OFS_LIB_SOURCES
 	"im3d/OFS_im3d.cpp"
 	"player/OFS_Tcode.cpp"
 	"OFS_UndoSystem.cpp"
+	"OFS_ControllerInput.cpp"
 
 	"OFS_Serialization.cpp"
 	"OFS_Util.cpp"

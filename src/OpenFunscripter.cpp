@@ -315,7 +315,7 @@ bool OpenFunscripter::setup()
 
     specialFunctions = std::make_unique<SpecialFunctionsWindow>();
     controllerInput = std::make_unique<ControllerInput>();
-    controllerInput->setup();
+    controllerInput->setup(*events);
     simulator.setup();
 
     sim3D = std::make_unique<Simulator3D>();
@@ -1296,7 +1296,7 @@ void OpenFunscripter::MpvPlayPauseChange(SDL_Event& ev) noexcept
 
 void OpenFunscripter::update() noexcept {
     ActiveFunscript()->update();
-    ControllerInput::UpdateControllers();
+    ControllerInput::UpdateControllers(settings->data().buttonRepeatIntervalMs);
     scripting->update();
 
     if (AutoBackup && player.isPaused()) {
