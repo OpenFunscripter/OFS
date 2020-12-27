@@ -3,6 +3,7 @@
 #include "Funscript.h"
 #include "FunscriptAction.h"
 #include "ScriptPositionsOverlayMode.h"
+#include "OFS_ScriptPositionsOverlays.h"
 
 #include "SDL_events.h"
 
@@ -81,18 +82,10 @@ private:
 	bool autoBackupTmp = false;
 	float epsilon = 0.f;
 
-	struct Recording {
-		int32_t startTimeMs;
-		int32_t endTimeMs;
-		std::vector<FunscriptAction> RawActions;
-	};
-
 	bool recordingActive = false;
 	bool recordingJustStopped = false;
 	bool recordingJustStarted = false;
 public:
-	Recording GeneratedRecording; 
-
 	// Attention: don't change order
 	enum RecordingMode : int32_t {
 		Mouse,
@@ -109,13 +102,9 @@ public:
 	virtual void update() noexcept override;
 };
 
-
-
-
 class OpenFunscripter;
 class ScriptingMode {
 	std::unique_ptr<ScripingModeBaseImpl> impl;
-	std::unique_ptr<BaseOverlay> overlay_impl;
 	ScriptingModeEnum active_mode;
 	ScriptingOverlayModes active_overlay;
 public:
@@ -129,14 +118,9 @@ public:
 	void setOverlay(ScriptingOverlayModes mode) noexcept;
 	void addEditAction(FunscriptAction action) noexcept;
 	inline void addAction(FunscriptAction action) noexcept { impl->addAction(action); }
-	inline void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept { overlay_impl->DrawScriptPositionContent(ctx); }
-	inline void NextFrame() noexcept { overlay_impl->nextFrame(); }
-	inline void PreviousFrame() noexcept { overlay_impl->previousFrame(); }
-	inline void update() noexcept {
-		impl->update();
-		overlay_impl->update();
-	}
+	void NextFrame() noexcept;
+	void PreviousFrame() noexcept;
+	void update() noexcept;
 
 	inline const std::unique_ptr<ScripingModeBaseImpl>& CurrentImpl() const { return impl; }
-	inline const std::unique_ptr<BaseOverlay>& Overlay() const { return overlay_impl; }
 };

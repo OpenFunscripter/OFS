@@ -48,7 +48,7 @@ void ScriptingMode::DrawScriptingMode(bool* open) noexcept
         setOverlay(active_overlay);
     }
     Util::Tooltip("Scripting overlay");
-    overlay_impl->DrawSettings();
+    OpenFunscripter::ptr->scriptPositions.overlay->DrawSettings();
     ImGui::PopItemWidth();
 
     ImGui::Spacing();
@@ -100,13 +100,13 @@ void ScriptingMode::setOverlay(ScriptingOverlayModes mode) noexcept
     switch (mode)
     {
     case FRAME:
-        overlay_impl = std::make_unique<FrameOverlay>();
+        OpenFunscripter::ptr->scriptPositions.overlay = std::make_unique<FrameOverlay>();
         break;
     case TEMPO:
-        overlay_impl = std::make_unique<TempoOverlay>();
+        OpenFunscripter::ptr->scriptPositions.overlay = std::make_unique<TempoOverlay>();
         break;
     case EMPTY:
-        overlay_impl = std::make_unique<EmptyOverlay>();
+        OpenFunscripter::ptr->scriptPositions.overlay = std::make_unique<EmptyOverlay>();
         break;
     default:
         break;
@@ -127,6 +127,22 @@ void ScriptingMode::addEditAction(FunscriptAction action) noexcept
     else {
 	    impl->addAction(action);
     }
+}
+
+void ScriptingMode::NextFrame() noexcept
+{
+    OpenFunscripter::ptr->scriptPositions.overlay->nextFrame();
+}
+
+void ScriptingMode::PreviousFrame() noexcept
+{
+    OpenFunscripter::ptr->scriptPositions.overlay->previousFrame();
+}
+
+void ScriptingMode::update() noexcept
+{
+    impl->update();
+    OpenFunscripter::ptr->scriptPositions.overlay->update();
 }
 
 // dynamic top injection
@@ -393,38 +409,36 @@ void RecordingImpl::update() noexcept
     auto app = OpenFunscripter::ptr;
     if (recordingActive) {
         uint32_t frameEstimate = app->player.getCurrentFrameEstimate();
-        GeneratedRecording.RawActions[frameEstimate] = std::move(FunscriptAction(app->player.getCurrentPositionMs(), currentPos));
+        app->scriptPositions.RecordingBuffer[frameEstimate] = std::move(FunscriptAction(app->player.getCurrentPositionMs(), currentPos));
         app->simulator.positionOverride = currentPos;
     }
     else if (recordingJustStarted) {
         recordingJustStarted = false;
         recordingActive = true;
-        GeneratedRecording.RawActions.clear();
-        GeneratedRecording.startTimeMs = app->player.getCurrentPositionMs();
-        GeneratedRecording.RawActions.resize(app->player.getTotalNumFrames());
+        app->scriptPositions.RecordingBuffer.clear();
+        app->scriptPositions.RecordingBuffer.resize(app->player.getTotalNumFrames());
     }
     else if (recordingJustStopped) {
         recordingJustStopped = false;
-        GeneratedRecording.endTimeMs = app->player.getCurrentPositionMs();
 
         if (app->settings->data().mirror_mode) {
-            app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, true);
+            app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, true, app->ActiveFunscript().get());
             for (auto&& script : app->LoadedFunscripts) {
-                for (auto&& action : GeneratedRecording.RawActions) {
-                    if (action.at >= GeneratedRecording.startTimeMs && action.at <= GeneratedRecording.endTimeMs) {
+                for (auto&& action : app->scriptPositions.RecordingBuffer) {
+                    if (action.at >= 0) {
                         script->AddActionSafe(action);
                     }
                 }
             }
         }
         else {
-            app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, false);
-            for (auto&& action : GeneratedRecording.RawActions) {
-                if (action.at >= GeneratedRecording.startTimeMs && action.at <= GeneratedRecording.endTimeMs) {
+            app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, false, app->ActiveFunscript().get());
+            for (auto&& action : app->scriptPositions.RecordingBuffer) {
+                if (action.at >= 0) {
                     ctx().AddActionSafe(action);
                 }
             }
         }
-        GeneratedRecording.RawActions.clear();
+        app->scriptPositions.RecordingBuffer.clear();
     }
 }

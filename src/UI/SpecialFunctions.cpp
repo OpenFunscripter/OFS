@@ -89,11 +89,11 @@ void FunctionRangeExtender::DrawUI() noexcept
             rangeExtend = Util::Clamp<int32_t>(rangeExtend, -50, 100);
             if (createUndoState || 
                 !undoSystem->MatchUndoTop(StateType::RANGE_EXTEND)) {
-                app->undoSystem->Snapshot(StateType::RANGE_EXTEND, false);
+                app->undoSystem->Snapshot(StateType::RANGE_EXTEND, false, app->ActiveFunscript().get());
             }
             else {
-                app->undoSystem->Undo();
-                app->undoSystem->Snapshot(StateType::RANGE_EXTEND, false);
+                app->undoSystem->Undo(app->ActiveFunscript().get());
+                app->undoSystem->Snapshot(StateType::RANGE_EXTEND, false, app->ActiveFunscript().get());
             }
             createUndoState = false;
             ctx().RangeExtendSelection(rangeExtend);
@@ -204,9 +204,9 @@ void RamerDouglasPeucker::DrawUI() noexcept
                 // NOOP
             }
             else {
-                app->undoSystem->Undo();
+                app->undoSystem->Undo(app->ActiveFunscript().get());
             }
-            app->undoSystem->Snapshot(StateType::SIMPLIFY, false);
+            app->undoSystem->Snapshot(StateType::SIMPLIFY, false, app->ActiveFunscript().get());
 
             createUndoState = false;
             auto selection = ctx().Selection();
@@ -787,7 +787,7 @@ void CustomLua::runScript(LuaScript* script, bool dry_run) noexcept
 
                     auto app = OpenFunscripter::ptr;
                     std::vector<FunscriptAction> tmpBuffer;
-                    app->undoSystem->Snapshot(StateType::CUSTOM_LUA, true);
+                    app->undoSystem->Snapshot(StateType::CUSTOM_LUA, true, app->ActiveFunscript().get());
 
                     for (int i = 0; i < app->LoadedFunscripts.size(); i++) {
                         auto& script = app->LoadedFunscripts[i];

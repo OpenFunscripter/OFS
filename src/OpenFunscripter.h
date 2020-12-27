@@ -13,9 +13,9 @@
 #include "ScriptingMode.h"
 #include "KeybindingSystem.h"
 #include "OpenFunscripterSettings.h"
-#include "ScriptPositionsWindow.h"
+#include "OFS_ScriptTimeline.h"
 #include "OFS_Videoplayer.h"
-#include "UndoSystem.h"
+#include "OFS_UndoSystem.h"
 #include "FunscriptUndoSystem.h"
 #include "EventSystem.h"
 #include "GradientBar.h"
@@ -66,7 +66,6 @@ private:
 	void process_events() noexcept;
 
 	void FunscriptChanged(SDL_Event& ev) noexcept;
-	void FunscriptActionClicked(SDL_Event& ev) noexcept;
 
 	void DragNDrop(SDL_Event& ev) noexcept;
 
@@ -75,6 +74,10 @@ private:
 
 	bool SetPlaybackSpeedController = false;
 	void ControllerAxisPlaybackSpeed(SDL_Event& ev) noexcept;
+
+	void ScriptTimelineActionClicked(SDL_Event& ev) noexcept;
+	void ScriptTimelineDoubleClick(SDL_Event& ev) noexcept;
+	void ScriptTimelineSelectTime(SDL_Event& ev) noexcept;
 
 	void cutSelection() noexcept;
 	void copySelection() noexcept;
@@ -120,7 +123,7 @@ public:
 	~OpenFunscripter();
 
 	KeybindingSystem keybinds;
-	ScriptPositionsWindow scriptPositions;
+	ScriptTimeline scriptPositions;
 	VideoplayerWindow player;
 	OFS_VideoplayerControls playerControls;
 	ScriptSimulator simulator;

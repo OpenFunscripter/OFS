@@ -1,6 +1,5 @@
-#include "UndoSystem.h"
+#include "OFS_UndoSystem.h"
 #include "FunscriptUndoSystem.h"
-#include "OpenFunscripter.h"
 
 #include <array>
 
@@ -46,9 +45,8 @@ const std::string& ScriptState::Message() const
 	return stateStrings[(int32_t)type];
 }
 
-void UndoSystem::Snapshot(StateType type, bool multi_script, bool clearRedo) noexcept
+void UndoSystem::Snapshot(StateType type, bool multi_script, Funscript* active, bool clearRedo) noexcept
 {
-	auto app = OpenFunscripter::ptr;
 	UndoStack.emplace_back(multi_script); // tracking multi-script modifications
 
 	if (UndoStack.size() > OFS::MaxScriptStateInMemory) {
@@ -61,45 +59,43 @@ void UndoSystem::Snapshot(StateType type, bool multi_script, bool clearRedo) noe
 
 
 	if (multi_script) {
-		for (auto&& script : app->LoadedFunscripts) {
+		for (auto&& script : *LoadedScripts) {
 			script->undoSystem->Snapshot(type, clearRedo);
 		}
 	}
 	else {
-		app->ActiveFunscript()->undoSystem->Snapshot(type, clearRedo);
+		active->undoSystem->Snapshot(type, clearRedo);
 	}
 }
 
-void UndoSystem::Undo() noexcept
+void UndoSystem::Undo(Funscript* active) noexcept
 {
 	if (UndoStack.empty()) return;
 
-	auto app = OpenFunscripter::ptr;
 	if (UndoStack.back().IsMultiscriptModification) {
-		for (auto&& script : app->LoadedFunscripts) {
+		for (auto&& script : *LoadedScripts) {
 			script->undoSystem->Undo();
 		}
 	}
 	else {
-		app->ActiveFunscript()->undoSystem->Undo();
+		active->undoSystem->Undo();
 	}
 
 	RedoStack.emplace_back(std::move(UndoStack.back()));
 	UndoStack.pop_back();
 }
 
-void UndoSystem::Redo() noexcept
+void UndoSystem::Redo(Funscript* active) noexcept
 {
 	if (RedoStack.empty()) return;
 
-	auto app = OpenFunscripter::ptr;
 	if (RedoStack.back().IsMultiscriptModification) {
-		for (auto&& script : app->LoadedFunscripts) {
+		for (auto&& script : *LoadedScripts) {
 			script->undoSystem->Redo();
 		}
 	}
 	else {
-		app->ActiveFunscript()->undoSystem->Redo();
+		active->undoSystem->Redo();
 	}
 	UndoStack.emplace_back(std::move(RedoStack.back()));
 	RedoStack.pop_back();

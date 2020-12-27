@@ -12,6 +12,9 @@ set(OFS_LIB_SOURCES
 	"UI/OFS_Videoplayer.cpp"
 	"UI/KeybindingSystem.cpp"
 	"UI/OFS_VideoplayerControls.cpp"
+	
+	"UI/OFS_ScriptTimeline.cpp"
+	"UI/ScriptPositionsOverlayMode.cpp"
 
 	"imgui_impl/imgui_impl_opengl3.cpp"
 	"imgui_impl/imgui_impl_sdl.cpp" 
@@ -20,6 +23,8 @@ set(OFS_LIB_SOURCES
 
 	"im3d/OFS_im3d.cpp"
 	"player/OFS_Tcode.cpp"
+	"OFS_UndoSystem.cpp"
+
 	"OFS_Serialization.cpp"
 	"OFS_Util.cpp"
 )

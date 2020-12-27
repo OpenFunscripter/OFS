@@ -4,19 +4,18 @@ project(OpenFunscripter)
 set(OPEN_FUNSCRIPTER_SOURCES
   "main.cpp"
   "OpenFunscripter.cpp"
-  "UndoSystem.cpp"
   
   "Funscript/OFS_ScriptSettings.cpp"
   
   "UI/OpenFunscripterSettings.cpp"
-  "UI/ScriptPositionsWindow.cpp"
 
   "ControllerInput.cpp"
   "ScriptingMode.cpp"
   
   "UI/ScriptSimulator.cpp"
   "UI/SpecialFunctions.cpp"
-  "UI/ScriptPositionsOverlayMode.cpp"
+  
+  "UI/OFS_ScriptPositionsOverlays.cpp"
 
   "event/OFS_Events.cpp"
 
@@ -64,7 +63,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	"${PROJECT_SOURCE_DIR}/gl/"
 	"${PROJECT_SOURCE_DIR}/lua/"
 	"${PROJECT_SOURCE_DIR}/event/"
-	"${CMAKE_SOURCE_DIR}/lib/minimp3/"
 )
 
 find_package(Git)

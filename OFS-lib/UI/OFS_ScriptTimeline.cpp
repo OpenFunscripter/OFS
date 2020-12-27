@@ -1,8 +1,6 @@
-#include "ScriptPositionsWindow.h"
+#include "OFS_ScriptTimeline.h"
 #include "imgui_internal.h"
 #include "imgui_stdlib.h"
-
-#include "OpenFunscripter.h"
 
 #include "SDL.h"
 #include "stb_sprintf.h"
@@ -14,56 +12,89 @@
 #define MINIMP3_IMPLEMENTATION
 #include "minimp3_ex.h"
 
-void ScriptPositionsWindow::updateSelection(bool clear)
+#include <array>
+
+int32_t ScriptTimelineEvents::FfmpegAudioProcessingFinished = 0;
+int32_t ScriptTimelineEvents::ScriptpositionWindowDoubleClick = 0;
+int32_t ScriptTimelineEvents::FunscriptActionClicked = 0;
+int32_t ScriptTimelineEvents::FunscriptSelectTime = 0;
+
+void ScriptTimelineEvents::RegisterEvents() noexcept
+{
+	FfmpegAudioProcessingFinished = SDL_RegisterEvents(1);
+	FunscriptActionClicked = SDL_RegisterEvents(1);
+	FunscriptSelectTime = SDL_RegisterEvents(1);
+	ScriptpositionWindowDoubleClick = SDL_RegisterEvents(1);
+}
+
+void ScriptTimeline::updateSelection(bool clear)
 {
 	float min = std::min(rel_x1, rel_x2);
 	float max = std::max(rel_x1, rel_x2);
-	int selection_start_ms = offset_ms + (visibleSizeMs * min);
-	int selection_end_ms = offset_ms + (visibleSizeMs * max);
-	OpenFunscripter::script().SelectTime(selection_start_ms, selection_end_ms, clear);
+	
+	static ScriptTimelineEvents::SelectTime selection;
+	selection.start_ms = offset_ms + (visibleSizeMs * min);
+	selection.end_ms = offset_ms + (visibleSizeMs * max);
+	selection.clear = clear;
+
+	SDL_Event ev;
+	ev.type = ScriptTimelineEvents::FunscriptSelectTime;
+	ev.user.data1 = &selection;
+	SDL_PushEvent(&ev);
 }
 
-void ScriptPositionsWindow::FfmpegAudioProcessingFinished(SDL_Event& ev)
+void ScriptTimeline::FfmpegAudioProcessingFinished(SDL_Event& ev)
 {
 	ShowAudioWaveform = true;
 	ffmpegInProgress = false;
 	LOG_INFO("Audio processing complete.");
 }
 
-void ScriptPositionsWindow::setup()
+void ScriptTimeline::setup(EventSystem& events, VideoplayerWindow* player, UndoSystem* undoSystem)
 {
-	auto app = OpenFunscripter::ptr;
-	app->events->Subscribe(SDL_MOUSEBUTTONDOWN, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_pressed));
-	app->events->Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_scroll));
-	app->events->Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_drag));
-	app->events->Subscribe(SDL_MOUSEBUTTONUP, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::mouse_released));
-	app->events->Subscribe(OFS_Events::FfmpegAudioProcessingFinished, EVENT_SYSTEM_BIND(this, &ScriptPositionsWindow::FfmpegAudioProcessingFinished));
+	this->player = player;
+	this->undoSystem = undoSystem;
+	events.Subscribe(SDL_MOUSEBUTTONDOWN, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouse_pressed));
+	events.Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouse_scroll));
+	events.Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouse_drag));
+	events.Subscribe(SDL_MOUSEBUTTONUP, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouse_released));
+	events.Subscribe(ScriptTimelineEvents::FfmpegAudioProcessingFinished, EVENT_SYSTEM_BIND(this, &ScriptTimeline::FfmpegAudioProcessingFinished));
 }
 
-void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
+void ScriptTimeline::mouse_pressed(SDL_Event& ev)
 {
 	auto& button = ev.button;
 	auto mousePos = ImGui::GetMousePos();
 	auto modstate = SDL_GetModState();
 	FunscriptAction* clickedAction = nullptr;
-	auto app = OpenFunscripter::ptr;
 
 	if (PositionsItemHovered) {
 		if (button.button == SDL_BUTTON_LEFT && button.clicks == 2) {
 			// seek to position double click
 			float rel_x = (mousePos.x - active_canvas_pos.x) / active_canvas_size.x;
 			int32_t seekToMs = offset_ms + (visibleSizeMs * rel_x);
-			OpenFunscripter::ptr->player.setPosition(seekToMs, false);
+
+			SDL_Event ev;
+			ev.type = ScriptTimelineEvents::ScriptpositionWindowDoubleClick;
+			ev.user.data1 =(void*)(intptr_t)seekToMs;
+			SDL_PushEvent(&ev);
 			return;
 		}
 
 		// test if an action has been clicked
 		int index = 0;
-		for (auto& vert : app->scripting->Overlay()->ActionScreenCoordinates) {
+		for (auto& vert : overlay->ActionScreenCoordinates) {
 			const ImVec2 size(10, 10);
 			ImRect rect(vert - size, vert + size);
 			if (rect.Contains(mousePos)) {
-				clickedAction = &app->scripting->Overlay()->ActionPositionWindow[index];
+				clickedAction = &overlay->ActionPositionWindow[index];
+				static FunscriptAction clickedActionStatic;
+				clickedActionStatic = *clickedAction;
+				
+				SDL_Event ev;
+				ev.type = ScriptTimelineEvents::FunscriptActionClicked;
+				ev.user.data1 = &clickedActionStatic;
+				SDL_PushEvent(&ev);
 				break;
 			}
 			index++;
@@ -72,29 +103,29 @@ void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
 
 	if (button.button == SDL_BUTTON_LEFT) {
 		if (modstate & KMOD_SHIFT && PositionsItemHovered) {
-			auto app = OpenFunscripter::ptr;
+			//auto app = OpenFunscripter::ptr;
 			if (clickedAction != nullptr) {
 				// start move
-				app->script().ClearSelection();
-				app->script().SetSelection(*clickedAction, true);
+				activeScript->ClearSelection();
+				activeScript->SetSelection(*clickedAction, true);
 				IsMoving = true;
-				app->undoSystem->Snapshot(StateType::MOUSE_MOVE_ACTION, false);
+				undoSystem->Snapshot(StateType::MOUSE_MOVE_ACTION, false, activeScript);
 				return;
 			}
 
 			// shift click an action into the window
-			auto action = getActionForPoint(active_canvas_pos, active_canvas_size, mousePos, app->player.getFrameTimeMs());
-			auto edit = app->ActiveFunscript()->GetActionAtTime(action.at, app->player.getFrameTimeMs());
-			app->undoSystem->Snapshot(StateType::ADD_ACTION, false);
-			if (edit != nullptr) { app->ActiveFunscript()->RemoveAction(*edit); }
-			app->ActiveFunscript()->AddAction(action);
+			auto action = getActionForPoint(active_canvas_pos, active_canvas_size, mousePos, player->getFrameTimeMs());
+			auto edit = activeScript->GetActionAtTime(action.at, player->getFrameTimeMs());
+			undoSystem->Snapshot(StateType::ADD_ACTION, false, activeScript);
+			if (edit != nullptr) { activeScript->RemoveAction(*edit); }
+			activeScript->AddAction(action);
 		}
 		// clicking an action  fires an event
 		else if (PositionsItemHovered && clickedAction != nullptr) {
 			static ActionClickedEventArgs args;
 			args = std::tuple<SDL_Event, FunscriptAction>(ev, *clickedAction);
 			SDL_Event notify;
-			notify.type = FunscriptEvents::FunscriptActionClickedEvent;
+			notify.type = ScriptTimelineEvents::FunscriptActionClicked;
 			notify.user.data1 = &args;
 			SDL_PushEvent(&notify);
 		}
@@ -110,11 +141,11 @@ void ScriptPositionsWindow::mouse_pressed(SDL_Event& ev)
 		}
 	}
 	else if (button.button == SDL_BUTTON_MIDDLE) {
-		OpenFunscripter::script().ClearSelection();
+		activeScript->ClearSelection();
 	}
 }
 
-void ScriptPositionsWindow::mouse_released(SDL_Event& ev)
+void ScriptTimeline::mouse_released(SDL_Event& ev)
 {
 	auto& button = ev.button;
 	if (IsMoving && button.button == SDL_BUTTON_LEFT) {
@@ -128,23 +159,22 @@ void ScriptPositionsWindow::mouse_released(SDL_Event& ev)
 	}
 }
 
-void ScriptPositionsWindow::mouse_drag(SDL_Event& ev)
+void ScriptTimeline::mouse_drag(SDL_Event& ev)
 {
 	auto& motion = ev.motion;
 	if (IsSelecting) {
 		rel_x2 = (ImGui::GetMousePos().x - active_canvas_pos.x) / active_canvas_size.x;
 	}
 	else if (IsMoving) {
-		auto app = OpenFunscripter::ptr;
-		if (!app->script().HasSelection()) { IsMoving = false; return; }
+		if (!activeScript->HasSelection()) { IsMoving = false; return; }
 		auto mousePos = ImGui::GetMousePos();
-		auto frameTime = app->player.getFrameTimeMs();
-		auto& toBeMoved = app->script().Selection()[0];
+		auto frameTime = player->getFrameTimeMs();
+		auto& toBeMoved = activeScript->Selection()[0];
 		auto newAction = getActionForPoint(active_canvas_pos, active_canvas_size, mousePos, frameTime);
 		if (newAction.at != toBeMoved.at || newAction.pos != toBeMoved.pos) {
 			const FunscriptAction* nearbyAction = nullptr;
 			if ((newAction.at - toBeMoved.at) > 0) {
-				nearbyAction = app->script().GetNextActionAhead(toBeMoved.at);
+				nearbyAction = activeScript->GetNextActionAhead(toBeMoved.at);
 				if (nearbyAction != nullptr) {
 					if (std::abs(nearbyAction->at - newAction.at) > frameTime) {
 						nearbyAction = nullptr;
@@ -152,7 +182,7 @@ void ScriptPositionsWindow::mouse_drag(SDL_Event& ev)
 				}
 			}
 			else if((newAction.at - toBeMoved.at) < 0) {
-				nearbyAction = app->script().GetPreviousActionBehind(toBeMoved.at);
+				nearbyAction = activeScript->GetPreviousActionBehind(toBeMoved.at);
 				if (nearbyAction != nullptr) {
 					if (std::abs(nearbyAction->at - newAction.at) > frameTime) {
 						nearbyAction = nullptr;
@@ -161,20 +191,20 @@ void ScriptPositionsWindow::mouse_drag(SDL_Event& ev)
 			}
 
 			if (nearbyAction == nullptr) {
-				app->script().RemoveAction(toBeMoved);
-				app->script().ClearSelection();
-				app->script().AddAction(newAction);
-				app->script().SetSelection(newAction, true);
+				activeScript->RemoveAction(toBeMoved);
+				activeScript->ClearSelection();
+				activeScript->AddAction(newAction);
+				activeScript->SetSelection(newAction, true);
 			}
 			else {
-				app->script().ClearSelection();
+				activeScript->ClearSelection();
 				IsMoving = false;
 			}
 		}
 	}
 }
 
-void ScriptPositionsWindow::mouse_scroll(SDL_Event& ev)
+void ScriptTimeline::mouse_scroll(SDL_Event& ev)
 {
 	auto& wheel = ev.wheel;
 	constexpr float scrollPercent = 0.10f;
@@ -184,16 +214,19 @@ void ScriptPositionsWindow::mouse_scroll(SDL_Event& ev)
 	}
 }
 
-void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositionMs) noexcept
+void ScriptTimeline::ShowScriptPositions(bool* open, const std::vector<std::unique_ptr<Funscript>>& scripts, Funscript* activeScript) noexcept
 {
-	auto app = OpenFunscripter::ptr;
+	this->activeScript = activeScript;
+
 	auto& style = ImGui::GetStyle();
 	visibleSizeMs = WindowSizeSeconds * 1000.0;
+	float currentPositionMs = player->getCurrentPositionMsInterp();
 	offset_ms = currentPositionMs - (visibleSizeMs / 2.0);
 	
 	OverlayDrawingCtx drawingCtx;
 	drawingCtx.offset_ms = offset_ms;
 	drawingCtx.visibleSizeMs = visibleSizeMs;
+	drawingCtx.totalDurationMs = player->getDuration() * 1000.f;
 	
 	ImGui::Begin(PositionsId, open, ImGuiWindowFlags_None);
 	auto draw_list = ImGui::GetWindowDrawList();
@@ -201,19 +234,19 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	PositionsItemHovered = ImGui::IsWindowHovered();
 
 	drawingCtx.drawnScriptCount = 0;
-	for (auto&& script : app->LoadedFunscripts) {
+	for (auto&& script : scripts) {
 		if (script->Enabled) { drawingCtx.drawnScriptCount++; }
 	}
 	const auto availSize = ImGui::GetContentRegionAvail() - ImVec2(0.f , style.ItemSpacing.y*((float)drawingCtx.drawnScriptCount-1));
 	const auto startCursor = ImGui::GetCursorScreenPos();
 
 	
-	for (auto&& scriptPtr : app->LoadedFunscripts) {
+	for (auto&& scriptPtr : scripts) {
 		if (!scriptPtr->Enabled) { continue; }
 		auto& script = *scriptPtr;
 		drawingCtx.canvas_pos = ImGui::GetCursorScreenPos();
 		drawingCtx.canvas_size = ImVec2(availSize.x, availSize.y / (float)drawingCtx.drawnScriptCount);
-		const bool IsActivated = drawingCtx.drawnScriptCount ? scriptPtr.get() == app->ActiveFunscript().get() : false;
+		const bool IsActivated = drawingCtx.drawnScriptCount ? scriptPtr.get() == activeScript : false;
 		
 		if (drawingCtx.drawnScriptCount == 1) {
 			active_canvas_pos = drawingCtx.canvas_pos;
@@ -236,8 +269,8 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 
 
 	ImGui::SetCursorScreenPos(startCursor);
-	for(int i=0; i < app->LoadedFunscripts.size(); i++) {
-		auto& scriptPtr = app->LoadedFunscripts[i];
+	for(int i=0; i < scripts.size(); i++) {
+		auto& scriptPtr = scripts[i];
 		auto& script = *scriptPtr.get();
 		if (!script.Enabled) { continue; }
 		
@@ -247,8 +280,6 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		const ImGuiID itemID = ImGui::GetID(script.metadata.title.c_str());
 		ImRect itemBB(drawingCtx.canvas_pos, drawingCtx.canvas_pos + drawingCtx.canvas_size);
 		ImGui::ItemAdd(itemBB, itemID);
-		float frameTime = app->player.getFrameTimeMs();
-		bool IsPaused = app->player.isPaused();
 
 		draw_list->AddRectFilledMultiColor(drawingCtx.canvas_pos, ImVec2(drawingCtx.canvas_pos.x + drawingCtx.canvas_size.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y),
 			IM_COL32(0, 0, 50, 255), IM_COL32(0, 0, 50, 255),
@@ -268,12 +299,12 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		}
 		drawingCtx.actionFromIdx = std::distance(script.Actions().begin(), startIt);
 		drawingCtx.actionToIdx = std::distance(script.Actions().begin(), endIt);
-
+		drawingCtx.script = scriptPtr.get();
 
 		// draws mode specific things in the timeline
 		// by default it draws the frame and time dividers
 		// DrawAudioWaveform called in scripting mode to control the draw order. spaghetti
-		app->scripting->DrawScriptPositionContent(drawingCtx);
+		overlay->DrawScriptPositionContent(drawingCtx);
 
 		// border
 		constexpr float borderThicknes = 1.f;
@@ -285,36 +316,37 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 			borderThicknes
 		);
 
+		
+		// TODO: reimplement this as an overlay ???
+
 		// render recordings
+		const float frameTime = player->getFrameTimeMs();
 		const FunscriptAction* prevAction = nullptr;
-		if (app->scripting->mode() == ScriptingModeEnum::RECORDING) {
-			auto& recordingMode = app->scripting->CurrentImpl();
-			auto& recording = static_cast<RecordingImpl*>(recordingMode.get())->GeneratedRecording.RawActions;
+		auto& recording = RecordingBuffer;
 
-			auto pathStroke = [](auto draw_list, uint32_t col) {
-				// sort of a hack ...
-				// PathStroke sets  _Path.Size = 0
-				// so we reset it in order to draw the same path twice
-				auto tmp = draw_list->_Path.Size;
-				draw_list->PathStroke(IM_COL32(0, 0, 0, 255), false, 7.0f);
-				draw_list->_Path.Size = tmp;
-				draw_list->PathStroke(col, false, 5.f);
-			};
-			auto pathRawSection = [this, &drawingCtx](auto draw_list, auto rawActions, int32_t fromIndex, int32_t toIndex) {
-				for (int i = fromIndex; i < toIndex; i++) {
-					auto action = rawActions[i];
-					if (action.at >= 0) {
-						auto point = getPointForAction(drawingCtx.canvas_pos, drawingCtx.canvas_size, action);
-						draw_list->PathLineTo(point);
-					}
+		auto pathStroke = [](auto draw_list, uint32_t col) {
+			// sort of a hack ...
+			// PathStroke sets  _Path.Size = 0
+			// so we reset it in order to draw the same path twice
+			auto tmp = draw_list->_Path.Size;
+			draw_list->PathStroke(IM_COL32(0, 0, 0, 255), false, 7.0f);
+			draw_list->_Path.Size = tmp;
+			draw_list->PathStroke(col, false, 5.f);
+		};
+		auto pathRawSection = [this, &drawingCtx](auto draw_list, auto rawActions, int32_t fromIndex, int32_t toIndex) {
+			for (int i = fromIndex; i < toIndex; i++) {
+				auto action = rawActions[i];
+				if (action.at >= 0) {
+					auto point = getPointForAction(drawingCtx.canvas_pos, drawingCtx.canvas_size, action);
+					draw_list->PathLineTo(point);
 				}
-			};
-			int32_t startIndex = Util::Clamp<int32_t>((offset_ms / frameTime), 0, recording.size());
-			int32_t endIndex = Util::Clamp<int32_t>(((float)offset_ms + visibleSizeMs) / frameTime, startIndex, recording.size());
+			}
+		};
+		int32_t startIndex = Util::Clamp<int32_t>((offset_ms / frameTime), 0, recording.size());
+		int32_t endIndex = Util::Clamp<int32_t>(((float)offset_ms + visibleSizeMs) / frameTime, startIndex, recording.size());
 
-			pathRawSection(draw_list, recording, startIndex, endIndex);
-			pathStroke(draw_list, IM_COL32(0, 255, 0, 180));
-		}
+		pathRawSection(draw_list, recording, startIndex, endIndex);
+		pathStroke(draw_list, IM_COL32(0, 255, 0, 180));
 
 
 		// current position indicator -> |
@@ -326,7 +358,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		// selection box
 		constexpr auto selectColor = IM_COL32(3, 252, 207, 255);
 		constexpr auto selectColorBackground = IM_COL32(3, 252, 207, 100);
-		if (IsSelecting && (scriptPtr.get() == app->ActiveFunscript().get())) {
+		if (IsSelecting && (scriptPtr.get() == activeScript)) {
 			draw_list->AddRectFilled(drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * rel_x1, 0), drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * rel_x2, drawingCtx.canvas_size.y), selectColorBackground);
 			draw_list->AddLine(drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * rel_x1, 0), drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * rel_x1, drawingCtx.canvas_size.y), selectColor, 3.0f);
 			draw_list->AddLine(drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * rel_x2, 0), drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * rel_x2, drawingCtx.canvas_size.y), selectColor, 3.0f);
@@ -350,14 +382,15 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 		if (ImGui::BeginPopupContextItem())
 		{
 			if (ImGui::BeginMenu("Scripts")) {
-				for (auto&& script : app->LoadedFunscripts) {
+				for (auto&& script : scripts) {
 					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, drawingCtx.drawnScriptCount == 1 && script->Enabled);
 					if (ImGui::Checkbox(script->metadata.title.c_str(), &script->Enabled) && !script->Enabled) {
-						if (script.get() == app->ActiveFunscript().get()) {
+						if (script.get() == activeScript) {
 							// find a enabled script which can be set active
-							for (int i = 0; i < app->LoadedFunscripts.size(); i++) {
-								if (app->LoadedFunscripts[i]->Enabled) {
-									app->UpdateNewActiveScript(i);
+							for (int i = 0; i < scripts.size(); i++) {
+								if (scripts[i]->Enabled) {
+									//app->UpdateNewActiveScript(i);
+									FUN_ASSERT(false, "fukc");
 									break;
 								}
 							}
@@ -381,7 +414,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 						ffmpegInProgress = true;
 
 						auto ffmpegThread = [](void* userData) -> int {
-							auto& ctx = *((ScriptPositionsWindow*)userData);
+							auto& ctx = *((ScriptTimeline*)userData);
 
 							std::error_code ec;
 							auto base_path = Util::Basepath();
@@ -395,7 +428,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 								return 0;
 							}
 							output_path = (std::filesystem::path(output_path) / "audio.mp3").string();
-							auto video_path = OpenFunscripter::ptr->player.getVideoPath();
+							auto video_path = ctx.player->getVideoPath();
 
 							bool succ = OutputAudioFile(ffmpeg_path.string().c_str(), video_path, output_path.c_str());
 							if (!succ) {
@@ -469,7 +502,7 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 							}
 							free(info.buffer);
 							SDL_Event ev;
-							ev.type = OFS_Events::FfmpegAudioProcessingFinished;
+							ev.type = ScriptTimelineEvents::FfmpegAudioProcessingFinished;
 							SDL_PushEvent(&ev);
 							return 0;
 						};
@@ -484,13 +517,13 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	}
 
 	// draw points on top of lines
-	for (auto&& p : app->scripting->Overlay()->ActionScreenCoordinates) {
+	for (auto&& p : overlay->ActionScreenCoordinates) {
 		draw_list->AddCircleFilled(p, 7.0, IM_COL32(0, 0, 0, 255), 8); // border
 		draw_list->AddCircleFilled(p, 5.0, IM_COL32(255, 0, 0, 255), 8);
 	}
 
 	// draw selected points
-	for (auto&& p : app->scripting->Overlay()->SelectedActionScreenCoordinates) {
+	for (auto&& p : overlay->SelectedActionScreenCoordinates) {
 		constexpr auto selectedDots = IM_COL32(11, 252, 3, 255);
 		draw_list->AddCircleFilled(p, 5.0, selectedDots, 8);
 	}
@@ -498,13 +531,13 @@ void ScriptPositionsWindow::ShowScriptPositions(bool* open, float currentPositio
 	ImGui::End();
 }
 
-void ScriptPositionsWindow::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
+void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 {
 	auto& canvas_pos = ctx.canvas_pos;
 	auto& canvas_size = ctx.canvas_size;
 	const auto draw_list = ctx.draw_list;
 	if (ShowAudioWaveform) {
-		const float durationMs = OpenFunscripter::ptr->player.getDuration() * 1000.f;
+		const float durationMs = ctx.totalDurationMs;
 		const float rel_start = offset_ms / durationMs;
 		const float rel_end = ((float)(offset_ms)+visibleSizeMs) / durationMs;
 

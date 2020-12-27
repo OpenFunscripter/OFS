@@ -54,7 +54,7 @@ void ScriptSimulator::MouseDown(SDL_Event& ev)
     if (modstate & KMOD_SHIFT && button.button == SDL_BUTTON_LEFT) {
         if (MouseBetweenSimulator) {
             auto app = OpenFunscripter::ptr;
-            app->undoSystem->Snapshot(StateType::ADD_EDIT_ACTION, false);
+            app->undoSystem->Snapshot(StateType::ADD_EDIT_ACTION, false, app->ActiveFunscript().get());
             app->scripting->addEditAction(FunscriptAction(app->player.getCurrentPositionMsInterp(), 50 + (50 * mouseValue)));
         }
     }
@@ -82,7 +82,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
             positionOverride = -1.f;
         }
         else {
-            currentPos = app->ActiveFunscript()->GetPositionAtTime(app->player.getCurrentPositionMsInterp(), app->scripting->Overlay()->SplineLines);
+            currentPos = app->ActiveFunscript()->GetPositionAtTime(app->player.getCurrentPositionMsInterp(), app->scriptPositions.overlay->SplineLines);
         }
 
         if (EnableVanilla) {
