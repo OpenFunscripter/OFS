@@ -1,6 +1,7 @@
-#include "ControllerInput.h"
+#include "OFS_ControllerInput.h"
+#include "OFS_Util.h"
+#include "KeybindingSystem.h"
 
-#include "OpenFunscripter.h"
 #include "SDL.h"
 
 std::array<int64_t, SDL_CONTROLLER_BUTTON_MAX> ButtonsHeldDown = {-1};
@@ -87,23 +88,21 @@ void ControllerInput::ControllerDeviceRemoved(SDL_Event& ev) noexcept
 	activeControllers--;
 }
 
-void ControllerInput::setup()
+void ControllerInput::setup(EventSystem& events)
 {
 	SDL_JoystickEventState(SDL_ENABLE);
 	SDL_GameControllerEventState(SDL_ENABLE);
-	auto app = OpenFunscripter::ptr;
-	app->events->Subscribe(SDL_CONTROLLERDEVICEADDED, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerDeviceAdded));
-	app->events->Subscribe(SDL_CONTROLLERDEVICEREMOVED, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerDeviceRemoved));
-	app->events->Subscribe(SDL_CONTROLLERBUTTONDOWN, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerButtonDown));
-	app->events->Subscribe(SDL_CONTROLLERBUTTONUP, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerButtonUp));
+	events.Subscribe(SDL_CONTROLLERDEVICEADDED, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerDeviceAdded));
+	events.Subscribe(SDL_CONTROLLERDEVICEREMOVED, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerDeviceRemoved));
+	events.Subscribe(SDL_CONTROLLERBUTTONDOWN, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerButtonDown));
+	events.Subscribe(SDL_CONTROLLERBUTTONUP, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerButtonUp));
 }
 
-void ControllerInput::update() noexcept
+void ControllerInput::update(int32_t buttonRepeatIntervalMs) noexcept
 {
 	int buttonEnumVal = 0;
-	auto& settings = OpenFunscripter::ptr->settings->data();
 	for (auto&& button : ButtonsHeldDown) {
-		if (button > 0 && ((int64_t)SDL_GetTicks() - button) >= settings.buttonRepeatIntervalMs) {
+		if (button > 0 && ((int64_t)SDL_GetTicks() - button) >= buttonRepeatIntervalMs) {
 			SDL_Event ev;
 			ev.type = KeybindingEvents::ControllerButtonRepeat;
 			ev.cbutton.button = buttonEnumVal;

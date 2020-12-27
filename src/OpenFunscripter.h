@@ -21,7 +21,7 @@
 #include "GradientBar.h"
 #include "ScriptSimulator.h"
 #include "Funscript.h"
-#include "ControllerInput.h"
+#include "OFS_ControllerInput.h"
 #include "GradientBar.h"
 #include "SpecialFunctions.h"
 #include "OFS_ScriptSettings.h"

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "EventSystem.h"
+
 #include "SDL.h"
 #include <array>
 
@@ -25,13 +27,13 @@ private:
 public:
 	static std::array<ControllerInput, 4> Controllers;
 
-	void setup();
-	void update() noexcept;
+	void setup(EventSystem& events);
+	void update(int32_t buttonRepeatIntervalMs) noexcept;
 
-	inline static void UpdateControllers() {
+	inline static void UpdateControllers(int32_t buttonRepeatIntervalMs) {
 		for (auto&& controller : Controllers) {
 			if (controller.connected()) {
-				controller.update();
+				controller.update(buttonRepeatIntervalMs);
 			}
 		}
 	}
