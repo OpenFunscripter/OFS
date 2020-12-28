@@ -91,6 +91,14 @@
 
 #endif
 
+#if WIN32
+#define OFS_CMD_QUOTES R"(")"
+#else	   
+#define OFS_CMD_QUOTES
+#endif
+
+// for windows it's a good idea to quote the command
+#define OFS_SYSTEM_CMD(cmd) OFS_CMD_QUOTES cmd OFS_CMD_QUOTES
 
 class Util {
 public:
@@ -295,4 +303,6 @@ public:
 	static void ConcatPathSafe(std::filesystem::path& path, const std::string& element) noexcept;
 
 	static bool SavePNG(const std::string& path, void* buffer, int32_t width, int32_t height, int32_t channels = 3, bool flipVertical = true) noexcept;
+
+	static std::filesystem::path FfmpegPath() noexcept;
 };

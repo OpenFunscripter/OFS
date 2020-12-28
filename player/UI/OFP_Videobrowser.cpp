@@ -15,9 +15,10 @@
 #include <unordered_set>
 
 #include "xxhash.h"
-
+#include "reproc++/run.hpp"
 
 #ifdef WIN32
+//used to obtain drives on windows
 #define WIN32_LEAN_AND_MEAN
 #include "windows.h"
 #endif
@@ -30,7 +31,7 @@ struct TextureHandle {
 static std::unordered_map<uint32_t, TextureHandle> TextureHashtable;
 
 
-constexpr int MaxThumbailProcesses = 8;
+constexpr int MaxThumbailProcesses = 4;
 static SDL_sem* ThumbnailThreadSem = nullptr;
 
 void Videobrowser::updateCache(const std::string& path) noexcept
@@ -67,26 +68,27 @@ void Videobrowser::updateCache(const std::string& path) noexcept
 				funscript.replace_extension(".funscript");
 				bool matchingScript = Util::FileExists(funscript.u8string());
 				// valid extension + matching script
+				size_t byte_count = p.file_size();
 				SDL_AtomicLock(&browser.ItemsLock);
-				browser.Items.emplace_back(p.path().u8string(), it->second, matchingScript);
+				browser.Items.emplace_back(p.path().u8string(), byte_count, it->second, matchingScript);
 				SDL_AtomicUnlock(&browser.ItemsLock);
 			}
 			else if (p.is_directory()) {
 				SDL_AtomicLock(&browser.ItemsLock);
-				browser.Items.emplace_back(p.path().u8string(), false, false);
+				browser.Items.emplace_back(p.path().u8string(), 0, false, false);
 				SDL_AtomicUnlock(&browser.ItemsLock);
 			}
 		}
 		SDL_AtomicLock(&browser.ItemsLock);
 		std::sort(browser.Items.begin(), browser.Items.end(),
 			[](auto& item1, auto& item2) {
-				return item1.name < item2.name;
+				return item1.filename < item2.filename;
 			}
 		);
 		std::sort(browser.Items.begin(), browser.Items.end(), [](auto& item1, auto& item2) {
 			return item1.IsDirectory() && !item2.IsDirectory();
 		});
-		browser.Items.insert(browser.Items.begin(), {(pathObj / "..").u8string(), false, false });
+		browser.Items.insert(browser.Items.begin(), {(pathObj / "..").u8string(), 0, false, false });
 		SDL_AtomicUnlock(&browser.ItemsLock);
 
 		data->running = false;
@@ -112,7 +114,7 @@ void Videobrowser::chooseDrive() noexcept
 		if (AvailableDrives & (Mask << i)) {
 			ss << (char)('A' + i);
 			ss << ":\\\\";
-			Items.emplace_back(ss.str(), false, false);
+			Items.emplace_back(ss.str(), 0, false, false);
 			ss.str("");
 		}
 	}
@@ -140,19 +142,17 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 	const float ItemHeight = (9.f/16.f)*ItemWidth;
 	const auto ItemDim = ImVec2(ItemWidth, ItemHeight);
 	
+	ImGui::BeginChild("Items");
+
 	int index = 0;
 	for (auto& item : Items) {
-		if (index % ItemsPerRow != 0) {
-			ImGui::SameLine();
-		}
-
 		if (!item.IsDirectory()) {
 			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, style.Colors[ImGuiCol_PlotLinesHovered]);
 			ImGui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_PlotLines]);
 			auto fileClickHandler = [](VideobrowserItem& item) {
 				LOGF_DEBUG("File: \"%s\"", item.path.c_str());
 				LOGF_DEBUG("Extension: \"%s\"", item.extension.c_str());
-				LOGF_DEBUG("Name: \"%s\"", item.name.c_str());
+				LOGF_DEBUG("Name: \"%s\"", item.filename.c_str());
 			};
 
 			uint32_t texId = item.GetTexId();
@@ -171,7 +171,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 			else {
 				if(!item.HasMatchingScript) { ImGui::PushStyleColor(ImGuiCol_Button, FileTint.Value); }
 				
-				if (ImGui::Button(item.name.c_str(), ItemDim)) {
+				if (ImGui::Button(item.filename.c_str(), ItemDim)) {
 					fileClickHandler(item);
 				}
 				if (!item.HasMatchingScript) { ImGui::PopStyleColor(1); }
@@ -179,7 +179,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 			ImGui::PopStyleColor(2);
 		}
 		else {
-			if (ImGui::Button(item.name.c_str(), ItemDim)) {
+			if (ImGui::Button(item.filename.c_str(), ItemDim)) {
 #ifdef WIN32
 				auto pathObj = Util::PathFromString(item.path);
 				auto pathObjAbs = std::filesystem::absolute(pathObj);
@@ -194,8 +194,13 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 				}
 			}
 		}
+		Util::Tooltip(item.filename.c_str());
 		index++;
+		if (index % ItemsPerRow != 0) {
+			ImGui::SameLine();
+		}
 	}
+	ImGui::EndChild();
 	ImGui::End();
 	SDL_AtomicUnlock(&ItemsLock);
 }
@@ -209,7 +214,7 @@ VideobrowserItem::~VideobrowserItem()
 			if (it->second.ref_count == 0 && it->second.texId != 0) {
 				glDeleteTextures(1, &it->second.texId);
 				it->second.texId = 0;
-				LOGF_DEBUG("Freed texture: \"%s\"", this->name.c_str());
+				LOGF_DEBUG("Freed texture: \"%s\"", this->filename.c_str());
 			}
 		}
 	}
@@ -225,7 +230,7 @@ uint64_t VideobrowserItem::GetTexId() const
 	return 0;
 }
 
-VideobrowserItem::VideobrowserItem(const std::string& path, bool genThumb, bool matchingScript) noexcept
+VideobrowserItem::VideobrowserItem(const std::string& path, size_t byte_count, bool genThumb, bool matchingScript) noexcept
 {
 	auto pathObj = Util::PathFromString(path);
 	pathObj.make_preferred();
@@ -235,12 +240,21 @@ VideobrowserItem::VideobrowserItem(const std::string& path, bool genThumb, bool 
 
 	this->HasMatchingScript = matchingScript;
 	this->path = pathObj.u8string();
-	pathObj.replace_extension("");
-	this->name = pathObj.filename().u8string();
-	if (this->name.empty()) {
-		this->name = pathObj.u8string();
+	this->filename = pathObj.filename().u8string();
+	if (this->filename.empty()) {
+		this->filename = pathObj.u8string();
 	}
-	this->Id = XXH64(this->path.c_str(), this->path.size(), 0);
+
+	{
+		// the byte count gets included in the hash
+		// to ensure the thumbnails gets regenerated
+		// when the content changes
+		std::stringstream ss;
+		ss << this->filename;
+		ss << byte_count;
+		auto hashString = ss.str();
+		this->Id = XXH64(hashString.c_str(), hashString.size(), 0);
+	}
 
 	if (genThumb) { 
 		auto it = TextureHashtable.find(this->Id);
@@ -312,26 +326,15 @@ void VideobrowserItem::GenThumbail(bool startThread) noexcept
 			return 0;
 		}
 
-		auto base_path = Util::Basepath();
-#if WIN32
-		auto ffmpeg_path = base_path / "ffmpeg.exe";
-#else
-		auto ffmpeg_path = std::filesystem::path("ffmpeg");
-#endif
+		auto ffmpeg_path = Util::FfmpegPath();
 
 		char buffer[1024];
 
-#if WIN32
-#define OFS_QUOTES "\""
-#else
-#define OFS_QUOTES
-#endif
 		constexpr std::array<const char*, 2> fmts = {
-			OFS_QUOTES "\"%s\" -y -ss 00:00:25 -i \"%s\" -vf \"thumbnail,scale=360:-1\" -frames:v 1 -vsync vfr \"%s\"" OFS_QUOTES,	// seeks 25 seconds into the video
-			OFS_QUOTES "\"%s\" -y -i \"%s\" -vf \"thumbnail,scale=360:-1\" -frames:v 1 -vsync vfr \"%s\"" OFS_QUOTES   			// for files shorter than 25 seconds
+			OFS_SYSTEM_CMD(R"("%s" -y -ss 00:00:26 -i "%s" -vf "thumbnail=120,scale=360:200" -frames:v 1 "%s")"),	// seeks 26 seconds into the video
+			OFS_SYSTEM_CMD(R"("%s" -y -i "%s" -vf "thumbnail=120,scale=360:200" -frames:v 1 "%s")")   			// for files shorter than 26 seconds
 		};
-#undef OFS_QUOTES
-
+	
 		bool success = false;
 		for (auto& fmt : fmts) {
 			int num = stbsp_snprintf(buffer, sizeof(buffer), fmt,
@@ -352,7 +355,6 @@ void VideobrowserItem::GenThumbail(bool startThread) noexcept
 #else
 			success = std::system(buffer) == 0;
 #endif
-
 			success = success && Util::FileExists(data->thumbOutputFilePath);
 			if (success) { 
 				break; 

@@ -13,6 +13,7 @@ add_executable(${PROJECT_NAME} ${OFP_SOURCES})
 target_link_libraries(${PROJECT_NAME} PUBLIC
 	OFS_lib
 	xxHash
+	reproc++
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE 

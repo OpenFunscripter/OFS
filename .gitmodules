@@ -25,3 +25,6 @@
 [submodule "lib/xxHash"]
 	path = lib/xxHash
 	url = https://github.com/Cyan4973/xxHash.git
+[submodule "lib/reproc"]
+	path = lib/reproc
+	url = https://github.com/DaanDeMeyer/reproc.git

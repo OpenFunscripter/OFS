@@ -4,6 +4,7 @@
 #include <string>
 #include <array>
 #include <tuple>
+#include <filesystem>
 
 #include "SDL_atomic.h"
 
@@ -27,7 +28,7 @@ private:
     bool HasThumbnail = false;
     void IncrementRefCount() noexcept;
 public:
-    VideobrowserItem(const std::string& path, bool genThumb, bool matchingScript) noexcept;
+    VideobrowserItem(const std::string& path, size_t byte_count, bool genThumb, bool matchingScript) noexcept;
     ~VideobrowserItem();
 
     VideobrowserItem(const VideobrowserItem& item) noexcept {
@@ -42,7 +43,7 @@ public:
 
     VideobrowserItem& operator=(const VideobrowserItem&) noexcept = default;
 
-    std::string name;
+    std::string filename;
     std::string path;
     std::string extension;
 

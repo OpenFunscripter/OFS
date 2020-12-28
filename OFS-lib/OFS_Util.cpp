@@ -313,3 +313,14 @@ bool Util::SavePNG(const std::string& path, void* buffer, int32_t width, int32_t
 	);
 	return success;
 }
+
+std::filesystem::path Util::FfmpegPath() noexcept
+{
+	auto base_path = Util::Basepath();
+#if WIN32
+	auto ffmpeg_path = base_path / "ffmpeg.exe";
+#else
+	auto ffmpeg_path = std::filesystem::path("ffmpeg");
+#endif
+	return ffmpeg_path;
+}
