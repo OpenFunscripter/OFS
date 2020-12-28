@@ -593,7 +593,7 @@ bool OutputAudioFile(const char* ffmpeg_path, const char* video_path, const char
 		video_path,
 		output_path);
 
-	FUN_ASSERT(num <= sizeof(buffer), "buffer to small");
+	FUN_ASSERT(num < sizeof(buffer), "buffer to small");
 
 	if (num >= sizeof(buffer)) {
 		return false;

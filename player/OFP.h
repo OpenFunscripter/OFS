@@ -9,6 +9,10 @@
 #include "OFS_Util.h"
 #include "OFS_Reflection.h"
 #include "OFS_VideoplayerControls.h"
+#include "OFS_ControllerInput.h"
+
+
+#include "OFP_Videobrowser.h"
 
 #include "SDL_events.h"
 
@@ -16,16 +20,25 @@
 #include <cstdint>
 #include <string>
 
+enum OFP_Scene : int32_t {
+	Player,
+	Filebrowser,
+	TotalScenes
+};
+
 struct OFP_Settings {
 	std::string font_override = "";
 	float default_font_size = 18.f;
 	bool vsync = true;
 	bool show_video = true;
 
+	bool show_browser = false;
 	bool show_tcode = false;
 
 	template <class Archive>
 	inline void reflect(Archive& ar) {
+		OFS_REFLECT(show_browser, ar);
+		OFS_REFLECT(show_tcode, ar);
 		OFS_REFLECT(font_override, ar);
 		OFS_REFLECT(default_font_size, ar);
 		OFS_REFLECT(vsync, ar);
@@ -46,6 +59,8 @@ private:
 	SDL_Window* window;
 	SDL_GLContext gl_context;
 	bool exit_app = false;
+
+	OFP_Scene ActiveScene = OFP_Scene::Player;
 
 #ifndef NDEBUG
 	bool DebugMetrics = false;
@@ -74,6 +89,10 @@ public:
 
 	std::unique_ptr<EventSystem> events;
 	std::unique_ptr<TCodePlayer> tcode;
+	std::unique_ptr<ControllerInput> controllerInput;
+
+	std::unique_ptr<Videobrowser> videobrowser;
+
 
 	std::vector<std::unique_ptr<Funscript>> LoadedFunscripts;
 
@@ -90,6 +109,10 @@ public:
 	void updateTitle() noexcept;
 	bool openFile(const std::string& file) noexcept;
 	void clearLoadedScripts() noexcept;
+
+
+	void FilebrowserScene() noexcept;
+	void PlayerScene() noexcept;
 
 	// events
 	void DragNDrop(SDL_Event& ev) noexcept;

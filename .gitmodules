@@ -22,3 +22,6 @@
 [submodule "lib/CSerial"]
 	path = lib/CSerial
 	url = https://github.com/rm5248/CSerial.git
+[submodule "lib/xxHash"]
+	path = lib/xxHash
+	url = https://github.com/Cyan4973/xxHash.git

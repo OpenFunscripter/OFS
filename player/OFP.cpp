@@ -5,6 +5,7 @@
 
 #include "SDL.h"
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_sdl.h"
 
@@ -100,7 +101,7 @@ void OFP::process_events() noexcept
 
 void OFP::update() noexcept
 {
-    //ControllerInput::UpdateControllers();
+    ControllerInput::UpdateControllers(150);
 }
 
 void OFP::new_frame() noexcept
@@ -138,7 +139,6 @@ void OFP::render() noexcept
 void OFP::ShowMainMenuBar() noexcept
 {
 #define BINDING_STRING(binding) keybinds.getBindingString(binding).c_str()  
-
     if (ImGui::BeginMainMenuBar())
     {
         if (ImGui::BeginMenu("File"))
@@ -189,6 +189,12 @@ void OFP::ShowMainMenuBar() noexcept
                 set_fullscreen(Fullscreen);
             }
             ImGui::EndMenu();
+        }
+        ImGui::Separator();
+        ImGui::Spacing();
+        if (ControllerInput::AnythingConnected()) {
+            bool navmodeActive = ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_NavEnableGamepad;
+            ImGui::Text(ICON_GAMEPAD " " ICON_LONG_ARROW_RIGHT " %s", (navmodeActive) ? "Navigation" : "Player");
         }
         ImGui::EndMainMenuBar();
     }
@@ -539,6 +545,63 @@ void OFP::register_bindings() noexcept
         );
         keybinds.registerBinding(group);
     }
+
+    {
+        KeybindingGroup group;
+        group.name = "Controller";
+        auto& toggle_nav_mode = group.bindings.emplace_back(
+            "toggle_controller_navmode",
+            "Toggle controller navigation",
+            true,
+            [&](void*) {
+                auto& io = ImGui::GetIO();
+                io.ConfigFlags ^= ImGuiConfigFlags_NavEnableGamepad;
+            }
+        );
+        toggle_nav_mode.controller = ControllerBinding(
+            SDL_CONTROLLER_BUTTON_LEFTSTICK,
+            true
+        );
+
+        auto& seek_forward_second = group.bindings.emplace_back(
+            "seek_forward_second",
+            "Forward 1 second",
+            false,
+            [&](void*) { player.seekRelative(1000); }
+        );
+        seek_forward_second.controller = ControllerBinding(
+            SDL_CONTROLLER_BUTTON_RIGHTSHOULDER,
+            false
+        );
+
+        auto& seek_backward_second = group.bindings.emplace_back(
+            "seek_backward_second",
+            "Backward 1 second",
+            false,
+            [&](void*) { player.seekRelative(-1000); }
+        );
+        seek_backward_second.controller = ControllerBinding(
+            SDL_CONTROLLER_BUTTON_LEFTSHOULDER,
+            false
+        );
+
+        auto& cycle_scenes = group.bindings.emplace_back(
+            "cycle_scenes",
+            "Cycle scenes",
+            true,
+            [&](void*) {
+                int32_t activeScene = ActiveScene;
+                activeScene++; activeScene %= OFP_Scene::TotalScenes;
+                ActiveScene = (OFP_Scene)activeScene;
+            }
+        );
+        cycle_scenes.controller = ControllerBinding(
+            SDL_CONTROLLER_BUTTON_RIGHTSTICK,
+            true
+        );
+
+        keybinds.registerBinding(group);
+    }
 }
 
 bool OFP::setup()
@@ -606,17 +669,21 @@ bool OFP::setup()
     register_bindings();
     //keybinds.setBindings()
 
-    tcode = std::make_unique<TCodePlayer>();
-
     FunscriptEvents::RegisterEvents();
     VideoEvents::RegisterEvents();
     KeybindingEvents::RegisterEvents();
+    VideobrowserEvents::RegisterEvents();
 
 	result &= player.setup(*events, false);
 
     events->Subscribe(SDL_DROPFILE, EVENT_SYSTEM_BIND(this, &OFP::DragNDrop));
     events->Subscribe(VideoEvents::MpvVideoLoaded, EVENT_SYSTEM_BIND(this, &OFP::MpvVideoLoaded));
     events->Subscribe(VideoEvents::PlayPauseChanged, EVENT_SYSTEM_BIND(this, &OFP::MpvPlayPauseChange));
+
+    controllerInput = std::make_unique<ControllerInput>();
+    controllerInput->setup(*events);
+    tcode = std::make_unique<TCodePlayer>();
+    videobrowser = std::make_unique<Videobrowser>();
 
     clearLoadedScripts();
     playerControls.player = &player;
@@ -642,16 +709,15 @@ void OFP::step() noexcept
     update();
     new_frame();
     {
-        // IMGUI HERE
-        CreateDockspace();
-
-        playerControls.DrawControls(NULL);
-        playerControls.DrawTimeline(NULL);
-
-        if (keybinds.ShowBindingWindow()) { /*settings->saveKeybinds(keybinds.getBindings());*/ }
-
-        tcode->DrawWindow(&settings.show_tcode);
-
+        switch (ActiveScene) {
+        case OFP_Scene::Player:
+            PlayerScene();
+            break;
+        case OFP_Scene::Filebrowser:
+            FilebrowserScene();
+            break;
+        }
+#ifndef NDEBUG
         if (DebugDemo) {
             ImGui::ShowDemoWindow(&DebugDemo);
         }
@@ -659,10 +725,31 @@ void OFP::step() noexcept
         if (DebugMetrics) {
             ImGui::ShowMetricsWindow(&DebugMetrics);
         }
-        player.DrawVideoPlayer(NULL, &settings.show_video);
+#endif
     }
     render();
     SDL_GL_SwapWindow(window);
+}
+
+void OFP::PlayerScene() noexcept 
+{
+    CreateDockspace();
+
+    playerControls.DrawControls(NULL);
+    playerControls.DrawTimeline(NULL);
+
+    if (keybinds.ShowBindingWindow()) { /*settings->saveKeybinds(keybinds.getBindings());*/ }
+
+    tcode->DrawWindow(&settings.show_tcode);
+
+    videobrowser->ShowBrowser(Videobrowser::VideobrowserId, &settings.show_browser);
+    player.DrawVideoPlayer(NULL, &settings.show_video);
+}
+
+void OFP::FilebrowserScene() noexcept 
+{
+    CreateDockspace();
+    videobrowser->ShowBrowser(Videobrowser::VideobrowserSceneId, NULL);
 }
 
 void OFP::shutdown() noexcept

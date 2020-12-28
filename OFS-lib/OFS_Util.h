@@ -269,6 +269,14 @@ public:
 		return (prefPath / rel).string();
 	}
 
+	static std::string PrefpathOFP(const std::string& path) {
+		static const char* cachedPref = SDL_GetPrefPath("OFS", "OFP_data");
+		static std::filesystem::path prefPath(cachedPref);
+		std::filesystem::path rel(path);
+		rel.make_preferred();
+		return (prefPath / rel).string();
+	}
+
 	static bool CreateDirectories(const std::filesystem::path& dirs) {
 		std::error_code ec;
 		std::filesystem::create_directories(dirs, ec);

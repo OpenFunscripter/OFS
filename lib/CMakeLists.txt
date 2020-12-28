@@ -137,8 +137,8 @@ add_subdirectory("utfcpp/")
 # ==============
 # === xxHash ===
 # ==============
-#add_library(xxHash STATIC "xxHash/xxhash.c")
-#target_include_directories(xxHash PUBLIC "xxHash/")
+add_library(xxHash STATIC "xxHash/xxhash.c")
+target_include_directories(xxHash PUBLIC "xxHash/")
 
 # ============
 # === json ===
