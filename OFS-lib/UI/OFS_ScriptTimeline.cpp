@@ -100,6 +100,7 @@ void ScriptTimeline::mouse_pressed(SDL_Event& ev)
 			index++;
 		}
 	}
+	if (undoSystem == nullptr) return;
 
 	if (button.button == SDL_BUTTON_LEFT) {
 		if (modstate & KMOD_SHIFT && PositionsItemHovered) {
@@ -216,6 +217,8 @@ void ScriptTimeline::mouse_scroll(SDL_Event& ev)
 
 void ScriptTimeline::ShowScriptPositions(bool* open, const std::vector<std::unique_ptr<Funscript>>& scripts, Funscript* activeScript) noexcept
 {
+	if (open != nullptr && !*open)return;
+
 	this->activeScript = activeScript;
 
 	auto& style = ImGui::GetStyle();

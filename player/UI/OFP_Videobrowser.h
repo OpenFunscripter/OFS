@@ -60,7 +60,7 @@ public:
 
 class VideobrowserEvents {
 public:
-    static int32_t FileClicked;
+    static int32_t VideobrowserItemClicked;
     static void RegisterEvents() noexcept;
 };
 
@@ -76,9 +76,11 @@ private:
     SDL_SpinLock ItemsLock = 0;
     std::vector<VideobrowserItem> Items;
 public:
-    int32_t ItemsPerRow = 10;
+    int32_t ItemsPerRow = 5;
 	static constexpr const char* VideobrowserId = "Videobrowser";
     static constexpr const char* VideobrowserSceneId = "VideobrowserScene";
+
+    std::string ClickedFilePath;
 
     Videobrowser();
 

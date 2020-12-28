@@ -10,7 +10,7 @@
 #include "OFS_Reflection.h"
 #include "OFS_VideoplayerControls.h"
 #include "OFS_ControllerInput.h"
-
+#include "OFS_ScriptTimeline.h"
 
 #include "OFP_Videobrowser.h"
 
@@ -34,11 +34,18 @@ struct OFP_Settings {
 
 	bool show_browser = false;
 	bool show_tcode = false;
+	bool show_timeline = true;
+	bool show_controls = true;
+	bool show_time = true;
 
 	template <class Archive>
 	inline void reflect(Archive& ar) {
+		OFS_REFLECT(show_timeline, ar);
+		OFS_REFLECT(show_controls, ar);
+		OFS_REFLECT(show_time, ar);
 		OFS_REFLECT(show_browser, ar);
 		OFS_REFLECT(show_tcode, ar);
+
 		OFS_REFLECT(font_override, ar);
 		OFS_REFLECT(default_font_size, ar);
 		OFS_REFLECT(vsync, ar);
@@ -78,7 +85,7 @@ private:
 	void render() noexcept;
 
 	void ShowMainMenuBar() noexcept;
-	void CreateDockspace() noexcept;
+	void CreateDockspace(bool withMenuBar) noexcept;
 public:
 	static ImFont* DefaultFont2; // x2 size of default
 
@@ -86,6 +93,7 @@ public:
 	KeybindingSystem keybinds;
 	VideoplayerWindow player;
 	OFS_VideoplayerControls playerControls;
+	ScriptTimeline scriptTimeline;
 
 	std::unique_ptr<EventSystem> events;
 	std::unique_ptr<TCodePlayer> tcode;
@@ -118,6 +126,8 @@ public:
 	void DragNDrop(SDL_Event& ev) noexcept;
 	void MpvVideoLoaded(SDL_Event& ev) noexcept;
 	void MpvPlayPauseChange(SDL_Event& ev) noexcept;
+
+	void VideobrowserItemClicked(SDL_Event& ev) noexcept;
 
 	inline bool ScriptLoaded() const { return LoadedFunscripts.size() > 0; }
 	inline std::unique_ptr<Funscript>& RootFunscript() noexcept {

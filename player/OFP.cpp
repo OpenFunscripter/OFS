@@ -2,6 +2,7 @@
 
 #include "OFS_Util.h"
 #include "FunscriptHeatmap.h"
+#include "ScriptPositionsOverlayMode.h"
 
 #include "SDL.h"
 #include "imgui.h"
@@ -101,7 +102,8 @@ void OFP::process_events() noexcept
 
 void OFP::update() noexcept
 {
-    ControllerInput::UpdateControllers(150);
+    ControllerInput::UpdateControllers(100);
+    scriptTimeline.overlay->update();
 }
 
 void OFP::new_frame() noexcept
@@ -160,6 +162,12 @@ void OFP::ShowMainMenuBar() noexcept
         }
         if (ImGui::BeginMenu("View")) {
             ImGui::MenuItem("T-Code", NULL, &settings.show_tcode);
+            ImGui::MenuItem("Videobrowser", NULL, &settings.show_browser);
+
+            ImGui::MenuItem("Controls", NULL, &settings.show_controls);
+            ImGui::MenuItem("Time", NULL, &settings.show_time);
+            ImGui::MenuItem("Script Timeline", NULL, &settings.show_timeline);
+
             ImGui::Separator();
             if (ImGui::MenuItem("Draw video", NULL, &settings.show_video)) { }
             if (ImGui::MenuItem("Reset video position", NULL)) { player.resetTranslationAndZoom(); }
@@ -201,7 +209,7 @@ void OFP::ShowMainMenuBar() noexcept
 #undef BINDING_STRING
 }
 
-void OFP::CreateDockspace() noexcept
+void OFP::CreateDockspace(bool withMenuBar) noexcept
 {
     const bool opt_fullscreen_persistant = true;
     const bool opt_fullscreen = opt_fullscreen_persistant;
@@ -247,7 +255,9 @@ void OFP::CreateDockspace() noexcept
         ImGui::DockSpace(MainDockspaceID, ImVec2(0.0f, 0.0f), dockspace_flags);
     }
 
-    ShowMainMenuBar();
+    if (withMenuBar) {
+        ShowMainMenuBar();
+    }
 
     ImGui::End();
 }
@@ -344,7 +354,7 @@ bool OFP::imgui_setup() noexcept
 
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;        // Enable Gamepad Controls
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
     io.ConfigWindowsMoveFromTitleBarOnly = true;
@@ -393,7 +403,7 @@ void OFP::register_bindings() noexcept
         );
         toggle_play.controller = ControllerBinding(
             SDL_CONTROLLER_BUTTON_START,
-            false
+            true
         );
         // PLAYBACK SPEED
         auto& decrement_speed = group.bindings.emplace_back(
@@ -664,22 +674,23 @@ bool OFP::setup()
 
     events = std::make_unique<EventSystem>();
     events->setup();
+    FunscriptEvents::RegisterEvents();
+    VideoEvents::RegisterEvents();
+    KeybindingEvents::RegisterEvents();
+    VideobrowserEvents::RegisterEvents();
 
     keybinds.setup(*events);
     register_bindings();
     //keybinds.setBindings()
 
-    FunscriptEvents::RegisterEvents();
-    VideoEvents::RegisterEvents();
-    KeybindingEvents::RegisterEvents();
-    VideobrowserEvents::RegisterEvents();
 
 	result &= player.setup(*events, false);
 
     events->Subscribe(SDL_DROPFILE, EVENT_SYSTEM_BIND(this, &OFP::DragNDrop));
     events->Subscribe(VideoEvents::MpvVideoLoaded, EVENT_SYSTEM_BIND(this, &OFP::MpvVideoLoaded));
     events->Subscribe(VideoEvents::PlayPauseChanged, EVENT_SYSTEM_BIND(this, &OFP::MpvPlayPauseChange));
-
+    events->Subscribe(VideobrowserEvents::VideobrowserItemClicked, EVENT_SYSTEM_BIND(this, &OFP::VideobrowserItemClicked));
+    
     controllerInput = std::make_unique<ControllerInput>();
     controllerInput->setup(*events);
     tcode = std::make_unique<TCodePlayer>();
@@ -687,6 +698,9 @@ bool OFP::setup()
 
     clearLoadedScripts();
     playerControls.player = &player;
+
+    scriptTimeline.setup(*events, &player, NULL);
+    scriptTimeline.overlay = std::make_unique<EmptyOverlay>();
 
     SDL_ShowWindow(window);
 	return result;
@@ -733,10 +747,11 @@ void OFP::step() noexcept
 
 void OFP::PlayerScene() noexcept 
 {
-    CreateDockspace();
+    CreateDockspace(true);
 
-    playerControls.DrawControls(NULL);
-    playerControls.DrawTimeline(NULL);
+    playerControls.DrawControls(&settings.show_controls);
+    playerControls.DrawTimeline(&settings.show_time);
+    scriptTimeline.ShowScriptPositions(&settings.show_timeline, LoadedFunscripts, RootFunscript().get());
 
     if (keybinds.ShowBindingWindow()) { /*settings->saveKeybinds(keybinds.getBindings());*/ }
 
@@ -748,8 +763,10 @@ void OFP::PlayerScene() noexcept
 
 void OFP::FilebrowserScene() noexcept 
 {
-    CreateDockspace();
+    CreateDockspace(false);
     videobrowser->ShowBrowser(Videobrowser::VideobrowserSceneId, NULL);
+    bool NotOpen = false;
+    player.DrawVideoPlayer(&NotOpen, &settings.show_video);
 }
 
 void OFP::shutdown() noexcept
@@ -872,4 +889,10 @@ void OFP::MpvPlayPauseChange(SDL_Event& ev) noexcept
     else {
         tcode->play(player.getCurrentPositionSecondsInterp(), RootFunscript()->Actions());
     }
+}
+
+void OFP::VideobrowserItemClicked(SDL_Event& ev) noexcept
+{
+    ActiveScene = OFP_Scene::Player;
+    openFile(videobrowser->ClickedFilePath);
 }

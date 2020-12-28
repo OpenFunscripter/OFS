@@ -130,10 +130,11 @@ Videobrowser::Videobrowser()
 
 void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 {
+	if (open != NULL && !*open) return;
 	if (CacheNeedsUpdate) { updateCache(CurrentPath); }
 
 	SDL_AtomicLock(&ItemsLock);
-	ImGui::Begin(Id, NULL, ImGuiWindowFlags_NoDecoration);
+	ImGui::Begin(Id, open, ImGuiWindowFlags_NoDecoration);
 	ImGui::SliderInt("Row", &ItemsPerRow, 1, 100);
 	auto availSpace = ImGui::GetContentRegionMax();
 	auto& style = ImGui::GetStyle();
@@ -149,10 +150,9 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 		if (!item.IsDirectory()) {
 			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, style.Colors[ImGuiCol_PlotLinesHovered]);
 			ImGui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_PlotLines]);
-			auto fileClickHandler = [](VideobrowserItem& item) {
-				LOGF_DEBUG("File: \"%s\"", item.path.c_str());
-				LOGF_DEBUG("Extension: \"%s\"", item.extension.c_str());
-				LOGF_DEBUG("Name: \"%s\"", item.filename.c_str());
+			auto fileClickHandler = [&](VideobrowserItem& item) {		
+				ClickedFilePath = item.path;
+				EventSystem::PushEvent(VideobrowserEvents::VideobrowserItemClicked);
 			};
 
 			uint32_t texId = item.GetTexId();
@@ -388,9 +388,9 @@ void VideobrowserItem::IncrementRefCount() noexcept
 	}
 }
 
-int32_t VideobrowserEvents::FileClicked = 0;
+int32_t VideobrowserEvents::VideobrowserItemClicked = 0;
 
 void VideobrowserEvents::RegisterEvents() noexcept
 {
-	FileClicked = SDL_RegisterEvents(1);
+	VideobrowserItemClicked = SDL_RegisterEvents(1);
 }

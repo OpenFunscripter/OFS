@@ -513,14 +513,14 @@ void VideoplayerWindow::videoRightClickMenu() noexcept
 
 void VideoplayerWindow::DrawVideoPlayer(bool* open, bool* draw_video) noexcept
 {
-	ImGui::Begin(PlayerId, open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
-
 	// this redraw has to happen even if the video isn't actually shown in the gui
 	if (redraw_video) { renderToTexture(); }
+	if (open != nullptr && !*open) return;
+	ImGui::Begin(PlayerId, open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
+
 
 	if (*draw_video) {
 		viewport_pos = ImGui::GetWindowViewport()->Pos;
-
 
 		auto draw_list = ImGui::GetWindowDrawList();
 		if (settings.activeMode != VideoMode::VR_MODE) {

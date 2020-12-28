@@ -101,8 +101,9 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
 
 void OFS_VideoplayerControls::DrawTimeline(bool* open, TimelineCustomDrawFunc&& customDraw) noexcept
 {
+    if (open != nullptr && !*open) return;
     FUN_ASSERT(player != nullptr, "nullptr");
-    ImGui::Begin(PlayerTimeId);
+    ImGui::Begin(PlayerTimeId, open);
 
     {
         constexpr float speedCalcUpdateFrequency = 1.0f;
@@ -182,9 +183,10 @@ void OFS_VideoplayerControls::DrawTimeline(bool* open, TimelineCustomDrawFunc&& 
 
 void OFS_VideoplayerControls::DrawControls(bool* open) noexcept
 {
+    if (open != nullptr && !*open) return;
     FUN_ASSERT(player != nullptr, "nullptr");
 
-    ImGui::Begin(PlayerControlId);
+    ImGui::Begin(PlayerControlId, open);
 
     constexpr int seek_ms = 3000;
     // Playback controls
