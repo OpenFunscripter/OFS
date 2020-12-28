@@ -10,7 +10,7 @@ bool OFP_Settings::load(const std::string& path) noexcept
 	bool succ = false;
 	auto json = Util::LoadJson(path, &succ);
 	if (succ) {
-		OFS::serializer::load(this, &json);
+		OFS::serializer::load(this, &json["config"]);
 	}
 	return succ;
 }
@@ -18,6 +18,6 @@ bool OFP_Settings::load(const std::string& path) noexcept
 void OFP_Settings::save() noexcept
 {
 	nlohmann::json json;
-	OFS::serializer::save(this, &json);
+	OFS::serializer::save(this, &json["config"]);
 	Util::WriteJson(json, loadedPath, true);
 }

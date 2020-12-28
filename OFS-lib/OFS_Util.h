@@ -33,6 +33,7 @@
 #define ICON_GITHUB "\xef\x82\x9b"
 #define ICON_SHARE "\xef\x81\x85"
 #define ICON_EXCLAMATION "\xef\x84\xaa"
+#define ICON_REFRESH "\xef\x80\xa1"
 
 //#ifndef NDEBUG
 #define LOG_INFO(msg)  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, msg)

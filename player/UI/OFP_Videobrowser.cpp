@@ -5,6 +5,7 @@
 
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "imgui_stdlib.h"
 
 #include "glad/glad.h"
 #include "SDL_thread.h"
@@ -121,7 +122,8 @@ void Videobrowser::chooseDrive() noexcept
 }
 #endif
 
-Videobrowser::Videobrowser()
+Videobrowser::Videobrowser(VideobrowserSettings* settings)
+	: settings(settings)
 {
 	if (ThumbnailThreadSem == nullptr) {
 		ThumbnailThreadSem = SDL_CreateSemaphore(MaxThumbailProcesses);
@@ -131,15 +133,35 @@ Videobrowser::Videobrowser()
 void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 {
 	if (open != NULL && !*open) return;
-	if (CacheNeedsUpdate) { updateCache(CurrentPath); }
+	if (CacheNeedsUpdate) { updateCache(settings->CurrentPath); }
+
+	uint32_t window_flags = 0;
+	window_flags |= ImGuiWindowFlags_MenuBar; 
 
 	SDL_AtomicLock(&ItemsLock);
-	ImGui::Begin(Id, open, ImGuiWindowFlags_NoDecoration);
-	ImGui::SliderInt("Row", &ItemsPerRow, 1, 100);
+	ImGui::Begin(Id, open, window_flags);
+	if (ImGui::BeginMenuBar()) {
+		if (ImGui::BeginMenu("View")) {
+			ImGui::SetNextItemWidth(ImGui::GetFontSize()*5.f);
+			ImGui::InputInt("Items", &settings->ItemsPerRow, 1, 10);
+			settings->ItemsPerRow = Util::Clamp(settings->ItemsPerRow, 1, 25);
+			ImGui::EndMenu();
+		}
+		ImGui::EndMenuBar();
+	}
+	if (ImGui::Button(ICON_REFRESH)) {
+		CacheNeedsUpdate = true;
+	}
+	ImGui::SameLine();
+	ImGui::Bullet();
+	ImGui::TextUnformatted(settings->CurrentPath.c_str());
+	ImGui::Separator();
+	
 	auto availSpace = ImGui::GetContentRegionMax();
 	auto& style = ImGui::GetStyle();
 
-	const float ItemWidth = (availSpace.x - (2.f * style.ItemInnerSpacing.x) - (ItemsPerRow*style.ItemSpacing.x)) / (float)ItemsPerRow;
+	float ItemWidth = (availSpace.x - (2.f * style.ItemInnerSpacing.x) - (settings->ItemsPerRow*style.ItemSpacing.x)) / (float)settings->ItemsPerRow;
+	ItemWidth = std::max(ItemWidth, 2.f);
 	const float ItemHeight = (9.f/16.f)*ItemWidth;
 	const auto ItemDim = ImVec2(ItemWidth, ItemHeight);
 	
@@ -151,19 +173,22 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, style.Colors[ImGuiCol_PlotLinesHovered]);
 			ImGui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_PlotLines]);
 			auto fileClickHandler = [&](VideobrowserItem& item) {		
-				ClickedFilePath = item.path;
-				EventSystem::PushEvent(VideobrowserEvents::VideobrowserItemClicked);
+				if (item.HasMatchingScript) {
+					ClickedFilePath = item.path;
+					EventSystem::PushEvent(VideobrowserEvents::VideobrowserItemClicked);
+				}
 			};
 
 			uint32_t texId = item.GetTexId();
-			ImColor FileTint = item.HasMatchingScript ? IM_COL32_WHITE : IM_COL32(75, 75, 75, 255);
+			ImColor FileTint = item.HasMatchingScript ? IM_COL32_WHITE : IM_COL32(200, 200, 200, 255);
 			if (!item.Focussed) {
 				FileTint.Value.x *= 0.75f;
 				FileTint.Value.y *= 0.75f;
 				FileTint.Value.z *= 0.75f;
 			}
 			if (texId != 0) {
-				if (ImGui::ImageButton((void*)(intptr_t)texId, ItemDim, ImVec2(0,0), ImVec2(1,1), 0, ImVec4(0,0,0,0), FileTint)) {
+				ImVec2 padding = item.HasMatchingScript ? ImVec2(0, 0) : ImVec2(ItemWidth*0.1f, ItemWidth*0.1f);
+				if (ImGui::ImageButton((void*)(intptr_t)texId, ItemDim - padding, ImVec2(0,0), ImVec2(1,1), padding.x/2.f, ImVec4(0,0,0,0), FileTint)) {
 					fileClickHandler(item);
 				}
 				item.Focussed = ImGui::IsItemFocused() || ImGui::IsItemHovered();
@@ -189,14 +214,14 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 				else
 #endif
 				{
-					CurrentPath = item.path;
+					settings->CurrentPath = item.path;
 					CacheNeedsUpdate = true;
 				}
 			}
 		}
 		Util::Tooltip(item.filename.c_str());
 		index++;
-		if (index % ItemsPerRow != 0) {
+		if (index % settings->ItemsPerRow != 0) {
 			ImGui::SameLine();
 		}
 	}
@@ -306,7 +331,7 @@ void VideobrowserItem::GenThumbail(bool startThread) noexcept
 				auto it = TextureHashtable.find(data->Id);
 				if (it != TextureHashtable.end() && it->second.ref_count > 0 && it->second.texId == 0) {
 					if (Util::LoadTextureFromFile(data->thumbOutputFilePath.c_str(), &it->second.texId, &w, &h)) {
-						LOGF_INFO("Loaded texture: \"%s\"", data->thumbOutputFilePath.c_str());
+						LOGF_DEBUG("Loaded texture: \"%s\"", data->thumbOutputFilePath.c_str());
 					}
 				}
 

@@ -12,6 +12,7 @@
 
 #include <filesystem>
 #include <sstream>
+#include <limits>
 
 constexpr const char* glsl_version = "#version 150";
 constexpr int DefaultWidth = 1920;
@@ -73,6 +74,36 @@ void OFP::set_default_layout(bool force) noexcept
             LOG_INFO("imgui.ini was not found...");
             LOG_INFO("Setting default layout.");
         }
+        
+        ImGui::ClearIniSettings();
+
+        ImGui::DockBuilderRemoveNode(MainDockspaceID); // Clear out existing layout
+        ImGui::DockBuilderAddNode(MainDockspaceID, ImGuiDockNodeFlags_DockSpace); // Add empty node
+        ImGui::DockBuilderSetNodeSize(MainDockspaceID, ImVec2(DefaultWidth, DefaultHeight));
+
+        ImGuiID dock_player_center_id;
+        ImGuiID opposite_node_id;
+        auto dock_time_bottom_id = ImGui::DockBuilderSplitNode(MainDockspaceID, ImGuiDir_Down, 0.1f, NULL, &dock_player_center_id);
+        auto dock_positions_id = ImGui::DockBuilderSplitNode(dock_player_center_id, ImGuiDir_Down, 0.15f, NULL, &dock_player_center_id);
+        auto dock_mode_right_id = ImGui::DockBuilderSplitNode(dock_player_center_id, ImGuiDir_Right, 0.15f, NULL, &dock_player_center_id);
+
+        auto dock_player_control_id = ImGui::DockBuilderSplitNode(dock_time_bottom_id, ImGuiDir_Left, 0.15f, &dock_time_bottom_id, &dock_time_bottom_id);
+
+        ImGui::DockBuilderGetNode(dock_player_center_id)->LocalFlags |= ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_AutoHideTabBar;
+        ImGui::DockBuilderGetNode(dock_positions_id)->LocalFlags |= ImGuiDockNodeFlags_AutoHideTabBar;
+        ImGui::DockBuilderGetNode(dock_time_bottom_id)->LocalFlags |= ImGuiDockNodeFlags_AutoHideTabBar;
+        ImGui::DockBuilderGetNode(dock_player_control_id)->LocalFlags |= ImGuiDockNodeFlags_AutoHideTabBar;
+
+        ImGui::DockBuilderDockWindow(VideoplayerWindow::PlayerId, dock_player_center_id);
+        ImGui::DockBuilderDockWindow(OFS_VideoplayerControls::PlayerTimeId, dock_time_bottom_id);
+        ImGui::DockBuilderDockWindow(OFS_VideoplayerControls::PlayerControlId, dock_player_control_id);
+        ImGui::DockBuilderDockWindow(ScriptTimeline::PositionsId, dock_positions_id);
+        ImGui::DockBuilderDockWindow(Videobrowser::VideobrowserId, dock_mode_right_id);
+
+        // filebrowser scene
+        ImGui::DockBuilderDockWindow(Videobrowser::VideobrowserSceneId, dock_player_center_id);
+
+        ImGui::DockBuilderFinish(MainDockspaceID);
     }
 }
 
@@ -104,6 +135,9 @@ void OFP::update() noexcept
 {
     ControllerInput::UpdateControllers(100);
     scriptTimeline.overlay->update();
+
+    settings.videoPlayer->current_vr_rotation += rotateVR;
+    settings.videoPlayer->vr_zoom *= zoomVR;
 }
 
 void OFP::new_frame() noexcept
@@ -157,6 +191,9 @@ void OFP::ShowMainMenuBar() noexcept
                             }
                         }
                     }, false);
+            }
+            if (ImGui::MenuItem("Videobrowser")) {
+                settings.ActiveScene = OFP_Scene::Filebrowser;
             }
             ImGui::EndMenu();
         }
@@ -213,7 +250,7 @@ void OFP::CreateDockspace(bool withMenuBar) noexcept
 {
     const bool opt_fullscreen_persistant = true;
     const bool opt_fullscreen = opt_fullscreen_persistant;
-    static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None | ImGuiDockNodeFlags_PassthruCentralNode;
+    static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None | ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_HiddenTabBar;
 
     // We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
     // because it would be confusing to have two docking targets within each others.
@@ -367,7 +404,7 @@ bool OFP::imgui_setup() noexcept
     io.ConfigViewportsNoAutoMerge = false;
     io.ConfigViewportsNoTaskBarIcon = false;
 
-    static auto imguiIniPath = Util::Prefpath("ofp_imgui.ini");
+    static auto imguiIniPath = Util::PrefpathOFP("ofp_imgui.ini");
     io.IniFilename = imguiIniPath.c_str();
 
     ImGui::StyleColorsDark();
@@ -474,15 +511,22 @@ void OFP::register_bindings() noexcept
             false
         );
 
-        // FRAME CONTROL
+        keybinds.registerBinding(group);
+    }
+    {
+        KeybindingGroup group;
+        group.name = "Utility";
+        
+
         auto& prev_frame = group.bindings.emplace_back(
-            "prev_frame",
-            "Previous frame",
+            "prev_scene",
+            "Previous scene",
             false,
             [&](void*) {
-                if (player.isPaused()) {
-                    player.previousFrame();
-                }
+                int32_t activeScene = settings.ActiveScene;
+                activeScene--; 
+                if (activeScene < 0) { activeScene = OFP_Scene::TotalScenes - 1; }
+                settings.ActiveScene = (OFP_Scene)activeScene;
             }
         );
         prev_frame.key = Keybinding(
@@ -495,13 +539,14 @@ void OFP::register_bindings() noexcept
         );
 
         auto& next_frame = group.bindings.emplace_back(
-            "next_frame",
-            "Next frame",
+            "next_scene",
+            "Next scene",
             false,
             [&](void*) {
-                if (player.isPaused()) {
-                    player.nextFrame();
-                }
+                int32_t activeScene = settings.ActiveScene;
+                activeScene++; 
+                activeScene %= OFP_Scene::TotalScenes;
+                settings.ActiveScene = (OFP_Scene)activeScene;
             }
         );
         next_frame.key = Keybinding(
@@ -513,13 +558,23 @@ void OFP::register_bindings() noexcept
             false
         );
 
+        auto& cycle_scenes = group.bindings.emplace_back(
+            "cycle_scenes",
+            "Cycle scenes",
+            true,
+            [&](void*) {
+                int32_t activeScene = settings.ActiveScene;
+                activeScene++;
+                activeScene %= OFP_Scene::TotalScenes;
+                settings.ActiveScene = (OFP_Scene)activeScene;
+            }
+        );
+        cycle_scenes.controller = ControllerBinding(
+            SDL_CONTROLLER_BUTTON_RIGHTSTICK,
+            true
+        );
 
-        keybinds.registerBinding(group);
-    }
-    {
-        KeybindingGroup group;
-        group.name = "Utility";
-        
+
         // SCREENSHOT VIDEO
         auto& save_frame_as_image = group.bindings.emplace_back(
             "save_frame_as_image",
@@ -600,28 +655,15 @@ void OFP::register_bindings() noexcept
             false
         );
 
-        auto& cycle_scenes = group.bindings.emplace_back(
-            "cycle_scenes",
-            "Cycle scenes",
-            true,
-            [&](void*) {
-                int32_t activeScene = ActiveScene;
-                activeScene++; activeScene %= OFP_Scene::TotalScenes;
-                ActiveScene = (OFP_Scene)activeScene;
-            }
-        );
-        cycle_scenes.controller = ControllerBinding(
-            SDL_CONTROLLER_BUTTON_RIGHTSTICK,
-            true
-        );
-
         keybinds.registerBinding(group);
     }
 }
 
 bool OFP::setup()
 {
+#ifndef NDEBUG
     SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
+#endif
 
     LOG_DEBUG("trying to init sdl");
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
@@ -665,6 +707,7 @@ bool OFP::setup()
     SDL_GL_MakeCurrent(window, gl_context);
     LOG_DEBUG("created gl context");
 
+    settings.videoPlayer = &player.settings;
     settings.load(Util::PrefpathOFP("settings.json"));
     SDL_GL_SetSwapInterval(settings.vsync);
 
@@ -688,7 +731,7 @@ bool OFP::setup()
 
     keybinds.setup(*events);
     register_bindings();
-    //keybinds.setBindings()
+    keybinds.load(Util::PrefpathOFP("keybinds.json"));
 
 
 	result &= player.setup(*events, false);
@@ -697,17 +740,22 @@ bool OFP::setup()
     events->Subscribe(VideoEvents::MpvVideoLoaded, EVENT_SYSTEM_BIND(this, &OFP::MpvVideoLoaded));
     events->Subscribe(VideoEvents::PlayPauseChanged, EVENT_SYSTEM_BIND(this, &OFP::MpvPlayPauseChange));
     events->Subscribe(VideobrowserEvents::VideobrowserItemClicked, EVENT_SYSTEM_BIND(this, &OFP::VideobrowserItemClicked));
-    
+    events->Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &OFP::ControllerAxis));
+
     controllerInput = std::make_unique<ControllerInput>();
     controllerInput->setup(*events);
     tcode = std::make_unique<TCodePlayer>();
-    videobrowser = std::make_unique<Videobrowser>();
+    videobrowser = std::make_unique<Videobrowser>(&settings.videoBrowser);
 
     clearLoadedScripts();
     playerControls.player = &player;
 
     scriptTimeline.setup(*events, &player, NULL);
     scriptTimeline.overlay = std::make_unique<EmptyOverlay>();
+
+    if (!settings.last_file.empty()) {
+        openFile(settings.last_file);
+    }
 
     SDL_ShowWindow(window);
 	return result;
@@ -730,7 +778,7 @@ void OFP::step() noexcept
     update();
     new_frame();
     {
-        switch (ActiveScene) {
+        switch (settings.ActiveScene) {
         case OFP_Scene::Player:
             PlayerScene();
             break;
@@ -754,13 +802,13 @@ void OFP::step() noexcept
 
 void OFP::PlayerScene() noexcept 
 {
-    CreateDockspace(true);
+    CreateDockspace(!Fullscreen);
 
     playerControls.DrawControls(&settings.show_controls);
     playerControls.DrawTimeline(&settings.show_time);
     scriptTimeline.ShowScriptPositions(&settings.show_timeline, LoadedFunscripts, RootFunscript().get());
 
-    if (keybinds.ShowBindingWindow()) { /*settings->saveKeybinds(keybinds.getBindings());*/ }
+    if (keybinds.ShowBindingWindow()) { keybinds.save(); }
 
     tcode->DrawWindow(&settings.show_tcode);
 
@@ -886,6 +934,7 @@ void OFP::DragNDrop(SDL_Event& ev) noexcept
 void OFP::MpvVideoLoaded(SDL_Event& ev) noexcept
 {
     OFS::UpdateHeatmapGradient(player.getDuration() * 1000.f, playerControls.TimelineGradient, RootFunscript()->Actions());
+    settings.last_file = player.getVideoPath();
 }
 
 void OFP::MpvPlayPauseChange(SDL_Event& ev) noexcept
@@ -900,6 +949,51 @@ void OFP::MpvPlayPauseChange(SDL_Event& ev) noexcept
 
 void OFP::VideobrowserItemClicked(SDL_Event& ev) noexcept
 {
-    ActiveScene = OFP_Scene::Player;
+    settings.ActiveScene = OFP_Scene::Player;
     openFile(videobrowser->ClickedFilePath);
+}
+
+void OFP::ControllerAxis(SDL_Event& ev) noexcept
+{
+    auto& io = ImGui::GetIO();
+    if (!(io.ConfigFlags & ImGuiConfigFlags_NavEnableGamepad) && settings.videoPlayer->activeMode == VideoMode::VR_MODE)
+    {
+        auto& caxis = ev.caxis;
+        constexpr int deadzone = 2000;
+        if (std::abs(caxis.value) < deadzone) {
+            switch (caxis.axis) {
+            case SDL_GameControllerAxis::SDL_CONTROLLER_AXIS_RIGHTX:
+                rotateVR.x = 0;
+                break;
+            case SDL_GameControllerAxis::SDL_CONTROLLER_AXIS_RIGHTY:
+                rotateVR.y = 0;
+                break;
+
+            case SDL_GameControllerAxis::SDL_CONTROLLER_AXIS_TRIGGERLEFT:
+            case SDL_GameControllerAxis::SDL_CONTROLLER_AXIS_TRIGGERRIGHT:
+                zoomVR = 1.f;
+                break;
+            }
+            return;
+        }
+
+        float relativeValue = (float)(caxis.value - deadzone) / (std::numeric_limits<int16_t>::max() - deadzone);
+        relativeValue *= 0.007f;
+
+        switch (caxis.axis) {
+        case SDL_GameControllerAxis::SDL_CONTROLLER_AXIS_RIGHTX:
+            rotateVR.x = -relativeValue;
+            break;
+        case SDL_GameControllerAxis::SDL_CONTROLLER_AXIS_RIGHTY:
+            rotateVR.y = relativeValue;
+            break;
+        case SDL_GameControllerAxis::SDL_CONTROLLER_AXIS_TRIGGERRIGHT:
+            zoomVR = 1.000000000001f * (1.f+relativeValue);
+            break;
+        case SDL_GameControllerAxis::SDL_CONTROLLER_AXIS_TRIGGERLEFT:
+            zoomVR = 0.999999000999f * (1.f-relativeValue);
+            break;
+        }
+
+    }
 }

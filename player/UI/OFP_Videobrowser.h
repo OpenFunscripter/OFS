@@ -6,6 +6,8 @@
 #include <tuple>
 #include <filesystem>
 
+#include "OFS_Reflection.h"
+
 #include "SDL_atomic.h"
 
 static std::array<std::pair<const char*, bool>, 10> BrowserExtensions {
@@ -64,6 +66,18 @@ public:
     static void RegisterEvents() noexcept;
 };
 
+struct VideobrowserSettings {
+
+	std::string CurrentPath = "/";
+    int32_t ItemsPerRow = 5;
+
+    template <class Archive>
+    inline void reflect(Archive& ar) {
+        OFS_REFLECT(CurrentPath, ar);
+        OFS_REFLECT(ItemsPerRow, ar);
+    }
+};
+
 class Videobrowser {
 private:
     void updateCache(const std::string& path) noexcept;
@@ -71,21 +85,20 @@ private:
     void chooseDrive() noexcept;
 #endif
     bool CacheNeedsUpdate = true;
-	std::string CurrentPath = "E:\\\\";
 
     SDL_SpinLock ItemsLock = 0;
     std::vector<VideobrowserItem> Items;
+    VideobrowserSettings* settings = nullptr;
 public:
-    int32_t ItemsPerRow = 5;
 	static constexpr const char* VideobrowserId = "Videobrowser";
     static constexpr const char* VideobrowserSceneId = "VideobrowserScene";
 
     std::string ClickedFilePath;
 
-    Videobrowser();
+    Videobrowser(VideobrowserSettings* settings);
 
 	void ShowBrowser(const char* Id, bool* open) noexcept;
 
-    inline void SetPath(const std::string& path) { if (path != CurrentPath) { CurrentPath = path; CacheNeedsUpdate = true; } }
-    inline const std::string& Path() const { return CurrentPath; }
+    inline void SetPath(const std::string& path) { if (path != settings->CurrentPath) { settings->CurrentPath = path; CacheNeedsUpdate = true; } }
+    inline const std::string& Path() const { return settings->CurrentPath; }
 };

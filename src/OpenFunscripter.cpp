@@ -193,7 +193,6 @@ OpenFunscripter::~OpenFunscripter()
     events.reset();
 
     settings->saveSettings();
-    keybinds.save();
 }
 
 bool OpenFunscripter::setup()

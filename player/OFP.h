@@ -20,12 +20,6 @@
 #include <cstdint>
 #include <string>
 
-enum OFP_Scene : int32_t {
-	Player,
-	Filebrowser,
-	TotalScenes
-};
-
 struct OFP_ScriptSettings {
 	
 	template <class Archive>
@@ -40,7 +34,6 @@ private:
 	SDL_GLContext gl_context;
 	bool exit_app = false;
 
-	OFP_Scene ActiveScene = OFP_Scene::Player;
 
 #ifndef NDEBUG
 	bool DebugMetrics = false;
@@ -101,6 +94,10 @@ public:
 	void MpvPlayPauseChange(SDL_Event& ev) noexcept;
 
 	void VideobrowserItemClicked(SDL_Event& ev) noexcept;
+
+	ImVec2 rotateVR;
+	float zoomVR = 1.f;
+	void ControllerAxis(SDL_Event& ev) noexcept;
 
 	inline bool ScriptLoaded() const { return LoadedFunscripts.size() > 0; }
 	inline std::unique_ptr<Funscript>& RootFunscript() noexcept {
