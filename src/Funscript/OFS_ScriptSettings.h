@@ -67,7 +67,7 @@ struct OFS_ScriptSettings {
 		}
 	};
 
-	std::string version = "OFS " FUN_LATEST_GIT_TAG "@" FUN_LATEST_GIT_HASH;
+	std::string version = "OFS " OFS_LATEST_GIT_TAG "@" OFS_LATEST_GIT_HASH;
 	std::vector<Bookmark> Bookmarks;
 	int32_t last_pos_ms = 0;
 	std::vector<std::string> associatedScripts;

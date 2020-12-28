@@ -135,8 +135,13 @@ class KeybindingSystem
 	void ControllerButtonDown(SDL_Event& ev) noexcept;
 
 	int32_t lastAxis = 0;
+
+	std::string keybindingPath;
 public:
 	bool ShowWindow = false;
+
+	bool load(const std::string& path) noexcept;
+	void save() noexcept;
 
 	void setup(class EventSystem& events);
 	const std::string& getBindingString(const char* binding_id) noexcept;

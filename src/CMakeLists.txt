@@ -64,31 +64,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	"${PROJECT_SOURCE_DIR}/event/"
 )
 
-find_package(Git)
-execute_process(
-    COMMAND ${GIT_EXECUTABLE} --git-dir=${CMAKE_SOURCE_DIR}/.git describe --abbrev=0 --tags
-    RESULT_VARIABLE result
-    OUTPUT_VARIABLE LATEST_GIT_TAG)
-
-execute_process(
-    COMMAND ${GIT_EXECUTABLE} --git-dir=${CMAKE_SOURCE_DIR}/.git rev-parse --short HEAD
-    RESULT_VARIABLE result
-    OUTPUT_VARIABLE LATEST_GIT_HASH)
-
-string(REGEX REPLACE "\n$" "" LATEST_GIT_TAG "${LATEST_GIT_TAG}")
-set(LATEST_GIT_TAG "\"${LATEST_GIT_TAG}\"")
-message("Compiling with git tag: ${LATEST_GIT_TAG}")
-
-string(REGEX REPLACE "\n$" "" LATEST_GIT_HASH "${LATEST_GIT_HASH}")
-set(LATEST_GIT_HASH "\"${LATEST_GIT_HASH}\"")
-message("Compiling with git hash: ${LATEST_GIT_HASH}")
-
-target_compile_definitions(${PROJECT_NAME} PUBLIC 
-	"FUN_LATEST_GIT_TAG=${LATEST_GIT_TAG}"
-	"FUN_LATEST_GIT_HASH=${LATEST_GIT_HASH}"
-)
-
-
 # c++17
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 

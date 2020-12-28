@@ -193,6 +193,7 @@ OpenFunscripter::~OpenFunscripter()
     events.reset();
 
     settings->saveSettings();
+    keybinds.save();
 }
 
 bool OpenFunscripter::setup()
@@ -204,7 +205,7 @@ bool OpenFunscripter::setup()
     auto prefPath = Util::Prefpath("");
     Util::CreateDirectories(prefPath);
 
-    settings = std::make_unique<OpenFunscripterSettings>(Util::Prefpath("keybinds.json"), Util::Prefpath("config.json"));
+    settings = std::make_unique<OpenFunscripterSettings>(Util::Prefpath("config.json"));
     
     LOG_DEBUG("trying to init sdl");
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
@@ -237,7 +238,7 @@ bool OpenFunscripter::setup()
 
     LOG_DEBUG("trying to create window");
     window = SDL_CreateWindow(
-        "OpenFunscripter " FUN_LATEST_GIT_TAG "@" FUN_LATEST_GIT_HASH,
+        "OpenFunscripter " OFS_LATEST_GIT_TAG "@" OFS_LATEST_GIT_HASH,
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         DefaultWidth, DefaultHeight,
         SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN
@@ -283,7 +284,7 @@ bool OpenFunscripter::setup()
 
     keybinds.setup(*events);
     register_bindings(); // needs to happen before setBindings
-    keybinds.setBindings(settings->getKeybindings()); // override with user bindings
+    keybinds.load(Util::Prefpath("keybinds.json"));
 
     scriptPositions.setup(*events, &player, undoSystem.get());
     clearLoadedScripts(); // initialized std::vector with one Funscript
@@ -1388,7 +1389,7 @@ void OpenFunscripter::step() noexcept {
         scripting->DrawScriptingMode(NULL);
 
         if (keybinds.ShowBindingWindow()) {
-            settings->saveKeybinds(keybinds.getBindings());
+            keybinds.save();
         }
 
         if (settings->ShowPreferenceWindow()) {
@@ -1663,7 +1664,7 @@ void OpenFunscripter::updateTitle() noexcept
     std::stringstream ss;
     ss.str(std::string());
     
-    ss << "OpenFunscripter " FUN_LATEST_GIT_TAG "@" FUN_LATEST_GIT_HASH " - \"" << ActiveFunscript()->current_path << "\"";
+    ss << "OpenFunscripter " OFS_LATEST_GIT_TAG "@" OFS_LATEST_GIT_HASH " - \"" << ActiveFunscript()->current_path << "\"";
     SDL_SetWindowTitle(window, ss.str().c_str());
 }
 
@@ -2548,8 +2549,8 @@ void OpenFunscripter::ShowAboutWindow(bool* open) noexcept
         | ImGuiWindowFlags_NoDocking
         | ImGuiWindowFlags_NoCollapse
     );
-    ImGui::TextUnformatted("OpenFunscripter " FUN_LATEST_GIT_TAG);
-    ImGui::Text("Commit: %s", FUN_LATEST_GIT_HASH);
+    ImGui::TextUnformatted("OpenFunscripter " OFS_LATEST_GIT_TAG);
+    ImGui::Text("Commit: %s", OFS_LATEST_GIT_HASH);
     if (ImGui::Button("Latest release " ICON_GITHUB, ImVec2(-1.f, 0.f))) {
         Util::OpenUrl("https://github.com/gagax1234/OpenFunscripter/releases/latest");
     }

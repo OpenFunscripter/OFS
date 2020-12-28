@@ -10,17 +10,10 @@
 #include <algorithm>
 
 
-OpenFunscripterSettings::OpenFunscripterSettings(const std::string& keybinds, const std::string& config)
-	: keybinds_path(keybinds), config_path(config)
+OpenFunscripterSettings::OpenFunscripterSettings(const std::string& config)
+	: config_path(config)
 {
 	bool success = false;
-	if (Util::FileExists(keybinds)) {
-		keybindsObj = Util::LoadJson(keybinds, &success);
-		if (!success) { 
-			LOGF_ERROR("Failed to parse config @ \"%s\"", keybinds.c_str());
-			keybindsObj.clear(); 
-		}
-	}
 	if (Util::FileExists(config)) {
 		configObj = Util::LoadJson(config, &success);
 		if (!success) {
@@ -29,19 +22,11 @@ OpenFunscripterSettings::OpenFunscripterSettings(const std::string& keybinds, co
 		}
 	}
 
-	scripterSettings.simulator = &OpenFunscripter::ptr->simulator.simulator;
-	if (!keybindsObj[KeybindsStr].is_object())
-		keybindsObj[KeybindsStr] = nlohmann::json::object();
-	
+	scripterSettings.simulator = &OpenFunscripter::ptr->simulator.simulator;	
 	if (!configObj[ConfigStr].is_object())
 		configObj[ConfigStr] = nlohmann::json::object();
 	else
 		load_config();
-}
-
-void OpenFunscripterSettings::save_keybinds()
-{
-	Util::WriteJson(keybindsObj, keybinds_path, true);
 }
 
 void OpenFunscripterSettings::save_config()
@@ -58,22 +43,6 @@ void OpenFunscripterSettings::saveSettings()
 {
 	OFS::serializer::save(&scripterSettings, &config());
 	save_config();
-}
-
-void OpenFunscripterSettings::saveKeybinds(const Keybindings& bindings)
-{
-	OFS::serializer::save((Keybindings*)&bindings, &keybindsObj[KeybindsStr]);
-	save_keybinds();
-}
-
-Keybindings OpenFunscripterSettings::getKeybindings()
-{
-	auto& keybinds = keybindsObj[KeybindsStr];
-	Keybindings bindings;
-	if (!keybinds.empty()) {
-		OFS::serializer::load(&bindings, &keybinds);
-	}
-	return bindings;
 }
 
 bool OpenFunscripterSettings::ShowPreferenceWindow()

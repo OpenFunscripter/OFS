@@ -1,6 +1,6 @@
 #include "KeybindingSystem.h"
 
-//#include "OpenFunscripter.h"
+#include "OFS_Serialization.h"
 #include "EventSystem.h"
 
 #include "imgui.h"
@@ -38,6 +38,26 @@ static const char* GetButtonString(int32_t button) {
     else {
         return "- Not set -";
     }
+}
+
+bool KeybindingSystem::load(const std::string& path) noexcept
+{
+    keybindingPath = path;
+    bool succ = false;
+    auto json = Util::LoadJson(path, &succ);
+    if (succ) {
+        Keybindings bindings;
+        OFS::serializer::load(&bindings, &json["keybindings"]);
+        setBindings(bindings);
+    }
+    return succ;
+}
+
+void KeybindingSystem::save() noexcept
+{
+    nlohmann::json json;
+    OFS::serializer::save(&ActiveBindings, &json["keybindings"]);
+    Util::WriteJson(json, keybindingPath, true);
 }
 
 void KeybindingSystem::setup(EventSystem& events)

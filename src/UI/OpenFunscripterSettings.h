@@ -2,8 +2,6 @@
 
 #include "nlohmann/json.hpp"
 
-#include "KeybindingSystem.h"
-
 #include <sstream>
 #include <vector>
 #include <string>
@@ -106,24 +104,18 @@ private:
 		}
 	} scripterSettings;
 
-	std::string keybinds_path;
 	std::string config_path;
 
-	const char* KeybindsStr = "keybinds";
 	const char* ConfigStr = "config";
-	nlohmann::json keybindsObj;
 	nlohmann::json configObj;
 	nlohmann::json& config() noexcept { return configObj[ConfigStr]; }
 
-	void save_keybinds();
 	void save_config();
 	void load_config();
 public:
-	OpenFunscripterSettings(const std::string& keybinds, const std::string& config);
+	OpenFunscripterSettings(const std::string& config);
 	ScripterSettingsData& data() noexcept { return scripterSettings; }
 	void saveSettings();
-	void saveKeybinds(const Keybindings& binding);
-	Keybindings getKeybindings();
 
 	inline void addRecentFile(RecentFile& recentFile) noexcept {
 		auto it = std::find_if(scripterSettings.recentFiles.begin(), scripterSettings.recentFiles.end(),

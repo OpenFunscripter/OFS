@@ -262,6 +262,11 @@ void OFP::CreateDockspace(bool withMenuBar) noexcept
     ImGui::End();
 }
 
+OFP::~OFP() noexcept
+{
+    settings.save();
+}
+
 bool OFP::load_fonts(const char* font_override) noexcept
 {
     auto& io = ImGui::GetIO();
@@ -641,7 +646,7 @@ bool OFP::setup()
 
     LOG_DEBUG("trying to create window");
     window = SDL_CreateWindow(
-        "OFP " FUN_LATEST_GIT_TAG "@" FUN_LATEST_GIT_HASH,
+        "OFP " OFS_LATEST_GIT_TAG "@" OFS_LATEST_GIT_HASH,
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         DefaultWidth, DefaultHeight,
         SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN
@@ -658,8 +663,10 @@ bool OFP::setup()
     LOG_DEBUG("trying to create gl context");
     gl_context = SDL_GL_CreateContext(window);
     SDL_GL_MakeCurrent(window, gl_context);
-    SDL_GL_SetSwapInterval(settings.vsync);
     LOG_DEBUG("created gl context");
+
+    settings.load(Util::PrefpathOFP("settings.json"));
+    SDL_GL_SetSwapInterval(settings.vsync);
 
     if (gladLoadGL() == 0) {
         LOG_ERROR("Failed to load glad.");
@@ -785,7 +792,7 @@ void OFP::updateTitle() noexcept
     std::stringstream ss;
     ss.str(std::string());
 
-    ss << "OFP " FUN_LATEST_GIT_TAG "@" FUN_LATEST_GIT_HASH " - \"" << RootFunscript()->current_path << "\"";
+    ss << "OFP " OFS_LATEST_GIT_TAG "@" OFS_LATEST_GIT_HASH " - \"" << RootFunscript()->current_path << "\"";
     SDL_SetWindowTitle(window, ss.str().c_str());
 }
 

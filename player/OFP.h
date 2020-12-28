@@ -13,7 +13,7 @@
 #include "OFS_ScriptTimeline.h"
 
 #include "OFP_Videobrowser.h"
-
+#include "OFP_Settings.h"
 #include "SDL_events.h"
 
 #include <memory>
@@ -24,33 +24,6 @@ enum OFP_Scene : int32_t {
 	Player,
 	Filebrowser,
 	TotalScenes
-};
-
-struct OFP_Settings {
-	std::string font_override = "";
-	float default_font_size = 18.f;
-	bool vsync = true;
-	bool show_video = true;
-
-	bool show_browser = false;
-	bool show_tcode = false;
-	bool show_timeline = true;
-	bool show_controls = true;
-	bool show_time = true;
-
-	template <class Archive>
-	inline void reflect(Archive& ar) {
-		OFS_REFLECT(show_timeline, ar);
-		OFS_REFLECT(show_controls, ar);
-		OFS_REFLECT(show_time, ar);
-		OFS_REFLECT(show_browser, ar);
-		OFS_REFLECT(show_tcode, ar);
-
-		OFS_REFLECT(font_override, ar);
-		OFS_REFLECT(default_font_size, ar);
-		OFS_REFLECT(vsync, ar);
-		OFS_REFLECT(show_video, ar);
-	}
 };
 
 struct OFP_ScriptSettings {
@@ -100,9 +73,9 @@ public:
 	std::unique_ptr<ControllerInput> controllerInput;
 
 	std::unique_ptr<Videobrowser> videobrowser;
-
-
 	std::vector<std::unique_ptr<Funscript>> LoadedFunscripts;
+
+	~OFP() noexcept;
 
 	bool load_fonts(const char* font_override) noexcept;
 	bool imgui_setup() noexcept;
