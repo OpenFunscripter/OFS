@@ -38,7 +38,6 @@ constexpr std::array<const char*, 4> SupportedAudioExtensions{
     ".ogg"
 };
 
-
 void OFP::set_fullscreen(bool fullscreen) noexcept
 {
     static SDL_Rect restoreRect{ 0,0, 1280,720 };
@@ -126,6 +125,10 @@ void OFP::process_events() noexcept
             }
             break;
         }
+        case SDL_CONTROLLERBUTTONDOWN:
+        case SDL_CONTROLLERBUTTONUP:
+            timer.reset();
+            break;
         }
         events->PushEvent(event);
     }
@@ -138,6 +141,21 @@ void OFP::update() noexcept
 
     settings.videoPlayer->current_vr_rotation += rotateVR;
     settings.videoPlayer->vr_zoom *= zoomVR;
+
+    static ImVec2 prevPos;
+    auto mousePos = ImGui::GetMousePos();
+    auto viewport = ImGui::GetMainViewport();
+    ImRect viewport_bb;
+    viewport_bb.Min = viewport->Pos;
+    viewport_bb.Max = viewport->Pos + viewport->Size;
+
+    if (viewport_bb.Contains(mousePos)) {
+        if (prevPos.x != mousePos.x || prevPos.y != mousePos.y) {
+            timer.reset();
+        }
+    }
+    prevPos = mousePos;
+    SDL_ShowCursor(!timer.hidden());
 }
 
 void OFP::new_frame() noexcept
@@ -193,7 +211,7 @@ void OFP::ShowMainMenuBar() noexcept
                     }, false);
             }
             if (ImGui::MenuItem("Videobrowser")) {
-                settings.ActiveScene = OFP_Scene::Filebrowser;
+                SetActiveScene(OFP_Scene::Filebrowser);
             }
             ImGui::EndMenu();
         }
@@ -201,21 +219,17 @@ void OFP::ShowMainMenuBar() noexcept
             ImGui::MenuItem("T-Code", NULL, &settings.show_tcode);
             ImGui::MenuItem("Videobrowser", NULL, &settings.show_browser);
 
-            ImGui::MenuItem("Controls", NULL, &settings.show_controls);
+            ImGui::MenuItem("Playback controls", NULL, &settings.show_controls);
             ImGui::MenuItem("Time", NULL, &settings.show_time);
             ImGui::MenuItem("Script Timeline", NULL, &settings.show_timeline);
 
             ImGui::Separator();
             if (ImGui::MenuItem("Draw video", NULL, &settings.show_video)) { }
             if (ImGui::MenuItem("Reset video position", NULL)) { player.resetTranslationAndZoom(); }
-            ImGui::Combo("Video Mode", (int32_t*)&player.settings.activeMode,
-                "Full Video\0"
-                "Left Pane\0"
-                "Right Pane\0"
-                "Top Pane\0"
-                "Bottom Pane\0"
-                "VR\0"
-                "\0");
+            ImGui::Separator();
+            if (ImGui::MenuItem("VR mode", NULL, player.settings.activeMode == VideoMode::VR_MODE)) {
+                ToggleVrMode();
+            }
 #ifndef NDEBUG
             ImGui::Separator();
             if (ImGui::BeginMenu("DEBUG ONLY")) {
@@ -297,6 +311,36 @@ void OFP::CreateDockspace(bool withMenuBar) noexcept
     }
 
     ImGui::End();
+}
+
+void OFP::SetNavigationMode(bool enable) noexcept
+{
+    auto& io = ImGui::GetIO();
+    io.ConfigFlags &= ~(ImGuiConfigFlags_NavEnableGamepad);
+    if (enable) { io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; }
+}
+
+void OFP::SetActiveScene(OFP_Scene scene) noexcept
+{
+    settings.ActiveScene = scene;
+    switch (scene) {
+    case OFP_Scene::Player:
+        SetNavigationMode(false);
+        break;
+    case OFP_Scene::Filebrowser:
+        SetNavigationMode(true);
+        break;
+    }
+}
+
+void OFP::ToggleVrMode() noexcept
+{
+    if (player.settings.activeMode == VideoMode::VR_MODE) {
+        player.settings.activeMode = VideoMode::FULL;
+    }
+    else {
+        player.settings.activeMode = VideoMode::VR_MODE;
+    }
 }
 
 OFP::~OFP() noexcept
@@ -469,6 +513,17 @@ void OFP::register_bindings() noexcept
             0
         );
 
+        auto& toggle_vr_mode = group.bindings.emplace_back(
+            "toggle_vr_mode",
+            "Toggle VR mode",
+            true,
+            [&](void*) { ToggleVrMode(); }
+        );
+        toggle_vr_mode.controller = ControllerBinding(
+            SDL_CONTROLLER_BUTTON_BACK,
+            true
+        );
+
         keybinds.registerBinding(group);
     }
     {
@@ -517,47 +572,6 @@ void OFP::register_bindings() noexcept
         KeybindingGroup group;
         group.name = "Utility";
         
-
-        auto& prev_frame = group.bindings.emplace_back(
-            "prev_scene",
-            "Previous scene",
-            false,
-            [&](void*) {
-                int32_t activeScene = settings.ActiveScene;
-                activeScene--; 
-                if (activeScene < 0) { activeScene = OFP_Scene::TotalScenes - 1; }
-                settings.ActiveScene = (OFP_Scene)activeScene;
-            }
-        );
-        prev_frame.key = Keybinding(
-            SDLK_LEFT,
-            0
-        );
-        prev_frame.controller = ControllerBinding(
-            SDL_CONTROLLER_BUTTON_DPAD_LEFT,
-            false
-        );
-
-        auto& next_frame = group.bindings.emplace_back(
-            "next_scene",
-            "Next scene",
-            false,
-            [&](void*) {
-                int32_t activeScene = settings.ActiveScene;
-                activeScene++; 
-                activeScene %= OFP_Scene::TotalScenes;
-                settings.ActiveScene = (OFP_Scene)activeScene;
-            }
-        );
-        next_frame.key = Keybinding(
-            SDLK_RIGHT,
-            0
-        );
-        next_frame.controller = ControllerBinding(
-            SDL_CONTROLLER_BUTTON_DPAD_RIGHT,
-            false
-        );
-
         auto& cycle_scenes = group.bindings.emplace_back(
             "cycle_scenes",
             "Cycle scenes",
@@ -566,7 +580,7 @@ void OFP::register_bindings() noexcept
                 int32_t activeScene = settings.ActiveScene;
                 activeScene++;
                 activeScene %= OFP_Scene::TotalScenes;
-                settings.ActiveScene = (OFP_Scene)activeScene;
+                SetActiveScene((OFP_Scene)activeScene);
             }
         );
         cycle_scenes.controller = ControllerBinding(
@@ -635,9 +649,9 @@ void OFP::register_bindings() noexcept
 
         auto& seek_forward_second = group.bindings.emplace_back(
             "seek_forward_second",
-            "Forward 1 second",
+            "Forward 3 second",
             false,
-            [&](void*) { player.seekRelative(1000); }
+            [&](void*) { player.seekRelative(3000); }
         );
         seek_forward_second.controller = ControllerBinding(
             SDL_CONTROLLER_BUTTON_RIGHTSHOULDER,
@@ -646,9 +660,9 @@ void OFP::register_bindings() noexcept
 
         auto& seek_backward_second = group.bindings.emplace_back(
             "seek_backward_second",
-            "Backward 1 second",
+            "Backward 3 second",
             false,
-            [&](void*) { player.seekRelative(-1000); }
+            [&](void*) { player.seekRelative(-3000); }
         );
         seek_backward_second.controller = ControllerBinding(
             SDL_CONTROLLER_BUTTON_LEFTSHOULDER,
@@ -728,6 +742,7 @@ bool OFP::setup()
     VideoEvents::RegisterEvents();
     KeybindingEvents::RegisterEvents();
     VideobrowserEvents::RegisterEvents();
+    ScriptTimelineEvents::RegisterEvents();
 
     keybinds.setup(*events);
     register_bindings();
@@ -751,11 +766,13 @@ bool OFP::setup()
     playerControls.player = &player;
 
     scriptTimeline.setup(*events, &player, NULL);
-    scriptTimeline.overlay = std::make_unique<EmptyOverlay>();
+    scriptTimeline.overlay = std::make_unique<EmptyOverlay>(&scriptTimeline);
 
     if (!settings.last_file.empty()) {
         openFile(settings.last_file);
     }
+
+    SetActiveScene(settings.ActiveScene);
 
     SDL_ShowWindow(window);
 	return result;
@@ -775,8 +792,8 @@ int OFP::run() noexcept
 void OFP::step() noexcept
 {
     process_events();
-    update();
     new_frame();
+    update();
     {
         switch (settings.ActiveScene) {
         case OFP_Scene::Player:
@@ -802,18 +819,20 @@ void OFP::step() noexcept
 
 void OFP::PlayerScene() noexcept 
 {
-    CreateDockspace(!Fullscreen);
+    CreateDockspace(!timer.hidden());
 
-    playerControls.DrawControls(&settings.show_controls);
-    playerControls.DrawTimeline(&settings.show_time);
-    scriptTimeline.ShowScriptPositions(&settings.show_timeline, LoadedFunscripts, RootFunscript().get());
+    bool HideElement = !timer.hidden();
+
+    playerControls.DrawControls(!HideElement ? &HideElement : &settings.show_controls);
+    playerControls.DrawTimeline(!HideElement ? &HideElement : &settings.show_time);
+    scriptTimeline.ShowScriptPositions(!HideElement ? &HideElement : &settings.show_timeline, LoadedFunscripts, RootFunscript().get());
 
     if (keybinds.ShowBindingWindow()) { keybinds.save(); }
 
-    tcode->DrawWindow(&settings.show_tcode);
+    tcode->DrawWindow(!HideElement ? &HideElement : &settings.show_tcode);
 
     videobrowser->ShowBrowser(Videobrowser::VideobrowserId, &settings.show_browser);
-    player.DrawVideoPlayer(NULL, &settings.show_video);
+    player.DrawVideoPlayer(NULL, &settings.show_video);    
 }
 
 void OFP::FilebrowserScene() noexcept 
@@ -822,6 +841,7 @@ void OFP::FilebrowserScene() noexcept
     videobrowser->ShowBrowser(Videobrowser::VideobrowserSceneId, NULL);
     bool NotOpen = false;
     player.DrawVideoPlayer(&NotOpen, &settings.show_video);
+    timer.reset();
 }
 
 void OFP::shutdown() noexcept
@@ -949,7 +969,7 @@ void OFP::MpvPlayPauseChange(SDL_Event& ev) noexcept
 
 void OFP::VideobrowserItemClicked(SDL_Event& ev) noexcept
 {
-    settings.ActiveScene = OFP_Scene::Player;
+    SetActiveScene(OFP_Scene::Player);
     openFile(videobrowser->ClickedFilePath);
 }
 

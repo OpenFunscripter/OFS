@@ -97,16 +97,17 @@ void ScriptingMode::setMode(ScriptingModeEnum mode) noexcept
 void ScriptingMode::setOverlay(ScriptingOverlayModes mode) noexcept
 {
     active_overlay = mode;
+    auto timeline = &OpenFunscripter::ptr->scriptPositions;
     switch (mode)
     {
     case FRAME:
-        OpenFunscripter::ptr->scriptPositions.overlay = std::make_unique<FrameOverlay>();
+        OpenFunscripter::ptr->scriptPositions.overlay = std::make_unique<FrameOverlay>(timeline);
         break;
     case TEMPO:
-        OpenFunscripter::ptr->scriptPositions.overlay = std::make_unique<TempoOverlay>();
+        OpenFunscripter::ptr->scriptPositions.overlay = std::make_unique<TempoOverlay>(timeline);
         break;
     case EMPTY:
-        OpenFunscripter::ptr->scriptPositions.overlay = std::make_unique<EmptyOverlay>();
+        OpenFunscripter::ptr->scriptPositions.overlay = std::make_unique<EmptyOverlay>(timeline);
         break;
     default:
         break;

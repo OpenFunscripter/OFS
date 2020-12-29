@@ -12,11 +12,11 @@
 
 // strings for SDL_GameControllerButton enum
 static const std::array<const char*, SDL_CONTROLLER_BUTTON_MAX> gameButtonString {
-    "A",
-    "B",
-    "X",
-    "Y",
-    "Back",
+    "A / X",
+    "B / Circle",
+    "X / Square",
+    "Y / Triangle",
+    "Back / Share",
     "Guide",
     "Start",
     "Leftstick",

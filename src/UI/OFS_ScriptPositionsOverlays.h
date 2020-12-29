@@ -53,6 +53,8 @@ private:
 		"64th measures",
 	};
 public:
+	TempoOverlay(class ScriptTimeline* timeline)
+		: BaseOverlay(timeline) {}
 	virtual void DrawSettings() noexcept override;
 	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept override;
 	virtual void nextFrame() noexcept override;
@@ -63,6 +65,8 @@ public:
 class FrameOverlay : public BaseOverlay {
 
 public:
+	FrameOverlay(class ScriptTimeline* timeline)
+		: BaseOverlay(timeline) {}
 	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept override;
 	virtual void nextFrame() noexcept override;
 	virtual void previousFrame() noexcept override;

@@ -1,4 +1,5 @@
 #include "ScriptPositionsOverlayMode.h"
+#include "OFS_ScriptTimeline.h"
 
 ImGradient BaseOverlay::speedGradient;
 std::vector<BaseOverlay::ColoredLine> BaseOverlay::ColoredLines;
@@ -8,8 +9,10 @@ std::vector<FunscriptAction> BaseOverlay::ActionPositionWindow;
 bool BaseOverlay::SplineLines = false;
 float BaseOverlay::SplineEasing = 1.5f;
 
-BaseOverlay::BaseOverlay() noexcept
+BaseOverlay::BaseOverlay(ScriptTimeline* timeline) noexcept
 {
+    this->timeline = timeline;
+
     if (speedGradient.getMarks().size() == 0) {
         std::array<ImColor, 4> heatColor{
         IM_COL32(0xFF, 0xFF, 0xFF, 0xFF),
@@ -45,6 +48,7 @@ void BaseOverlay::DrawSettings() noexcept
 
 void EmptyOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept
 {
+    timeline->DrawAudioWaveform(ctx);
     BaseOverlay::DrawActionLines(ctx);
 }
 

@@ -19,6 +19,16 @@
 #include <memory>
 #include <cstdint>
 #include <string>
+#include <cstdint>
+
+struct AutoHideTime 
+{
+	uint32_t StartTime = 0;
+	static constexpr uint32_t HideAfterTime = 5000;
+
+	inline void reset() { StartTime = SDL_GetTicks(); }
+	inline bool hidden() const { return SDL_GetTicks() >= (StartTime + HideAfterTime); }
+};
 
 struct OFP_ScriptSettings {
 	
@@ -52,6 +62,10 @@ private:
 
 	void ShowMainMenuBar() noexcept;
 	void CreateDockspace(bool withMenuBar) noexcept;
+
+	void SetNavigationMode(bool enable) noexcept;
+	void SetActiveScene(OFP_Scene scene) noexcept;
+	void ToggleVrMode() noexcept;
 public:
 	static ImFont* DefaultFont2; // x2 size of default
 
@@ -60,6 +74,7 @@ public:
 	VideoplayerWindow player;
 	OFS_VideoplayerControls playerControls;
 	ScriptTimeline scriptTimeline;
+	AutoHideTime timer;
 
 	std::unique_ptr<EventSystem> events;
 	std::unique_ptr<TCodePlayer> tcode;

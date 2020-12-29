@@ -52,7 +52,7 @@ void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
         }
     }
     BaseOverlay::DrawHeightLines(ctx);
-    app->scriptPositions.DrawAudioWaveform(ctx);
+    timeline->DrawAudioWaveform(ctx);
     BaseOverlay::DrawActionLines(ctx);
     BaseOverlay::DrawSecondsLabel(ctx);
     BaseOverlay::DrawScriptLabel(ctx);
@@ -99,7 +99,7 @@ void TempoOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
     auto app = OpenFunscripter::ptr;
     auto& tempo = app->ActiveFunscript()->Userdata<OFS_ScriptSettings>().tempoSettings;
     BaseOverlay::DrawHeightLines(ctx);
-    app->scriptPositions.DrawAudioWaveform(ctx);
+    timeline->DrawAudioWaveform(ctx);
     BaseOverlay::DrawActionLines(ctx);
     BaseOverlay::DrawSecondsLabel(ctx);
     BaseOverlay::DrawScriptLabel(ctx);

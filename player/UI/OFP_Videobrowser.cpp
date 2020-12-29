@@ -50,6 +50,7 @@ void Videobrowser::updateCache(const std::string& path) noexcept
 		
 		SDL_AtomicLock(&browser.ItemsLock);
 		browser.Items.clear();
+		LOG_DEBUG("ITEMS CLEAR");
 		SDL_AtomicUnlock(&browser.ItemsLock);
 
 		auto pathObj = Util::PathFromString(data->path);
@@ -166,18 +167,54 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 	const auto ItemDim = ImVec2(ItemWidth, ItemHeight);
 	
 	ImGui::BeginChild("Items");
+	auto fileClickHandler = [&](VideobrowserItem& item) {		
+		if (item.HasMatchingScript) {
+			ClickedFilePath = item.path;
+			EventSystem::PushEvent(VideobrowserEvents::VideobrowserItemClicked);
+		}
+	};
+
+	auto directoryClickHandler = [&](VideobrowserItem& item) {
+#ifdef WIN32
+		auto pathObj = Util::PathFromString(item.path);
+		auto pathObjAbs = std::filesystem::absolute(pathObj);
+		if (pathObj != pathObjAbs && pathObj.root_path() == pathObjAbs) {
+			chooseDrive();
+		}
+		else
+#endif
+		{
+			settings->CurrentPath = item.path;
+			CacheNeedsUpdate = true;
+			// this ensures the items are focussed
+			ImGui::SetFocusID(ImGui::GetID(".."), ImGui::GetCurrentWindow());
+		}
+	};
+
+	if (ImGui::IsNavInputTest(ImGuiNavInput_Cancel, ImGuiInputReadMode_Pressed)) {
+		// go up one directory
+		// this assumes Items.front() contains ".."
+		if (Items.size() > 0 && Items.front().filename == "..") {
+			directoryClickHandler(Items.front());
+		}
+	}
+	else if (ImGui::IsNavInputTest(ImGuiNavInput_FocusPrev, ImGuiInputReadMode_Pressed))
+	{
+		settings->ItemsPerRow--;
+		settings->ItemsPerRow = Util::Clamp(settings->ItemsPerRow, 1, 25);
+	}
+	else if (ImGui::IsNavInputTest(ImGuiNavInput_FocusNext, ImGuiInputReadMode_Pressed)) 
+	{
+		settings->ItemsPerRow++;
+		settings->ItemsPerRow = Util::Clamp(settings->ItemsPerRow, 1, 25);
+	}
+	
 
 	int index = 0;
 	for (auto& item : Items) {
 		if (!item.IsDirectory()) {
 			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, style.Colors[ImGuiCol_PlotLinesHovered]);
 			ImGui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_PlotLines]);
-			auto fileClickHandler = [&](VideobrowserItem& item) {		
-				if (item.HasMatchingScript) {
-					ClickedFilePath = item.path;
-					EventSystem::PushEvent(VideobrowserEvents::VideobrowserItemClicked);
-				}
-			};
 
 			uint32_t texId = item.GetTexId();
 			ImColor FileTint = item.HasMatchingScript ? IM_COL32_WHITE : IM_COL32(200, 200, 200, 255);
@@ -205,18 +242,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 		}
 		else {
 			if (ImGui::Button(item.filename.c_str(), ItemDim)) {
-#ifdef WIN32
-				auto pathObj = Util::PathFromString(item.path);
-				auto pathObjAbs = std::filesystem::absolute(pathObj);
-				if (pathObj != pathObjAbs && pathObj.root_path() == pathObjAbs) {
-					chooseDrive();
-				}
-				else
-#endif
-				{
-					settings->CurrentPath = item.path;
-					CacheNeedsUpdate = true;
-				}
+				directoryClickHandler(item);
 			}
 		}
 		Util::Tooltip(item.filename.c_str());
@@ -225,6 +251,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 			ImGui::SameLine();
 		}
 	}
+
 	ImGui::EndChild();
 	ImGui::End();
 	SDL_AtomicUnlock(&ItemsLock);

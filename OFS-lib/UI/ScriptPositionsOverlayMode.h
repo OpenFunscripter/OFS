@@ -22,6 +22,8 @@ struct OverlayDrawingCtx {
 };
 
 class BaseOverlay {
+protected:
+	class ScriptTimeline* timeline;
 public:
 	struct ColoredLine {
 		ImVec2 p1;
@@ -38,7 +40,7 @@ public:
 	static bool SplineLines;
 	static float SplineEasing;
 
-	BaseOverlay() noexcept;
+	BaseOverlay(class ScriptTimeline* timeline) noexcept;
 	virtual ~BaseOverlay() noexcept {}
 	virtual void DrawSettings() noexcept;
 
@@ -55,6 +57,7 @@ public:
 
 class EmptyOverlay : public BaseOverlay {
 public:
+	EmptyOverlay(class ScriptTimeline* timeline) : BaseOverlay(timeline) {}
 	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept override;
 };
 
