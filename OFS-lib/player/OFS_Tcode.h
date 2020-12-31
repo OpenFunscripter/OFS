@@ -33,7 +33,7 @@ public:
 		/* TODO: add more channels*/
 	) noexcept;
 	void stop() noexcept;
-	void sync(float currentTimeMs) noexcept;
+	void sync(float currentTimeMs, float speed) noexcept;
 
 	inline bool IgnoreChannel(TChannel c) const noexcept {
 		switch (c) {

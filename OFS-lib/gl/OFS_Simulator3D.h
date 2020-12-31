@@ -27,7 +27,7 @@ private:
 
 	float rollRange = 60.f;
 	float pitchRange = 90.f;
-	float twistSpeed = 3.f;
+	float twistSpeed = 4.f;
 
     glm::mat4 projection;
 	glm::mat4 view;

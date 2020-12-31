@@ -230,6 +230,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, const std::vector<std::shar
 	drawingCtx.offset_ms = offset_ms;
 	drawingCtx.visibleSizeMs = visibleSizeMs;
 	drawingCtx.totalDurationMs = player->getDuration() * 1000.f;
+	if (drawingCtx.totalDurationMs == 0.f) return;
 	
 	ImGui::Begin(PositionsId, open, ImGuiWindowFlags_None);
 	auto draw_list = ImGui::GetWindowDrawList();

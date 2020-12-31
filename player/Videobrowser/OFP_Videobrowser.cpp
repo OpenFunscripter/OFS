@@ -39,12 +39,16 @@ void Videobrowser::updateCache(const std::string& path) noexcept
 		LOG_DEBUG("ITEMS CLEAR");
 		SDL_AtomicUnlock(&browser.ItemsLock);
 
+
 		auto pathObj = Util::PathFromString(data->path);
 		pathObj = std::filesystem::absolute(pathObj);
+
+		browser.Items.emplace_back((pathObj / "..").u8string(), 0, 0, false, false );
 		std::error_code ec;
 		for (auto& p : std::filesystem::directory_iterator(pathObj, ec)) {
 			auto extension = p.path().extension().u8string();
-
+			auto pathString = p.path().u8string();
+			uint64_t timestamp = p.last_write_time(ec).time_since_epoch().count();
 
 			auto it = std::find_if(BrowserExtensions.begin(), BrowserExtensions.end(),
 				[&](auto& ext) {
@@ -52,31 +56,55 @@ void Videobrowser::updateCache(const std::string& path) noexcept
 			});
 		
 			if (it != BrowserExtensions.end()) {
+				#ifdef WIN32
+				HANDLE file = CreateFileW((wchar_t*)p.path().u16string().c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+				if (file == INVALID_HANDLE_VALUE)
+				{
+					LOGF_ERROR("Could not open file \"%s\", error 0x%08x", pathString.c_str(), GetLastError());
+				}
+				else {
+					FILETIME ftCreate;
+					if (!GetFileTime(file, &ftCreate, NULL, NULL))
+					{
+						LOG_ERROR("Couldn't GetFileTime");
+						timestamp = p.last_write_time(ec).time_since_epoch().count();
+					}
+					else {
+						timestamp = *(uint64_t*)&ftCreate;
+					}
+					CloseHandle(file);
+				}
+				#endif
 				auto funscript = p.path();
 				funscript.replace_extension(".funscript");
 				bool matchingScript = Util::FileExists(funscript.u8string());
 				// valid extension + matching script
 				size_t byte_count = p.file_size();
 				SDL_AtomicLock(&browser.ItemsLock);
-				browser.Items.emplace_back(p.path().u8string(), byte_count, it->second, matchingScript);
+				browser.Items.emplace_back(p.path().u8string(), byte_count, timestamp, it->second, matchingScript);
 				SDL_AtomicUnlock(&browser.ItemsLock);
 			}
 			else if (p.is_directory()) {
 				SDL_AtomicLock(&browser.ItemsLock);
-				browser.Items.emplace_back(p.path().u8string(), 0, false, false);
+				browser.Items.emplace_back(p.path().u8string(), 0, timestamp, false, false);
 				SDL_AtomicUnlock(&browser.ItemsLock);
 			}
 		}
 		SDL_AtomicLock(&browser.ItemsLock);
-		std::sort(browser.Items.begin(), browser.Items.end(),
-			[](auto& item1, auto& item2) {
-				return item1.filename < item2.filename;
-			}
-		);
 		std::sort(browser.Items.begin(), browser.Items.end(), [](auto& item1, auto& item2) {
 			return item1.IsDirectory() && !item2.IsDirectory();
 		});
-		browser.Items.insert(browser.Items.begin(), {(pathObj / "..").u8string(), 0, false, false });
+		auto last_dir = std::find_if(browser.Items.begin(), browser.Items.end(),
+			[](auto& item) {
+				return !item.IsDirectory();
+		});
+		if (last_dir != browser.Items.end()) {
+			std::sort(last_dir, browser.Items.end(),
+				[](auto& item1, auto& item2) {
+					return item1.lastEdit > item2.lastEdit;
+				}
+			);
+		}
 		SDL_AtomicUnlock(&browser.ItemsLock);
 
 		data->running = false;
@@ -102,7 +130,7 @@ void Videobrowser::chooseDrive() noexcept
 		if (AvailableDrives & (Mask << i)) {
 			ss << (char)('A' + i);
 			ss << ":\\\\";
-			Items.emplace_back(ss.str(), 0, false, false);
+			Items.emplace_back(ss.str(), 0, 0, false, false);
 			ss.str("");
 		}
 	}

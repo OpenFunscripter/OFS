@@ -13,7 +13,6 @@ public:
 	TCodeChannel* channel = nullptr;
 	std::weak_ptr<Funscript> script;
 	int32_t currentIndex = 0;
-	int32_t lastTimeMs = 0;
 
 	TCodeChannelProducer() {}
 
@@ -23,27 +22,41 @@ public:
 		this->channel = channel;
 	}
 
+	inline void sync(int32_t CurrentTimeMs) noexcept {
+		if (script.expired() || channel == nullptr) return;
+
+		auto scriptPtr = script.lock();
+		auto& actions = scriptPtr->Actions();
+
+		for (int i = 0; i < actions.size(); i++) {
+			auto action = actions[i];
+			if (action.at >= CurrentTimeMs) 
+			{
+				currentIndex = std::max(0, i - 1);
+				channel->startAction = actions[currentIndex];
+				channel->nextAction = actions[currentIndex+1];
+				break;
+			}
+		}
+	}
+
 	inline void tick(int32_t CurrentTimeMs) noexcept {
 		if (script.expired() || channel == nullptr) return;
 
 		auto scriptPtr = script.lock();
 		auto& actions = scriptPtr->Actions();
 
-		int newIndex = currentIndex;
-		if (std::abs(lastTimeMs - CurrentTimeMs) >= 100) {
-			// resync
-			FunscriptAction prev;
-			for (int i = 0; i < actions.size(); i++) {
-				auto action = actions[i];
-				if (action.at >= CurrentTimeMs) 
-				{
-					newIndex = std::max(0, i - 1);
-					break;
-				}
-			}
+		const FunscriptAction* currentAction = &actions[currentIndex];
+		const FunscriptAction* nextAction;
+		if (currentIndex + 1 >= actions.size()) {
+			return;
+		}
+		else {
+			nextAction = &actions[currentIndex + 1];
 		}
 
-		if (CurrentTimeMs > channel->nextAction.at) {
+		int newIndex = currentIndex;
+		if (CurrentTimeMs > nextAction->at) {
 			newIndex++;
 		}
 
@@ -55,11 +68,11 @@ public:
 			}
 			else {
 				channel->nextAction = channel->startAction;
+				channel->nextAction.at++;
 			}
 
 			LOGF_DEBUG("%s: New stroke! %d -> %d", channel->Id, channel->startAction.pos, channel->nextAction.pos);
 		}
-		lastTimeMs = CurrentTimeMs;
 	}
 };
 
@@ -105,5 +118,15 @@ public:
 		}
 	}
 
-	void tick(int32_t CurrentTimeMs) noexcept;
+	inline void tick(int32_t CurrentTimeMs) noexcept {
+		for (auto& prod : producers) {
+			prod.tick(CurrentTimeMs);
+		}
+	}
+
+	inline void sync(int32_t CurrentTimeMs) noexcept {
+		for (auto& prod : producers) {
+			prod.sync(CurrentTimeMs);
+		}
+	}
 };

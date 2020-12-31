@@ -136,7 +136,7 @@ void OFP::process_events() noexcept
 
 void OFP::update() noexcept
 {
-    tcode->sync(player.getCurrentPositionMsInterp());
+    tcode->sync(player.getCurrentPositionMsInterp(), player.getSpeed());
     ControllerInput::UpdateControllers(100);
     scriptTimeline.overlay->update();
 
@@ -227,7 +227,7 @@ void OFP::ShowMainMenuBar() noexcept
         if (ImGui::BeginMenu("View")) {
             ImGui::MenuItem("T-Code", NULL, &settings.show_tcode);
             ImGui::MenuItem("Videobrowser", NULL, &settings.show_browser);
-
+            ImGui::MenuItem("Simulator 3D", NULL, &settings.show_sim3d);
             ImGui::MenuItem("Playback controls", NULL, &settings.show_controls);
             ImGui::MenuItem("Time", NULL, &settings.show_time);
             ImGui::MenuItem("Script Timeline", NULL, &settings.show_timeline);
@@ -829,7 +829,9 @@ void OFP::step() noexcept
 #endif
     }
     render();
-    sim3d->render();
+    if (settings.show_sim3d && settings.ActiveScene == OFP_Scene::Player) {
+        sim3d->render();
+    }
     OFS::Im3d_EndFrame();
     SDL_GL_SwapWindow(window);
 }
@@ -839,6 +841,8 @@ void OFP::PlayerScene() noexcept
     CreateDockspace(!timer.hidden());
 
     bool HideElement = !timer.hidden();
+
+    sim3d->ShowWindow(&settings.show_sim3d, player.getCurrentPositionMsInterp(), BaseOverlay::SplineLines, LoadedFunscripts);
 
     playerControls.DrawControls(!HideElement ? &HideElement : &settings.show_controls);
     playerControls.DrawTimeline(!HideElement ? &HideElement : &settings.show_time);
@@ -850,8 +854,6 @@ void OFP::PlayerScene() noexcept
 
     videobrowser->ShowBrowser(Videobrowser::VideobrowserId, &settings.show_browser);
     player.DrawVideoPlayer(NULL, &settings.show_video);    
-    
-    sim3d->ShowWindow(NULL, player.getCurrentPositionMsInterp(), BaseOverlay::SplineLines, LoadedFunscripts);
 }
 
 void OFP::FilebrowserScene() noexcept 
@@ -937,6 +939,7 @@ bool OFP::openFile(const std::string& file) noexcept
         player.openVideo(video_path);
     }
 
+    clearLoadedScripts();
     auto openFunscript = [this](const std::string& file) -> bool {
         RootFunscript() = std::make_shared<Funscript>();
         if (!Util::FileExists(file)) {

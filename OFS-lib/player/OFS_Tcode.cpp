@@ -101,6 +101,7 @@ static struct TCodeThreadData {
     bool requestStop = false;
     int32_t scriptTimeMs = 0.f;
     
+    float speed = 1.f;
     int tickrate = 250;
     int32_t delay = 0;
 
@@ -182,31 +183,7 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
         ImGui::SameLine(); ImGui::Text(" -> %s", c.buf);
     }
     ImGui::PopItemFlag();
-
-    
-
-    //glm::vec3 position(0.f, 0.f, -1.f);
-    //position.y = 1.f * (tcode.Get(TChannel::L0).lastTcodeVal / 800.f);
-
-    //glm::mat4 model(1.f);
-    //model = glm::translate(model, position);
-    //model = glm::rotate(model, ((tcode.Get(TChannel::R2).lastTcodeVal/800.f) - 0.5f) * ((float)M_PI / 3.f), glm::vec3(1.f, 0.f, 0.f));
-    //model = glm::rotate(model, 0.f, glm::vec3(0.f, 1.f, 0.f));
-    //model = glm::rotate(model, ((tcode.Get(TChannel::R1).lastTcodeVal / 800.f) - 0.5f) * ((float)M_PI/3.f), glm::vec3(0.f, 0.f, 1.f));
-    //
-    //glm::vec3 p1(0.f, 0.5f, -1.0f);
-    //glm::vec3 p2(0.f, -0.5f,-1.0f);
-    ////p1 = position;
-    ////p1.y -= 0.5f;
-    ////p1.z = -1.f;
-    ////p2 = position;
-    ////p2.y += 0.5f;
-    ////p2.z = -1.f;
-    //p1 = model * glm::vec4(p1, 1.f);
-    //p2 = model * glm::vec4(p2, 1.f);
-
-    //Im3d::DrawArrow(p1, p2, 2, 50);
-	ImGui::End();
+  	ImGui::End();
 }
 
 
@@ -219,18 +196,22 @@ static int32_t TCodeThread(void* threadData) noexcept {
     
     int scriptTimeMs = 0;
 
+    data->producer.sync(data->scriptTimeMs);
+
     while (!data->requestStop) {
         int maxTicks = std::round(1000.f / data->tickrate) - 1;
 
         int32_t ticks = SDL_GetTicks();
-        int32_t currentTimeMs = ((ticks - startTicks) + scriptTimeMs) - Thread.delay;
-        int32_t syncTimeMs = ((ticks - SDL_GetTicks()) + data->scriptTimeMs) - Thread.delay;
-        if (std::abs(currentTimeMs - syncTimeMs) >= 250) {
+        int32_t currentTimeMs = (((ticks - startTicks) * data->speed) + scriptTimeMs) - Thread.delay;
+        int32_t syncTimeMs = (((ticks - SDL_GetTicks())* data->speed) + data->scriptTimeMs) - Thread.delay;
+        if (std::abs(currentTimeMs - syncTimeMs) >= 30) {
             LOGF_DEBUG("Resync -> %d", data->scriptTimeMs - scriptTimeMs);
             LOGF_DEBUG("prev: %d new: %d", currentTimeMs, syncTimeMs);
             currentTimeMs = syncTimeMs;
             scriptTimeMs = data->scriptTimeMs;
             startTicks = SDL_GetTicks();
+
+            data->producer.sync(currentTimeMs);
         }
 
         // tick producers
@@ -283,7 +264,8 @@ void TCodePlayer::stop() noexcept
     }
 }
 
-void TCodePlayer::sync(float currentTimeMs) noexcept
+void TCodePlayer::sync(float currentTimeMs, float speed) noexcept
 {
+    Thread.speed = speed;
     Thread.scriptTimeMs = std::round(currentTimeMs);
 }

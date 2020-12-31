@@ -39,11 +39,7 @@ void BaseOverlay::update() noexcept
 
 void BaseOverlay::DrawSettings() noexcept
 {
-    ImGui::Checkbox("Spline", &SplineLines);
-#ifndef NDEBUG
-    ImGui::SameLine();
-    ImGui::DragFloat("Easing", &SplineEasing, 0.01f, 1.0f, 100.f);
-#endif
+
 }
 
 void EmptyOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept

@@ -1378,13 +1378,14 @@ void OpenFunscripter::step() noexcept {
     {
         // IMGUI HERE
         CreateDockspace();
+        sim3D->ShowWindow(&settings->data().show_simulator_3d, player.getCurrentPositionMsInterp(), BaseOverlay::SplineLines, LoadedFunscripts);
+
         ShowAboutWindow(&ShowAbout);
         specialFunctions->ShowFunctionsWindow(&settings->data().show_special_functions);
         ActiveFunscript()->undoSystem->ShowUndoRedoHistory(&settings->data().show_history);
         simulator.ShowSimulator(&settings->data().show_simulator);
         ShowStatisticsWindow(&settings->data().show_statistics);
         if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { saveScript(ActiveFunscript().get(), "", false); }
-        sim3D->ShowWindow(&settings->data().show_simulator_3d, player.getCurrentPositionMsInterp(), BaseOverlay::SplineLines, LoadedFunscripts);
         scripting->DrawScriptingMode(NULL);
 
         if (keybinds.ShowBindingWindow()) {

@@ -23,6 +23,7 @@ struct OFP_Settings {
 	bool vsync = true;
 	bool show_video = true;
 
+	bool show_sim3d = false;
 	bool show_browser = false;
 	bool show_tcode = false;
 	bool show_timeline = true;
@@ -42,6 +43,7 @@ struct OFP_Settings {
 
 		OFS_REFLECT_PTR(videoPlayer, ar);
 
+		OFS_REFLECT(show_sim3d, ar);
 		OFS_REFLECT(enable_autohide, ar);
 		OFS_REFLECT(show_timeline, ar);
 		OFS_REFLECT(show_controls, ar);

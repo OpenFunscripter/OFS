@@ -50,8 +50,9 @@ uint64_t VideobrowserItem::GetTexId() const
 	return 0;
 }
 
-VideobrowserItem::VideobrowserItem(const std::string& path, size_t byte_count, bool genThumb, bool matchingScript) noexcept
+VideobrowserItem::VideobrowserItem(const std::string& path, size_t byte_count, uint64_t lastEdit, bool genThumb, bool matchingScript) noexcept
 {
+	this->lastEdit = lastEdit;
 	auto pathObj = Util::PathFromString(path);
 	pathObj.make_preferred();
 	if (!std::filesystem::is_directory(pathObj)) {

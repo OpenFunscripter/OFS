@@ -26,7 +26,7 @@ private:
     bool HasThumbnail = false;
     void IncrementRefCount() noexcept;
 public:
-    VideobrowserItem(const std::string& path, size_t byte_count, bool genThumb, bool matchingScript) noexcept;
+    VideobrowserItem(const std::string& path, size_t byte_count, uint64_t lastEdit, bool genThumb, bool matchingScript) noexcept;
     ~VideobrowserItem();
 
     VideobrowserItem(const VideobrowserItem& item) noexcept {
@@ -51,6 +51,7 @@ public:
 
     uint64_t GetTexId() const;
     uint64_t Id;
+    uint64_t lastEdit = 0;
     bool HasMatchingScript = false;
     bool Focussed = false;
 };

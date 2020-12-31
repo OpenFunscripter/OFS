@@ -151,7 +151,13 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, const s
     glm::mat3 rot(1.f);
     glm::vec3 scale(1.f);
     if (TranslateEnabled) {
-        Im3d::Gizmo("Move", glm::value_ptr(translation));
+        if (Im3d::Gizmo("Move", glm::value_ptr(translation))) {
+            auto g = ImGui::GetCurrentContext();
+            auto window = ImGui::GetCurrentWindow();
+            g->HoveredRootWindow = window;
+            g->HoveredWindow = window;
+            g->HoveredDockNode = window->DockNode;
+        }
     }
 
     ImGui::SliderFloat("Distance", &Zoom, 0.1f, MaxZoom);
