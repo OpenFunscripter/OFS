@@ -127,7 +127,10 @@ void VideobrowserItem::GenThumbail(bool startThread) noexcept
 				auto it = TextureHashtable.find(data->Id);
 				if (it != TextureHashtable.end() && it->second.ref_count > 0 && it->second.texId == 0) {
 					if (Util::LoadTextureFromFile(data->thumbOutputFilePath.c_str(), &it->second.texId, &w, &h)) {
-						LOGF_DEBUG("Loaded texture: \"%s\"", data->thumbOutputFilePath.c_str());
+						//LOGF_DEBUG("Loaded texture: \"%s\"", data->thumbOutputFilePath.c_str());
+					}
+					else {
+						LOGF_WARN("Failed loading texture: \"%s\"", data->thumbOutputFilePath.c_str());
 					}
 				}
 
@@ -170,6 +173,7 @@ void VideobrowserItem::GenThumbail(bool startThread) noexcept
 				return false;
 			}
 
+			LOGF_DEBUG("Running: %s", buffer);
 #if WIN32
 			auto wide = Util::Utf8ToUtf16(buffer);
 			success = _wsystem(wide.c_str()) == 0;

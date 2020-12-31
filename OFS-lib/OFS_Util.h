@@ -267,6 +267,9 @@ public:
 		FileDialogResultHandler&& handler, 
 		const std::vector<const char*>& filters = { },
 		const std::string& filterText = "") noexcept;
+	static void OpenDirectoryDialog(const std::string& title,
+		const std::string& path,
+		FileDialogResultHandler&& handler) noexcept;
 
 	static std::string Resource(const std::string& path) noexcept;
 

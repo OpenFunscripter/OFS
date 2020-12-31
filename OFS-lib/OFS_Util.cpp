@@ -161,7 +161,7 @@ void Util::OpenFileDialog(const std::string& title, const std::string& path, Fil
 
 		auto eventData = new EventSystem::SingleShotEventData;
 		eventData->ctx = dialogResult;
-		eventData->handler = data->handler;
+		eventData->handler = std::move(data->handler);
 
 		SDL_Event ev{ 0 };
 		ev.type = EventSystem::SingleShotEvent;
@@ -218,7 +218,7 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
 		}
 		auto eventData = new EventSystem::SingleShotEventData;
 		eventData->ctx = saveDialogResult;
-		eventData->handler = data->handler;
+		eventData->handler = std::move(data->handler);
 
 		SDL_Event ev{ 0 };
 		ev.type = EventSystem::SingleShotEvent;
@@ -232,6 +232,58 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
 	threadData->path = path;
 	threadData->filters = filters;
 	threadData->filterText = filterText;
+	threadData->handler = [handler](void* ctx) {
+		auto result = (FileDialogResult*)ctx;
+		handler(*result);
+		delete result;
+	};
+	auto handle = SDL_CreateThread(thread, "SaveFileDialog", threadData);
+}
+
+void Util::OpenDirectoryDialog(const std::string& title, const std::string& path, FileDialogResultHandler&& handler) noexcept
+{
+	struct OpenDirectoryDialogThreadData {
+		std::string title;
+		std::string path;
+		EventSystem::SingleShotEventHandler handler;
+	};
+	auto thread = [](void* ctx) -> int32_t {
+		auto data = (OpenDirectoryDialogThreadData*)ctx;
+
+		auto dialogPath = Util::PathFromString(data->path);
+		if (std::filesystem::is_directory(dialogPath) && !std::filesystem::exists(dialogPath)) {
+			data->path = "";
+		}
+		else {
+			auto directory = dialogPath;
+			directory.replace_filename("");
+			if (!std::filesystem::exists(directory)) {
+				data->path = "";
+			}
+		}
+
+		auto result = tinyfd_selectFolderDialog(data->title.c_str(), data->path.c_str());
+
+		FUN_ASSERT(result, "Ignore this if you pressed cancel.");
+		auto directoryDialogResult = new FileDialogResult;
+		if (result != nullptr) {
+			directoryDialogResult->files.emplace_back(result);
+		}
+	
+		auto eventData = new EventSystem::SingleShotEventData;
+		eventData->ctx = directoryDialogResult;
+		eventData->handler = std::move(data->handler);
+
+		SDL_Event ev{ 0 };
+		ev.type = EventSystem::SingleShotEvent;
+		ev.user.data1 = eventData;
+		SDL_PushEvent(&ev);
+		delete data;
+		return 0;
+	};
+	auto threadData = new OpenDirectoryDialogThreadData;
+	threadData->title = title;
+	threadData->path = path;
 	threadData->handler = [handler](void* ctx) {
 		auto result = (FileDialogResult*)ctx;
 		handler(*result);
