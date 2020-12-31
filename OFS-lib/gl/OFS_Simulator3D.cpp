@@ -1,12 +1,11 @@
-#include "Simulator3D.h"
+#include "OFS_Simulator3D.h"
 
-#include "OpenFunscripter.h"
-
+#include "glad/glad.h"
 #include "imgui.h"
-
 #include "OFS_im3d.h"
 
 #include "glm/gtx/matrix_decompose.hpp"
+#include "glm/gtx/rotate_vector.hpp"
 
 
 // cube pos + normals
@@ -54,7 +53,6 @@ constexpr float vertices[] = {
     -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
 };
 
-
 constexpr float simLength = 2.f;
 constexpr float simDistance = 5.f;
 constexpr float simCubeSize = 0.5f;
@@ -95,34 +93,14 @@ void Simulator3D::setup() noexcept
     reset();
 }
 
-void Simulator3D::ShowWindow(bool* open) noexcept
+void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, const std::vector<std::shared_ptr<Funscript>>& scripts) noexcept
 {
-    if (!*open) { return; }
-    auto app = OpenFunscripter::ptr;
-    float currentMs = app->player.getCurrentPositionMsInterp();
-    float roll = 0.f;
-    float pitch = 0.f;
-    float yaw = 0.f;
-    float scriptPos = 0.f;
-    int32_t loadedScriptsCount = app->LoadedFunscripts.size();
-    
-    bool easing = app->scriptPositions.overlay->SplineLines;
+    if (open != nullptr && !*open) { return; }
 
-    if (posIndex >= 0 && posIndex < loadedScriptsCount) {
-        scriptPos = app->LoadedFunscripts[posIndex]->GetPositionAtTime(currentMs, easing);
-    }
-    if (rollIndex >= 0 && rollIndex < loadedScriptsCount) {
-        roll = app->LoadedFunscripts[rollIndex]->GetPositionAtTime(currentMs, easing) - 50.f;
-        roll = (rollRange/2.f) * (roll / 50.f);
-    }
-    if (pitchIndex >= 0 && pitchIndex < loadedScriptsCount) {
-        pitch = app->LoadedFunscripts[pitchIndex]->GetPositionAtTime(currentMs, easing) - 50.f;
-        pitch = (pitchRange/2.f) * (pitch / 50.f);
-    }
-    //if (twistIndex >= 0 && twistIndex < loadedScriptsCount) {
-    //    yaw = app->LoadedFunscripts[twistIndex]->GetPositionAtTime(currentMs) - 50.f;
-    //    yaw = (twistRange/2.f) * (yaw / 50.f);
-    //}
+    
+
+    const int32_t loadedScriptsCount = scripts.size();
+
 
     auto viewport = ImGui::GetMainViewport();
     
@@ -130,6 +108,40 @@ void Simulator3D::ShowWindow(bool* open) noexcept
     projection = glm::ortho(-Zoom*ratio, Zoom*ratio, -Zoom, Zoom, 0.1f, 100.f);
     
     ImGui::Begin("Simulator 3D", open, ImGuiWindowFlags_None);
+
+    if (posIndex >= 0 && posIndex < loadedScriptsCount) {
+        scriptPos = scripts[posIndex]->GetPositionAtTime(currentMs, easing);
+    }
+    if (rollIndex >= 0 && rollIndex < loadedScriptsCount) {
+        roll = scripts[rollIndex]->GetPositionAtTime(currentMs, easing) - 50.f;
+        roll = (rollRange/2.f) * (roll / 50.f);
+    }
+    if (pitchIndex >= 0 && pitchIndex < loadedScriptsCount) {
+        pitch = scripts[pitchIndex]->GetPositionAtTime(currentMs, easing) - 50.f;
+        pitch = (pitchRange/2.f) * (pitch / 50.f);
+    }
+    if (twistIndex >= 0 && twistIndex < loadedScriptsCount) {
+        yaw += ((scripts[twistIndex]->GetPositionAtTime(currentMs, easing) - 50.f) / 50.f)*twistSpeed;
+    }
+
+    //roll = glm::radians(roll);
+    //ImGui::SliderAngle("Roll", &roll, -rollRange/2.f, rollRange/2.f);
+    //roll = glm::degrees(roll);
+
+    //pitch = glm::radians(pitch);
+    //ImGui::SliderAngle("Pitch", &pitch, -pitchRange/2.f, pitchRange/2.f);
+    //pitch = glm::degrees(pitch);
+
+    //yaw = glm::radians(yaw);
+    //ImGui::SliderAngle("Yaw", &yaw, -180.f, 180.f);
+    //yaw = glm::degrees(yaw);
+    
+    //static float twist = 0.f;
+    //twist = glm::radians(twist);
+    //ImGui::SliderAngle("Twist", &twist, -3, 3);
+    //twist = glm::degrees(twist);
+    //yaw += twist;
+
 
     if (ImGui::Button("Reset", ImVec2(-1.f, 0.f))) {
         reset();
@@ -145,12 +157,12 @@ void Simulator3D::ShowWindow(bool* open) noexcept
     ImGui::SliderFloat("Distance", &Zoom, 0.1f, MaxZoom);
 
     // TODO: use more efficient way of doing getting this vector...
-    glm::vec3 direction;
+    glm::vec3 direction(0.f, -1.f, 0.f);
     {
         glm::mat4 directionMtx = translation;
-        directionMtx = glm::rotate(directionMtx, glm::radians(roll), glm::vec3(0.f, 0.f, 1.f));
-        directionMtx = glm::rotate(directionMtx, glm::radians(yaw), glm::vec3(0.f, 1.f, 0.f));
-        directionMtx = glm::rotate(directionMtx, glm::radians(pitch), glm::vec3(1.f, 0.f, 0.f));
+        directionMtx = glm::rotate(directionMtx, glm::radians(roll), glm::vec3(0.f, 0.f,-1.f));
+        directionMtx = glm::rotate(directionMtx, glm::radians(pitch),glm::vec3(1.f, 0.f, 0.f));
+        directionMtx = glm::rotate(directionMtx, glm::radians(yaw),  glm::vec3(0.f, 1.f, 0.f));
         direction = glm::vec3(directionMtx[1][0], directionMtx[1][1], directionMtx[1][2]);
         direction = glm::normalize(direction);
     }
@@ -160,18 +172,17 @@ void Simulator3D::ShowWindow(bool* open) noexcept
         ImGui::ColorEdit4("Container", &containerColor.Value.x);
         ImGui::InputFloat("Roll deg", &rollRange);
         ImGui::InputFloat("Pitch deg", &pitchRange);
-        ImGui::InputFloat("Twist deg", &twistRange);
+        ImGui::InputFloat("Twist speed", &twistSpeed);
     }
 
-    auto ScriptCombo = [](auto Id, int32_t* index) {
-        auto app = OpenFunscripter::ptr;
-        int32_t loadedScriptCount = app->LoadedFunscripts.size();
-        if (ImGui::BeginCombo(Id, *index >= 0 && *index < loadedScriptCount ? app->LoadedFunscripts[*index]->metadata.title.c_str() : "None", ImGuiComboFlags_PopupAlignLeft)) {
+    auto ScriptCombo = [&](auto Id, int32_t* index) {
+        //auto app = OpenFunscripter::ptr;
+        if (ImGui::BeginCombo(Id, *index >= 0 && *index < loadedScriptsCount ? scripts[*index]->metadata.title.c_str() : "None", ImGuiComboFlags_PopupAlignLeft)) {
             if (ImGui::Selectable("None", *index < 0) || ImGui::IsItemHovered()) {
                 *index = -1;
             }
-            for (int i = 0; i < loadedScriptCount; i++) {
-                if (ImGui::Selectable(app->LoadedFunscripts[i]->metadata.title.c_str(), *index == i) || ImGui::IsItemHovered()) {
+            for (int i = 0; i < loadedScriptsCount; i++) {
+                if (ImGui::Selectable(scripts[i]->metadata.title.c_str(), *index == i) || ImGui::IsItemHovered()) {
                     *index = i;
                 }
             }
@@ -181,7 +192,7 @@ void Simulator3D::ShowWindow(bool* open) noexcept
     ScriptCombo("Position", &posIndex);
     ScriptCombo("Roll", &rollIndex);
     ScriptCombo("Pitch", &pitchIndex);
-    //ScriptCombo("Twist", &twistIndex);
+    ScriptCombo("Twist", &twistIndex);
 
 
     ImGui::End();
@@ -201,26 +212,29 @@ void Simulator3D::ShowWindow(bool* open) noexcept
     // container model matrix
     containerModel = glm::mat4(1.f);
     containerModel = glm::translate(containerModel, ((direction * ((cubeHeight + antiZBufferFight)/2.f))) + position);
-    containerModel = glm::rotate(containerModel, glm::radians(roll), glm::vec3(0.f, 0.f, 1.f));
-    containerModel = glm::rotate(containerModel, glm::radians(yaw), glm::vec3(0.f, 1.f, 0.f));
+    containerModel = glm::rotate(containerModel, glm::radians(roll), glm::vec3(0.f, 0.f, -1.f));
     containerModel = glm::rotate(containerModel, glm::radians(pitch), glm::vec3(1.f, 0.f, 0.f));
-    
-
+    //containerModel = glm::rotate(containerModel, glm::radians(yaw), glm::vec3(0.f, 1.f, 0.f));    
     containerModel = glm::scale(containerModel, glm::vec3(simCubeSize, (simLength + simCubeSize) - cubeHeight, simCubeSize)*1.01f);
 
     // box model matrix
     boxModel = glm::mat4(1.f);
     boxModel = glm::translate(boxModel, (-(direction * ((simLength + simCubeSize) - (cubeHeight - antiZBufferFight)))/2.f) + position);
-    boxModel = glm::rotate(boxModel, glm::radians(roll), glm::vec3(0.f, 0.f, 1.f));
-    boxModel = glm::rotate(boxModel, glm::radians(yaw), glm::vec3(0.f, 1.f, 0.f));
+    boxModel = glm::rotate(boxModel, glm::radians(roll), glm::vec3(0.f, 0.f, -1.f));
     boxModel = glm::rotate(boxModel, glm::radians(pitch), glm::vec3(1.f, 0.f, 0.f));
+    //boxModel = glm::rotate(boxModel, glm::radians(yaw), glm::vec3(0.f, 1.f, 0.f));
     boxModel = glm::scale(boxModel, glm::vec3(simCubeSize, cubeHeight, simCubeSize));
+
+    boxy = glm::mat4(1.f);
+    boxy = glm::translate(boxy, position + (direction*(cubeHeight-1.25f)));
+    boxy = glm::rotate(boxy, glm::radians(roll), glm::vec3(0.f, 0.f, -1.f));
+    boxy = glm::rotate(boxy, glm::radians(pitch), glm::vec3(1.f, 0.f, 0.f));
+    boxy = glm::rotate(boxy, glm::radians(yaw), glm::vec3(0.f, 1.f, 0.f));
+    boxy = glm::scale(boxy, glm::vec3(simCubeSize, simCubeSize/4.f, simCubeSize)*1.5f);
 }
 
 void Simulator3D::render() noexcept
 {
-    if (!OpenFunscripter::ptr->settings->data().show_simulator_3d) return;
-    
     auto viewport = ImGui::GetMainViewport();
     glViewport(0, 0, viewport->Size.x, viewport->Size.y);
     glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -240,14 +254,17 @@ void Simulator3D::render() noexcept
     glBindVertexArray(cubeVAO);
     glDrawArrays(GL_TRIANGLES, 0, 36);
 
-    //glEnable(GL_BLEND);
-    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     lightShader->ObjectColor(&containerColor.Value.x);
     lightShader->ModelMtx(glm::value_ptr(containerModel));
     glBindVertexArray(cubeVAO);
     glDrawArrays(GL_TRIANGLES, 0, 36);
 
+
+    lightShader->ObjectColor(&red.Value.x);
+    lightShader->ModelMtx(glm::value_ptr(boxy));
+    glBindVertexArray(cubeVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
 
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);

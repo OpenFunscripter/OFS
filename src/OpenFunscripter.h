@@ -4,7 +4,7 @@
 
 
 #include "glad/glad.h"
-#include "Simulator3D.h"
+#include "OFS_Simulator3D.h"
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
@@ -139,7 +139,7 @@ public:
 
 	std::unique_ptr<Simulator3D> sim3D;
 
-	std::vector<std::unique_ptr<Funscript>> LoadedFunscripts;
+	std::vector<std::shared_ptr<Funscript>> LoadedFunscripts;
 
 	bool setup();
 	int run() noexcept;
@@ -147,12 +147,12 @@ public:
 	void shutdown() noexcept;
 
 	inline bool ScriptLoaded() const { return LoadedFunscripts.size() > 0; }
-	inline std::unique_ptr<Funscript>& ActiveFunscript() noexcept {
+	inline std::shared_ptr<Funscript>& ActiveFunscript() noexcept {
 		FUN_ASSERT(ScriptLoaded(), "No script loaded");
 		return LoadedFunscripts[ActiveFunscriptIdx]; 
 	}
 
-	inline std::unique_ptr<Funscript>& RootFunscript() noexcept {
+	inline std::shared_ptr<Funscript>& RootFunscript() noexcept {
 		FUN_ASSERT(ScriptLoaded(), "No script loaded");
 		// when multiple funscripts are loaded the root funscript will store paths to the associated scripts
 		return LoadedFunscripts[0];

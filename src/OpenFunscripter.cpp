@@ -1384,7 +1384,7 @@ void OpenFunscripter::step() noexcept {
         simulator.ShowSimulator(&settings->data().show_simulator);
         ShowStatisticsWindow(&settings->data().show_statistics);
         if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { saveScript(ActiveFunscript().get(), "", false); }
-        sim3D->ShowWindow(&settings->data().show_simulator_3d);
+        sim3D->ShowWindow(&settings->data().show_simulator_3d, player.getCurrentPositionMsInterp(), BaseOverlay::SplineLines, LoadedFunscripts);
         scripting->DrawScriptingMode(NULL);
 
         if (keybinds.ShowBindingWindow()) {

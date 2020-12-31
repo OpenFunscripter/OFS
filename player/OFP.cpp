@@ -88,10 +88,10 @@ void OFP::set_default_layout(bool force) noexcept
 
         auto dock_player_control_id = ImGui::DockBuilderSplitNode(dock_time_bottom_id, ImGuiDir_Left, 0.15f, &dock_time_bottom_id, &dock_time_bottom_id);
 
-        ImGui::DockBuilderGetNode(dock_player_center_id)->LocalFlags |= ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_AutoHideTabBar;
-        ImGui::DockBuilderGetNode(dock_positions_id)->LocalFlags |= ImGuiDockNodeFlags_AutoHideTabBar;
-        ImGui::DockBuilderGetNode(dock_time_bottom_id)->LocalFlags |= ImGuiDockNodeFlags_AutoHideTabBar;
-        ImGui::DockBuilderGetNode(dock_player_control_id)->LocalFlags |= ImGuiDockNodeFlags_AutoHideTabBar;
+        ImGui::DockBuilderGetNode(dock_player_center_id)->LocalFlags |= ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_AutoHideTabBar | ImGuiDockNodeFlags_NoDocking;
+        ImGui::DockBuilderGetNode(dock_positions_id)->LocalFlags |= ImGuiDockNodeFlags_AutoHideTabBar | ImGuiDockNodeFlags_NoDocking;
+        ImGui::DockBuilderGetNode(dock_time_bottom_id)->LocalFlags |= ImGuiDockNodeFlags_AutoHideTabBar | ImGuiDockNodeFlags_NoDocking;
+        ImGui::DockBuilderGetNode(dock_player_control_id)->LocalFlags |= ImGuiDockNodeFlags_AutoHideTabBar | ImGuiDockNodeFlags_NoDocking;
 
         ImGui::DockBuilderDockWindow(VideoplayerWindow::PlayerId, dock_player_center_id);
         ImGui::DockBuilderDockWindow(OFS_VideoplayerControls::PlayerTimeId, dock_time_bottom_id);
@@ -136,25 +136,32 @@ void OFP::process_events() noexcept
 
 void OFP::update() noexcept
 {
+    tcode->sync(player.getCurrentPositionMsInterp());
     ControllerInput::UpdateControllers(100);
     scriptTimeline.overlay->update();
 
     settings.videoPlayer->current_vr_rotation += rotateVR;
     settings.videoPlayer->vr_zoom *= zoomVR;
 
-    static ImVec2 prevPos;
-    auto mousePos = ImGui::GetMousePos();
-    auto viewport = ImGui::GetMainViewport();
-    ImRect viewport_bb;
-    viewport_bb.Min = viewport->Pos;
-    viewport_bb.Max = viewport->Pos + viewport->Size;
-
-    if (viewport_bb.Contains(mousePos)) {
-        if (prevPos.x != mousePos.x || prevPos.y != mousePos.y) {
-            timer.reset();
-        }
+    if (!settings.enable_autohide) 
+    {
+        timer.reset();
     }
-    prevPos = mousePos;
+    else {
+        static ImVec2 prevPos;
+        auto mousePos = ImGui::GetMousePos();
+        auto viewport = ImGui::GetMainViewport();
+        ImRect viewport_bb;
+        viewport_bb.Min = viewport->Pos;
+        viewport_bb.Max = viewport->Pos + viewport->Size;
+
+        if (viewport_bb.Contains(mousePos)) {
+            if (prevPos.x != mousePos.x || prevPos.y != mousePos.y) {
+                timer.reset();
+            }
+        }
+        prevPos = mousePos;
+    }
     SDL_ShowCursor(!timer.hidden());
 }
 
@@ -169,6 +176,8 @@ void OFP::new_frame() noexcept
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame(window);
     ImGui::NewFrame();
+    
+    OFS::Im3d_NewFrame();
 }
 
 void OFP::render() noexcept
@@ -230,6 +239,8 @@ void OFP::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem("VR mode", NULL, player.settings.activeMode == VideoMode::VR_MODE)) {
                 ToggleVrMode();
             }
+            ImGui::Separator();
+            ImGui::MenuItem("Auto-hide", NULL, &settings.enable_autohide);
 #ifndef NDEBUG
             ImGui::Separator();
             if (ImGui::BeginMenu("DEBUG ONLY")) {
@@ -346,6 +357,7 @@ void OFP::ToggleVrMode() noexcept
 OFP::~OFP() noexcept
 {
     settings.save();
+    OFS::Im3d_Shutdown();
 }
 
 bool OFP::load_fonts(const char* font_override) noexcept
@@ -444,10 +456,10 @@ bool OFP::imgui_setup() noexcept
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
     io.ConfigWindowsMoveFromTitleBarOnly = true;
-    io.ConfigViewportsNoDecoration = false;
+    io.ConfigViewportsNoDecoration = true;
     io.ConfigViewportsNoAutoMerge = false;
     io.ConfigViewportsNoTaskBarIcon = false;
-
+    
     static auto imguiIniPath = Util::PrefpathOFP("ofp_imgui.ini");
     io.IniFilename = imguiIniPath.c_str();
 
@@ -467,7 +479,6 @@ bool OFP::imgui_setup() noexcept
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     load_fonts(settings.font_override.empty() ? nullptr : settings.font_override.c_str());
-
     return true;
 }
 
@@ -771,8 +782,12 @@ bool OFP::setup()
     if (!settings.last_file.empty()) {
         openFile(settings.last_file);
     }
-
+    
+    OFS::Im3d_Init();
     SetActiveScene(settings.ActiveScene);
+
+    sim3d = std::make_unique<Simulator3D>();
+    sim3d->setup();
 
     SDL_ShowWindow(window);
 	return result;
@@ -814,6 +829,8 @@ void OFP::step() noexcept
 #endif
     }
     render();
+    sim3d->render();
+    OFS::Im3d_EndFrame();
     SDL_GL_SwapWindow(window);
 }
 
@@ -829,10 +846,12 @@ void OFP::PlayerScene() noexcept
 
     if (keybinds.ShowBindingWindow()) { keybinds.save(); }
 
-    tcode->DrawWindow(!HideElement ? &HideElement : &settings.show_tcode);
+    tcode->DrawWindow(&settings.show_tcode);
 
     videobrowser->ShowBrowser(Videobrowser::VideobrowserId, &settings.show_browser);
     player.DrawVideoPlayer(NULL, &settings.show_video);    
+    
+    sim3d->ShowWindow(NULL, player.getCurrentPositionMsInterp(), BaseOverlay::SplineLines, LoadedFunscripts);
 }
 
 void OFP::FilebrowserScene() noexcept 
@@ -868,7 +887,7 @@ bool OFP::openFile(const std::string& file) noexcept
 {
     if (!Util::FileExists(file)) return false;
 
-    std::filesystem::path file_path(file);
+    std::filesystem::path file_path = Util::PathFromString(file);
     std::filesystem::path base_path = file_path;
     base_path.replace_extension("");
     std::string video_path;
@@ -910,7 +929,7 @@ bool OFP::openFile(const std::string& file) noexcept
 
     if (video_path.empty()) {
         if (!Util::FileNamesMatch(player.getVideoPath(), funscript_path)) {
-            LOG_WARN("No video found.\nLoading scripts without a video is not supported.");
+            LOG_ERROR("No video found.\nLoading scripts without a video is not supported.");
             player.closeVideo();
         }
     }
@@ -919,7 +938,7 @@ bool OFP::openFile(const std::string& file) noexcept
     }
 
     auto openFunscript = [this](const std::string& file) -> bool {
-        RootFunscript() = std::make_unique<Funscript>();
+        RootFunscript() = std::make_shared<Funscript>();
         if (!Util::FileExists(file)) {
             return false;
         }
@@ -928,11 +947,28 @@ bool OFP::openFile(const std::string& file) noexcept
 
     // try load funscript
     bool result = openFunscript(funscript_path);
+    RootFunscript()->Userdata<OFP_ScriptSettings>().ScriptChannel = TChannel::L0;
+
     if (!result) {
         LOGF_WARN("Couldn't find funscript. \"%s\"", funscript_path.c_str());
-        // do not return false here future me
     }
-    RootFunscript()->current_path = funscript_path;
+    int channelIdx = 0;
+    for (auto& axisAliases : TCodeChannels::Aliases) {
+        for (auto alias : axisAliases) {
+            auto axisFile = base_path;
+            std::stringstream ss;
+            ss << axisFile.filename().u8string() << '.' << alias << ".funscript";
+            axisFile.replace_filename(ss.str());
+            auto axisFileString = axisFile.u8string();
+            if (Util::FileExists(axisFileString)) {
+                auto& script = LoadedFunscripts.emplace_back();
+                script = std::make_shared<Funscript>();
+                script->open<OFP_ScriptSettings>(axisFileString, "OFP");
+                script->Userdata<OFP_ScriptSettings>().ScriptChannel = static_cast<TChannel>(channelIdx);
+            }
+        }
+        channelIdx++;
+    }
 
     updateTitle();
 
@@ -942,7 +978,7 @@ bool OFP::openFile(const std::string& file) noexcept
 void OFP::clearLoadedScripts() noexcept
 {
     LoadedFunscripts.clear();
-    LoadedFunscripts.emplace_back(std::move(std::make_unique<Funscript>()));
+    LoadedFunscripts.emplace_back(std::move(std::make_shared<Funscript>()));
 }
 
 void OFP::DragNDrop(SDL_Event& ev) noexcept
@@ -963,7 +999,16 @@ void OFP::MpvPlayPauseChange(SDL_Event& ev) noexcept
         tcode->stop();
     }
     else {
-        tcode->play(player.getCurrentPositionSecondsInterp(), RootFunscript()->Actions());
+        auto l0_it = std::find_if(LoadedFunscripts.begin(), LoadedFunscripts.end(), [](auto& script) { return script->Userdata<OFP_ScriptSettings>().ScriptChannel == TChannel::L0; });
+        auto r0_it = std::find_if(LoadedFunscripts.begin(), LoadedFunscripts.end(), [](auto& script) { return script->Userdata<OFP_ScriptSettings>().ScriptChannel == TChannel::R0; });
+        auto r1_it = std::find_if(LoadedFunscripts.begin(), LoadedFunscripts.end(), [](auto& script) { return script->Userdata<OFP_ScriptSettings>().ScriptChannel == TChannel::R1; });
+        auto r2_it = std::find_if(LoadedFunscripts.begin(), LoadedFunscripts.end(), [](auto& script) { return script->Userdata<OFP_ScriptSettings>().ScriptChannel == TChannel::R2; });
+
+        std::weak_ptr<Funscript> L0 = l0_it != LoadedFunscripts.end() ? *l0_it : std::weak_ptr<Funscript>();
+        std::weak_ptr<Funscript> R0 = r0_it != LoadedFunscripts.end() ? *r0_it : std::weak_ptr<Funscript>();;
+        std::weak_ptr<Funscript> R1 = r1_it != LoadedFunscripts.end() ? *r1_it : std::weak_ptr<Funscript>();;
+        std::weak_ptr<Funscript> R2 = r2_it != LoadedFunscripts.end() ? *r2_it : std::weak_ptr<Funscript>();;
+        tcode->play(player.getCurrentPositionMsInterp(), std::move(L0), std::move(R0), std::move(R1), std::move(R2));
     }
 }
 

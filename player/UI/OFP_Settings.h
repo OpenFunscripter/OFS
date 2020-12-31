@@ -29,6 +29,8 @@ struct OFP_Settings {
 	bool show_controls = true;
 	bool show_time = true;
 
+	bool enable_autohide = true;
+
 	VideobrowserSettings videoBrowser;
 	VideoplayerWindow::OFS_VideoPlayerSettings* videoPlayer = nullptr;
 
@@ -40,6 +42,7 @@ struct OFP_Settings {
 
 		OFS_REFLECT_PTR(videoPlayer, ar);
 
+		OFS_REFLECT(enable_autohide, ar);
 		OFS_REFLECT(show_timeline, ar);
 		OFS_REFLECT(show_controls, ar);
 		OFS_REFLECT(show_time, ar);

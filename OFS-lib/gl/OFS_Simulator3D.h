@@ -10,6 +10,8 @@
 #include "glm/gtc/type_ptr.hpp"
 
 
+#include "Funscript.h"
+
 class Simulator3D
 {
 private:
@@ -25,7 +27,7 @@ private:
 
 	float rollRange = 60.f;
 	float pitchRange = 90.f;
-	float twistRange = 180.f;
+	float twistSpeed = 3.f;
 
     glm::mat4 projection;
 	glm::mat4 view;
@@ -33,6 +35,8 @@ private:
 	glm::mat4 translation;
 	glm::mat4 boxModel;
 	glm::mat4 containerModel;
+
+	glm::mat4 boxy;
 
 	glm::vec3 viewPos;
 	glm::vec3 lightPos;
@@ -44,11 +48,17 @@ private:
 	
 	ImColor boxColor = IM_COL32(245, 164, 66, (int)(0.8f * 255));
 	ImColor containerColor = IM_COL32(66, 135, 245, (int)(0.6f * 255));
+	const ImColor red = IM_COL32(255, 0, 0, 150);
+
+	float roll = 0.f;
+	float pitch = 0.f;
+	float scriptPos = 0.f;
+	float yaw = 0.f;
 
 	void reset() noexcept;
 public:
 	void setup() noexcept;
 
-	void ShowWindow(bool* open) noexcept;
+	void ShowWindow(bool* open, int32_t currentMs, bool easing, const std::vector<std::shared_ptr<Funscript>>& scripts) noexcept;
 	void render() noexcept;
 };

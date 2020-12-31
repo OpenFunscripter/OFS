@@ -11,6 +11,7 @@
 #include "OFS_VideoplayerControls.h"
 #include "OFS_ControllerInput.h"
 #include "OFS_ScriptTimeline.h"
+#include "OFS_Simulator3D.h"
 
 #include "OFP_Videobrowser.h"
 #include "OFP_Settings.h"
@@ -32,6 +33,8 @@ struct AutoHideTime
 
 struct OFP_ScriptSettings {
 	
+	TChannel ScriptChannel;
+
 	template <class Archive>
 	inline void reflect(Archive& ar) {
 		//OFS_RELFECT(..., ar);
@@ -80,8 +83,10 @@ public:
 	std::unique_ptr<TCodePlayer> tcode;
 	std::unique_ptr<ControllerInput> controllerInput;
 
+	std::unique_ptr<Simulator3D> sim3d;
+
 	std::unique_ptr<Videobrowser> videobrowser;
-	std::vector<std::unique_ptr<Funscript>> LoadedFunscripts;
+	std::vector<std::shared_ptr<Funscript>> LoadedFunscripts;
 
 	~OFP() noexcept;
 
@@ -115,7 +120,7 @@ public:
 	void ControllerAxis(SDL_Event& ev) noexcept;
 
 	inline bool ScriptLoaded() const { return LoadedFunscripts.size() > 0; }
-	inline std::unique_ptr<Funscript>& RootFunscript() noexcept {
+	inline std::shared_ptr<Funscript>& RootFunscript() noexcept {
 		FUN_ASSERT(ScriptLoaded(), "No script loaded");
 		return LoadedFunscripts[0];
 	}

@@ -5,11 +5,14 @@
 #include "imgui_internal.h"
 
 #include "SDL.h"
+#include "OFS_im3d.h"
 
-bool TCodeChannel::easing = false;
-int32_t TCodeChannel::limits[2] = { 100, 900 };
 
-void TCodePlayer::openPort(const char* name) noexcept
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtc/type_ptr.hpp"
+
+bool TCodePlayer::openPort(const char* name) noexcept
 {
     if (port != nullptr) {
         c_serial_free(port);
@@ -20,7 +23,7 @@ void TCodePlayer::openPort(const char* name) noexcept
         LOG_ERROR("ERROR: Unable to create new serial port\n");
         port = nullptr;
         status = -1;
-        return;
+        return false;
     }
 
     /*
@@ -29,7 +32,7 @@ void TCodePlayer::openPort(const char* name) noexcept
      */
     if (c_serial_set_port_name(port, name) < 0) {
         LOG_ERROR("ERROR: can't set port name\n");
-        return;
+        return false;
     }
 
     c_serial_set_baud_rate(port, CSERIAL_BAUD_115200);
@@ -47,41 +50,43 @@ void TCodePlayer::openPort(const char* name) noexcept
     status = c_serial_open(port);
     if (status < 0) {
         LOG_ERROR("ERROR: Can't open serial port\n");
-        return;
+        return false;
     }
+    return true;
 }
 
-void TCodePlayer::tick() noexcept
-{
-    if (status < 0) return;
-
-    data_length = sizeof(data);
-    status = c_serial_read_data(port, data, &data_length, &lines);
-    if (status < 0) {
-        LOG_ERROR("Failed to read from serial port.");
-        return;
-    }
-
-
-    LOGF_DEBUG("Got %d bytes of data\n", data_length);
-    
-    for (int x = 0; x < data_length; x++) {
-        LOGF_DEBUG("    0x%02X (ASCII: %c)\n", data[x], data[x]);
-    }
-    LOGF_DEBUG("Serial line state: CD: %d CTS: %d DSR: %d DTR: %d RTS: %d RI: %d\n",
-        lines.cd,
-        lines.cts,
-        lines.dsr,
-        lines.dtr,
-        lines.rts,
-        lines.ri);
-
-    status = c_serial_write_data(port, data, &data_length);
-    if (status < 0) {
-        LOG_ERROR("Failed to write to serial port.");
-        return;
-    }
-}
+//void TCodePlayer::tick() noexcept
+//{
+//    if (status < 0) return;
+//
+//    data_length = sizeof(data);
+//    if (status >= 0) {
+//        status = c_serial_read_data(port, data, &data_length, &lines);
+//        if (status < 0) {
+//            LOG_ERROR("Failed to read from serial port.");
+//            return;
+//        }
+//    }
+//
+//    LOGF_DEBUG("Got %d bytes of data\n", data_length);
+//    
+//    for (int x = 0; x < data_length; x++) {
+//        LOGF_DEBUG("    0x%02X (ASCII: %c)\n", data[x], data[x]);
+//    }
+//    LOGF_DEBUG("Serial line state: CD: %d CTS: %d DSR: %d DTR: %d RTS: %d RI: %d\n",
+//        lines.cd,
+//        lines.cts,
+//        lines.dsr,
+//        lines.dtr,
+//        lines.rts,
+//        lines.ri);
+//
+//    status = c_serial_write_data(port, data, &data_length);
+//    if (status < 0) {
+//        LOG_ERROR("Failed to write to serial port.");
+//        return;
+//    }
+//}
 
 TCodePlayer::TCodePlayer()
 {
@@ -91,16 +96,17 @@ TCodePlayer::TCodePlayer()
 		});
 }
 
-static struct TcodeThreadData {
+static struct TCodeThreadData {
     bool running = false;
     bool requestStop = false;
     int32_t scriptTimeMs = 0.f;
-    int tickrate = 30;
+    
+    int tickrate = 250;
     int32_t delay = 0;
 
     TCodePlayer* player = nullptr;
-
-    TCodeChannel L0;
+    TCodeChannels* channel = nullptr;
+    TCodeProducer producer;
 } Thread;
 
 void TCodePlayer::DrawWindow(bool* open) noexcept
@@ -137,48 +143,104 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
         }
     }
 
-    ImGui::SliderInt2("Limits", TCodeChannel::limits, 100, 900);
-    ImGui::Checkbox("Easing", &TCodeChannel::easing);
-    ImGui::SameLine();
+    ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
+
+    char buf[16];
+    ImGui::TextUnformatted("Linear");
+    auto& l0 = tcode.Get(TChannel::L0);
+    stbsp_snprintf(buf, sizeof(buf), "%s Limit", l0.Id);
+    ImGui::SliderInt2(buf, l0.limits.data(), TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue);
+
+    ImGui::Separator();
+
+    ImGui::TextUnformatted("Rotation");
+    auto rotationGui = [&](TCodeChannel& c) {
+        stbsp_snprintf(buf, sizeof(buf), "%s Limit", c.Id);
+        ImGui::SliderInt2(buf, c.limits.data(), TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue);
+    };
+    rotationGui(tcode.Get(TChannel::R0));
+    rotationGui(tcode.Get(TChannel::R1));
+    rotationGui(tcode.Get(TChannel::R2));
+
+
     ImGui::InputInt("Delay", &Thread.delay, 10, 10);
+    ImGui::SameLine();
+    static bool easing = false;
+    if (ImGui::Checkbox("Easing", &easing)) {
+        TCodeChannel::EasingMode = easing ? TCodeEasing::Cubic : TCodeEasing::None;
+    }
     ImGui::SliderInt("Tickrate", &Thread.tickrate, 30, 300);
 
-    ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal);
+
+    ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
+
     ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-    ImGui::SliderInt("L0", &Thread.L0.lastTcodeVal, TCodeChannel::limits[0], TCodeChannel::limits[1]);
-    ImGui::SameLine(); ImGui::Text(" -> %s", Thread.L0.buf);
+    for (int i = 0; i < tcode.channels.size(); i++) {
+        if (IgnoreChannel(static_cast<TChannel>(i))) { ImGui::Spacing(); continue; }
+        auto& c = tcode.channels[i];
+        ImGui::SliderInt(c.Id, &c.lastTcodeVal,  TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue /*c.limits[0], c.limits[1]*/);
+        ImGui::SameLine(); ImGui::Text(" -> %s", c.buf);
+    }
     ImGui::PopItemFlag();
 
+    
+
+    //glm::vec3 position(0.f, 0.f, -1.f);
+    //position.y = 1.f * (tcode.Get(TChannel::L0).lastTcodeVal / 800.f);
+
+    //glm::mat4 model(1.f);
+    //model = glm::translate(model, position);
+    //model = glm::rotate(model, ((tcode.Get(TChannel::R2).lastTcodeVal/800.f) - 0.5f) * ((float)M_PI / 3.f), glm::vec3(1.f, 0.f, 0.f));
+    //model = glm::rotate(model, 0.f, glm::vec3(0.f, 1.f, 0.f));
+    //model = glm::rotate(model, ((tcode.Get(TChannel::R1).lastTcodeVal / 800.f) - 0.5f) * ((float)M_PI/3.f), glm::vec3(0.f, 0.f, 1.f));
+    //
+    //glm::vec3 p1(0.f, 0.5f, -1.0f);
+    //glm::vec3 p2(0.f, -0.5f,-1.0f);
+    ////p1 = position;
+    ////p1.y -= 0.5f;
+    ////p1.z = -1.f;
+    ////p2 = position;
+    ////p2.y += 0.5f;
+    ////p2.z = -1.f;
+    //p1 = model * glm::vec4(p1, 1.f);
+    //p2 = model * glm::vec4(p2, 1.f);
+
+    //Im3d::DrawArrow(p1, p2, 2, 50);
 	ImGui::End();
 }
 
 
-static int32_t TcodeThread(void* threadData) noexcept {
-    TcodeThreadData* data = (TcodeThreadData*)threadData;
+static int32_t TCodeThread(void* threadData) noexcept {
+    TCodeThreadData* data = (TCodeThreadData*)threadData;
 
     LOG_INFO("T-Code thread started...");
 
     int startTicks = SDL_GetTicks();
     
-    int scriptTimeMs = -1;
-
-    data->L0.Sync(data->scriptTimeMs - Thread.delay);
+    int scriptTimeMs = 0;
 
     while (!data->requestStop) {
         int maxTicks = std::round(1000.f / data->tickrate) - 1;
-        if (data->scriptTimeMs != scriptTimeMs) {
-            scriptTimeMs = data->scriptTimeMs;
-            int startTicks = SDL_GetTicks();
-
-            data->L0.Sync(scriptTimeMs);
-        }
 
         int32_t ticks = SDL_GetTicks();
-        int32_t currentTimeMs = (ticks - startTicks) + data->scriptTimeMs;
+        int32_t currentTimeMs = ((ticks - startTicks) + scriptTimeMs) - Thread.delay;
+        int32_t syncTimeMs = ((ticks - SDL_GetTicks()) + data->scriptTimeMs) - Thread.delay;
+        if (std::abs(currentTimeMs - syncTimeMs) >= 250) {
+            LOGF_DEBUG("Resync -> %d", data->scriptTimeMs - scriptTimeMs);
+            LOGF_DEBUG("prev: %d new: %d", currentTimeMs, syncTimeMs);
+            currentTimeMs = syncTimeMs;
+            scriptTimeMs = data->scriptTimeMs;
+            startTicks = SDL_GetTicks();
+        }
 
-        const char* cmd = data->L0.getCommand(currentTimeMs - Thread.delay);
+        // tick producers
+        data->producer.tick(currentTimeMs);
+        
+        // update channels
+        const char* cmd = data->channel->GetCommand(currentTimeMs);
+        //if (cmd != nullptr) { LOG_DEBUG(cmd); }
+
         if (cmd != nullptr && data->player->status >= 0) {
-            //LOGF_DEBUG("tcode: %s", cmd);
             int len = strlen(cmd);
             data->player->status = c_serial_write_data(data->player->port, (void*)cmd, &len);
             if (data->player->status < 0) {
@@ -199,14 +261,15 @@ static int32_t TcodeThread(void* threadData) noexcept {
     return 0;
 }
 
-void TCodePlayer::play(float currentTimeMs, const std::vector<FunscriptAction>& actions) noexcept
+void TCodePlayer::play(float currentTimeMs, std::weak_ptr<Funscript>&& L0, std::weak_ptr<Funscript>&& R0, std::weak_ptr<Funscript>&& R1, std::weak_ptr<Funscript>&& R2) noexcept
 {
     if (!Thread.running) {
-        Thread.scriptTimeMs = std::round(currentTimeMs);
         Thread.running = true;
-        Thread.L0.actions = actions;
         Thread.player = this;
-        auto t = SDL_CreateThread(TcodeThread, "TCodePlayer", &Thread);
+        Thread.channel = &this->tcode;
+        Thread.scriptTimeMs = std::round(currentTimeMs);
+        Thread.producer.HookupChannels(&tcode, std::move(L0), std::move(R0), std::move(R1), std::move(R2));
+        auto t = SDL_CreateThread(TCodeThread, "TCodePlayer", &Thread);
         SDL_DetachThread(t);
     }
 }
@@ -215,5 +278,12 @@ void TCodePlayer::stop() noexcept
 {
     if (Thread.running) {
         Thread.requestStop = true;
+        while(!Thread.running) { /* busy wait */ }
+        Thread.producer.ClearChannels();
     }
+}
+
+void TCodePlayer::sync(float currentTimeMs) noexcept
+{
+    Thread.scriptTimeMs = std::round(currentTimeMs);
 }

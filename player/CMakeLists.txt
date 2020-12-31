@@ -4,7 +4,8 @@ set(OFP_SOURCES
   "main.cpp"
   "OFP.cpp"
 
-  "UI/OFP_Videobrowser.cpp"
+  "Videobrowser/OFP_Videobrowser.cpp"
+  "Videobrowser/OFP_VideobrowserItem.cpp"
   "UI/OFP_Settings.cpp"
 )
 
@@ -19,6 +20,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 target_include_directories(${PROJECT_NAME} PRIVATE 
 	"${PROJECT_SOURCE_DIR}/"
 	"${PROJECT_SOURCE_DIR}/UI"
+	"${PROJECT_SOURCE_DIR}/Videobrowser"
 	#"${CMAKE_SOURCE_DIR}/lib/minimp3/"
 )
 

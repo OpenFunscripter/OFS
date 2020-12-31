@@ -20,9 +20,13 @@ set(OFS_LIB_SOURCES
 	"imgui_impl/imgui_impl_sdl.cpp" 
 
 	"gl/OFS_Shader.cpp"
+	"gl/OFS_Simulator3D.cpp"
+
+	"player/OFS_TCode.cpp"
+	"player/OFS_TCodeChannel.cpp"
+	"player/OFS_TCodeProducer.cpp"
 
 	"im3d/OFS_im3d.cpp"
-	"player/OFS_Tcode.cpp"
 	"OFS_UndoSystem.cpp"
 	"OFS_ControllerInput.cpp"
 

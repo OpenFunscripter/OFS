@@ -215,7 +215,7 @@ void ScriptTimeline::mouse_scroll(SDL_Event& ev)
 	}
 }
 
-void ScriptTimeline::ShowScriptPositions(bool* open, const std::vector<std::unique_ptr<Funscript>>& scripts, Funscript* activeScript) noexcept
+void ScriptTimeline::ShowScriptPositions(bool* open, const std::vector<std::shared_ptr<Funscript>>& scripts, Funscript* activeScript) noexcept
 {
 	if (open != nullptr && !*open)return;
 
@@ -403,11 +403,10 @@ void ScriptTimeline::ShowScriptPositions(bool* open, const std::vector<std::uniq
 				}
 				ImGui::EndMenu();
 			}
-#ifndef NDEBUG
 			if (ImGui::BeginMenu("Rendering")) {
+				ImGui::MenuItem("Spline mode", 0, &BaseOverlay::SplineLines);
 				ImGui::EndMenu();
 			}
-#endif
 			if (ImGui::BeginMenu("Audio waveform")) {
 				ImGui::SliderFloat("Waveform scale", &ScaleAudio, 0.25f, 10.f);
 				if (ImGui::MenuItem("Enable waveform", NULL, &ShowAudioWaveform, !ffmpegInProgress)) {}

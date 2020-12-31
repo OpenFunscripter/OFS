@@ -62,9 +62,9 @@ private:
 	std::vector<UndoContext> RedoStack;
 	void ClearRedo() noexcept;
 public:
-	std::vector<std::unique_ptr<class Funscript>>* LoadedScripts = nullptr;
+	std::vector<std::shared_ptr<class Funscript>>* LoadedScripts = nullptr;
 
-	UndoSystem(std::vector<std::unique_ptr<class Funscript>>* scripts) {
+	UndoSystem(std::vector<std::shared_ptr<class Funscript>>* scripts) {
 		LoadedScripts = scripts;
 	}
 
