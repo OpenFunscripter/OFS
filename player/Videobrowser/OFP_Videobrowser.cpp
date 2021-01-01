@@ -277,6 +277,38 @@ Videobrowser::~Videobrowser()
 	libCache.save();
 }
 
+void Videobrowser::Lootcrate(bool* open) noexcept
+{
+	if (open != nullptr && !*open) return;
+
+	if (Random)
+		ImGui::OpenPopup(VideobrowserRandomId);
+
+	if (ImGui::BeginPopupModal(VideobrowserRandomId, open, ImGuiWindowFlags_None)) {
+		auto hostWidth = ImGui::GetContentRegionAvail().x;
+		ImGui::BeginChild("RandomVideo", ImVec2(hostWidth, hostWidth), true);
+		renderLoot();
+		ImGui::EndChild();
+		ImGui::Button("Spin!", ImVec2(-1, 0));
+		ImGui::EndPopup();
+	}
+}
+
+void Videobrowser::renderLoot() noexcept
+{
+	auto window_pos = ImGui::GetWindowPos();
+	auto availSize = ImGui::GetContentRegionAvail();
+	
+	auto frame_bb = ImRect(window_pos, availSize);
+
+	auto draw_list = ImGui::GetWindowDrawList();
+
+	auto centerPos = window_pos + (availSize / 2.f);
+
+	draw_list->AddCircle(centerPos, availSize.x, IM_COL32_WHITE, 8);
+
+}
+
 void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 {
 	if (open != NULL && !*open) return;
@@ -319,7 +351,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 	const float ItemHeight = (9.f/16.f)*ItemWidth;
 	const auto ItemDim = ImVec2(ItemWidth, ItemHeight);
 	
-	ImGui::BeginChild("Items");
+	ImGui::BeginChild("Items", ImVec2(0,0), true);
 	auto fileClickHandler = [&](VideobrowserItem& item) {		
 		if (item.HasMatchingScript) {
 			ClickedFilePath = item.path;
@@ -415,6 +447,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 	SDL_AtomicUnlock(&ItemsLock);
 
 	ShowBrowserSettings(&ShowSettings);
+	Lootcrate(&Random);
 }
 
 void Videobrowser::ShowBrowserSettings(bool* open) noexcept

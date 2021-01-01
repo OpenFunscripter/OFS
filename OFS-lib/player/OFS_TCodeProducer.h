@@ -11,7 +11,7 @@ class TCodeChannelProducer
 {
 public:
 	TCodeChannel* channel = nullptr;
-	std::weak_ptr<Funscript> script;
+	std::weak_ptr<const Funscript> script;
 	int32_t currentIndex = 0;
 
 	TCodeChannelProducer() {}
@@ -40,6 +40,10 @@ public:
 		}
 	}
 
+#ifndef NDEBUG
+	bool foo = false;
+#endif
+
 	inline void tick(int32_t CurrentTimeMs) noexcept {
 		if (script.expired() || channel == nullptr) return;
 
@@ -61,6 +65,12 @@ public:
 		}
 
 		if (currentIndex != newIndex && newIndex < actions.size()) {
+#ifndef NDEBUG
+			if (foo && newIndex-currentIndex <= -1) {
+				FUN_ASSERT(false, "bug???");
+			}
+			foo = true;
+#endif
 			currentIndex = newIndex;
 			channel->startAction = actions[currentIndex];
 			if (currentIndex + 1 < actions.size()) {
@@ -73,6 +83,11 @@ public:
 
 			LOGF_DEBUG("%s: New stroke! %d -> %d", channel->Id, channel->startAction.pos, channel->nextAction.pos);
 		}
+#ifndef NDEBUG
+		else {
+			foo = false;
+		}
+#endif
 	}
 };
 

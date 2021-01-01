@@ -21,8 +21,10 @@ public:
 	c_serial_control_lines_t lines;
 
 	TCodeChannels tcode;
-	
+	TCodeProducer prod;
+
 	TCodePlayer();
+	~TCodePlayer();
 	void DrawWindow(bool* open) noexcept;
 
 	void play(float currentTimeMs, 

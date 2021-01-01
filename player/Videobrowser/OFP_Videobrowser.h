@@ -93,12 +93,15 @@ private:
     SDL_SpinLock ItemsLock = 0;
     std::vector<VideobrowserItem> Items;
     LibraryCachedVideos libCache;
+
+    void renderLoot() noexcept;
 public:
     VideobrowserSettings* settings = nullptr;
 
 	static constexpr const char* VideobrowserId = "Videobrowser";
     static constexpr const char* VideobrowserSceneId = "VideobrowserScene";
     static constexpr const char* VideobrowserSettingsId = "Videobrowser Settings";
+    static constexpr const char* VideobrowserRandomId = "Random video";
 
     static constexpr int MaxThumbailProcesses = 4;
     static SDL_sem* ThumbnailThreadSem;
@@ -107,12 +110,15 @@ public:
     std::string Filter;
 
     bool ShowSettings = false;
+    bool Random = true;
 
     Videobrowser(VideobrowserSettings* settings);
     ~Videobrowser();
 
 	void ShowBrowser(const char* Id, bool* open) noexcept;
     void ShowBrowserSettings(bool* open) noexcept;
+
+    void Lootcrate(bool* open) noexcept;
 
     inline void SetPath(const std::string& path) { if (path != settings->CurrentPath) { settings->CurrentPath = path; CacheNeedsUpdate = true; } }
     inline const std::string& Path() const { return settings->CurrentPath; }

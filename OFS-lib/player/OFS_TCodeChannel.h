@@ -42,8 +42,7 @@ public:
 	char Id[3] = "\0";
 
 	TCodeChannel() {
-		startAction.at = -2; startAction.pos = 50;
-		nextAction.at = -1; nextAction.pos = 50;
+		reset();
 	}
 
 	inline void SetId(char id[3]) noexcept {
@@ -56,26 +55,35 @@ public:
 	std::array<int32_t, 2> limits = { MinChannelValue, MaxChannelValue };
 	int32_t lastTcodeVal = -1;
 
-	inline void SetStroke(FunscriptAction from, FunscriptAction to) noexcept {
-		startAction = from;
-		nextAction = to;
-	}
-	inline void SetNext(FunscriptAction next) noexcept {
-		startAction = nextAction;
-		nextAction = next;
-	}
-	inline bool StrokeComplete(int32_t currentTimeMs) const noexcept { return nextAction.at > currentTimeMs; }
-
 	char buf[16] = "???\0";
-	inline const char* getCommand(int32_t currentTimeMs) noexcept {
+	inline const char* getCommand(int32_t currentTimeMs, int32_t tickrate) noexcept {
 		float pos = getPos(currentTimeMs);
 		int32_t tcodeVal = (int32_t)(limits[0] + ((pos / 100.f) * (limits[1] - limits[0])));
 		if (tcodeVal != lastTcodeVal) {
-			lastTcodeVal = tcodeVal;
-			stbsp_snprintf(buf, sizeof(buf), "%s%d ", Id, tcodeVal);
+
+			constexpr float MaxSpeed = 10000.f;
+			int32_t diff = tcodeVal - lastTcodeVal;
+			int32_t abs_diff = std::abs(diff);
+			float speed = abs_diff / (1.f / tickrate);
+
+			if (speed >= MaxSpeed) {
+				LOGF_DEBUG("%s: jitter detected: %f", Id, speed);
+				lastTcodeVal += (diff / abs_diff) *  ((MaxSpeed*(1.f/tickrate))/10.f);
+				lastTcodeVal = Util::Clamp(lastTcodeVal, limits[0], limits[1]);
+			}
+			else {
+				lastTcodeVal = tcodeVal;
+			}
+
+			stbsp_snprintf(buf, sizeof(buf), "%s%d ", Id, lastTcodeVal);
 			return buf;
 		}
 		return nullptr;
+	}
+
+	inline void reset() noexcept {
+		startAction.at = -2; startAction.pos = 50;
+		nextAction.at = -1; nextAction.pos = 50;
 	}
 };
 
@@ -150,11 +158,12 @@ public:
 		return channels[static_cast<size_t>(c)];
 	}
 
-	const char* GetCommand(int32_t CurrentTimeMs) noexcept {
+	const char* GetCommand(int32_t CurrentTimeMs, int32_t tickrate) noexcept {
 		bool gotCmd = false;
+
 		ss.str("");
 		for (auto& c : channels) {
-			auto cmd = c.getCommand(CurrentTimeMs);
+			auto cmd = c.getCommand(CurrentTimeMs, tickrate);
 			if (cmd != nullptr) {
 				gotCmd = true;
 				ss << cmd;
@@ -167,5 +176,9 @@ public:
 		}
 		
 		return nullptr;
+	}
+
+	void reset() noexcept {
+		for (auto& c : channels) c.reset();
 	}
 };
