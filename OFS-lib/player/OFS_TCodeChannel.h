@@ -41,10 +41,6 @@ public:
 	// 2 characters + 0 terminator
 	char Id[3] = "\0";
 
-	TCodeChannel() {
-		reset();
-	}
-
 	inline void SetId(char id[3]) noexcept {
 		strcpy(Id, id);
 	}
@@ -138,7 +134,7 @@ public:
 
 	TCodeChannels()
 	{
-		for (auto& c : channels) { c = TCodeChannel(); }
+		for (auto& c : channels) { c = TCodeChannel(); c.reset(); }
 		L0.SetId("L0");
 		L1.SetId("L1");
 		L2.SetId("L2");
