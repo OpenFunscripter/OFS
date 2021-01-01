@@ -45,6 +45,8 @@ public:
 		strcpy(Id, id);
 	}
 
+	TCodeChannel() = delete;
+
 	static constexpr int32_t MaxChannelValue = 900;
 	static constexpr int32_t MinChannelValue = 100;
 
@@ -134,7 +136,7 @@ public:
 
 	TCodeChannels()
 	{
-		for (auto& c : channels) { c = TCodeChannel(); c.reset(); }
+		for (auto& c : channels) { c.reset(); }
 		L0.SetId("L0");
 		L1.SetId("L1");
 		L2.SetId("L2");
