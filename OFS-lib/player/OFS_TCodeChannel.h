@@ -41,11 +41,13 @@ public:
 	// 2 characters + 0 terminator
 	char Id[3] = "\0";
 
-	inline void SetId(char id[3]) noexcept {
+	inline void SetId(const char id[3]) noexcept {
 		strcpy(Id, id);
 	}
 
-	TCodeChannel() = delete;
+	TCodeChannel() {
+		reset();
+	}
 
 	static constexpr int32_t MaxChannelValue = 900;
 	static constexpr int32_t MinChannelValue = 100;
@@ -108,28 +110,7 @@ class TCodeChannels {
 public:
 	static std::array<std::vector<const char*>, static_cast<size_t>(TChannel::TotalCount)> Aliases;
 
-	union
-	{
-		std::array<TCodeChannel, static_cast<size_t>(TChannel::TotalCount)> channels;
-		
-		struct {
-			// linear movement
-			TCodeChannel L0; // up/down
-			TCodeChannel L1; //unused
-			TCodeChannel L2; //unused
-			// TODO: add L3/succ
-
-			// rotation
-			TCodeChannel R0; // twist
-			TCodeChannel R1; // roll
-			TCodeChannel R2; // pitch
-
-			// vibration
-			TCodeChannel V0; //unused
-			TCodeChannel V1; //unused
-			TCodeChannel V2; //unused
-		};
-	};
+	std::array<TCodeChannel, static_cast<size_t>(TChannel::TotalCount)> channels;
 
 	std::stringstream ss;
 	std::string lastCommand;
@@ -137,17 +118,18 @@ public:
 	TCodeChannels()
 	{
 		for (auto& c : channels) { c.reset(); }
-		L0.SetId("L0");
-		L1.SetId("L1");
-		L2.SetId("L2");
 
-		R0.SetId("R0");
-		R1.SetId("R1");
-		R2.SetId("R2");
+		Get(TChannel::L0).SetId("L0");
+		Get(TChannel::L1).SetId("L1");
+		Get(TChannel::L2).SetId("L2");
 
-		V0.SetId("V0");
-		V1.SetId("V1");
-		V2.SetId("V2");
+		Get(TChannel::R0).SetId("R0");
+		Get(TChannel::R1).SetId("R1");
+		Get(TChannel::R2).SetId("R2");
+
+		Get(TChannel::V0).SetId("V0");
+		Get(TChannel::V1).SetId("V1");
+		Get(TChannel::V2).SetId("V2");
 	}
 
 	~TCodeChannels() { }
