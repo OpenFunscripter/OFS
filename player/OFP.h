@@ -5,7 +5,7 @@
 #include "EventSystem.h"
 #include "Funscript.h"
 #include "KeybindingSystem.h"
-#include "OFS_Tcode.h"
+#include "OFS_TCode.h"
 #include "OFS_Util.h"
 #include "OFS_Reflection.h"
 #include "OFS_VideoplayerControls.h"
