@@ -6,6 +6,7 @@
 #include <tuple>
 #include <filesystem>
 
+#include "OFP_Videopreview.h"
 #include "OFP_VideobrowserItem.h"
 
 #include "OFS_Reflection.h"
@@ -98,6 +99,9 @@ private:
 public:
     VideobrowserSettings* settings = nullptr;
 
+    uint64_t previewItemId = 0;
+    VideoPreview preview;
+
 	static constexpr const char* VideobrowserId = "Videobrowser";
     static constexpr const char* VideobrowserSceneId = "VideobrowserScene";
     static constexpr const char* VideobrowserSettingsId = "Videobrowser Settings";
@@ -110,7 +114,7 @@ public:
     std::string Filter;
 
     bool ShowSettings = false;
-    bool Random = true;
+    bool Random = false;
 
     Videobrowser(VideobrowserSettings* settings);
     ~Videobrowser();

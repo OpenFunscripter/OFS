@@ -270,6 +270,8 @@ Videobrowser::Videobrowser(VideobrowserSettings* settings)
 	}
 	libCache.load(Util::PrefpathOFP("library.json"));
 	UpdateLibCache = libCache.videos.empty();
+
+	preview.setup();
 }
 
 Videobrowser::~Videobrowser()
@@ -296,17 +298,46 @@ void Videobrowser::Lootcrate(bool* open) noexcept
 
 void Videobrowser::renderLoot() noexcept
 {
+	if (Items.empty()) return;
+
 	auto window_pos = ImGui::GetWindowPos();
 	auto availSize = ImGui::GetContentRegionAvail();
 	
-	auto frame_bb = ImRect(window_pos, availSize);
+	auto window = ImGui::GetCurrentWindowRead();
+	
+	auto frame_bb = ImRect(window->DC.CursorPos, window->DC.CursorPos +availSize);
 
 	auto draw_list = ImGui::GetWindowDrawList();
 
-	auto centerPos = window_pos + (availSize / 2.f);
+	auto style = ImGui::GetStyle();
 
-	draw_list->AddCircle(centerPos, availSize.x, IM_COL32_WHITE, 8);
+	constexpr float scale = 4.f;
 
+
+	ImVec2 videoSize((availSize.x / scale) * (16.f / 9.f), (availSize.x / scale));
+	
+	static ImVec2 offset(0.f, 0.f);
+	offset.x = std::sin(SDL_GetTicks() / 1500.f)*videoSize.x*5.f;
+
+	ImVec2 centerPos(frame_bb.GetWidth() / 2.f, frame_bb.GetHeight() / 2.f);
+	centerPos += frame_bb.Min;
+	
+
+	ImVec2 wheelPos = centerPos + offset;
+	ImVec2 p1 = wheelPos - (videoSize / 2.f);
+	ImVec2 p2 = wheelPos + (videoSize / 2.f);
+	draw_list->AddRect(p1, p2, IM_COL32(255, 0, 0, 255), 2.f);
+	draw_list->AddImage((void*)(intptr_t)Items.begin()->GetTexId(), p1 + style.FramePadding, p2 - style.FramePadding, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE);
+
+	for (int i = 1; i <= 10; i++) {
+		wheelPos += ImVec2(videoSize.x + style.ItemSpacing.x, 0.f);
+		p1 = wheelPos - (videoSize / 2.f);
+		p2 = wheelPos + (videoSize / 2.f);
+		draw_list->AddRect(p1, p2, IM_COL32(255, 0, 0, 255), 2.f);
+		draw_list->AddImage((void*)(intptr_t)(Items.begin()+i)->GetTexId(), p1 + style.FramePadding, p2 - style.FramePadding, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE);
+	}
+
+	draw_list->AddLine(centerPos - ImVec2(0.f, availSize.x / 4.f), centerPos + ImVec2(0.f, availSize.x / 4.f), IM_COL32(255, 255, 0, 255));
 }
 
 void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
@@ -395,6 +426,9 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 	}
 	
 
+
+	VideobrowserItem* previewItem = nullptr;
+
 	int index = 0;
 	for (auto& item : Items) {
 		if (index != 0 && !Filter.empty()) {
@@ -415,10 +449,16 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 			}
 			if (texId != 0) {
 				ImVec2 padding = item.HasMatchingScript ? ImVec2(0, 0) : ImVec2(ItemWidth*0.1f, ItemWidth*0.1f);
-				if (ImGui::ImageButton((void*)(intptr_t)texId, ItemDim - padding, ImVec2(0,0), ImVec2(1,1), padding.x/2.f, ImVec4(0,0,0,0), FileTint)) {
+				ImGui::PushID(index);
+				if(ImGui::ImageButtonEx(ImGui::GetID(item.filename.c_str()), item.Focussed && preview.ready ? (void*)(intptr_t)preview.render_texture : (void*)(intptr_t)texId, ItemDim - padding, ImVec2(0, 0), ImVec2(1, 1), padding/2.f, style.Colors[ImGuiCol_PlotLines], FileTint)) {
 					fileClickHandler(item);
 				}
-				item.Focussed = ImGui::IsItemFocused() || ImGui::IsItemHovered();
+				ImGui::PopID();
+				bool prevValue = item.Focussed;
+				item.Focussed = /*ImGui::IsItemActive() || ImGui::IsItemActivated() ||*/ ImGui::IsItemFocused() || ImGui::IsItemHovered();
+				if (item.Focussed) {
+					previewItem = &item;
+				}
 			}
 			else {
 				if(!item.HasMatchingScript) { ImGui::PushStyleColor(ImGuiCol_Button, FileTint.Value); }
@@ -442,12 +482,23 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 		}
 	}
 
+	if (previewItem != nullptr && !preview.loading || previewItem != nullptr && previewItem->Id != previewItemId) {
+		previewItemId = previewItem->Id;
+		preview.previewVideo(previewItem->path, 0.2f);
+	}
+	else if (previewItem == nullptr && preview.ready) {
+		preview.closeVideo();
+	}
+
 	ImGui::EndChild();
 	ImGui::End();
 	SDL_AtomicUnlock(&ItemsLock);
 
 	ShowBrowserSettings(&ShowSettings);
+
+	SDL_AtomicLock(&ItemsLock);
 	Lootcrate(&Random);
+	SDL_AtomicUnlock(&ItemsLock);
 }
 
 void Videobrowser::ShowBrowserSettings(bool* open) noexcept

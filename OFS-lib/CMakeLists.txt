@@ -92,7 +92,7 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 
 
 if(WIN32)
-	target_include_directories(${PROJECT_NAME} PRIVATE 
+	target_include_directories(${PROJECT_NAME} PUBLIC 
 		"${CMAKE_SOURCE_DIR}/lib/libmpv/include"
 	)
 	target_link_directories(${PROJECT_NAME} PUBLIC 

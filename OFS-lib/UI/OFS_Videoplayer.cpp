@@ -29,6 +29,7 @@ static void on_mpv_events(void* ctx)
 {
 	SDL_Event event{ 0 };
 	event.type = VideoEvents::WakeupOnMpvEvents;
+	event.user.data1 = ctx;
 	SDL_PushEvent(&event);
 }
 
@@ -36,11 +37,13 @@ static void on_mpv_render_update(void* ctx)
 {
 	SDL_Event event{ 0 };
 	event.type = VideoEvents::WakeupOnMpvRenderUpdate;
+	event.user.data1 = ctx;
 	SDL_PushEvent(&event);
 }
 
 void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 {
+	if (ev.user.data1 != this) return;
 	while (1) {
 		mpv_event* mp_event = mpv_wait_event(mpv, 0);
 		if (mp_event->event_id == MPV_EVENT_NONE)
@@ -175,6 +178,7 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 
 void VideoplayerWindow::MpvRenderUpdate(SDL_Event& ev) noexcept
 {
+	if (ev.user.data1 != this) return;
 	uint64_t flags = mpv_render_context_update(mpv_gl);
 	if (flags & MPV_RENDER_UPDATE_FRAME) {
 		redraw_video = true;
@@ -308,13 +312,13 @@ bool VideoplayerWindow::setup(EventSystem& events, bool force_hw_decoding)
 	}
 
 	// When normal mpv events are available.
-	mpv_set_wakeup_callback(mpv, on_mpv_events, NULL);
+	mpv_set_wakeup_callback(mpv, on_mpv_events, this);
 
 	// When there is a need to call mpv_render_context_update(), which can
 	// request a new frame to be rendered.
 	// (Separate from the normal event handling mechanism for the sake of
 	//  users which run OpenGL on a different thread.)
-	mpv_render_context_set_update_callback(mpv_gl, on_mpv_render_update, NULL);
+	mpv_render_context_set_update_callback(mpv_gl, on_mpv_render_update, this);
 
 	observeProperties();
 

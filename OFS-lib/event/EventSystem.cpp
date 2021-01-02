@@ -1,5 +1,7 @@
 #include "EventSystem.h"
 
+EventSystem* EventSystem::instance = nullptr;
+
 int32_t EventSystem::SingleShotEvent = 0;
 
 void EventSystem::SingleShotHandler(SDL_Event& ev) noexcept
@@ -11,6 +13,8 @@ void EventSystem::SingleShotHandler(SDL_Event& ev) noexcept
 
 void EventSystem::setup()
 {
+	FUN_ASSERT(instance == nullptr, "only one instance");
+	instance = this;
 	SingleShotEvent = SDL_RegisterEvents(1);
 
 	Subscribe(SingleShotEvent, EVENT_SYSTEM_BIND(this, &EventSystem::SingleShotHandler));

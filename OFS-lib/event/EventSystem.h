@@ -45,6 +45,13 @@ public:
 	// helper
 	static void PushEvent(int32_t type) noexcept;
 	static void SingleShot(SingleShotEventHandler&& handler, void* ctx) noexcept;
+
+
+	static EventSystem* instance;
+	static EventSystem& ev() noexcept {
+		FUN_ASSERT(instance != nullptr, "null");
+		return *instance;
+	}
 };
 
 #define EVENT_SYSTEM_BIND(listener, handler) listener, std::move(std::bind(handler, listener, std::placeholders::_1))

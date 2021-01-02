@@ -6,6 +6,8 @@ set(OFP_SOURCES
 
   "Videobrowser/OFP_Videobrowser.cpp"
   "Videobrowser/OFP_VideobrowserItem.cpp"
+  "Videobrowser/OFP_Videopreview.cpp"
+
   "UI/OFP_Settings.cpp"
 )
 
