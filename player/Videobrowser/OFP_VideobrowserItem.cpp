@@ -15,40 +15,9 @@
 #include <filesystem>
 #include <unordered_map>
 
-struct TextureHandle {
-	int32_t ref_count = 0;
-	uint32_t texId = 0;
-};
-
-static std::unordered_map<uint32_t, TextureHandle> TextureHashtable;
 
 constexpr int MaxThumbailProcesses = 4;
 
-
-VideobrowserItem::~VideobrowserItem()
-{
-	if (HasThumbnail) {
-		auto it = TextureHashtable.find(this->Id);
-		if (it != TextureHashtable.end()) {
-			it->second.ref_count--;
-			if (it->second.ref_count == 0 && it->second.texId != 0) {
-				glDeleteTextures(1, &it->second.texId);
-				it->second.texId = 0;
-				LOGF_DEBUG("Freed texture: \"%s\"", this->filename.c_str());
-			}
-		}
-	}
-}
-
-uint64_t VideobrowserItem::GetTexId() const
-{
-	if (!HasThumbnail) return 0;
-	auto it = TextureHashtable.find(this->Id);
-	if (it != TextureHashtable.end()) {
-		return it->second.texId;
-	}
-	return 0;
-}
 
 VideobrowserItem::VideobrowserItem(const std::string& path, size_t byte_count, uint64_t lastEdit, bool genThumb, bool matchingScript) noexcept
 {
@@ -75,25 +44,17 @@ VideobrowserItem::VideobrowserItem(const std::string& path, size_t byte_count, u
 		ss << byte_count;
 		auto hashString = ss.str();
 		this->Id = XXH64(hashString.c_str(), hashString.size(), 0);
+		texture = OFS_Texture::CreateOrGetTexture();
 	}
 
-	if (genThumb) {
-		auto it = TextureHashtable.find(this->Id);
-		if (it != TextureHashtable.end()) {
-			it->second.ref_count++; // increment ref_count
-			GenThumbail(false);
-		}
-		else {
-			// insert handle
-			TextureHashtable.insert(std::make_pair(this->Id, TextureHandle{1, 0}));
-			GenThumbail(true);
-		}
-	}
+	this->HasThumbnail = genThumb;
+	//GenThumbail();
 }
 
-void VideobrowserItem::GenThumbail(bool startThread) noexcept
+void VideobrowserItem::GenThumbail() noexcept
 {
-	HasThumbnail = true;
+	if (!this->HasThumbnail || GenThumbnailStarted) { return; }
+	GenThumbnailStarted = true;
 	auto thumbPath = Util::PrefpathOFP("thumbs");
 	Util::CreateDirectories(thumbPath);
 	auto thumbPathObj = Util::PathFromString(thumbPath);
@@ -116,6 +77,7 @@ void VideobrowserItem::GenThumbail(bool startThread) noexcept
 		std::string videoPath;
 		std::string thumbOutputFilePath;
 		uint32_t Id;
+		OFS_Texture::Handle texture;
 		bool startFfmpeg = false;
 	};
 
@@ -124,10 +86,12 @@ void VideobrowserItem::GenThumbail(bool startThread) noexcept
 			EventSystem::SingleShot([](void* ctx) {
 				GenLoadThreadData* data = (GenLoadThreadData*)ctx;
 				int w, h;
-				auto it = TextureHashtable.find(data->Id);
-				if (it != TextureHashtable.end() && it->second.ref_count > 0 && it->second.texId == 0) {
-					if (Util::LoadTextureFromFile(data->thumbOutputFilePath.c_str(), &it->second.texId, &w, &h)) {
-						//LOGF_DEBUG("Loaded texture: \"%s\"", data->thumbOutputFilePath.c_str());
+				
+				auto texId = data->texture.GetTexId();
+				if (texId == 0) {
+					if (Util::LoadTextureFromFile(data->thumbOutputFilePath.c_str(), &texId, &w, &h)) {
+						data->texture.SetTexId(texId);
+						LOGF_DEBUG("Loaded texture: \"%s\"", data->thumbOutputFilePath.c_str());
 					}
 					else {
 						LOGF_WARN("Failed loading texture: \"%s\"", data->thumbOutputFilePath.c_str());
@@ -198,17 +162,10 @@ void VideobrowserItem::GenThumbail(bool startThread) noexcept
 	};
 
 	GenLoadThreadData* data = new GenLoadThreadData;
-	data->Id = this->Id;
+	data->Id = texture.Id;
 	data->thumbOutputFilePath = thumbFilePath;
 	data->videoPath = this->path;
+	data->texture = this->texture;
 	auto thread = SDL_CreateThread(genThread, "GenThumbnail", data);
 	SDL_DetachThread(thread);
-}
-
-void VideobrowserItem::IncrementRefCount() noexcept
-{
-	auto it = TextureHashtable.find(this->Id);
-	if (it != TextureHashtable.end()) {
-		it->second.ref_count++;
-	}
 }

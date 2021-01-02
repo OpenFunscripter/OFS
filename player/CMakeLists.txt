@@ -8,6 +8,8 @@ set(OFP_SOURCES
   "Videobrowser/OFP_VideobrowserItem.cpp"
   "Videobrowser/OFP_Videopreview.cpp"
 
+  "Videolibrary/OFP_Sqlite.cpp"
+
   "UI/OFP_Settings.cpp"
 )
 
@@ -17,13 +19,16 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	OFS_lib
 	xxHash
 	reproc++
+	sqlite_orm
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE 
 	"${PROJECT_SOURCE_DIR}/"
 	"${PROJECT_SOURCE_DIR}/UI"
 	"${PROJECT_SOURCE_DIR}/Videobrowser"
+	"${PROJECT_SOURCE_DIR}/Videolibrary"
 	#"${CMAKE_SOURCE_DIR}/lib/minimp3/"
+	"${CMAKE_SOURCE_DIR}/lib/sqlite-amalgamation/"
 )
 
 # c++17

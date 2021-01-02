@@ -13,6 +13,8 @@
 #include "SDL_atomic.h"
 #include "SDL_thread.h"
 
+#include "OFP_Sqlite.h"
+
 class VideobrowserEvents {
 public:
     static int32_t VideobrowserItemClicked;
@@ -82,14 +84,12 @@ class Videobrowser {
 private:
     void updateCache(const std::string& path) noexcept;
 
-    void updateLibraryCache(bool useCache) noexcept;
+    void updateLibraryCache() noexcept;
 
 #ifdef WIN32
     void chooseDrive() noexcept;
 #endif
-    bool CacheNeedsUpdate = true;
-
-    bool UpdateLibCache = false;
+    bool CacheNeedsUpdate = false;
 
     SDL_SpinLock ItemsLock = 0;
     std::vector<VideobrowserItem> Items;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "OFS_Texture.h"
+
 #include "OFS_Reflection.h"
 
 #include <string>
@@ -22,24 +24,9 @@ static std::array<std::pair<const char*, bool>, 10> BrowserExtensions{
 
 class VideobrowserItem {
 private:
-    void GenThumbail(bool startThread) noexcept;
-    bool HasThumbnail = false;
-    void IncrementRefCount() noexcept;
+    bool GenThumbnailStarted = false;
 public:
     VideobrowserItem(const std::string& path, size_t byte_count, uint64_t lastEdit, bool genThumb, bool matchingScript) noexcept;
-    ~VideobrowserItem();
-
-    VideobrowserItem(const VideobrowserItem& item) noexcept {
-        *this = item;
-        if (HasThumbnail) { IncrementRefCount(); }
-    }
-
-    VideobrowserItem(VideobrowserItem&& item) noexcept {
-        *this = std::move(item);
-        if (HasThumbnail) { IncrementRefCount(); }
-    }
-
-    VideobrowserItem& operator=(const VideobrowserItem&) noexcept = default;
 
     std::string filename;
     std::string path;
@@ -48,10 +35,13 @@ public:
     inline bool IsDirectory() const {
         return extension.empty();
     }
+    void GenThumbail() noexcept;
 
-    uint64_t GetTexId() const;
-    uint64_t Id;
+    OFS_Texture::Handle texture;
+
+    uint64_t Id = 0;
     uint64_t lastEdit = 0;
+    bool HasThumbnail = false;
     bool HasMatchingScript = false;
     bool Focussed = false;
 };

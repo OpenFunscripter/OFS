@@ -21,6 +21,7 @@ set(OFS_LIB_SOURCES
 
 	"gl/OFS_Shader.cpp"
 	"gl/OFS_Simulator3D.cpp"
+	"gl/OFS_Texture.cpp"
 
 	"player/OFS_TCode.cpp"
 	"player/OFS_TCodeChannel.cpp"

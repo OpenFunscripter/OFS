@@ -132,11 +132,10 @@ void Videobrowser::updateCache(const std::string& path) noexcept
 	CacheNeedsUpdate = false;
 }
 
-void Videobrowser::updateLibraryCache(bool useCache) noexcept
+void Videobrowser::updateLibraryCache() noexcept
 {
 	struct UpdateLibraryThreadData {
 		Videobrowser* browser;
-		bool useCache;
 	};
 
 	auto updateLibrary = [](void* ctx) -> int {
@@ -149,77 +148,59 @@ void Videobrowser::updateLibraryCache(bool useCache) noexcept
 		SDL_AtomicUnlock(&browser.ItemsLock);
 
 		auto& cache = browser.libCache;
-		if(!data->useCache)
-		{
-			cache.videos.clear();
+		cache.videos.clear();
 
-			auto& searchPaths = data->browser->settings->SearchPaths;
-			for (auto& sPath : searchPaths) {
-				auto pathObj = Util::PathFromString(sPath.path);
+		auto& searchPaths = data->browser->settings->SearchPaths;
+		for (auto& sPath : searchPaths) {
+			auto pathObj = Util::PathFromString(sPath.path);
 
-				auto handleItem = [&](auto& p) {
-					auto extension = p.path().extension().u8string();
-					auto pathString = p.path().u8string();
-					if (p.is_directory()) return;
+			auto handleItem = [&](auto& p) {
+				auto extension = p.path().extension().u8string();
+				auto pathString = p.path().u8string();
+				if (p.is_directory()) return;
 
-					auto it = std::find_if(BrowserExtensions.begin(), BrowserExtensions.end(),
-						[&](auto& ext) {
-							return std::strcmp(ext.first, extension.c_str()) == 0;
-						});
-					if (it != BrowserExtensions.end()) {
-						// extension matches
-						auto timestamp = GetFileAge(p.path());
-						auto funscript = p.path();
-						funscript.replace_extension(".funscript");
-						bool matchingScript = Util::FileExists(funscript.u8string());
-						if (!matchingScript) return;
+				auto it = std::find_if(BrowserExtensions.begin(), BrowserExtensions.end(),
+					[&](auto& ext) {
+						return std::strcmp(ext.first, extension.c_str()) == 0;
+					});
+				if (it != BrowserExtensions.end()) {
+					// extension matches
+					auto timestamp = GetFileAge(p.path());
+					auto funscript = p.path();
+					funscript.replace_extension(".funscript");
+					bool matchingScript = Util::FileExists(funscript.u8string());
+					if (!matchingScript) return;
 
-						// valid extension + matching script
-						size_t byte_count = p.file_size();
+					// valid extension + matching script
+					size_t byte_count = p.file_size();
 
-						LibraryCachedVideos::CachedVideo vid;
-						vid.path = p.path().u8string();
-						vid.byte_count = byte_count;
-						vid.thumbnail = it->second;
-						vid.hasScript = matchingScript;
-						vid.timestamp = timestamp;
+					LibraryCachedVideos::CachedVideo vid;
+					vid.path = p.path().u8string();
+					vid.byte_count = byte_count;
+					vid.thumbnail = it->second;
+					vid.hasScript = matchingScript;
+					vid.timestamp = timestamp;
 
-						SDL_AtomicLock(&browser.ItemsLock);
-						browser.Items.emplace_back(vid.path, vid.byte_count, timestamp, vid.thumbnail && browser.settings->showThumbnails, vid.hasScript);
-						SDL_AtomicUnlock(&browser.ItemsLock);
-
-						cache.videos.emplace_back(std::move(vid));
-					}
-				};
-
-				std::error_code ec;
-				if (sPath.recursive) {
-					for (auto& p : std::filesystem::recursive_directory_iterator(pathObj, ec)) {
-						handleItem(p);
-					}
-				}
-				else {
-					for (auto& p : std::filesystem::directory_iterator(pathObj, ec)) {
-						handleItem(p);
-					}
-				}
-				LOGF_DEBUG("Done iterating \"%s\" %s", sPath.path.c_str(), sPath.recursive ? "recursively" : "");
-			}
-		}
-		else /* if(data->useCache)*/ {
-			int32_t count = 0;
-			SDL_AtomicLock(&browser.ItemsLock);
-			for (auto& vid : cache.videos) {
-				//auto timestamp = GetFileAge(Util::PathFromString(vid.path));
-				browser.Items.emplace_back(vid.path, vid.byte_count, vid.timestamp, vid.thumbnail && browser.settings->showThumbnails, vid.hasScript);
-				count++;
-				if (count % 15 == 0) {
-					SDL_AtomicUnlock(&browser.ItemsLock);
-					SDL_Delay(60); // let the ui thread render something...
 					SDL_AtomicLock(&browser.ItemsLock);
+					browser.Items.emplace_back(vid.path, vid.byte_count, timestamp, vid.thumbnail && browser.settings->showThumbnails, vid.hasScript);
+					SDL_AtomicUnlock(&browser.ItemsLock);
+
+					cache.videos.emplace_back(std::move(vid));
+				}
+			};
+
+			std::error_code ec;
+			if (sPath.recursive) {
+				for (auto& p : std::filesystem::recursive_directory_iterator(pathObj, ec)) {
+					handleItem(p);
 				}
 			}
-			SDL_AtomicUnlock(&browser.ItemsLock);
+			else {
+				for (auto& p : std::filesystem::directory_iterator(pathObj, ec)) {
+					handleItem(p);
+				}
+			}
+			LOGF_DEBUG("Done iterating \"%s\" %s", sPath.path.c_str(), sPath.recursive ? "recursively" : "");
 		}
 
 		SDL_AtomicLock(&browser.ItemsLock);
@@ -236,10 +217,8 @@ void Videobrowser::updateLibraryCache(bool useCache) noexcept
 	};
 
 	CacheNeedsUpdate = false;
-	UpdateLibCache = false;
 	auto data = new UpdateLibraryThreadData;
 	data->browser = this;
-	data->useCache = useCache;
 	auto thread = SDL_CreateThread(updateLibrary, "UpdateVideoLibrary", data);
 	SDL_DetachThread(thread);
 }
@@ -269,9 +248,37 @@ Videobrowser::Videobrowser(VideobrowserSettings* settings)
 		ThumbnailThreadSem = SDL_CreateSemaphore(MaxThumbailProcesses);
 	}
 	libCache.load(Util::PrefpathOFP("library.json"));
-	UpdateLibCache = libCache.videos.empty();
+	CacheNeedsUpdate = libCache.videos.empty();
 
 	preview.setup();
+
+	SDL_AtomicLock(&ItemsLock);
+	for (auto& cached : libCache.videos) {
+		Items.emplace_back(cached.path, cached.byte_count, cached.timestamp, cached.thumbnail, cached.hasScript);
+	}
+	SDL_AtomicUnlock(&ItemsLock);
+
+#ifndef NDEBUG
+	// foo
+	{
+		auto storage = Videolibrary::Storage();
+		auto vids = storage.get_all<Video>();
+		for (auto& vid : vids) {
+			LOGF_DEBUG("%s in category", vid.filename.c_str());
+		}
+
+		storage.remove_all<Video>();
+
+		Video vid;
+		vid.path = "C:\\\\homework\porn.mp4";
+		vid.filename = "porn.mp4";
+		vid.byte_count = 123;
+		vid.timestamp = 0;
+		vid.insert();
+
+		//auto vidId = storage.insert(vid);
+	}
+#endif
 }
 
 Videobrowser::~Videobrowser()
@@ -327,14 +334,14 @@ void Videobrowser::renderLoot() noexcept
 	ImVec2 p1 = wheelPos - (videoSize / 2.f);
 	ImVec2 p2 = wheelPos + (videoSize / 2.f);
 	draw_list->AddRect(p1, p2, IM_COL32(255, 0, 0, 255), 2.f);
-	draw_list->AddImage((void*)(intptr_t)Items.begin()->GetTexId(), p1 + style.FramePadding, p2 - style.FramePadding, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE);
+	//draw_list->AddImage((void*)(intptr_t)*Items.begin()->texture.GetTexId(), p1 + style.FramePadding, p2 - style.FramePadding, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE);
 
 	for (int i = 1; i <= 10; i++) {
 		wheelPos += ImVec2(videoSize.x + style.ItemSpacing.x, 0.f);
 		p1 = wheelPos - (videoSize / 2.f);
 		p2 = wheelPos + (videoSize / 2.f);
 		draw_list->AddRect(p1, p2, IM_COL32(255, 0, 0, 255), 2.f);
-		draw_list->AddImage((void*)(intptr_t)(Items.begin()+i)->GetTexId(), p1 + style.FramePadding, p2 - style.FramePadding, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE);
+		//draw_list->AddImage((void*)(intptr_t)*(Items.begin()+i)->texture.GetTexId(), p1 + style.FramePadding, p2 - style.FramePadding, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE);
 	}
 
 	draw_list->AddLine(centerPos - ImVec2(0.f, availSize.x / 4.f), centerPos + ImVec2(0.f, availSize.x / 4.f), IM_COL32(255, 255, 0, 255));
@@ -343,7 +350,7 @@ void Videobrowser::renderLoot() noexcept
 void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 {
 	if (open != NULL && !*open) return;
-	if (CacheNeedsUpdate) { updateLibraryCache(!UpdateLibCache); /*updateCache(settings->CurrentPath);*/ }
+	if (CacheNeedsUpdate) { updateLibraryCache(); /*updateCache(settings->CurrentPath);*/ }
 
 	uint32_t window_flags = 0;
 	window_flags |= ImGuiWindowFlags_MenuBar; 
@@ -364,7 +371,6 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 	}
 	if (ImGui::Button(ICON_REFRESH)) {
 		CacheNeedsUpdate = true;
-		UpdateLibCache = true;
 	}
 	ImGui::SameLine();
 	ImGui::Bullet();
@@ -440,13 +446,14 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, style.Colors[ImGuiCol_PlotLinesHovered]);
 			ImGui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_PlotLines]);
 
-			uint32_t texId = item.GetTexId();
 			ImColor FileTint = item.HasMatchingScript ? IM_COL32_WHITE : IM_COL32(200, 200, 200, 255);
 			if (!item.Focussed) {
 				FileTint.Value.x *= 0.75f;
 				FileTint.Value.y *= 0.75f;
 				FileTint.Value.z *= 0.75f;
 			}
+
+			auto texId = item.texture.GetTexId();
 			if (texId != 0) {
 				ImVec2 padding = item.HasMatchingScript ? ImVec2(0, 0) : ImVec2(ItemWidth*0.1f, ItemWidth*0.1f);
 				ImGui::PushID(index);
@@ -466,6 +473,9 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 				if (ImGui::Button(item.filename.c_str(), ItemDim)) {
 					fileClickHandler(item);
 				}
+				if (item.HasThumbnail && ImGui::IsItemVisible()) {
+					item.GenThumbail();
+				}
 				if (!item.HasMatchingScript) { ImGui::PopStyleColor(1); }
 			}
 			ImGui::PopStyleColor(2);
@@ -482,8 +492,8 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 		}
 	}
 
-	if (previewItem != nullptr && !preview.loading || previewItem != nullptr && previewItem->Id != previewItemId) {
-		previewItemId = previewItem->Id;
+	if (previewItem != nullptr && !preview.loading || previewItem != nullptr && previewItem->texture.Id != previewItemId) {
+		previewItemId = previewItem->texture.Id;
 		preview.previewVideo(previewItem->path, 0.2f);
 	}
 	else if (previewItem == nullptr && preview.ready) {

@@ -28,3 +28,6 @@
 [submodule "lib/reproc"]
 	path = lib/reproc
 	url = https://github.com/DaanDeMeyer/reproc.git
+[submodule "lib/sqlite-amalgamation"]
+	path = lib/sqlite-amalgamation
+	url = https://github.com/azadkuh/sqlite-amalgamation.git
