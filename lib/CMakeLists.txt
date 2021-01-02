@@ -173,11 +173,11 @@ target_link_libraries(im3d PUBLIC glm)
 target_compile_features(im3d PUBLIC cxx_std_17)
 
 
-
-
 # ==================
 # === sqlite_orm ===
 # ==================
 set(SQLITE_ORM_ENABLE_CXX_17 ON CACHE BOOL "" FORCE)
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 add_subdirectory("sqlite-amalgamation/")
 add_subdirectory("sqlite_orm/")
