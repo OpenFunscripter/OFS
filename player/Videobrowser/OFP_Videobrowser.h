@@ -23,7 +23,6 @@ public:
 
 struct VideobrowserSettings {
 
-	std::string CurrentPath = "/";
     int32_t ItemsPerRow = 5;
 
     bool showThumbnails = true;
@@ -43,57 +42,20 @@ struct VideobrowserSettings {
     inline void reflect(Archive& ar) {
         OFS_REFLECT(showThumbnails, ar);
         OFS_REFLECT(SearchPaths, ar);
-        OFS_REFLECT(CurrentPath, ar);
         OFS_REFLECT(ItemsPerRow, ar);
     }
-};
-
-struct LibraryCachedVideos {
-    struct CachedVideo {
-        std::string path;
-        uint64_t byte_count = 0;
-        uint64_t timestamp = 0;
-
-        bool thumbnail = false;
-        bool hasScript = false;
-
-        template <class Archive>
-        inline void reflect(Archive& ar) {
-            OFS_REFLECT(path, ar);
-            OFS_REFLECT(byte_count, ar);
-            OFS_REFLECT(timestamp, ar);
-            OFS_REFLECT(thumbnail, ar);
-            OFS_REFLECT(hasScript, ar);
-        }
-    };
-    std::vector<CachedVideo> videos;
-
-    template <class Archive>
-    inline void reflect(Archive& ar) {
-        OFS_REFLECT(videos, ar);
-    }
-
-
-    std::string cachePath;
-    void load(const std::string& path) noexcept;
-    void save() noexcept;
 };
 
 
 class Videobrowser {
 private:
-    void updateCache(const std::string& path) noexcept;
-
     void updateLibraryCache() noexcept;
 
-#ifdef WIN32
-    void chooseDrive() noexcept;
-#endif
+
     bool CacheNeedsUpdate = false;
 
     SDL_SpinLock ItemsLock = 0;
     std::vector<VideobrowserItem> Items;
-    LibraryCachedVideos libCache;
 
     void renderLoot() noexcept;
 public:
@@ -123,7 +85,4 @@ public:
     void ShowBrowserSettings(bool* open) noexcept;
 
     void Lootcrate(bool* open) noexcept;
-
-    inline void SetPath(const std::string& path) { if (path != settings->CurrentPath) { settings->CurrentPath = path; CacheNeedsUpdate = true; } }
-    inline const std::string& Path() const { return settings->CurrentPath; }
 };

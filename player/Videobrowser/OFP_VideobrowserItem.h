@@ -1,12 +1,13 @@
 #pragma once
 
 #include "OFS_Texture.h"
-
 #include "OFS_Reflection.h"
 
 #include <string>
 #include <tuple>
 #include <array>
+
+#include "OFP_Sqlite.h"
 
 static std::array<std::pair<const char*, bool>, 10> BrowserExtensions{
     std::make_pair(".mp4", true),
@@ -26,22 +27,19 @@ class VideobrowserItem {
 private:
     bool GenThumbnailStarted = false;
 public:
-    VideobrowserItem(const std::string& path, size_t byte_count, uint64_t lastEdit, bool genThumb, bool matchingScript) noexcept;
-
-    std::string filename;
-    std::string path;
-    std::string extension;
+    VideobrowserItem(Video&& vid) noexcept;
+    
+    Video video;
 
     inline bool IsDirectory() const {
-        return extension.empty();
+        return false;
     }
+
     void GenThumbail() noexcept;
 
     OFS_Texture::Handle texture;
 
     uint64_t Id = 0;
-    uint64_t lastEdit = 0;
-    bool HasThumbnail = false;
-    bool HasMatchingScript = false;
+
     bool Focussed = false;
 };

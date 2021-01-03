@@ -15,45 +15,45 @@
 #include <filesystem>
 #include <unordered_map>
 
+#include "OFP_Sqlite.h"
+
 
 constexpr int MaxThumbailProcesses = 4;
 
-
-VideobrowserItem::VideobrowserItem(const std::string& path, size_t byte_count, uint64_t lastEdit, bool genThumb, bool matchingScript) noexcept
+VideobrowserItem::VideobrowserItem(Video&& vid) noexcept
 {
-	this->lastEdit = lastEdit;
-	auto pathObj = Util::PathFromString(path);
-	pathObj.make_preferred();
-	if (!std::filesystem::is_directory(pathObj)) {
-		this->extension = pathObj.extension().u8string();
-	}
+	video = std::move(vid);
+	//auto pathObj = Util::PathFromString(vid.path);
+	//pathObj.make_preferred();
 
-	this->HasMatchingScript = matchingScript;
-	this->path = pathObj.u8string();
-	this->filename = pathObj.filename().u8string();
-	if (this->filename.empty()) {
-		this->filename = pathObj.u8string();
-	}
+	//if (!std::filesystem::is_directory(pathObj)) {
+	//	this->extension = pathObj.extension().u8string();
+	//}
 
 	{
 		// the byte count gets included in the hash
 		// to ensure the thumbnails gets regenerated
 		// when the content changes
 		std::stringstream ss;
-		ss << this->filename;
-		ss << byte_count;
+		ss << vid.filename;
+		ss << vid.byte_count;
 		auto hashString = ss.str();
 		this->Id = XXH64(hashString.c_str(), hashString.size(), 0);
 		texture = OFS_Texture::CreateOrGetTexture();
 	}
-
-	this->HasThumbnail = genThumb;
-	//GenThumbail();
 }
 
 void VideobrowserItem::GenThumbail() noexcept
 {
-	if (!this->HasThumbnail || GenThumbnailStarted) { return; }
+	if (!video.HasThumbnail() || GenThumbnailStarted) { return; }
+	auto thumb = video.thumbnail();
+	if(thumb == nullptr) {
+		Thumbnail t;
+		t.insert();
+		OFS::Set(video.thumbnailId, t.id);
+		video.update();
+	}
+
 	GenThumbnailStarted = true;
 	auto thumbPath = Util::PrefpathOFP("thumbs");
 	Util::CreateDirectories(thumbPath);
@@ -67,7 +67,7 @@ void VideobrowserItem::GenThumbail() noexcept
 			ss << this->Id << ".jpg";
 			thumbFileName = ss.str();
 		}
-
+			
 		auto thumbFilePathObj = thumbPathObj / thumbFileName;
 		thumbFilePath = thumbFilePathObj.u8string();
 	}
@@ -78,6 +78,7 @@ void VideobrowserItem::GenThumbail() noexcept
 		std::string thumbOutputFilePath;
 		uint32_t Id;
 		OFS_Texture::Handle texture;
+		int32_t thumbnailId;
 		bool startFfmpeg = false;
 	};
 
@@ -86,17 +87,35 @@ void VideobrowserItem::GenThumbail() noexcept
 			EventSystem::SingleShot([](void* ctx) {
 				GenLoadThreadData* data = (GenLoadThreadData*)ctx;
 				int w, h;
-				
-				auto texId = data->texture.GetTexId();
-				if (texId == 0) {
-					if (Util::LoadTextureFromFile(data->thumbOutputFilePath.c_str(), &texId, &w, &h)) {
-						data->texture.SetTexId(texId);
-						LOGF_DEBUG("Loaded texture: \"%s\"", data->thumbOutputFilePath.c_str());
+				auto thumb = Videolibrary::Storage().get_pointer<Thumbnail>(data->thumbnailId);
+				FUN_ASSERT(thumb != nullptr, "thumb was null");
+
+				if (thumb != nullptr && thumb->thumb_buffer.size() == 0) {
+					auto handle = SDL_RWFromFile(data->thumbOutputFilePath.c_str(), "rb");
+					if (handle != nullptr) {
+						std::vector<char> buffer;
+						buffer.resize(SDL_RWsize(handle));
+						SDL_RWread(handle, buffer.data(), sizeof(char), buffer.size());
+						SDL_RWclose(handle);
+
+						if (thumb != nullptr) {
+							thumb->thumb_buffer = std::move(buffer);
+							thumb->update();
+						}
+
 					}
 					else {
 						LOGF_WARN("Failed loading texture: \"%s\"", data->thumbOutputFilePath.c_str());
 					}
 				}
+
+				auto& buffer = thumb->thumb_buffer;
+				auto texId = data->texture.GetTexId();
+
+				if (texId == 0 && Util::LoadTextureFromBuffer(buffer.data(), buffer.size(), &texId, &w, &h)) {
+					data->texture.SetTexId(texId);
+				}
+
 
 				delete data;
 				}, data);
@@ -164,8 +183,9 @@ void VideobrowserItem::GenThumbail() noexcept
 	GenLoadThreadData* data = new GenLoadThreadData;
 	data->Id = texture.Id;
 	data->thumbOutputFilePath = thumbFilePath;
-	data->videoPath = this->path;
+	data->videoPath = video.path;
 	data->texture = this->texture;
+	data->thumbnailId = *video.thumbnailId;
 	auto thread = SDL_CreateThread(genThread, "GenThumbnail", data);
 	SDL_DetachThread(thread);
 }

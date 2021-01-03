@@ -50,88 +50,6 @@ static uint64_t GetFileAge(const std::filesystem::path& path) {
 	return timestamp;
 }
 
-void Videobrowser::updateCache(const std::string& path) noexcept
-{
-	static struct IterateDirData {
-		std::string path;
-		bool running = false;
-		Videobrowser* browser;
-	} IterateThread;
-	if (IterateThread.running) return;
-
-	auto iterateDirThread = [](void* ctx) -> int {
-		IterateDirData* data = (IterateDirData*)ctx;
-		Videobrowser& browser = *data->browser;
-		
-		SDL_AtomicLock(&browser.ItemsLock);
-		browser.Items.clear();
-		LOG_DEBUG("ITEMS CLEAR");
-		SDL_AtomicUnlock(&browser.ItemsLock);
-
-
-		auto pathObj = Util::PathFromString(data->path);
-		pathObj = std::filesystem::absolute(pathObj);
-
-		SDL_AtomicLock(&browser.ItemsLock);
-		browser.Items.emplace_back((pathObj / "..").u8string(), 0, 0, false, false );
-		SDL_AtomicUnlock(&browser.ItemsLock);
-
-		std::error_code ec;
-		for (auto& p : std::filesystem::directory_iterator(pathObj, ec)) {
-			auto extension = p.path().extension().u8string();
-			auto pathString = p.path().u8string();
-
-			auto it = std::find_if(BrowserExtensions.begin(), BrowserExtensions.end(),
-				[&](auto& ext) {
-					return std::strcmp(ext.first, extension.c_str()) == 0;
-			});
-		
-			if (it != BrowserExtensions.end()) {
-				auto timestamp = GetFileAge(p.path());
-				auto funscript = p.path();
-				funscript.replace_extension(".funscript");
-				bool matchingScript = Util::FileExists(funscript.u8string());
-				// valid extension + matching script
-				size_t byte_count = p.file_size();
-				SDL_AtomicLock(&browser.ItemsLock);
-				browser.Items.emplace_back(p.path().u8string(), byte_count, timestamp, it->second && browser.settings->showThumbnails, matchingScript);
-				SDL_AtomicUnlock(&browser.ItemsLock);
-			}
-			else if (p.is_directory()) {
-				SDL_AtomicLock(&browser.ItemsLock);
-				browser.Items.emplace_back(p.path().u8string(), 0, 0, false, false);
-				SDL_AtomicUnlock(&browser.ItemsLock);
-			}
-		}
-		SDL_AtomicLock(&browser.ItemsLock);
-		std::sort(browser.Items.begin(), browser.Items.end(), [](auto& item1, auto& item2) {
-			return item1.IsDirectory() && !item2.IsDirectory();
-		});
-		auto last_dir = std::find_if(browser.Items.begin(), browser.Items.end(),
-			[](auto& item) {
-				return !item.IsDirectory();
-		});
-		if (last_dir != browser.Items.end()) {
-			std::sort(last_dir, browser.Items.end(),
-				[](auto& item1, auto& item2) {
-					return item1.lastEdit > item2.lastEdit;
-				}
-			);
-		}
-		SDL_AtomicUnlock(&browser.ItemsLock);
-
-		data->running = false;
-		return 0;
-	};
-
-	IterateThread.running = true;
-	IterateThread.path = path;
-	IterateThread.browser = this;
-	auto thread = SDL_CreateThread(iterateDirThread, "IterateDirectory", &IterateThread);
-	SDL_DetachThread(thread);
-	CacheNeedsUpdate = false;
-}
-
 void Videobrowser::updateLibraryCache() noexcept
 {
 	struct UpdateLibraryThreadData {
@@ -147,8 +65,6 @@ void Videobrowser::updateLibraryCache() noexcept
 		LOG_DEBUG("ITEMS CLEAR");
 		SDL_AtomicUnlock(&browser.ItemsLock);
 
-		auto& cache = browser.libCache;
-		cache.videos.clear();
 
 		auto& searchPaths = data->browser->settings->SearchPaths;
 		for (auto& sPath : searchPaths) {
@@ -174,18 +90,21 @@ void Videobrowser::updateLibraryCache() noexcept
 					// valid extension + matching script
 					size_t byte_count = p.file_size();
 
-					LibraryCachedVideos::CachedVideo vid;
+					Video vid;
+					//LibraryCachedVideos::CachedVideo vid;
 					vid.path = p.path().u8string();
 					vid.byte_count = byte_count;
-					vid.thumbnail = it->second;
+					vid.filename = p.path().filename().u8string();
 					vid.hasScript = matchingScript;
 					vid.timestamp = timestamp;
+					vid.shouldGenerateThumbnail = it->second;
+					vid.insert();
 
 					SDL_AtomicLock(&browser.ItemsLock);
-					browser.Items.emplace_back(vid.path, vid.byte_count, timestamp, vid.thumbnail && browser.settings->showThumbnails, vid.hasScript);
+					browser.Items.emplace_back(std::move(vid));
 					SDL_AtomicUnlock(&browser.ItemsLock);
 
-					cache.videos.emplace_back(std::move(vid));
+					//cache.videos.emplace_back(std::move(vid));
 				}
 			};
 
@@ -206,7 +125,7 @@ void Videobrowser::updateLibraryCache() noexcept
 		SDL_AtomicLock(&browser.ItemsLock);
 		std::sort(browser.Items.begin(), browser.Items.end(),
 			[](auto& item1, auto& item2) {
-				return item1.lastEdit > item2.lastEdit;
+				return item1.video.timestamp > item2.video.timestamp;
 			}
 		);
 		SDL_AtomicUnlock(&browser.ItemsLock);
@@ -223,67 +142,37 @@ void Videobrowser::updateLibraryCache() noexcept
 	SDL_DetachThread(thread);
 }
 
-#ifdef WIN32
-void Videobrowser::chooseDrive() noexcept
-{
-	Items.clear();
-	auto AvailableDrives = GetLogicalDrives();
-	uint32_t Mask = 0b1;
-	std::stringstream ss;
-	for (int i = 0; i < 32; i++) {
-		if (AvailableDrives & (Mask << i)) {
-			ss << (char)('A' + i);
-			ss << ":\\\\";
-			Items.emplace_back(ss.str(), 0, 0, false, false);
-			ss.str("");
-		}
-	}
-}
-#endif
-
 Videobrowser::Videobrowser(VideobrowserSettings* settings)
 	: settings(settings)
 {
 	if (ThumbnailThreadSem == nullptr) {
 		ThumbnailThreadSem = SDL_CreateSemaphore(MaxThumbailProcesses);
 	}
-	libCache.load(Util::PrefpathOFP("library.json"));
-	CacheNeedsUpdate = libCache.videos.empty();
+#ifndef NDEBUG
+	//foo
+	if constexpr(false)
+	{
+		auto storage = Videolibrary::Storage();
+		storage.remove_all<Video>();
+		storage.remove_all<Tag>();
+		storage.remove_all<Thumbnail>();
+		storage.remove_all<VideoAndTag>();
+	}
+#endif
+	auto vidCache = Videolibrary::GetVideos();
+	CacheNeedsUpdate = vidCache.empty();
 
 	preview.setup();
 
 	SDL_AtomicLock(&ItemsLock);
-	for (auto& cached : libCache.videos) {
-		Items.emplace_back(cached.path, cached.byte_count, cached.timestamp, cached.thumbnail, cached.hasScript);
+	for (auto& cached : vidCache) {
+		Items.emplace_back(std::move(cached));
 	}
 	SDL_AtomicUnlock(&ItemsLock);
-
-#ifndef NDEBUG
-	// foo
-	{
-		auto storage = Videolibrary::Storage();
-		auto vids = storage.get_all<Video>();
-		for (auto& vid : vids) {
-			LOGF_DEBUG("%s in category", vid.filename.c_str());
-		}
-
-		storage.remove_all<Video>();
-
-		Video vid;
-		vid.path = "C:\\\\homework\porn.mp4";
-		vid.filename = "porn.mp4";
-		vid.byte_count = 123;
-		vid.timestamp = 0;
-		vid.insert();
-
-		//auto vidId = storage.insert(vid);
-	}
-#endif
 }
 
 Videobrowser::~Videobrowser()
 {
-	libCache.save();
 }
 
 void Videobrowser::Lootcrate(bool* open) noexcept
@@ -374,7 +263,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 	}
 	ImGui::SameLine();
 	ImGui::Bullet();
-	ImGui::TextUnformatted(settings->CurrentPath.c_str());
+	ImGui::TextUnformatted("Library");
 	ImGui::Separator();
 	
 	ImGui::SetNextItemWidth(-1.f);
@@ -383,30 +272,22 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 	auto availSpace = ImGui::GetContentRegionMax();
 	auto& style = ImGui::GetStyle();
 
-	float ItemWidth = (availSpace.x - (2.f * style.ItemInnerSpacing.x) - (settings->ItemsPerRow*style.ItemSpacing.x)) / (float)settings->ItemsPerRow;
+	float ItemWidth = (availSpace.x - (style.ScrollbarSize) - (3.f * style.ItemInnerSpacing.x) - (settings->ItemsPerRow*style.ItemSpacing.x)) / (float)settings->ItemsPerRow;
 	ItemWidth = std::max(ItemWidth, 2.f);
 	const float ItemHeight = (9.f/16.f)*ItemWidth;
 	const auto ItemDim = ImVec2(ItemWidth, ItemHeight);
 	
 	ImGui::BeginChild("Items", ImVec2(0,0), true);
 	auto fileClickHandler = [&](VideobrowserItem& item) {		
-		if (item.HasMatchingScript) {
-			ClickedFilePath = item.path;
+		if (item.video.hasScript) {
+			ClickedFilePath = item.video.path;
 			EventSystem::PushEvent(VideobrowserEvents::VideobrowserItemClicked);
 		}
 	};
 
 	auto directoryClickHandler = [&](VideobrowserItem& item) {
-#ifdef WIN32
-		auto pathObj = Util::PathFromString(item.path);
-		auto pathObjAbs = std::filesystem::absolute(pathObj);
-		if (pathObj != pathObjAbs && pathObj.root_path() == pathObjAbs) {
-			chooseDrive();
-		}
-		else
-#endif
 		{
-			settings->CurrentPath = item.path;
+			//settings->CurrentPath = item.video.path;
 			CacheNeedsUpdate = true;
 			// this ensures the items are focussed
 			ImGui::SetFocusID(ImGui::GetID(".."), ImGui::GetCurrentWindow());
@@ -416,7 +297,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 	if (ImGui::IsNavInputTest(ImGuiNavInput_Cancel, ImGuiInputReadMode_Pressed)) {
 		// go up one directory
 		// this assumes Items.front() contains ".."
-		if (Items.size() > 0 && Items.front().filename == "..") {
+		if (Items.size() > 0 && Items.front().video.filename == "..") {
 			directoryClickHandler(Items.front());
 		}
 	}
@@ -434,11 +315,11 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 
 
 	VideobrowserItem* previewItem = nullptr;
-
+	bool itemFocussed = false;
 	int index = 0;
 	for (auto& item : Items) {
 		if (index != 0 && !Filter.empty()) {
-			if (!Util::ContainsInsensitive(item.filename, Filter)) {
+			if (!Util::ContainsInsensitive(item.video.filename, Filter)) {
 				continue;
 			}
 		}
@@ -446,7 +327,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, style.Colors[ImGuiCol_PlotLinesHovered]);
 			ImGui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_PlotLines]);
 
-			ImColor FileTint = item.HasMatchingScript ? IM_COL32_WHITE : IM_COL32(200, 200, 200, 255);
+			ImColor FileTint = item.video.hasScript ? IM_COL32_WHITE : IM_COL32(200, 200, 200, 255);
 			if (!item.Focussed) {
 				FileTint.Value.x *= 0.75f;
 				FileTint.Value.y *= 0.75f;
@@ -455,37 +336,37 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 
 			auto texId = item.texture.GetTexId();
 			if (texId != 0) {
-				ImVec2 padding = item.HasMatchingScript ? ImVec2(0, 0) : ImVec2(ItemWidth*0.1f, ItemWidth*0.1f);
+				ImVec2 padding = item.video.hasScript ? ImVec2(0, 0) : ImVec2(ItemWidth*0.1f, ItemWidth*0.1f);
 				ImGui::PushID(index);
-				if(ImGui::ImageButtonEx(ImGui::GetID(item.filename.c_str()), item.Focussed && preview.ready ? (void*)(intptr_t)preview.render_texture : (void*)(intptr_t)texId, ItemDim - padding, ImVec2(0, 0), ImVec2(1, 1), padding/2.f, style.Colors[ImGuiCol_PlotLines], FileTint)) {
+				if(ImGui::ImageButtonEx(ImGui::GetID(item.video.filename.c_str()), item.Focussed && preview.ready ? (void*)(intptr_t)preview.render_texture : (void*)(intptr_t)texId, ItemDim - padding, ImVec2(0, 0), ImVec2(1, 1), padding/2.f, style.Colors[ImGuiCol_PlotLines], FileTint)) {
 					fileClickHandler(item);
 				}
 				ImGui::PopID();
-				bool prevValue = item.Focussed;
-				item.Focussed = /*ImGui::IsItemActive() || ImGui::IsItemActivated() ||*/ ImGui::IsItemFocused() || ImGui::IsItemHovered();
+				item.Focussed = (ImGui::IsItemHovered() || (ImGui::IsItemActive() || ImGui::IsItemActivated() || ImGui::IsItemFocused())) && !itemFocussed;
 				if (item.Focussed) {
+					itemFocussed = true;
 					previewItem = &item;
 				}
 			}
 			else {
-				if(!item.HasMatchingScript) { ImGui::PushStyleColor(ImGuiCol_Button, FileTint.Value); }
+				if(!item.video.hasScript) { ImGui::PushStyleColor(ImGuiCol_Button, FileTint.Value); }
 				
-				if (ImGui::Button(item.filename.c_str(), ItemDim)) {
+				if (ImGui::Button(item.video.filename.c_str(), ItemDim)) {
 					fileClickHandler(item);
 				}
-				if (item.HasThumbnail && ImGui::IsItemVisible()) {
+				if (item.video.HasThumbnail() && ImGui::IsItemVisible()) {
 					item.GenThumbail();
 				}
-				if (!item.HasMatchingScript) { ImGui::PopStyleColor(1); }
+				if (!item.video.hasScript) { ImGui::PopStyleColor(1); }
 			}
 			ImGui::PopStyleColor(2);
 		}
 		else {
-			if (ImGui::Button(item.filename.c_str(), ItemDim)) {
+			if (ImGui::Button(item.video.filename.c_str(), ItemDim)) {
 				directoryClickHandler(item);
 			}
 		}
-		Util::Tooltip(item.filename.c_str());
+		Util::Tooltip(item.video.filename.c_str());
 		index++;
 		if (index % settings->ItemsPerRow != 0) {
 			ImGui::SameLine();
@@ -494,7 +375,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 
 	if (previewItem != nullptr && !preview.loading || previewItem != nullptr && previewItem->texture.Id != previewItemId) {
 		previewItemId = previewItem->texture.Id;
-		preview.previewVideo(previewItem->path, 0.2f);
+		preview.previewVideo(previewItem->video.path, 0.2f);
 	}
 	else if (previewItem == nullptr && preview.ready) {
 		preview.closeVideo();
@@ -568,24 +449,4 @@ int32_t VideobrowserEvents::VideobrowserItemClicked = 0;
 void VideobrowserEvents::RegisterEvents() noexcept
 {
 	VideobrowserItemClicked = SDL_RegisterEvents(1);
-}
-
-#include "OFS_Serialization.h"
-#include "nlohmann/json.hpp"
-
-void LibraryCachedVideos::load(const std::string& path) noexcept
-{
-	cachePath = path;
-	bool succ;
-	auto json = Util::LoadJson(path, &succ);
-	if (succ) {
-		OFS::serializer::load(this, &json);
-	}
-}
-
-void LibraryCachedVideos::save() noexcept
-{
-	nlohmann::json json;
-	OFS::serializer::save(this, &json);
-	Util::WriteJson(json, cachePath, false);
 }
