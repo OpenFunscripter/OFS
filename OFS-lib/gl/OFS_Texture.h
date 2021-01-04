@@ -2,14 +2,13 @@
 
 #include "OFS_Util.h"
 
-#include <unordered_map>
+#include <vector>
 #include <cstdint>
 
 #include "glad/glad.h"
 
 #include "SDL_atomic.h"
 #include "SDL_mutex.h"
-#include "SDL_timer.h"
 
 class OFS_Texture {
 private:
@@ -19,21 +18,33 @@ private:
 		uint32_t texId = 0;
 
 		~Texture() noexcept {
+			if (ref_count == 0) {
+				freeTexture();
+			}
+		}
+
+		inline void freeTexture() noexcept {
 			if (texId != 0) {
 				FUN_ASSERT(ref_count == 0, "ref_count not zero");
 				glDeleteTextures(1, &texId);
 				texId = 0;
+				ref_count = 0;
 				LOG_DEBUG("Freed texture.");
 			}
 		}
 	};
-	static std::unordered_map<uint64_t, Texture> TextureHashtable;
-	static SDL_mutex* texLock;
-	static SDL_cond* texCond;
-	static SDL_sem* TextureReads;
+	static std::vector<Texture> Textures;
 
+	static SDL_atomic_t TextureIdCounter;
 	static SDL_atomic_t Reads;
 	static SDL_atomic_t QueuedWrites;
+	inline static bool BoundCheck(uint64_t id) noexcept {
+		id--; // ids start at one
+		return id >= 0 && id < Textures.size();
+	}
+	inline static Texture& ById(uint64_t id) noexcept {
+		return Textures[id-1];
+	}
 public:
 	inline static void ReadTextures() noexcept {
 		for (;;) {
@@ -72,27 +83,20 @@ public:
 	class Handle {
 	private:
 		inline void IncrementRefCount() noexcept {
-			ReadTextures();
-			auto it = TextureHashtable.find(this->Id);
-			if (it != TextureHashtable.end()) {
-				it->second.ref_count++;
+			ReadTextures(); // it's a "read" because it doesn't erase or append
+			if (BoundCheck(this->Id)) {
+				ById(this->Id).ref_count++;
 			}
 			SDL_AtomicIncRef(&Reads);
 		}
 
 		inline void DecrementRefCount() noexcept {
-			ReadTextures();
-			auto it = TextureHashtable.find(this->Id);
-			if (it != TextureHashtable.end()) {
-				it->second.ref_count--;
-				if (it->second.ref_count <= 0) {
-					SDL_AtomicIncRef(&Reads);
-					SDL_AtomicIncRef(&QueuedWrites);
-					WriteTextures();
-					LOG_DEBUG("erase texture");
-					TextureHashtable.erase(it);
-					SDL_AtomicDecRef(&Reads);
-					return;
+			ReadTextures(); // it's a "read" because it doesn't erase or append
+			if (BoundCheck(this->Id)) {
+				ById(this->Id).ref_count--;
+				if (ById(this->Id).ref_count <= 0) {
+					// this needs to run on the main thread...
+					ById(this->Id).freeTexture();
 				}
 			}
 			SDL_AtomicIncRef(&Reads);
@@ -132,33 +136,33 @@ public:
 
 		inline uint32_t GetTexId() noexcept {
 			ReadTextures();
-			auto it = TextureHashtable.find(this->Id);
-			if (it != TextureHashtable.end()) {
+			if (BoundCheck(this->Id)) {
 				SDL_AtomicIncRef(&Reads);
-				return it->second.texId;
+				return ById(this->Id).texId;
 			}
 			SDL_AtomicIncRef(&Reads);
 			return 0;
 		}
 
-		inline void SetTexId(uint32_t Id) noexcept 
+		inline void SetTexId(uint32_t texId) noexcept 
 		{
 			// same as read because nothing is inserted or erased
 			ReadTextures(); 
-			auto it = TextureHashtable.find(this->Id);
-			if (it != TextureHashtable.end()) {
-				it->second.texId = Id;
+			if (BoundCheck(this->Id)) {
+				FUN_ASSERT(ById(this->Id).texId == 0, "leaking texture");
+				ById(this->Id).texId = texId;
 			}
 			SDL_AtomicIncRef(&Reads);
 		}
 	};
 
-	inline static Handle CreateOrGetTexture() noexcept {
+	inline static Handle CreateTexture() noexcept {
 		SDL_AtomicIncRef(&QueuedWrites);
 		WriteTextures();
-		TextureHashtable.insert(std::move(std::make_pair(TextureHashtable.size()+1, Texture{0, 0})));
+		int newId = SDL_AtomicIncRef(&TextureIdCounter);
+		Textures.emplace_back();
 		SDL_AtomicDecRef(&Reads);
-		Handle handle(TextureHashtable.size());
+		Handle handle(newId);
 		return handle;
 	}
 

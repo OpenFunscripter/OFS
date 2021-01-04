@@ -169,7 +169,7 @@ public:
 		}
 	}
 
-	static int OpenFileExplorer(const char* path);
+	static int OpenFileExplorer(const std::string& path);
 	static int OpenUrl(const char* url);
 
 	inline static std::filesystem::path Basepath() {

@@ -2,6 +2,7 @@
 
 #include "OFS_Util.h"
 #include "EventSystem.h"
+#include "OFS_ImGui.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -20,7 +21,7 @@
 #include "windows.h"
 #endif
 
-SDL_sem* Videobrowser::ThumbnailThreadSem = nullptr;
+SDL_sem* Videobrowser::ThumbnailThreadSem = SDL_CreateSemaphore(Videobrowser::MaxThumbailProcesses);
 
 static uint64_t GetFileAge(const std::filesystem::path& path) {
 	std::error_code ec;
@@ -73,6 +74,8 @@ void Videobrowser::updateLibraryCache() noexcept
 			auto handleItem = [&](auto& p) {
 				auto extension = p.path().extension().u8string();
 				auto pathString = p.path().u8string();
+				auto filename = p.path().filename().u8string();
+
 				if (p.is_directory()) return;
 
 				auto it = std::find_if(BrowserExtensions.begin(), BrowserExtensions.end(),
@@ -81,7 +84,6 @@ void Videobrowser::updateLibraryCache() noexcept
 					});
 				if (it != BrowserExtensions.end()) {
 					// extension matches
-					auto timestamp = GetFileAge(p.path());
 					auto funscript = p.path();
 					funscript.replace_extension(".funscript");
 					bool matchingScript = Util::FileExists(funscript.u8string());
@@ -89,12 +91,12 @@ void Videobrowser::updateLibraryCache() noexcept
 
 					// valid extension + matching script
 					size_t byte_count = p.file_size();
+					auto timestamp = GetFileAge(p.path());
 
 					Video vid;
-					//LibraryCachedVideos::CachedVideo vid;
-					vid.path = p.path().u8string();
+					vid.path = pathString;
 					vid.byte_count = byte_count;
-					vid.filename = p.path().filename().u8string();
+					vid.filename = filename;
 					vid.hasScript = matchingScript;
 					vid.timestamp = timestamp;
 					vid.shouldGenerateThumbnail = it->second;
@@ -103,8 +105,6 @@ void Videobrowser::updateLibraryCache() noexcept
 					SDL_AtomicLock(&browser.ItemsLock);
 					browser.Items.emplace_back(std::move(vid));
 					SDL_AtomicUnlock(&browser.ItemsLock);
-
-					//cache.videos.emplace_back(std::move(vid));
 				}
 			};
 
@@ -145,9 +145,6 @@ void Videobrowser::updateLibraryCache() noexcept
 Videobrowser::Videobrowser(VideobrowserSettings* settings)
 	: settings(settings)
 {
-	if (ThumbnailThreadSem == nullptr) {
-		ThumbnailThreadSem = SDL_CreateSemaphore(MaxThumbailProcesses);
-	}
 #ifndef NDEBUG
 	//foo
 	if constexpr(false)
@@ -157,6 +154,7 @@ Videobrowser::Videobrowser(VideobrowserSettings* settings)
 		storage.remove_all<Tag>();
 		storage.remove_all<Thumbnail>();
 		storage.remove_all<VideoAndTag>();
+		storage.vacuum();
 	}
 #endif
 	auto vidCache = Videolibrary::GetVideos();
@@ -168,11 +166,11 @@ Videobrowser::Videobrowser(VideobrowserSettings* settings)
 	for (auto& cached : vidCache) {
 		Items.emplace_back(std::move(cached));
 	}
-	SDL_AtomicUnlock(&ItemsLock);
-}
-
-Videobrowser::~Videobrowser()
-{
+	std::sort(Items.begin(), Items.end(),
+		[](auto& item1, auto& item2) {
+			return item1.video.timestamp > item2.video.timestamp;
+	});
+	SDL_AtomicUnlock(&ItemsLock);	
 }
 
 void Videobrowser::Lootcrate(bool* open) noexcept
@@ -239,13 +237,29 @@ void Videobrowser::renderLoot() noexcept
 void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 {
 	if (open != NULL && !*open) return;
-	if (CacheNeedsUpdate) { updateLibraryCache(); /*updateCache(settings->CurrentPath);*/ }
+	if (CacheNeedsUpdate) { updateLibraryCache(); }
 
+	// gamepad control items per row
+	if (ImGui::IsNavInputTest(ImGuiNavInput_FocusPrev, ImGuiInputReadMode_Pressed))
+	{
+		settings->ItemsPerRow--;
+		settings->ItemsPerRow = Util::Clamp(settings->ItemsPerRow, 1, 25);
+	}
+	else if (ImGui::IsNavInputTest(ImGuiNavInput_FocusNext, ImGuiInputReadMode_Pressed)) 
+	{
+		settings->ItemsPerRow++;
+		settings->ItemsPerRow = Util::Clamp(settings->ItemsPerRow, 1, 25);
+	}
+	
 	uint32_t window_flags = 0;
-	window_flags |= ImGuiWindowFlags_MenuBar; 
-
+	window_flags |= ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar;
+	
 	SDL_AtomicLock(&ItemsLock);
+	ImGui::SetNextWindowScroll(ImVec2(0,0)); // prevent scrolling
+
 	ImGui::Begin(Id, open, window_flags);
+	auto availSpace = ImGui::GetContentRegionMax();
+	auto& style = ImGui::GetStyle();
 	if (ImGui::BeginMenuBar()) {
 		if (ImGui::BeginMenu("View")) {
 			ImGui::MenuItem("Show thumbnails", NULL, &settings->showThumbnails);
@@ -258,6 +272,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 		ImGui::MenuItem("Settings", NULL, &ShowSettings);
 		ImGui::EndMenuBar();
 	}
+
 	if (ImGui::Button(ICON_REFRESH)) {
 		CacheNeedsUpdate = true;
 	}
@@ -268,77 +283,71 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 	
 	ImGui::SetNextItemWidth(-1.f);
 	ImGui::InputText("Filter", &Filter);
-
-	auto availSpace = ImGui::GetContentRegionMax();
-	auto& style = ImGui::GetStyle();
-
-	float ItemWidth = (availSpace.x - (style.ScrollbarSize) - (3.f * style.ItemInnerSpacing.x) - (settings->ItemsPerRow*style.ItemSpacing.x)) / (float)settings->ItemsPerRow;
-	ItemWidth = std::max(ItemWidth, 2.f);
-	const float ItemHeight = (9.f/16.f)*ItemWidth;
-	const auto ItemDim = ImVec2(ItemWidth, ItemHeight);
 	
-	ImGui::BeginChild("Items", ImVec2(0,0), true);
-	auto fileClickHandler = [&](VideobrowserItem& item) {		
-		if (item.video.hasScript) {
-			ClickedFilePath = item.video.path;
-			EventSystem::PushEvent(VideobrowserEvents::VideobrowserItemClicked);
-		}
-	};
-
-	auto directoryClickHandler = [&](VideobrowserItem& item) {
-		{
-			//settings->CurrentPath = item.video.path;
-			CacheNeedsUpdate = true;
-			// this ensures the items are focussed
-			ImGui::SetFocusID(ImGui::GetID(".."), ImGui::GetCurrentWindow());
-		}
-	};
-
-	if (ImGui::IsNavInputTest(ImGuiNavInput_Cancel, ImGuiInputReadMode_Pressed)) {
-		// go up one directory
-		// this assumes Items.front() contains ".."
-		if (Items.size() > 0 && Items.front().video.filename == "..") {
-			directoryClickHandler(Items.front());
-		}
-	}
-	else if (ImGui::IsNavInputTest(ImGuiNavInput_FocusPrev, ImGuiInputReadMode_Pressed))
-	{
-		settings->ItemsPerRow--;
-		settings->ItemsPerRow = Util::Clamp(settings->ItemsPerRow, 1, 25);
-	}
-	else if (ImGui::IsNavInputTest(ImGuiNavInput_FocusNext, ImGuiInputReadMode_Pressed)) 
-	{
-		settings->ItemsPerRow++;
-		settings->ItemsPerRow = Util::Clamp(settings->ItemsPerRow, 1, 25);
-	}
-	
+	if (ImGui::BeginTable("##VideobrowserUI", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings)) {
+		ImGui::TableSetupColumn("##TagCol", ImGuiTableColumnFlags_WidthStretch, 0.15);
+		ImGui::TableSetupColumn("##ItemsCol", ImGuiTableColumnFlags_WidthStretch, 0.85);
+		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
 
 
-	VideobrowserItem* previewItem = nullptr;
-	bool itemFocussed = false;
-	int index = 0;
-	for (auto& item : Items) {
-		if (index != 0 && !Filter.empty()) {
-			if (!Util::ContainsInsensitive(item.video.filename, Filter)) {
-				continue;
+		ImGui::BeginChild("Tags");
+		ImGui::TextUnformatted("tags....");
+		ImGui::Button("this is a button");
+		ImGui::EndChild();
+
+		ImGui::TableNextColumn();
+
+		// HACK: there currently doesn't seem to be a way to obtain the column width
+		const auto& column = ImGui::GetCurrentContext()->CurrentTable->Columns[ImGui::TableGetColumnIndex()];
+		float ItemWidth = ((availSpace.x * column.StretchWeight)
+			- style.ScrollbarSize 
+			- (3.f * style.ItemInnerSpacing.x)
+			- (settings->ItemsPerRow*style.ItemSpacing.x)) / (float)settings->ItemsPerRow;
+		ItemWidth = std::max(ItemWidth, 3.f);
+		const float ItemHeight = (9.f/16.f)*ItemWidth;
+		const auto ItemDim = ImVec2(ItemWidth, ItemHeight);
+
+		ImGui::BeginChild("Items");
+		auto fileClickHandler = [&](VideobrowserItem& item) {		
+			if (item.video.hasScript) {
+				ClickedFilePath = item.video.path;
+				EventSystem::PushEvent(VideobrowserEvents::VideobrowserItemClicked);
 			}
-		}
-		if (!item.IsDirectory()) {
+		};
+
+
+		VideobrowserItem* previewItem = nullptr;
+		bool itemFocussed = false;
+		int index = 0;
+		for (auto& item : Items) {
+			if (!Filter.empty()) {
+				if (!Util::ContainsInsensitive(item.video.filename, Filter)) {
+					continue;
+				}
+			}
+
+			ImColor FileTintColor = item.video.hasScript ? IM_COL32_WHITE : IM_COL32(200, 200, 200, 255);
+			if (!item.Focussed) {
+				FileTintColor.Value.x *= 0.75f;
+				FileTintColor.Value.y *= 0.75f;
+				FileTintColor.Value.z *= 0.75f;
+			}
+
 			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, style.Colors[ImGuiCol_PlotLinesHovered]);
 			ImGui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_PlotLines]);
-
-			ImColor FileTint = item.video.hasScript ? IM_COL32_WHITE : IM_COL32(200, 200, 200, 255);
-			if (!item.Focussed) {
-				FileTint.Value.x *= 0.75f;
-				FileTint.Value.y *= 0.75f;
-				FileTint.Value.z *= 0.75f;
-			}
 
 			auto texId = item.texture.GetTexId();
 			if (texId != 0) {
 				ImVec2 padding = item.video.hasScript ? ImVec2(0, 0) : ImVec2(ItemWidth*0.1f, ItemWidth*0.1f);
 				ImGui::PushID(index);
-				if(ImGui::ImageButtonEx(ImGui::GetID(item.video.filename.c_str()), item.Focussed && preview.ready ? (void*)(intptr_t)preview.render_texture : (void*)(intptr_t)texId, ItemDim - padding, ImVec2(0, 0), ImVec2(1, 1), padding/2.f, style.Colors[ImGuiCol_PlotLines], FileTint)) {
+				if(ImGui::ImageButtonEx(ImGui::GetID(item.video.filename.c_str()),
+					item.Focussed && preview.ready ? (void*)(intptr_t)preview.render_texture : (void*)(intptr_t)texId,
+					ItemDim - padding,
+					ImVec2(0, 0), ImVec2(1, 1),
+					padding/2.f,
+					style.Colors[ImGuiCol_PlotLines],
+					FileTintColor)) {
 					fileClickHandler(item);
 				}
 				ImGui::PopID();
@@ -349,7 +358,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 				}
 			}
 			else {
-				if(!item.video.hasScript) { ImGui::PushStyleColor(ImGuiCol_Button, FileTint.Value); }
+				if(!item.video.hasScript) { ImGui::PushStyleColor(ImGuiCol_Button, FileTintColor.Value); }
 				
 				if (ImGui::Button(item.video.filename.c_str(), ItemDim)) {
 					fileClickHandler(item);
@@ -360,28 +369,47 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 				if (!item.video.hasScript) { ImGui::PopStyleColor(1); }
 			}
 			ImGui::PopStyleColor(2);
-		}
-		else {
-			if (ImGui::Button(item.video.filename.c_str(), ItemDim)) {
-				directoryClickHandler(item);
+		
+			if (ImGui::BeginPopupContextItem() || OFS::GamepadContextMenu())
+			{
+				if (ImGui::BeginMenu("Add tag...")) {
+					ImGui::MenuItem("...");
+					ImGui::EndMenu();
+				}
+				if (ImGui::BeginMenu("Remove tag...")) {
+					ImGui::MenuItem("...");
+					ImGui::EndMenu();
+				}
+				if (ImGui::MenuItem("Explore location...")) {
+					auto path = Util::PathFromString(item.video.path);
+					path.remove_filename();
+					Util::OpenFileExplorer(path.u8string().c_str());
+				}
+				ImGui::EndPopup();
+			}
+			else {
+				Util::Tooltip(item.video.filename.c_str());
+			}
+
+			index++;
+			if (index % settings->ItemsPerRow != 0) {
+				ImGui::SameLine();
 			}
 		}
-		Util::Tooltip(item.video.filename.c_str());
-		index++;
-		if (index % settings->ItemsPerRow != 0) {
-			ImGui::SameLine();
+
+		if (previewItem != nullptr && !preview.loading || previewItem != nullptr && previewItem->texture.Id != previewItemId) {
+			previewItemId = previewItem->texture.Id;
+			preview.previewVideo(previewItem->video.path, 0.2f);
 		}
-	}
+		else if (previewItem == nullptr && preview.ready) {
+			preview.closeVideo();
+		}
 
-	if (previewItem != nullptr && !preview.loading || previewItem != nullptr && previewItem->texture.Id != previewItemId) {
-		previewItemId = previewItem->texture.Id;
-		preview.previewVideo(previewItem->video.path, 0.2f);
-	}
-	else if (previewItem == nullptr && preview.ready) {
-		preview.closeVideo();
-	}
+		ImGui::EndChild();
 
-	ImGui::EndChild();
+		ImGui::EndTable();
+	}
+	
 	ImGui::End();
 	SDL_AtomicUnlock(&ItemsLock);
 
@@ -402,6 +430,10 @@ void Videobrowser::ShowBrowserSettings(bool* open) noexcept
 	if (ImGui::BeginPopupModal(VideobrowserSettingsId, open, ImGuiWindowFlags_AlwaysAutoResize)) {
 
 		if (ImGui::BeginTable("##SearchPaths", 3, ImGuiTableFlags_Borders)) {
+			ImGui::TableSetupColumn("Path");
+			//ImGui::TableSetupColumn("Recursive");
+			//ImGui::TableSetupColumn("");
+			ImGui::TableHeadersRow();
 			int32_t index = 0;
 			for (index = 0; index < settings->SearchPaths.size(); index++) {
 				ImGui::PushID(index);

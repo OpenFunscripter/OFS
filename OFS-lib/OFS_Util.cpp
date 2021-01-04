@@ -2,6 +2,7 @@
 
 #include "EventSystem.h"
 
+#include <sstream>
 #include <filesystem>
 #include  "SDL.h"
 
@@ -86,12 +87,13 @@ bool Util::LoadTextureFromBuffer(const char* buffer, size_t buffsize, unsigned i
 	return true;
 }
 
-int Util::OpenFileExplorer(const char* path)
+int Util::OpenFileExplorer(const std::string& str)
 {
 #if WIN32
-	char tmp[1024];
-	stbsp_snprintf(tmp, sizeof(tmp), "explorer %s", path);
-	return std::system(tmp);
+	std::wstring wstr = Util::Utf8ToUtf16(str);
+	std::wstringstream ss;
+	ss << '"' << "explorer " << wstr << '"';
+	return _wsystem(ss.str().c_str());
 #elif __APPLE__
 	LOG_ERROR("Not implemented for this platform.");
 #else

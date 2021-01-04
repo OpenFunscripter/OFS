@@ -10,11 +10,11 @@
 
 
 #define OFP_SQLITE_ID(id)\
-int32_t id = -1
+int64_t id = -1
 
 // shared_ptr because it doesn't cause the headache off removing copy constructors...
 #define OFP_SQLITE_OPT_ID(id)\
-std::shared_ptr<int32_t> id = nullptr;
+std::shared_ptr<int64_t> id = nullptr;
 
 namespace OFS{
 	template<typename T>
@@ -33,6 +33,7 @@ template<typename T>
 struct Entity {
 	T* insert();
 	void update();
+	void replace();
 	void remove();
 };
 
@@ -143,6 +144,7 @@ inline T* Entity<T>::insert()
 		return ((T*)this);
 	}
 	catch (std::system_error& er) {
+		FUN_ASSERT(false, er.what());
 		LOGF_ERROR("%s", er.what());
 	}
 	return nullptr;
@@ -155,6 +157,7 @@ inline void Entity<T>::update()
 		Videolibrary::Storage().update(*(T*)this);
 	}
 	catch (std::system_error& er) {
+		FUN_ASSERT(false, er.what());
 		LOGF_ERROR("%s", er.what());
 	}
 }
@@ -166,6 +169,19 @@ inline void Entity<T>::remove()
 		Videolibrary::Storage().remove(*(T*)this);
 	}
 	catch (std::system_error& er) {
+		FUN_ASSERT(false, er.what());
+		LOGF_ERROR("%s", er.what());
+	}
+}
+
+template<typename T>
+inline void Entity<T>::replace()
+{
+	try {
+		Videolibrary::Storage().replace(*(T*)this);
+	}
+	catch (std::system_error& er) {
+		FUN_ASSERT(false, er.what());
 		LOGF_ERROR("%s", er.what());
 	}
 }

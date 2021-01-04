@@ -18,8 +18,6 @@
 #include "OFP_Sqlite.h"
 
 
-constexpr int MaxThumbailProcesses = 4;
-
 VideobrowserItem::VideobrowserItem(Video&& vid) noexcept
 {
 	video = std::move(vid);
@@ -38,8 +36,8 @@ VideobrowserItem::VideobrowserItem(Video&& vid) noexcept
 		ss << vid.filename;
 		ss << vid.byte_count;
 		auto hashString = ss.str();
-		this->Id = XXH64(hashString.c_str(), hashString.size(), 0);
-		texture = OFS_Texture::CreateOrGetTexture();
+		this->ThumbnailHash = XXH64(hashString.c_str(), hashString.size(), 0);
+		texture = OFS_Texture::CreateTexture();
 	}
 }
 
@@ -48,9 +46,16 @@ void VideobrowserItem::GenThumbail() noexcept
 	if (!video.HasThumbnail() || GenThumbnailStarted) { return; }
 	auto thumb = video.thumbnail();
 	if(thumb == nullptr) {
-		Thumbnail t;
-		t.insert();
-		OFS::Set(video.thumbnailId, t.id);
+		auto thumb = Videolibrary::Storage().get_pointer<Thumbnail>(this->ThumbnailHash);
+		if (thumb != nullptr) {
+			OFS::Set(video.thumbnailId, thumb->id);
+		}
+		else {
+			Thumbnail t;
+			t.id = this->ThumbnailHash;
+			t.replace();
+			OFS::Set(video.thumbnailId, t.id);
+		}
 		video.update();
 	}
 
@@ -64,7 +69,7 @@ void VideobrowserItem::GenThumbail() noexcept
 	{
 		{
 			std::stringstream ss;
-			ss << this->Id << ".jpg";
+			ss << this->ThumbnailHash << ".jpg";
 			thumbFileName = ss.str();
 		}
 			
@@ -78,7 +83,7 @@ void VideobrowserItem::GenThumbail() noexcept
 		std::string thumbOutputFilePath;
 		uint32_t Id;
 		OFS_Texture::Handle texture;
-		int32_t thumbnailId;
+		int64_t thumbnailId;
 		bool startFfmpeg = false;
 	};
 

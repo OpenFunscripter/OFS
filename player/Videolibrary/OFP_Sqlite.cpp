@@ -1,7 +1,7 @@
 #include "OFP_Sqlite.h"
 
 template<typename T>
-static std::unique_ptr<T> ById(const std::shared_ptr<int32_t>& id) {
+static std::unique_ptr<T> ById(const std::shared_ptr<int64_t>& id) {
 	try {
 		auto result =  id != nullptr ? std::move(Videolibrary::Storage().get_pointer<T>(*id)) : nullptr;
 		return result;

@@ -27,19 +27,11 @@ class VideobrowserItem {
 private:
     bool GenThumbnailStarted = false;
 public:
-    VideobrowserItem(Video&& vid) noexcept;
-    
     Video video;
-
-    inline bool IsDirectory() const {
-        return false;
-    }
-
-    void GenThumbail() noexcept;
-
     OFS_Texture::Handle texture;
-
-    uint64_t Id = 0;
-
+    uint64_t ThumbnailHash = 0;
     bool Focussed = false;
+
+    VideobrowserItem(Video&& vid) noexcept;
+    void GenThumbail() noexcept;
 };

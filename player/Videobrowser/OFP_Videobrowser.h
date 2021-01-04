@@ -51,9 +51,7 @@ class Videobrowser {
 private:
     void updateLibraryCache() noexcept;
 
-
     bool CacheNeedsUpdate = false;
-
     SDL_SpinLock ItemsLock = 0;
     std::vector<VideobrowserItem> Items;
 
@@ -79,7 +77,6 @@ public:
     bool Random = false;
 
     Videobrowser(VideobrowserSettings* settings);
-    ~Videobrowser();
 
 	void ShowBrowser(const char* Id, bool* open) noexcept;
     void ShowBrowserSettings(bool* open) noexcept;
