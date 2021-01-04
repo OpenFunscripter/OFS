@@ -170,7 +170,7 @@ public:
 	}
 
 	static int OpenFileExplorer(const std::string& path);
-	static int OpenUrl(const char* url);
+	static int OpenUrl(const std::string& url);
 
 	inline static std::filesystem::path Basepath() {
 		char* base = SDL_GetBasePath();

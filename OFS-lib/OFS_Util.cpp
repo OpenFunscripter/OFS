@@ -102,16 +102,16 @@ int Util::OpenFileExplorer(const std::string& str)
 	return 1;
 }
 
-int Util::OpenUrl(const char* url)
+int Util::OpenUrl(const std::string& url)
 {
 	char tmp[1024];
 #if WIN32
-	stbsp_snprintf(tmp, sizeof(tmp), "start \"\" \"%s\"", url);
+	stbsp_snprintf(tmp, sizeof(tmp), "start \"\" \"%s\"", url.c_str());
 	return std::system(tmp);
 #elif __APPLE__
 	LOG_ERROR("Not implemented for this platform.");
 #else
-	stbsp_snprintf(tmp, sizeof(tmp), "xdg-open \"%s\"", url);
+	stbsp_snprintf(tmp, sizeof(tmp), "xdg-open \"%s\"", url.c_str());
 	return std::system(tmp);
 #endif
 	return 1;
