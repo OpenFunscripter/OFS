@@ -42,12 +42,17 @@ jobs:
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
       run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 
-    - name: Build
+    - name: Build OFS
       working-directory: ${{runner.workspace}}/build
       shell: bash
       # Execute the build.  You can specify a specific target with "--target <NAME>"
       run: |
         cmake --build . --config $BUILD_TYPE --target "OpenFunscripter"
+        
+    - name: Build OFP
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: |
         cmake --build . --config $BUILD_TYPE --target "OFP"
     
   linux:
@@ -79,12 +84,16 @@ jobs:
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
       run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 
-    - name: Build
+    - name: Build OFS
       working-directory: ${{runner.workspace}}/build
       shell: bash
-      # Execute the build.  You can specify a specific target with "--target <NAME>"
       run: |
         cmake --build . --config $BUILD_TYPE --target "OpenFunscripter"
+
+    - name: Build OFP
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: |
         cmake --build . --config $BUILD_TYPE --target "OFP"
 
     # - name: Test
@@ -123,12 +132,16 @@ jobs:
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
       run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G "Visual Studio 16 2019" -A x64
 
-    - name: Build
+    - name: Build OFS
       working-directory: ${{runner.workspace}}/build
       shell: bash
-      # Execute the build.  You can specify a specific target with "--target <NAME>"
       run: |
         cmake --build . --config $BUILD_TYPE --target "OpenFunscripter"
+
+    - name: Build OFP
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: |
         cmake --build . --config $BUILD_TYPE --target "OFP"
 
     # - name: Test
