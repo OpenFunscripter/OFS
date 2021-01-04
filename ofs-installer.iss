@@ -21,6 +21,7 @@ OutputBaseFilename=ofs-installer
 OutputDir=.\installer
 
 [Files]
+Source: "bin\{#Configuration}\OFP.exe"; DestDir: "{app}"
 Source: "bin\{#Configuration}\OpenFunscripter.exe"; DestDir: "{app}"
 Source: "bin\{#Configuration}\*.dll"; DestDir: "{app}"
 Source: "ffmpeg\ffmpeg.exe"; DestDir: "{app}"

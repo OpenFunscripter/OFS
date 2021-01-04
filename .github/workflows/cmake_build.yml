@@ -48,6 +48,7 @@ jobs:
       # Execute the build.  You can specify a specific target with "--target <NAME>"
       run: |
         cmake --build . --config $BUILD_TYPE --target "OpenFunscripter"
+        cmake --build . --config $BUILD_TYPE --target "OFP"
     
   linux:
     runs-on: ubuntu-20.04
@@ -82,7 +83,9 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       shell: bash
       # Execute the build.  You can specify a specific target with "--target <NAME>"
-      run: cmake --build . --config $BUILD_TYPE --target "OpenFunscripter"
+      run: |
+        cmake --build . --config $BUILD_TYPE --target "OpenFunscripter"
+        cmake --build . --config $BUILD_TYPE --target "OFP"
 
     # - name: Test
       # working-directory: ${{runner.workspace}}/build
@@ -124,7 +127,9 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       shell: bash
       # Execute the build.  You can specify a specific target with "--target <NAME>"
-      run: cmake --build . --config $BUILD_TYPE --target "OpenFunscripter"
+      run: |
+        cmake --build . --config $BUILD_TYPE --target "OpenFunscripter"
+        cmake --build . --config $BUILD_TYPE --target "OFP"
 
     # - name: Test
       # working-directory: ${{runner.workspace}}/build

@@ -27,7 +27,7 @@ before_build:
     cmake --version
     cmake .. -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 16 2019" -A x64
 build:
-  project: c:\projects\OpenFunscripter\build\src\OpenFunscripter.sln
+  project: c:\projects\OpenFunscripter\build\scripter.sln
   verbosity: minimal
   parallel: true
 
@@ -43,7 +43,7 @@ after_build:
     7z e ffmpeg-release-essentials.7z
     cp ffmpeg.exe "../bin/%configuration%/"
     cd "../bin/%configuration%/"
-    7z a "OFS-%platform%_%APPVEYOR_REPO_BRANCH%-%APPVEYOR_REPO_COMMIT%.7z" ffmpeg.exe mpv-1.dll OpenFunscripter.exe
+    7z a "OFS-%platform%_%APPVEYOR_REPO_BRANCH%-%APPVEYOR_REPO_COMMIT%.7z" ffmpeg.exe mpv-1.dll OpenFunscripter.exe OFP.exe
     7z a "OFS-%platform%_%APPVEYOR_REPO_BRANCH%-%APPVEYOR_REPO_COMMIT%.7z" data
   
 - ps: cd ../../
