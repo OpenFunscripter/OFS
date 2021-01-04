@@ -28,6 +28,14 @@ private:
     bool GenThumbnailStarted = false;
 public:
     Video video;
+    std::vector<Tag> AssignedTags;
+
+    inline void UpdateTags() {
+        if (AssignedTags.size() != Videolibrary::GetTagCountForVideo(video.id)) {
+            AssignedTags = Videolibrary::GetTagsForVideo(video.id);
+        }
+    }
+
     OFS_Texture::Handle texture;
     uint64_t ThumbnailHash = 0;
     bool Focussed = false;

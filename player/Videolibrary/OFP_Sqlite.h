@@ -31,10 +31,10 @@ namespace OFS{
 
 template<typename T>
 struct Entity {
-	T* insert();
+	auto insert();
+	auto try_insert();
 	void update();
 	void replace();
-	void remove();
 };
 
 struct Video;
@@ -63,7 +63,6 @@ struct Video : Entity<Video>
 struct Thumbnail : Entity<Thumbnail>
 {
 	OFP_SQLITE_ID(id);
-	//std::string path;
 	std::vector<char> thumb_buffer;
 };
 
@@ -75,98 +74,142 @@ struct Tag : Entity<Tag>
 
 struct VideoAndTag : Entity<VideoAndTag>
 {
-	OFP_SQLITE_ID(metaId);
+	OFP_SQLITE_ID(videoId);
 	OFP_SQLITE_ID(tagId);
 };
 
+inline auto initStorage(const std::string& path)
+{
+	using namespace sqlite_orm;
+	return make_storage(path,
+		// video files
+		make_table("videos",
+			make_column("video_pk", &Video::id, autoincrement(), primary_key()),
+			make_column("filename", &Video::filename),
+			make_column("path", &Video::path, unique()),
+			make_column("byte_count", &Video::byte_count),
+			make_column("timestamp", &Video::timestamp),
+			make_column("has_script", &Video::hasScript),
+			make_column("gen_thumbnail", &Video::shouldGenerateThumbnail),
+			make_column("thumbnail_fk", &Video::thumbnailId),
+			foreign_key(&Video::thumbnailId).references(&Thumbnail::id)
+		),
+
+		// thumbnails
+		make_table("thumbnails",
+			make_column("thumb_pk", &Thumbnail::id, autoincrement(), primary_key()),
+			make_column("image_buffer", &Thumbnail::thumb_buffer)
+		),
+
+		// tags
+		make_table("tags",
+			make_column("tag_pk", &Tag::id, autoincrement(), primary_key()),
+			make_column("tag", &Tag::tag, unique())
+		),
+
+		// meta & tag
+		make_table("videos_and_tags",
+			make_column("video_fk", &VideoAndTag::videoId),
+			make_column("tag_fk", &VideoAndTag::tagId),
+			foreign_key(&VideoAndTag::videoId).references(&Video::id),
+			foreign_key(&VideoAndTag::tagId).references(&Tag::id),
+			primary_key(&VideoAndTag::videoId, &VideoAndTag::tagId)
+		)
+	);
+}
+using StorageT = decltype(initStorage(""));
+
 class Videolibrary {
+private:
 public:
-	static auto& Storage() {
+	static StorageT Storage;
+
+	static void init() {
+		Storage.sync_schema();
+		Storage.open_forever();
+	}
+
+	static std::vector<Video> GetVideos() {
+		return Videolibrary::Storage.get_all<Video>();
+	}
+
+	static std::vector<Tag> GetTagsForVideo(int64_t videoId) {
 		using namespace sqlite_orm;
-		static auto storage = make_storage(Util::PrefpathOFP("library.sqlite"),
-			// video files
-			make_table("videos",
-				make_column("id", &Video::id, autoincrement(), primary_key()),
-				make_column("filename", &Video::filename),
-				make_column("path", &Video::path, unique()),
-				make_column("byte_count", &Video::byte_count),
-				make_column("timestamp", &Video::timestamp),
-				make_column("has_script", &Video::hasScript),
-				make_column("gen_thumbnail", &Video::shouldGenerateThumbnail),
-				make_column("thumbnail_id", &Video::thumbnailId),
-				foreign_key(&Video::thumbnailId).references(&Thumbnail::id)
-			),
 
-			// thumbnails
-			make_table("thumbnails",
-				make_column("id", &Thumbnail::id, autoincrement(), primary_key()),
-				make_column("image_buffer", &Thumbnail::thumb_buffer)
-			),
-
-			// tags
-			make_table("tags",
-				make_column("id", &Tag::id, autoincrement(), primary_key()),
-				make_column("tag", &Tag::tag, unique())
-			),
-
-			// meta & tag
-			make_table("videos_and_tags",
-				make_column("meta_id", &VideoAndTag::metaId),
-				make_column("tag_id", &VideoAndTag::tagId),
-				foreign_key(&VideoAndTag::metaId).references(&Video::id),
-				foreign_key(&VideoAndTag::tagId).references(&Tag::id)
-			)
-		);
 		try {
-			if (!storage.is_opened()) {
-				storage.sync_schema();
-				storage.open_forever();
-			}
+			auto tagsJoin = Storage.get_all<Tag>(
+				inner_join<VideoAndTag>(on(c(&VideoAndTag::tagId) == &Tag::id)),
+				where(c(&VideoAndTag::videoId) == videoId)
+			);
+			return tagsJoin;
 		}
 		catch (std::system_error& er) {
 			LOGF_ERROR("%s", er.what());
 		}
-
-		return storage;
+		return std::vector<Tag>();
 	}
 
-	static std::vector<Video> GetVideos() {
-		return Videolibrary::Storage().get_all<Video>();
+	static int64_t GetTagCountForVideo(int64_t videoId) {
+		using namespace sqlite_orm;
+
+		auto count = Storage.count(
+			&Tag::id,
+			inner_join<Tag>(on(c(&Tag::id) == &VideoAndTag::tagId)),
+			where(c(&VideoAndTag::videoId) == videoId)
+		);
+		
+		return count;
+	}
+
+	static std::vector<Video> GetVideosWithTag(int64_t tagId) {
+		using namespace sqlite_orm;
+		try {
+			auto videos = Storage.get_all<Video>(
+				inner_join<VideoAndTag>(on(c(&Video::id) == &VideoAndTag::videoId)),
+				where(c(&VideoAndTag::tagId) == tagId)
+			);
+			return videos;
+		}
+		catch (std::system_error& er) {
+			LOGF_ERROR("%s", er.what());
+		}
+		return std::vector<Video>();
+	}
+
+	static VideoAndTag GetConnect(int64_t videoId, int64_t tagId) {
+
 	}
 };
 
 
 template<typename T>
-inline T* Entity<T>::insert()
+inline auto Entity<T>::insert()
 {
 	try {
-		((T*)this)->id = Videolibrary::Storage().insert(*(T*)this);
-		return ((T*)this);
+		((T*)this)->id = Videolibrary::Storage.insert(*(T*)this);
 	}
 	catch (std::system_error& er) {
 		FUN_ASSERT(false, er.what());
 		LOGF_ERROR("%s", er.what());
 	}
-	return nullptr;
+}
+
+template<typename T>
+inline auto Entity<T>::try_insert()
+{
+	try {
+		((T*)this)->id = Videolibrary::Storage.insert(*(T*)this);
+	}
+	catch (std::system_error& er) {
+		LOGF_ERROR("%s", er.what());
+	}
 }
 
 template<typename T>
 inline void Entity<T>::update()
 {
 	try {
-		Videolibrary::Storage().update(*(T*)this);
-	}
-	catch (std::system_error& er) {
-		FUN_ASSERT(false, er.what());
-		LOGF_ERROR("%s", er.what());
-	}
-}
-
-template<typename T>
-inline void Entity<T>::remove()
-{
-	try {
-		Videolibrary::Storage().remove(*(T*)this);
+		Videolibrary::Storage.update(*(T*)this);
 	}
 	catch (std::system_error& er) {
 		FUN_ASSERT(false, er.what());
@@ -178,7 +221,7 @@ template<typename T>
 inline void Entity<T>::replace()
 {
 	try {
-		Videolibrary::Storage().replace(*(T*)this);
+		Videolibrary::Storage.replace(*(T*)this);
 	}
 	catch (std::system_error& er) {
 		FUN_ASSERT(false, er.what());

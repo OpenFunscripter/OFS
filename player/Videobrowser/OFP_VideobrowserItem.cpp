@@ -21,13 +21,6 @@
 VideobrowserItem::VideobrowserItem(Video&& vid) noexcept
 {
 	video = std::move(vid);
-	//auto pathObj = Util::PathFromString(vid.path);
-	//pathObj.make_preferred();
-
-	//if (!std::filesystem::is_directory(pathObj)) {
-	//	this->extension = pathObj.extension().u8string();
-	//}
-
 	{
 		// the byte count gets included in the hash
 		// to ensure the thumbnails gets regenerated
@@ -46,7 +39,7 @@ void VideobrowserItem::GenThumbail() noexcept
 	if (!video.HasThumbnail() || GenThumbnailStarted) { return; }
 	auto thumb = video.thumbnail();
 	if(thumb == nullptr) {
-		auto thumb = Videolibrary::Storage().get_pointer<Thumbnail>(this->ThumbnailHash);
+		auto thumb = Videolibrary::Storage.get_pointer<Thumbnail>(this->ThumbnailHash);
 		if (thumb != nullptr) {
 			OFS::Set(video.thumbnailId, thumb->id);
 		}
@@ -92,7 +85,7 @@ void VideobrowserItem::GenThumbail() noexcept
 			EventSystem::SingleShot([](void* ctx) {
 				GenLoadThreadData* data = (GenLoadThreadData*)ctx;
 				int w, h;
-				auto thumb = Videolibrary::Storage().get_pointer<Thumbnail>(data->thumbnailId);
+				auto thumb = Videolibrary::Storage.get_pointer<Thumbnail>(data->thumbnailId);
 				FUN_ASSERT(thumb != nullptr, "thumb was null");
 
 				if (thumb != nullptr && thumb->thumb_buffer.size() == 0) {

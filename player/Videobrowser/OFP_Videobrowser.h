@@ -52,8 +52,11 @@ private:
     void updateLibraryCache() noexcept;
 
     bool CacheNeedsUpdate = false;
+    bool CacheUpdateInProgress = false;
+
     SDL_SpinLock ItemsLock = 0;
     std::vector<VideobrowserItem> Items;
+    std::vector<Tag> Tags;
 
     void renderLoot() noexcept;
 public:

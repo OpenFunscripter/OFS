@@ -61,6 +61,8 @@ public:
 			OFS_REFLECT(notes, ar);
 		}
 
+		void loadFromFunscript(const std::string& path) noexcept;
+		void writeToFunscript(const std::string& path) noexcept;
 	} metadata;
 
 	void* userdata = nullptr;
