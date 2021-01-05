@@ -38,6 +38,8 @@ private:
 	static SDL_atomic_t TextureIdCounter;
 	static SDL_atomic_t Reads;
 	static SDL_atomic_t QueuedWrites;
+	static SDL_sem* WriteSem;
+
 	inline static bool BoundCheck(uint64_t id) noexcept {
 		id--; // ids start at one
 		return id >= 0 && id < Textures.size();
@@ -57,11 +59,11 @@ public:
 			}
 		}
 
-		// after reading SDL_AtomicIncRef(&Writes);
+		// after reading SDL_AtomicIncRef(&Reads);
 	}
 
 	inline static void WriteTextures() noexcept {
-		
+		SDL_AtomicIncRef(&QueuedWrites);
 		int queuedWrites;
 		for (;;) {
 			queuedWrites = SDL_AtomicGet(&QueuedWrites);
@@ -71,13 +73,19 @@ public:
 		for (;;) {
 			int value = SDL_AtomicGet(&Reads);
 			if (value < 0) { continue; }
-			if (value > 0) { break; }
+			if (value > 0 && queuedWrites == 0) { break; }
 			if (SDL_AtomicCAS(&Reads, 0, queuedWrites)) {
 				//LOGF_DEBUG("WRITE: Writes: %d", queuedWrites);
 				break; 
 			}
 		}
-		// after writing SDL_AtomicDecRef(&Writes);
+		SDL_SemWait(WriteSem);
+		// after writing SDL_AtomicDecRef(&Reads) + SDL_SemPost(WriteSem)
+	}
+	inline static void EndWriteTextures() noexcept 
+	{
+		SDL_AtomicDecRef(&Reads);
+		SDL_SemPost(WriteSem);
 	}
 	
 	class Handle {
@@ -157,11 +165,10 @@ public:
 	};
 
 	inline static Handle CreateTexture() noexcept {
-		SDL_AtomicIncRef(&QueuedWrites);
 		WriteTextures();
 		int newId = SDL_AtomicIncRef(&TextureIdCounter);
 		Textures.emplace_back();
-		SDL_AtomicDecRef(&Reads);
+		EndWriteTextures();
 		Handle handle(newId);
 		return handle;
 	}

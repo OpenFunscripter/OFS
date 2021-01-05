@@ -7,3 +7,4 @@ std::vector<OFS_Texture::Texture> OFS_Texture::Textures;
 SDL_atomic_t OFS_Texture::Reads = { 0 };
 SDL_atomic_t OFS_Texture::QueuedWrites = { 0 };
 SDL_atomic_t OFS_Texture::TextureIdCounter = { 1 };
+SDL_sem* OFS_Texture::WriteSem = SDL_CreateSemaphore(1);

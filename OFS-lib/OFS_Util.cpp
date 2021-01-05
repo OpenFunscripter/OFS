@@ -97,7 +97,7 @@ int Util::OpenFileExplorer(const std::string& str)
 #elif __APPLE__
 	LOG_ERROR("Not implemented for this platform.");
 #else
-	return OpenUrl(path);
+	return OpenUrl(str);
 #endif
 	return 1;
 }

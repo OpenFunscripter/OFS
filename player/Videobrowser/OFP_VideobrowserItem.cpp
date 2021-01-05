@@ -38,16 +38,16 @@ void VideobrowserItem::GenThumbail() noexcept
 {
 	if (!video.HasThumbnail() || GenThumbnailStarted) { return; }
 	auto thumb = video.thumbnail();
-	if(thumb == nullptr) {
-		auto thumb = Videolibrary::Storage.get_pointer<Thumbnail>(this->ThumbnailHash);
-		if (thumb != nullptr) {
-			OFS::Set(video.thumbnailId, thumb->id);
+	if(!thumb.has_value()) {
+		thumb = Videolibrary::Get<Thumbnail>(this->ThumbnailHash);
+		if (thumb.has_value()) {
+			video.thumbnailId = thumb->id;
 		}
 		else {
 			Thumbnail t;
 			t.id = this->ThumbnailHash;
 			t.replace();
-			OFS::Set(video.thumbnailId, t.id);
+			video.thumbnailId = t.id;
 		}
 		video.update();
 	}
@@ -85,10 +85,10 @@ void VideobrowserItem::GenThumbail() noexcept
 			EventSystem::SingleShot([](void* ctx) {
 				GenLoadThreadData* data = (GenLoadThreadData*)ctx;
 				int w, h;
-				auto thumb = Videolibrary::Storage.get_pointer<Thumbnail>(data->thumbnailId);
-				FUN_ASSERT(thumb != nullptr, "thumb was null");
+				auto thumb = Videolibrary::Get<Thumbnail>(data->thumbnailId);
+				FUN_ASSERT(thumb.has_value(), "thumb was empty");
 
-				if (thumb != nullptr && thumb->thumb_buffer.size() == 0) {
+				if (thumb.has_value() && thumb->thumb_buffer.size() == 0) {
 					auto handle = SDL_RWFromFile(data->thumbOutputFilePath.c_str(), "rb");
 					if (handle != nullptr) {
 						std::vector<char> buffer;
@@ -96,11 +96,8 @@ void VideobrowserItem::GenThumbail() noexcept
 						SDL_RWread(handle, buffer.data(), sizeof(char), buffer.size());
 						SDL_RWclose(handle);
 
-						if (thumb != nullptr) {
-							thumb->thumb_buffer = std::move(buffer);
-							thumb->update();
-						}
-
+						thumb->thumb_buffer = std::move(buffer);
+						thumb->update();
 					}
 					else {
 						LOGF_WARN("Failed loading texture: \"%s\"", data->thumbOutputFilePath.c_str());
