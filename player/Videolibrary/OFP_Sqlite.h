@@ -115,7 +115,7 @@ using StorageT = decltype(initStorage(""));
 
 class Videolibrary {
 private:
-	static StorageT Storage;
+	//static StorageT Storage;
 
 	static SDL_atomic_t Reads;
 	static SDL_atomic_t QueuedWrites;
@@ -164,29 +164,44 @@ private:
 		SDL_AtomicDecRef(&Reads);
 		SDL_SemPost(WriteSem);
 	}
+
+	inline static StorageT storage()
+	{
+		static auto cachedPath = Util::PrefpathOFP("library.sqlite");
+		auto store = initStorage(cachedPath);
+		store.open_forever();
+		//ReadDB();
+		//store.sync_schema_simulate();
+		//SDL_AtomicIncRef(&Reads);
+		return store;
+	}
 public:
 
 	inline static void init() {
-		Storage.sync_schema();
-		Storage.open_forever();
-		Storage.busy_timeout(15000);
+		auto store = storage();
+		store.sync_schema();
+		//Storage.sync_schema();
+		//Storage.open_forever();
+		//Storage.busy_timeout(15000);
 	}
 
 	inline static void DeleteAll() {
+		auto store = storage();
 		WriteDB();
-		Storage.remove_all<VideoAndTag>();
-		Storage.remove_all<Tag>();
-		Storage.remove_all<Video>();
-		Storage.remove_all<Thumbnail>();
-		Storage.vacuum();
+		store.remove_all<VideoAndTag>();
+		store.remove_all<Tag>();
+		store.remove_all<Video>();
+		store.remove_all<Thumbnail>();
+		store.vacuum();
 		EndWriteDB();
 	}
 
 	inline static std::vector<Tag> GetTagsForVideo(int64_t videoId) {
 		using namespace sqlite_orm;
+		auto store = storage();
 		ReadDB();
 		try {
-			auto tagsJoin = Storage.get_all<Tag>(
+			auto tagsJoin = store.get_all<Tag>(
 				inner_join<VideoAndTag>(on(c(&VideoAndTag::tagId) == &Tag::id)),
 				where(c(&VideoAndTag::videoId) == videoId)
 			);
@@ -202,10 +217,11 @@ public:
 
 	inline static int64_t GetTagCountForVideo(int64_t videoId) {
 		using namespace sqlite_orm;
+		auto store = storage();
 		ReadDB();
 		try 
 		{
-			auto count = Storage.count(
+			auto count = store.count(
 				&Tag::id,
 				inner_join<Tag>(on(c(&Tag::id) == &VideoAndTag::tagId)),
 				where(c(&VideoAndTag::videoId) == videoId)
@@ -223,9 +239,10 @@ public:
 
 	inline static std::vector<Video> GetVideosWithTags(std::vector<int64_t>& tagIds) {
 		using namespace sqlite_orm;		
+		auto store = storage();
 		ReadDB();
 		try {
-			auto videos = Storage.get_all<Video>(
+			auto videos = store.get_all<Video>(
 				inner_join<VideoAndTag>(on(c(&Video::id) == &VideoAndTag::videoId)),
 				where(in(&VideoAndTag::tagId, tagIds) /*c(&VideoAndTag::tagId) == tagId*/),
 				group_by(&Video::id)
@@ -242,10 +259,12 @@ public:
 
 	template<typename T>
 	inline static std::optional<T> Get(const std::optional<int64_t> id) {
+		auto store = storage();
 		ReadDB();
 		if (id.has_value()) {
 			try {
-				auto value = Storage.get_optional<T>(id.value());
+				auto foo = id.value();
+				auto value = store.get_optional<T>(foo);
 				SDL_AtomicIncRef(&Reads);
 				return value;
 
@@ -261,10 +280,11 @@ public:
 
 	template<typename T>
 	inline static std::optional<T> Get(int64_t id) {
+		auto store = storage();
 		ReadDB();
 		try
 		{
-			std::optional<T> value = Storage.get_optional<T>(id);
+			std::optional<T> value = store.get_optional<T>(id);
 			SDL_AtomicIncRef(&Reads);
 			return value;
 		}
@@ -279,10 +299,11 @@ public:
 	template<typename T>
 	inline static std::vector<T> GetAll()
 	{
+		auto store = storage();
 		ReadDB();
 		try
 		{
-			auto values = Storage.get_all<T>();
+			auto values = store.get_all<T>();
 			SDL_AtomicIncRef(&Reads);
 			return values;
 		}
@@ -297,10 +318,11 @@ public:
 	inline static std::optional<Tag> TagByName(const std::string& name) 
 	{
 		using namespace sqlite_orm;
+		auto store = storage();
 		ReadDB();
 		try
 		{
-			auto tags = Storage.get_all<Tag>(
+			auto tags = store.get_all<Tag>(
 				where(c(&Tag::tag) == name)
 			);
 			FUN_ASSERT(tags.size() <= 1, "the tag is supposed to be unique");
@@ -319,10 +341,11 @@ public:
 
 	template<typename T>
 	inline static int64_t Count() {
+		auto store = storage();
 		ReadDB();
 		try
 		{
-			int64_t count = Storage.count<T>();
+			int64_t count = store.count<T>();
 			SDL_AtomicIncRef(&Reads);
 			return count;
 		}
@@ -337,10 +360,11 @@ public:
 	template<typename T>
 	inline static int64_t Insert(T& o)
 	{
+		auto store = storage();
 		WriteDB();
 		try
 		{
-			auto id = Storage.insert(o);
+			auto id = store.insert(o);
 			EndWriteDB();
 			return id;
 		}
@@ -355,10 +379,11 @@ public:
 	template<typename T>
 	inline static void Update(T& o)
 	{
+		auto store = storage();
 		WriteDB();
 		try
 		{
-			Storage.update(o);
+			store.update(o);
 		}
 		catch (std::system_error& er)
 		{
@@ -370,9 +395,10 @@ public:
 	template<typename T>
 	inline static void Replace(T& o)
 	{
+		auto store = storage();
 		WriteDB();
 		try{
-			Storage.replace(o);
+			store.replace(o);
 		}
 		catch (std::system_error& er)
 		{
@@ -384,9 +410,10 @@ public:
 	template<typename T, typename... Ids>
 	inline static void Remove(Ids... ids)
 	{
+		auto store = storage();
 		WriteDB();
 		try {
-			Storage.remove<T>(std::forward<Ids>(ids)...);
+			store.remove<T>(std::forward<Ids>(ids)...);
 		}
 		catch (std::system_error& er)
 		{

@@ -587,7 +587,12 @@ void VideoplayerWindow::openVideo(const std::string& file)
 
 	const char* cmd[] = { "loadfile", file.c_str(), NULL };
 	mpv_command_async(mpv, 0, cmd);
-	MpvData = MpvDataCache();
+	
+	MpvDataCache newCache;
+	// some variables shouldn't get reset
+	newCache.current_speed = MpvData.current_speed;
+	newCache.paused = MpvData.paused;
+	MpvData = newCache;
 
 	setPaused(true);
 	setVolume(settings.volume);

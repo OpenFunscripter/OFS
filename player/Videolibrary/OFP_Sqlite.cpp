@@ -1,6 +1,6 @@
 #include "OFP_Sqlite.h"
 
-StorageT Videolibrary::Storage = initStorage(Util::PrefpathOFP("library.sqlite"));
+//StorageT Videolibrary::Storage = initStorage(Util::PrefpathOFP("library.sqlite"));
 
 SDL_atomic_t Videolibrary::Reads = { 0 };
 SDL_atomic_t Videolibrary::QueuedWrites = { 0 };
