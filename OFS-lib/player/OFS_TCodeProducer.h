@@ -6,20 +6,64 @@
 #include <array>
 #include <vector>
 #include <memory>
+#include <algorithm>
 
 class TCodeChannelProducer
 {
-public:
-	TCodeChannel* channel = nullptr;
+private:
+	FunscriptAction startAction;
+	FunscriptAction nextAction;
+
+	float ScriptMinPos;
+	float ScriptMaxPos;
+
+	// maps actions to 0 to a 100
+	inline void MapNewActions() noexcept
+	{
+		startAction.pos = Util::MapRange<float>(startAction.pos, ScriptMinPos, ScriptMaxPos, 0.f, 100.f);
+		nextAction.pos = Util::MapRange<float>(nextAction.pos, ScriptMinPos, ScriptMaxPos, 0.f, 100.f);
+	}
+
+	inline float getPos(int32_t currentTimeMs) noexcept {
+		if (currentTimeMs > nextAction.at) { return nextAction.pos; }
+
+		float progress = Util::Clamp((float)(currentTimeMs - startAction.at) / (nextAction.at - startAction.at), 0.f, 1.f);
+		switch (TCodeChannel::EasingMode) {
+		case TCodeEasing::Cubic:
+		{
+			progress = progress < 0.5f
+				? 4.f * progress * progress * progress
+				: 1.f - ((-2.f * progress + 2.f) * (-2.f * progress + 2.f) * (-2.f * progress + 2.f)) / 2.f;
+			break;
+		}
+		case TCodeEasing::None:
+			break;
+		}
+		float pos = Util::Lerp<float>(startAction.pos/100.f, nextAction.pos/100.f, progress);
+
+		return pos;
+	}
 	std::weak_ptr<const Funscript> script;
 	int32_t currentIndex = 0;
+public:
+	TCodeChannel* channel = nullptr;
 
 	TCodeChannelProducer() {}
 
-	TCodeChannelProducer(std::weak_ptr<Funscript>&& script, TCodeChannel* channel)
+	inline void SetScript(std::weak_ptr<Funscript>&& script) noexcept
 	{
+		this->currentIndex = 0;
 		this->script = std::move(script);
-		this->channel = channel;
+		if (!this->script.expired()) {
+			auto locked = this->script.lock();
+			auto [min, max] = std::minmax_element(locked->Actions().begin(), locked->Actions().end(),
+				[](auto act1, auto act2) {
+					return act1.pos < act2.pos;
+			});
+			ScriptMinPos = min->pos;
+			ScriptMaxPos = max->pos;
+			LOGF_DEBUG("Script min %f and max %f", ScriptMinPos, ScriptMaxPos);
+		}
 	}
 
 	inline void sync(int32_t CurrentTimeMs) noexcept {
@@ -33,11 +77,15 @@ public:
 			if (action.at >= CurrentTimeMs) 
 			{
 				currentIndex = std::max(0, i - 1);
-				channel->startAction = actions[currentIndex];
-				channel->nextAction = actions[currentIndex+1];
+				startAction = actions[currentIndex];
+				nextAction = actions[currentIndex+1];
+				MapNewActions();
 				break;
 			}
 		}
+
+		float interp = getPos(CurrentTimeMs);
+		channel->SetNextPos(interp);
 	}
 
 #ifndef NDEBUG
@@ -50,17 +98,8 @@ public:
 		auto scriptPtr = script.lock();
 		auto& actions = scriptPtr->Actions();
 
-		const FunscriptAction* currentAction = &actions[currentIndex];
-		const FunscriptAction* nextAction;
-		if (currentIndex + 1 >= actions.size()) {
-			return;
-		}
-		else {
-			nextAction = &actions[currentIndex + 1];
-		}
-
 		int newIndex = currentIndex;
-		if (CurrentTimeMs > nextAction->at) {
+		if (CurrentTimeMs > nextAction.at) {
 			newIndex++;
 		}
 
@@ -72,22 +111,24 @@ public:
 			foo = true;
 #endif
 			currentIndex = newIndex;
-			channel->startAction = actions[currentIndex];
+			startAction = actions[currentIndex];
 			if (currentIndex + 1 < actions.size()) {
-				channel->nextAction = actions[currentIndex+1];
+				nextAction = actions[currentIndex+1];
 			}
 			else {
-				channel->nextAction = channel->startAction;
-				channel->nextAction.at++;
+				nextAction = startAction;
+				nextAction.at++;
 			}
-
-			LOGF_DEBUG("%s: New stroke! %d -> %d", channel->Id, channel->startAction.pos, channel->nextAction.pos);
+			MapNewActions();
+			LOGF_DEBUG("%s: New stroke! %d -> %d", channel->Id, startAction.pos, nextAction.pos);
 		}
 #ifndef NDEBUG
 		else {
 			foo = false;
 		}
 #endif
+		float interp = getPos(CurrentTimeMs);
+		channel->SetNextPos(interp);
 	}
 };
 
@@ -103,17 +144,17 @@ public:
 		std::weak_ptr<Funscript>&& R2 = std::weak_ptr<Funscript>()
 		/*TODO: add more channels */ ) noexcept {
 
-		GetProd(TChannel::L0).script = L0;
-		GetProd(TChannel::L1).script.reset();
-		GetProd(TChannel::L2).script.reset();
+		GetProd(TChannel::L0).SetScript(std::move(L0));
+		GetProd(TChannel::L1).SetScript(std::weak_ptr<Funscript>());
+		GetProd(TChannel::L2).SetScript(std::weak_ptr<Funscript>());
 
-		GetProd(TChannel::R0).script = R0;
-		GetProd(TChannel::R1).script = R1;
-		GetProd(TChannel::R2).script = R2;
+		GetProd(TChannel::R0).SetScript(std::move(R0));
+		GetProd(TChannel::R1).SetScript(std::move(R1));
+		GetProd(TChannel::R2).SetScript(std::move(R2));
 
-		GetProd(TChannel::V0).script.reset();
-		GetProd(TChannel::V1).script.reset();
-		GetProd(TChannel::V2).script.reset();
+		GetProd(TChannel::V0).SetScript(std::weak_ptr<Funscript>());
+		GetProd(TChannel::V1).SetScript(std::weak_ptr<Funscript>());
+		GetProd(TChannel::V2).SetScript(std::weak_ptr<Funscript>());
 
 		SetChannels(tcode);
 	}
@@ -129,7 +170,7 @@ public:
 	void ClearChannels() noexcept {
 		for (auto& prod : producers) {
 			prod.channel = nullptr;
-			prod.script.reset();
+			prod.SetScript(std::weak_ptr<Funscript>());
 		}
 	}
 

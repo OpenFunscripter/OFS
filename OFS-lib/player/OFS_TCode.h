@@ -9,12 +9,17 @@
 
 
 class TCodePlayer {
+	std::string loadPath;
 public:
 	int current_port = 0;
 	int port_count = 0;
 	const char** port_list = nullptr;
 
 	int status = -1;
+
+	int32_t tickrate = 60;
+	int32_t delay = 0;
+
 
 	bool openPort(const char* name) noexcept;
 	c_serial_port_t* port = nullptr;
@@ -25,6 +30,10 @@ public:
 
 	TCodePlayer();
 	~TCodePlayer();
+	
+	void loadSettings(const std::string& path) noexcept;
+	void save() noexcept;
+
 	void DrawWindow(bool* open) noexcept;
 
 	void play(float currentTimeMs, 
@@ -60,5 +69,13 @@ public:
 		}
 
 		return true;
+	}
+
+	template <class Archive>
+	inline void reflect(Archive& ar) {
+		OFS_REFLECT(tcode, ar);
+		OFS_REFLECT(tickrate, ar);
+		OFS_REFLECT(delay, ar);
+		OFS_REFLECT_NAMED("easingMode", TCodeChannel::EasingMode, ar);
 	}
 };

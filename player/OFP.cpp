@@ -790,6 +790,8 @@ bool OFP::setup()
     sim3d = std::make_unique<Simulator3D>();
     sim3d->setup();
 
+    tcode->loadSettings(Util::PrefpathOFP("tcode.json"));
+
     SDL_ShowWindow(window);
 	return result;
 }

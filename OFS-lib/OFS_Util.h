@@ -112,6 +112,12 @@ public:
 	}
 
 	template<typename T>
+	inline static T MapRange(T val, T a1, T a2, T b1, T b2)
+	{
+		return b1 + (val - a1) * (b2 - b1) / (a2 - a1);
+	}
+
+	template<typename T>
 	inline static T Lerp(T startVal, T endVal, float t) {
 		return startVal + ((endVal - startVal) * t);
 	}

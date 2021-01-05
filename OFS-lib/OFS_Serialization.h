@@ -5,6 +5,8 @@
 
 #include "OFS_Util.h"
 
+#include <array>
+
 namespace BlackMagic {
 
 	template <typename T, typename A>
@@ -42,6 +44,9 @@ namespace OFS
 		
 		template<typename T>
 		inline archiver& operator<<(reflect_member<std::vector<T>>& pair);
+
+		template<typename T, size_t arraySize>
+		inline archiver& operator<<(reflect_member<std::array<T, arraySize>>& pair);
 	};
 
 
@@ -55,6 +60,9 @@ namespace OFS
 
 		template<typename T>
 		inline unpacker& operator<<(reflect_member<std::vector<T>>& pair);
+
+		template<typename T, size_t arraySize>
+		inline unpacker& operator<<(reflect_member<std::array<T, arraySize>>& pair);
 	};
 
 
@@ -120,6 +128,35 @@ namespace OFS
 		return *this;
 	}
 
+
+	template<typename T, size_t arraySize>
+	inline archiver& archiver::operator<<(reflect_member<std::array<T, arraySize>>& pair) {
+		auto* node = &(*ctx)[pair.name];
+		*node = nlohmann::json::array();
+		for (auto& item : *pair.value) {
+			nlohmann::json itemJson;
+			if constexpr (BlackMagic::has_reflect<T, archiver>::value) {
+				archiver ar(&itemJson);
+				item.template reflect<archiver>(ar);
+				(*node).push_back(itemJson);
+			}
+			else if constexpr (BlackMagic::has_reflect_function<T, archiver>::value) {
+				archiver ar(&itemJson);
+				reflect_function<T, archiver>().reflect(item, ar);
+				(*node).push_back(itemJson);
+			}
+			else {
+				for (auto&& item : *pair.value)
+				{
+					(*node).push_back(item);
+				}
+				break;
+			}
+		}
+		return *this;
+	}
+
+
 	// IMPLEMENTATION unpacker
 	//==================================================================
 	template<typename T>
@@ -170,6 +207,34 @@ namespace OFS
 						pair.value->emplace_back(std::move(item.template get<T>()));
 					}
 				}
+			}
+		}
+		return *this;
+	}
+
+	template<typename T, size_t arraySize>
+	inline unpacker& unpacker::operator<<(reflect_member<std::array<T, arraySize>>& pair) {
+		auto* node = &(*ctx)[pair.name];
+		if (node->is_array()) {
+			int32_t index = 0;
+			for (auto& item : *node) {
+				if constexpr (BlackMagic::has_reflect<T, unpacker>::value) {
+					unpacker des(&item);
+					(*pair.value)[index].template reflect<unpacker>(des);
+				}
+				else if constexpr (BlackMagic::has_reflect_function<T, unpacker>::value) {
+					unpacker des(&item);
+					reflect_function<T, unpacker>().relfect((*pair.value)[index], des);
+				}
+				else {
+					if (node->is_null()) {
+						LOGF_WARN("Failed to reflect \"%s\"", pair.name);
+					}
+					else {
+						(*pair.value)[index] = item.template get<T>();
+					}
+				}
+				index++;
 			}
 		}
 		return *this;

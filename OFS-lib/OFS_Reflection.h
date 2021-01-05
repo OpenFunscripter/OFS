@@ -17,7 +17,8 @@ struct reflect_member {
 
 #define OFS_REFLECT(member, archive) { auto pair = reflect_member(#member, std::addressof(member)); archive << pair; }
 #define OFS_REFLECT_PTR(member, archive) { auto pair = reflect_member(#member, member); archive << pair; }
-#define OFS_REFLECT_NAMED(name, value, archive) { auto pair = reflect_member(#name, std::addressof(value)); archive << pair; }
+#define OFS_REFLECT_PTR_NAMED(name, member, archive) { auto pair = reflect_member(name, member); archive << pair; }
+#define OFS_REFLECT_NAMED(name, value, archive) { auto pair = reflect_member(name, std::addressof(value)); archive << pair; }
 
 template<typename T, typename Archive>
 struct reflect_function {
@@ -35,8 +36,8 @@ template<typename Archive>
 struct reflect_function<ImVec2, Archive> 
 {
 	void reflect(ImVec2& obj, Archive& ar) {
-		OFS_REFLECT_NAMED(x, obj.x, ar);
-		OFS_REFLECT_NAMED(y, obj.y, ar);
+		OFS_REFLECT_NAMED("x", obj.x, ar);
+		OFS_REFLECT_NAMED("y", obj.y, ar);
 	}
 };
 
@@ -44,10 +45,10 @@ template<typename Archive>
 struct reflect_function<ImColor, Archive>
 {
 	void reflect(ImColor& obj, Archive& ar) {
-		OFS_REFLECT_NAMED(x, obj.Value.x, ar);
-		OFS_REFLECT_NAMED(y, obj.Value.y, ar);
-		OFS_REFLECT_NAMED(z, obj.Value.z, ar);
-		OFS_REFLECT_NAMED(w, obj.Value.w, ar);
+		OFS_REFLECT_NAMED("x", obj.Value.x, ar);
+		OFS_REFLECT_NAMED("y", obj.Value.y, ar);
+		OFS_REFLECT_NAMED("z", obj.Value.z, ar);
+		OFS_REFLECT_NAMED("w", obj.Value.w, ar);
 	}
 };
 
@@ -55,7 +56,7 @@ template<typename Archive>
 struct reflect_function<ImRect, Archive>
 {
 	void reflect(ImRect& obj, Archive& ar) {
-		OFS_REFLECT_NAMED(Min, obj.Min, ar);
-		OFS_REFLECT_NAMED(Max, obj.Max, ar);
+		OFS_REFLECT_NAMED("Min", obj.Min, ar);
+		OFS_REFLECT_NAMED("Max", obj.Max, ar);
 	}
 };

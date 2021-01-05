@@ -14,76 +14,61 @@ enum class TCodeEasing : int32_t {
 
 class TCodeChannel {
 public:
-	FunscriptAction startAction;
-	FunscriptAction nextAction;
-private:
-
-	inline float getPos(int32_t currentTimeMs) noexcept {
-		if (currentTimeMs > nextAction.at) { return nextAction.pos; }
-
-		float progress = Util::Clamp((float)(currentTimeMs - startAction.at) / (nextAction.at - startAction.at), 0.f, 1.f);
-		switch (TCodeChannel::EasingMode) {
-		case TCodeEasing::Cubic:
-		{
-			progress = progress < 0.5f
-				? 4.f * progress * progress * progress
-				: 1.f - ((-2.f * progress + 2.f) * (-2.f * progress + 2.f) * (-2.f * progress + 2.f)) / 2.f;
-			break;
-		}
-		case TCodeEasing::None:
-			break;
-		}
-		float pos = Util::Lerp<float>(startAction.pos, nextAction.pos, progress);
-		return pos;
-	}
-public:
-	static TCodeEasing EasingMode;
 	// 2 characters + 0 terminator
 	char Id[3] = "\0";
+	int32_t LastTCodeValue = -1;
+private:
+	int32_t NextTCodeValue = -1;
+public:
+
+	char LastCommand[16] = "???\0";
+
+	static constexpr int32_t NeutralChannelValue = 500;
+	static constexpr int32_t MaxChannelValue = 900;
+	static constexpr int32_t MinChannelValue = 100;
+	std::array<int32_t, 2> limits = { MinChannelValue, MaxChannelValue };
+	
+	static TCodeEasing EasingMode;
 
 	inline void SetId(const char id[3]) noexcept {
 		strcpy(Id, id);
 	}
 
-	TCodeChannel() {
-		reset();
+	TCodeChannel() { reset(); }
+
+	inline int32_t GetPos(float relative) noexcept
+	{
+		FUN_ASSERT(limits[0] <= limits[1], "limits are scuffed");
+		relative = Util::Clamp<float>(relative, 0.f, 1.f);
+		int32_t tcodeVal = (int32_t)(limits[0] + (relative * (limits[1] - limits[0])));
+		return tcodeVal;
 	}
 
-	static constexpr int32_t MaxChannelValue = 900;
-	static constexpr int32_t MinChannelValue = 100;
+	inline void SetNextPos(float relativePos) noexcept
+	{
+		NextTCodeValue = GetPos(relativePos);
+	}
 
-	std::array<int32_t, 2> limits = { MinChannelValue, MaxChannelValue };
-	int32_t lastTcodeVal = -1;
-
-	char buf[16] = "???\0";
 	inline const char* getCommand(int32_t currentTimeMs, int32_t tickrate) noexcept {
-		float pos = getPos(currentTimeMs);
-		int32_t tcodeVal = (int32_t)(limits[0] + ((pos / 100.f) * (limits[1] - limits[0])));
-		if (tcodeVal != lastTcodeVal) {
-
-			constexpr float MaxSpeed = 10000.f;
-			int32_t diff = tcodeVal - lastTcodeVal;
-			int32_t abs_diff = std::abs(diff);
-			float speed = abs_diff / (1.f / tickrate);
-
-			if (speed >= MaxSpeed) {
-				LOGF_DEBUG("%s: jitter detected: %f", Id, speed);
-				lastTcodeVal += (diff / abs_diff) *  ((MaxSpeed*(1.f/tickrate))/10.f);
-				lastTcodeVal = Util::Clamp(lastTcodeVal, limits[0], limits[1]);
-			}
-			else {
-				lastTcodeVal = tcodeVal;
-			}
-
-			stbsp_snprintf(buf, sizeof(buf), "%s%d ", Id, lastTcodeVal);
-			return buf;
+		if (NextTCodeValue != LastTCodeValue) {
+			stbsp_snprintf(LastCommand, sizeof(LastCommand), "%s%d ", Id, NextTCodeValue);
+			LastTCodeValue = NextTCodeValue;
+			return LastCommand;
 		}
 		return nullptr;
 	}
 
 	inline void reset() noexcept {
-		startAction.at = -2; startAction.pos = 50;
-		nextAction.at = -1; nextAction.pos = 50;
+		LastTCodeValue = GetPos(NeutralChannelValue);
+		NextTCodeValue = GetPos(NeutralChannelValue);
+	}
+
+	template <class Archive>
+	inline void reflect(Archive& ar) {
+		std::string id = Id;
+		OFS_REFLECT(id, ar);
+		OFS_REFLECT_PTR_NAMED("minimum", &limits[0], ar);
+		OFS_REFLECT_PTR_NAMED("maximum", &limits[1], ar);
 	}
 };
 
@@ -160,5 +145,10 @@ public:
 
 	void reset() noexcept {
 		for (auto& c : channels) c.reset();
+	}
+
+	template <class Archive>
+	inline void reflect(Archive& ar) {
+		OFS_REFLECT(channels, ar);
 	}
 };

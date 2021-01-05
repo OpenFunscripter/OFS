@@ -99,6 +99,24 @@ TCodePlayer::TCodePlayer()
 TCodePlayer::~TCodePlayer()
 {
     stop();
+    save();
+}
+
+void TCodePlayer::loadSettings(const std::string& path) noexcept
+{
+    bool succ;
+    auto json = Util::LoadJson(path, &succ);
+    if (succ) {
+        OFS::serializer::load(this, &json["tcode_player"]);
+        loadPath = path;
+    }
+}
+
+void TCodePlayer::save() noexcept
+{
+    nlohmann::json json;
+    OFS::serializer::save(this, &json["tcode_player"]);
+    Util::WriteJson(json, loadPath, true);
 }
 
 static struct TCodeThreadData {
@@ -108,8 +126,6 @@ static struct TCodeThreadData {
     SDL_atomic_t scriptTimeMs = { 0 };
     
     float speed = 1.f;
-    int tickrate = 60;
-    int32_t delay = 0;
 
     TCodePlayer* player = nullptr;
     TCodeChannels* channel = nullptr;
@@ -170,13 +186,13 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
     rotationGui(tcode.Get(TChannel::R2));
 
 
-    ImGui::InputInt("Delay", &Thread.delay, 10, 10);
+    ImGui::InputInt("Delay", &delay, 10, 10);
     ImGui::SameLine();
-    static bool easing = false;
+    static bool easing = TCodeChannel::EasingMode == TCodeEasing::Cubic;
     if (ImGui::Checkbox("Easing", &easing)) {
         TCodeChannel::EasingMode = easing ? TCodeEasing::Cubic : TCodeEasing::None;
     }
-    ImGui::SliderInt("Tickrate", &Thread.tickrate, 60, 300, "%d", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SliderInt("Tickrate", &tickrate, 60, 300, "%d", ImGuiSliderFlags_AlwaysClamp);
     
     if (!Thread.running) {
         if (ImGui::Button("Home", ImVec2(-1, 0))) {
@@ -199,8 +215,8 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
         if (IgnoreChannel(static_cast<TChannel>(i))) { ImGui::Spacing(); continue; }
         auto& c = tcode.channels[i];
         auto& p = prod.producers[i];
-        ImGui::SliderInt(c.Id, &c.lastTcodeVal,  TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue /*c.limits[0], c.limits[1]*/);
-        ImGui::SameLine(); ImGui::Text(" -> %s", c.buf);
+        ImGui::SliderInt(c.Id, &c.LastTCodeValue,  TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue /*c.limits[0], c.limits[1]*/);
+        ImGui::SameLine(); ImGui::Text(" -> %s", c.LastCommand);
     }
     ImGui::PopItemFlag();
 
@@ -220,13 +236,13 @@ static int32_t TCodeThread(void* threadData) noexcept {
     data->producer->sync(SDL_AtomicGet(&Thread.scriptTimeMs));
 
     while (!data->requestStop) {
-        int maxTicks = std::round(1000.f / data->tickrate) - 1;
+        int maxTicks = std::round(1000.f / data->player->tickrate) - 1;
 
         int32_t data_scriptTimeMs = SDL_AtomicGet(&Thread.scriptTimeMs);
 
         int32_t ticks = SDL_GetTicks();
-        int32_t currentTimeMs = (((ticks - startTicks) * data->speed) + scriptTimeMs) - Thread.delay;
-        int32_t syncTimeMs =  data_scriptTimeMs - Thread.delay;
+        int32_t currentTimeMs = (((ticks - startTicks) * data->speed) + scriptTimeMs) - data->player->delay;
+        int32_t syncTimeMs =  data_scriptTimeMs - data->player->delay;
         if (std::abs(currentTimeMs - syncTimeMs) >= 60) {
             LOGF_DEBUG("Resync -> %d", currentTimeMs - syncTimeMs);
             LOGF_DEBUG("prev: %d new: %d", currentTimeMs, syncTimeMs);
@@ -244,7 +260,7 @@ static int32_t TCodeThread(void* threadData) noexcept {
 
         
         // update channels
-        const char* cmd = data->channel->GetCommand(currentTimeMs, data->tickrate);
+        const char* cmd = data->channel->GetCommand(currentTimeMs, data->player->tickrate);
         //if (cmd != nullptr) { LOG_DEBUG(cmd); }
 
         if (cmd != nullptr && data->player->status >= 0) {
