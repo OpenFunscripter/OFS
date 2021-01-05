@@ -66,11 +66,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
 if(WIN32)
-    target_compile_options(${PROJECT_NAME} PUBLIC /EHc- /GR-)
 	# target_compile_options(${PROJECT_NAME} PRIVATE /W2 /WX)
 	# target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
 elseif(UNIX AND NOT APPLE) # clang/gcc
-	target_compile_options(${PROJECT_NAME} PUBLIC -fno-rtti)
     target_compile_options(${PROJECT_NAME} PUBLIC -fpermissive)
     
 	#target_compile_options(${PROJECT_NAME} PRIVATE -g -fsanitize=undefined)
@@ -84,7 +82,6 @@ elseif(UNIX AND NOT APPLE) # clang/gcc
 	# )
 	install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION "bin/")
 elseif(APPLE)
-	target_compile_options(${PROJECT_NAME} PUBLIC -fno-rtti)
 	target_compile_options(${PROJECT_NAME} PUBLIC -fpermissive)
 	
 	# Note Mac specific extension .app
