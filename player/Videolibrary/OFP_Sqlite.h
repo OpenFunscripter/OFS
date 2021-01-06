@@ -25,7 +25,7 @@ struct Entity {
 	auto insert();
 	auto try_insert();
 	void update();
-	void replace();
+	auto replace();
 };
 
 struct Video;
@@ -393,18 +393,22 @@ public:
 	}
 
 	template<typename T>
-	inline static void Replace(T& o)
+	inline static bool Replace(T& o)
 	{
+		bool suc;
 		auto store = storage();
 		WriteDB();
 		try{
 			store.replace(o);
+			suc = true;
 		}
 		catch (std::system_error& er)
 		{
 			LOGF_ERROR("sqlite: %s", er.what());
+			suc = false;
 		}
 		EndWriteDB();
+		return suc;
 	}
 
 	template<typename T, typename... Ids>
@@ -444,7 +448,7 @@ inline void Entity<T>::update()
 }
 
 template<typename T>
-inline void Entity<T>::replace()
+inline auto Entity<T>::replace()
 {
-	Videolibrary::Replace(*(T*)this);
+	return Videolibrary::Replace(*(T*)this);
 }

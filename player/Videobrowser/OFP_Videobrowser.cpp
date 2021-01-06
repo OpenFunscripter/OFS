@@ -499,7 +499,10 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 							VideoAndTag connect;
 							connect.tagId = t.id;
 							connect.videoId = item.video.id;
-							connect.replace();
+							if (connect.replace())
+							{
+								// TODO: write tag into funscript
+							}
 						}
 					}
 					ImGui::EndMenu();
@@ -509,6 +512,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 					for (auto& t : item.AssignedTags) {
 						if (ImGui::MenuItem(t.tag.c_str())) {
 							Videolibrary::Remove<VideoAndTag>(item.video.id, t.id);
+							// TODO: remove tag from funscript
 						}
 					}
 					ImGui::EndMenu();
