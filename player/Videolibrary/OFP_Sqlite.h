@@ -209,7 +209,7 @@ public:
 			return tagsJoin;
 		}
 		catch (std::system_error& er) {
-			LOGF_ERROR("%s", er.what());
+			LOGF_ERROR("sqlite: %s", er.what());
 		}
 		SDL_AtomicIncRef(&Reads);
 		return std::vector<Tag>();
@@ -231,7 +231,7 @@ public:
 		}
 		catch (std::system_error& er)
 		{
-			LOGF_ERROR("%s", er.what());
+			LOGF_ERROR("sqlite: %s", er.what());
 		}
 		SDL_AtomicIncRef(&Reads);
 		return 0;
@@ -251,7 +251,7 @@ public:
 			return videos;
 		}
 		catch (std::system_error& er) {
-			LOGF_ERROR("%s", er.what());
+			LOGF_ERROR("sqlite: %s", er.what());
 		}
 		SDL_AtomicIncRef(&Reads);
 		return std::vector<Video>();
@@ -271,7 +271,7 @@ public:
 			}
 			catch (std::system_error& er)
 			{
-				LOGF_ERROR("%s", er.what());
+				LOGF_ERROR("sqlite: %s", er.what());
 			}
 		}
 		SDL_AtomicIncRef(&Reads);
@@ -290,7 +290,7 @@ public:
 		}
 		catch (std::system_error& er)
 		{
-			LOGF_ERROR("%s", er.what());
+			LOGF_ERROR("sqlite: %s", er.what());
 		}
 		SDL_AtomicIncRef(&Reads);
 		return std::optional<T>();
@@ -309,7 +309,7 @@ public:
 		}
 		catch (std::system_error& er)
 		{
-			LOGF_ERROR("%s", er.what());
+			LOGF_ERROR("sqlite: %s", er.what());
 		}
 		SDL_AtomicIncRef(&Reads);
 		return std::vector<T>();
@@ -333,7 +333,7 @@ public:
 		}
 		catch (std::system_error& er)
 		{
-			LOGF_ERROR("%s", er.what());
+			LOGF_ERROR("sqlite: %s", er.what());
 		}
 		SDL_AtomicIncRef(&Reads);
 		return std::optional<Tag>();
@@ -351,7 +351,7 @@ public:
 		}
 		catch (std::system_error& er)
 		{
-			LOGF_ERROR("%s", er.what());
+			LOGF_ERROR("sqlite: %s", er.what());
 		}
 		SDL_AtomicIncRef(&Reads);
 		return 0;
@@ -370,7 +370,7 @@ public:
 		}
 		catch (std::system_error& er)
 		{
-			LOGF_ERROR("%s", er.what());
+			LOGF_ERROR("sqlite: %s", er.what());
 		}
 		EndWriteDB();
 		return -1;
@@ -387,7 +387,7 @@ public:
 		}
 		catch (std::system_error& er)
 		{
-			LOGF_ERROR("%s", er.what());
+			LOGF_ERROR("sqlite: %s", er.what());
 		}
 		EndWriteDB();
 	}
@@ -402,7 +402,7 @@ public:
 		}
 		catch (std::system_error& er)
 		{
-			LOGF_ERROR("%s", er.what());
+			LOGF_ERROR("sqlite: %s", er.what());
 		}
 		EndWriteDB();
 	}
@@ -417,7 +417,7 @@ public:
 		}
 		catch (std::system_error& er)
 		{
-			LOGF_ERROR("%s", er.what());
+			LOGF_ERROR("sqlite: %s", er.what());
 		}
 		EndWriteDB();
 	}
@@ -427,46 +427,24 @@ public:
 template<typename T>
 inline auto Entity<T>::insert()
 {
-	try {
-		((T*)this)->id = Videolibrary::Insert(*(T*)this);
-	}
-	catch (std::system_error& er) {
-		LOGF_ERROR("%s", er.what());
-		FUN_ASSERT(false, er.what());
-	}
+	((T*)this)->id = Videolibrary::Insert(*(T*)this);
 }
 
 template<typename T>
 inline auto Entity<T>::try_insert()
 {
-	try {
-		((T*)this)->id = Videolibrary::Insert(*(T*)this);
-	}
-	catch (std::system_error& er) {
-		LOGF_ERROR("%s", er.what());
-	}
+	((T*)this)->id = Videolibrary::Insert(*(T*)this);
+	return ((T*)this)->id != -1;
 }
 
 template<typename T>
 inline void Entity<T>::update()
 {
-	try {
-		Videolibrary::Update(*(T*)this);
-	}
-	catch (std::system_error& er) {
-		LOGF_ERROR("%s", er.what());
-		FUN_ASSERT(false, er.what());
-	}
+	Videolibrary::Update(*(T*)this);
 }
 
 template<typename T>
 inline void Entity<T>::replace()
 {
-	try {
-		Videolibrary::Replace(*(T*)this);
-	}
-	catch (std::system_error& er) {
-		LOGF_ERROR("%s", er.what());
-		FUN_ASSERT(false, er.what());
-	}
+	Videolibrary::Replace(*(T*)this);
 }

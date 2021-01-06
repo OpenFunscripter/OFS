@@ -902,7 +902,10 @@ void OFP::updateTitle() noexcept
     std::stringstream ss;
     ss.str(std::string());
 
-    ss << "OFP " OFS_LATEST_GIT_TAG "@" OFS_LATEST_GIT_HASH " - \"" << RootFunscript()->current_path << "\"";
+    ss << "OFP " OFS_LATEST_GIT_TAG "@" OFS_LATEST_GIT_HASH;
+    if (!RootFunscript()->current_path.empty()) {
+        ss << " - \"" << RootFunscript()->current_path << "\"";
+    }
     SDL_SetWindowTitle(window, ss.str().c_str());
 }
 
@@ -1007,6 +1010,7 @@ void OFP::clearLoadedScripts() noexcept
     playerControls.TimelineGradient.addMark(0.f, IM_COL32_BLACK);
     playerControls.TimelineGradient.addMark(1.f, IM_COL32_BLACK);
     playerControls.TimelineGradient.refreshCache();
+    updateTitle();
 }
 
 void OFP::DragNDrop(SDL_Event& ev) noexcept

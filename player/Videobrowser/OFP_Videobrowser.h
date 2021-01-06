@@ -58,6 +58,18 @@ private:
     std::vector<VideobrowserItem> Items;
     std::vector<Tag> Tags;
 
+    void setVideos(std::vector<Video>& videos) noexcept
+    {
+        Items.clear();
+        for (auto& vid : videos) {
+            Items.emplace_back(std::move(vid));
+        }
+        std::sort(Items.begin(), Items.end(),
+            [](auto& item1, auto& item2) {
+                return item1.video.timestamp > item2.video.timestamp;
+        });
+    }
+
     void renderLoot() noexcept;
 public:
     VideobrowserSettings* settings = nullptr;

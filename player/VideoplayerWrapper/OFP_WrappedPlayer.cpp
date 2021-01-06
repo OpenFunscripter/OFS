@@ -158,8 +158,8 @@ void WhirligigPlayer::DrawVideoPlayer(bool* open, bool* show_video) noexcept
 	ImGui::Begin(PlayerId);
     if (!threadData.connected)
     {
-	    ImGui::TextUnformatted("You are running whirligig.");
-	    ImGui::Text("Trying to connect to %s:%s.", ConnectAddress, DefaultPort);
+	    ImGui::TextUnformatted("Whirligig.");
+	    ImGui::Text("Trying to connect to %s:%s", ConnectAddress, DefaultPort);
 	    ImGui::SameLine(); OFS::Spinner("IDoBeWaitingForAConnection", ImGui::GetFontSize() / 2.f, ImGui::GetFontSize() / 4.f, IM_COL32(66, 150, 250, 255));
     }
     else
@@ -224,7 +224,6 @@ bool WhirligigPlayer::setup()
                     }
                     break;
                 }
-
 
                 if (data->player->ConnectSocket == INVALID_SOCKET) {
                     LOG_ERROR("Unable to connect to Whirligig.");

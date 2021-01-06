@@ -73,6 +73,18 @@ void Videobrowser::updateLibraryCache() noexcept
 		SDL_AtomicUnlock(&browser.ItemsLock);
 
 
+		// check if videos went away
+		auto allVideos = Videolibrary::GetAll<Video>();
+		for (auto& video : allVideos) {
+			LOGF_INFO("Looking for %s", video.filename.c_str());
+			if (!Util::FileExists(video.path))
+			{
+				Videolibrary::Remove<Video>(video.id);
+				LOGF_INFO("Removing %s", video.filename.c_str());
+			}
+		}
+
+
 		auto& searchPaths = data->browser->settings->SearchPaths;
 		for (auto& sPath : searchPaths) {
 			auto pathObj = Util::PathFromString(sPath.path);
@@ -105,7 +117,10 @@ void Videobrowser::updateLibraryCache() noexcept
 					vid.hasScript = matchingScript;
 					vid.timestamp = timestamp;
 					vid.shouldGenerateThumbnail = it->second;
-					vid.insert();
+					if (!vid.try_insert()) {
+						// failed to insert
+						return;
+					}
 
 					{
 						Funscript::Metadata meta;
@@ -182,12 +197,11 @@ void Videobrowser::updateLibraryCache() noexcept
 			LOGF_DEBUG("Done iterating \"%s\" %s", sPath.path.c_str(), sPath.recursive ? "recursively" : "");
 		}
 
+
+
 		SDL_AtomicLock(&browser.ItemsLock);
-		std::sort(browser.Items.begin(), browser.Items.end(),
-			[](auto& item1, auto& item2) {
-				return item1.video.timestamp > item2.video.timestamp;
-			}
-		);
+		allVideos = Videolibrary::GetAll<Video>();
+		browser.setVideos(allVideos);
 		SDL_AtomicUnlock(&browser.ItemsLock);
 
 		data->browser->CacheUpdateInProgress = false;
@@ -299,7 +313,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 		ImGui::Begin(Id, open, window_flags);
 		ImGui::TextUnformatted("Updating library... this may take a while.");
 		ImGui::NewLine();
-		ImGui::Text("Found %ld videos", Items.size());
+		ImGui::Text("Found %ld new videos", Items.size());
 		ImGui::SameLine(); OFS::Spinner("it do be spinning doe", ImGui::GetFontSize()/2.f, ImGui::GetFontSize()/4.f, IM_COL32(66, 150, 250, 255));
 		ImGui::End();
 		return;
@@ -338,12 +352,11 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 	}
 
 	if (ImGui::Button(ICON_REFRESH)) {
-		Videolibrary::DeleteAll();
 		CacheNeedsUpdate = true;
 	}
 	ImGui::SameLine();
 	ImGui::Bullet();
-	ImGui::TextUnformatted("Library");
+	ImGui::Text("Videos: %ld", Items.size());
 	ImGui::Separator();
 	
 	ImGui::SetNextItemWidth(-1.f);
@@ -376,16 +389,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 				LOGF_ERROR("%s", er.what());
 			}
 		}
-		auto setVideos = [&](std::vector<Video>& videos) {
-			Items.clear();
-			for (auto& vid : videos) {
-				Items.emplace_back(std::move(vid));
-			}
-			std::sort(Items.begin(), Items.end(),
-				[](auto& item1, auto& item2) {
-					return item1.video.timestamp > item2.video.timestamp;
-			});
-		};
+
 		if (ImGui::Button("All##AllTagsButton", ImVec2(-1, 0))) {
 			for (auto& t : Tags) { t.FilterActive = false; }
 		}
@@ -454,11 +458,11 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, style.Colors[ImGuiCol_PlotLinesHovered]);
 			ImGui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_PlotLines]);
 
+			ImGui::PushID(index);
 			auto texId = item.texture.GetTexId();
 			if (settings->showThumbnails && texId != 0) {
 				ImVec2 padding = item.video.hasScript ? ImVec2(0, 0) : ImVec2(ItemWidth*0.1f, ItemWidth*0.1f);
-				ImGui::PushID(index);
-				if(ImGui::ImageButtonEx(ImGui::GetID(item.video.filename.c_str()),
+				if(ImGui::ImageButtonEx(ImGui::GetID(item.video.path.c_str()),
 					item.Focussed && preview.ready ? (void*)(intptr_t)preview.render_texture : (void*)(intptr_t)texId,
 					ItemDim - padding,
 					ImVec2(0, 0), ImVec2(1, 1),
@@ -467,7 +471,6 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 					FileTintColor)) {
 					fileClickHandler(item);
 				}
-				ImGui::PopID();
 				item.Focussed = (ImGui::IsItemHovered() || (ImGui::IsItemActive() || ImGui::IsItemActivated() || ImGui::IsItemFocused())) && !itemFocussed;
 				if (item.Focussed) {
 					itemFocussed = true;
@@ -485,6 +488,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 				}
 				if (!item.video.hasScript) { ImGui::PopStyleColor(1); }
 			}
+			ImGui::PopID();
 			ImGui::PopStyleColor(2);
 		
 			if (ImGui::BeginPopupContextItem() || OFS::GamepadContextMenu())

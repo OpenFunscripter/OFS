@@ -192,15 +192,13 @@ public:
 			.string();
 	}
 
-	inline static bool FileExists(const std::string& file) { return FileExists(file.c_str()); }
-	inline static bool FileExists(const char* file) {
-		//std::filesystem::path file_path(file);
-		//bool exists = std::filesystem::exists(file_path) && std::filesystem::is_regular_file(file_path);
-		
-		// this sucks but unlike the code above works with unicode 
-		// and std::filesystem::u8path keeps throwing ...
-		// SDL2 uses utf-8 strings
+	inline static bool FileExists(const std::string& file) {
 		bool exists = false;
+#if WIN32
+		std::wstring wfile = Util::Utf8ToUtf16(file);
+		struct _stati64 s;
+		exists = _wstati64(wfile.c_str(), &s) == 0;
+#else
 		auto handle = SDL_RWFromFile(file, "r");
 		if (handle != nullptr) {
 			SDL_RWclose(handle);
@@ -209,7 +207,7 @@ public:
 		else {
 			LOGF_WARN("\"%s\" doesn't exist", file);
 		}
-
+#endif
 		return exists;
 	}
 	inline static bool FileNamesMatch(std::filesystem::path path1, std::filesystem::path path2) {
