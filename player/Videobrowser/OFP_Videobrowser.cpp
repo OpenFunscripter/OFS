@@ -393,21 +393,20 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 		int activeCount = activeFilterTags.size();
 		activeFilterTags.clear();
 		for (auto& tagItem : Tags) {
-			if (ImGui::Checkbox(tagItem.tag.c_str(), &tagItem.FilterActive)) {
-				//std::vector<int64_t> tags = { tagItem.id };
-				//setVideos(Videolibrary::GetVideosWithTags(tags));
-			}
+			if (ImGui::Checkbox(tagItem.tag.c_str(), &tagItem.FilterActive)) {}
 			if (tagItem.FilterActive) { activeFilterTags.emplace_back(tagItem.id); }
 		}
 
 		if (activeCount != activeFilterTags.size()) {
 			if (activeFilterTags.size() > 0) {
-				setVideos(Videolibrary::GetVideosWithTags(activeFilterTags));
+				auto vids = Videolibrary::GetVideosWithTags(activeFilterTags);
+				setVideos(vids);
 			}
 			else
 			{
 				// all
-				setVideos(Videolibrary::GetAll<Video>());
+				auto vids = Videolibrary::GetAll<Video>();
+				setVideos(vids);
 			}
 		}
 
