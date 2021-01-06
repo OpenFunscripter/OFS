@@ -261,6 +261,22 @@ void OFP::ShowMainMenuBar() noexcept
             }
             ImGui::EndMenu();
         }
+#ifdef WIN32
+        if (ImGui::MenuItem("Whirligig", NULL, &Whirligig)) {
+            player->closeVideo();
+            clearLoadedScripts();
+            if (Whirligig)
+            {
+                player = std::make_unique<WhirligigPlayer>(this);
+            }
+            else
+            {
+                player = std::make_unique<DefaultPlayer>();
+            }
+            settings.videoPlayer = player->settings;
+            player->setup();
+        }
+#endif
         ImGui::Separator();
         ImGui::Spacing();
         if (ControllerInput::AnythingConnected()) {
@@ -358,6 +374,7 @@ void OFP::ToggleVrMode() noexcept
 OFP::~OFP() noexcept
 {
     settings.save();
+    player.reset();
     OFS::Im3d_Shutdown();
 }
 
@@ -734,8 +751,8 @@ bool OFP::setup()
     LOG_DEBUG("created gl context");
 
     player = std::make_unique<DefaultPlayer>();
-
     settings.videoPlayer = player->settings;
+
     settings.load(Util::PrefpathOFP("settings.json"));
     SDL_GL_SetSwapInterval(settings.vsync);
 
@@ -932,17 +949,6 @@ bool OFP::openFile(const std::string& file) noexcept
             funscript_path = RootFunscript()->current_path;
         }
     }
-
-    if (video_path.empty()) {
-        if (!Util::FileNamesMatch(player->getVideoPath(), funscript_path)) {
-            LOG_ERROR("No video found.\nLoading scripts without a video is not supported.");
-            player->closeVideo();
-        }
-    }
-    else {
-        player->openVideo(video_path);
-    }
-
     clearLoadedScripts();
     auto openFunscript = [this](const std::string& file) -> bool {
         RootFunscript() = std::make_shared<Funscript>();
@@ -977,6 +983,17 @@ bool OFP::openFile(const std::string& file) noexcept
         channelIdx++;
     }
 
+    if (video_path.empty()) {
+        if (!Util::FileNamesMatch(player->getVideoPath(), funscript_path)) {
+            LOG_ERROR("No video found.\nLoading scripts without a video is not supported.");
+            player->closeVideo();
+        }
+    }
+    else {
+        player->openVideo(video_path);
+    }
+
+
     updateTitle();
 
     return result;
@@ -986,6 +1003,10 @@ void OFP::clearLoadedScripts() noexcept
 {
     LoadedFunscripts.clear();
     LoadedFunscripts.emplace_back(std::move(std::make_shared<Funscript>()));
+    playerControls.TimelineGradient.clear();
+    playerControls.TimelineGradient.addMark(0.f, IM_COL32_BLACK);
+    playerControls.TimelineGradient.addMark(1.f, IM_COL32_BLACK);
+    playerControls.TimelineGradient.refreshCache();
 }
 
 void OFP::DragNDrop(SDL_Event& ev) noexcept
@@ -1006,6 +1027,7 @@ void OFP::MpvPlayPauseChange(SDL_Event& ev) noexcept
         tcode->stop();
     }
     else {
+        if (RootFunscript()->current_path.empty()) return;
         auto l0_it = std::find_if(LoadedFunscripts.begin(), LoadedFunscripts.end(), [](auto& script) { return script->template Userdata<OFP_ScriptSettings>().ScriptChannel == TChannel::L0; });
         auto r0_it = std::find_if(LoadedFunscripts.begin(), LoadedFunscripts.end(), [](auto& script) { return script->template Userdata<OFP_ScriptSettings>().ScriptChannel == TChannel::R0; });
         auto r1_it = std::find_if(LoadedFunscripts.begin(), LoadedFunscripts.end(), [](auto& script) { return script->template Userdata<OFP_ScriptSettings>().ScriptChannel == TChannel::R1; });

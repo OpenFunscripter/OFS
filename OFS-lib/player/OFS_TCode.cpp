@@ -210,15 +210,15 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
 
     ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
 
-    ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+    //ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
     for (int i = 0; i < tcode.channels.size(); i++) {
         if (IgnoreChannel(static_cast<TChannel>(i))) { ImGui::Spacing(); continue; }
         auto& c = tcode.channels[i];
         auto& p = prod.producers[i];
-        ImGui::SliderInt(c.Id, &c.LastTCodeValue,  TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue /*c.limits[0], c.limits[1]*/);
+        if (ImGui::SliderInt(c.Id, &c.NextTCodeValue, /*TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue*/c.limits[0], c.limits[1]));
         ImGui::SameLine(); ImGui::Text(" -> %s", c.LastCommand);
     }
-    ImGui::PopItemFlag();
+    //ImGui::PopItemFlag();
 
   	ImGui::End();
 }

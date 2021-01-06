@@ -124,12 +124,12 @@ public:
 
 	KeybindingSystem keybinds;
 	ScriptTimeline scriptPositions;
-	VideoplayerWindow player;
 	OFS_VideoplayerControls playerControls;
 	ScriptSimulator simulator;
 
 	bool AutoBackup = true;
 
+	std::unique_ptr<VideoplayerWindow> player;
 	std::unique_ptr<SpecialFunctionsWindow> specialFunctions;
 	std::unique_ptr<ScriptingMode> scripting;
 	std::unique_ptr<EventSystem> events;

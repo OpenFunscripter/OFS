@@ -16,7 +16,11 @@ set(OFP_SOURCES
   "UI/OFP_Settings.cpp"
 )
 
+if(WIN32)
 add_executable(${PROJECT_NAME} ${OFP_SOURCES})
+else()
+add_executable(${PROJECT_NAME} ${OFP_SOURCES})
+endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
 	OFS_lib

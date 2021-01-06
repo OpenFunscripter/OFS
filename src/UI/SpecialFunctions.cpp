@@ -630,11 +630,11 @@ void CustomLua::resetVM() noexcept
         builder << tmp;
 
 
-        stbsp_snprintf(tmp, sizeof(tmp), "CurrentTimeMs=%lf\n", app->player.getCurrentPositionMsInterp());
+        stbsp_snprintf(tmp, sizeof(tmp), "CurrentTimeMs=%lf\n", app->player->getCurrentPositionMsInterp());
         builder << tmp;
-        stbsp_snprintf(tmp, sizeof(tmp), "FrameTimeMs=%lf\n", app->player.getFrameTimeMs());
+        stbsp_snprintf(tmp, sizeof(tmp), "FrameTimeMs=%lf\n", app->player->getFrameTimeMs());
         builder << tmp;
-        stbsp_snprintf(tmp, sizeof(tmp), "TotalTimeMs=%lf\n", static_cast<float>(app->player.getDuration() * 1000.f));
+        stbsp_snprintf(tmp, sizeof(tmp), "TotalTimeMs=%lf\n", static_cast<float>(app->player->getDuration() * 1000.f));
         builder << tmp;
 
 
@@ -803,7 +803,7 @@ void CustomLua::runScript(LuaScript* script, bool dry_run) noexcept
                         script->SetSelection(tmpBuffer, true);
                     }
 
-                    app->player.setPositionExact(data.NewPositionMs);
+                    app->player->setPositionExact(data.NewPositionMs);
                     data.running = false;
                 }, &data);
             }

@@ -142,6 +142,7 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 				break;
 			case MpvDuration:
 				MpvData.duration = *(double*)prop->data;
+				notifyVideoLoaded();
 				break;
 			case MpvTotalFrames:
 				MpvData.total_num_frames = *(int64_t*)prop->data;
@@ -329,8 +330,9 @@ VideoplayerWindow::~VideoplayerWindow()
 {
 	mpv_render_context_free(mpv_gl);
 	mpv_detach_destroy(mpv);
-
-	// TODO: free gl resources
+	glDeleteTextures(1, &render_texture);
+	glDeleteFramebuffers(1, &framebuffer_obj);
+	EventSystem::ev().UnsubscribeAll(this);
 }
 
 void VideoplayerWindow::mouse_scroll(SDL_Event& ev) noexcept

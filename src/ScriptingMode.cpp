@@ -117,11 +117,11 @@ void ScriptingMode::setOverlay(ScriptingOverlayModes mode) noexcept
 void ScriptingMode::addEditAction(FunscriptAction action) noexcept
 {
     auto app = OpenFunscripter::ptr;
-    if (!app->player.isPaused()) {
+    if (!app->player->isPaused()) {
         // apply offset
         action.at += app->settings->data().action_insert_delay_ms;
     }
-    auto ptr = OpenFunscripter::script().GetActionAtTime(action.at, app->player.getFrameTimeMs());
+    auto ptr = OpenFunscripter::script().GetActionAtTime(action.at, app->player->getFrameTimeMs());
     if (ptr != nullptr) {
         app->ActiveFunscript()->EditAction(*ptr, FunscriptAction(ptr->at, action.pos));
     }
@@ -375,7 +375,7 @@ void RecordingImpl::DrawModeSettings() noexcept
 
     ImGui::Spacing();
     auto app = OpenFunscripter::ptr;
-    bool playing = !app->player.isPaused();
+    bool playing = !app->player->isPaused();
     if (automaticRecording && playing && recordingActive != playing) {
         autoBackupTmp = app->AutoBackup;
         app->AutoBackup = false;
@@ -409,15 +409,15 @@ void RecordingImpl::update() noexcept
 {
     auto app = OpenFunscripter::ptr;
     if (recordingActive) {
-        uint32_t frameEstimate = app->player.getCurrentFrameEstimate();
-        app->scriptPositions.RecordingBuffer[frameEstimate] = std::move(FunscriptAction(app->player.getCurrentPositionMs(), currentPos));
+        uint32_t frameEstimate = app->player->getCurrentFrameEstimate();
+        app->scriptPositions.RecordingBuffer[frameEstimate] = std::move(FunscriptAction(app->player->getCurrentPositionMs(), currentPos));
         app->simulator.positionOverride = currentPos;
     }
     else if (recordingJustStarted) {
         recordingJustStarted = false;
         recordingActive = true;
         app->scriptPositions.RecordingBuffer.clear();
-        app->scriptPositions.RecordingBuffer.resize(app->player.getTotalNumFrames());
+        app->scriptPositions.RecordingBuffer.resize(app->player->getTotalNumFrames());
     }
     else if (recordingJustStopped) {
         recordingJustStopped = false;

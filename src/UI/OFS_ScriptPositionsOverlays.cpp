@@ -4,7 +4,7 @@
 void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept
 {
     auto app = OpenFunscripter::ptr;
-    auto frameTime = app->player.getFrameTimeMs();
+    auto frameTime = app->player->getFrameTimeMs();
 
     float visibleFrames = ctx.visibleSizeMs / frameTime;
     constexpr float maxVisibleFrames = 400.f;
@@ -23,8 +23,8 @@ void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
         }
 
         // out of sync line
-        if (app->player.isPaused() || app->player.getSpeed() <= 0.1) {
-            float realFrameTime = app->player.getRealCurrentPositionMs() - ctx.offset_ms;
+        if (app->player->isPaused() || app->player->getSpeed() <= 0.1) {
+            float realFrameTime = app->player->getRealCurrentPositionMs() - ctx.offset_ms;
             ctx.draw_list->AddLine(
                 ctx.canvas_pos + ImVec2((realFrameTime / ctx.visibleSizeMs) * ctx.canvas_size.x, 0.f),
                 ctx.canvas_pos + ImVec2((realFrameTime / ctx.visibleSizeMs) * ctx.canvas_size.x, ctx.canvas_size.y),
@@ -36,7 +36,7 @@ void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
 
     // time dividers
     constexpr float maxVisibleTimeDividers = 150.f;
-    const float timeIntervalMs = std::round(app->player.getFps() * 0.1f) * app->player.getFrameTimeMs();
+    const float timeIntervalMs = std::round(app->player->getFps() * 0.1f) * app->player->getFrameTimeMs();
     const float visibleTimeIntervals = ctx.visibleSizeMs / timeIntervalMs;
     if (visibleTimeIntervals <= (maxVisibleTimeDividers * 0.8f)) {
         float offset = -std::fmod(ctx.offset_ms, timeIntervalMs);
@@ -60,12 +60,12 @@ void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
 
 void FrameOverlay::nextFrame() noexcept
 {
-    OpenFunscripter::ptr->player.nextFrame();
+    OpenFunscripter::ptr->player->nextFrame();
 }
 
 void FrameOverlay::previousFrame() noexcept
 {
-    OpenFunscripter::ptr->player.previousFrame();
+    OpenFunscripter::ptr->player->previousFrame();
 }
 
 void TempoOverlay::DrawSettings() noexcept
@@ -159,7 +159,7 @@ void TempoOverlay::nextFrame() noexcept
     auto& tempo = app->ActiveFunscript()->Userdata<OFS_ScriptSettings>().tempoSettings;
 
     float beatTimeMs = ((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX];
-    float currentMs = app->player.getCurrentPositionMsInterp();
+    float currentMs = app->player->getCurrentPositionMsInterp();
     int32_t beatIdx = std::ceil(currentMs / beatTimeMs);
     if (std::abs(tempo.beat_offset_seconds) >= 0.001f) {
         beatIdx -= (tempo.beat_offset_seconds * 1000.f) / beatTimeMs;
@@ -167,7 +167,7 @@ void TempoOverlay::nextFrame() noexcept
     beatIdx += 1;
     int32_t newPositionMs = (beatIdx * beatTimeMs) + (tempo.beat_offset_seconds * 1000.f);
 
-    app->player.setPositionExact(newPositionMs);
+    app->player->setPositionExact(newPositionMs);
 }
 
 void TempoOverlay::previousFrame() noexcept
@@ -176,7 +176,7 @@ void TempoOverlay::previousFrame() noexcept
     auto& tempo = app->ActiveFunscript()->Userdata<OFS_ScriptSettings>().tempoSettings;
 
     float beatTimeMs = ((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX];
-    float currentMs = app->player.getCurrentPositionMsInterp();
+    float currentMs = app->player->getCurrentPositionMsInterp();
     int32_t beatIdx = std::ceil(currentMs / beatTimeMs);
     if (std::abs(tempo.beat_offset_seconds) >= 0.001f) {
         beatIdx -= (tempo.beat_offset_seconds * 1000.f) / beatTimeMs;
@@ -184,5 +184,5 @@ void TempoOverlay::previousFrame() noexcept
     beatIdx -= 1;
     int32_t newPositionMs = (beatIdx * beatTimeMs) + (tempo.beat_offset_seconds * 1000.f);
 
-    app->player.setPositionExact(newPositionMs);
+    app->player->setPositionExact(newPositionMs);
 }

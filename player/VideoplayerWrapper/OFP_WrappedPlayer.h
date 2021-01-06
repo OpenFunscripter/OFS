@@ -10,6 +10,8 @@ class WrappedPlayer
 public:
 	VideoplayerWindow::OFS_VideoPlayerSettings* settings = nullptr;
 
+	virtual ~WrappedPlayer() {}
+
 	virtual bool setup() = 0;
 
 	virtual void togglePlay() noexcept = 0;
@@ -44,6 +46,75 @@ public:
 
 	virtual void DrawVideoPlayer(bool* open, bool* show_video) noexcept = 0;
 };
+
+#ifdef WIN32
+class WhirligigPlayer : public WrappedPlayer
+{
+private:
+	uint64_t ConnectSocket = ~0;
+
+	struct WhirligigPlayerData
+	{
+		bool playing = false;
+		float currentTimeSeconds = 0.f;
+		float totalDurationSeconds = 0.f;
+		std::string videoPath;
+
+		int32_t startTicks = 0;
+		int32_t endTicks = 0;
+	};
+
+	struct WhirligigThreadData
+	{
+		WhirligigPlayer* player = nullptr;
+		bool shouldExit = false;
+		bool isRunning = false;
+		bool connected = false;
+		WhirligigPlayerData vars;
+		class OFP* ofp = nullptr;
+	} threadData;
+public:
+	static constexpr const char* PlayerId = "Player";
+	VideoplayerWindow::OFS_VideoPlayerSettings Settings;
+	WhirligigPlayer(class OFP* instance) { settings = &Settings; threadData.ofp = instance; }
+	virtual ~WhirligigPlayer();
+
+	virtual bool setup();
+
+	virtual void togglePlay() noexcept;
+
+	virtual void setPositionExact(int32_t ms, bool pause = false) noexcept;
+	virtual void setPositionRelative(float pos, bool pause = false) noexcept;
+
+	virtual void seekRelative(int32_t ms) noexcept;
+	virtual void previousFrame() noexcept;
+	virtual void nextFrame() noexcept;
+
+	virtual void setVolume(float volume) noexcept;
+	virtual void setPaused(bool paused) noexcept;
+	virtual void setSpeed(float speed) noexcept;
+	virtual void addSpeed(float val) noexcept;
+
+	virtual void closeVideo() noexcept;
+	virtual void openVideo(const std::string& path) noexcept;
+
+	virtual float getFrameTimeMs() const noexcept;
+	virtual bool isPaused() const noexcept;
+	virtual float getPosition() const noexcept;
+	virtual float getDuration() const noexcept;
+	virtual float getSpeed() const noexcept ;
+
+	virtual float getCurrentPositionMsInterp() const noexcept ;
+	virtual float getCurrentPositionSecondsInterp() const noexcept;
+	virtual const char* getVideoPath() const noexcept;
+
+	virtual void cycleSubtitles() noexcept {}
+	virtual void saveFrameToImage(const std::string& path) noexcept {}
+	virtual void resetTranslationAndZoom() noexcept {}
+
+	virtual void DrawVideoPlayer(bool* open, bool* show_video) noexcept;
+};
+#endif
 
 class DefaultPlayer : public WrappedPlayer
 {

@@ -17,9 +17,7 @@ public:
 	// 2 characters + 0 terminator
 	char Id[3] = "\0";
 	int32_t LastTCodeValue = -1;
-private:
 	int32_t NextTCodeValue = -1;
-public:
 
 	char LastCommand[16] = "???\0";
 

@@ -55,7 +55,7 @@ void ScriptSimulator::MouseDown(SDL_Event& ev)
         if (MouseBetweenSimulator) {
             auto app = OpenFunscripter::ptr;
             app->undoSystem->Snapshot(StateType::ADD_EDIT_ACTION, false, app->ActiveFunscript().get());
-            app->scripting->addEditAction(FunscriptAction(app->player.getCurrentPositionMsInterp(), 50 + (50 * mouseValue)));
+            app->scripting->addEditAction(FunscriptAction(app->player->getCurrentPositionMsInterp(), 50 + (50 * mouseValue)));
         }
     }
 }
@@ -82,7 +82,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
             positionOverride = -1.f;
         }
         else {
-            currentPos = app->ActiveFunscript()->GetPositionAtTime(app->player.getCurrentPositionMsInterp(), app->scriptPositions.overlay->SplineLines);
+            currentPos = app->ActiveFunscript()->GetPositionAtTime(app->player->getCurrentPositionMsInterp(), app->scriptPositions.overlay->SplineLines);
         }
 
         if (EnableVanilla) {
@@ -274,11 +274,11 @@ void ScriptSimulator::ShowSimulator(bool* open)
 
         // INDICATORS
         if (simulator.EnableIndicators) {
-            auto previousAction = app->ActiveFunscript()->GetActionAtTime(app->player.getCurrentPositionMs(), app->player.getFrameTimeMs());
+            auto previousAction = app->ActiveFunscript()->GetActionAtTime(app->player->getCurrentPositionMs(), app->player->getFrameTimeMs());
             if (previousAction == nullptr) {
-                previousAction = app->ActiveFunscript()->GetPreviousActionBehind(app->player.getCurrentPositionMs());
+                previousAction = app->ActiveFunscript()->GetPreviousActionBehind(app->player->getCurrentPositionMs());
             }
-            auto nextAction = app->ActiveFunscript()->GetNextActionAhead(app->player.getCurrentPositionMs());
+            auto nextAction = app->ActiveFunscript()->GetNextActionAhead(app->player->getCurrentPositionMs());
             if (previousAction != nullptr && nextAction == previousAction)
             {
                 nextAction = app->ActiveFunscript()->GetNextActionAhead(previousAction->at);
