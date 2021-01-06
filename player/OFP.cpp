@@ -1006,10 +1006,10 @@ void OFP::MpvPlayPauseChange(SDL_Event& ev) noexcept
         tcode->stop();
     }
     else {
-        auto l0_it = std::find_if(LoadedFunscripts.begin(), LoadedFunscripts.end(), [](auto& script) { return script->Userdata<OFP_ScriptSettings>().ScriptChannel == TChannel::L0; });
-        auto r0_it = std::find_if(LoadedFunscripts.begin(), LoadedFunscripts.end(), [](auto& script) { return script->Userdata<OFP_ScriptSettings>().ScriptChannel == TChannel::R0; });
-        auto r1_it = std::find_if(LoadedFunscripts.begin(), LoadedFunscripts.end(), [](auto& script) { return script->Userdata<OFP_ScriptSettings>().ScriptChannel == TChannel::R1; });
-        auto r2_it = std::find_if(LoadedFunscripts.begin(), LoadedFunscripts.end(), [](auto& script) { return script->Userdata<OFP_ScriptSettings>().ScriptChannel == TChannel::R2; });
+        auto l0_it = std::find_if(LoadedFunscripts.begin(), LoadedFunscripts.end(), [](auto& script) { return script->template Userdata<OFP_ScriptSettings>().ScriptChannel == TChannel::L0; });
+        auto r0_it = std::find_if(LoadedFunscripts.begin(), LoadedFunscripts.end(), [](auto& script) { return script->template Userdata<OFP_ScriptSettings>().ScriptChannel == TChannel::R0; });
+        auto r1_it = std::find_if(LoadedFunscripts.begin(), LoadedFunscripts.end(), [](auto& script) { return script->template Userdata<OFP_ScriptSettings>().ScriptChannel == TChannel::R1; });
+        auto r2_it = std::find_if(LoadedFunscripts.begin(), LoadedFunscripts.end(), [](auto& script) { return script->template Userdata<OFP_ScriptSettings>().ScriptChannel == TChannel::R2; });
 
         std::weak_ptr<Funscript> L0 = l0_it != LoadedFunscripts.end() ? *l0_it : std::weak_ptr<Funscript>();
         std::weak_ptr<Funscript> R0 = r0_it != LoadedFunscripts.end() ? *r0_it : std::weak_ptr<Funscript>();;
