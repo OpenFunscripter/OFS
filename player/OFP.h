@@ -8,10 +8,13 @@
 #include "OFS_TCode.h"
 #include "OFS_Util.h"
 #include "OFS_Reflection.h"
-#include "OFS_VideoplayerControls.h"
 #include "OFS_ControllerInput.h"
-#include "OFS_ScriptTimeline.h"
 #include "OFS_Simulator3D.h"
+#include "OFS_ScriptTimeline.h"
+
+//#include "OFS_VideoplayerControls.h"
+#include "OFP_WrappedVideoplayerControls.h"
+#include "OFP_WrappedPlayer.h"
 
 #include "OFP_Videobrowser.h"
 #include "OFP_Settings.h"
@@ -74,10 +77,11 @@ public:
 
 	OFP_Settings settings;
 	KeybindingSystem keybinds;
-	VideoplayerWindow player;
-	OFS_VideoplayerControls playerControls;
+	OFP_WrappedVideoplayerControls playerControls;
 	ScriptTimeline scriptTimeline;
 	AutoHideTime timer;
+
+	std::unique_ptr<WrappedPlayer> player;
 
 	std::unique_ptr<EventSystem> events;
 	std::unique_ptr<TCodePlayer> tcode;

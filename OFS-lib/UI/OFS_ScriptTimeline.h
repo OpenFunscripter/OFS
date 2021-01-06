@@ -56,15 +56,18 @@ public:
 
 	std::vector<FunscriptAction> RecordingBuffer;
 	
+	const char* videoPath = nullptr;
+	float frameTimeMs = 16.66667;
 	Funscript* activeScript = nullptr;
-	VideoplayerWindow* player = nullptr;
 	UndoSystem* undoSystem = nullptr;
 private:
 
-	void mouse_pressed(SDL_Event& ev);
-	void mouse_released(SDL_Event& ev);
-	void mouse_drag(SDL_Event& ev);
-	void mouse_scroll(SDL_Event& ev);
+	void mouse_pressed(SDL_Event& ev) noexcept;
+	void mouse_released(SDL_Event& ev) noexcept;
+	void mouse_drag(SDL_Event& ev) noexcept;
+	void mouse_scroll(SDL_Event& ev) noexcept;
+
+	void videoLoaded(SDL_Event& ev) noexcept;
 
 	inline ImVec2 getPointForAction(ImVec2 canvas_pos, ImVec2 canvas_size, FunscriptAction action) noexcept {
 		float relative_x = (float)(action.at - offset_ms) / visibleSizeMs;
@@ -88,7 +91,7 @@ private:
 	}
 
 	void updateSelection(bool clear);
-	void FfmpegAudioProcessingFinished(SDL_Event& ev);
+	void FfmpegAudioProcessingFinished(SDL_Event& ev) noexcept;
 
 	bool ShowAudioWaveform = false;
 	float ScaleAudio = 1.f;
@@ -100,12 +103,12 @@ public:
 
 	const float MAX_WINDOW_SIZE = 300.f; // this limit is arbitrary and not enforced
 	const float MIN_WINDOW_SIZE = 1.f; // this limit is also arbitrary and not enforced
-	void setup(EventSystem& events, VideoplayerWindow* player, UndoSystem* undo);
+	void setup(/*VideoplayerWindow* player,*/ UndoSystem* undo);
 
 	inline void ClearAudioWaveform() noexcept { audio_waveform_avg.clear(); }
 	inline void setStartSelection(int32_t ms) noexcept { startSelectionMs = ms; }
 	inline int32_t selectionStart() const noexcept { return startSelectionMs; }
-	void ShowScriptPositions(bool* open, const std::vector<std::shared_ptr<Funscript>>& scripts, Funscript* activeScript) noexcept;
+	void ShowScriptPositions(bool* open, float currentPositionMs, float durationMs, float frameTimeMs, const std::vector<std::shared_ptr<Funscript>>& scripts, Funscript* activeScript) noexcept;
 
 	void DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept;
 };

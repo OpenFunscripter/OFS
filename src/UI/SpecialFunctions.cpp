@@ -803,7 +803,7 @@ void CustomLua::runScript(LuaScript* script, bool dry_run) noexcept
                         script->SetSelection(tmpBuffer, true);
                     }
 
-                    app->player.setPosition(data.NewPositionMs);
+                    app->player.setPositionExact(data.NewPositionMs);
                     data.running = false;
                 }, &data);
             }

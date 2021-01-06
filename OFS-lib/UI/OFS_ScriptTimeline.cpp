@@ -43,25 +43,25 @@ void ScriptTimeline::updateSelection(bool clear)
 	SDL_PushEvent(&ev);
 }
 
-void ScriptTimeline::FfmpegAudioProcessingFinished(SDL_Event& ev)
+void ScriptTimeline::FfmpegAudioProcessingFinished(SDL_Event& ev) noexcept
 {
 	ShowAudioWaveform = true;
 	ffmpegInProgress = false;
 	LOG_INFO("Audio processing complete.");
 }
 
-void ScriptTimeline::setup(EventSystem& events, VideoplayerWindow* player, UndoSystem* undoSystem)
+void ScriptTimeline::setup(UndoSystem* undoSystem)
 {
-	this->player = player;
 	this->undoSystem = undoSystem;
-	events.Subscribe(SDL_MOUSEBUTTONDOWN, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouse_pressed));
-	events.Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouse_scroll));
-	events.Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouse_drag));
-	events.Subscribe(SDL_MOUSEBUTTONUP, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouse_released));
-	events.Subscribe(ScriptTimelineEvents::FfmpegAudioProcessingFinished, EVENT_SYSTEM_BIND(this, &ScriptTimeline::FfmpegAudioProcessingFinished));
+	EventSystem::ev().Subscribe(SDL_MOUSEBUTTONDOWN, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouse_pressed));
+	EventSystem::ev().Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouse_scroll));
+	EventSystem::ev().Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouse_drag));
+	EventSystem::ev().Subscribe(SDL_MOUSEBUTTONUP, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouse_released));
+	EventSystem::ev().Subscribe(ScriptTimelineEvents::FfmpegAudioProcessingFinished, EVENT_SYSTEM_BIND(this, &ScriptTimeline::FfmpegAudioProcessingFinished));
+	EventSystem::ev().Subscribe(VideoEvents::MpvVideoLoaded, EVENT_SYSTEM_BIND(this, &ScriptTimeline::videoLoaded));
 }
 
-void ScriptTimeline::mouse_pressed(SDL_Event& ev)
+void ScriptTimeline::mouse_pressed(SDL_Event& ev) noexcept
 {
 	auto& button = ev.button;
 	auto mousePos = ImGui::GetMousePos();
@@ -115,8 +115,8 @@ void ScriptTimeline::mouse_pressed(SDL_Event& ev)
 			}
 
 			// shift click an action into the window
-			auto action = getActionForPoint(active_canvas_pos, active_canvas_size, mousePos, player->getFrameTimeMs());
-			auto edit = activeScript->GetActionAtTime(action.at, player->getFrameTimeMs());
+			auto action = getActionForPoint(active_canvas_pos, active_canvas_size, mousePos, frameTimeMs);
+			auto edit = activeScript->GetActionAtTime(action.at, frameTimeMs);
 			undoSystem->Snapshot(StateType::ADD_ACTION, false, activeScript);
 			if (edit != nullptr) { activeScript->RemoveAction(*edit); }
 			activeScript->AddAction(action);
@@ -146,7 +146,7 @@ void ScriptTimeline::mouse_pressed(SDL_Event& ev)
 	}
 }
 
-void ScriptTimeline::mouse_released(SDL_Event& ev)
+void ScriptTimeline::mouse_released(SDL_Event& ev) noexcept
 {
 	auto& button = ev.button;
 	if (IsMoving && button.button == SDL_BUTTON_LEFT) {
@@ -160,7 +160,7 @@ void ScriptTimeline::mouse_released(SDL_Event& ev)
 	}
 }
 
-void ScriptTimeline::mouse_drag(SDL_Event& ev)
+void ScriptTimeline::mouse_drag(SDL_Event& ev) noexcept
 {
 	auto& motion = ev.motion;
 	if (IsSelecting) {
@@ -169,15 +169,14 @@ void ScriptTimeline::mouse_drag(SDL_Event& ev)
 	else if (IsMoving) {
 		if (!activeScript->HasSelection()) { IsMoving = false; return; }
 		auto mousePos = ImGui::GetMousePos();
-		auto frameTime = player->getFrameTimeMs();
 		auto& toBeMoved = activeScript->Selection()[0];
-		auto newAction = getActionForPoint(active_canvas_pos, active_canvas_size, mousePos, frameTime);
+		auto newAction = getActionForPoint(active_canvas_pos, active_canvas_size, mousePos, frameTimeMs);
 		if (newAction.at != toBeMoved.at || newAction.pos != toBeMoved.pos) {
 			const FunscriptAction* nearbyAction = nullptr;
 			if ((newAction.at - toBeMoved.at) > 0) {
 				nearbyAction = activeScript->GetNextActionAhead(toBeMoved.at);
 				if (nearbyAction != nullptr) {
-					if (std::abs(nearbyAction->at - newAction.at) > frameTime) {
+					if (std::abs(nearbyAction->at - newAction.at) > frameTimeMs) {
 						nearbyAction = nullptr;
 					}
 				}
@@ -185,7 +184,7 @@ void ScriptTimeline::mouse_drag(SDL_Event& ev)
 			else if((newAction.at - toBeMoved.at) < 0) {
 				nearbyAction = activeScript->GetPreviousActionBehind(toBeMoved.at);
 				if (nearbyAction != nullptr) {
-					if (std::abs(nearbyAction->at - newAction.at) > frameTime) {
+					if (std::abs(nearbyAction->at - newAction.at) > frameTimeMs) {
 						nearbyAction = nullptr;
 					}
  				}
@@ -205,7 +204,7 @@ void ScriptTimeline::mouse_drag(SDL_Event& ev)
 	}
 }
 
-void ScriptTimeline::mouse_scroll(SDL_Event& ev)
+void ScriptTimeline::mouse_scroll(SDL_Event& ev) noexcept
 {
 	auto& wheel = ev.wheel;
 	constexpr float scrollPercent = 0.10f;
@@ -215,21 +214,26 @@ void ScriptTimeline::mouse_scroll(SDL_Event& ev)
 	}
 }
 
-void ScriptTimeline::ShowScriptPositions(bool* open, const std::vector<std::shared_ptr<Funscript>>& scripts, Funscript* activeScript) noexcept
+void ScriptTimeline::videoLoaded(SDL_Event& ev) noexcept
+{
+	videoPath = (const char*)ev.user.data1;
+}
+
+void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, float durationMs, float frameTimeMs, const std::vector<std::shared_ptr<Funscript>>& scripts, Funscript* activeScript) noexcept
 {
 	if (open != nullptr && !*open)return;
 
 	this->activeScript = activeScript;
+	this->frameTimeMs = frameTimeMs;
 
 	auto& style = ImGui::GetStyle();
 	visibleSizeMs = WindowSizeSeconds * 1000.0;
-	float currentPositionMs = player->getCurrentPositionMsInterp();
 	offset_ms = currentPositionMs - (visibleSizeMs / 2.0);
 	
 	OverlayDrawingCtx drawingCtx;
 	drawingCtx.offset_ms = offset_ms;
 	drawingCtx.visibleSizeMs = visibleSizeMs;
-	drawingCtx.totalDurationMs = player->getDuration() * 1000.f;
+	drawingCtx.totalDurationMs = durationMs;
 	if (drawingCtx.totalDurationMs == 0.f) return;
 	
 	ImGui::Begin(PositionsId, open, ImGuiWindowFlags_None);
@@ -324,7 +328,6 @@ void ScriptTimeline::ShowScriptPositions(bool* open, const std::vector<std::shar
 		// TODO: reimplement this as an overlay ???
 
 		// render recordings
-		const float frameTime = player->getFrameTimeMs();
 		const FunscriptAction* prevAction = nullptr;
 		auto& recording = RecordingBuffer;
 
@@ -346,8 +349,8 @@ void ScriptTimeline::ShowScriptPositions(bool* open, const std::vector<std::shar
 				}
 			}
 		};
-		int32_t startIndex = Util::Clamp<int32_t>((offset_ms / frameTime), 0, recording.size());
-		int32_t endIndex = Util::Clamp<int32_t>(((float)offset_ms + visibleSizeMs) / frameTime, startIndex, recording.size());
+		int32_t startIndex = Util::Clamp<int32_t>((offset_ms / frameTimeMs), 0, recording.size());
+		int32_t endIndex = Util::Clamp<int32_t>(((float)offset_ms + visibleSizeMs) / frameTimeMs, startIndex, recording.size());
 
 		pathRawSection(draw_list, recording, startIndex, endIndex);
 		pathStroke(draw_list, IM_COL32(0, 255, 0, 180));
@@ -411,7 +414,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, const std::vector<std::shar
 			if (ImGui::BeginMenu("Audio waveform")) {
 				ImGui::SliderFloat("Waveform scale", &ScaleAudio, 0.25f, 10.f);
 				if (ImGui::MenuItem("Enable waveform", NULL, &ShowAudioWaveform, !ffmpegInProgress)) {}
-				if (ImGui::MenuItem(ffmpegInProgress ? "Processing audio..." : "Update waveform", NULL, false, !ffmpegInProgress)) {
+				if (ImGui::MenuItem(ffmpegInProgress ? "Processing audio..." : "Update waveform", NULL, false, !ffmpegInProgress && videoPath != nullptr)) {
 					if (!ffmpegInProgress) {
 						ShowAudioWaveform = false; // gets switched true after processing
 						ffmpegInProgress = true;
@@ -431,7 +434,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, const std::vector<std::shar
 								return 0;
 							}
 							output_path = (std::filesystem::path(output_path) / "audio.mp3").string();
-							auto video_path = ctx.player->getVideoPath();
+							auto video_path = ctx.videoPath;
 
 							bool succ = OutputAudioFile(ffmpeg_path.string().c_str(), video_path, output_path.c_str());
 							if (!succ) {

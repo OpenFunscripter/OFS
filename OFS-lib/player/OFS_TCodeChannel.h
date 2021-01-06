@@ -23,7 +23,6 @@ public:
 
 	char LastCommand[16] = "???\0";
 
-	static constexpr int32_t NeutralChannelValue = 500;
 	static constexpr int32_t MaxChannelValue = 900;
 	static constexpr int32_t MinChannelValue = 100;
 	std::array<int32_t, 2> limits = { MinChannelValue, MaxChannelValue };
@@ -59,8 +58,8 @@ public:
 	}
 
 	inline void reset() noexcept {
-		LastTCodeValue = GetPos(NeutralChannelValue);
-		NextTCodeValue = GetPos(NeutralChannelValue);
+		LastTCodeValue = GetPos(0.5f);
+		NextTCodeValue = GetPos(0.5f);
 	}
 
 	template <class Archive>

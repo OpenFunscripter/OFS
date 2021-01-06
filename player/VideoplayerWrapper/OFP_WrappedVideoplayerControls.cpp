@@ -1,16 +1,17 @@
-#include "OFS_VideoplayerControls.h"
+#include "OFP_WrappedVideoplayerControls.h"
+
 #include "OFS_Util.h"
 
 static char tmp_buf[2][32];
 
-OFS_VideoplayerControls::OFS_VideoplayerControls() noexcept
+OFP_WrappedVideoplayerControls::OFP_WrappedVideoplayerControls() noexcept
 {
     TimelineGradient.addMark(0.f, IM_COL32_BLACK);
     TimelineGradient.addMark(1.f, IM_COL32_BLACK);
     TimelineGradient.refreshCache();
 }
 
-bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* position, TimelineCustomDrawFunc&& customDraw) noexcept
+bool OFP_WrappedVideoplayerControls::DrawTimelineWidget(const char* label, float* position, WrappedPlayer* player, TimelineCustomDrawFunc&& customDraw) noexcept
 {
     bool change = false;
 
@@ -99,7 +100,7 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
     return change;
 }
 
-void OFS_VideoplayerControls::DrawTimeline(bool* open, TimelineCustomDrawFunc&& customDraw) noexcept
+void OFP_WrappedVideoplayerControls::DrawTimeline(bool* open, WrappedPlayer* player, TimelineCustomDrawFunc&& customDraw) noexcept
 {
     if (open != nullptr && !*open) return;
     FUN_ASSERT(player != nullptr, "nullptr");
@@ -159,15 +160,15 @@ void OFS_VideoplayerControls::DrawTimeline(bool* open, TimelineCustomDrawFunc&& 
     ImGui::NextColumn();
 
     ImGui::SetNextItemWidth(-1.f);
-    if (ImGui::SliderFloat("##Speed", &player->settings.playback_speed, VideoplayerWindow::MinPlaybackSpeed, VideoplayerWindow::MaxPlaybackSpeed)) {
-        player->setSpeed(player->settings.playback_speed);
+    if (ImGui::SliderFloat("##Speed", &player->settings->playback_speed, VideoplayerWindow::MinPlaybackSpeed, VideoplayerWindow::MaxPlaybackSpeed)) {
+        player->setSpeed(player->settings->playback_speed);
     }
     Util::Tooltip("Speed");
 
     ImGui::Columns(1, 0, false);
 
     float position = player->getPosition();
-    if (DrawTimelineWidget("Timeline", &position, std::move(customDraw))) {
+    if (DrawTimelineWidget("Timeline", &position, player, std::move(customDraw))) {
         if (!player->isPaused()) {
             hasSeeked = true;
         }
@@ -181,7 +182,7 @@ void OFS_VideoplayerControls::DrawTimeline(bool* open, TimelineCustomDrawFunc&& 
     ImGui::End();
 }
 
-void OFS_VideoplayerControls::DrawControls(bool* open) noexcept
+void OFP_WrappedVideoplayerControls::DrawControls(bool* open, WrappedPlayer* player) noexcept
 {
     if (open != nullptr && !*open) return;
     FUN_ASSERT(player != nullptr, "nullptr");
@@ -225,16 +226,16 @@ void OFS_VideoplayerControls::DrawControls(bool* open) noexcept
             player->setVolume(0.0f);
         }
         else {
-            player->setVolume(player->settings.volume);
+            player->setVolume(player->settings->volume);
         }
     }
     ImGui::SetColumnWidth(0, ImGui::GetItemRectSize().x + 10);
     ImGui::NextColumn();
     ImGui::SetNextItemWidth(-1);
-    if (ImGui::SliderFloat("##Volume", &player->settings.volume, 0.0f, 1.0f)) {
-        player->settings.volume = Util::Clamp(player->settings.volume, 0.0f, 1.f);
-        player->setVolume(player->settings.volume);
-        if (player->settings.volume > 0.0f) {
+    if (ImGui::SliderFloat("##Volume", &player->settings->volume, 0.0f, 1.0f)) {
+        player->settings->volume = Util::Clamp(player->settings->volume, 0.0f, 1.f);
+        player->setVolume(player->settings->volume);
+        if (player->settings->volume > 0.0f) {
             mute = false;
         }
     }

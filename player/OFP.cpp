@@ -94,8 +94,8 @@ void OFP::set_default_layout(bool force) noexcept
         ImGui::DockBuilderGetNode(dock_player_control_id)->LocalFlags |= ImGuiDockNodeFlags_AutoHideTabBar | ImGuiDockNodeFlags_NoDocking;
 
         ImGui::DockBuilderDockWindow(VideoplayerWindow::PlayerId, dock_player_center_id);
-        ImGui::DockBuilderDockWindow(OFS_VideoplayerControls::PlayerTimeId, dock_time_bottom_id);
-        ImGui::DockBuilderDockWindow(OFS_VideoplayerControls::PlayerControlId, dock_player_control_id);
+        ImGui::DockBuilderDockWindow(OFP_WrappedVideoplayerControls::PlayerTimeId, dock_time_bottom_id);
+        ImGui::DockBuilderDockWindow(OFP_WrappedVideoplayerControls::PlayerControlId, dock_player_control_id);
         ImGui::DockBuilderDockWindow(ScriptTimeline::PositionsId, dock_positions_id);
         ImGui::DockBuilderDockWindow(Videobrowser::VideobrowserId, dock_mode_right_id);
 
@@ -137,7 +137,7 @@ void OFP::process_events() noexcept
 
 void OFP::update() noexcept
 {
-    tcode->sync(player.getCurrentPositionMsInterp(), player.getSpeed());
+    tcode->sync(player->getCurrentPositionMsInterp(), player->getSpeed());
     ControllerInput::UpdateControllers(100);
     scriptTimeline.overlay->update();
 
@@ -235,9 +235,9 @@ void OFP::ShowMainMenuBar() noexcept
 
             ImGui::Separator();
             if (ImGui::MenuItem("Draw video", NULL, &settings.show_video)) { }
-            if (ImGui::MenuItem("Reset video position", NULL)) { player.resetTranslationAndZoom(); }
+            if (ImGui::MenuItem("Reset video position", NULL)) { player->resetTranslationAndZoom(); }
             ImGui::Separator();
-            if (ImGui::MenuItem("VR mode", NULL, player.settings.activeMode == VideoMode::VR_MODE)) {
+            if (ImGui::MenuItem("VR mode", NULL, player->settings->activeMode == VideoMode::VR_MODE)) {
                 ToggleVrMode();
             }
             ImGui::Separator();
@@ -347,11 +347,11 @@ void OFP::SetActiveScene(OFP_Scene scene) noexcept
 
 void OFP::ToggleVrMode() noexcept
 {
-    if (player.settings.activeMode == VideoMode::VR_MODE) {
-        player.settings.activeMode = VideoMode::FULL;
+    if (player->settings->activeMode == VideoMode::VR_MODE) {
+        player->settings->activeMode = VideoMode::FULL;
     }
     else {
-        player.settings.activeMode = VideoMode::VR_MODE;
+        player->settings->activeMode = VideoMode::VR_MODE;
     }
 }
 
@@ -493,7 +493,7 @@ void OFP::register_bindings() noexcept
             "toggle_play",
             "Play / Pause",
             true,
-            [&](void*) { player.togglePlay(); }
+            [&](void*) { player->togglePlay(); }
         );
         toggle_play.key = Keybinding(
             SDLK_SPACE,
@@ -508,7 +508,7 @@ void OFP::register_bindings() noexcept
             "decrement_speed",
             "Playback speed -10%",
             true,
-            [&](void*) { player.addSpeed(-0.10); }
+            [&](void*) { player->addSpeed(-0.10); }
         );
         decrement_speed.key = Keybinding(
             SDLK_KP_MINUS,
@@ -518,7 +518,7 @@ void OFP::register_bindings() noexcept
             "increment_speed",
             "Playback speed +10%",
             true,
-            [&](void*) { player.addSpeed(0.10); }
+            [&](void*) { player->addSpeed(0.10); }
         );
         increment_speed.key = Keybinding(
             SDLK_KP_PLUS,
@@ -547,8 +547,8 @@ void OFP::register_bindings() noexcept
             "Previous action",
             false,
             [&](void*) {
-                auto action = RootFunscript()->GetPreviousActionBehind(player.getCurrentPositionMsInterp() - 1.f);
-                if (action != nullptr) player.setPosition(action->at);
+                auto action = RootFunscript()->GetPreviousActionBehind(player->getCurrentPositionMsInterp() - 1.f);
+                if (action != nullptr) player->setPositionExact(action->at);
             }
         );
         prev_action.key = Keybinding(
@@ -565,8 +565,8 @@ void OFP::register_bindings() noexcept
             "Next action",
             false,
             [&](void*) {
-                auto action = RootFunscript()->GetNextActionAhead(player.getCurrentPositionMsInterp() + 1.f);
-                if (action != nullptr) player.setPosition(action->at);
+                auto action = RootFunscript()->GetNextActionAhead(player->getCurrentPositionMsInterp() + 1.f);
+                if (action != nullptr) player->setPositionExact(action->at);
             }
         );
         next_action.key = Keybinding(
@@ -608,7 +608,7 @@ void OFP::register_bindings() noexcept
             true,
             [&](void*) {
                 auto screenshot_dir = Util::Prefpath("screenshot");
-                player.saveFrameToImage(screenshot_dir);
+                player->saveFrameToImage(screenshot_dir);
             }
         );
         save_frame_as_image.key = Keybinding(
@@ -621,7 +621,7 @@ void OFP::register_bindings() noexcept
             "cycle_subtitles",
             "Cycle subtitles",
             true,
-            [&](void*) { player.cycleSubtitles(); }
+            [&](void*) { player->cycleSubtitles(); }
         );
         cycle_subtitles.key = Keybinding(
             SDLK_j,
@@ -663,7 +663,7 @@ void OFP::register_bindings() noexcept
             "seek_forward_second",
             "Forward 3 second",
             false,
-            [&](void*) { player.seekRelative(3000); }
+            [&](void*) { player->seekRelative(3000); }
         );
         seek_forward_second.controller = ControllerBinding(
             SDL_CONTROLLER_BUTTON_RIGHTSHOULDER,
@@ -674,7 +674,7 @@ void OFP::register_bindings() noexcept
             "seek_backward_second",
             "Backward 3 second",
             false,
-            [&](void*) { player.seekRelative(-3000); }
+            [&](void*) { player->seekRelative(-3000); }
         );
         seek_backward_second.controller = ControllerBinding(
             SDL_CONTROLLER_BUTTON_LEFTSHOULDER,
@@ -733,7 +733,9 @@ bool OFP::setup()
     SDL_GL_MakeCurrent(window, gl_context);
     LOG_DEBUG("created gl context");
 
-    settings.videoPlayer = &player.settings;
+    player = std::make_unique<DefaultPlayer>();
+
+    settings.videoPlayer = player->settings;
     settings.load(Util::PrefpathOFP("settings.json"));
     SDL_GL_SetSwapInterval(settings.vsync);
 
@@ -761,7 +763,7 @@ bool OFP::setup()
     keybinds.load(Util::PrefpathOFP("keybinds.json"));
 
 
-	result &= player.setup(*events, false);
+	result &= player->setup();
 
     events->Subscribe(SDL_DROPFILE, EVENT_SYSTEM_BIND(this, &OFP::DragNDrop));
     events->Subscribe(VideoEvents::MpvVideoLoaded, EVENT_SYSTEM_BIND(this, &OFP::MpvVideoLoaded));
@@ -775,9 +777,8 @@ bool OFP::setup()
     videobrowser = std::make_unique<Videobrowser>(&settings.videoBrowser);
 
     clearLoadedScripts();
-    playerControls.player = &player;
 
-    scriptTimeline.setup(*events, &player, NULL);
+    scriptTimeline.setup(NULL);
     scriptTimeline.overlay = std::make_unique<EmptyOverlay>(&scriptTimeline);
 
     if (!settings.last_file.empty()) {
@@ -845,18 +846,18 @@ void OFP::PlayerScene() noexcept
 
     bool HideElement = !timer.hidden();
 
-    sim3d->ShowWindow(&settings.show_sim3d, player.getCurrentPositionMsInterp(), BaseOverlay::SplineLines, LoadedFunscripts);
+    sim3d->ShowWindow(&settings.show_sim3d, player->getCurrentPositionMsInterp(), BaseOverlay::SplineLines, LoadedFunscripts);
 
-    playerControls.DrawControls(!HideElement ? &HideElement : &settings.show_controls);
-    playerControls.DrawTimeline(!HideElement ? &HideElement : &settings.show_time);
-    scriptTimeline.ShowScriptPositions(!HideElement ? &HideElement : &settings.show_timeline, LoadedFunscripts, RootFunscript().get());
+    playerControls.DrawControls(!HideElement ? &HideElement : &settings.show_controls, player.get());
+    playerControls.DrawTimeline(!HideElement ? &HideElement : &settings.show_time, player.get());
+    scriptTimeline.ShowScriptPositions(!HideElement ? &HideElement : &settings.show_timeline, player->getCurrentPositionMsInterp(), player->getDuration() * 1000.f, player->getFrameTimeMs(), LoadedFunscripts, RootFunscript().get());
 
     if (keybinds.ShowBindingWindow()) { keybinds.save(); }
 
     tcode->DrawWindow(&settings.show_tcode);
 
     videobrowser->ShowBrowser(Videobrowser::VideobrowserId, &settings.show_browser);
-    player.DrawVideoPlayer(NULL, &settings.show_video);    
+    player->DrawVideoPlayer(NULL, &settings.show_video);    
 }
 
 void OFP::FilebrowserScene() noexcept 
@@ -864,7 +865,7 @@ void OFP::FilebrowserScene() noexcept
     CreateDockspace(false);
     videobrowser->ShowBrowser(Videobrowser::VideobrowserSceneId, NULL);
     bool NotOpen = false;
-    player.DrawVideoPlayer(&NotOpen, &settings.show_video);
+    player->DrawVideoPlayer(&NotOpen, &settings.show_video);
     timer.reset();
 }
 
@@ -933,13 +934,13 @@ bool OFP::openFile(const std::string& file) noexcept
     }
 
     if (video_path.empty()) {
-        if (!Util::FileNamesMatch(player.getVideoPath(), funscript_path)) {
+        if (!Util::FileNamesMatch(player->getVideoPath(), funscript_path)) {
             LOG_ERROR("No video found.\nLoading scripts without a video is not supported.");
-            player.closeVideo();
+            player->closeVideo();
         }
     }
     else {
-        player.openVideo(video_path);
+        player->openVideo(video_path);
     }
 
     clearLoadedScripts();
@@ -995,13 +996,13 @@ void OFP::DragNDrop(SDL_Event& ev) noexcept
 
 void OFP::MpvVideoLoaded(SDL_Event& ev) noexcept
 {
-    OFS::UpdateHeatmapGradient(player.getDuration() * 1000.f, playerControls.TimelineGradient, RootFunscript()->Actions());
-    settings.last_file = player.getVideoPath();
+    OFS::UpdateHeatmapGradient(player->getDuration() * 1000.f, playerControls.TimelineGradient, RootFunscript()->Actions());
+    settings.last_file = player->getVideoPath();
 }
 
 void OFP::MpvPlayPauseChange(SDL_Event& ev) noexcept
 {
-    if (player.isPaused()) {
+    if (player->isPaused()) {
         tcode->stop();
     }
     else {
@@ -1014,7 +1015,7 @@ void OFP::MpvPlayPauseChange(SDL_Event& ev) noexcept
         std::weak_ptr<Funscript> R0 = r0_it != LoadedFunscripts.end() ? *r0_it : std::weak_ptr<Funscript>();;
         std::weak_ptr<Funscript> R1 = r1_it != LoadedFunscripts.end() ? *r1_it : std::weak_ptr<Funscript>();;
         std::weak_ptr<Funscript> R2 = r2_it != LoadedFunscripts.end() ? *r2_it : std::weak_ptr<Funscript>();;
-        tcode->play(player.getCurrentPositionMsInterp(), std::move(L0), std::move(R0), std::move(R1), std::move(R2));
+        tcode->play(player->getCurrentPositionMsInterp(), std::move(L0), std::move(R0), std::move(R1), std::move(R2));
     }
 }
 

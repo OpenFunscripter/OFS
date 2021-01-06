@@ -167,7 +167,7 @@ void TempoOverlay::nextFrame() noexcept
     beatIdx += 1;
     int32_t newPositionMs = (beatIdx * beatTimeMs) + (tempo.beat_offset_seconds * 1000.f);
 
-    app->player.setPosition(newPositionMs);
+    app->player.setPositionExact(newPositionMs);
 }
 
 void TempoOverlay::previousFrame() noexcept
@@ -184,5 +184,5 @@ void TempoOverlay::previousFrame() noexcept
     beatIdx -= 1;
     int32_t newPositionMs = (beatIdx * beatTimeMs) + (tempo.beat_offset_seconds * 1000.f);
 
-    app->player.setPosition(newPositionMs);
+    app->player.setPositionExact(newPositionMs);
 }

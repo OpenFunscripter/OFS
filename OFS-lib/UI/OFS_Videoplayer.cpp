@@ -86,7 +86,6 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 		case MPV_EVENT_FILE_LOADED:
 		{
 			MpvData.video_loaded = true; 	
-			notifyVideoLoaded();
 			continue;
 		}
 		case MPV_EVENT_PROPERTY_CHANGE:
@@ -125,7 +124,6 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 				if (MpvData.video_height > 0) {
 					updateRenderTexture();
 					MpvData.video_loaded = true;
-					notifyVideoLoaded();
 				}
 				break;
 			}
@@ -135,7 +133,6 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 				if (MpvData.video_width > 0) {
 					updateRenderTexture();
 					MpvData.video_loaded = true;
-					notifyVideoLoaded();
 				}
 				break;
 			}
@@ -168,6 +165,7 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 				// I'm not sure if I own this memory :/
 				// But I can't free it so I will assume I don't
 				MpvData.file_path = *((const char**)(prop->data));
+				notifyVideoLoaded();
 				break;
 			}
 			continue;
@@ -249,11 +247,11 @@ void VideoplayerWindow::updateRenderTexture() noexcept
 	}
 }
 
-bool VideoplayerWindow::setup(EventSystem& events, bool force_hw_decoding)
+bool VideoplayerWindow::setup(bool force_hw_decoding)
 {
-	events.Subscribe(VideoEvents::WakeupOnMpvEvents, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvEvents));
-	events.Subscribe(VideoEvents::WakeupOnMpvRenderUpdate, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvRenderUpdate));
-	events.Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::mouse_scroll));
+	EventSystem::ev().Subscribe(VideoEvents::WakeupOnMpvEvents, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvEvents));
+	EventSystem::ev().Subscribe(VideoEvents::WakeupOnMpvRenderUpdate, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvRenderUpdate));
+	EventSystem::ev().Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::mouse_scroll));
 	
 	updateRenderTexture();
 
@@ -395,6 +393,7 @@ void VideoplayerWindow::notifyVideoLoaded() noexcept
 {
 	SDL_Event ev;
 	ev.type = VideoEvents::MpvVideoLoaded;
+	ev.user.data1 = (void*)MpvData.file_path;
 	SDL_PushEvent(&ev);
 }
 
@@ -561,7 +560,7 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open, bool* draw_video) noexcept
 
 void VideoplayerWindow::setSpeed(float speed) noexcept
 {
-	speed = Util::Clamp<float>(speed, minPlaybackSpeed, maxPlaybackSpeed);
+	speed = Util::Clamp<float>(speed, MinPlaybackSpeed, MaxPlaybackSpeed);
 	if (getSpeed() != speed) {
 		settings.playback_speed = speed;
 		stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.3f", speed);
@@ -573,7 +572,7 @@ void VideoplayerWindow::setSpeed(float speed) noexcept
 void VideoplayerWindow::addSpeed(float speed) noexcept
 {
 	settings.playback_speed += speed;
-	settings.playback_speed = Util::Clamp<float>(settings.playback_speed, minPlaybackSpeed, maxPlaybackSpeed);
+	settings.playback_speed = Util::Clamp<float>(settings.playback_speed, MinPlaybackSpeed, MaxPlaybackSpeed);
 	setSpeed(settings.playback_speed);
 	//stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.3f", speed);
 	//const char* cmd[]{ "add", "speed", tmp_buf, NULL };
@@ -628,7 +627,7 @@ void VideoplayerWindow::setVolume(float volume) noexcept
 	mpv_command_async(mpv, 0, cmd);
 }
 
-void VideoplayerWindow::setPosition(float pos, bool pausesVideo) noexcept
+void VideoplayerWindow::setPositionRelative(float pos, bool pausesVideo) noexcept
 {
 	MpvData.percent_pos = pos;
 	stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f%", (float)(pos * 100.0f));
@@ -643,7 +642,7 @@ void VideoplayerWindow::seekRelative(int32_t ms) noexcept
 {
 	int32_t seek_to = getCurrentPositionMs() + ms;
 	seek_to = std::max(seek_to, 0);
-	setPosition(seek_to);
+	setPositionExact(seek_to);
 }
 
 void VideoplayerWindow::setPaused(bool paused) noexcept

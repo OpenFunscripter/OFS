@@ -152,12 +152,12 @@ public:
 		}
 	};
 
-	const float minPlaybackSpeed = 0.05f;
-	const float maxPlaybackSpeed = 5.0f;
+	static constexpr float MinPlaybackSpeed = 0.05f;
+	static constexpr float MaxPlaybackSpeed = 5.0f;
 
 	OFS_VideoPlayerSettings settings;
 
-	bool setup(class EventSystem& events, bool force_hw_decoding);
+	bool setup(bool force_hw_decoding);
 	void DrawVideoPlayer(bool* open, bool* draw_video) noexcept;
 
 	inline void resetTranslationAndZoom() noexcept {
@@ -191,12 +191,14 @@ public:
 
 
 	void setVolume(float volume) noexcept;
-	inline void setPosition(int32_t time_ms, bool pausesVideo = false) noexcept {
+	
+	inline void setPositionExact(int32_t time_ms, bool pausesVideo = false) noexcept {
 		time_ms = Util::Clamp<int32_t>(time_ms, 0, getDuration() * 1000.f);
 		float rel_pos = ((float)time_ms) / (getDuration() * 1000.f);
-		setPosition(rel_pos, pausesVideo); 
+		setPositionRelative(rel_pos, pausesVideo); 
 	}
-	void setPosition(float rel_pos, bool pausesVideo) noexcept;
+	void setPositionRelative(float rel_pos, bool pausesVideo) noexcept;
+	
 	void seekRelative(int32_t ms) noexcept;
 	
 	void setPaused(bool paused) noexcept;

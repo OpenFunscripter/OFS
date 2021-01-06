@@ -10,6 +10,9 @@ set(OFP_SOURCES
 
   "Videolibrary/OFP_Sqlite.cpp"
 
+  "VideoplayerWrapper/OFP_WrappedPlayer.cpp"
+  "VideoplayerWrapper/OFP_WrappedVideoplayerControls.cpp"
+
   "UI/OFP_Settings.cpp"
 )
 
@@ -27,6 +30,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	"${PROJECT_SOURCE_DIR}/UI"
 	"${PROJECT_SOURCE_DIR}/Videobrowser"
 	"${PROJECT_SOURCE_DIR}/Videolibrary"
+	"${PROJECT_SOURCE_DIR}/VideoplayerWrapper"
 	#"${CMAKE_SOURCE_DIR}/lib/minimp3/"
 	"${CMAKE_SOURCE_DIR}/lib/sqlite-amalgamation/"
 )
