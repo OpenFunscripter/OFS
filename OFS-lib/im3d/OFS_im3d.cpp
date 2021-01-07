@@ -506,7 +506,11 @@ void OFS::Im3d_NewFrame() noexcept
 
 	// World space cursor ray from mouse position; for VR this might be the position/orientation of the HMD or a tracked controller.
 	Vec2 cursorPos = g_Example->getWindowRelativeCursor();
-	cursorPos = (cursorPos / ad.m_viewportSize) * 2.0f - 1.0f;
+	{
+		cursorPos = (cursorPos / ad.m_viewportSize) * 2.0f;
+		cursorPos.x -= 1.f;
+		cursorPos.y -= 1.f;
+	}
 	cursorPos.y = -cursorPos.y; // window origin is top-left, ndc is bottom-left
 	Vec3 rayOrigin, rayDirection;
 	if (g_Example->m_camOrtho)
