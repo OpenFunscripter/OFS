@@ -199,13 +199,13 @@ public:
 		struct _stati64 s;
 		exists = _wstati64(wfile.c_str(), &s) == 0;
 #else
-		auto handle = SDL_RWFromFile(file, "r");
+		auto handle = SDL_RWFromFile(file.c_str(), "r");
 		if (handle != nullptr) {
 			SDL_RWclose(handle);
 			exists = true;
 		}
 		else {
-			LOGF_WARN("\"%s\" doesn't exist", file);
+			LOGF_WARN("\"%s\" doesn't exist", file.c_str());
 		}
 #endif
 		return exists;
