@@ -1023,6 +1023,8 @@ void OFP::MpvVideoLoaded(SDL_Event& ev) noexcept
 {
     OFS::UpdateHeatmapGradient(player->getDuration() * 1000.f, playerControls.TimelineGradient, RootFunscript()->Actions());
     settings.last_file = player->getVideoPath();
+    
+    if(!videobrowser->ClickedFilePath.empty()) player->setPaused(false);
 }
 
 void OFP::MpvPlayPauseChange(SDL_Event& ev) noexcept

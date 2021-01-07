@@ -67,12 +67,19 @@ void Videobrowser::updateLibraryCache() noexcept
 		auto data = static_cast<UpdateLibraryThreadData*>(ctx);
 		auto& browser = *data->browser;
 
-		// this needs to run on the gl thread
-		// SDL_AtomicLock(&browser.ItemsLock);
-		// browser.Items.clear();
-		// LOG_DEBUG("ITEMS CLEAR");
-		// SDL_AtomicUnlock(&browser.ItemsLock);
-
+		{
+			auto handle = EventSystem::WaitableSingleShot(
+				[](void* ctx)
+				{
+					auto browser = (Videobrowser*)ctx;
+					// this needs to run on the gl thread because
+					//textures might be freed
+					SDL_AtomicLock(&browser->ItemsLock);
+					browser->Items.clear();
+					SDL_AtomicUnlock(&browser->ItemsLock);
+				}, &browser);
+			handle->wait();
+		}
 
 		// check if videos went away
 		auto allVideos = Videolibrary::GetAll<Video>();
@@ -99,68 +106,68 @@ void Videobrowser::updateLibraryCache() noexcept
 					[&](auto& ext) {
 						return std::strcmp(ext.first, extension.c_str()) == 0;
 					});
-				if (it != BrowserExtensions.end()) {
-					// extension matches
-					auto funscript = p.path();
-					funscript.replace_extension(".funscript");
-					bool matchingScript = Util::FileExists(funscript.u8string());
-					if (!matchingScript) return;
+if (it != BrowserExtensions.end()) {
+	// extension matches
+	auto funscript = p.path();
+	funscript.replace_extension(".funscript");
+	bool matchingScript = Util::FileExists(funscript.u8string());
+	if (!matchingScript) return;
 
-					
-					// valid extension + matching script
-					size_t byte_count = p.file_size();
-					auto timestamp = GetFileAge(p.path());
 
-					Video vid;
-					vid.path = pathString;
-					vid.byte_count = byte_count;
-					vid.filename = filename;
-					vid.hasScript = matchingScript;
-					vid.timestamp = timestamp;
-					vid.shouldGenerateThumbnail = it->second;
-					if (!vid.try_insert()) {
-						// failed to insert
-						return;
-					}
+	// valid extension + matching script
+	size_t byte_count = p.file_size();
+	auto timestamp = GetFileAge(p.path());
 
-					{
-						Funscript::Metadata meta;
-						meta.loadFromFunscript(funscript.u8string());
-						for (auto& mtag : meta.tags) {
-							Tag imported;
-							imported.tag = mtag;
-							imported.try_insert();
+	Video vid;
+	vid.path = pathString;
+	vid.byte_count = byte_count;
+	vid.filename = filename;
+	vid.hasScript = matchingScript;
+	vid.timestamp = timestamp;
+	vid.shouldGenerateThumbnail = it->second;
+	if (!vid.try_insert()) {
+		// failed to insert
+		return;
+	}
 
-							if (imported.id < 0) {
-								using namespace sqlite_orm;
-								try
-								{
-									auto tag = Videolibrary::TagByName(imported.tag);
-									FUN_ASSERT(tag.has_value(), "where did the tag go!?");
-									imported.id = tag->id;
-								}
-								catch (std::system_error& er) {
-									LOGF_ERROR("%s", er.what());
-								}
-							}
-							VideoAndTag connect;
-							connect.tagId = imported.id;
-							connect.videoId = vid.id;
-							try {
-								// must be replaced because tagId & videoId are primary keys
-								connect.replace();
-							}
-							catch (std::system_error& er) {
-								LOGF_ERROR("%s", er.what());
-							}
-						}
-					}
+	{
+		Funscript::Metadata meta;
+		meta.loadFromFunscript(funscript.u8string());
+		for (auto& mtag : meta.tags) {
+			Tag imported;
+			imported.tag = mtag;
+			imported.try_insert();
 
-					SDL_AtomicLock(&browser->ItemsLock);
-					browser->Items.emplace_back(std::move(vid));
-					SDL_AtomicUnlock(&browser->ItemsLock);
-					LOGF_DEBUG("done hanlding %s", filename.c_str());
+			if (imported.id < 0) {
+				using namespace sqlite_orm;
+				try
+				{
+					auto tag = Videolibrary::TagByName(imported.tag);
+					FUN_ASSERT(tag.has_value(), "where did the tag go!?");
+					imported.id = tag->id;
 				}
+				catch (std::system_error& er) {
+					LOGF_ERROR("%s", er.what());
+				}
+			}
+			VideoAndTag connect;
+			connect.tagId = imported.id;
+			connect.videoId = vid.id;
+			try {
+				// must be replaced because tagId & videoId are primary keys
+				connect.replace();
+			}
+			catch (std::system_error& er) {
+				LOGF_ERROR("%s", er.what());
+			}
+		}
+	}
+
+	SDL_AtomicLock(&browser->ItemsLock);
+	browser->Items.emplace_back(std::move(vid));
+	SDL_AtomicUnlock(&browser->ItemsLock);
+	LOGF_DEBUG("done hanlding %s", filename.c_str());
+}
 			};
 
 			std::error_code ec;
@@ -194,16 +201,25 @@ void Videobrowser::updateLibraryCache() noexcept
 					}
 				}
 			}
-			for (auto& fut : futures) {	fut.wait();	}
+			for (auto& fut : futures) { fut.wait(); }
 			LOGF_DEBUG("Done iterating \"%s\" %s", sPath.path.c_str(), sPath.recursive ? "recursively" : "");
 		}
 
 
-		// this needs to run on the gl thread
-		// SDL_AtomicLock(&browser.ItemsLock);
-		// allVideos = Videolibrary::GetAll<Video>();
-		// browser.setVideos(allVideos);
-		// SDL_AtomicUnlock(&browser.ItemsLock);
+		{
+			auto handle = EventSystem::WaitableSingleShot(
+				[](void* ctx)
+				{
+					auto browser = (Videobrowser*)ctx;
+					// this needs to run on the gl thread 
+					SDL_AtomicLock(&browser->ItemsLock);
+					auto allVideos = Videolibrary::GetAll<Video>();
+					browser->setVideos(allVideos);
+					SDL_AtomicUnlock(&browser->ItemsLock);
+				}
+				, &browser);
+			handle->wait();
+		}
 
 		data->browser->CacheUpdateInProgress = false;
 		delete data;
@@ -277,7 +293,7 @@ void Videobrowser::renderRandomizer() noexcept
 {
 	if (Items.empty()) return;
 
-	constexpr int32_t MaxRollFreqMs = 150;
+	constexpr int32_t MaxRollFreqMs = 125;
 	constexpr int32_t PickAfterRolls = 100;
 	constexpr int32_t ShowResultTime = 3000;
 
@@ -375,6 +391,17 @@ void Videobrowser::renderRandomizer() noexcept
 			p1 + ImVec2((videoSize.x / 2.f) - (countDownTextSize.x / 2.f), textSize.y + videoSize.y + (style.ItemSpacing.y*2.f)),
 			ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]),
 			tmp
+		);
+	}
+	else
+	{
+		draw_list->AddRectFilledMultiColor(
+			p1 + ImVec2(0.f, videoSize.y + textSize.y + style.ItemSpacing.y),
+			p1 + ImVec2(videoSize.x * (RollCount / (float)PickAfterRolls), ImGui::GetFontSize() + videoSize.y + textSize.y + style.ItemSpacing.y),
+			IM_COL32_BLACK, 
+			IM_COL32(255, 0, 0, 255), 
+			IM_COL32(255, 0, 0, 255),
+			IM_COL32_BLACK
 		);
 	}
 }
@@ -646,7 +673,7 @@ void Videobrowser::ShowBrowserSettings(bool* open) noexcept
 	if (ShowSettings)
 		ImGui::OpenPopup(VideobrowserSettingsId);
 
-	if (ImGui::BeginPopupModal(VideobrowserSettingsId, open, ImGuiWindowFlags_AlwaysAutoResize)) {
+	if (ImGui::BeginPopupModal(VideobrowserSettingsId, open, ImGuiWindowFlags_None)) {
 
 		if (ImGui::BeginTable("##SearchPaths", 3, ImGuiTableFlags_Borders)) {
 			ImGui::TableSetupColumn("Path");

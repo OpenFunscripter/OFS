@@ -25,6 +25,25 @@ public:
 	static void RegisterEvents() noexcept;
 };
 
+class FunscriptUserData 
+{
+public:
+	virtual ~FunscriptUserData() {}
+
+	template<typename UserType>
+	UserType& Get() noexcept
+	{
+		return ((FunscriptUserDataT<UserType>*)this)->data;
+	}
+};
+
+template<typename UserType>
+class FunscriptUserDataT : public FunscriptUserData
+{
+public:
+	UserType data;
+};
+
 class Funscript
 {
 public:
@@ -65,7 +84,7 @@ public:
 		void writeToFunscript(const std::string& path) noexcept;
 	} metadata;
 
-	void* userdata = nullptr;
+	std::unique_ptr<FunscriptUserData> userdata = nullptr;
 private:
 	nlohmann::json Json;
 	nlohmann::json BaseLoaded;
@@ -228,18 +247,15 @@ void Funscript::saveSettings(const std::string& name, UserSettings* user) noexce
 template<class UserSettings>
 inline UserSettings& Funscript::Userdata() noexcept
 {
-	FUN_ASSERT(userdata, "userdata is null");
-	return *(UserSettings*)userdata;
+	FUN_ASSERT(userdata != nullptr, "userdata is null");
+	return userdata->Get<UserSettings>();
 }
 
 template<class UserSettings>
 inline void Funscript::AllocUser() noexcept
 {
-	if (userdata != nullptr) {
-		// FIX: this doesn't work
-		delete userdata;
-	}
-	userdata = new UserSettings();
+	FUN_ASSERT(userdata == nullptr, "there was already userdata");
+	userdata = std::make_unique<FunscriptUserDataT<UserSettings>>();
 }
 
 template<class UserSettings>
@@ -275,7 +291,7 @@ inline bool Funscript::open(const std::string& file, const std::string& usersett
 
 	loadMetadata();
 	AllocUser<UserSettings>();
-	loadSettings<UserSettings>(usersettings, static_cast<UserSettings*>(userdata));
+	loadSettings<UserSettings>(usersettings, static_cast<UserSettings*>(&userdata->Get<UserSettings>()));
 
 	if (metadata.title.empty()) {
 		metadata.title = std::filesystem::path(current_path)
@@ -293,7 +309,7 @@ inline void Funscript::save(const std::string& path, const std::string& usersett
 {
 	setScriptTemplate();
 	saveMetadata();
-	saveSettings<UserSettings>(usersettings, static_cast<UserSettings*>(userdata));
+	saveSettings<UserSettings>(usersettings, static_cast<UserSettings*>(&userdata->Get<UserSettings>()));
 
 	auto& actions = Json["actions"];
 	actions.clear();

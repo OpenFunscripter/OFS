@@ -383,6 +383,7 @@ void OpenFunscripter::clearLoadedScripts() noexcept
 {
     LoadedFunscripts.clear();
     LoadedFunscripts.emplace_back(std::move(std::make_unique<Funscript>()));
+    ActiveFunscript()->AllocUser<OFS_ScriptSettings>();
     ActiveFunscriptIdx = 0;
 }
 

@@ -142,6 +142,7 @@ void VideobrowserItem::GenThumbail() noexcept
 
 			if (num >= sizeof(buffer)) {
 				SDL_SemPost(Videobrowser::ThumbnailThreadSem);
+				delete data;
 				return false;
 			}
 
