@@ -67,10 +67,11 @@ void Videobrowser::updateLibraryCache() noexcept
 		auto data = static_cast<UpdateLibraryThreadData*>(ctx);
 		auto& browser = *data->browser;
 
-		SDL_AtomicLock(&browser.ItemsLock);
-		browser.Items.clear();
-		LOG_DEBUG("ITEMS CLEAR");
-		SDL_AtomicUnlock(&browser.ItemsLock);
+		// this needs to run on the gl thread
+		// SDL_AtomicLock(&browser.ItemsLock);
+		// browser.Items.clear();
+		// LOG_DEBUG("ITEMS CLEAR");
+		// SDL_AtomicUnlock(&browser.ItemsLock);
 
 
 		// check if videos went away
@@ -198,11 +199,11 @@ void Videobrowser::updateLibraryCache() noexcept
 		}
 
 
-
-		SDL_AtomicLock(&browser.ItemsLock);
-		allVideos = Videolibrary::GetAll<Video>();
-		browser.setVideos(allVideos);
-		SDL_AtomicUnlock(&browser.ItemsLock);
+		// this needs to run on the gl thread
+		// SDL_AtomicLock(&browser.ItemsLock);
+		// allVideos = Videolibrary::GetAll<Video>();
+		// browser.setVideos(allVideos);
+		// SDL_AtomicUnlock(&browser.ItemsLock);
 
 		data->browser->CacheUpdateInProgress = false;
 		delete data;
