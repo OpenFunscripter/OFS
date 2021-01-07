@@ -17,6 +17,11 @@ private:
 		int32_t ref_count = 0;
 		uint32_t texId = 0;
 
+		Texture() noexcept
+		{
+			LOG_DEBUG("Created texture.");
+		}
+
 		~Texture() noexcept {
 			if (ref_count == 0) {
 				freeTexture();
@@ -121,22 +126,34 @@ public:
 		}
 
 		Handle(const Handle& h) noexcept {
+			if(this->Id != 0) {
+				DecrementRefCount();
+			}
 			this->Id = h.Id;
 			IncrementRefCount();
 		}
 
 		Handle(Handle&& h) noexcept {
+			if(this->Id != 0) {
+				DecrementRefCount();
+			}
 			this->Id = h.Id;
 			IncrementRefCount();
 		}
 
 		Handle& operator=(const Handle& h) noexcept {
+			if(this->Id != 0) {
+				DecrementRefCount();
+			}
 			this->Id = h.Id;
 			IncrementRefCount();
 			return *this;
 		}
 
 		Handle& operator=(Handle&& h) noexcept {
+			if(this->Id != 0) {
+				DecrementRefCount();
+			}
 			this->Id = h.Id;
 			IncrementRefCount();
 			return *this;
