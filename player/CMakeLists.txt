@@ -15,6 +15,10 @@ set(OFP_SOURCES
 
   "UI/OFP_Settings.cpp"
 )
+if(WIN32)
+	set(OFP_SOURCES ${OFP_SOURCES} "${CMAKE_SOURCE_DIR}/iconOFP.rc")
+endif()
+
 
 if(WIN32)
 add_executable(${PROJECT_NAME} ${OFP_SOURCES})
