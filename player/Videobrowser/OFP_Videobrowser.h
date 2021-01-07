@@ -70,7 +70,8 @@ private:
         });
     }
 
-    void renderLoot() noexcept;
+    void renderRandomizer() noexcept;
+    void fileClickedHandler(VideobrowserItem& item) noexcept;
 public:
     VideobrowserSettings* settings = nullptr;
 
@@ -96,5 +97,5 @@ public:
 	void ShowBrowser(const char* Id, bool* open) noexcept;
     void ShowBrowserSettings(bool* open) noexcept;
 
-    void Lootcrate(bool* open) noexcept;
+    void Randomizer(const char* Id, bool* open) noexcept;
 };

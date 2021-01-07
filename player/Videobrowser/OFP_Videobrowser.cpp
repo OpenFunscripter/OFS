@@ -242,65 +242,148 @@ Videobrowser::Videobrowser(VideobrowserSettings* settings)
 	SDL_AtomicUnlock(&ItemsLock);	
 }
 
-void Videobrowser::Lootcrate(bool* open) noexcept
+void Videobrowser::Randomizer(const char* Id, bool* open) noexcept
 {
 	if (open != nullptr && !*open) return;
 
-	if (Random)
-		ImGui::OpenPopup(VideobrowserRandomId);
+	//if (Random) {
+	//	ImGui::OpenPopup(Id);
+	//	ImGui::SetNextWindowSizeConstraints(ImVec2(500, 500), ImVec2(3000, 3000),
+	//		[](ImGuiSizeCallbackData* data) {
+	//			if (data->CurrentSize.x == data->DesiredSize.x && data->CurrentSize.y == data->DesiredSize.y)return;
+	//			float size;
+	//			if (data->CurrentSize.x < data->DesiredSize.x || data->CurrentSize.y < data->DesiredSize.y)
+	//			{
+	//				size = std::min(data->DesiredSize.x, data->DesiredSize.y);
+	//			}
+	//			else
+	//			{
+	//				size = std::max(data->DesiredSize.x, data->DesiredSize.y);
+	//			}
+	//			data->DesiredSize = ImVec2(size, size);
+	//		});
+	//}
 
-	if (ImGui::BeginPopupModal(VideobrowserRandomId, open, ImGuiWindowFlags_None)) {
-		auto hostWidth = ImGui::GetContentRegionAvail().x;
-		ImGui::BeginChild("RandomVideo", ImVec2(hostWidth, hostWidth), true);
-		renderLoot();
-		ImGui::EndChild();
-		ImGui::Button("Spin!", ImVec2(-1, 0));
-		ImGui::EndPopup();
-	}
+	ImGui::Begin(Id, open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove);
+	//auto hostWidth = ImGui::GetContentRegionAvail().x;
+	ImGui::BeginChild("RandomVideo"/* ImVec2(hostWidth, hostWidth), true*/);
+	renderRandomizer();
+	ImGui::EndChild();
+	ImGui::End();
 }
 
-void Videobrowser::renderLoot() noexcept
+void Videobrowser::renderRandomizer() noexcept
 {
 	if (Items.empty()) return;
 
+	constexpr int32_t MaxRollFreqMs = 150;
+	constexpr int32_t PickAfterRolls = 100;
+	constexpr int32_t ShowResultTime = 3000;
+
+	static int32_t RollFreqMs = MaxRollFreqMs;
+	static int32_t RollCount = 0;
+	static int32_t LastRollTime = 0;
+	static int32_t LastRoll = 0;
+
+	if (SDL_GetTicks() - LastRollTime >= RollFreqMs)
+	{
+		if (RollCount == PickAfterRolls) {
+			fileClickedHandler(Items[LastRoll]);
+			RollFreqMs = MaxRollFreqMs;
+			RollCount = 0;
+			Random = false;
+		}
+		else
+		{
+			if (RollCount == 0)
+			{
+				srand(SDL_GetTicks());
+			}
+			LastRoll = rand() % Items.size();
+			LastRollTime = SDL_GetTicks();
+			RollCount++;
+
+			if (RollCount != PickAfterRolls)
+			{
+				// roll faster which each roll
+				auto easeOutCubic = [](float x) -> float {	x = 1 - x;	return 1 - (x*x*x);	};
+				RollFreqMs = MaxRollFreqMs - ((MaxRollFreqMs / 1.25f) * (easeOutCubic((float)RollCount/PickAfterRolls)));
+			}
+			else
+			{
+				// show result for 3 seconds
+				RollFreqMs = ShowResultTime;
+			}
+		}
+	}
+
+	auto& style = ImGui::GetStyle();
 	auto window_pos = ImGui::GetWindowPos();
-	auto availSize = ImGui::GetContentRegionAvail();
-	
+	auto availSize = ImGui::GetContentRegionAvail() - style.ItemSpacing;
 	auto window = ImGui::GetCurrentWindowRead();
-	
-	auto frame_bb = ImRect(window->DC.CursorPos, window->DC.CursorPos +availSize);
-
+	auto frame_bb = ImRect(window->DC.CursorPos, window->DC.CursorPos + availSize);
 	auto draw_list = ImGui::GetWindowDrawList();
-
-	auto style = ImGui::GetStyle();
-
-	constexpr float scale = 4.f;
-
+	
+	constexpr float scale = 3.f;
+	//ImGui::ItemSize(availSize, 0.0f);
+	//if (!ImGui::ItemAdd(frame_bb, 0))
+	//	return;
 
 	ImVec2 videoSize((availSize.x / scale) * (16.f / 9.f), (availSize.x / scale));
-	
-	static ImVec2 offset(0.f, 0.f);
-	offset.x = std::sin(SDL_GetTicks() / 1500.f)*videoSize.x*5.f;
 
 	ImVec2 centerPos(frame_bb.GetWidth() / 2.f, frame_bb.GetHeight() / 2.f);
 	centerPos += frame_bb.Min;
 	
+	ImVec2 thumbPos = centerPos;
+	ImVec2 p1 = thumbPos - (videoSize / 2.f);
+	ImVec2 p2 = thumbPos + (videoSize / 2.f);
+	draw_list->AddRect(p1, p2, ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Border]), 2.f);
 
-	ImVec2 wheelPos = centerPos + offset;
-	ImVec2 p1 = wheelPos - (videoSize / 2.f);
-	ImVec2 p2 = wheelPos + (videoSize / 2.f);
-	draw_list->AddRect(p1, p2, IM_COL32(255, 0, 0, 255), 2.f);
-	//draw_list->AddImage((void*)(intptr_t)*Items.begin()->texture.GetTexId(), p1 + style.FramePadding, p2 - style.FramePadding, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE);
+	auto& rolledItem = Items[LastRoll];
 
-	for (int i = 1; i <= 10; i++) {
-		wheelPos += ImVec2(videoSize.x + style.ItemSpacing.x, 0.f);
-		p1 = wheelPos - (videoSize / 2.f);
-		p2 = wheelPos + (videoSize / 2.f);
-		draw_list->AddRect(p1, p2, IM_COL32(255, 0, 0, 255), 2.f);
-		//draw_list->AddImage((void*)(intptr_t)*(Items.begin()+i)->texture.GetTexId(), p1 + style.FramePadding, p2 - style.FramePadding, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE);
+	uint32_t texId = rolledItem.texture.GetTexId();
+	
+	if(RollCount == PickAfterRolls)
+	{
+		if (!preview.loading)
+		{
+			preview.previewVideo(rolledItem.video.path, 0.1f);
+		}
+		if (preview.ready)
+		{
+			texId = preview.render_texture;
+		}
 	}
 
-	draw_list->AddLine(centerPos - ImVec2(0.f, availSize.x / 4.f), centerPos + ImVec2(0.f, availSize.x / 4.f), IM_COL32(255, 255, 0, 255));
+	if (texId != 0) {
+		draw_list->AddImage((void*)(intptr_t)texId, p1 + style.FramePadding, p2 - style.FramePadding, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE);
+	}
+	else
+	{
+		rolledItem.GenThumbail();
+	}
+	auto textSize = ImGui::CalcTextSize(rolledItem.video.filename.c_str());
+	draw_list->AddText(p1 + ImVec2((videoSize.x/2.f) - (textSize.x/2.f), videoSize.y + style.ItemSpacing.y), ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]), rolledItem.video.filename.c_str());
+
+	if (RollCount == PickAfterRolls)
+	{
+		char tmp[16];
+		stbsp_snprintf(tmp, sizeof(tmp), "%.2f seconds", (ShowResultTime - (SDL_GetTicks() - LastRollTime)) / 1000.f);
+		auto countDownTextSize = ImGui::CalcTextSize(tmp);
+		draw_list->AddText(
+			p1 + ImVec2((videoSize.x / 2.f) - (countDownTextSize.x / 2.f), textSize.y + videoSize.y + (style.ItemSpacing.y*2.f)),
+			ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]),
+			tmp
+		);
+	}
+}
+
+void Videobrowser::fileClickedHandler(VideobrowserItem& item) noexcept
+{
+	if (item.video.hasScript) {
+		ClickedFilePath = item.video.path;
+		EventSystem::PushEvent(VideobrowserEvents::VideobrowserItemClicked);
+	}
 }
 
 void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
@@ -319,6 +402,15 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 		return;
 	}
 	if (CacheNeedsUpdate) { updateLibraryCache(); }
+
+	if (Random)
+	{
+		SDL_AtomicLock(&ItemsLock);
+		Randomizer(Id, open);
+		SDL_AtomicUnlock(&ItemsLock);
+		return;
+	}
+
 	// gamepad control items per row
 	if (ImGui::IsNavInputTest(ImGuiNavInput_FocusPrev, ImGuiInputReadMode_Pressed))
 	{
@@ -348,6 +440,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 			ImGui::EndMenu();
 		}
 		ImGui::MenuItem("Settings", NULL, &ShowSettings);
+		ImGui::MenuItem("Random", NULL, &Random);
 		ImGui::EndMenuBar();
 	}
 
@@ -430,14 +523,6 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 		const auto ItemDim = ImVec2(ItemWidth, ItemHeight);
 
 		ImGui::BeginChild("Items");
-		auto fileClickHandler = [&](VideobrowserItem& item) {		
-			if (item.video.hasScript) {
-				ClickedFilePath = item.video.path;
-				EventSystem::PushEvent(VideobrowserEvents::VideobrowserItemClicked);
-			}
-		};
-
-
 		VideobrowserItem* previewItem = nullptr;
 		bool itemFocussed = false;
 		int index = 0;
@@ -469,7 +554,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 					padding/2.f,
 					style.Colors[ImGuiCol_PlotLines],
 					FileTintColor)) {
-					fileClickHandler(item);
+					fileClickedHandler(item);
 				}
 				item.Focussed = (ImGui::IsItemHovered() || (ImGui::IsItemActive() || ImGui::IsItemActivated() || ImGui::IsItemFocused())) && !itemFocussed;
 				if (item.Focussed) {
@@ -481,7 +566,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 				if(!item.video.hasScript) { ImGui::PushStyleColor(ImGuiCol_Button, FileTintColor.Value); }
 				
 				if (ImGui::Button(item.video.filename.c_str(), ItemDim)) {
-					fileClickHandler(item);
+					fileClickedHandler(item);
 				}
 				if (settings->showThumbnails && item.video.HasThumbnail() && ImGui::IsItemVisible()) {
 					item.GenThumbail();
@@ -551,10 +636,6 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 	SDL_AtomicUnlock(&ItemsLock);
 
 	ShowBrowserSettings(&ShowSettings);
-
-	SDL_AtomicLock(&ItemsLock);
-	Lootcrate(&Random);
-	SDL_AtomicUnlock(&ItemsLock);
 }
 
 void Videobrowser::ShowBrowserSettings(bool* open) noexcept
