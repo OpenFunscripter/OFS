@@ -311,8 +311,8 @@ void Videobrowser::renderRandomizer() noexcept
 {
 	if (Items.empty()) return;
 
-	constexpr int32_t MaxRollFreqMs = 125;
-	constexpr int32_t PickAfterRolls = 100;
+	constexpr int32_t MaxRollFreqMs = 120;
+	constexpr int32_t PickAfterRolls = 69;
 	constexpr int32_t ShowResultTime = 3000;
 
 	static int32_t RollFreqMs = MaxRollFreqMs;

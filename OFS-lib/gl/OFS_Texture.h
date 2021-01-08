@@ -17,11 +17,6 @@ private:
 		int32_t ref_count = 0;
 		uint32_t texId = 0;
 
-		Texture() noexcept
-		{
-			LOG_DEBUG("Created texture.");
-		}
-
 		~Texture() noexcept {
 			if (ref_count == 0) {
 				freeTexture();
@@ -33,13 +28,13 @@ private:
 				FUN_ASSERT(ref_count == 0, "ref_count not zero");
 				glDeleteTextures(1, &texId);
 				texId = 0;
-				ref_count = 0;
+				ref_count = -1;
 				LOG_DEBUG("Freed texture.");
 			}
 		}
 	};
 	static std::vector<Texture> Textures;
-
+	
 	static SDL_atomic_t TextureIdCounter;
 	static SDL_atomic_t Reads;
 	static SDL_atomic_t QueuedWrites;
@@ -181,13 +176,34 @@ public:
 		}
 	};
 
+	static int32_t LastFreeIndex;
 	inline static Handle CreateTexture() noexcept {
 		WriteTextures();
-		int newId = SDL_AtomicIncRef(&TextureIdCounter);
-		Textures.emplace_back();
-		EndWriteTextures();
-		Handle handle(newId);
-		return handle;
+
+		// search free texture
+		for(; LastFreeIndex < Textures.size(); LastFreeIndex++)
+		{
+			auto& tex = Textures[LastFreeIndex];
+			if (tex.ref_count == -1 && tex.texId == 0) { tex.ref_count = 0; break; }
+		}
+		if (LastFreeIndex < Textures.size())
+		{
+			// found free texture
+			EndWriteTextures();
+			Handle handle(LastFreeIndex+1);
+			return handle;
+		}
+		else
+		{
+			LastFreeIndex = 0;
+
+			// create new texture
+			int newId = SDL_AtomicIncRef(&TextureIdCounter);
+			Textures.emplace_back();
+			EndWriteTextures();
+			Handle handle(newId);
+			return handle;
+		}
 	}
 
 };
