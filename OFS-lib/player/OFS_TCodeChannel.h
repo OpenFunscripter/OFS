@@ -19,7 +19,7 @@ public:
 	int32_t LastTCodeValue = -1;
 	int32_t NextTCodeValue = -1;
 
-	char LastCommand[16] = "???\0";
+	char LastCommand[16] = "?????\0";
 
 	static constexpr int32_t MaxChannelValue = 900;
 	static constexpr int32_t MinChannelValue = 100;
@@ -48,7 +48,7 @@ public:
 
 	inline const char* getCommand(int32_t currentTimeMs, int32_t tickrate) noexcept {
 		if (NextTCodeValue != LastTCodeValue) {
-			stbsp_snprintf(LastCommand, sizeof(LastCommand), "%s%d ", Id, NextTCodeValue);
+			stbsp_snprintf(LastCommand, sizeof(LastCommand), "%s%d", Id, NextTCodeValue);
 			LastTCodeValue = NextTCodeValue;
 			return LastCommand;
 		}
@@ -128,7 +128,7 @@ public:
 			auto cmd = c.getCommand(CurrentTimeMs, tickrate);
 			if (cmd != nullptr) {
 				gotCmd = true;
-				ss << cmd;
+				ss << cmd << ' ';
 			}
 		}
 		if (gotCmd) { 

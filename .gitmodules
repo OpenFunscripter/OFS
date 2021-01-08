@@ -34,3 +34,6 @@
 [submodule "lib/sqlite_orm"]
 	path = lib/sqlite_orm
 	url = https://github.com/fnc12/sqlite_orm.git
+[submodule "lib/implot"]
+	path = lib/implot
+	url = https://github.com/epezent/implot.git

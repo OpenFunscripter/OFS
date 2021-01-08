@@ -172,6 +172,23 @@ target_include_directories(im3d PUBLIC "im3d")
 target_link_libraries(im3d PUBLIC glm)
 target_compile_features(im3d PUBLIC cxx_std_17)
 
+# ============
+# === implot ===
+# ============
+set(implot_SOURCES
+	"implot/implot.cpp"
+	"implot/implot_demo.cpp"
+	"implot/implot_items.cpp"
+)
+set(implot_HEADERS
+	"implot/implot.h"
+	"implot/implot_internal.h"
+)
+add_library(implot STATIC ${implot_SOURCES} ${implot_HEADERS})
+target_include_directories(implot PUBLIC "implot")
+target_link_libraries(implot PUBLIC imgui)
+target_compile_features(implot PUBLIC cxx_std_17)
+
 
 # ===============
 # === sqlite3 ===

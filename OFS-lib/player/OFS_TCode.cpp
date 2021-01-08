@@ -6,11 +6,41 @@
 
 #include "SDL.h"
 #include "OFS_im3d.h"
+#include "OFS_ImGui.h"
 
+#include "implot.h"
 
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
+
+#include <chrono>
+
+// utility structure for realtime plot
+struct ScrollingBuffer {
+    int MaxSize;
+    int Offset;
+    ImVector<ImVec2> Data;
+    ScrollingBuffer() {
+        MaxSize = 2000;
+        Offset = 0;
+        Data.reserve(MaxSize);
+    }
+    void AddPoint(float x, float y) {
+        if (Data.size() < MaxSize)
+            Data.push_back(ImVec2(x, y));
+        else {
+            Data[Offset] = ImVec2(x, y);
+            Offset = (Offset + 1) % MaxSize;
+        }
+    }
+    void Erase() {
+        if (Data.size() > 0) {
+            Data.shrink(0);
+            Offset = 0;
+        }
+    }
+};
 
 bool TCodePlayer::openPort(const char* name) noexcept
 {
@@ -94,6 +124,10 @@ TCodePlayer::TCodePlayer()
 		[](const char* logger_name, const struct SL_LogLocation* location, const enum SL_LogLevel level, const char* log_string) {
 			LOGF_INFO("%s: %s",logger_name, log_string);
 		});
+#ifndef NDEBUG
+    if(ImPlot::GetCurrentContext() == nullptr)
+        ImPlot::CreateContext();
+#endif
 }
 
 TCodePlayer::~TCodePlayer()
@@ -172,14 +206,20 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
     ImGui::TextUnformatted("Linear");
     auto& l0 = tcode.Get(TChannel::L0);
     stbsp_snprintf(buf, sizeof(buf), "%s Limit", l0.Id);
-    ImGui::SliderInt2(buf, l0.limits.data(), TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue);
+    ImGui::DragIntRange2(buf, 
+        &l0.limits[0], &l0.limits[1], 1,
+        TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue,
+        "Min: %d", "Max: %d", ImGuiSliderFlags_AlwaysClamp);
 
     ImGui::Separator();
 
     ImGui::TextUnformatted("Rotation");
     auto rotationGui = [&](TCodeChannel& c) {
         stbsp_snprintf(buf, sizeof(buf), "%s Limit", c.Id);
-        ImGui::SliderInt2(buf, c.limits.data(), TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue);
+        ImGui::DragIntRange2(buf,
+            &c.limits[0], &c.limits[1], 1,
+            TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue,
+            "Min: %d", "Max: %d", ImGuiSliderFlags_AlwaysClamp);
     };
     rotationGui(tcode.Get(TChannel::R0));
     rotationGui(tcode.Get(TChannel::R1));
@@ -213,14 +253,66 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
     //ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
     for (int i = 0; i < tcode.channels.size(); i++) {
         if (IgnoreChannel(static_cast<TChannel>(i))) { ImGui::Spacing(); continue; }
+        ImGui::PushID(i);
         auto& c = tcode.channels[i];
         auto& p = prod.producers[i];
-        if (ImGui::SliderInt(c.Id, &c.NextTCodeValue, /*TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue*/c.limits[0], c.limits[1]));
+        if (OFS::BoundedSliderInt(c.Id, &c.NextTCodeValue, TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue, c.limits[0], c.limits[1], "%d", ImGuiSliderFlags_AlwaysClamp));
         ImGui::SameLine(); ImGui::Text(" -> %s", c.LastCommand);
+        if (i != static_cast<int32_t>(TChannel::L0)) {
+            ImGui::SameLine(); 
+            bool hookedUp = !p.GetScript().expired();
+            if (ImGui::Checkbox("Hook L0", &hookedUp))
+            {
+                if (hookedUp) {
+                    auto script = prod.GetProd(TChannel::L0).GetScript();
+                    p.SetScript(std::move(script));
+                }
+                else {
+                    p.SetScript(std::move(std::weak_ptr<Funscript>()));
+                }
+            }
+        }
+        ImGui::SameLine();
+        ImGui::Checkbox("Invert", &p.Invert);
+
+        ImGui::PopID();
     }
     //ImGui::PopItemFlag();
+	ImGui::End();
 
-  	ImGui::End();
+#ifndef NDEBUG
+    ImGui::Begin("Plot");
+
+    static float history = 10.0f;
+    static float t = (SDL_GetTicks()/1000.f) + 0.1f;
+    t += ImGui::GetIO().DeltaTime;
+
+    static ScrollingBuffer RawSpeed;
+    static ScrollingBuffer RawData;
+
+    static ScrollingBuffer FilteredSpeed;
+    static ScrollingBuffer FilteredData;
+
+    float timestamp = SDL_GetTicks() / 1000.f;
+    FilteredData.AddPoint(timestamp,  prod.GetProd(TChannel::L0).LastValue);
+    RawData.AddPoint(timestamp, prod.GetProd(TChannel::L0).LastValueRaw);
+    FilteredSpeed.AddPoint(timestamp, prod.GetProd(TChannel::L0).FilteredSpeed);
+    RawSpeed.AddPoint(timestamp, prod.GetProd(TChannel::L0).RawSpeed);
+
+    static ImPlotAxisFlags rt_axis = ImPlotAxisFlags_NoTickLabels;
+    ImPlot::SetNextPlotLimitsX(t - history, t, ImGuiCond_Always);
+    if (ImPlot::BeginPlot("##EuroComp", NULL, NULL, ImVec2(-1, -1), 0, rt_axis, rt_axis | ImPlotAxisFlags_LockMin)) {
+
+        ImPlot::PlotLine("RawSpeed", &RawSpeed.Data[0].x, &RawSpeed.Data[0].y, RawSpeed.Data.size(), RawSpeed.Offset, 2 * sizeof(float));
+        ImPlot::PlotLine("FilteredSpeed", &FilteredSpeed.Data[0].x, &FilteredSpeed.Data[0].y, FilteredSpeed.Data.size(), FilteredSpeed.Offset, 2 * sizeof(float));
+
+        ImPlot::PlotLine("Raw", &RawData.Data[0].x, &RawData.Data[0].y, RawData.Data.size(), RawData.Offset, 2 * sizeof(float));
+        ImPlot::PlotLine("Filtered", &FilteredData.Data[0].x, &FilteredData.Data[0].y, FilteredData.Data.size(), FilteredData.Offset, 2 * sizeof(float));
+        ImPlot::EndPlot();
+    }
+
+    ImGui::End();
+#endif
 }
 
 
@@ -229,39 +321,41 @@ static int32_t TCodeThread(void* threadData) noexcept {
 
     LOG_INFO("T-Code thread started...");
 
-    int startTicks = SDL_GetTicks();
+    auto startTime = std::chrono::high_resolution_clock::now();
     
     int scriptTimeMs = 0;
 
-    data->producer->sync(SDL_AtomicGet(&Thread.scriptTimeMs));
+    data->producer->sync(SDL_AtomicGet(&data->scriptTimeMs), data->player->tickrate);
 
     while (!data->requestStop) {
-        int maxTicks = std::round(1000.f / data->player->tickrate) - 1;
+        float tickrate = data->player->tickrate;
+        float tickDurationSeconds = 1.f / tickrate;
+        auto currentTime = std::chrono::high_resolution_clock::now();
 
-        int32_t data_scriptTimeMs = SDL_AtomicGet(&Thread.scriptTimeMs);
+        int32_t delay = data->player->delay;
+        int32_t data_scriptTimeMs = SDL_AtomicGet(&data->scriptTimeMs);
+        
+        std::chrono::duration<float> duration = currentTime - startTime;
 
-        int32_t ticks = SDL_GetTicks();
-        int32_t currentTimeMs = (((ticks - startTicks) * data->speed) + scriptTimeMs) - data->player->delay;
-        int32_t syncTimeMs =  data_scriptTimeMs - data->player->delay;
+        int32_t currentTimeMs = (((duration.count()*1000.f) * data->speed) + scriptTimeMs) - delay;
+        int32_t syncTimeMs =  data_scriptTimeMs - delay;
         if (std::abs(currentTimeMs - syncTimeMs) >= 60) {
-            LOGF_DEBUG("Resync -> %d", currentTimeMs - syncTimeMs);
-            LOGF_DEBUG("prev: %d new: %d", currentTimeMs, syncTimeMs);
+            LOGF_INFO("Resync -> %d", currentTimeMs - syncTimeMs);
+            LOGF_INFO("prev: %d new: %d", currentTimeMs, syncTimeMs);
 
             scriptTimeMs = data_scriptTimeMs;
-            startTicks = ticks;
+            startTime = std::move(currentTime);
             currentTimeMs = syncTimeMs;
 
-            data->producer->sync(currentTimeMs);
+            data->producer->sync(currentTimeMs, tickrate);
         }
         else {
             // tick producers
-            data->producer->tick(currentTimeMs);
+            data->producer->tick(currentTimeMs, tickrate);
         }
-
         
         // update channels
-        const char* cmd = data->channel->GetCommand(currentTimeMs, data->player->tickrate);
-        //if (cmd != nullptr) { LOG_DEBUG(cmd); }
+        const char* cmd = data->channel->GetCommand(currentTimeMs, tickrate);
 
         if (cmd != nullptr && data->player->status >= 0) {
             int len = strlen(cmd);
@@ -272,9 +366,10 @@ static int32_t TCodeThread(void* threadData) noexcept {
             }
         }
 
-        int delay = maxTicks - (SDL_GetTicks() - ticks);
-        if (delay > 0) {
-            SDL_Delay(delay);
+        while((duration = std::chrono::high_resolution_clock::now() - currentTime).count() < tickDurationSeconds) {
+            /* Spin wait */
+            int ms = (duration.count() / 0.001f) - 1;
+            if (ms > 0) { SDL_Delay(ms); }
         }
     }
     data->running = false;
@@ -303,7 +398,7 @@ void TCodePlayer::stop() noexcept
 {
     if (Thread.running) {
         Thread.requestStop = true;
-        while(!Thread.running) { /* busy wait */ }
+        while (!Thread.running) { SDL_Delay(1); }
         prod.ClearChannels();
     }
 }

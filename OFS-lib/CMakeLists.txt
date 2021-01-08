@@ -62,6 +62,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	cserial_static
 	im3d
 	glm
+	implot
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)

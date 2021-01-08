@@ -8,23 +8,37 @@
 #include <memory>
 #include <algorithm>
 
+#include "SDL_timer.h"
+
 class TCodeChannelProducer
 {
 private:
 	FunscriptAction startAction;
 	FunscriptAction nextAction;
 
+	bool InterpTowards = false;
+	float InterpStart = 0.f;
+	float InterpEnd = 0.f;
+	int32_t InterpStartTime = 0;
+	static constexpr int32_t MaxInterpTimeMs = 1000;
+
+public:float LastValue = 0.f;
+	  float LastValueRaw = 0.f;
+	  float FilteredSpeed = 0.f;
+	  float RawSpeed = 0.f;
+	  bool Invert = false;
+private:
 	float ScriptMinPos;
 	float ScriptMaxPos;
 
-	// maps actions to 0 to a 100
+	// remaps actions to 0 to 100 range
 	inline void MapNewActions() noexcept
 	{
 		startAction.pos = Util::MapRange<float>(startAction.pos, ScriptMinPos, ScriptMaxPos, 0.f, 100.f);
 		nextAction.pos = Util::MapRange<float>(nextAction.pos, ScriptMinPos, ScriptMaxPos, 0.f, 100.f);
 	}
 
-	inline float getPos(int32_t currentTimeMs) noexcept {
+	inline float getPos(int32_t currentTimeMs, float freq) noexcept {
 		if (currentTimeMs > nextAction.at) { return nextAction.pos; }
 
 		float progress = Util::Clamp((float)(currentTimeMs - startAction.at) / (nextAction.at - startAction.at), 0.f, 1.f);
@@ -39,18 +53,53 @@ private:
 		case TCodeEasing::None:
 			break;
 		}
-		float pos = Util::Lerp<float>(startAction.pos/100.f, nextAction.pos/100.f, progress);
+		float pos;
+		if (Invert)
+		{
+			pos = Util::Lerp<float>(nextAction.pos / 100.f, startAction.pos / 100.f,  progress);
+		}
+		else
+		{
+			pos = Util::Lerp<float>(startAction.pos/100.f, nextAction.pos/100.f, progress);
+		}
 
-		return pos;
+		
+		RawSpeed = std::abs(pos - LastValue) / (1.f/freq);
+
+		// detect discontinuity
+		if (RawSpeed >= 35.f && !InterpTowards) {
+			InterpTowards = true;
+			InterpStart = LastValue;
+			InterpEnd = pos;
+			InterpStartTime = SDL_GetTicks();
+			LOGF_INFO("InterpTowards: %f", RawSpeed);
+		}
+
+		if (InterpTowards) {
+			float t = Util::Clamp((SDL_GetTicks() - InterpStartTime) / (float)MaxInterpTimeMs, 0.f, 1.f);
+			float diff = std::abs(LastValue - pos);
+			
+			LastValue = Util::Lerp(InterpStart, InterpEnd, t);
+			if (t >= 1.f || std::abs(LastValue - pos) > diff) {
+				InterpTowards = false;
+			}
+		}
+		else {
+			LastValue = pos;
+		}
+		LastValueRaw = pos;
+
+		return LastValue;
 	}
-	std::weak_ptr<const Funscript> script;
+
 	int32_t currentIndex = 0;
+	std::weak_ptr<const Funscript> script;
 public:
 	TCodeChannel* channel = nullptr;
 
 	TCodeChannelProducer() {}
 
-	inline void SetScript(std::weak_ptr<Funscript>&& script) noexcept
+	inline void SetScript(std::weak_ptr<const Funscript>&& script) noexcept
 	{
 		this->currentIndex = 0;
 		this->script = std::move(script);
@@ -66,7 +115,12 @@ public:
 		}
 	}
 
-	inline void sync(int32_t CurrentTimeMs) noexcept {
+	inline std::weak_ptr<const Funscript>& GetScript() noexcept
+	{
+		return script;
+	}
+
+	inline void sync(int32_t CurrentTimeMs, float freq) noexcept {
 		if (script.expired() || channel == nullptr) return;
 
 		auto scriptPtr = script.lock();
@@ -84,7 +138,7 @@ public:
 			}
 		}
 
-		float interp = getPos(CurrentTimeMs);
+		float interp = getPos(CurrentTimeMs, freq);
 		channel->SetNextPos(interp);
 	}
 
@@ -92,7 +146,7 @@ public:
 	bool foo = false;
 #endif
 
-	inline void tick(int32_t CurrentTimeMs) noexcept {
+	inline void tick(int32_t CurrentTimeMs, float freq) noexcept {
 		if (script.expired() || channel == nullptr) return;
 
 		auto scriptPtr = script.lock();
@@ -127,7 +181,7 @@ public:
 			foo = false;
 		}
 #endif
-		float interp = getPos(CurrentTimeMs);
+		float interp = getPos(CurrentTimeMs, freq);
 		channel->SetNextPos(interp);
 	}
 };
@@ -174,15 +228,15 @@ public:
 		}
 	}
 
-	inline void tick(int32_t CurrentTimeMs) noexcept {
+	inline void tick(int32_t CurrentTimeMs, float freq) noexcept {
 		for (auto& prod : producers) {
-			prod.tick(CurrentTimeMs);
+			prod.tick(CurrentTimeMs, freq);
 		}
 	}
 
-	inline void sync(int32_t CurrentTimeMs) noexcept {
+	inline void sync(int32_t CurrentTimeMs, float freq) noexcept {
 		for (auto& prod : producers) {
-			prod.sync(CurrentTimeMs);
+			prod.sync(CurrentTimeMs, freq);
 		}
 	}
 };
