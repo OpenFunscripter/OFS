@@ -68,7 +68,7 @@ public:
 	// helper
 	static void PushEvent(int32_t type) noexcept;
 	static void SingleShot(SingleShotEventHandler&& handler, void* ctx) noexcept;
-	[[nodiscard("this must be waited on")]]static std::unique_ptr<WaitableSingleShotEventData> WaitableSingleShot(SingleShotEventHandler&& handler, void* ctx) noexcept;
+	[[nodiscard/*("this must be waited on")*/]]static std::unique_ptr<WaitableSingleShotEventData> WaitableSingleShot(SingleShotEventHandler&& handler, void* ctx) noexcept;
 
 	static EventSystem* instance;
 	static EventSystem& ev() noexcept {

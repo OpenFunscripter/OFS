@@ -26,7 +26,7 @@ VideobrowserItem::VideobrowserItem(Video&& vid) noexcept
 		// to ensure the thumbnails gets regenerated
 		// when the content changes
 		std::stringstream ss;
-		ss << vid.filename;
+		ss << vid.videoFilename;
 		ss << vid.byte_count;
 		auto hashString = ss.str();
 		this->ThumbnailHash = XXH64(hashString.c_str(), hashString.size(), 0);
@@ -135,7 +135,7 @@ void VideobrowserItem::GenThumbail() noexcept
 		for (auto& fmt : fmts) {
 			int num = stbsp_snprintf(buffer, sizeof(buffer), fmt,
 				ffmpeg_path.u8string().c_str(),
-				data->video->path.c_str(),
+				data->video->videoPath.c_str(),
 				data->thumbOutputFilePath.c_str()
 			);
 			FUN_ASSERT(num < sizeof(buffer), "buffer to small");

@@ -37,8 +37,10 @@ struct Video : Entity<Video>
 {
 	OFP_SQLITE_ID(id);
 
-	std::string filename;
-	std::string path;
+	std::string videoFilename;
+	std::string videoPath;
+
+	std::string scriptPath;
 
 	uint64_t byte_count;
 	uint64_t timestamp;
@@ -79,8 +81,9 @@ inline auto initStorage(const std::string& path)
 		// video files
 		make_table("videos",
 			make_column("video_pk", &Video::id, autoincrement(), primary_key()),
-			make_column("filename", &Video::filename),
-			make_column("path", &Video::path, unique()),
+			make_column("video_filename", &Video::videoFilename),
+			make_column("video_path", &Video::videoPath, unique()),
+			make_column("script_path", &Video::scriptPath),
 			make_column("byte_count", &Video::byte_count),
 			make_column("timestamp", &Video::timestamp),
 			make_column("has_script", &Video::hasScript),
@@ -179,7 +182,14 @@ public:
 
 	inline static void init() {
 		auto store = storage();
-		store.sync_schema();
+		try
+		{
+			store.sync_schema();
+		}
+		catch (std::system_error& er)
+		{
+			LOGF_ERROR("%s", er.what());
+		}
 		//Storage.sync_schema();
 		//Storage.open_forever();
 		//Storage.busy_timeout(15000);

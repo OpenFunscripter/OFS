@@ -25,6 +25,14 @@
 #include "windows.h"
 #endif
 
+
+#ifndef NDEBUG
+constexpr uint64_t MaxFileSearchFutures = 4;
+#else
+constexpr uint64_t MaxFileSearchFutures = 16;
+#endif
+
+
 SDL_sem* Videobrowser::ThumbnailThreadSem = SDL_CreateSemaphore(Videobrowser::MaxThumbailProcesses);
 
 static uint64_t GetFileAge(const std::filesystem::path& path) {
@@ -67,6 +75,7 @@ void Videobrowser::updateLibraryCache() noexcept
 		auto data = static_cast<UpdateLibraryThreadData*>(ctx);
 		auto& browser = *data->browser;
 
+		// clear current items
 		{
 			auto handle = EventSystem::WaitableSingleShot(
 				[](void* ctx)
@@ -81,131 +90,140 @@ void Videobrowser::updateLibraryCache() noexcept
 			handle->wait();
 		}
 
-		// check if videos went away
-		auto allVideos = Videolibrary::GetAll<Video>();
-		for (auto& video : allVideos) {
-			LOGF_INFO("Looking for %s", video.filename.c_str());
-			if (!Util::FileExists(video.path))
-			{
-				Videolibrary::Remove<Video>(video.id);
-				LOGF_INFO("Removing %s", video.filename.c_str());
-			}
-		}
-
-
-		auto& searchPaths = data->browser->settings->SearchPaths;
-		for (auto& sPath : searchPaths) {
-			auto pathObj = Util::PathFromString(sPath.path);
-
-			auto handleItem = [browser=data->browser](auto p) {
-				auto extension = p.path().extension().u8string();
-				auto pathString = p.path().u8string();
-				auto filename = p.path().filename().u8string();
-
-				auto it = std::find_if(BrowserExtensions.begin(), BrowserExtensions.end(),
-					[&](auto& ext) {
-						return std::strcmp(ext.first, extension.c_str()) == 0;
-					});
-if (it != BrowserExtensions.end()) {
-	// extension matches
-	auto funscript = p.path();
-	funscript.replace_extension(".funscript");
-	bool matchingScript = Util::FileExists(funscript.u8string());
-	if (!matchingScript) return;
-
-
-	// valid extension + matching script
-	size_t byte_count = p.file_size();
-	auto timestamp = GetFileAge(p.path());
-
-	Video vid;
-	vid.path = pathString;
-	vid.byte_count = byte_count;
-	vid.filename = filename;
-	vid.hasScript = matchingScript;
-	vid.timestamp = timestamp;
-	vid.shouldGenerateThumbnail = it->second;
-	if (!vid.try_insert()) {
-		// failed to insert
-		return;
-	}
-
-	{
-		Funscript::Metadata meta;
-		meta.loadFromFunscript(funscript.u8string());
-		for (auto& mtag : meta.tags) {
-			Tag imported;
-			imported.tag = mtag;
-			imported.try_insert();
-
-			if (imported.id < 0) {
-				using namespace sqlite_orm;
-				try
+		auto checkForRemovedFiles = []()
+		{
+			auto allVideos = Videolibrary::GetAll<Video>();
+			for (auto& video : allVideos) {
+				LOGF_INFO("Looking for %s", video.videoFilename.c_str());
+				if (!Util::FileExists(video.videoPath))
 				{
-					auto tag = Videolibrary::TagByName(imported.tag);
-					FUN_ASSERT(tag.has_value(), "where did the tag go!?");
-					imported.id = tag->id;
+					Videolibrary::Remove<Video>(video.id);
+					LOGF_INFO("Couldn't find %s", video.videoPath.c_str());
 				}
-				catch (std::system_error& er) {
-					LOGF_ERROR("%s", er.what());
+				else if (!Util::FileExists(video.scriptPath))
+				{
+					Videolibrary::Remove<Video>(video.id);
+					LOGF_INFO("Couldn't find %s", video.scriptPath.c_str());
 				}
 			}
-			VideoAndTag connect;
-			connect.tagId = imported.id;
-			connect.videoId = vid.id;
-			try {
-				// must be replaced because tagId & videoId are primary keys
-				connect.replace();
-			}
-			catch (std::system_error& er) {
-				LOGF_ERROR("%s", er.what());
-			}
-		}
-	}
+		};
 
-	SDL_AtomicLock(&browser->ItemsLock);
-	browser->Items.emplace_back(std::move(vid));
-	SDL_AtomicUnlock(&browser->ItemsLock);
-	LOGF_DEBUG("done hanlding %s", filename.c_str());
-}
-			};
+		auto searchPathsForVideos = [](UpdateLibraryThreadData* data)
+		{
+			auto& searchPaths = data->browser->settings->SearchPaths;
+			for (auto& sPath : searchPaths) {
+				auto pathObj = Util::PathFromString(sPath.path);
 
-			std::error_code ec;
-#ifndef NDEBUG
-			constexpr uint64_t maxFutures = 4;
-#else
-			constexpr uint64_t maxFutures = 16;
-#endif
-			std::vector<std::future<void>> futures;
-			if (sPath.recursive) {
-				for (auto& p : std::filesystem::recursive_directory_iterator(pathObj, ec)) {
-					if (p.is_directory()) continue;
-					futures.emplace_back(std::async(std::launch::async, handleItem, p));
-					if (futures.size() == maxFutures) {
-						for (auto& future : futures) {
-							future.wait();
+				auto handleItem = [browser = data->browser](auto p) {
+					auto extension = p.path().extension().u8string();
+					auto pathString = p.path().u8string();
+					auto filename = p.path().filename().u8string();
+
+					auto it = std::find_if(BrowserExtensions.begin(), BrowserExtensions.end(),
+						[&](auto& ext) {
+							return std::strcmp(ext.first, extension.c_str()) == 0;
+						});
+					if (it != BrowserExtensions.end()) {
+						// extension matches
+						auto funscript = p.path();
+						funscript.replace_extension(".funscript");
+						auto funscript_path = funscript.u8string();
+						bool matchingScript = Util::FileExists(funscript_path);
+						if (!matchingScript) return;
+
+
+						// valid extension + matching script
+						size_t byte_count = p.file_size();
+						auto timestamp = GetFileAge(p.path());
+
+						Video vid;
+						vid.videoPath = pathString;
+						vid.byte_count = byte_count;
+						vid.videoFilename = filename;
+						vid.hasScript = matchingScript;
+						vid.timestamp = timestamp;
+						vid.shouldGenerateThumbnail = it->second;
+						vid.scriptPath = funscript_path;
+						if (!vid.try_insert()) {
+							// failed to insert
+							return;
 						}
-						futures.clear();
+
+						{
+							Funscript::Metadata meta;
+							meta.loadFromFunscript(funscript.u8string());
+							for (auto& mtag : meta.tags) {
+								Tag imported;
+								imported.tag = mtag;
+								imported.try_insert();
+
+								if (imported.id < 0) {
+									using namespace sqlite_orm;
+									try
+									{
+										auto tag = Videolibrary::TagByName(imported.tag);
+										FUN_ASSERT(tag.has_value(), "where did the tag go!?");
+										imported.id = tag->id;
+									}
+									catch (std::system_error& er) {
+										LOGF_ERROR("%s", er.what());
+									}
+								}
+								VideoAndTag connect;
+								connect.tagId = imported.id;
+								connect.videoId = vid.id;
+								try {
+									// must be replaced because tagId & videoId are primary keys
+									connect.replace();
+								}
+								catch (std::system_error& er) {
+									LOGF_ERROR("%s", er.what());
+								}
+							}
+						}
+
+						SDL_AtomicLock(&browser->ItemsLock);
+						browser->Items.emplace_back(std::move(vid));
+						SDL_AtomicUnlock(&browser->ItemsLock);
+						LOGF_DEBUG("done hanlding %s", filename.c_str());
+					}
+				};
+
+				std::error_code ec;
+				std::vector<std::future<void>> futures;
+				if (sPath.recursive) {
+					for (auto& p : std::filesystem::recursive_directory_iterator(pathObj, ec)) {
+						if (p.is_directory()) continue;
+						futures.emplace_back(std::async(std::launch::async, handleItem, p));
+						if (futures.size() == MaxFileSearchFutures) {
+							for (auto& future : futures) {
+								future.wait();
+							}
+							futures.clear();
+						}
 					}
 				}
-			}
-			else {
-				for (auto& p : std::filesystem::directory_iterator(pathObj, ec)) {
-					if (p.is_directory()) continue;
-					futures.emplace_back(std::async(std::launch::async, handleItem, p));
-					if (futures.size() == maxFutures) {
-						for (auto& future : futures) {
-							future.wait();
+				else {
+					for (auto& p : std::filesystem::directory_iterator(pathObj, ec)) {
+						if (p.is_directory()) continue;
+						futures.emplace_back(std::async(std::launch::async, handleItem, p));
+						if (futures.size() == MaxFileSearchFutures) {
+							for (auto& future : futures) {
+								future.wait();
+							}
+							futures.clear();
 						}
-						futures.clear();
 					}
 				}
+				for (auto& fut : futures) { fut.wait(); }
+				LOGF_DEBUG("Done iterating \"%s\" %s", sPath.path.c_str(), sPath.recursive ? "recursively" : "");
 			}
-			for (auto& fut : futures) { fut.wait(); }
-			LOGF_DEBUG("Done iterating \"%s\" %s", sPath.path.c_str(), sPath.recursive ? "recursively" : "");
-		}
+		};
 
+		checkForRemovedFiles();
+		searchPathsForVideos(data);
 
+		// set items equal to all videos
 		{
 			auto handle = EventSystem::WaitableSingleShot(
 				[](void* ctx)
@@ -364,7 +382,7 @@ void Videobrowser::renderRandomizer() noexcept
 	{
 		if (!preview.loading)
 		{
-			preview.previewVideo(rolledItem.video.path, 0.1f);
+			preview.previewVideo(rolledItem.video.videoPath, 0.1f);
 		}
 		if (preview.ready)
 		{
@@ -379,8 +397,10 @@ void Videobrowser::renderRandomizer() noexcept
 	{
 		rolledItem.GenThumbail();
 	}
-	auto textSize = ImGui::CalcTextSize(rolledItem.video.filename.c_str());
-	draw_list->AddText(p1 + ImVec2((videoSize.x/2.f) - (textSize.x/2.f), videoSize.y + style.ItemSpacing.y), ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]), rolledItem.video.filename.c_str());
+	auto textSize = ImGui::CalcTextSize(rolledItem.video.videoFilename.c_str());
+	draw_list->AddText(
+		p1 + ImVec2((videoSize.x/2.f) - (textSize.x/2.f), videoSize.y + style.ItemSpacing.y),
+		ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]), rolledItem.video.videoFilename.c_str());
 
 	if (RollCount == PickAfterRolls)
 	{
@@ -409,7 +429,7 @@ void Videobrowser::renderRandomizer() noexcept
 void Videobrowser::fileClickedHandler(VideobrowserItem& item) noexcept
 {
 	if (item.video.hasScript) {
-		ClickedFilePath = item.video.path;
+		ClickedFilePath = item.video.videoPath;
 		EventSystem::PushEvent(VideobrowserEvents::VideobrowserItemClicked);
 	}
 }
@@ -556,7 +576,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 		int index = 0;
 		for (auto& item : Items) {
 			if (!Filter.empty()) {
-				if (!Util::ContainsInsensitive(item.video.filename, Filter)) {
+				if (!Util::ContainsInsensitive(item.video.videoFilename, Filter)) {
 					continue;
 				}
 			}
@@ -575,7 +595,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 			auto texId = item.texture.GetTexId();
 			if (settings->showThumbnails && texId != 0) {
 				ImVec2 padding = item.video.hasScript ? ImVec2(0, 0) : ImVec2(ItemWidth*0.1f, ItemWidth*0.1f);
-				if(ImGui::ImageButtonEx(ImGui::GetID(item.video.path.c_str()),
+				if(ImGui::ImageButtonEx(ImGui::GetID(item.video.videoPath.c_str()),
 					item.Focussed && preview.ready ? (void*)(intptr_t)preview.render_texture : (void*)(intptr_t)texId,
 					ItemDim - padding,
 					ImVec2(0, 0), ImVec2(1, 1),
@@ -593,7 +613,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 			else {
 				if(!item.video.hasScript) { ImGui::PushStyleColor(ImGuiCol_Button, FileTintColor.Value); }
 				
-				if (ImGui::Button(item.video.filename.c_str(), ItemDim)) {
+				if (ImGui::Button(item.video.videoFilename.c_str(), ItemDim)) {
 					fileClickedHandler(item);
 				}
 				if (settings->showThumbnails && item.video.HasThumbnail() && ImGui::IsItemVisible()) {
@@ -631,14 +651,14 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 					ImGui::EndMenu();
 				}
 				if (ImGui::MenuItem("Explore location...")) {
-					auto path = Util::PathFromString(item.video.path);
+					auto path = Util::PathFromString(item.video.videoPath);
 					path.remove_filename();
 					Util::OpenFileExplorer(path.u8string().c_str());
 				}
 				ImGui::EndPopup();
 			}
 			else {
-				Util::Tooltip(item.video.filename.c_str());
+				Util::Tooltip(item.video.videoFilename.c_str());
 			}
 
 			index++;
@@ -649,7 +669,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 
 		if (previewItem != nullptr && !preview.loading || previewItem != nullptr && previewItem->texture.Id != previewItemId) {
 			previewItemId = previewItem->texture.Id;
-			preview.previewVideo(previewItem->video.path, 0.2f);
+			preview.previewVideo(previewItem->video.videoPath, 0.2f);
 		}
 		else if (previewItem == nullptr && preview.ready) {
 			preview.closeVideo();
