@@ -368,6 +368,7 @@ static int32_t TCodeThread(void* threadData) noexcept {
 
         while((duration = std::chrono::high_resolution_clock::now() - currentTime).count() < tickDurationSeconds) {
             /* Spin wait */
+            OFS_PAUSE_INTRIN();
             int ms = (duration.count() / 0.001f) - 1;
             if (ms > 0) { SDL_Delay(ms); }
         }

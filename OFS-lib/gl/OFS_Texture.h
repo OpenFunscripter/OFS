@@ -57,6 +57,7 @@ public:
 				//LOGF_DEBUG("READ: Writes:%d", value - 1);	
 				break; 
 			}
+			OFS_PAUSE_INTRIN();
 		}
 
 		// after reading SDL_AtomicIncRef(&Reads);
@@ -68,6 +69,7 @@ public:
 		for (;;) {
 			queuedWrites = SDL_AtomicGet(&QueuedWrites);
 			if (SDL_AtomicCAS(&QueuedWrites, queuedWrites, 0)) { break; }
+			OFS_PAUSE_INTRIN();
 		}
 
 		for (;;) {
@@ -78,6 +80,7 @@ public:
 				//LOGF_DEBUG("WRITE: Writes: %d", queuedWrites);
 				break; 
 			}
+			OFS_PAUSE_INTRIN();
 		}
 		SDL_SemWait(WriteSem);
 		// after writing SDL_AtomicDecRef(&Reads) + SDL_SemPost(WriteSem)

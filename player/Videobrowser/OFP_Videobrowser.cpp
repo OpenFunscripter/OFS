@@ -16,7 +16,7 @@
 
 #include <filesystem>
 #include <sstream>
-
+#include <algorithm>
 #include <future>
 
 #ifdef WIN32
@@ -25,13 +25,11 @@
 #include "windows.h"
 #endif
 
-
 #ifndef NDEBUG
 constexpr uint64_t MaxFileSearchFutures = 4;
 #else
 constexpr uint64_t MaxFileSearchFutures = 16;
 #endif
-
 
 SDL_sem* Videobrowser::ThumbnailThreadSem = SDL_CreateSemaphore(Videobrowser::MaxThumbailProcesses);
 
@@ -137,6 +135,15 @@ void Videobrowser::updateLibraryCache() noexcept
 						auto timestamp = GetFileAge(p.path());
 
 						Video vid;
+						bool updateVid = false;
+						{
+							auto optVid = Videolibrary::GetVideoByPath(pathString);
+							if (optVid.has_value())
+							{
+								vid = std::move(optVid.value());
+								updateVid = true;
+							}
+						}
 						vid.videoPath = pathString;
 						vid.byte_count = byte_count;
 						vid.videoFilename = filename;
@@ -144,43 +151,86 @@ void Videobrowser::updateLibraryCache() noexcept
 						vid.timestamp = timestamp;
 						vid.shouldGenerateThumbnail = it->second;
 						vid.scriptPath = funscript_path;
-						if (!vid.try_insert()) {
-							// failed to insert
-							return;
+						
+						if (updateVid) { vid.update(); }
+						else { 
+							if (!vid.try_insert()) { 
+								FUN_ASSERT(false, "what!?")
+								return; 
+							} 
 						}
 
 						{
-							Funscript::Metadata meta;
-							meta.loadFromFunscript(funscript.u8string());
-							for (auto& mtag : meta.tags) {
-								Tag imported;
-								imported.tag = mtag;
-								imported.try_insert();
+							std::vector<std::string> scriptTags;
+							{
+								Funscript::Metadata meta;
+								meta.loadFromFunscript(funscript_path);
+								scriptTags = std::move(meta.tags);
+							}
+							auto videoTags = Videolibrary::GetTagsForVideo(vid.id);
+							if (videoTags.size() > 0 || scriptTags.size() > 0) 
+							{
+								std::vector<std::string> dbTagStrings;
+								dbTagStrings.reserve(videoTags.size());
+								for (auto& dbTag : videoTags) { dbTagStrings.emplace_back(dbTag.tag); }
 
-								if (imported.id < 0) {
-									using namespace sqlite_orm;
-									try
-									{
-										auto tag = Videolibrary::TagByName(imported.tag);
-										FUN_ASSERT(tag.has_value(), "where did the tag go!?");
-										imported.id = tag->id;
-									}
-									catch (std::system_error& er) {
-										LOGF_ERROR("%s", er.what());
+								std::sort(dbTagStrings.begin(), dbTagStrings.end());
+								std::sort(scriptTags.begin(), scriptTags.end());
+
+								// remove tags from video
+								{
+									std::vector<std::string> removeTags;
+									std::set_difference(
+										dbTagStrings.begin(), dbTagStrings.end(),
+										scriptTags.begin(), scriptTags.end(),
+										std::back_inserter(removeTags)
+									);
+
+							
+									for (auto& removeTag : removeTags) {
+										auto tag = Videolibrary::GetTagByName(removeTag);
+
+										if (tag.has_value()) {
+											Videolibrary::Remove<VideoAndTag>(vid.id, tag->id);
+
+											if (Videolibrary::GetTagUsage(tag->id) == 0) {
+												// remove
+												Videolibrary::Remove<Tag>(tag->id);
+											}
+										}
 									}
 								}
-								VideoAndTag connect;
-								connect.tagId = imported.id;
-								connect.videoId = vid.id;
-								try {
-									// must be replaced because tagId & videoId are primary keys
-									connect.replace();
-								}
-								catch (std::system_error& er) {
-									LOGF_ERROR("%s", er.what());
+
+								// add tags to video
+								{
+									std::vector<std::string> addTags;
+									std::set_difference(
+										scriptTags.begin(), scriptTags.end(),
+										dbTagStrings.begin(), dbTagStrings.end(),
+										std::back_inserter(addTags)
+									);
+
+									for (auto& addTag : addTags) {
+										Tag imported;
+										imported.tag = addTag;
+										imported.try_insert();
+
+										if (imported.id < 0) {
+											auto tag = Videolibrary::TagByName(imported.tag);
+											FUN_ASSERT(tag.has_value(), "where did the tag go!?");
+											imported.id = tag->id;
+										}
+										VideoAndTag connect;
+										connect.tagId = imported.id;
+										connect.videoId = vid.id;
+										// must be replaced because tagId & videoId are primary keys
+										connect.replace();
+									}
 								}
 							}
 						}
+
+						if (updateVid) { return; }
 
 						SDL_AtomicLock(&browser->ItemsLock);
 						browser->Items.emplace_back(std::move(vid));
@@ -280,24 +330,6 @@ Videobrowser::Videobrowser(VideobrowserSettings* settings)
 void Videobrowser::Randomizer(const char* Id, bool* open) noexcept
 {
 	if (open != nullptr && !*open) return;
-
-	//if (Random) {
-	//	ImGui::OpenPopup(Id);
-	//	ImGui::SetNextWindowSizeConstraints(ImVec2(500, 500), ImVec2(3000, 3000),
-	//		[](ImGuiSizeCallbackData* data) {
-	//			if (data->CurrentSize.x == data->DesiredSize.x && data->CurrentSize.y == data->DesiredSize.y)return;
-	//			float size;
-	//			if (data->CurrentSize.x < data->DesiredSize.x || data->CurrentSize.y < data->DesiredSize.y)
-	//			{
-	//				size = std::min(data->DesiredSize.x, data->DesiredSize.y);
-	//			}
-	//			else
-	//			{
-	//				size = std::max(data->DesiredSize.x, data->DesiredSize.y);
-	//			}
-	//			data->DesiredSize = ImVec2(size, size);
-	//		});
-	//}
 
 	ImGui::Begin(Id, open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove);
 	//auto hostWidth = ImGui::GetContentRegionAvail().x;
@@ -404,7 +436,6 @@ void Videobrowser::renderRandomizer() noexcept
 
 	if (RollCount == PickAfterRolls)
 	{
-		char tmp[16];
 		stbsp_snprintf(tmp, sizeof(tmp), "%.2f seconds", (ShowResultTime - (SDL_GetTicks() - LastRollTime)) / 1000.f);
 		auto countDownTextSize = ImGui::CalcTextSize(tmp);
 		draw_list->AddText(
@@ -537,9 +568,25 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 		static std::vector<int64_t> activeFilterTags;
 		int activeCount = activeFilterTags.size();
 		activeFilterTags.clear();
-		for (auto& tagItem : Tags) {
-			if (ImGui::Checkbox(tagItem.tag.c_str(), &tagItem.FilterActive)) {}
-			if (tagItem.FilterActive) { activeFilterTags.emplace_back(tagItem.id); }
+
+		{
+			int deleteIndex = -1;
+			for (int i = 0; i < Tags.size(); i++) {
+				ImGui::PushID(i);
+				auto& tagItem = Tags[i];
+				int32_t usageCount = tagItem.UsageCount();
+				stbsp_snprintf(tmp, sizeof(tmp), "%s (%d)", tagItem.tag.c_str(), usageCount);
+				ImGui::Checkbox(tmp, &tagItem.FilterActive);
+				if (usageCount == 0) {
+					ImGui::SameLine();
+					if(ImGui::Button(ICON_TRASH)) {
+						deleteIndex = i;
+					}
+				}
+				if (tagItem.FilterActive) { activeFilterTags.emplace_back(tagItem.id); }
+				ImGui::PopID();
+			}
+			if (deleteIndex >= 0) { Videolibrary::Remove<Tag>(Tags[deleteIndex].id);  }
 		}
 
 		if (activeCount != activeFilterTags.size()) {
@@ -632,10 +679,8 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 							VideoAndTag connect;
 							connect.tagId = t.id;
 							connect.videoId = item.video.id;
-							if (connect.replace())
-							{
-								// TODO: write tag into funscript
-							}
+							connect.replace();
+							Videolibrary::WritebackFunscriptTags(item.video.id, item.video.scriptPath);
 						}
 					}
 					ImGui::EndMenu();
@@ -645,9 +690,10 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 					for (auto& t : item.AssignedTags) {
 						if (ImGui::MenuItem(t.tag.c_str())) {
 							Videolibrary::Remove<VideoAndTag>(item.video.id, t.id);
-							// TODO: remove tag from funscript
+							Videolibrary::WritebackFunscriptTags(item.video.id, item.video.scriptPath);
 						}
 					}
+					if (item.AssignedTags.empty()) ImGui::TextDisabled("Nothing here.");
 					ImGui::EndMenu();
 				}
 				if (ImGui::MenuItem("Explore location...")) {

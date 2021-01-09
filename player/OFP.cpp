@@ -14,10 +14,6 @@
 #include <sstream>
 #include <limits>
 
-// TODO: Videobrowser write tags back into funscripts
-// TODO: Videobrowser update library process should include reimporting tags
-// TODO: Videobrowser tag manager for deleting tags
-
 constexpr const char* glsl_version = "#version 150";
 constexpr int DefaultWidth = 1920;
 constexpr int DefaultHeight = 1080;

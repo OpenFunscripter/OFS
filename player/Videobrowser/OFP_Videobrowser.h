@@ -77,6 +77,8 @@ public:
 
     uint64_t previewItemId = 0;
     VideoPreview preview;
+    
+    char tmp[64];
 
 	static constexpr const char* VideobrowserId = "Videobrowser";
     static constexpr const char* VideobrowserSceneId = "VideobrowserScene";

@@ -792,16 +792,17 @@ void FunscriptEvents::RegisterEvents() noexcept
 	FunscriptSelectionChangedEvent = SDL_RegisterEvents(1);
 }
 
-void Funscript::Metadata::loadFromFunscript(const std::string& path) noexcept
+bool Funscript::Metadata::loadFromFunscript(const std::string& path) noexcept
 {
 	bool succ;
 	auto json = Util::LoadJson(path, &succ);
 	if (succ && json.contains("metadata")) {
 		OFS::serializer::load(this, &json["metadata"]);
 	}
+	return succ;
 }
 
-void Funscript::Metadata::writeToFunscript(const std::string& path) noexcept
+bool Funscript::Metadata::writeToFunscript(const std::string& path) noexcept
 {
 	bool succ;
 	auto json = Util::LoadJson(path, &succ);
@@ -810,4 +811,5 @@ void Funscript::Metadata::writeToFunscript(const std::string& path) noexcept
 		OFS::serializer::save(this, &json["metadata"]);
 		Util::WriteJson(json, path, false);
 	}
+	return succ;
 }

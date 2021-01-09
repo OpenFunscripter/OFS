@@ -15,6 +15,11 @@
 #include "stb_sprintf.h"
 #include "stb_image.h"
 
+#include "emmintrin.h" // for _mm_pause
+
+#define OFS_PAUSE_INTRIN _mm_pause
+
+
 // helper for FontAwesome. Version 4.7.0 2016 ttf
 #define ICON_FOLDER_OPEN "\xef\x81\xbc"
 #define ICON_VOLUME_UP "\xef\x80\xa8"
@@ -34,6 +39,7 @@
 #define ICON_SHARE "\xef\x81\x85"
 #define ICON_EXCLAMATION "\xef\x84\xaa"
 #define ICON_REFRESH "\xef\x80\xa1"
+#define ICON_TRASH "\xef\x87\xb8"
 
 //#ifndef NDEBUG
 #define LOG_INFO(msg)  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, msg)

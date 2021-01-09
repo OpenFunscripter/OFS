@@ -80,8 +80,8 @@ public:
 			OFS_REFLECT(notes, ar);
 		}
 
-		void loadFromFunscript(const std::string& path) noexcept;
-		void writeToFunscript(const std::string& path) noexcept;
+		bool loadFromFunscript(const std::string& path) noexcept;
+		bool writeToFunscript(const std::string& path) noexcept;
 	} metadata;
 
 	std::unique_ptr<FunscriptUserData> userdata = nullptr;

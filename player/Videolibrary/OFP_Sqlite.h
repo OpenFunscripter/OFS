@@ -66,6 +66,7 @@ struct Tag : Entity<Tag>
 
 	// not used in db
 	bool FilterActive = false;
+	int32_t UsageCount();
 };
 
 struct VideoAndTag : Entity<VideoAndTag>
@@ -135,6 +136,7 @@ private:
 				//LOGF_DEBUG("ReadDB: %d", value - 1);	
 				break;
 			}
+			OFS_PAUSE_INTRIN();
 		}
 		// after reading SDL_AtomicIncRef(&Reads);
 	}
@@ -147,6 +149,7 @@ private:
 		for (;;) {
 			queuedWrites = SDL_AtomicGet(&QueuedWrites);
 			if (SDL_AtomicCAS(&QueuedWrites, queuedWrites, 0)) { break; }
+			OFS_PAUSE_INTRIN();
 		}
 		// if Reads is 0 set it attomically to queuedWrites
 		for (;;) {
@@ -157,6 +160,7 @@ private:
 				//LOGF_DEBUG("WriteDB: %d", queuedWrites);
 				break;
 			}
+			OFS_PAUSE_INTRIN();
 		}
 		// multiple writes have to go one at a time
 		SDL_SemWait(WriteSem);
@@ -173,6 +177,7 @@ private:
 		static auto cachedPath = Util::PrefpathOFP("library.sqlite");
 		auto store = initStorage(cachedPath);
 		store.open_forever();
+		store.busy_timeout(5000);
 		//ReadDB();
 		//store.sync_schema_simulate();
 		//SDL_AtomicIncRef(&Reads);
@@ -225,6 +230,45 @@ public:
 		return std::vector<Tag>();
 	}
 
+	inline static int64_t GetTagUsage(int64_t tagId) 
+	{
+		using namespace sqlite_orm;
+		auto store = storage();
+		ReadDB();
+		int count = 0;
+		try
+		{
+			count = store.count<VideoAndTag>(where(c(&VideoAndTag::tagId) == tagId));
+		}
+		catch (std::system_error& er)
+		{
+			LOGF_ERROR("sqlite: %s", er.what());
+		}
+		SDL_AtomicIncRef(&Reads);
+		return count;
+	}
+
+	inline static std::optional<Tag> GetTagByName(const std::string& name)
+	{
+		using namespace sqlite_orm;
+		auto store = storage();
+		ReadDB();
+		std::optional<Tag> result;
+		try
+		{
+			auto tags = store.get_all<Tag>(where(c(&Tag::tag) == name));
+			if (tags.size() > 0) {
+				result = std::make_optional<Tag>(tags.front());
+			}
+		}
+		catch (std::system_error& er)
+		{
+			LOGF_ERROR("sqlite: %s", er.what());
+		}
+		SDL_AtomicIncRef(&Reads);
+		return result;
+	}
+
 	inline static int64_t GetTagCountForVideo(int64_t videoId) {
 		using namespace sqlite_orm;
 		auto store = storage();
@@ -265,6 +309,29 @@ public:
 		}
 		SDL_AtomicIncRef(&Reads);
 		return std::vector<Video>();
+	}
+
+	inline static std::optional<Video> GetVideoByPath(const std::string& path)
+	{
+		using namespace sqlite_orm;
+		auto store = storage();
+		ReadDB();
+		try
+		{
+			auto video = store.get_all<Video>(
+					where(c(&Video::videoPath) == path)
+				);
+			if (video.size() > 0) {
+				SDL_AtomicIncRef(&Reads);
+				return std::make_optional<Video>(video.front());
+			}
+		}
+		catch (std::system_error& er)
+		{
+			LOGF_ERROR("sqlite: %s", er.what());
+		}
+		SDL_AtomicIncRef(&Reads);
+		return std::optional<Video>();
 	}
 
 	template<typename T>
@@ -435,6 +502,8 @@ public:
 		}
 		EndWriteDB();
 	}
+
+	static bool WritebackFunscriptTags(int64_t videoId, const std::string& funscriptPath) noexcept;
 };
 
 
