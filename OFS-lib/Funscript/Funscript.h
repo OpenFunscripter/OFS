@@ -25,6 +25,13 @@ public:
 	static void RegisterEvents() noexcept;
 };
 
+template<typename UserType>
+class FunscriptUserDataT : public FunscriptUserData
+{
+public:
+	UserType data;
+};
+
 class FunscriptUserData 
 {
 public:
@@ -37,12 +44,6 @@ public:
 	}
 };
 
-template<typename UserType>
-class FunscriptUserDataT : public FunscriptUserData
-{
-public:
-	UserType data;
-};
 
 class Funscript
 {
