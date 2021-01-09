@@ -290,7 +290,7 @@ inline void Funscript::save(const std::string& path, const std::string& usersett
 {
 	setScriptTemplate();
 	saveMetadata();
-	saveSettings<UserSettings>(usersettings, static_cast<UserSettings*>(&userdata->Get<UserSettings>()));
+	saveSettings<UserSettings>(usersettings, static_cast<UserSettings*>(userdata.get()));
 
 	auto& actions = Json["actions"];
 	actions.clear();
