@@ -25,24 +25,23 @@ public:
 	static void RegisterEvents() noexcept;
 };
 
-template<typename UserType>
-class FunscriptUserDataT : public FunscriptUserData
+struct FunscriptUserData 
 {
-public:
-	UserType data;
-};
-
-class FunscriptUserData 
-{
-public:
-	virtual ~FunscriptUserData() {}
-
 	template<typename UserType>
 	UserType& Get() noexcept
 	{
-		return ((FunscriptUserDataT<UserType>*)this)->data;
+		//return ((FunscriptUserDataT<UserType>*)this)->data;
+		return *(UserType*)this;
 	}
+	virtual ~FunscriptUserData() {}
 };
+
+template<typename UserType>
+struct FunscriptUserDataT : public FunscriptUserData
+{
+	UserType data;
+};
+
 
 
 class Funscript

@@ -372,7 +372,7 @@ static int32_t TCodeThread(void* threadData) noexcept {
             int ms = (duration.count() / 0.001f) - 1;
             if (ms > 0) { SDL_Delay(ms); }
         }
-    }
+    } 
     data->running = false;
     data->requestStop = false;
     LOG_INFO("T-Code thread stopped.");
