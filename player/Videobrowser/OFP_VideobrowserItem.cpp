@@ -78,24 +78,22 @@ void VideobrowserItem::GenThumbail() noexcept
 					data->item->texture.SetTexId(texId);
 				}
 
-
 				delete data;
-				}, data);
+			}, data);
 		};
 		GenLoadThreadData* data = (GenLoadThreadData*)user;
 		
-		auto thumb = data->video->thumbnail();
-		if(!thumb.has_value()) {
-			thumb = Videolibrary::Get<Thumbnail>(data->item->ThumbnailHash);
-			if (thumb.has_value()) {
-				data->video->thumbnailId = thumb->id;
-			}
-			else {
-				Thumbnail t;
-				t.id = data->item->ThumbnailHash;
-				t.replace();
-				data->video->thumbnailId = t.id;
-			}
+		auto thumb = Videolibrary::Get<Thumbnail>(data->item->ThumbnailHash);
+		if (thumb.has_value() && (!data->video->thumbnailId.has_value() || data->video->thumbnailId != thumb->id)) {
+			data->video->thumbnailId = thumb->id;
+			data->video->update();
+		}
+		else if (!thumb.has_value()) 
+		{
+			Thumbnail t;
+			t.id = data->item->ThumbnailHash;
+			t.replace();
+			data->video->thumbnailId = t.id;
 			data->video->update();
 		}
 
@@ -123,44 +121,36 @@ void VideobrowserItem::GenThumbail() noexcept
 		}
 
 		auto ffmpeg_path = Util::FfmpegPath();
+		auto ffmpeg_path_str = ffmpeg_path.u8string();
 
-		char buffer[1024];
+		reproc::options options;
+		options.redirect.parent = true;
 
-		constexpr std::array<const char*, 2> fmts = {
-			OFS_SYSTEM_CMD(R"("%s" -y -ss 00:00:26 -i "%s" -vf "thumbnail=120,scale=360:200" -frames:v 1 "%s")"),	// seeks 26 seconds into the video
-			OFS_SYSTEM_CMD(R"("%s" -y -i "%s" -vf "thumbnail=120,scale=360:200" -frames:v 1 "%s")")   			// for files shorter than 26 seconds
+		auto GenThumbnailArgs = [](const char* ffmpeg, const char* videoPath, const char* output, const char* time = nullptr)
+		{ 
+			std::vector<const char*> args;
+			args.emplace_back(ffmpeg);
+			args.emplace_back("-y");
+			if (time != nullptr) { args.emplace_back("-ss"); args.emplace_back(time); }
+			args.emplace_back("-i"); args.emplace_back(videoPath);
+			args.emplace_back("-vf"); args.emplace_back("thumbnail=120,scale=360:200");
+			args.emplace_back("-frames:v"); args.emplace_back("1");
+			args.emplace_back(output);
+			args.emplace_back(nullptr);
+			return args;
 		};
 
-		bool success = false;
-		for (auto& fmt : fmts) {
-			int num = stbsp_snprintf(buffer, sizeof(buffer), fmt,
-				ffmpeg_path.u8string().c_str(),
-				data->video->videoPath.c_str(),
-				data->thumbOutputFilePath.c_str()
-			);
-			FUN_ASSERT(num < sizeof(buffer), "buffer to small");
-
-			if (num >= sizeof(buffer)) {
-				SDL_SemPost(Videobrowser::ThumbnailThreadSem);
-				delete data;
-				return false;
-			}
-
-			LOGF_DEBUG("Running: %s", buffer);
-#if WIN32
-			auto wide = Util::Utf8ToUtf16(buffer);
-			success = _wsystem(wide.c_str()) == 0;
-#else
-			success = std::system(buffer) == 0;
-#endif
-			success = success && Util::FileExists(data->thumbOutputFilePath);
-			if (success) {
-				break;
-			}
+		auto args = GenThumbnailArgs(ffmpeg_path_str.c_str(), data->video->videoPath.c_str(), data->thumbOutputFilePath.c_str(), "00:00:26");
+		auto[status, ec] = reproc::run(args.data(), options);
+		bool outputFileExists = true;
+		if (!Util::FileExists(data->thumbOutputFilePath)) {
+			args = GenThumbnailArgs(ffmpeg_path_str.c_str(), data->video->videoPath.c_str(), data->thumbOutputFilePath.c_str());
+			auto [status, ec] = reproc::run(args.data(), options);
+			outputFileExists = Util::FileExists(data->thumbOutputFilePath);
 		}
 
 		SDL_SemPost(Videobrowser::ThumbnailThreadSem);
-		if (success) {
+		if (outputFileExists) {
 			loadTextureOnMainThread(data);
 		}
 		else {

@@ -75,7 +75,7 @@ struct Tag : Entity<Tag>
 		for (auto& c : tag)
 		{
 			c = std::tolower(c);
-			if (c == ' ')
+			if (c == ' ' || c == '_')
 			{
 				c = '-';
 			}

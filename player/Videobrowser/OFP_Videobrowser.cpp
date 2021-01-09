@@ -142,6 +142,7 @@ void Videobrowser::updateLibraryCache() noexcept
 							{
 								vid = std::move(optVid.value());
 								updateVid = true;
+								LOGF_INFO("Updating %s", filename.c_str());
 							}
 						}
 						vid.videoPath = pathString;
@@ -170,6 +171,7 @@ void Videobrowser::updateLibraryCache() noexcept
 							auto videoTags = Videolibrary::GetTagsForVideo(vid.id);
 							if (videoTags.size() > 0 || scriptTags.size() > 0) 
 							{
+								LOGF_INFO("Updating script tags for %s", vid.videoFilename.c_str());
 								std::vector<std::string> dbTagStrings;
 								dbTagStrings.reserve(videoTags.size());
 								for (auto& dbTag : videoTags) { Tag::NormalizeTagString(dbTag.tag); dbTagStrings.emplace_back(std::move(dbTag.tag)); } videoTags.clear();
@@ -236,7 +238,7 @@ void Videobrowser::updateLibraryCache() noexcept
 						SDL_AtomicLock(&browser->ItemsLock);
 						browser->Items.emplace_back(std::move(vid));
 						SDL_AtomicUnlock(&browser->ItemsLock);
-						LOGF_DEBUG("done hanlding %s", filename.c_str());
+						LOGF_INFO("found %s", filename.c_str());
 					}
 				};
 
@@ -556,12 +558,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 
 
 		if (Tags.size() != Videolibrary::Count<Tag>()) {
-			try {
-				Tags = Videolibrary::GetAll<Tag>();
-			}
-			catch (std::system_error& er) {
-				LOGF_ERROR("%s", er.what());
-			}
+			Tags = Videolibrary::GetAll<Tag>();
 		}
 
 		if (ImGui::Button("All##AllTagsButton", ImVec2(-1, 0))) {
@@ -729,9 +726,8 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 	}
 	
 	ImGui::End();
-	SDL_AtomicUnlock(&ItemsLock);
-
 	ShowBrowserSettings(&ShowSettings);
+	SDL_AtomicUnlock(&ItemsLock);
 }
 
 void Videobrowser::ShowBrowserSettings(bool* open) noexcept
@@ -742,7 +738,6 @@ void Videobrowser::ShowBrowserSettings(bool* open) noexcept
 		ImGui::OpenPopup(VideobrowserSettingsId);
 
 	if (ImGui::BeginPopupModal(VideobrowserSettingsId, open, ImGuiWindowFlags_None)) {
-
 		if (ImGui::BeginTable("##SearchPaths", 3, ImGuiTableFlags_Borders)) {
 			ImGui::TableSetupColumn("Path");
 			//ImGui::TableSetupColumn("Recursive");
@@ -785,7 +780,14 @@ void Videobrowser::ShowBrowserSettings(bool* open) noexcept
 				}
 			});
 		}
+		ImGui::NewLine(); ImGui::Separator();
+		if (ImGui::Button("Clear database", ImVec2(-1, 0))) {
+			Videolibrary::DeleteAll();
+			auto allVideos = Videolibrary::GetAll<Video>();
+			setVideos(allVideos); // items are locked by the caller
+		}
 
+		Util::ForceMinumumWindowSize(ImGui::GetCurrentWindow());
 		ImGui::EndPopup();
 	}
 }
