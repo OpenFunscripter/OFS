@@ -14,6 +14,8 @@
 #include <sstream>
 #include <limits>
 
+// TODO: switch to reproc library for external processes e.g. ffmpgeg thumbnail generation
+
 constexpr const char* glsl_version = "#version 150";
 constexpr int DefaultWidth = 1920;
 constexpr int DefaultHeight = 1080;

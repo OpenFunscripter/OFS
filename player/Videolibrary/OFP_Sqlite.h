@@ -42,8 +42,8 @@ struct Video : Entity<Video>
 
 	std::string scriptPath;
 
-	uint64_t byte_count;
-	uint64_t timestamp;
+	uint64_t byte_count = 0;
+	uint64_t timestamp = 0;
 
 	bool hasScript;
 	bool shouldGenerateThumbnail;
@@ -67,6 +67,20 @@ struct Tag : Entity<Tag>
 	// not used in db
 	bool FilterActive = false;
 	int32_t UsageCount();
+
+	// trims, converts to lower case & replaces spaces with -
+	inline static void NormalizeTagString(std::string& tag) noexcept
+	{
+		Util::trim(tag);
+		for (auto& c : tag)
+		{
+			c = std::tolower(c);
+			if (c == ' ')
+			{
+				c = '-';
+			}
+		}
+	}
 };
 
 struct VideoAndTag : Entity<VideoAndTag>

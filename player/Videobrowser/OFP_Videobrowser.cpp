@@ -172,7 +172,8 @@ void Videobrowser::updateLibraryCache() noexcept
 							{
 								std::vector<std::string> dbTagStrings;
 								dbTagStrings.reserve(videoTags.size());
-								for (auto& dbTag : videoTags) { dbTagStrings.emplace_back(dbTag.tag); }
+								for (auto& dbTag : videoTags) { Tag::NormalizeTagString(dbTag.tag); dbTagStrings.emplace_back(std::move(dbTag.tag)); } videoTags.clear();
+								for (auto& sTag : scriptTags) { Tag::NormalizeTagString(sTag); }
 
 								std::sort(dbTagStrings.begin(), dbTagStrings.end());
 								std::sort(scriptTags.begin(), scriptTags.end());
@@ -545,6 +546,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 		auto addTag = [](const std::string& newTag) {
 			Tag tag;
 			tag.tag = newTag;
+			tag.NormalizeTagString(tag.tag);
 			tag.insert();
 		};
 		static std::string tagBuffer;

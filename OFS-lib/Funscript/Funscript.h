@@ -25,25 +25,6 @@ public:
 	static void RegisterEvents() noexcept;
 };
 
-struct FunscriptUserData 
-{
-	template<typename UserType>
-	UserType& Get() noexcept
-	{
-		//return ((FunscriptUserDataT<UserType>*)this)->data;
-		return *(UserType*)this;
-	}
-	virtual ~FunscriptUserData() {}
-};
-
-template<typename UserType>
-struct FunscriptUserDataT : public FunscriptUserData
-{
-	UserType data;
-};
-
-
-
 class Funscript
 {
 public:
@@ -84,7 +65,7 @@ public:
 		bool writeToFunscript(const std::string& path) noexcept;
 	} metadata;
 
-	std::unique_ptr<FunscriptUserData> userdata = nullptr;
+	std::shared_ptr<void> userdata = nullptr;
 private:
 	nlohmann::json Json;
 	nlohmann::json BaseLoaded;
@@ -248,14 +229,14 @@ template<class UserSettings>
 inline UserSettings& Funscript::Userdata() noexcept
 {
 	FUN_ASSERT(userdata != nullptr, "userdata is null");
-	return userdata->Get<UserSettings>();
+	return *(UserSettings*)userdata.get();
 }
 
 template<class UserSettings>
 inline void Funscript::AllocUser() noexcept
 {
 	FUN_ASSERT(userdata == nullptr, "there was already userdata");
-	userdata = std::make_unique<FunscriptUserDataT<UserSettings>>();
+	userdata = std::make_shared<UserSettings>();
 }
 
 template<class UserSettings>
@@ -290,8 +271,8 @@ inline bool Funscript::open(const std::string& file, const std::string& usersett
 	data.Actions.assign(actionSet.begin(), actionSet.end());
 
 	loadMetadata();
-	AllocUser<UserSettings>();
-	loadSettings<UserSettings>(usersettings, static_cast<UserSettings*>(&userdata->Get<UserSettings>()));
+	AllocUser<UserSettings>();	
+	loadSettings<UserSettings>(usersettings, static_cast<UserSettings*>(userdata.get()));
 
 	if (metadata.title.empty()) {
 		metadata.title = std::filesystem::path(current_path)
