@@ -53,11 +53,11 @@ public:
 };
 
 #ifdef WIN32
+
+
 class WhirligigPlayer : public WrappedPlayer
 {
 private:
-	uint64_t ConnectSocket = ~0;
-
 	struct WhirligigPlayerData
 	{
 		bool playing = false;
@@ -67,7 +67,7 @@ private:
 
 		int32_t startTicks = 0;
 		int32_t endTicks = 0;
-	};
+	} vars;
 
 	struct WhirligigThreadData
 	{
@@ -75,9 +75,10 @@ private:
 		bool shouldExit = false;
 		bool isRunning = false;
 		bool connected = false;
-		WhirligigPlayerData vars;
 		class OFP* ofp = nullptr;
 	} threadData;
+
+	void parseWhirligigMsg(std::string& msg) noexcept;
 public:
 	static constexpr const char* PlayerId = "Player";
 	VideoplayerWindow::OFS_VideoPlayerSettings Settings;

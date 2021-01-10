@@ -2,6 +2,8 @@
 
 #include "OFS_Util.h"
 
+#include "SDL_timer.h"
+
 static char tmp_buf[2][32];
 
 OFP_WrappedVideoplayerControls::OFP_WrappedVideoplayerControls() noexcept

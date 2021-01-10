@@ -2,7 +2,9 @@
 
 #include "EventSystem.h"
 
-#include "SDL.h"
+#include "SDL_events.h"
+#include "SDL_gamecontroller.h"
+#include "SDL_haptic.h"
 #include <array>
 
 // lifted from https://gist.github.com/urkle/6701236

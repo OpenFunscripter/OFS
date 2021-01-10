@@ -1,7 +1,5 @@
 #pragma once
 
-#include "glad/glad.h"
-#include "OFS_Videoplayer.h"
 #include "EventSystem.h"
 #include "Funscript.h"
 #include "KeybindingSystem.h"
@@ -12,7 +10,6 @@
 #include "OFS_Simulator3D.h"
 #include "OFS_ScriptTimeline.h"
 
-//#include "OFS_VideoplayerControls.h"
 #include "OFP_WrappedVideoplayerControls.h"
 #include "OFP_WrappedPlayer.h"
 

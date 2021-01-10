@@ -2,6 +2,8 @@
 #include "imgui_internal.h"
 #include "imgui_stdlib.h"
 
+#include "OFS_Videoplayer.h"
+
 #include "SDL.h"
 #include "stb_sprintf.h"
 

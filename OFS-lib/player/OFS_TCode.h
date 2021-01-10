@@ -1,5 +1,4 @@
 #pragma once
-#include "c_serial.h"
 #include <cstdint>
 
 #include "OFS_TCodeProducer.h"
@@ -22,8 +21,7 @@ public:
 
 
 	bool openPort(const char* name) noexcept;
-	c_serial_port_t* port = nullptr;
-	c_serial_control_lines_t lines;
+	struct c_serial_port* port = nullptr;
 
 	TCodeChannels tcode;
 	TCodeProducer prod;

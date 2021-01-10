@@ -3,7 +3,6 @@
 #include "Funscript.h"
 #include "GradientBar.h"
 #include "ScriptPositionsOverlayMode.h"
-#include "OFS_Videoplayer.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"

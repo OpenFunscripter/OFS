@@ -1,6 +1,8 @@
 #include "OFS_VideoplayerControls.h"
 #include "OFS_Util.h"
 
+#include "SDL_timer.h"
+
 static char tmp_buf[2][32];
 
 OFS_VideoplayerControls::OFS_VideoplayerControls() noexcept

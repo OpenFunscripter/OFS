@@ -1,6 +1,5 @@
 #pragma once
 
-#include "SDL.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 
@@ -10,6 +9,8 @@
 
 #include <string>
 #include <chrono>
+
+#include "SDL_events.h"
 
 struct mpv_handle;
 struct mpv_render_context;
