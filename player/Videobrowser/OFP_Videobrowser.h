@@ -56,6 +56,8 @@ private:
 
     SDL_SpinLock ItemsLock = 0;
     std::vector<VideobrowserItem> Items;
+    std::vector<VideobrowserItem> FilteredItems;
+
     std::vector<Tag> Tags;
 
     void setVideos(std::vector<Video>& videos) noexcept
@@ -90,6 +92,8 @@ public:
 
     std::string ClickedFilePath;
     std::string Filter;
+
+    std::string NewTagBuffer;
 
     bool ShowSettings = false;
     bool Random = false;

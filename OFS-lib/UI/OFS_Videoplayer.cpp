@@ -143,6 +143,7 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 			case MpvDuration:
 				MpvData.duration = *(double*)prop->data;
 				notifyVideoLoaded();
+				clearLoop();
 				break;
 			case MpvTotalFrames:
 				MpvData.total_num_frames = *(int64_t*)prop->data;
@@ -168,6 +169,20 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 				MpvData.file_path = *((const char**)(prop->data));
 				notifyVideoLoaded();
 				break;
+			case MpvAbLoopA:
+			{
+				MpvData.ab_loop_a = *(double*)prop->data;
+				showText("Loop A set.");
+				LoopState = LoopEnum::A_set;
+				break;
+			}
+			case MpvAbLoopB:
+			{
+				MpvData.ab_loop_b = *(double*)prop->data;
+				showText("Loop B set.");
+				LoopState = LoopEnum::B_set;
+				break;
+			}
 			}
 			continue;
 		}
@@ -196,6 +211,8 @@ void VideoplayerWindow::observeProperties() noexcept
 	mpv_observe_property(mpv, MpvFilePath, "path", MPV_FORMAT_STRING);
 	mpv_observe_property(mpv, MpvHwDecoder, "hwdec-current", MPV_FORMAT_STRING);
 	mpv_observe_property(mpv, MpvFramesPerSecond, "estimated-vf-fps", MPV_FORMAT_DOUBLE);
+	mpv_observe_property(mpv, MpvAbLoopA, "ab-loop-a", MPV_FORMAT_DOUBLE);
+	mpv_observe_property(mpv, MpvAbLoopB, "ab-loop-b", MPV_FORMAT_DOUBLE);
 }
 
 void VideoplayerWindow::renderToTexture() noexcept
@@ -253,7 +270,7 @@ bool VideoplayerWindow::setup(bool force_hw_decoding)
 	EventSystem::ev().Subscribe(VideoEvents::WakeupOnMpvEvents, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvEvents));
 	EventSystem::ev().Subscribe(VideoEvents::WakeupOnMpvRenderUpdate, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvRenderUpdate));
 	EventSystem::ev().Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::mouse_scroll));
-	
+
 	updateRenderTexture();
 
 	mpv = mpv_create();
@@ -269,7 +286,7 @@ bool VideoplayerWindow::setup(bool force_hw_decoding)
 		if (!suc)
 			LOG_WARN("failed to set mpv hardware decoding to \"auto-safe\"");
 	}
-	
+
 	// without this the file gets closed when the end is reached
 	suc = mpv_set_property_string(mpv, "keep-open", "yes") == 0;
 	if (!suc)
@@ -285,7 +302,7 @@ bool VideoplayerWindow::setup(bool force_hw_decoding)
 	mpv_opengl_init_params init_params{ 0 };
 	init_params.get_proc_address = get_proc_address_mpv;
 
-	const int enable = 1;
+	const int64_t enable = 1;
 	mpv_render_param params[] = {
 		mpv_render_param{MPV_RENDER_PARAM_API_TYPE, (void*)MPV_RENDER_API_TYPE_OPENGL},
 		mpv_render_param{MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &init_params},
@@ -323,6 +340,7 @@ bool VideoplayerWindow::setup(bool force_hw_decoding)
 
 	setup_vr_mode();
 	setPaused(true);
+
 	return true;
 }
 
@@ -514,6 +532,26 @@ void VideoplayerWindow::videoRightClickMenu() noexcept
 		ImGui::EndPopup();
 	}
 #endif
+}
+
+void VideoplayerWindow::showText(const char* text) noexcept
+{
+	const char* cmd[] = { "show_text", text, NULL };
+	mpv_command_async(mpv, 0, cmd);
+}
+
+void VideoplayerWindow::clearLoop() noexcept
+{
+	if (LoopState == LoopEnum::A_set)
+	{
+		// call twice
+		cycleLoopAB(); cycleLoopAB();
+	}
+	else if (LoopState == LoopEnum::B_set)
+	{
+		cycleLoopAB();
+	}
+	else { /*loop already clear*/ }
 }
 
 void VideoplayerWindow::DrawVideoPlayer(bool* open, bool* draw_video) noexcept
@@ -711,13 +749,24 @@ void VideoplayerWindow::cycleSubtitles() noexcept
 	mpv_command_async(mpv, 0, cmd);
 }
 
+void VideoplayerWindow::cycleLoopAB() noexcept
+{
+	const char* cmd[]{ "ab-loop", NULL };
+	mpv_command_async(mpv, 0, cmd);
+	if (LoopState == LoopEnum::B_set) {
+		MpvData.ab_loop_a = 0.f;
+		MpvData.ab_loop_b = 0.f;
+		showText("Loop cleared.");
+		LoopState == LoopEnum::Clear;
+	}
+}
+
 void VideoplayerWindow::closeVideo() noexcept
 {
 	const char* cmd[] = { "stop", NULL };
 	mpv_command_async(mpv, 0, cmd);
 	MpvData.video_loaded = false;
 }
-
 
 int32_t VideoEvents::MpvVideoLoaded = 0;
 int32_t VideoEvents::WakeupOnMpvEvents = 0;

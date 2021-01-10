@@ -40,6 +40,11 @@ public:
 	virtual float getCurrentPositionSecondsInterp() const noexcept = 0;
 	virtual const char* getVideoPath() const noexcept = 0;
 
+	virtual void CycleLoopAB() noexcept = 0;
+	virtual bool LoopActive() const noexcept = 0;
+	virtual double LoopASeconds() const noexcept = 0;
+	virtual double LoopBSeconds() const noexcept = 0;
+
 	virtual void cycleSubtitles() noexcept = 0;
 	virtual void saveFrameToImage(const std::string& path) noexcept = 0;
 	virtual void resetTranslationAndZoom() noexcept = 0;
@@ -108,9 +113,14 @@ public:
 	virtual float getCurrentPositionSecondsInterp() const noexcept;
 	virtual const char* getVideoPath() const noexcept;
 
-	virtual void cycleSubtitles() noexcept {}
-	virtual void saveFrameToImage(const std::string& path) noexcept {}
-	virtual void resetTranslationAndZoom() noexcept {}
+	virtual void cycleSubtitles() noexcept { LOG_INFO("This does nothing on Whirligig"); }
+	virtual void saveFrameToImage(const std::string& path) noexcept { LOG_INFO("This does nothing on Whirligig"); }
+	virtual void resetTranslationAndZoom() noexcept { LOG_INFO("This does nothing on Whirligig"); }
+
+	virtual void CycleLoopAB() noexcept { LOG_INFO("This does nothing on Whirligig"); }
+	virtual bool LoopActive() const noexcept { LOG_INFO("This does nothing on Whirligig"); return false; }
+	virtual double LoopASeconds() const noexcept { LOG_INFO("This does nothing on Whirligig"); return 0.f; }
+	virtual double LoopBSeconds() const noexcept { LOG_INFO("This does nothing on Whirligig"); return 0.f; }
 
 	virtual void DrawVideoPlayer(bool* open, bool* show_video) noexcept;
 };
@@ -247,4 +257,9 @@ public:
 	{
 		impl.DrawVideoPlayer(open, show_video);
 	}
+
+	virtual void CycleLoopAB() noexcept { impl.cycleLoopAB(); }
+	virtual bool LoopActive() const noexcept { return impl.LoopActive(); }
+	virtual double LoopASeconds() const noexcept { return impl.LoopASeconds(); }
+	virtual double LoopBSeconds() const noexcept { return impl.LoopBSeconds(); }
 };

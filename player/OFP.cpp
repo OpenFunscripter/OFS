@@ -22,6 +22,12 @@ ImFont* OFP::DefaultFont2 = nullptr;
 
 static ImGuiID MainDockspaceID;
 
+// TODO: fix whirligig implementation maybe use libcluon for the tcp
+// TODO: show active loop in the timeline
+// TODO: autohome when paused
+
+// TODO: try fix to layout issues with docking
+
 constexpr std::array<const char*, 6> SupportedVideoExtensions{
     ".mp4",
     ".mkv",
@@ -259,6 +265,15 @@ void OFP::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem("Fullscreen", BINDING_STRING("fullscreen_toggle"), &Fullscreen)) {
                 set_fullscreen(Fullscreen);
             }
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Loop"))
+        {
+            if (player->LoopActive()) {
+                ImGui::Text("%.3lf to %.3lf", player->LoopASeconds(), player->LoopBSeconds());
+                if (ImGui::MenuItem("Clear loop")) { player->CycleLoopAB(); }
+            }
+            else { if (ImGui::MenuItem("Set")) { player->CycleLoopAB(); } }
             ImGui::EndMenu();
         }
 #ifdef WIN32
@@ -553,6 +568,17 @@ void OFP::register_bindings() noexcept
             true
         );
 
+        auto& ab_loop = group.bindings.emplace_back(
+            "ab_loop",
+            "Cycle AB Loop",
+            true,
+            [&](void*) {player->CycleLoopAB(); }
+        );
+        ab_loop.key = Keybinding(
+            SDLK_l,
+            0
+        );
+
         keybinds.registerBinding(group);
     }
     {
@@ -593,6 +619,37 @@ void OFP::register_bindings() noexcept
         next_action.controller = ControllerBinding(
             SDL_CONTROLLER_BUTTON_DPAD_UP,
             false
+        );
+
+        // FRAME CONTROL
+        auto& prev_frame = group.bindings.emplace_back(
+            "prev_frame",
+            "Previous frame",
+            false,
+            [&](void*) {
+                if (player->isPaused()) {
+                    player->previousFrame();
+                }
+            }
+        );
+        prev_frame.key = Keybinding(
+            SDLK_LEFT,
+            0
+        );
+
+        auto& next_frame = group.bindings.emplace_back(
+            "next_frame",
+            "Next frame",
+            false,
+            [&](void*) {
+                if (player->isPaused()) {
+                    player->nextFrame();
+                }
+            }
+        );
+        next_frame.key = Keybinding(
+            SDLK_RIGHT,
+            0
         );
 
         keybinds.registerBinding(group);
@@ -865,9 +922,9 @@ void OFP::PlayerScene() noexcept
 
     sim3d->ShowWindow(&settings.show_sim3d, player->getCurrentPositionMsInterp(), BaseOverlay::SplineLines, LoadedFunscripts);
 
-    playerControls.DrawControls(!HideElement ? &HideElement : &settings.show_controls, player.get());
-    playerControls.DrawTimeline(!HideElement ? &HideElement : &settings.show_time, player.get());
-    scriptTimeline.ShowScriptPositions(!HideElement ? &HideElement : &settings.show_timeline, player->getCurrentPositionMsInterp(), player->getDuration() * 1000.f, player->getFrameTimeMs(), LoadedFunscripts, RootFunscript().get());
+    playerControls.DrawControls(&settings.show_controls, player.get());
+    playerControls.DrawTimeline(&settings.show_time, player.get());
+    scriptTimeline.ShowScriptPositions(&settings.show_timeline, player->getCurrentPositionMsInterp(), player->getDuration() * 1000.f, player->getFrameTimeMs(), LoadedFunscripts, RootFunscript().get());
 
     if (keybinds.ShowBindingWindow()) { keybinds.save(); }
 
@@ -925,7 +982,7 @@ bool OFP::openFile(const std::string& file) noexcept
         // try find video
         std::string videoPath;
         for (auto&& extension : SupportedVideoExtensions) {
-            videoPath = base_path.string() + extension;
+            videoPath = base_path.u8string() + extension;
             if (Util::FileExists(videoPath)) {
                 video_path = videoPath;
                 break;
@@ -935,7 +992,7 @@ bool OFP::openFile(const std::string& file) noexcept
         if (video_path.empty()) {
             // try find audio
             for (auto&& extension : SupportedAudioExtensions) {
-                videoPath = base_path.string() + extension;
+                videoPath = base_path.u8string() + extension;
                 if (Util::FileExists(videoPath)) {
                     video_path = videoPath;
                     break;
@@ -946,7 +1003,7 @@ bool OFP::openFile(const std::string& file) noexcept
     else {
         video_path = file;
         if (ScriptLoaded() && !Util::FileNamesMatch(video_path, RootFunscript()->current_path)) {
-            funscript_path = base_path.string() + ".funscript";
+            funscript_path = base_path.u8string() + ".funscript";
         }
         else {
             funscript_path = RootFunscript()->current_path;
@@ -963,7 +1020,10 @@ bool OFP::openFile(const std::string& file) noexcept
 
     // try load funscript
     bool result = openFunscript(funscript_path);
-    RootFunscript()->Userdata<OFP_ScriptSettings>().ScriptChannel = TChannel::L0;
+    if (result)
+    {
+        RootFunscript()->Userdata<OFP_ScriptSettings>().ScriptChannel = TChannel::L0;
+    }
 
     if (!result) {
         LOGF_WARN("Couldn't find funscript. \"%s\"", funscript_path.c_str());
@@ -1023,7 +1083,6 @@ void OFP::MpvVideoLoaded(SDL_Event& ev) noexcept
 {
     OFS::UpdateHeatmapGradient(player->getDuration() * 1000.f, playerControls.TimelineGradient, RootFunscript()->Actions());
     settings.last_file = player->getVideoPath();
-    
     if(!videobrowser->ClickedFilePath.empty()) player->setPaused(false);
 }
 

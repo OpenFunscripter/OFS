@@ -362,7 +362,7 @@ bool WhirligigPlayer::setup()
                 FUN_ASSERT(iResult <= DefaultBufLen, "whoa this is to big");
 
                 if (iResult > 0 && !data->shouldExit) {
-                    recvbuf[iResult] = '\0';
+                    recvbuf[iResult-1] = '\0';
                     parseWhirligigMsg(data, recvbuf, iResult);
                 }
                 else if (iResult == 0) {

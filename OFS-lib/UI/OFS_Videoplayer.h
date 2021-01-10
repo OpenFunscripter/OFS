@@ -60,6 +60,15 @@ private:
 	ImVec2 video_draw_size;
 	ImVec2 viewport_pos;
 
+	enum class LoopEnum : int32_t
+	{
+		A_set,
+		B_set,
+		Clear,
+	};
+
+	LoopEnum LoopState = LoopEnum::Clear;
+
 	enum MpvPropertyGet : uint64_t {
 		MpvDuration,
 		MpvPosition,
@@ -71,6 +80,8 @@ private:
 		MpvFilePath,
 		MpvHwDecoder,
 		MpvFramesPerSecond,
+		MpvAbLoopA,
+		MpvAbLoopB,
 	};
 
 	enum MpvCommandIdentifier : uint64_t {
@@ -84,11 +95,15 @@ private:
 		double current_speed = 1.0;
 		double average_frame_time = 0.0167;
 		double fps = 30.f;
+		
+		double ab_loop_a = 0;
+		double ab_loop_b = 0;
 
 		int64_t total_num_frames = 0;
 		int64_t paused = true;
 		int64_t video_width = 0;
 		int64_t video_height = 0;
+
 
 		bool video_loaded = false;
 		const char* file_path = nullptr;
@@ -121,6 +136,9 @@ private:
 	void drawVrVideo(ImDrawList* draw_list) noexcept;
 	void draw2dVideo(ImDrawList* draw_list) noexcept;
 	void videoRightClickMenu() noexcept;
+
+	void showText(const char* text) noexcept;
+	void clearLoop() noexcept;
 public:
 	static constexpr const char* PlayerId = "Player";
 
@@ -208,6 +226,8 @@ public:
 	void togglePlay() noexcept;
 	void cycleSubtitles() noexcept;
 
+	void cycleLoopAB() noexcept;
+
 	inline double getFrameTimeMs() const noexcept { return MpvData.average_frame_time * 1000.0; }
 	inline double getSpeed() const noexcept { return MpvData.current_speed; }
 	inline double getDuration() const noexcept { return MpvData.duration; }
@@ -217,6 +237,11 @@ public:
 	inline int64_t getCurrentFrameEstimate() const noexcept { return MpvData.percent_pos * MpvData.total_num_frames; }
 	inline double getFps() const noexcept { return MpvData.fps; }
 	inline bool isLoaded() const noexcept { return MpvData.video_loaded; }
+	
+	inline bool LoopActive() const noexcept { return LoopState == LoopEnum::B_set; }
+	inline double LoopASeconds() const noexcept { return MpvData.ab_loop_a; }
+	inline double LoopBSeconds() const noexcept { return MpvData.ab_loop_b; }
+
 	void closeVideo() noexcept;
 
 	inline const char* getVideoPath() const noexcept { return (MpvData.file_path == nullptr) ? "" : MpvData.file_path; }

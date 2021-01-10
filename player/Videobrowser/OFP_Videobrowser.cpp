@@ -335,8 +335,7 @@ void Videobrowser::Randomizer(const char* Id, bool* open) noexcept
 	if (open != nullptr && !*open) return;
 
 	ImGui::Begin(Id, open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove);
-	//auto hostWidth = ImGui::GetContentRegionAvail().x;
-	ImGui::BeginChild("RandomVideo"/* ImVec2(hostWidth, hostWidth), true*/);
+	ImGui::BeginChild("RandomVideo");
 	renderRandomizer();
 	ImGui::EndChild();
 	ImGui::End();
@@ -355,10 +354,11 @@ void Videobrowser::renderRandomizer() noexcept
 	static int32_t LastRollTime = 0;
 	static int32_t LastRoll = 0;
 
+	auto& pickedItem = Filter.empty() ? Items[LastRoll] : FilteredItems[LastRoll];
 	if (SDL_GetTicks() - LastRollTime >= RollFreqMs)
 	{
 		if (RollCount == PickAfterRolls) {
-			fileClickedHandler(Items[LastRoll]);
+			fileClickedHandler(pickedItem);
 			RollFreqMs = MaxRollFreqMs;
 			RollCount = 0;
 			Random = false;
@@ -369,7 +369,7 @@ void Videobrowser::renderRandomizer() noexcept
 			{
 				srand(SDL_GetTicks());
 			}
-			LastRoll = rand() % Items.size();
+			LastRoll = rand() % (Filter.empty() ? Items.size() : FilteredItems.size());
 			LastRollTime = SDL_GetTicks();
 			RollCount++;
 
@@ -409,15 +409,13 @@ void Videobrowser::renderRandomizer() noexcept
 	ImVec2 p2 = thumbPos + (videoSize / 2.f);
 	draw_list->AddRect(p1, p2, ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Border]), 2.f);
 
-	auto& rolledItem = Items[LastRoll];
-
-	uint32_t texId = rolledItem.texture.GetTexId();
+	uint32_t texId = pickedItem.texture.GetTexId();
 	
 	if(RollCount == PickAfterRolls)
 	{
 		if (!preview.loading)
 		{
-			preview.previewVideo(rolledItem.video.videoPath, 0.1f);
+			preview.previewVideo(pickedItem.video.videoPath, 0.1f);
 		}
 		if (preview.ready)
 		{
@@ -426,16 +424,19 @@ void Videobrowser::renderRandomizer() noexcept
 	}
 
 	if (texId != 0) {
-		draw_list->AddImage((void*)(intptr_t)texId, p1 + style.FramePadding, p2 - style.FramePadding, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE);
+		draw_list->AddImage((
+			void*)(intptr_t)texId,
+			p1 + style.FramePadding, p2 - style.FramePadding,
+			ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE);
 	}
 	else
 	{
-		rolledItem.GenThumbail();
+		pickedItem.GenThumbail();
 	}
-	auto textSize = ImGui::CalcTextSize(rolledItem.video.videoFilename.c_str());
+	auto textSize = ImGui::CalcTextSize(pickedItem.video.videoFilename.c_str());
 	draw_list->AddText(
 		p1 + ImVec2((videoSize.x/2.f) - (textSize.x/2.f), videoSize.y + style.ItemSpacing.y),
-		ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]), rolledItem.video.videoFilename.c_str());
+		ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]), pickedItem.video.videoFilename.c_str());
 
 	if (RollCount == PickAfterRolls)
 	{
@@ -522,7 +523,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 			ImGui::EndMenu();
 		}
 		ImGui::MenuItem("Settings", NULL, &ShowSettings);
-		ImGui::MenuItem("Random", NULL, &Random);
+		ImGui::MenuItem("Random", NULL, &Random, Filter.empty() ? Items.size() > 0 : FilteredItems.size() > 0);
 		ImGui::EndMenuBar();
 	}
 
@@ -531,12 +532,10 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 	}
 	ImGui::SameLine();
 	ImGui::Bullet();
-	ImGui::Text("Videos: %ld", Items.size());
+	ImGui::Text("Videos: %ld", Filter.empty() ? Items.size() : FilteredItems.size());
 	ImGui::Separator();
 	
-	ImGui::SetNextItemWidth(-1.f);
-	ImGui::InputText("Filter", &Filter);
-	
+		
 	if (ImGui::BeginTable("##VideobrowserUI", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings)) {
 		ImGui::TableSetupColumn("##TagCol", ImGuiTableColumnFlags_WidthStretch, 0.15);
 		ImGui::TableSetupColumn("##ItemsCol", ImGuiTableColumnFlags_WidthStretch, 0.85);
@@ -545,18 +544,6 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 
 
 		ImGui::BeginChild("Tags");
-		auto addTag = [](const std::string& newTag) {
-			Tag tag;
-			tag.tag = newTag;
-			tag.NormalizeTagString(tag.tag);
-			tag.insert();
-		};
-		static std::string tagBuffer;
-		if (ImGui::InputText("##TagInput", &tagBuffer, ImGuiInputTextFlags_EnterReturnsTrue)) { addTag(tagBuffer); }
-		ImGui::SameLine();
-		if (ImGui::Button("Add##AddTag", ImVec2(-1,0))) { addTag(tagBuffer); }
-
-
 		if (Tags.size() != Videolibrary::Count<Tag>()) {
 			Tags = Videolibrary::GetAll<Tag>();
 		}
@@ -600,11 +587,35 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 				setVideos(vids);
 			}
 		}
-
-
+		ImGui::Separator();
+		auto addTag = [](const std::string& newTag) {
+			Tag tag;
+			tag.tag = newTag;
+			tag.NormalizeTagString(tag.tag);
+			tag.insert();
+		};
+		if (ImGui::InputText("##TagInput", &NewTagBuffer, ImGuiInputTextFlags_EnterReturnsTrue)) { addTag(NewTagBuffer); }
+		ImGui::SameLine();
+		if (ImGui::Button("Add##AddTag", ImVec2(-1, 0))) { addTag(NewTagBuffer); }
 		ImGui::EndChild();
 
 		ImGui::TableNextColumn();
+
+		ImGui::SetNextItemWidth(-1.f);
+		if (ImGui::InputText("Filter", &Filter))
+		{
+			Util::trim(Filter);
+			if (!Filter.empty()) {
+				FilteredItems.clear();
+				for (auto& item : Items)
+				{
+					if (Util::ContainsInsensitive(item.video.videoFilename, Filter))
+					{
+						FilteredItems.emplace_back(item);
+					}
+				}
+			}
+		}
 
 		// HACK: there currently doesn't seem to be a way to obtain the column width
 		const auto& column = ImGui::GetCurrentContext()->CurrentTable->Columns[ImGui::TableGetColumnIndex()];
@@ -620,13 +631,7 @@ void Videobrowser::ShowBrowser(const char* Id, bool* open) noexcept
 		VideobrowserItem* previewItem = nullptr;
 		bool itemFocussed = false;
 		int index = 0;
-		for (auto& item : Items) {
-			if (!Filter.empty()) {
-				if (!Util::ContainsInsensitive(item.video.videoFilename, Filter)) {
-					continue;
-				}
-			}
-
+		for (auto& item : Filter.empty() ? Items : FilteredItems) {
 			ImColor FileTintColor = item.video.hasScript ? IM_COL32_WHITE : IM_COL32(200, 200, 200, 255);
 			if (!item.Focussed) {
 				FileTintColor.Value.x *= 0.75f;

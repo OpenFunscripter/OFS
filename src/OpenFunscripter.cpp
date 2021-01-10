@@ -1577,7 +1577,7 @@ bool OpenFunscripter::openFile(const std::string& file)
         // try find video
         std::string videoPath;
         for (auto&& extension : SupportedVideoExtensions) {
-            videoPath = base_path.string() + extension;
+            videoPath = base_path.u8string() + extension;
             if (Util::FileExists(videoPath)) {
                 video_path = videoPath;
                 break;
@@ -1587,7 +1587,7 @@ bool OpenFunscripter::openFile(const std::string& file)
         if (video_path.empty()) {
             // try find audio
             for (auto&& extension : SupportedAudioExtensions) {
-                videoPath = base_path.string() + extension;
+                videoPath = base_path.u8string() + extension;
                 if (Util::FileExists(videoPath)) {
                     video_path = videoPath;
                     break;
@@ -1598,7 +1598,7 @@ bool OpenFunscripter::openFile(const std::string& file)
     else {
         video_path = file;
         if (ScriptLoaded() && !Util::FileNamesMatch(video_path, RootFunscript()->current_path)) {
-            funscript_path = base_path.string() + ".funscript";
+            funscript_path = base_path.u8string() + ".funscript";
         }
         else {
             funscript_path = RootFunscript()->current_path;
@@ -1647,7 +1647,7 @@ bool OpenFunscripter::openFile(const std::string& file)
     auto last_path = std::filesystem::path(file);
     last_path.replace_filename("");
     last_path /= "";
-    settings->data().last_path = last_path.string();
+    settings->data().last_path = last_path.u8string();
     settings->saveSettings();
 
     last_backup = std::chrono::system_clock::now();
@@ -1697,7 +1697,7 @@ void OpenFunscripter::saveScripts() noexcept
         script->metadata.title = std::filesystem::path(script->current_path)
             .replace_extension("")
             .filename()
-            .string();
+            .u8string();
         script->metadata.duration = player->getDuration();
         script->Userdata<OFS_ScriptSettings>().last_pos_ms = player->getCurrentPositionMs();
         saveScript(script.get(), "", false);
@@ -1943,13 +1943,13 @@ void OpenFunscripter::saveActiveScriptAs()
 {
     std::filesystem::path path = ActiveFunscript()->current_path;
     path.make_preferred();
-    Util::SaveFileDialog("Save", path.string(),
+    Util::SaveFileDialog("Save", path.u8string(),
         [&](auto& result) {
             if (result.files.size() > 0) {
                 saveScript(ActiveFunscript().get(), result.files[0], true);
                 std::filesystem::path dir(result.files[0]);
                 dir.remove_filename();
-                settings->data().last_path = dir.string();
+                settings->data().last_path = dir.u8string();
             }
         }, {"Funscript", "*.funscript"});
 }
@@ -2062,7 +2062,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             }
             if (ImGui::MenuItem(ICON_SHARE" Share...")) {
                 auto savePath = std::filesystem::path(settings->data().last_path) / (Util::Filename(ActiveFunscript()->current_path) + "_share.funscript");
-                Util::SaveFileDialog("Share funscript", savePath.string(),
+                Util::SaveFileDialog("Share funscript", savePath.u8string(),
                     [&](auto& result) {
                         if (result.files.size() > 0) {
                             ActiveFunscript()->saveMinium(result.files[0]);

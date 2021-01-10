@@ -278,9 +278,15 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
         ImGui::PopID();
     }
     //ImGui::PopItemFlag();
+
+#ifndef NDEBUG
+    static bool debugShowPlot = false;
+    ImGui::Checkbox("Plot", &debugShowPlot);
+#endif
 	ImGui::End();
 
 #ifndef NDEBUG
+    if (!debugShowPlot) return;
     ImGui::Begin("Plot");
 
     static float history = 10.0f;

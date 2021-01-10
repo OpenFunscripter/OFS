@@ -59,7 +59,6 @@ private:
 #ifdef WIN32
 	bool Whirligig = false;
 #endif
-
 	bool Fullscreen = false;
 	void set_fullscreen(bool full) noexcept;
 

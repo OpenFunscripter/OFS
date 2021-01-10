@@ -22,11 +22,17 @@ private:
 	int32_t InterpStartTime = 0;
 	static constexpr int32_t MaxInterpTimeMs = 1000;
 
-public:float LastValue = 0.f;
-	  float LastValueRaw = 0.f;
-	  float FilteredSpeed = 0.f;
-	  float RawSpeed = 0.f;
-	  bool Invert = false;
+public:
+	float LastValue = 0.f;
+	float RawSpeed = 0.f;
+
+#ifndef NDEBUG
+	float LastValueRaw = 0.f;
+	float FilteredSpeed = 0.f;
+#endif
+
+	bool Invert = false;
+	bool NeedsResync = false;
 private:
 	float ScriptMinPos;
 	float ScriptMaxPos;
@@ -67,7 +73,7 @@ private:
 		RawSpeed = std::abs(pos - LastValue) / (1.f/freq);
 
 		// detect discontinuity
-		if (RawSpeed >= 35.f && !InterpTowards) {
+		if (RawSpeed >= 50.f && !InterpTowards) {
 			InterpTowards = true;
 			InterpStart = LastValue;
 			InterpEnd = pos;
@@ -87,8 +93,9 @@ private:
 		else {
 			LastValue = pos;
 		}
+#ifndef NDEBUG
 		LastValueRaw = pos;
-
+#endif
 		return LastValue;
 	}
 
@@ -102,9 +109,9 @@ public:
 	inline void SetScript(std::weak_ptr<const Funscript>&& script) noexcept
 	{
 		this->currentIndex = 0;
-		this->script = std::move(script);
-		if (!this->script.expired()) {
-			auto locked = this->script.lock();
+		if (!script.expired()) {
+			auto locked = script.lock();
+			if (locked->Actions().size() <= 1) { this->script = std::weak_ptr<const Funscript>(); return; }
 			auto [min, max] = std::minmax_element(locked->Actions().begin(), locked->Actions().end(),
 				[](auto act1, auto act2) {
 					return act1.pos < act2.pos;
@@ -112,6 +119,9 @@ public:
 			ScriptMinPos = min->pos;
 			ScriptMaxPos = max->pos;
 			LOGF_DEBUG("Script min %f and max %f", ScriptMinPos, ScriptMaxPos);
+
+			this->script = std::move(script);
+			NeedsResync = true;
 		}
 	}
 
@@ -140,6 +150,7 @@ public:
 
 		float interp = getPos(CurrentTimeMs, freq);
 		channel->SetNextPos(interp);
+		NeedsResync = false;
 	}
 
 #ifndef NDEBUG
@@ -148,7 +159,7 @@ public:
 
 	inline void tick(int32_t CurrentTimeMs, float freq) noexcept {
 		if (script.expired() || channel == nullptr) return;
-
+		if (NeedsResync) { sync(CurrentTimeMs, freq); }
 		auto scriptPtr = script.lock();
 		auto& actions = scriptPtr->Actions();
 
