@@ -22,11 +22,8 @@ ImFont* OFP::DefaultFont2 = nullptr;
 
 static ImGuiID MainDockspaceID;
 
-// TODO: fix whirligig implementation maybe use libcluon for the tcp
 // TODO: show active loop in the timeline
 // TODO: autohome when paused
-
-// TODO: try fix to layout issues with docking
 
 constexpr std::array<const char*, 6> SupportedVideoExtensions{
     ".mp4",
@@ -72,7 +69,8 @@ void OFP::set_fullscreen(bool fullscreen) noexcept
 void OFP::set_default_layout(bool force) noexcept
 {
     MainDockspaceID = ImGui::GetID("MainAppDockspace");
-    auto imgui_ini = ImGui::GetIO().IniFilename;
+    auto& io = ImGui::GetIO();
+    auto imgui_ini = io.IniFilename;
     bool imgui_ini_found = Util::FileExists(imgui_ini);
     if (force || !imgui_ini_found) {
         if (!imgui_ini_found) {
@@ -80,11 +78,13 @@ void OFP::set_default_layout(bool force) noexcept
             LOG_INFO("Setting default layout.");
         }
         
-        ImGui::ClearIniSettings();
+        //ImGui::ClearIniSettings();
+
+        auto viewport = ImGui::GetMainViewport();
 
         ImGui::DockBuilderRemoveNode(MainDockspaceID); // Clear out existing layout
-        ImGui::DockBuilderAddNode(MainDockspaceID, ImGuiDockNodeFlags_DockSpace); // Add empty node
-        ImGui::DockBuilderSetNodeSize(MainDockspaceID, ImVec2(DefaultWidth, DefaultHeight));
+        ImGui::DockBuilderAddNode(MainDockspaceID, ImGuiDockNodeFlags_DockSpace | ImGuiDockNodeFlags_CentralNode); // Add empty node
+        ImGui::DockBuilderSetNodeSize(MainDockspaceID, viewport->Size);
 
         ImGuiID dock_player_center_id;
         ImGuiID opposite_node_id;
@@ -92,7 +92,7 @@ void OFP::set_default_layout(bool force) noexcept
         auto dock_positions_id = ImGui::DockBuilderSplitNode(dock_player_center_id, ImGuiDir_Down, 0.15f, NULL, &dock_player_center_id);
         auto dock_mode_right_id = ImGui::DockBuilderSplitNode(dock_player_center_id, ImGuiDir_Right, 0.15f, NULL, &dock_player_center_id);
 
-        auto dock_player_control_id = ImGui::DockBuilderSplitNode(dock_time_bottom_id, ImGuiDir_Left, 0.15f, &dock_time_bottom_id, &dock_time_bottom_id);
+        auto dock_player_control_id = ImGui::DockBuilderSplitNode(dock_time_bottom_id, ImGuiDir_Left, 0.15f, NULL, &dock_time_bottom_id);
 
         ImGui::DockBuilderGetNode(dock_player_center_id)->LocalFlags |= ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_AutoHideTabBar | ImGuiDockNodeFlags_NoDocking;
         ImGui::DockBuilderGetNode(dock_positions_id)->LocalFlags |= ImGuiDockNodeFlags_AutoHideTabBar | ImGuiDockNodeFlags_NoDocking;
@@ -169,7 +169,6 @@ void OFP::update() noexcept
         }
         prevPos = mousePos;
     }
-    SDL_ShowCursor(!timer.hidden());
 }
 
 void OFP::new_frame() noexcept
@@ -874,7 +873,7 @@ bool OFP::setup()
 int OFP::run() noexcept
 {
     new_frame();
-    set_default_layout(false);
+    set_default_layout(true);
     render();
     while (!exit_app) {
         step();
