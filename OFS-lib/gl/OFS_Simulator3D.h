@@ -60,5 +60,8 @@ public:
 	void setup() noexcept;
 
 	void ShowWindow(bool* open, int32_t currentMs, bool easing, const std::vector<std::shared_ptr<Funscript>>& scripts) noexcept;
-	void render() noexcept;
+	void renderSim() noexcept;
+	inline void render(bool show) noexcept {
+		if (show) { renderSim(); }
+	}
 };

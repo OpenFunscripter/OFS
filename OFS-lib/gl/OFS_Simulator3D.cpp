@@ -239,7 +239,7 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, const s
     boxy = glm::scale(boxy, glm::vec3(simCubeSize, simCubeSize/4.f, simCubeSize)*1.5f);
 }
 
-void Simulator3D::render() noexcept
+void Simulator3D::renderSim() noexcept
 {
     auto viewport = ImGui::GetMainViewport();
     glViewport(0, 0, viewport->Size.x, viewport->Size.y);

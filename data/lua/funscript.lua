@@ -18,7 +18,7 @@ function Action:new(o)
    return o
 end
 
-Funscript = {}
+Funscript = { title = "" }
 
 -- tostring function for funscript
 function ScriptToString(self)

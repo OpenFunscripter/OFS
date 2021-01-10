@@ -906,9 +906,7 @@ void OFP::step() noexcept
 #endif
     }
     render();
-    if (settings.show_sim3d && settings.ActiveScene == OFP_Scene::Player) {
-        sim3d->render();
-    }
+    sim3d->render(settings.show_sim3d && settings.ActiveScene == OFP_Scene::Player);
     OFS::Im3d_EndFrame();
     SDL_GL_SwapWindow(window);
 }

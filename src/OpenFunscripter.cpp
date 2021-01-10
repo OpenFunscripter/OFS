@@ -24,7 +24,6 @@
 // TODO: render simulator relative to video position & zoom
 
 // TODO: binding Lua scripts to keys or buttons
-// TODO: Change how twist is implemented in the 3D simulator
 
 // BUG: Simulator 3D move widget doesn't show when settings window is in a separate platform window/viewport
 // BUG: scripts not getting unloaded when loading new video when using drag'n drop
@@ -1526,7 +1525,7 @@ void OpenFunscripter::step() noexcept {
     }
 
     render();
-    sim3D->render();
+    sim3D->render(settings->data().show_simulator_3d);
     OFS::Im3d_EndFrame();
     SDL_GL_SwapWindow(window);
 }
@@ -1988,6 +1987,34 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     );
                     return it != app->LoadedFunscripts.end();
                 };
+                auto addNewShortcut = [this, fileAlreadyLoaded](std::string&& postfix)
+                {
+                    if (ImGui::MenuItem(postfix.c_str()))
+                    {
+                        std::string newScriptPath;
+                        {
+                            auto root = Util::PathFromString(RootFunscript()->current_path);
+                            root.replace_extension(postfix + ".funscript");
+                            newScriptPath = root.u8string();
+                        }
+
+                        if (!fileAlreadyLoaded(newScriptPath)) {
+                            auto newScript = std::make_unique<Funscript>();
+                            newScript->current_path = newScriptPath;
+                            newScript->metadata.title = Util::Filename(newScriptPath);
+                            newScript->AllocUser<OFS_ScriptSettings>();
+                            LoadedFunscripts.emplace_back(std::move(newScript));
+                        }
+                    }
+                };
+                if (ImGui::BeginMenu("Add..."))
+                {
+                    addNewShortcut(".pitch");
+                    addNewShortcut(".roll");
+                    addNewShortcut(".twist");
+                    addNewShortcut(".suck");
+                    ImGui::EndMenu();
+                }
                 if (ImGui::MenuItem("Add new")) {
                     Util::SaveFileDialog("Add new funscript", settings->data().last_path,
                         [fileAlreadyLoaded](auto& result) {
