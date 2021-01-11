@@ -71,10 +71,10 @@ private:
 
 	struct WhirligigThreadData
 	{
-		WhirligigPlayer* player = nullptr;
-		bool shouldExit = false;
+		volatile bool shouldExit = false;
 		bool isRunning = false;
 		bool connected = false;
+		WhirligigPlayer* player = nullptr;
 		class OFP* ofp = nullptr;
 	} threadData;
 

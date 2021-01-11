@@ -156,12 +156,12 @@ void TCodePlayer::save() noexcept
 }
 
 static struct TCodeThreadData {
+    volatile bool requestStop = false;
     bool running = false;
-    bool requestStop = false;
     
     SDL_atomic_t scriptTimeMs = { 0 };
     
-    float speed = 1.f;
+    volatile float speed = 1.f;
 
     TCodePlayer* player = nullptr;
     TCodeChannels* channel = nullptr;
@@ -328,7 +328,6 @@ static int32_t TCodeThread(void* threadData) noexcept {
     TCodeThreadData* data = (TCodeThreadData*)threadData;
 
     LOG_INFO("T-Code thread started...");
-
     auto startTime = std::chrono::high_resolution_clock::now();
     
     int scriptTimeMs = 0;
