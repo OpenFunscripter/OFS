@@ -16,7 +16,7 @@ set(OFP_SOURCES
   "UI/OFP_Settings.cpp"
 )
 if(WIN32)
-	set(OFP_SOURCES ${OFP_SOURCES} "${CMAKE_SOURCE_DIR}/iconOFP.rc")
+	set(OFP_SOURCES ${OFP_SOURCES} "../iconOFP.rc")
 endif()
 
 
@@ -40,7 +40,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	"${PROJECT_SOURCE_DIR}/Videolibrary"
 	"${PROJECT_SOURCE_DIR}/VideoplayerWrapper"
 	#"${CMAKE_SOURCE_DIR}/lib/minimp3/"
-	"${CMAKE_SOURCE_DIR}/lib/sqlite-amalgamation/"
+	"../lib/sqlite-amalgamation/"
 )
 
 # c++17

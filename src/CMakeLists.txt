@@ -21,7 +21,7 @@ set(OPEN_FUNSCRIPTER_SOURCES
 
 
 if(WIN32)
-	set(OPEN_FUNSCRIPTER_SOURCES ${OPEN_FUNSCRIPTER_SOURCES} "${CMAKE_SOURCE_DIR}/icon.rc")
+	set(OPEN_FUNSCRIPTER_SOURCES ${OPEN_FUNSCRIPTER_SOURCES} "../icon.rc")
 endif()
 
 if(APPLE)
@@ -46,7 +46,7 @@ if(WIN32)
 	# copy mpv-1.dll to bin dir
 	add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy
-                   "${CMAKE_SOURCE_DIR}/lib/libmpv/mpv-1.dll" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/mpv-1.dll")
+                   "../lib/libmpv/mpv-1.dll" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/mpv-1.dll")
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
@@ -93,5 +93,5 @@ if(OFS_SNAP_IMAGE)
 # this is awful
 target_compile_definitions(${PROJECT_NAME} PRIVATE
 	"OFS_SNAP_IMAGE")
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/data DESTINATION "bin/")
+install(DIRECTORY "../data" DESTINATION "bin/")
 endif()

@@ -45,9 +45,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	"${PROJECT_SOURCE_DIR}/im3d/"
 	"${PROJECT_SOURCE_DIR}/"
 	"${PROJECT_SOURCE_DIR}/player/"
-	"${CMAKE_SOURCE_DIR}/lib/stb/"
-	"${CMAKE_SOURCE_DIR}/lib/CSerial/"
-	"${CMAKE_SOURCE_DIR}/lib/minimp3/"
+	"../lib/stb/"
+	"../lib/CSerial/"
+	"../lib/minimp3/"
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
@@ -95,10 +95,10 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 
 if(WIN32)
 	target_include_directories(${PROJECT_NAME} PUBLIC 
-		"${CMAKE_SOURCE_DIR}/lib/libmpv/include"
+		"../lib/libmpv/include"
 	)
 	target_link_directories(${PROJECT_NAME} PUBLIC 
-		"${CMAKE_SOURCE_DIR}/lib/libmpv/"
+		"../lib/libmpv/"
 	)
 	target_link_libraries(${PROJECT_NAME} PUBLIC
 		# linking of libmpv can be improved but this works...
