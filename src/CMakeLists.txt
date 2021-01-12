@@ -46,7 +46,7 @@ if(WIN32)
 	# copy mpv-1.dll to bin dir
 	add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy
-                   "../lib/libmpv/mpv-1.dll" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/mpv-1.dll")
+                   "${CMAKE_SOURCE_DIR}/lib/libmpv/mpv-1.dll" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/mpv-1.dll")
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
