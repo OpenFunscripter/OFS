@@ -2294,6 +2294,11 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 settings->saveSettings();
             }
 
+            if (ImGui::MenuItem("Delete all bookmarks"))
+            {
+                scriptSettings.Bookmarks.clear();
+            }
+
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("View")) {

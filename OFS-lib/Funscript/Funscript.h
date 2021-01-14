@@ -228,7 +228,7 @@ void Funscript::saveSettings(const std::string& name, UserSettings* user) noexce
 template<class UserSettings>
 inline UserSettings& Funscript::Userdata() noexcept
 {
-	FUN_ASSERT(userdata != nullptr, "userdata is null");
+	if (userdata == nullptr) { AllocUser<UserSettings>(); }
 	return *(UserSettings*)userdata.get();
 }
 
