@@ -9,6 +9,7 @@
 #include "imgui_internal.h"
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_sdl.h"
+#include "ImGuizmo.h"
 
 #include <filesystem>
 #include <sstream>
@@ -182,8 +183,7 @@ void OFP::new_frame() noexcept
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame(window);
     ImGui::NewFrame();
-    
-    OFS::Im3d_NewFrame();
+    ImGuizmo::BeginFrame();
 }
 
 void OFP::render() noexcept
@@ -389,7 +389,6 @@ OFP::~OFP() noexcept
 {
     settings.save();
     player.reset();
-    OFS::Im3d_Shutdown();
 }
 
 bool OFP::load_fonts(const char* font_override) noexcept
@@ -858,13 +857,13 @@ bool OFP::setup()
         openFile(settings.last_file);
     }
     
-    OFS::Im3d_Init();
     SetActiveScene(settings.ActiveScene);
 
     sim3d = std::make_unique<Simulator3D>();
     sim3d->setup();
 
     tcode->loadSettings(Util::PrefpathOFP("tcode.json"));
+
 
     SDL_ShowWindow(window);
 	return result;
@@ -906,8 +905,9 @@ void OFP::step() noexcept
 #endif
     }
     render();
-    sim3d->render(settings.show_sim3d && settings.ActiveScene == OFP_Scene::Player);
-    OFS::Im3d_EndFrame();
+    if (settings.show_sim3d && settings.ActiveScene == OFP_Scene::Player) {
+        sim3d->renderSim();
+    }
     SDL_GL_SwapWindow(window);
 }
 
