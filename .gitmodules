@@ -40,3 +40,6 @@
 [submodule "lib/imgizmo"]
 	path = lib/imgizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo.git
+[submodule "lib/ImGuizmo"]
+	path = lib/ImGuizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git
