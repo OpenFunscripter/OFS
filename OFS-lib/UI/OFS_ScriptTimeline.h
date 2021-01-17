@@ -20,6 +20,7 @@ public:
 	static int32_t FfmpegAudioProcessingFinished;
 	static int32_t FunscriptActionClicked;
 	static int32_t ScriptpositionWindowDoubleClick;
+	static int32_t ActiveScriptChanged;
 
 	struct SelectTime {
 		int32_t start_ms;

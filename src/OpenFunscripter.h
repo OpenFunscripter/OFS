@@ -78,6 +78,8 @@ private:
 	void ScriptTimelineActionClicked(SDL_Event& ev) noexcept;
 	void ScriptTimelineDoubleClick(SDL_Event& ev) noexcept;
 	void ScriptTimelineSelectTime(SDL_Event& ev) noexcept;
+	void ScriptTimelineActiveScriptChanged(SDL_Event& ev) noexcept;
+
 
 	void cutSelection() noexcept;
 	void copySelection() noexcept;

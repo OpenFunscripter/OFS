@@ -306,6 +306,7 @@ bool OpenFunscripter::setup()
     events->Subscribe(ScriptTimelineEvents::ScriptpositionWindowDoubleClick, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineDoubleClick));
     events->Subscribe(ScriptTimelineEvents::FunscriptSelectTime, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineSelectTime));
     events->Subscribe(VideoEvents::PlayPauseChanged, EVENT_SYSTEM_BIND(this, &OpenFunscripter::MpvPlayPauseChange));
+    events->Subscribe(ScriptTimelineEvents::ActiveScriptChanged, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActiveScriptChanged));
 
     if (!settings->data().recentFiles.empty()) {
         // cache these here because openFile overrides them
@@ -2671,4 +2672,9 @@ void OpenFunscripter::ScriptTimelineSelectTime(SDL_Event& ev) noexcept
 {
     auto& time =*(ScriptTimelineEvents::SelectTime*)ev.user.data1;
     ActiveFunscript()->SelectTime(time.start_ms, time.end_ms, time.clear);
+}
+
+void OpenFunscripter::ScriptTimelineActiveScriptChanged(SDL_Event& ev) noexcept
+{
+    UpdateNewActiveScript((intptr_t)ev.user.data1);
 }

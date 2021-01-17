@@ -20,6 +20,7 @@ int32_t ScriptTimelineEvents::FfmpegAudioProcessingFinished = 0;
 int32_t ScriptTimelineEvents::ScriptpositionWindowDoubleClick = 0;
 int32_t ScriptTimelineEvents::FunscriptActionClicked = 0;
 int32_t ScriptTimelineEvents::FunscriptSelectTime = 0;
+int32_t ScriptTimelineEvents::ActiveScriptChanged = 0;
 
 void ScriptTimelineEvents::RegisterEvents() noexcept
 {
@@ -27,6 +28,7 @@ void ScriptTimelineEvents::RegisterEvents() noexcept
 	FunscriptActionClicked = SDL_RegisterEvents(1);
 	FunscriptSelectTime = SDL_RegisterEvents(1);
 	ScriptpositionWindowDoubleClick = SDL_RegisterEvents(1);
+	ActiveScriptChanged = SDL_RegisterEvents(1);
 }
 
 void ScriptTimeline::updateSelection(bool clear)
@@ -397,9 +399,8 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 						if (script.get() == activeScript) {
 							// find a enabled script which can be set active
 							for (int i = 0; i < scripts.size(); i++) {
-								if (scripts[i]->Enabled) {
-									//app->UpdateNewActiveScript(i);
-									FUN_ASSERT(false, "fukc");
+								if (scripts[i]->Enabled) {									
+									EventSystem::PushEvent(ScriptTimelineEvents::ActiveScriptChanged, (void*)(intptr_t)i);
 									break;
 								}
 							}

@@ -32,10 +32,11 @@ void EventSystem::setup()
 	Subscribe(WaitableSingleShotEvent, EVENT_SYSTEM_BIND(this, &EventSystem::WaitableSingleShotHandler));
 }
 
-void EventSystem::PushEvent(int32_t type) noexcept
+void EventSystem::PushEvent(int32_t type, void* user1) noexcept
 {
 	SDL_Event ev;
 	ev.type = type;
+	ev.user.data1 = user1;
 	SDL_PushEvent(&ev);
 }
 
