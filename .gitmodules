@@ -37,3 +37,6 @@
 [submodule "lib/implot"]
 	path = lib/implot
 	url = https://github.com/epezent/implot.git
+[submodule "lib/imgizmo"]
+	path = lib/imgizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git

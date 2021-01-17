@@ -572,6 +572,7 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open, bool* draw_video) noexcept
 		else {
 			drawVrVideo(draw_list);
 		}
+		if (OnRenderCallback != nullptr) { draw_list->AddCallback(OnRenderCallback, this); }
 		// this reset is for the simulator 3d, vr mode or both
 		draw_list->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
 

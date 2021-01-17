@@ -142,6 +142,7 @@ private:
 	void clearLoop() noexcept;
 public:
 	static constexpr const char* PlayerId = "Player";
+	ImDrawCallback OnRenderCallback = nullptr;
 
 	struct OFS_VideoPlayerSettings {
 		ImVec2 current_vr_rotation = ImVec2(0.5f, -0.5f);

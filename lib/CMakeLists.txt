@@ -155,23 +155,6 @@ set(JSON_MultipleHeaders ON CACHE BOOL "" FORCE)
 set(JSON_Install OFF CACHE BOOL "" FORCE)
 add_subdirectory("json/")
 
-
-# ============
-# === im3d ===
-# ============
-set(im3d_SOURCES
-	"im3d/im3d.cpp"
-)
-set(im3d_HEADERS
-	"im3d/im3d.h"
-	"im3d/im3d_config.h"
-	"im3d/im3d_math.h"
-)
-add_library(im3d STATIC ${im3d_SOURCES} ${im3d_HEADERS})
-target_include_directories(im3d PUBLIC "im3d")
-target_link_libraries(im3d PUBLIC glm)
-target_compile_features(im3d PUBLIC cxx_std_17)
-
 # ============
 # === implot ===
 # ============
@@ -188,6 +171,16 @@ add_library(implot STATIC ${implot_SOURCES} ${implot_HEADERS})
 target_include_directories(implot PUBLIC "implot")
 target_link_libraries(implot PUBLIC imgui)
 target_compile_features(implot PUBLIC cxx_std_17)
+
+# ============
+# = ImGuizmo =
+# ============
+file (GLOB ImGuizmo_SOURCES imguizmo/*.cpp)
+file (GLOB ImGuizmo_HEADERS imguizmo/*.h)
+add_library(ImGuizmo STATIC ${ImGuizmo_SOURCES} ${ImGuizmo_HEADERS})
+target_include_directories(ImGuizmo PUBLIC "imguizmo/")
+target_link_libraries(ImGuizmo PUBLIC imgui)
+target_compile_features(ImGuizmo PUBLIC cxx_std_11)
 
 
 # ===============

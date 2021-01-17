@@ -11,7 +11,7 @@
 #include "imgui_stdlib.h"
 #include "imgui_internal.h"
 
-#include "OFS_im3d.h"
+#include "ImGuizmo.h"
 
 // FIX: Add type checking to the deserialization. 
 //      I assume it would crash if a field is specified but doesn't have the correct type.
@@ -27,6 +27,10 @@
 
 // BUG: Simulator 3D move widget doesn't show when settings window is in a separate platform window/viewport
 // BUG: scripts not getting unloaded when loading new video when using drag'n drop
+
+// TODO: moving actions bindings should respect tempo mode interval
+// TODO: bindings for moving closest point +10 & -10
+
 
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
@@ -183,7 +187,6 @@ bool OpenFunscripter::imgui_setup() noexcept
 
 OpenFunscripter::~OpenFunscripter()
 {
-    OFS::Im3d_Shutdown();
     // needs a certain destruction order
     scripting.reset();
     controllerInput.reset();
@@ -322,10 +325,17 @@ bool OpenFunscripter::setup()
     sim3D = std::make_unique<Simulator3D>();
     sim3D->setup();
 
+    // callback that renders the simulator right after the video
+    player->OnRenderCallback = [](const ImDrawList * parent_list, const ImDrawCmd * cmd) {
+        auto app = OpenFunscripter::ptr;
+        if (app->settings->data().show_simulator_3d)
+        {
+            app->sim3D->renderSim();
+        }
+    };
+
     playerControls.player = player.get();
 
-
-    OFS::Im3d_Init();
     SDL_ShowWindow(window);
     return true;
 }
@@ -1208,7 +1218,7 @@ void OpenFunscripter::new_frame() noexcept
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame(window);
     ImGui::NewFrame();
-    OFS::Im3d_NewFrame();
+    ImGuizmo::BeginFrame();
 }
 
 void OpenFunscripter::render() noexcept
@@ -1524,9 +1534,8 @@ void OpenFunscripter::step() noexcept {
         player->DrawVideoPlayer(NULL, &settings->data().draw_video);
     }
 
+    sim3D->renderSim();
     render();
-    sim3D->render(settings->data().show_simulator_3d);
-    OFS::Im3d_EndFrame();
     SDL_GL_SwapWindow(window);
 }
 

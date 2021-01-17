@@ -2,7 +2,7 @@
 
 #include "glad/glad.h"
 #include "imgui.h"
-#include "OFS_im3d.h"
+#include "ImGuizmo.h"
 
 #include "glm/gtx/matrix_decompose.hpp"
 #include "glm/gtx/rotate_vector.hpp"
@@ -69,6 +69,7 @@ void Simulator3D::reset() noexcept
     lightPos = glm::vec3(0.f, 0.f, 0.f);
 
     Zoom = 3.f;
+    ImGuizmo::SetOrthographic(true);
 }
 
 void Simulator3D::setup() noexcept
@@ -150,8 +151,17 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, const s
     if (ImGui::Button("Move", ImVec2(-1.f, 0.f))) { TranslateEnabled = !TranslateEnabled; }
     glm::mat3 rot(1.f);
     glm::vec3 scale(1.f);
+
+
     if (TranslateEnabled) {
-        if (Im3d::Gizmo("Move", glm::value_ptr(translation))) {
+        auto draw_list = ImGui::GetForegroundDrawList();
+        ImGuizmo::SetDrawlist(draw_list);
+        ImGuizmo::SetRect(viewport->Pos.x, viewport->Pos.y, viewport->Size.x, viewport->Size.y);
+        if (ImGuizmo::Manipulate(glm::value_ptr(view),
+            glm::value_ptr(projection),
+            ImGuizmo::OPERATION::TRANSLATE,
+            ImGuizmo::MODE::WORLD,
+            glm::value_ptr(translation), NULL, NULL)) {
             auto g = ImGui::GetCurrentContext();
             auto window = ImGui::GetCurrentWindow();
             g->HoveredRootWindow = window;

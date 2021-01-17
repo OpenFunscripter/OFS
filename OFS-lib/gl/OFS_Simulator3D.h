@@ -1,7 +1,9 @@
 #pragma once
 
-#include "OFS_Shader.h"
 #include <memory>
+#include <functional>
+
+#include "OFS_Shader.h"
 
 #include "imgui.h"
 
@@ -61,7 +63,4 @@ public:
 
 	void ShowWindow(bool* open, int32_t currentMs, bool easing, const std::vector<std::shared_ptr<Funscript>>& scripts) noexcept;
 	void renderSim() noexcept;
-	inline void render(bool show) noexcept {
-		if (show) { renderSim(); }
-	}
 };

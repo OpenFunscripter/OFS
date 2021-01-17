@@ -27,7 +27,6 @@ set(OFS_LIB_SOURCES
 	"player/OFS_TCodeChannel.cpp"
 	"player/OFS_TCodeProducer.cpp"
 
-	"im3d/OFS_im3d.cpp"
 	"OFS_UndoSystem.cpp"
 	"OFS_ControllerInput.cpp"
 
@@ -60,9 +59,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	tinyfiledialogs
 	utf8::cpp
 	cserial_static
-	im3d
 	glm
 	implot
+	ImGuizmo
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
