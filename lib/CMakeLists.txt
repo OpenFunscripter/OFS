@@ -181,38 +181,3 @@ add_library(ImGuizmo STATIC ${ImGuizmo_SOURCES} ${ImGuizmo_HEADERS})
 target_include_directories(ImGuizmo PUBLIC "ImGuizmo/")
 target_link_libraries(ImGuizmo PUBLIC imgui)
 target_compile_features(ImGuizmo PUBLIC cxx_std_11)
-
-
-# ===============
-# === sqlite3 ===
-# ===============
-#add_subdirectory("sqlite-amalgamation/")
-set(sqlite3_SOURCES
-	"sqlite-amalgamation/sqlite3.c"
-)
-set(sqlite3_HEADERS
-	"sqlite-amalgamation/sqlite3.h"
-	"sqlite-amalgamation/sqlite3ext.h"
-)
-add_library(sqlite3 STATIC ${sqlite3_SOURCES} ${sqlite3_HEADERS})
-target_compile_definitions(sqlite3 PUBLIC 
-    SQLITE_DQS=0
-    SQLITE_DEFAULT_MEMSTATUS=0
-    SQLITE_DEFAULT_WAL_SYNCHRONOUS=1
-    SQLITE_LIKE_DOESNT_MATCH_BLOBS
-    SQLITE_MAX_EXPR_DEPTH=0
-    SQLITE_OMIT_DECLTYPE
-    SQLITE_OMIT_DEPRECATED
-    SQLITE_OMIT_PROGRESS_CALLBACK
-    SQLITE_OMIT_SHARED_CACHE
-    SQLITE_USE_ALLOCA
-	SQLITE_THREADSAFE=2
-)
-
-# ==================
-# === sqlite_orm ===
-# ==================
-add_library(sqlite_orm INTERFACE)
-target_link_libraries(sqlite_orm INTERFACE sqlite3)
-target_include_directories(sqlite_orm INTERFACE "sqlite_orm/include")
-
