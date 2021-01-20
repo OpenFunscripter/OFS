@@ -138,7 +138,7 @@ public:
 		}
 	}
 
-	inline std::weak_ptr<const Funscript>& GetScript() noexcept
+	inline std::weak_ptr<const Funscript> GetScript() noexcept
 	{
 		if (scriptIndex < scripts->size())
 		{

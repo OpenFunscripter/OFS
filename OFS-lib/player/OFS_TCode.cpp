@@ -251,7 +251,6 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
 
     ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
 
-    //ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
     for (int i = 0; i < tcode.channels.size(); i++) {
         if (IgnoreChannel(static_cast<TChannel>(i))) { ImGui::Spacing(); continue; }
         ImGui::PushID(i);
@@ -281,7 +280,6 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
 
         ImGui::PopID();
     }
-    //ImGui::PopItemFlag();
 
 #ifndef NDEBUG
     static bool debugShowPlot = false;
