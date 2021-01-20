@@ -184,6 +184,7 @@ public:
 	void DrawVideoPlayer(bool* open, bool* draw_video) noexcept;
 
 	inline void resetTranslationAndZoom() noexcept {
+		if (settings.LockedPosition) return;
 		settings.zoom_factor = 1.f;
 		settings.prev_translation = ImVec2(0.f, 0.f);
 		settings.current_translation = ImVec2(0.f, 0.f); 
