@@ -187,6 +187,8 @@ bool OpenFunscripter::imgui_setup() noexcept
 
 OpenFunscripter::~OpenFunscripter()
 {
+    tcode.save();
+
     // needs a certain destruction order
     scripting.reset();
     controllerInput.reset();
@@ -336,6 +338,8 @@ bool OpenFunscripter::setup()
     };
 
     playerControls.player = player.get();
+
+    tcode.loadSettings(Util::Prefpath("tcode.json"));
 
     SDL_ShowWindow(window);
     return true;
@@ -1304,7 +1308,16 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
 
 void OpenFunscripter::MpvPlayPauseChange(SDL_Event& ev) noexcept
 {
-
+    if ((intptr_t)ev.user.data1) // true == paused
+    {
+        tcode.stop();
+    }
+    else
+    {
+        std::vector<std::weak_ptr<const Funscript>> scripts;
+        scripts.assign(LoadedFunscripts.begin(), LoadedFunscripts.end());
+        tcode.play(player->getCurrentPositionMsInterp(), scripts);
+    }
 }
 
 void OpenFunscripter::update() noexcept {
@@ -1315,6 +1328,8 @@ void OpenFunscripter::update() noexcept {
     if (AutoBackup && player->isPaused()) {
         autoBackup();
     }
+
+    tcode.sync(player->getCurrentPositionMsInterp(), player->getSpeed());
 }
 
 void OpenFunscripter::autoBackup() noexcept
@@ -1400,6 +1415,8 @@ void OpenFunscripter::step() noexcept {
         ShowStatisticsWindow(&settings->data().show_statistics);
         if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { saveScript(ActiveFunscript().get(), "", false); }
         scripting->DrawScriptingMode(NULL);
+
+        tcode.DrawWindow(&settings->data().show_tcode);
 
         if (keybinds.ShowBindingWindow()) {
             keybinds.save();
@@ -2044,7 +2061,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         [fileAlreadyLoaded](auto& result) {
                             if (result.files.size() > 0) {
                                 for (auto&& scriptPath : result.files) {
-                                    auto newScript = std::make_unique<Funscript>();
+                                    auto newScript = std::make_shared<Funscript>();
                                     if (newScript->open<OFS_ScriptSettings>(scriptPath, "OpenFunscripter")) {
                                         auto app = OpenFunscripter::ptr;
                                         if (!fileAlreadyLoaded(scriptPath)) {
@@ -2324,6 +2341,8 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem("Metadata", NULL, &ShowMetadataEditor)) {}
             if (ImGui::MenuItem("Action editor", NULL, &settings->data().show_action_editor)) {}
             if (ImGui::MenuItem(SpecialFunctionsWindow::SpecialFunctionsId, NULL, &settings->data().show_special_functions)) {}
+            if (ImGui::MenuItem("T-Code", NULL, &settings->data().show_tcode)) {}
+
             ImGui::Separator();
 
             if (ImGui::MenuItem("Draw video", NULL, &settings->data().draw_video)) { settings->saveSettings(); }

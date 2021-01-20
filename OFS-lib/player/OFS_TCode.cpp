@@ -258,21 +258,26 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
         auto& c = tcode.channels[i];
         auto& p = prod.producers[i];
         if (OFS::BoundedSliderInt(c.Id, &c.NextTCodeValue, TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue, c.limits[0], c.limits[1], "%d", ImGuiSliderFlags_AlwaysClamp));
-        ImGui::SameLine(); ImGui::Text(" -> %s", c.LastCommand);
-        if (i != static_cast<int32_t>(TChannel::L0)) {
-            ImGui::SameLine(); 
-            bool hookedUp = !p.GetScript().expired();
-            if (ImGui::Checkbox("Hook L0", &hookedUp))
-            {
-                if (hookedUp) {
-                    auto script = prod.GetProd(TChannel::L0).GetScript();
-                    p.SetScript(std::move(script));
-                }
-                else {
-                    p.SetScript(std::move(std::weak_ptr<Funscript>()));
+        if (ImGui::BeginPopupContextItem())
+        {
+            auto activeIdx = prod.GetProd(static_cast<TChannel>(i)).ScriptIdx();
+            
+            for (int32_t scriptIdx = 0; scriptIdx < prod.LoadedScripts.size(); scriptIdx++) {
+                if (auto script = prod.LoadedScripts[scriptIdx].lock()) {
+                    if (ImGui::MenuItem(script->metadata.title.c_str(), NULL, scriptIdx == activeIdx))
+                    {
+                        if (scriptIdx != activeIdx)
+                        {
+                            p.SetScript(scriptIdx);
+                        }
+                        break;
+                    }
                 }
             }
+            ImGui::EndPopup();
         }
+        ImGui::SameLine(); ImGui::Text(" -> %s", c.LastCommand);
+
         ImGui::SameLine();
         ImGui::Checkbox("Invert", &p.Invert);
 
@@ -386,7 +391,7 @@ static int32_t TCodeThread(void* threadData) noexcept {
     return 0;
 }
 
-void TCodePlayer::play(float currentTimeMs, std::weak_ptr<Funscript>&& L0, std::weak_ptr<Funscript>&& R0, std::weak_ptr<Funscript>&& R1, std::weak_ptr<Funscript>&& R2) noexcept
+void TCodePlayer::play(float currentTimeMs, std::vector<std::weak_ptr<const Funscript>> scripts) noexcept
 {
     if (!Thread.running) {
         Thread.running = true;
@@ -395,7 +400,31 @@ void TCodePlayer::play(float currentTimeMs, std::weak_ptr<Funscript>&& L0, std::
         SDL_AtomicSet(&Thread.scriptTimeMs, std::round(currentTimeMs));
         Thread.producer = &this->prod;
         tcode.reset();
-        prod.HookupChannels(&tcode, std::move(L0), std::move(R0), std::move(R1), std::move(R2));
+
+        prod.LoadedScripts = std::move(scripts);
+        // assume first is always stroke
+        prod.GetProd(TChannel::L0).SetScript(0);
+
+        for(int scriptIndex = 0; scriptIndex < prod.LoadedScripts.size(); scriptIndex++)
+        {
+            auto& script = prod.LoadedScripts[scriptIndex];
+            if (auto locked = script.lock())
+            {
+                for (int i=0; i < static_cast<int>(TChannel::TotalCount); i++)
+                {
+                    auto& aliases = TCodeChannels::Aliases[i];
+                    for (auto& alias : aliases)
+                    {
+                        if (Util::StringEndswith(locked->metadata.title, alias))
+                        {
+                            prod.GetProd(static_cast<TChannel>(i)).SetScript(scriptIndex);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        prod.SetChannels(&tcode);
         auto t = SDL_CreateThread(TCodeThread, "TCodePlayer", &Thread);
         SDL_DetachThread(t);
     }

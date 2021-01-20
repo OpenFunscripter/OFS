@@ -27,6 +27,7 @@
 #include "OFS_ScriptSettings.h"
 #include "OFS_Events.h"
 #include "OFS_VideoplayerControls.h"
+#include "OFS_TCode.h"
 
 #include <memory>
 #include <array>
@@ -128,6 +129,7 @@ public:
 	ScriptTimeline scriptPositions;
 	OFS_VideoplayerControls playerControls;
 	ScriptSimulator simulator;
+	TCodePlayer tcode;
 
 	bool AutoBackup = true;
 

@@ -45,6 +45,7 @@ private:
 		bool show_action_editor = false;
 		bool force_hw_decoding = false;
 		bool mirror_mode = false;
+		bool show_tcode = false;
 
 		int32_t	vsync = 0;
 		int32_t framerateLimit = 150;
@@ -100,6 +101,7 @@ private:
 			OFS_REFLECT(framerateLimit, ar);
 			OFS_REFLECT(buttonRepeatIntervalMs, ar);
 			OFS_REFLECT(font_override, ar);
+			OFS_REFLECT(show_tcode, ar);
 			OFS_REFLECT_PTR(simulator, ar);
 		}
 	} scripterSettings;

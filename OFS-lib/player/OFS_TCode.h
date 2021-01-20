@@ -33,13 +33,7 @@ public:
 
 	void DrawWindow(bool* open) noexcept;
 
-	void play(float currentTimeMs, 
-		std::weak_ptr<Funscript>&& L0, // everything except L0 is optional
-		std::weak_ptr<Funscript>&& R0 = std::weak_ptr<Funscript>(),
-		std::weak_ptr<Funscript>&& R1 = std::weak_ptr<Funscript>(),
-		std::weak_ptr<Funscript>&& R2 = std::weak_ptr<Funscript>()
-		/* TODO: add more channels*/
-	) noexcept;
+	void play(float currentTimeMs, 	std::vector<std::weak_ptr<const Funscript>> scripts) noexcept;
 	void stop() noexcept;
 	void sync(float currentTimeMs, float speed) noexcept;
 

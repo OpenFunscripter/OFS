@@ -100,18 +100,32 @@ private:
 	}
 
 	int32_t currentIndex = 0;
-	std::weak_ptr<const Funscript> script;
+	int32_t scriptIndex = -1;
+	
+	inline bool GetScript(std::shared_ptr<const Funscript>& ptr) noexcept
+	{
+		if (scripts != nullptr && scriptIndex < scripts->size())
+		{
+			ptr = scripts->operator[](scriptIndex).lock();
+			if (ptr != nullptr) { return true; }
+		}
+		ptr = nullptr;
+		return false;
+	}
 public:
+	std::vector<std::weak_ptr<const Funscript>>* scripts = nullptr;
 	TCodeChannel* channel = nullptr;
 
 	TCodeChannelProducer() {}
 
-	inline void SetScript(std::weak_ptr<const Funscript>&& script) noexcept
+	inline void Reset() { SetScript(-1); }
+	inline void SetScript(int32_t index) noexcept
 	{
+		this->scriptIndex = index;
 		this->currentIndex = 0;
-		if (!script.expired()) {
-			auto locked = script.lock();
-			if (locked->Actions().size() <= 1) { this->script = std::weak_ptr<const Funscript>(); return; }
+		std::shared_ptr<const Funscript> locked;
+		if (GetScript(locked)) {
+			if (locked->Actions().size() <= 1) { return; }
 			auto [min, max] = std::minmax_element(locked->Actions().begin(), locked->Actions().end(),
 				[](auto act1, auto act2) {
 					return act1.pos < act2.pos;
@@ -120,20 +134,24 @@ public:
 			ScriptMaxPos = max->pos;
 			LOGF_DEBUG("Script min %f and max %f", ScriptMinPos, ScriptMaxPos);
 
-			this->script = std::move(script);
 			NeedsResync = true;
 		}
 	}
 
 	inline std::weak_ptr<const Funscript>& GetScript() noexcept
 	{
-		return script;
+		if (scriptIndex < scripts->size())
+		{
+			return (*scripts)[scriptIndex];
+		}
+		return std::weak_ptr<const Funscript>();
 	}
 
 	inline void sync(int32_t CurrentTimeMs, float freq) noexcept {
-		if (script.expired() || channel == nullptr) return;
+		std::shared_ptr<const Funscript> scriptPtr;
+		if (channel == nullptr || scripts == nullptr) return;
+		if (!GetScript(scriptPtr)) return;
 
-		auto scriptPtr = script.lock();
 		auto& actions = scriptPtr->Actions();
 
 		for (int i = 0; i < actions.size(); i++) {
@@ -158,9 +176,11 @@ public:
 #endif
 
 	inline void tick(int32_t CurrentTimeMs, float freq) noexcept {
-		if (script.expired() || channel == nullptr) return;
+		std::shared_ptr<const Funscript> scriptPtr;
+		if (scripts == nullptr || channel == nullptr) return;
+		if (!GetScript(scriptPtr)) return;
+
 		if (NeedsResync) { sync(CurrentTimeMs, freq); }
-		auto scriptPtr = script.lock();
 		auto& actions = scriptPtr->Actions();
 
 		int newIndex = currentIndex;
@@ -195,37 +215,25 @@ public:
 		float interp = getPos(CurrentTimeMs, freq);
 		channel->SetNextPos(interp);
 	}
+
+	inline int32_t ScriptIdx() const noexcept { return scriptIndex; }
 };
 
 class TCodeProducer {
 public:
 	std::array<TCodeChannelProducer, static_cast<size_t>(TChannel::TotalCount)> producers;
-
-	inline void HookupChannels(
-		TCodeChannels* tcode,
-		std::weak_ptr<Funscript>&& L0, // everything except L0 is optional
-		std::weak_ptr<Funscript>&& R0 = std::weak_ptr<Funscript>(),
-		std::weak_ptr<Funscript>&& R1 = std::weak_ptr<Funscript>(),
-		std::weak_ptr<Funscript>&& R2 = std::weak_ptr<Funscript>()
-		/*TODO: add more channels */ ) noexcept {
-
-		GetProd(TChannel::L0).SetScript(std::move(L0));
-		GetProd(TChannel::L1).SetScript(std::weak_ptr<Funscript>());
-		GetProd(TChannel::L2).SetScript(std::weak_ptr<Funscript>());
-
-		GetProd(TChannel::R0).SetScript(std::move(R0));
-		GetProd(TChannel::R1).SetScript(std::move(R1));
-		GetProd(TChannel::R2).SetScript(std::move(R2));
-
-		GetProd(TChannel::V0).SetScript(std::weak_ptr<Funscript>());
-		GetProd(TChannel::V1).SetScript(std::weak_ptr<Funscript>());
-		GetProd(TChannel::V2).SetScript(std::weak_ptr<Funscript>());
-
-		SetChannels(tcode);
-	}
+	std::vector<std::weak_ptr<const Funscript>> LoadedScripts;
 
 	TCodeChannelProducer& GetProd(TChannel ch) { return producers[static_cast<size_t>(ch)]; }
 	
+	TCodeProducer() noexcept
+	{
+		for (auto& p : producers)
+		{
+			p.scripts = &LoadedScripts;
+		}
+	}
+
 	void SetChannels(TCodeChannels* tcode) noexcept {
 		for (int i = 0; i < producers.size(); i++) {
 			producers[i].channel = &tcode->channels[i];
@@ -234,8 +242,7 @@ public:
 
 	void ClearChannels() noexcept {
 		for (auto& prod : producers) {
-			prod.channel = nullptr;
-			prod.SetScript(std::weak_ptr<Funscript>());
+			prod.Reset();
 		}
 	}
 

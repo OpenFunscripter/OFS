@@ -56,7 +56,7 @@ public:
 	}
 
 	inline void reset() noexcept {
-		LastTCodeValue = GetPos(0.5f);
+		LastTCodeValue = GetPos(0.499f);
 		NextTCodeValue = GetPos(0.5f);
 	}
 
