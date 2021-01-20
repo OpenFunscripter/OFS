@@ -266,10 +266,8 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
                 if (auto script = prod.LoadedScripts[scriptIdx].lock()) {
                     if (ImGui::MenuItem(script->metadata.title.c_str(), NULL, scriptIdx == activeIdx))
                     {
-                        if (scriptIdx != activeIdx)
-                        {
-                            p.SetScript(scriptIdx);
-                        }
+                        if (scriptIdx != activeIdx) { p.SetScript(scriptIdx); }
+                        else { p.SetScript(-1); }
                         break;
                     }
                 }
