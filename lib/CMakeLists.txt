@@ -135,12 +135,6 @@ add_subdirectory("utfcpp/")
 #add_subdirectory("spdlog")
 
 # ==============
-# === xxHash ===
-# ==============
-add_library(xxHash STATIC "xxHash/xxhash.c")
-target_include_directories(xxHash PUBLIC "xxHash/")
-
-# ==============
 # === reproc ===
 # ==============
 set(REPROC++ ON CACHE BOOL "" FORCE)
