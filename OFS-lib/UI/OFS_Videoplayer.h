@@ -143,6 +143,7 @@ private:
 public:
 	static constexpr const char* PlayerId = "Player";
 	ImDrawCallback OnRenderCallback = nullptr;
+	bool LockPosition = false;
 
 	struct OFS_VideoPlayerSettings {
 		ImVec2 current_vr_rotation = ImVec2(0.5f, -0.5f);
@@ -156,6 +157,7 @@ public:
 		float zoom_factor = 1.f;
 		float volume = 0.5f;
 		float playback_speed = 1.f;
+		bool LockedPosition = false;
 
 		template <class Archive>
 		inline void reflect(Archive& ar) {
@@ -169,6 +171,7 @@ public:
 			OFS_REFLECT(current_translation, ar);
 			OFS_REFLECT(prev_translation, ar);
 			OFS_REFLECT(video_pos, ar);
+			OFS_REFLECT(LockedPosition, ar);
 		}
 	};
 

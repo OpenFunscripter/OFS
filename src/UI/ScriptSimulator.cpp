@@ -121,6 +121,8 @@ void ScriptSimulator::ShowSimulator(bool* open)
             simulator.P2 = tmp; 
         }
         ImGui::Columns(1);
+        ImGui::Checkbox("Lock", &simulator.LockedPosition);
+
         if (ImGui::CollapsingHeader("Configuration", ImGuiTreeNodeFlags_SpanAvailWidth)) {
             ImGui::ColorEdit4("Text", &simulator.Text.Value.x);
             ImGui::ColorEdit4("Border", &simulator.Border.Value.x);
@@ -351,64 +353,69 @@ void ScriptSimulator::ShowSimulator(bool* open)
             ImGui::PopFont();
         }
 
-        auto barCenter = barP2 + (direction * (distance / 2.f));
+        if (!simulator.LockedPosition)
+        {
+            auto barCenter = barP2 + (direction * (distance / 2.f));
 
-        constexpr bool ShowMovementHandle = false;
-        if constexpr (ShowMovementHandle) {
-            front_draw->AddCircle(barP1, simulator.Width/2.f, IM_COL32(255, 0, 0, 255), 0, 5.f);
-            front_draw->AddCircle(barP2, simulator.Width/2.f, IM_COL32(255, 0, 0, 255), 0, 5.f);
-            front_draw->AddCircle(barCenter, simulator.Width / 2.f, IM_COL32(255, 0, 0, 255), 0, 5.f);
-        }
+            constexpr bool ShowMovementHandle = false;
+            if constexpr (ShowMovementHandle) {
+                front_draw->AddCircle(barP1, simulator.Width/2.f, IM_COL32(255, 0, 0, 255), 0, 5.f);
+                front_draw->AddCircle(barP2, simulator.Width/2.f, IM_COL32(255, 0, 0, 255), 0, 5.f);
+                front_draw->AddCircle(barCenter, simulator.Width / 2.f, IM_COL32(255, 0, 0, 255), 0, 5.f);
+            }
 
-        auto mouse = ImGui::GetMousePos();
-        float p1Distance = Distance(mouse, barP1);
-        float p2Distance = Distance(mouse, barP2);
-        float barCenterDistance = Distance(mouse, barCenter);
+            auto mouse = ImGui::GetMousePos();
+            float p1Distance = Distance(mouse, barP1);
+            float p2Distance = Distance(mouse, barP2);
+            float barCenterDistance = Distance(mouse, barCenter);
 
-        if (p1Distance <= (simulator.Width / 2.f)) {
-            OpenFunscripter::SetCursorType(ImGuiMouseCursor_Hand);
-            g->HoveredWindow = window;
-            g->HoveredDockNode = window->DockNode;
-            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-                startDragP1 = simulator.P1;
-                dragging = &simulator.P1;
+            if (p1Distance <= (simulator.Width / 2.f)) {
+                OpenFunscripter::SetCursorType(ImGuiMouseCursor_Hand);
+                g->HoveredWindow = window;
+                g->HoveredDockNode = window->DockNode;
+                if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                    startDragP1 = simulator.P1;
+                    dragging = &simulator.P1;
+                }
+            }
+            else if (p2Distance <= (simulator.Width/2.f)) {
+                OpenFunscripter::SetCursorType(ImGuiMouseCursor_Hand);
+                g->HoveredWindow = window;
+                g->HoveredDockNode = window->DockNode;
+                if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                    startDragP1 = simulator.P2;
+                    dragging = &simulator.P2;
+                }
+            }
+            else if (barCenterDistance <= (simulator.Width / 2.f)) {
+                OpenFunscripter::SetCursorType(ImGuiMouseCursor_ResizeAll);
+                g->HoveredWindow = window;
+                g->HoveredDockNode = window->DockNode;
+                if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                    startDragP1 = simulator.P1;
+                    startDragP2 = simulator.P2;
+                    IsMovingSimulator = true;
+                }
+            }
+
+
+            if (dragging != nullptr) {
+                if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+                    *dragging = startDragP1 + ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
+                }
+                if(ImGui::IsMouseReleased(ImGuiMouseButton_Left)) { dragging = nullptr; }
+            }
+            else if (IsMovingSimulator) {
+                if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+                    auto delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
+                    simulator.P1 = startDragP1 + delta;
+                    simulator.P2 = startDragP2 + delta;
+                }
+                if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) { IsMovingSimulator = false; }
             }
         }
-        else if (p2Distance <= (simulator.Width/2.f)) {
-            OpenFunscripter::SetCursorType(ImGuiMouseCursor_Hand);
-            g->HoveredWindow = window;
-            g->HoveredDockNode = window->DockNode;
-            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-                startDragP1 = simulator.P2;
-                dragging = &simulator.P2;
-            }
-        }
-        else if (barCenterDistance <= (simulator.Width / 2.f)) {
-            OpenFunscripter::SetCursorType(ImGuiMouseCursor_ResizeAll);
-            g->HoveredWindow = window;
-            g->HoveredDockNode = window->DockNode;
-            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-                startDragP1 = simulator.P1;
-                startDragP2 = simulator.P2;
-                IsMovingSimulator = true;
-            }
-        }
+        else { dragging = nullptr; IsMovingSimulator = false; }
 
-
-        if (dragging != nullptr) {
-            if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-                *dragging = startDragP1 + ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
-            }
-            if(ImGui::IsMouseReleased(ImGuiMouseButton_Left)) { dragging = nullptr; }
-        }
-        else if (IsMovingSimulator) {
-            if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-                auto delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
-                simulator.P1 = startDragP1 + delta;
-                simulator.P2 = startDragP2 + delta;
-            }
-            if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) { IsMovingSimulator = false; }
-        }
 
 
         ImGui::End();

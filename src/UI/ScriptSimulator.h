@@ -43,6 +43,7 @@ public:
 		bool EnableIndicators = true;
 		bool EnablePosition = false;
 		bool EnableHeightLines = true;
+		bool LockedPosition = false;
 
 		template <class Archive>
 		inline void reflect(Archive& ar)
@@ -64,6 +65,7 @@ public:
 			OFS_REFLECT(EnablePosition, ar);
 			OFS_REFLECT(EnableHeightLines, ar);
 			OFS_REFLECT(ExtraLinesCount, ar);
+			OFS_REFLECT(LockedPosition, ar);
 		}
 	} simulator;
 

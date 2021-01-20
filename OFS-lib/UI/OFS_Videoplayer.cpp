@@ -355,6 +355,8 @@ VideoplayerWindow::~VideoplayerWindow()
 
 void VideoplayerWindow::mouse_scroll(SDL_Event& ev) noexcept
 {
+	if (LockPosition) return;
+
 	auto scroll = ev.wheel;
 	if (videoHovered) {
 		auto mouse_pos_in_vid = ImGui::GetMousePos() - viewport_pos - settings.video_pos;
@@ -419,7 +421,7 @@ void VideoplayerWindow::notifyVideoLoaded() noexcept
 
 void VideoplayerWindow::drawVrVideo(ImDrawList* draw_list) noexcept
 {
-	if (videoHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !dragStarted) {
+	if (!settings.LockedPosition && videoHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !dragStarted) {
 		dragStarted = true;
 	}
 	// apply drag to translation
@@ -505,7 +507,7 @@ void VideoplayerWindow::draw2dVideo(ImDrawList* draw_list) noexcept
 	ImGui::SetCursorPos(settings.video_pos);
 	// the videoHovered is one frame old but moving this up prevents flicker while dragging and zooming at the same time
 	// start video dragging
-	if (videoHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !dragStarted) {
+	if (!settings.LockedPosition && videoHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !dragStarted) {
 		dragStarted = true;
 	}
 	// apply drag to translation
@@ -520,18 +522,19 @@ void VideoplayerWindow::draw2dVideo(ImDrawList* draw_list) noexcept
 
 void VideoplayerWindow::videoRightClickMenu() noexcept
 {
-#ifndef NDEBUG
 	if (ImGui::BeginPopupContextItem())
 	{
-		auto pos = ImGui::GetItemRectMin();
+		ImGui::MenuItem("Lock", NULL, &settings.LockedPosition);
 
+
+#ifndef NDEBUG
 		if (ImGui::BeginMenu("Empty")) {
 			ImGui::TextDisabled("it really do be empty");
 			ImGui::EndMenu();
 		}
+#endif
 		ImGui::EndPopup();
 	}
-#endif
 }
 
 void VideoplayerWindow::showText(const char* text) noexcept
