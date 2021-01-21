@@ -27,6 +27,7 @@
 #define ICON_LONG_ARROW_UP "\xef\x85\xb6"
 #define ICON_LONG_ARROW_DOWN "\xef\x85\xb5"
 #define ICON_LONG_ARROW_RIGHT "\xef\x85\xb8"
+#define ICON_ARROW_RIGHT "\xef\x81\xa1"
 #define ICON_PLAY "\xef\x81\x8b"
 #define ICON_PAUSE "\xef\x81\x8c"
 #define ICON_GAMEPAD "\xef\x84\x9b"
@@ -40,6 +41,7 @@
 #define ICON_EXCLAMATION "\xef\x84\xaa"
 #define ICON_REFRESH "\xef\x80\xa1"
 #define ICON_TRASH "\xef\x87\xb8"
+#define ICON_RANDOM "\xef\x81\xb4"
 
 //#ifndef NDEBUG
 #define LOG_INFO(msg)  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, msg)

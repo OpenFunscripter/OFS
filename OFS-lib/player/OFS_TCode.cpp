@@ -267,7 +267,7 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
             }
             ImGui::EndPopup();
         }
-        ImGui::SameLine(); ImGui::Text(" -> %s", c.LastCommand);
+        ImGui::SameLine(); ImGui::Text(" " ICON_LONG_ARROW_RIGHT " %s", c.LastCommand);
         if (ImGui::IsItemHovered())
         {
             ImGui::BeginTooltip();
