@@ -48,28 +48,21 @@ private:
 		if (currentTimeMs > nextAction.at) { return nextAction.pos; }
 
 		float progress = Util::Clamp((float)(currentTimeMs - startAction.at) / (nextAction.at - startAction.at), 0.f, 1.f);
-		switch (TCodeChannel::EasingMode) {
-		case TCodeEasing::Cubic:
-		{
-			progress = progress < 0.5f
-				? 4.f * progress * progress * progress
-				: 1.f - ((-2.f * progress + 2.f) * (-2.f * progress + 2.f) * (-2.f * progress + 2.f)) / 2.f;
-			break;
-		}
-		case TCodeEasing::None:
-			break;
-		}
+		
+
 		float pos;
-		if (Invert)
+		std::shared_ptr<const Funscript> ptr;
+		if (TCodeChannel::SplineMode && GetScript(ptr))
 		{
-			pos = Util::Lerp<float>(nextAction.pos / 100.f, startAction.pos / 100.f,  progress);
+			pos = ptr->ScriptSpline.SampleAtIndex(ptr->Actions(), currentIndex, currentTimeMs);
 		}
 		else
 		{
-			pos = Util::Lerp<float>(startAction.pos/100.f, nextAction.pos/100.f, progress);
+			pos = Util::Lerp<float>(nextAction.pos / 100.f, startAction.pos / 100.f, progress);
 		}
 
-		
+		if (Invert) { pos = glm::abs(pos - 1.f); }
+
 		RawSpeed = std::abs(pos - LastValue) / (1.f/freq);
 
 		// detect discontinuity

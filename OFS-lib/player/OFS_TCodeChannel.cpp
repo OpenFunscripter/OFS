@@ -1,6 +1,6 @@
 #include "OFS_TCodeChannel.h"
 
-TCodeEasing TCodeChannel::EasingMode = TCodeEasing::None;
+bool TCodeChannel::SplineMode = false;
 
 
 std::array<const std::vector<const char*>, static_cast<size_t>(TChannel::TotalCount)> TCodeChannels::Aliases

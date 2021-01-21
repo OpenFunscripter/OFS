@@ -69,6 +69,6 @@ public:
 		OFS_REFLECT(tcode, ar);
 		OFS_REFLECT(tickrate, ar);
 		OFS_REFLECT(delay, ar);
-		OFS_REFLECT_NAMED("easingMode", TCodeChannel::EasingMode, ar);
+		OFS_REFLECT_NAMED("SplineMode", TCodeChannel::SplineMode, ar);
 	}
 };

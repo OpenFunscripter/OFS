@@ -119,7 +119,6 @@ private:
 	void startSaveThread(const std::string& path, nlohmann::json&& json) noexcept;
 	
 	bool SplineNeedsUpdate = true;
-	FunscriptSpline ScriptSpline;
 public:
 	Funscript();
 	~Funscript();
@@ -133,6 +132,7 @@ public:
 		SplineNeedsUpdate = true;
 	}
 
+	FunscriptSpline ScriptSpline;
 	std::unique_ptr<FunscriptUndoSystem> undoSystem;
 	std::string current_path;
 	bool Enabled = true;

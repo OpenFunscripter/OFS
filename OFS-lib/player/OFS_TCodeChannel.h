@@ -7,11 +7,6 @@
 #include <array>
 #include <sstream>
 
-enum class TCodeEasing : int32_t {
-	None,
-	Cubic,
-};
-
 class TCodeChannel {
 public:
 	// 2 characters + 0 terminator
@@ -25,7 +20,7 @@ public:
 	static constexpr int32_t MinChannelValue = 100;
 	std::array<int32_t, 2> limits = { MinChannelValue, MaxChannelValue };
 	
-	static TCodeEasing EasingMode;
+	static bool SplineMode;
 
 	inline void SetId(const char id[3]) noexcept {
 		strcpy(Id, id);

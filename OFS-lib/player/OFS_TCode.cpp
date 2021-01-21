@@ -232,10 +232,7 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
         ImGui::TextUnformatted("Global settings");
         ImGui::InputInt("Delay", &delay, 10, 10);
         ImGui::SliderInt("Tickrate", &tickrate, 60, 300, "%d", ImGuiSliderFlags_AlwaysClamp);
-        static bool easing = TCodeChannel::EasingMode == TCodeEasing::Cubic;
-        if (ImGui::Checkbox("Easing", &easing)) {
-            TCodeChannel::EasingMode = easing ? TCodeEasing::Cubic : TCodeEasing::None;
-        }
+        if (ImGui::Checkbox("Spline", &TCodeChannel::SplineMode)) {}
     }
 
     ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
