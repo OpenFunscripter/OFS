@@ -99,21 +99,31 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
                     float currentTime = prevAction->at;
                     float endTime = action.at;
                     const float duration = (endTime - currentTime);
-                    const float timeStep = duration / ((duration / 1.f) * (MinSamplesPerSecond/1000.f));
 
                     auto putPoint = [getPointForTimePos](auto& ctx, float timeMs) noexcept {
                         float pos = Util::Clamp<float>(ctx.script->Spline(timeMs) * 100.f, 0.f, 100.f);
                         ctx.draw_list->PathLineTo(getPointForTimePos(ctx, timeMs, pos));
                     };
 
-                    putPoint(ctx, currentTime);
-                    currentTime += timeStep;
-                    while (currentTime < endTime)
+                    if (ctx.visibleSizeMs / duration >= 125.f)
                     {
                         putPoint(ctx, currentTime);
-                        currentTime += timeStep;
+                        putPoint(ctx, endTime);
                     }
-                    putPoint(ctx, endTime);
+                    else
+                    {
+                        const float timeStep = duration / (duration * (MinSamplesPerSecond / 1000.f));
+
+                        putPoint(ctx, currentTime);
+                        currentTime += timeStep;
+                        while (currentTime < endTime)
+                        {
+                            putPoint(ctx, currentTime);
+                            currentTime += timeStep;
+                        }
+                        putPoint(ctx, endTime);
+                    }
+
 
                     auto tmpSize = ctx.draw_list->_Path.Size;
                     ctx.draw_list->PathStroke(IM_COL32_BLACK, false, 3.f);
