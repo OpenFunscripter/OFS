@@ -2,6 +2,7 @@
 
 #include "OFS_Videoplayer.h"
 #include "GradientBar.h"
+#include "OFS_Videopreview.h"
 
 #include <functional>
 
@@ -18,13 +19,20 @@ private:
 	bool mute = false;
 	bool hasSeeked = false;
 	bool dragging = false;
+	
+	static constexpr int32_t PreviewUpdateMs = 1000;
+	uint32_t lastPreviewUpdate = 0;
+
+	void VideoLoaded(SDL_Event& ev) noexcept;
 public:
 	static constexpr const char* PlayerControlId = "Controls";
 	static constexpr const char* PlayerTimeId = "Time";
 	VideoplayerWindow* player = nullptr;
 	ImGradient TimelineGradient;
+	VideoPreview videoPreview;
 
 	OFS_VideoplayerControls() noexcept;
+	void setup() noexcept;
 
 	bool DrawTimelineWidget(const char* label, float* position, TimelineCustomDrawFunc&& customDraw) noexcept;
 

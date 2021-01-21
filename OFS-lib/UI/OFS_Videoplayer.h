@@ -244,6 +244,8 @@ public:
 	inline double getFps() const noexcept { return MpvData.fps; }
 	inline bool isLoaded() const noexcept { return MpvData.video_loaded; }
 	
+	inline double getCurrentPositionRel() const noexcept { return MpvData.percent_pos; }
+
 	inline bool LoopActive() const noexcept { return LoopState == LoopEnum::B_set; }
 	inline double LoopASeconds() const noexcept { return MpvData.ab_loop_a; }
 	inline double LoopBSeconds() const noexcept { return MpvData.ab_loop_b; }

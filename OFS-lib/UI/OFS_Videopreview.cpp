@@ -88,7 +88,7 @@ VideoPreview::~VideoPreview()
 	glDeleteTextures(1, &render_texture);
 }
 
-void VideoPreview::setup() noexcept
+void VideoPreview::setup(bool autoplay) noexcept
 {
 	VideoPreviewEvents::RegisterEvents();
 	EventSystem::ev().Subscribe(VideoPreviewEvents::PreviewWakeUpMpvEvents, EVENT_SYSTEM_BIND(this, &VideoPreview::MpvEvents));
@@ -133,9 +133,11 @@ void VideoPreview::setup() noexcept
 	mpv_set_wakeup_callback(mpv, on_mpv_events, this);
 	mpv_render_context_set_update_callback(mpv_gl, on_mpv_render_update, this);
 
-	//play(); // auto-play
-	const char* play_cmd[]{ "play",  NULL };
-	mpv_command_async(mpv, 0, play_cmd);
+	if (autoplay)
+	{
+		const char* play_cmd[]{ "play",  NULL };
+		mpv_command_async(mpv, 0, play_cmd);
+	}
 
 	// mute
 	stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.2f", (float)(0.f * 100.f));
@@ -252,7 +254,7 @@ void VideoPreview::MpvRenderUpdate(SDL_Event& ev) noexcept
 
 void VideoPreview::setPosition(float pos) noexcept
 {
-	stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f%", (float)(pos * 100.0f));
+	stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f", (float)(pos * 100.0f));
 	const char* cmd[]{ "seek", tmp_buf, "absolute-percent+exact", NULL };
 	mpv_command_async(mpv, 0, cmd);
 }

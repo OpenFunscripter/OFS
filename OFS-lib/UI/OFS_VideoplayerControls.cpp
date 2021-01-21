@@ -5,11 +5,25 @@
 
 static char tmp_buf[2][32];
 
+void OFS_VideoplayerControls::VideoLoaded(SDL_Event& ev) noexcept
+{
+    if (ev.user.data1 != nullptr)
+    {
+        videoPreview.previewVideo((const char*)ev.user.data1, 0.f);
+    }
+}
+
 OFS_VideoplayerControls::OFS_VideoplayerControls() noexcept
 {
     TimelineGradient.addMark(0.f, IM_COL32_BLACK);
     TimelineGradient.addMark(1.f, IM_COL32_BLACK);
     TimelineGradient.refreshCache();
+}
+
+void OFS_VideoplayerControls::setup() noexcept
+{
+    videoPreview.setup(false);
+    EventSystem::ev().Subscribe(VideoEvents::MpvVideoLoaded, EVENT_SYSTEM_BIND(this, &OFS_VideoplayerControls::VideoLoaded));
 }
 
 bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* position, TimelineCustomDrawFunc&& customDraw) noexcept
@@ -62,10 +76,17 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
         draw_list->AddLine(ImVec2(mouse.x, frame_bb.Min.y), ImVec2(mouse.x, frame_bb.Max.y), timeline_cursor_back, timeline_pos_cursor_w);
         draw_list->AddLine(ImVec2(mouse.x, frame_bb.Min.y), ImVec2(mouse.x, frame_bb.Max.y), timeline_cursor_front, timeline_pos_cursor_w / 2.f);
 
-        ImGui::BeginTooltip();
+        ImGui::BeginTooltipEx(ImGuiWindowFlags_None, ImGuiTooltipFlags_None);
         {
-            double time_seconds = player->getDuration() * rel_timeline_pos;
-            double time_delta = time_seconds - player->getCurrentPositionSecondsInterp();
+            if (SDL_GetTicks() - lastPreviewUpdate >= PreviewUpdateMs)
+            {
+                videoPreview.setPosition(rel_timeline_pos);
+                lastPreviewUpdate = SDL_GetTicks();
+            }
+            const ImVec2 ImageDim = ImVec2(ImGui::GetFontSize()*7.f * (16.f / 9.f), ImGui::GetFontSize() * 7.f);
+            ImGui::Image((void*)(intptr_t)videoPreview.render_texture, ImageDim);
+            float time_seconds = player->getDuration() * rel_timeline_pos;
+            float time_delta = time_seconds - player->getCurrentPositionSecondsInterp();
             Util::FormatTime(tmp_buf[0], sizeof(tmp_buf[0]), time_seconds, false);
             Util::FormatTime(tmp_buf[1], sizeof(tmp_buf[1]), (time_delta > 0) ? time_delta : -time_delta, false);
             if (time_delta > 0)

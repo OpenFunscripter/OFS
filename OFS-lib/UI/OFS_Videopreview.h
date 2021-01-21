@@ -48,7 +48,7 @@ public:
 
 	~VideoPreview();
 
-	void setup() noexcept;
+	void setup(bool autoplay) noexcept;
 
 	void setPosition(float pos) noexcept;
 	void previewVideo(const std::string& path, float pos) noexcept;

@@ -15,6 +15,7 @@
 #include "EventSystem.h"
 #include "SDL_events.h"
 
+
 class ScriptTimelineEvents {
 public:
 	static int32_t FfmpegAudioProcessingFinished;
@@ -103,7 +104,7 @@ public:
 
 	const float MAX_WINDOW_SIZE = 300.f; // this limit is arbitrary and not enforced
 	const float MIN_WINDOW_SIZE = 1.f; // this limit is also arbitrary and not enforced
-	void setup(/*VideoplayerWindow* player,*/ UndoSystem* undo);
+	void setup(UndoSystem* undo);
 
 	inline void ClearAudioWaveform() noexcept { audio_waveform_avg.clear(); }
 	inline void setStartSelection(int32_t ms) noexcept { startSelectionMs = ms; }

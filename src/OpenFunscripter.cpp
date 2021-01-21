@@ -337,6 +337,7 @@ bool OpenFunscripter::setup()
         }
     };
 
+    playerControls.setup();
     playerControls.player = player.get();
 
     tcode.loadSettings(Util::Prefpath("tcode.json"));
