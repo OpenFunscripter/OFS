@@ -14,6 +14,8 @@
 #include "OFS_Util.h"
 #include "SDL_mutex.h"
 
+#include "FunscriptSpline.h"
+
 class FunscriptUndoSystem;
 
 class FunscriptEvents
@@ -115,6 +117,9 @@ private:
 	void saveSettings(const std::string& name, UserSettings* user) noexcept;
 
 	void startSaveThread(const std::string& path, nlohmann::json&& json) noexcept;
+	
+	bool SplineNeedsUpdate = true;
+	FunscriptSpline ScriptSpline;
 public:
 	Funscript();
 	~Funscript();
@@ -125,6 +130,7 @@ public:
 			unsavedEdits = true;
 			editTime = std::chrono::system_clock::now();
 		}
+		SplineNeedsUpdate = true;
 	}
 
 	std::unique_ptr<FunscriptUndoSystem> undoSystem;
@@ -166,7 +172,7 @@ public:
 	inline const FunscriptAction* GetPreviousActionBehind(int32_t time_ms) noexcept { return getPreviousActionBehind(time_ms); }
 	inline const FunscriptAction* GetClosestAction(int32_t time_ms) noexcept { return getActionAtTime(data.Actions, time_ms, std::numeric_limits<uint32_t>::max()); }
 
-	float GetPositionAtTime(int32_t time_ms, bool easing) noexcept;
+	float GetPositionAtTime(int32_t time_ms) noexcept;
 	
 	inline void AddAction(FunscriptAction newAction) noexcept { addAction(data.Actions, newAction); }
 	void AddActionSafe(FunscriptAction newAction) noexcept;
@@ -208,6 +214,23 @@ public:
 
 	void EqualizeSelection() noexcept;
 	void InvertSelection() noexcept;
+
+
+	inline const float Spline(float timeMs)
+	{
+		auto& actions = Actions();
+		if (SplineNeedsUpdate) {
+			ScriptSpline.Update(actions);
+			SplineNeedsUpdate = false;
+		}
+
+		return ScriptSpline.Sample(actions, timeMs);
+	}
+
+	inline const float SplineClamped(float timeMs)
+	{
+		return Util::Clamp<float>(Spline(timeMs) * 100.f, 0.f, 100.f);
+	}
 };
 
 

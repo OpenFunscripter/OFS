@@ -111,18 +111,28 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, const s
     ImGui::Begin("Simulator 3D", open, ImGuiWindowFlags_None);
 
     if (posIndex >= 0 && posIndex < loadedScriptsCount) {
-        scriptPos = scripts[posIndex]->GetPositionAtTime(currentMs, easing);
+        scriptPos = easing 
+            ? scripts[posIndex]->SplineClamped(currentMs)
+            : scriptPos = scripts[posIndex]->GetPositionAtTime(currentMs);
     }
     if (rollIndex >= 0 && rollIndex < loadedScriptsCount) {
-        roll = scripts[rollIndex]->GetPositionAtTime(currentMs, easing) - 50.f;
+        roll = easing 
+            ? scripts[rollIndex]->SplineClamped(currentMs) - 50.f
+            : roll = scripts[rollIndex]->GetPositionAtTime(currentMs) - 50.f;
         roll = (rollRange/2.f) * (roll / 50.f);
     }
     if (pitchIndex >= 0 && pitchIndex < loadedScriptsCount) {
-        pitch = scripts[pitchIndex]->GetPositionAtTime(currentMs, easing) - 50.f;
+        pitch =  easing 
+            ? scripts[pitchIndex]->SplineClamped(currentMs) - 50.f
+            : scripts[pitchIndex]->GetPositionAtTime(currentMs) - 50.f;
         pitch = (pitchRange/2.f) * (pitch / 50.f);
     }
     if (twistIndex >= 0 && twistIndex < loadedScriptsCount) {
-        yaw += ((scripts[twistIndex]->GetPositionAtTime(currentMs, easing) - 50.f) / 50.f)*twistSpeed;
+        float spin = ((easing 
+            ? scripts[twistIndex]->SplineClamped(currentMs) - 50.f
+            : scripts[twistIndex]->GetPositionAtTime(currentMs) - 50.f) / 50.f) * twistSpeed;
+
+        yaw += spin;
     }
 
     //roll = glm::radians(roll);

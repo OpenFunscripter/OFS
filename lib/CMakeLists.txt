@@ -130,11 +130,6 @@ set(UTF8_SAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory("utfcpp/")
 
 # ==============
-# === SPDLOG ===
-# ==============
-#add_subdirectory("spdlog")
-
-# ==============
 # === reproc ===
 # ==============
 set(REPROC++ ON CACHE BOOL "" FORCE)

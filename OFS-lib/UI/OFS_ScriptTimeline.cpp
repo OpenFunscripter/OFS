@@ -411,7 +411,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("Rendering")) {
-				ImGui::MenuItem("Spline mode", 0, &BaseOverlay::SplineLines);
+				ImGui::MenuItem("Spline mode", 0, &BaseOverlay::SplineMode);
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("Audio waveform")) {

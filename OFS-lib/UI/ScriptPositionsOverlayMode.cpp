@@ -6,8 +6,7 @@ std::vector<BaseOverlay::ColoredLine> BaseOverlay::ColoredLines;
 std::vector<ImVec2> BaseOverlay::SelectedActionScreenCoordinates;
 std::vector<ImVec2> BaseOverlay::ActionScreenCoordinates;
 std::vector<FunscriptAction> BaseOverlay::ActionPositionWindow;
-bool BaseOverlay::SplineLines = false;
-float BaseOverlay::SplineEasing = 1.5f;
+bool BaseOverlay::SplineMode = false;
 
 BaseOverlay::BaseOverlay(ScriptTimeline* timeline) noexcept
 {
@@ -66,47 +65,88 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
             return ImVec2(x, y);
         };
 
-        const FunscriptAction* prevAction = nullptr;
-        for (; startIt != endIt; startIt++) {
-            auto& action = *startIt;
+        if (SplineMode)
+        {
+            constexpr int32_t MinSamplesPerSecond = 30;
 
-            auto p1 = getPointForAction(ctx, action);
-            ActionScreenCoordinates.emplace_back(p1);
-            ActionPositionWindow.emplace_back(action);
+            const FunscriptAction* prevAction = nullptr;
 
-            if (prevAction != nullptr) {
-                // draw line
-                auto p2 = getPointForAction(ctx, *prevAction);
-                // calculate speed relative to maximum speed
-                float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.at - prevAction->at) / 1000.0f)) / max_speed_per_seconds, 0.f, 1.f);
-                ImColor speed_color;
-                speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
-                speed_color.Value.w = 1.f;
-                
-                if (SplineLines) {
-                    float splineEasing = (p1.x - p2.x)/SplineEasing;
-                    ctx.draw_list->AddBezierCurve(p1, p1 - ImVec2(splineEasing, 0.f), p2 + ImVec2(splineEasing, 0.f), p2, IM_COL32(0, 0, 0, 255), 7.0f);
+            for (; startIt != endIt; startIt++) {
+                auto& action = *startIt;
+
+                auto p1 = getPointForAction(ctx, action);
+                ActionScreenCoordinates.emplace_back(p1);
+                ActionPositionWindow.emplace_back(action);
+
+
+                if (prevAction != nullptr) {
+                    // calculate speed relative to maximum speed
+                    float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.at - prevAction->at) / 1000.0f)) / max_speed_per_seconds, 0.f, 1.f);
+                    ImColor speed_color;
+                    speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
+                    speed_color.Value.w = 1.f;
+
+                    ctx.draw_list->PathClear();
+                    float currentTime = prevAction->at;
+                    float endTime = action.at;
+                    const float duration = (endTime - currentTime);
+                    const float timeStep = duration / ((duration / 1.f) * (MinSamplesPerSecond/1000.f));
+
+                    auto putPoint = [getPointForAction](auto& ctx, float timeMs) noexcept {
+                        int32_t pos = Util::Clamp<int32_t>(std::round(ctx.script->Spline(timeMs) * 100.f), 0, 100);
+                        ctx.draw_list->PathLineTo(getPointForAction(ctx, FunscriptAction(timeMs, pos)));
+                    };
+
+                    putPoint(ctx, currentTime);
+                    currentTime += timeStep;
+                    while (currentTime < endTime)
+                    {
+                        putPoint(ctx, currentTime);
+                        currentTime += timeStep;
+                    }
+                    putPoint(ctx, endTime);
+
+                    auto tmpSize = ctx.draw_list->_Path.Size;
+                    ctx.draw_list->PathStroke(IM_COL32_BLACK, false, 3.f);
+                    ctx.draw_list->_Path.Size = tmpSize;
+                    ctx.draw_list->PathStroke(ImGui::ColorConvertFloat4ToU32(speed_color), false, 3.f);
                 }
-                else {
-                    ctx.draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
-                }
-                ColoredLines.emplace_back(std::move(BaseOverlay::ColoredLine{ p1, p2, ImGui::ColorConvertFloat4ToU32(speed_color) }));
+
+                prevAction = &action;
             }
-
-            prevAction = &action;
         }
+        else
+        {
+            const FunscriptAction* prevAction = nullptr;
+            for (; startIt != endIt; startIt++) {
+                auto& action = *startIt;
 
-        // this is so that the black background line gets rendered first
-        for (auto&& line : ColoredLines) {
-            if (SplineLines) {
-                float splineEasing = (line.p1.x - line.p2.x)/SplineEasing;
+                auto p1 = getPointForAction(ctx, action);
+                ActionScreenCoordinates.emplace_back(p1);
+                ActionPositionWindow.emplace_back(action);
 
-                ctx.draw_list->AddBezierCurve(line.p1, line.p1 - ImVec2(splineEasing, 0.f), line.p2 + ImVec2(splineEasing, 0.f), line.p2, line.color, 3.0f);
+                if (prevAction != nullptr) {
+                    // draw line
+                    auto p2 = getPointForAction(ctx, *prevAction);
+                    // calculate speed relative to maximum speed
+                    float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.at - prevAction->at) / 1000.0f)) / max_speed_per_seconds, 0.f, 1.f);
+                    ImColor speed_color;
+                    speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
+                    speed_color.Value.w = 1.f;
+                
+                    ctx.draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
+                    ColoredLines.emplace_back(std::move(BaseOverlay::ColoredLine{ p1, p2, ImGui::ColorConvertFloat4ToU32(speed_color) }));
+                }
+
+                prevAction = &action;
             }
-            else {
+
+            // this is so that the black background line gets rendered first
+            for (auto&& line : ColoredLines) {
                 ctx.draw_list->AddLine(line.p1, line.p2, line.color, 3.f);
             }
         }
+
 
         if (script.HasSelection()) {
             auto startIt = std::find_if(script.Selection().begin(), script.Selection().end(),
@@ -128,14 +168,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
 
                 if (prev_action != nullptr) {
                     // draw highlight line
-                    if (SplineLines) {
-                        auto p1 = getPointForAction(ctx, *prev_action);
-                        float splineEasing = (p1.x - point.x) / SplineEasing;
-                        ctx.draw_list->AddBezierCurve(p1, p1 - ImVec2(splineEasing, 0.f), point + ImVec2(splineEasing, 0.f), point, selectedLines, 3.0f);
-                    }
-                    else {
-                        ctx.draw_list->AddLine(getPointForAction(ctx, *prev_action), point, selectedLines, 3.0f);
-                    }
+                    ctx.draw_list->AddLine(getPointForAction(ctx, *prev_action), point, selectedLines, 3.0f);
                 }
 
                 SelectedActionScreenCoordinates.emplace_back(point);

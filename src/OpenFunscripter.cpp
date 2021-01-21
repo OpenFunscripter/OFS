@@ -391,8 +391,8 @@ void OpenFunscripter::clearLoadedScripts() noexcept
 {
     LoadedFunscripts.clear();
     LoadedFunscripts.emplace_back(std::move(std::make_unique<Funscript>()));
-    ActiveFunscript()->AllocUser<OFS_ScriptSettings>();
     ActiveFunscriptIdx = 0;
+    ActiveFunscript()->AllocUser<OFS_ScriptSettings>();
 }
 
 void OpenFunscripter::register_bindings()
@@ -1407,7 +1407,7 @@ void OpenFunscripter::step() noexcept {
     {
         // IMGUI HERE
         CreateDockspace();
-        sim3D->ShowWindow(&settings->data().show_simulator_3d, player->getCurrentPositionMsInterp(), BaseOverlay::SplineLines, LoadedFunscripts);
+        sim3D->ShowWindow(&settings->data().show_simulator_3d, player->getCurrentPositionMsInterp(), BaseOverlay::SplineMode, LoadedFunscripts);
 
         ShowAboutWindow(&ShowAbout);
         specialFunctions->ShowFunctionsWindow(&settings->data().show_special_functions);

@@ -37,8 +37,7 @@ public:
 	static ImGradient speedGradient;
 	// used for calculating stroke color with speedGradient
 	static constexpr float max_speed_per_seconds = 530.f; // arbitrarily choosen maximum tuned for coloring
-	static bool SplineLines;
-	static float SplineEasing;
+	static bool SplineMode;
 
 	BaseOverlay(class ScriptTimeline* timeline) noexcept;
 	virtual ~BaseOverlay() noexcept {}

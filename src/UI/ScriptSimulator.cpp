@@ -82,7 +82,9 @@ void ScriptSimulator::ShowSimulator(bool* open)
             positionOverride = -1.f;
         }
         else {
-            currentPos = app->ActiveFunscript()->GetPositionAtTime(app->player->getCurrentPositionMsInterp(), app->scriptPositions.overlay->SplineLines);
+            currentPos = BaseOverlay::SplineMode 
+                ? app->ActiveFunscript()->SplineClamped(app->player->getCurrentPositionMsInterp()) 
+                : app->ActiveFunscript()->GetPositionAtTime(app->player->getCurrentPositionMsInterp());
         }
 
         if (EnableVanilla) {
