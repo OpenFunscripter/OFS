@@ -43,6 +43,9 @@ public:
 
 	inline float Sample(const std::vector<FunscriptAction>& actions, float timeMs) noexcept 
 	{
+		if (actions.size() == 0) { return NAN; }
+		if (cacheIdx + 1 >= actions.size()) { cacheIdx = 0; }
+
 		if (actions[cacheIdx].at <= timeMs && actions[cacheIdx + 1].at >= timeMs)
 		{
 			// cache hit!
@@ -73,6 +76,7 @@ public:
 
 	inline float SampleAtIndex(const std::vector<FunscriptAction>& actions, int32_t index, float timeMs) const noexcept
 	{
+		if (actions.size() == 0) { return NAN; }
 		if (index + 1 < actions.size())
 		{
 			if (actions[index].at <= timeMs && actions[index + 1].at >= timeMs)

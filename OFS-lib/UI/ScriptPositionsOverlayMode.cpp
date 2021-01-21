@@ -59,7 +59,16 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
         auto getPointForAction = [](const OverlayDrawingCtx& ctx, FunscriptAction action) {
             float relative_x = (float)(action.at - ctx.offset_ms) / ctx.visibleSizeMs;
             float x = (ctx.canvas_size.x) * relative_x;
-            float y = (ctx.canvas_size.y) * (1 - (action.pos / 100.0));
+            float y = (ctx.canvas_size.y) * (1 - (action.pos / 100.f));
+            x += ctx.canvas_pos.x;
+            y += ctx.canvas_pos.y;
+            return ImVec2(x, y);
+        };
+
+        auto getPointForTimePos = [](const OverlayDrawingCtx& ctx, float timeMs, float pos) {
+            float relative_x = (float)(timeMs - ctx.offset_ms) / ctx.visibleSizeMs;
+            float x = (ctx.canvas_size.x) * relative_x;
+            float y = (ctx.canvas_size.y) * (1 - (pos / 100.f));
             x += ctx.canvas_pos.x;
             y += ctx.canvas_pos.y;
             return ImVec2(x, y);
@@ -92,9 +101,9 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
                     const float duration = (endTime - currentTime);
                     const float timeStep = duration / ((duration / 1.f) * (MinSamplesPerSecond/1000.f));
 
-                    auto putPoint = [getPointForAction](auto& ctx, float timeMs) noexcept {
-                        int32_t pos = Util::Clamp<int32_t>(std::round(ctx.script->Spline(timeMs) * 100.f), 0, 100);
-                        ctx.draw_list->PathLineTo(getPointForAction(ctx, FunscriptAction(timeMs, pos)));
+                    auto putPoint = [getPointForTimePos](auto& ctx, float timeMs) noexcept {
+                        float pos = Util::Clamp<float>(ctx.script->Spline(timeMs) * 100.f, 0.f, 100.f);
+                        ctx.draw_list->PathLineTo(getPointForTimePos(ctx, timeMs, pos));
                     };
 
                     putPoint(ctx, currentTime);
