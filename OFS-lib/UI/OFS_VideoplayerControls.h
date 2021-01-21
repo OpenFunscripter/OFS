@@ -29,10 +29,11 @@ public:
 	static constexpr const char* PlayerTimeId = "Time";
 	VideoplayerWindow* player = nullptr;
 	ImGradient TimelineGradient;
-	VideoPreview videoPreview;
+	std::unique_ptr<VideoPreview> videoPreview;
 
 	OFS_VideoplayerControls() noexcept;
 	void setup() noexcept;
+	inline void Destroy() noexcept { videoPreview.reset(); }
 
 	bool DrawTimelineWidget(const char* label, float* position, TimelineCustomDrawFunc&& customDraw) noexcept;
 

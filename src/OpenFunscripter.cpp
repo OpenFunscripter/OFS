@@ -190,6 +190,7 @@ OpenFunscripter::~OpenFunscripter()
     tcode.save();
 
     // needs a certain destruction order
+    playerControls.Destroy();
     scripting.reset();
     controllerInput.reset();
     specialFunctions.reset();
