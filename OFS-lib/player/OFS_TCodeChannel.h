@@ -56,8 +56,8 @@ public:
 	}
 
 	inline void reset() noexcept {
-		LastTCodeValue = GetPos(0.499f);
-		NextTCodeValue = GetPos(0.5f);
+		LastTCodeValue = 499;
+		NextTCodeValue = 500;
 	}
 
 	template <class Archive>
@@ -90,7 +90,7 @@ enum class TChannel : int32_t {
 
 class TCodeChannels {
 public:
-	static std::array<std::vector<const char*>, static_cast<size_t>(TChannel::TotalCount)> Aliases;
+	static std::array<const std::vector<const char*>, static_cast<size_t>(TChannel::TotalCount)> Aliases;
 
 	std::array<TCodeChannel, static_cast<size_t>(TChannel::TotalCount)> channels;
 

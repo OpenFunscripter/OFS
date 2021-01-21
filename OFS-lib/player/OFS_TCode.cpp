@@ -203,37 +203,80 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
 
     ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
 
-    char buf[16];
-    ImGui::TextUnformatted("Linear");
-    auto& l0 = tcode.Get(TChannel::L0);
-    stbsp_snprintf(buf, sizeof(buf), "%s Limit", l0.Id);
-    ImGui::DragIntRange2(buf, 
-        &l0.limits[0], &l0.limits[1], 1,
-        TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue,
-        "Min: %d", "Max: %d", ImGuiSliderFlags_AlwaysClamp);
-
-    ImGui::Separator();
-
-    ImGui::TextUnformatted("Rotation");
-    auto rotationGui = [&](TCodeChannel& c) {
-        stbsp_snprintf(buf, sizeof(buf), "%s Limit", c.Id);
+    if (ImGui::CollapsingHeader("Options & Limits"))
+    {
+        char buf[16];
+        ImGui::TextUnformatted("Linear limits");
+        auto& l0 = tcode.Get(TChannel::L0);
+        stbsp_snprintf(buf, sizeof(buf), "%s##%s_Limit", l0.Id, l0.Id);
         ImGui::DragIntRange2(buf,
-            &c.limits[0], &c.limits[1], 1,
+            &l0.limits[0], &l0.limits[1], 1,
             TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue,
             "Min: %d", "Max: %d", ImGuiSliderFlags_AlwaysClamp);
-    };
-    rotationGui(tcode.Get(TChannel::R0));
-    rotationGui(tcode.Get(TChannel::R1));
-    rotationGui(tcode.Get(TChannel::R2));
 
+        ImGui::Separator();
 
-    ImGui::InputInt("Delay", &delay, 10, 10);
-    ImGui::SameLine();
-    static bool easing = TCodeChannel::EasingMode == TCodeEasing::Cubic;
-    if (ImGui::Checkbox("Easing", &easing)) {
-        TCodeChannel::EasingMode = easing ? TCodeEasing::Cubic : TCodeEasing::None;
+        ImGui::TextUnformatted("Rotation limits");
+        auto rotationGui = [&](TCodeChannel& c) noexcept {
+            stbsp_snprintf(buf, sizeof(buf), "%s##%s_Limit", c.Id, c.Id);
+            ImGui::DragIntRange2(buf,
+                &c.limits[0], &c.limits[1], 1,
+                TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue,
+                "Min: %d", "Max: %d", ImGuiSliderFlags_AlwaysClamp);
+        };
+        rotationGui(tcode.Get(TChannel::R0));
+        rotationGui(tcode.Get(TChannel::R1));
+        rotationGui(tcode.Get(TChannel::R2));
+
+        ImGui::Separator();
+        ImGui::TextUnformatted("Global settings");
+        ImGui::InputInt("Delay", &delay, 10, 10);
+        ImGui::SliderInt("Tickrate", &tickrate, 60, 300, "%d", ImGuiSliderFlags_AlwaysClamp);
+        static bool easing = TCodeChannel::EasingMode == TCodeEasing::Cubic;
+        if (ImGui::Checkbox("Easing", &easing)) {
+            TCodeChannel::EasingMode = easing ? TCodeEasing::Cubic : TCodeEasing::None;
+        }
     }
-    ImGui::SliderInt("Tickrate", &tickrate, 60, 300, "%d", ImGuiSliderFlags_AlwaysClamp);
+
+    ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
+    ImGui::TextUnformatted("Outputs");
+    ImGui::SameLine(); ImGui::TextDisabled("(?)");
+    Util::Tooltip("You can right click sliders.");
+
+    for (int i = 0; i < tcode.channels.size(); i++) {
+        if (IgnoreChannel(static_cast<TChannel>(i))) { ImGui::Spacing(); continue; }
+        ImGui::PushID(i);
+        auto& c = tcode.channels[i];
+        auto& p = prod.producers[i];
+        if (OFS::BoundedSliderInt(c.Id, &c.NextTCodeValue, TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue, c.limits[0], c.limits[1], "%d", ImGuiSliderFlags_AlwaysClamp));
+        if (ImGui::BeginPopupContextItem())
+        {
+            if (ImGui::MenuItem("Invert", NULL, &p.Invert)) {}
+            ImGui::Separator();
+            auto activeIdx = prod.GetProd(static_cast<TChannel>(i)).ScriptIdx();
+            
+            for (int32_t scriptIdx = 0; scriptIdx < prod.LoadedScripts.size(); scriptIdx++) {
+                if (auto script = prod.LoadedScripts[scriptIdx].lock()) {
+                    if (ImGui::MenuItem(script->metadata.title.c_str(), NULL, scriptIdx == activeIdx))
+                    {
+                        if (scriptIdx != activeIdx) { p.SetScript(scriptIdx); }
+                        else { p.SetScript(-2); } // -1 for uninitialized & -2 for unset
+                        break;
+                    }
+                }
+            }
+            ImGui::EndPopup();
+        }
+        ImGui::SameLine(); ImGui::Text(" -> %s", c.LastCommand);
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted(TCodeChannels::Aliases[i][2]);
+            ImGui::EndTooltip();
+        }
+
+        ImGui::PopID();
+    }
     
     if (!Thread.running) {
         if (ImGui::Button("Home", ImVec2(-1, 0))) {
@@ -249,43 +292,12 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
         }
     }
 
-    ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
-
-    for (int i = 0; i < tcode.channels.size(); i++) {
-        if (IgnoreChannel(static_cast<TChannel>(i))) { ImGui::Spacing(); continue; }
-        ImGui::PushID(i);
-        auto& c = tcode.channels[i];
-        auto& p = prod.producers[i];
-        if (OFS::BoundedSliderInt(c.Id, &c.NextTCodeValue, TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue, c.limits[0], c.limits[1], "%d", ImGuiSliderFlags_AlwaysClamp));
-        if (ImGui::BeginPopupContextItem())
-        {
-            auto activeIdx = prod.GetProd(static_cast<TChannel>(i)).ScriptIdx();
-            
-            for (int32_t scriptIdx = 0; scriptIdx < prod.LoadedScripts.size(); scriptIdx++) {
-                if (auto script = prod.LoadedScripts[scriptIdx].lock()) {
-                    if (ImGui::MenuItem(script->metadata.title.c_str(), NULL, scriptIdx == activeIdx))
-                    {
-                        if (scriptIdx != activeIdx) { p.SetScript(scriptIdx); }
-                        else { p.SetScript(-1); }
-                        break;
-                    }
-                }
-            }
-            ImGui::EndPopup();
-        }
-        ImGui::SameLine(); ImGui::Text(" -> %s", c.LastCommand);
-
-        ImGui::SameLine();
-        ImGui::Checkbox("Invert", &p.Invert);
-
-        ImGui::PopID();
-    }
-
 #ifndef NDEBUG
     static bool debugShowPlot = false;
     ImGui::Checkbox("Plot", &debugShowPlot);
 #endif
 	ImGui::End();
+
 
 #ifndef NDEBUG
     if (!debugShowPlot) return;
@@ -398,16 +410,22 @@ void TCodePlayer::play(float currentTimeMs, std::vector<std::weak_ptr<const Funs
         tcode.reset();
 
         prod.LoadedScripts = std::move(scripts);
+        
         // assume first is always stroke
-        prod.GetProd(TChannel::L0).SetScript(0);
+        if (prod.GetProd(TChannel::L0).ScriptIdx() == -1) {
+            prod.GetProd(TChannel::L0).SetScript(0);
+        }
 
         for(int scriptIndex = 0; scriptIndex < prod.LoadedScripts.size(); scriptIndex++)
         {
+
             auto& script = prod.LoadedScripts[scriptIndex];
             if (auto locked = script.lock())
             {
                 for (int i=0; i < static_cast<int>(TChannel::TotalCount); i++)
                 {
+                    if (prod.GetProd(static_cast<TChannel>(i)).ScriptIdx() >= 0 // skip all which are already set
+                        || prod.GetProd(static_cast<TChannel>(i)).ScriptIdx() == -2) { continue; }  // -2 is deliberatly unset
                     auto& aliases = TCodeChannels::Aliases[i];
                     for (auto& alias : aliases)
                     {
@@ -431,7 +449,6 @@ void TCodePlayer::stop() noexcept
     if (Thread.running) {
         Thread.requestStop = true;
         while (!Thread.running) { SDL_Delay(1); }
-        prod.ClearChannels();
     }
 }
 
@@ -439,4 +456,13 @@ void TCodePlayer::sync(float currentTimeMs, float speed) noexcept
 {
     Thread.speed = speed;
     SDL_AtomicSet(&Thread.scriptTimeMs, std::round(currentTimeMs));
+}
+
+void TCodePlayer::reset() noexcept
+{
+    if (Thread.running) {
+        Thread.requestStop = true;
+        while (!Thread.running) { SDL_Delay(1); }
+    }
+    prod.ClearChannels();
 }

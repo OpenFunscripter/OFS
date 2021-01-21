@@ -204,7 +204,6 @@ OpenFunscripter::~OpenFunscripter()
 bool OpenFunscripter::setup()
 {
     SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
-    LOG_DEBUG("entered setup()");
     FUN_ASSERT(ptr == nullptr, "there can only be one instance");
     ptr = this;
     auto prefPath = Util::Prefpath("");
@@ -212,13 +211,11 @@ bool OpenFunscripter::setup()
 
     settings = std::make_unique<OpenFunscripterSettings>(Util::Prefpath("config.json"));
     
-    LOG_DEBUG("trying to init sdl");
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
     {
         LOGF_ERROR("Error: %s\n", SDL_GetError());
         return false;
     }
-    LOG_DEBUG("SDL init done!");
 
 #if __APPLE__
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG); // Always required on Mac according to imgui example
@@ -241,14 +238,12 @@ bool OpenFunscripter::setup()
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
-    LOG_DEBUG("trying to create window");
     window = SDL_CreateWindow(
         "OpenFunscripter " OFS_LATEST_GIT_TAG "@" OFS_LATEST_GIT_HASH,
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         DefaultWidth, DefaultHeight,
         SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN
     );
-    LOG_DEBUG("created window");
 
     SDL_Rect display;
     int windowDisplay = SDL_GetWindowDisplayIndex(window);
@@ -257,11 +252,9 @@ bool OpenFunscripter::setup()
         SDL_MaximizeWindow(window);
     }
     
-    LOG_DEBUG("trying to create gl context");
     gl_context = SDL_GL_CreateContext(window);
     SDL_GL_MakeCurrent(window, gl_context);
     SDL_GL_SetSwapInterval(settings->data().vsync);
-    LOG_DEBUG("created gl context");
 
     if (gladLoadGL() == 0) {
         LOG_ERROR("Failed to load glad.");
@@ -273,7 +266,6 @@ bool OpenFunscripter::setup()
         return false;
     }
 
-    LOG_DEBUG("more init");
     events = std::make_unique<EventSystem>();
     events->setup();
     // register custom events with sdl
@@ -1306,6 +1298,8 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
     auto recentFile = OpenFunscripterSettings::RecentFile{ name, std::string(player->getVideoPath()), ActiveFunscript()->current_path };
     settings->addRecentFile(recentFile);
     scriptPositions.ClearAudioWaveform();
+
+    tcode.reset();
 }
 
 void OpenFunscripter::MpvPlayPauseChange(SDL_Event& ev) noexcept

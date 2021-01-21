@@ -3,7 +3,7 @@
 TCodeEasing TCodeChannel::EasingMode = TCodeEasing::None;
 
 
-std::array<std::vector<const char*>, static_cast<size_t>(TChannel::TotalCount)> TCodeChannels::Aliases
+std::array<const std::vector<const char*>, static_cast<size_t>(TChannel::TotalCount)> TCodeChannels::Aliases
 {
 	std::vector<const char*>{"l0", "L0", "stroke" },
 	std::vector<const char*>{"l1", "L1", "sway" },
@@ -13,5 +13,5 @@ std::array<std::vector<const char*>, static_cast<size_t>(TChannel::TotalCount)> 
 	std::vector<const char*>{"r2", "R2", "pitch" },
 	std::vector<const char*>{"v0", "V0", "vib" },
 	std::vector<const char*>{"v1", "V1", "pump" },
-	std::vector<const char*>{"v2", "V2", }
+	std::vector<const char*>{"v2", "V2", "unknown"}
 };
