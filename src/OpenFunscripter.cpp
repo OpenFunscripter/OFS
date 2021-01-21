@@ -1300,6 +1300,11 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
     scriptPositions.ClearAudioWaveform();
 
     tcode.reset();
+    {
+        std::vector<std::weak_ptr<const Funscript>> scripts;
+        scripts.assign(LoadedFunscripts.begin(), LoadedFunscripts.end());
+        tcode.setScripts(std::move(scripts));
+    }
 }
 
 void OpenFunscripter::MpvPlayPauseChange(SDL_Event& ev) noexcept

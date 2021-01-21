@@ -267,7 +267,7 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
             }
             ImGui::EndPopup();
         }
-        ImGui::SameLine(); ImGui::Text(" " ICON_LONG_ARROW_RIGHT " %s", c.LastCommand);
+        ImGui::SameLine(); ImGui::Text(" " ICON_ARROW_RIGHT " %s", c.LastCommand);
         if (ImGui::IsItemHovered())
         {
             ImGui::BeginTooltip();
@@ -336,6 +336,7 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
 }
 
 
+
 static int32_t TCodeThread(void* threadData) noexcept {
     TCodeThreadData* data = (TCodeThreadData*)threadData;
 
@@ -399,6 +400,38 @@ static int32_t TCodeThread(void* threadData) noexcept {
     return 0;
 }
 
+void TCodePlayer::setScripts(std::vector<std::weak_ptr<const Funscript>>&& scripts) noexcept
+{
+    prod.LoadedScripts = std::move(scripts);
+        
+    // assume first is always stroke
+    if (prod.GetProd(TChannel::L0).ScriptIdx() == -1) {
+        prod.GetProd(TChannel::L0).SetScript(0);
+    }
+
+    for(int scriptIndex = 0; scriptIndex < prod.LoadedScripts.size(); scriptIndex++)
+    {
+        auto& script = prod.LoadedScripts[scriptIndex];
+        if (auto locked = script.lock())
+        {
+            for (int i=0; i < static_cast<int>(TChannel::TotalCount); i++)
+            {
+                if (prod.GetProd(static_cast<TChannel>(i)).ScriptIdx() >= 0 // skip all which are already set
+                    || prod.GetProd(static_cast<TChannel>(i)).ScriptIdx() == -2) { continue; }  // -2 is deliberatly unset
+                auto& aliases = TCodeChannels::Aliases[i];
+                for (auto& alias : aliases)
+                {
+                    if (Util::StringEndswith(locked->metadata.title, alias))
+                    {
+                        prod.GetProd(static_cast<TChannel>(i)).SetScript(scriptIndex);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
 void TCodePlayer::play(float currentTimeMs, std::vector<std::weak_ptr<const Funscript>> scripts) noexcept
 {
     if (!Thread.running) {
@@ -408,36 +441,9 @@ void TCodePlayer::play(float currentTimeMs, std::vector<std::weak_ptr<const Funs
         SDL_AtomicSet(&Thread.scriptTimeMs, std::round(currentTimeMs));
         Thread.producer = &this->prod;
         tcode.reset();
-
-        prod.LoadedScripts = std::move(scripts);
         
-        // assume first is always stroke
-        if (prod.GetProd(TChannel::L0).ScriptIdx() == -1) {
-            prod.GetProd(TChannel::L0).SetScript(0);
-        }
+        setScripts(std::move(scripts));
 
-        for(int scriptIndex = 0; scriptIndex < prod.LoadedScripts.size(); scriptIndex++)
-        {
-
-            auto& script = prod.LoadedScripts[scriptIndex];
-            if (auto locked = script.lock())
-            {
-                for (int i=0; i < static_cast<int>(TChannel::TotalCount); i++)
-                {
-                    if (prod.GetProd(static_cast<TChannel>(i)).ScriptIdx() >= 0 // skip all which are already set
-                        || prod.GetProd(static_cast<TChannel>(i)).ScriptIdx() == -2) { continue; }  // -2 is deliberatly unset
-                    auto& aliases = TCodeChannels::Aliases[i];
-                    for (auto& alias : aliases)
-                    {
-                        if (Util::StringEndswith(locked->metadata.title, alias))
-                        {
-                            prod.GetProd(static_cast<TChannel>(i)).SetScript(scriptIndex);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
         prod.SetChannels(&tcode);
         auto t = SDL_CreateThread(TCodeThread, "TCodePlayer", &Thread);
         SDL_DetachThread(t);
