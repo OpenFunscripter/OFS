@@ -28,10 +28,6 @@
 // BUG: Simulator 3D move widget doesn't show when settings window is in a separate platform window/viewport
 // BUG: scripts not getting unloaded when loading new video when using drag'n drop
 
-// TODO: moving actions bindings should respect tempo mode interval
-// TODO: bindings for moving closest point +10 & -10
-
-
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
 constexpr std::array<const char*, 6> SupportedVideoExtensions {
@@ -880,6 +876,31 @@ void OpenFunscripter::register_bindings()
     {
         KeybindingGroup group;
         group.name = "Moving";
+        auto& move_closest_action_up_ten = group.bindings.emplace_back(
+            "move_closest_action_up_ten",
+            "Move closest +10 up",
+            false,
+            [&](void*) {
+                auto closest = ActiveFunscript()->GetClosestAction(player->getCurrentPositionMsInterp());
+                if (closest != nullptr) {
+                    ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->at, Util::Clamp<int32_t>(closest->pos + 10, 0, 100)));
+                }
+            }
+        );
+
+        auto& move_closest_action_down_ten = group.bindings.emplace_back(
+            "move_closest_action_down_ten",
+            "Move closest -10 down",
+            false,
+            [&](void*) {
+                auto closest = ActiveFunscript()->GetClosestAction(player->getCurrentPositionMsInterp());
+                if (closest != nullptr) {
+                    ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->at, Util::Clamp<int32_t>(closest->pos - 10, 0, 100)));
+                }
+            }
+        );
+
+
         auto& move_actions_left_snapped = group.bindings.emplace_back(
             "move_actions_left_snapped",
             "Move actions left with snapping",
