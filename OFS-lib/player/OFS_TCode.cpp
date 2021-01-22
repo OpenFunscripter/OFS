@@ -232,7 +232,10 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
         ImGui::TextUnformatted("Global settings");
         ImGui::InputInt("Delay", &delay, 10, 10);
         ImGui::SliderInt("Tickrate", &tickrate, 60, 300, "%d", ImGuiSliderFlags_AlwaysClamp);
-        if (ImGui::Checkbox("Spline", &TCodeChannel::SplineMode)) {}
+        ImGui::Checkbox("Spline", &TCodeChannel::SplineMode);
+        Util::Tooltip("Smooth motion instead of linear.");
+        ImGui::SameLine(); ImGui::Checkbox("Remap", &TCodeChannel::RemapToFullRange);
+        Util::Tooltip("Remap script to use the full range.\ni.e. scripts using the range 10 to 90 become 0 to 100");
     }
 
     ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
@@ -248,7 +251,8 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
         if (OFS::BoundedSliderInt(c.Id, &c.NextTCodeValue, TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue, c.limits[0], c.limits[1], "%d", ImGuiSliderFlags_AlwaysClamp));
         if (ImGui::BeginPopupContextItem())
         {
-            if (ImGui::MenuItem("Invert", NULL, &p.Invert)) {}
+            ImGui::MenuItem("Invert", NULL, &p.Invert);
+            ImGui::MenuItem("Rebalance", NULL, &c.Rebalance); Util::Tooltip("Balance around 500 even with unevenly spread limits.");
             ImGui::Separator();
             auto activeIdx = prod.GetProd(static_cast<TChannel>(i)).ScriptIdx();
             

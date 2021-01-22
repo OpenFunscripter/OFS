@@ -132,7 +132,10 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, const s
             ? scripts[twistIndex]->SplineClamped(currentMs) - 50.f
             : scripts[twistIndex]->GetPositionAtTime(currentMs) - 50.f) / 50.f) * twistSpeed;
 
-        yaw += spin;
+        if (!std::isnan(spin))
+        {
+            yaw += spin;
+        }
     }
 
     //roll = glm::radians(roll);

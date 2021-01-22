@@ -70,5 +70,6 @@ public:
 		OFS_REFLECT(tickrate, ar);
 		OFS_REFLECT(delay, ar);
 		OFS_REFLECT_NAMED("SplineMode", TCodeChannel::SplineMode, ar);
+		OFS_REFLECT_NAMED("RemapToFullRange", TCodeChannel::RemapToFullRange, ar);
 	}
 };

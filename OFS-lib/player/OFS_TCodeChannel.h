@@ -21,6 +21,9 @@ public:
 	std::array<int32_t, 2> limits = { MinChannelValue, MaxChannelValue };
 	
 	static bool SplineMode;
+	static bool RemapToFullRange;
+
+	bool Rebalance = false;
 
 	inline void SetId(const char id[3]) noexcept {
 		strcpy(Id, id);
@@ -32,12 +35,23 @@ public:
 	{
 		FUN_ASSERT(limits[0] <= limits[1], "limits are scuffed");
 		relative = Util::Clamp<float>(relative, 0.f, 1.f);
-		int32_t tcodeVal = (int32_t)(limits[0] + (relative * (limits[1] - limits[0])));
+		int32_t tcodeVal;
+		if (Rebalance)
+		{
+			tcodeVal = relative < 0.5f 
+				? (int32_t)(limits[0] + (relative*2.f) * (500 - limits[0]))
+				: (int32_t)(500 + ((relative-0.5f)*2.f) * (limits[1] - 500));
+		}
+		else
+		{
+			tcodeVal = (int32_t)(limits[0] + (relative * (limits[1] - limits[0])));
+		}
 		return tcodeVal;
 	}
 
 	inline void SetNextPos(float relativePos) noexcept
 	{
+		if (std::isnan(relativePos)) return;
 		NextTCodeValue = GetPos(relativePos);
 	}
 
@@ -61,6 +75,7 @@ public:
 		OFS_REFLECT(id, ar);
 		OFS_REFLECT_PTR_NAMED("minimum", &limits[0], ar);
 		OFS_REFLECT_PTR_NAMED("maximum", &limits[1], ar);
+		OFS_REFLECT(Rebalance, ar);
 	}
 };
 

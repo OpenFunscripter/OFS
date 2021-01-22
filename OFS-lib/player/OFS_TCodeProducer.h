@@ -10,6 +10,11 @@
 
 #include "SDL_timer.h"
 
+// TODO: add rebalance option. 
+//		 balance a channel around 500.
+//		 meaning a position of 50 would always turn into 500 even if the limits are uneven
+
+
 class TCodeChannelProducer
 {
 private:
@@ -45,7 +50,7 @@ private:
 	}
 
 	inline float getPos(int32_t currentTimeMs, float freq) noexcept {
-		if (currentTimeMs > nextAction.at) { return nextAction.pos; }
+		if (currentTimeMs > nextAction.at) { return LastValue; }
 
 		float progress = Util::Clamp((float)(currentTimeMs - startAction.at) / (nextAction.at - startAction.at), 0.f, 1.f);
 		
@@ -55,6 +60,7 @@ private:
 		if (TCodeChannel::SplineMode && GetScript(ptr))
 		{
 			pos = ptr->ScriptSpline.SampleAtIndex(ptr->Actions(), currentIndex, currentTimeMs);
+			if (TCodeChannel::RemapToFullRange) { pos = Util::MapRange<float>(pos, ScriptMinPos / 100.f, ScriptMaxPos / 100.f, 0.f, 1.f); }
 		}
 		else
 		{
@@ -109,7 +115,7 @@ public:
 	std::vector<std::weak_ptr<const Funscript>>* scripts = nullptr;
 	TCodeChannel* channel = nullptr;
 
-	TCodeChannelProducer() {}
+	TCodeChannelProducer() : startAction(0, 50), nextAction(1, 50) {}
 
 	inline void Reset() { SetScript(-1); }
 	inline void SetScript(int32_t index) noexcept
@@ -154,7 +160,7 @@ public:
 				currentIndex = std::max(0, i - 1);
 				startAction = actions[currentIndex];
 				nextAction = actions[currentIndex+1];
-				MapNewActions();
+				if (TCodeChannel::RemapToFullRange) { MapNewActions(); }
 				break;
 			}
 		}

@@ -1,7 +1,7 @@
 #include "OFS_TCodeChannel.h"
 
 bool TCodeChannel::SplineMode = false;
-
+bool TCodeChannel::RemapToFullRange = false;
 
 std::array<const std::vector<const char*>, static_cast<size_t>(TChannel::TotalCount)> TCodeChannels::Aliases
 {

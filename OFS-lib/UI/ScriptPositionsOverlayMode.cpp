@@ -6,7 +6,7 @@ std::vector<BaseOverlay::ColoredLine> BaseOverlay::ColoredLines;
 std::vector<ImVec2> BaseOverlay::SelectedActionScreenCoordinates;
 std::vector<ImVec2> BaseOverlay::ActionScreenCoordinates;
 std::vector<FunscriptAction> BaseOverlay::ActionPositionWindow;
-bool BaseOverlay::SplineMode = false;
+bool BaseOverlay::SplineMode = true;
 
 BaseOverlay::BaseOverlay(ScriptTimeline* timeline) noexcept
 {
@@ -107,6 +107,8 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
 
                     if (ctx.visibleSizeMs / duration >= 125.f)
                     {
+                        // for better performance
+                        // when splines get really small, they get drawn as straigth lines
                         putPoint(ctx, currentTime);
                         putPoint(ctx, endTime);
                     }
