@@ -876,26 +876,44 @@ void OpenFunscripter::register_bindings()
     {
         KeybindingGroup group;
         group.name = "Moving";
-        auto& move_closest_action_up_ten = group.bindings.emplace_back(
-            "move_closest_action_up_ten",
-            "Move closest +10 up",
+        auto& move_actions_up_ten = group.bindings.emplace_back(
+            "move_actions_up_ten",
+            "Move actions +10 up",
             false,
             [&](void*) {
-                auto closest = ActiveFunscript()->GetClosestAction(player->getCurrentPositionMsInterp());
-                if (closest != nullptr) {
-                    ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->at, Util::Clamp<int32_t>(closest->pos + 10, 0, 100)));
+                if (ActiveFunscript()->HasSelection())
+                {
+                    undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, ActiveFunscript().get());
+                    ActiveFunscript()->MoveSelectionPosition(10);
+                }
+                else
+                {
+                    auto closest = ActiveFunscript()->GetClosestAction(player->getCurrentPositionMsInterp());
+                    if (closest != nullptr) {
+                        undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, ActiveFunscript().get());
+                        ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->at, Util::Clamp<int32_t>(closest->pos + 10, 0, 100)));
+                    }
                 }
             }
         );
 
-        auto& move_closest_action_down_ten = group.bindings.emplace_back(
-            "move_closest_action_down_ten",
-            "Move closest -10 down",
+        auto& move_actions_down_ten = group.bindings.emplace_back(
+            "move_actions_down_ten",
+            "Move actions -10 down",
             false,
             [&](void*) {
-                auto closest = ActiveFunscript()->GetClosestAction(player->getCurrentPositionMsInterp());
-                if (closest != nullptr) {
-                    ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->at, Util::Clamp<int32_t>(closest->pos - 10, 0, 100)));
+                if (ActiveFunscript()->HasSelection())
+                {
+                    undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, ActiveFunscript().get());
+                    ActiveFunscript()->MoveSelectionPosition(-10);
+                }
+                else
+                {
+                    auto closest = ActiveFunscript()->GetClosestAction(player->getCurrentPositionMsInterp());
+                    if (closest != nullptr) {
+                        undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, ActiveFunscript().get());
+                        ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->at, Util::Clamp<int32_t>(closest->pos - 10, 0, 100)));
+                    }
                 }
             }
         );
