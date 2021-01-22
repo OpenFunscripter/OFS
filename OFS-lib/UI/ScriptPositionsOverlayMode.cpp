@@ -49,152 +49,150 @@ void EmptyOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
 
 void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
 {
-    if (ctx.actionToIdx - ctx.actionFromIdx > 1) {
-        auto& script = *ctx.script;
+    auto& script = *ctx.script;
 
-        auto startIt = script.Actions().begin() + ctx.actionFromIdx;
-        auto endIt = script.Actions().begin() + ctx.actionToIdx;
-        ColoredLines.clear();
+    auto startIt = script.Actions().begin() + ctx.actionFromIdx;
+    auto endIt = script.Actions().begin() + ctx.actionToIdx;
+    ColoredLines.clear();
 
-        auto getPointForAction = [](const OverlayDrawingCtx& ctx, FunscriptAction action) {
-            float relative_x = (float)(action.at - ctx.offset_ms) / ctx.visibleSizeMs;
-            float x = (ctx.canvas_size.x) * relative_x;
-            float y = (ctx.canvas_size.y) * (1 - (action.pos / 100.f));
-            x += ctx.canvas_pos.x;
-            y += ctx.canvas_pos.y;
-            return ImVec2(x, y);
-        };
+    auto getPointForAction = [](const OverlayDrawingCtx& ctx, FunscriptAction action) {
+        float relative_x = (float)(action.at - ctx.offset_ms) / ctx.visibleSizeMs;
+        float x = (ctx.canvas_size.x) * relative_x;
+        float y = (ctx.canvas_size.y) * (1 - (action.pos / 100.f));
+        x += ctx.canvas_pos.x;
+        y += ctx.canvas_pos.y;
+        return ImVec2(x, y);
+    };
 
-        auto getPointForTimePos = [](const OverlayDrawingCtx& ctx, float timeMs, float pos) {
-            float relative_x = (float)(timeMs - ctx.offset_ms) / ctx.visibleSizeMs;
-            float x = (ctx.canvas_size.x) * relative_x;
-            float y = (ctx.canvas_size.y) * (1 - (pos / 100.f));
-            x += ctx.canvas_pos.x;
-            y += ctx.canvas_pos.y;
-            return ImVec2(x, y);
-        };
+    auto getPointForTimePos = [](const OverlayDrawingCtx& ctx, float timeMs, float pos) {
+        float relative_x = (float)(timeMs - ctx.offset_ms) / ctx.visibleSizeMs;
+        float x = (ctx.canvas_size.x) * relative_x;
+        float y = (ctx.canvas_size.y) * (1 - (pos / 100.f));
+        x += ctx.canvas_pos.x;
+        y += ctx.canvas_pos.y;
+        return ImVec2(x, y);
+    };
 
-        if (SplineMode)
-        {
-            constexpr int32_t MinSamplesPerSecond = 30;
+    if (SplineMode)
+    {
+        constexpr int32_t MinSamplesPerSecond = 30;
 
-            const FunscriptAction* prevAction = nullptr;
+        const FunscriptAction* prevAction = nullptr;
 
-            for (; startIt != endIt; startIt++) {
-                auto& action = *startIt;
+        for (; startIt != endIt; startIt++) {
+            auto& action = *startIt;
 
-                auto p1 = getPointForAction(ctx, action);
-                ActionScreenCoordinates.emplace_back(p1);
-                ActionPositionWindow.emplace_back(action);
+            auto p1 = getPointForAction(ctx, action);
+            ActionScreenCoordinates.emplace_back(p1);
+            ActionPositionWindow.emplace_back(action);
 
 
-                if (prevAction != nullptr) {
-                    // calculate speed relative to maximum speed
-                    float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.at - prevAction->at) / 1000.0f)) / max_speed_per_seconds, 0.f, 1.f);
-                    ImColor speed_color;
-                    speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
-                    speed_color.Value.w = 1.f;
+            if (prevAction != nullptr) {
+                // calculate speed relative to maximum speed
+                float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.at - prevAction->at) / 1000.0f)) / max_speed_per_seconds, 0.f, 1.f);
+                ImColor speed_color;
+                speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
+                speed_color.Value.w = 1.f;
 
-                    ctx.draw_list->PathClear();
-                    float currentTime = prevAction->at;
-                    float endTime = action.at;
-                    const float duration = (endTime - currentTime);
+                ctx.draw_list->PathClear();
+                float currentTime = prevAction->at;
+                float endTime = action.at;
+                const float duration = (endTime - currentTime);
 
-                    auto putPoint = [getPointForTimePos](auto& ctx, float timeMs) noexcept {
-                        float pos = Util::Clamp<float>(ctx.script->Spline(timeMs) * 100.f, 0.f, 100.f);
-                        ctx.draw_list->PathLineTo(getPointForTimePos(ctx, timeMs, pos));
-                    };
+                auto putPoint = [getPointForTimePos](auto& ctx, float timeMs) noexcept {
+                    float pos = Util::Clamp<float>(ctx.script->Spline(timeMs) * 100.f, 0.f, 100.f);
+                    ctx.draw_list->PathLineTo(getPointForTimePos(ctx, timeMs, pos));
+                };
 
-                    if (ctx.visibleSizeMs / duration >= 125.f)
+                if (ctx.visibleSizeMs / duration >= 125.f)
+                {
+                    // for better performance
+                    // when splines get really small, they get drawn as straigth lines
+                    putPoint(ctx, currentTime);
+                    putPoint(ctx, endTime);
+                }
+                else
+                {
+                    const float timeStep = duration / (duration * (MinSamplesPerSecond / 1000.f));
+
+                    putPoint(ctx, currentTime);
+                    currentTime += timeStep;
+                    while (currentTime < endTime)
                     {
-                        // for better performance
-                        // when splines get really small, they get drawn as straigth lines
-                        putPoint(ctx, currentTime);
-                        putPoint(ctx, endTime);
-                    }
-                    else
-                    {
-                        const float timeStep = duration / (duration * (MinSamplesPerSecond / 1000.f));
-
                         putPoint(ctx, currentTime);
                         currentTime += timeStep;
-                        while (currentTime < endTime)
-                        {
-                            putPoint(ctx, currentTime);
-                            currentTime += timeStep;
-                        }
-                        putPoint(ctx, endTime);
                     }
-
-
-                    auto tmpSize = ctx.draw_list->_Path.Size;
-                    ctx.draw_list->PathStroke(IM_COL32_BLACK, false, 3.f);
-                    ctx.draw_list->_Path.Size = tmpSize;
-                    ctx.draw_list->PathStroke(ImGui::ColorConvertFloat4ToU32(speed_color), false, 3.f);
+                    putPoint(ctx, endTime);
                 }
 
-                prevAction = &action;
+
+                auto tmpSize = ctx.draw_list->_Path.Size;
+                ctx.draw_list->PathStroke(IM_COL32_BLACK, false, 3.f);
+                ctx.draw_list->_Path.Size = tmpSize;
+                ctx.draw_list->PathStroke(ImGui::ColorConvertFloat4ToU32(speed_color), false, 3.f);
             }
+
+            prevAction = &action;
         }
-        else
-        {
-            const FunscriptAction* prevAction = nullptr;
-            for (; startIt != endIt; startIt++) {
-                auto& action = *startIt;
+    }
+    else
+    {
+        const FunscriptAction* prevAction = nullptr;
+        for (; startIt != endIt; startIt++) {
+            auto& action = *startIt;
 
-                auto p1 = getPointForAction(ctx, action);
-                ActionScreenCoordinates.emplace_back(p1);
-                ActionPositionWindow.emplace_back(action);
+            auto p1 = getPointForAction(ctx, action);
+            ActionScreenCoordinates.emplace_back(p1);
+            ActionPositionWindow.emplace_back(action);
 
-                if (prevAction != nullptr) {
-                    // draw line
-                    auto p2 = getPointForAction(ctx, *prevAction);
-                    // calculate speed relative to maximum speed
-                    float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.at - prevAction->at) / 1000.0f)) / max_speed_per_seconds, 0.f, 1.f);
-                    ImColor speed_color;
-                    speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
-                    speed_color.Value.w = 1.f;
+            if (prevAction != nullptr) {
+                // draw line
+                auto p2 = getPointForAction(ctx, *prevAction);
+                // calculate speed relative to maximum speed
+                float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.at - prevAction->at) / 1000.0f)) / max_speed_per_seconds, 0.f, 1.f);
+                ImColor speed_color;
+                speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
+                speed_color.Value.w = 1.f;
                 
-                    ctx.draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
-                    ColoredLines.emplace_back(std::move(BaseOverlay::ColoredLine{ p1, p2, ImGui::ColorConvertFloat4ToU32(speed_color) }));
-                }
-
-                prevAction = &action;
+                ctx.draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
+                ColoredLines.emplace_back(std::move(BaseOverlay::ColoredLine{ p1, p2, ImGui::ColorConvertFloat4ToU32(speed_color) }));
             }
 
-            // this is so that the black background line gets rendered first
-            for (auto&& line : ColoredLines) {
-                ctx.draw_list->AddLine(line.p1, line.p2, line.color, 3.f);
-            }
+            prevAction = &action;
         }
 
+        // this is so that the black background line gets rendered first
+        for (auto&& line : ColoredLines) {
+            ctx.draw_list->AddLine(line.p1, line.p2, line.color, 3.f);
+        }
+    }
 
-        if (script.HasSelection()) {
-            auto startIt = std::find_if(script.Selection().begin(), script.Selection().end(),
-                [&](auto& act) { return act.at >= ctx.offset_ms; });
-            if (startIt != script.Selection().begin())
-                startIt -= 1;
 
-            auto endIt = std::find_if(startIt, script.Selection().end(),
-                [&](auto& act) { return act.at >= ctx.offset_ms + ctx.visibleSizeMs; });
-            if (endIt != script.Selection().end())
-                endIt += 1;
+    if (script.HasSelection()) {
+        auto startIt = std::find_if(script.Selection().begin(), script.Selection().end(),
+            [&](auto& act) { return act.at >= ctx.offset_ms; });
+        if (startIt != script.Selection().begin())
+            startIt -= 1;
 
-            constexpr auto selectedLines = IM_COL32(3, 194, 252, 255);
+        auto endIt = std::find_if(startIt, script.Selection().end(),
+            [&](auto& act) { return act.at >= ctx.offset_ms + ctx.visibleSizeMs; });
+        if (endIt != script.Selection().end())
+            endIt += 1;
 
-            const FunscriptAction* prev_action = nullptr;
-            for (; startIt != endIt; startIt++) {
-                auto&& action = *startIt;
-                auto point = getPointForAction(ctx, action);
+        constexpr auto selectedLines = IM_COL32(3, 194, 252, 255);
 
-                if (prev_action != nullptr) {
-                    // draw highlight line
-                    ctx.draw_list->AddLine(getPointForAction(ctx, *prev_action), point, selectedLines, 3.0f);
-                }
+        const FunscriptAction* prev_action = nullptr;
+        for (; startIt != endIt; startIt++) {
+            auto&& action = *startIt;
+            auto point = getPointForAction(ctx, action);
 
-                SelectedActionScreenCoordinates.emplace_back(point);
-                prev_action = &action;
+            if (prev_action != nullptr) {
+                // draw highlight line
+                ctx.draw_list->AddLine(getPointForAction(ctx, *prev_action), point, selectedLines, 3.0f);
             }
+
+            SelectedActionScreenCoordinates.emplace_back(point);
+            prev_action = &action;
         }
     }
 }
