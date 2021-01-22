@@ -12,6 +12,8 @@
 #include "OFS_Util.h"
 #include "imgui.h"
 
+#include "OFS_ScriptPositionsOverlays.h"
+
 constexpr const char* CurrentSettingsVersion = "1";
 class OpenFunscripterSettings
 {
@@ -103,6 +105,7 @@ private:
 			OFS_REFLECT(font_override, ar);
 			OFS_REFLECT(show_tcode, ar);
 			OFS_REFLECT_PTR(simulator, ar);
+			OFS_REFLECT_NAMED("SplineMode", BaseOverlay::SplineMode, ar);
 		}
 	} scripterSettings;
 
