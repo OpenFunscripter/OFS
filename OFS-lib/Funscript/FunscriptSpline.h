@@ -44,7 +44,8 @@ public:
 	inline float Sample(const std::vector<FunscriptAction>& actions, float timeMs) noexcept 
 	{
 		if (actions.size() == 0) { return NAN; }
-		if (cacheIdx + 1 >= actions.size()) { cacheIdx = 0; }
+		else if (actions.size() == 1) { return actions.front().pos; }
+		else if (cacheIdx + 1 >= actions.size()) { cacheIdx = 0; }
 
 		if (actions[cacheIdx].at <= timeMs && actions[cacheIdx + 1].at >= timeMs)
 		{
@@ -62,12 +63,18 @@ public:
 			// cache miss
 			// lookup index
 			auto it = SplineActionMap.upper_bound((int32_t)timeMs);
-			if (it != SplineActionMap.begin() && it != SplineActionMap.end()) {
-				it--;
-				// cache index
-				cacheIdx = it->second;
-				return catmull_rom_spline(actions, it->second, timeMs);
+			if (it == SplineActionMap.end()) { 
+				return actions.back().pos / 100.f; 
 			}
+			else if (it == SplineActionMap.begin())
+			{
+				return actions.front().pos / 100.f;
+			}
+
+			it--;
+			// cache index
+			cacheIdx = it->second;
+			return catmull_rom_spline(actions, it->second, timeMs);
 		}
 
 		// I don't know if I like this probably better to just return 0.f

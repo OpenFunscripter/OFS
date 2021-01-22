@@ -38,7 +38,7 @@ private:
 	glm::mat4 boxModel;
 	glm::mat4 containerModel;
 
-	glm::mat4 boxy;
+	glm::mat4 twistBox;
 
 	glm::vec3 viewPos;
 	glm::vec3 lightPos;
@@ -50,7 +50,7 @@ private:
 	
 	ImColor boxColor = IM_COL32(245, 164, 66, (int)(0.8f * 255));
 	ImColor containerColor = IM_COL32(66, 135, 245, (int)(0.6f * 255));
-	const ImColor red = IM_COL32(255, 0, 0, 150);
+	ImColor twistBoxColor = IM_COL32(255, 0, 0, 150);
 
 	float roll = 0.f;
 	float pitch = 0.f;

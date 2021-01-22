@@ -143,7 +143,6 @@ private:
 public:
 	static constexpr const char* PlayerId = "Player";
 	ImDrawCallback OnRenderCallback = nullptr;
-	bool LockPosition = false;
 
 	struct OFS_VideoPlayerSettings {
 		ImVec2 current_vr_rotation = ImVec2(0.5f, -0.5f);

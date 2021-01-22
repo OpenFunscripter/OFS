@@ -355,7 +355,7 @@ VideoplayerWindow::~VideoplayerWindow()
 
 void VideoplayerWindow::mouse_scroll(SDL_Event& ev) noexcept
 {
-	if (LockPosition) return;
+	if (settings.LockedPosition) return;
 
 	auto scroll = ev.wheel;
 	if (videoHovered) {

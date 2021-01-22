@@ -199,6 +199,8 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, const s
     if (ImGui::CollapsingHeader("Settings")) {
         ImGui::ColorEdit4("Box", &boxColor.Value.x);
         ImGui::ColorEdit4("Container", &containerColor.Value.x);
+        ImGui::ColorEdit4("Twist", &twistBoxColor.Value.x);
+
         ImGui::InputFloat("Roll deg", &rollRange);
         ImGui::InputFloat("Pitch deg", &pitchRange);
         ImGui::InputFloat("Twist speed", &twistSpeed);
@@ -254,12 +256,12 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, const s
     //boxModel = glm::rotate(boxModel, glm::radians(yaw), glm::vec3(0.f, 1.f, 0.f));
     boxModel = glm::scale(boxModel, glm::vec3(simCubeSize, cubeHeight, simCubeSize));
 
-    boxy = glm::mat4(1.f);
-    boxy = glm::translate(boxy, position + (direction*(cubeHeight-1.25f)));
-    boxy = glm::rotate(boxy, glm::radians(roll), glm::vec3(0.f, 0.f, -1.f));
-    boxy = glm::rotate(boxy, glm::radians(pitch), glm::vec3(1.f, 0.f, 0.f));
-    boxy = glm::rotate(boxy, glm::radians(yaw), glm::vec3(0.f, 1.f, 0.f));
-    boxy = glm::scale(boxy, glm::vec3(simCubeSize, simCubeSize/4.f, simCubeSize)*1.5f);
+    twistBox = glm::mat4(1.f);
+    twistBox = glm::translate(twistBox, position + (direction*(cubeHeight-1.25f)));
+    twistBox = glm::rotate(twistBox, glm::radians(roll), glm::vec3(0.f, 0.f, -1.f));
+    twistBox = glm::rotate(twistBox, glm::radians(pitch), glm::vec3(1.f, 0.f, 0.f));
+    twistBox = glm::rotate(twistBox, glm::radians(yaw), glm::vec3(0.f, 1.f, 0.f));
+    twistBox = glm::scale(twistBox, glm::vec3(simCubeSize, simCubeSize/4.f, simCubeSize)*1.5f);
 }
 
 void Simulator3D::renderSim() noexcept
@@ -290,8 +292,8 @@ void Simulator3D::renderSim() noexcept
     glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
-    lightShader->ObjectColor(&red.Value.x);
-    lightShader->ModelMtx(glm::value_ptr(boxy));
+    lightShader->ObjectColor(&twistBoxColor.Value.x);
+    lightShader->ModelMtx(glm::value_ptr(twistBox));
     glBindVertexArray(cubeVAO);
     glDrawArrays(GL_TRIANGLES, 0, 36);
 

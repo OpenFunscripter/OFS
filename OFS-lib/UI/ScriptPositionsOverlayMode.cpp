@@ -64,28 +64,68 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
         return ImVec2(x, y);
     };
 
-    auto getPointForTimePos = [](const OverlayDrawingCtx& ctx, float timeMs, float pos) {
-        float relative_x = (float)(timeMs - ctx.offset_ms) / ctx.visibleSizeMs;
-        float x = (ctx.canvas_size.x) * relative_x;
-        float y = (ctx.canvas_size.y) * (1 - (pos / 100.f));
-        x += ctx.canvas_pos.x;
-        y += ctx.canvas_pos.y;
-        return ImVec2(x, y);
+
+    auto drawSpline = [](const OverlayDrawingCtx& ctx, float currentTime, float endTime, int32_t color, bool background)
+    {
+        constexpr int32_t MinSamplesPerSecond = 30;
+        auto getPointForTimePos = [](const OverlayDrawingCtx& ctx, float timeMs, float pos) {
+            float relative_x = (float)(timeMs - ctx.offset_ms) / ctx.visibleSizeMs;
+            float x = (ctx.canvas_size.x) * relative_x;
+            float y = (ctx.canvas_size.y) * (1 - (pos / 100.f));
+            x += ctx.canvas_pos.x;
+            y += ctx.canvas_pos.y;
+            return ImVec2(x, y);
+        };
+        auto putPoint = [getPointForTimePos](auto& ctx, float timeMs) noexcept {
+            float pos = Util::Clamp<float>(ctx.script->Spline(timeMs) * 100.f, 0.f, 100.f);
+            ctx.draw_list->PathLineTo(getPointForTimePos(ctx, timeMs, pos));
+        };
+
+        ctx.draw_list->PathClear();
+        const float duration = (endTime - currentTime);
+
+        if (ctx.visibleSizeMs / duration >= 100.f)
+        {
+            // for better performance
+            // when splines get really small, they get drawn as straigth lines
+            putPoint(ctx, currentTime);
+            putPoint(ctx, endTime);
+        }
+        else
+        {
+            const float timeStep = duration / (duration * (MinSamplesPerSecond / 1000.f));
+
+            putPoint(ctx, currentTime);
+            currentTime += timeStep;
+            while (currentTime < endTime)
+            {
+                putPoint(ctx, currentTime);
+                currentTime += timeStep;
+            }
+            putPoint(ctx, endTime);
+        }
+
+
+        if(background)
+        {
+            auto tmpSize = ctx.draw_list->_Path.Size;
+            ctx.draw_list->PathStroke(IM_COL32_BLACK, false, 7.f);
+            ctx.draw_list->_Path.Size = tmpSize;
+        }
+        ctx.draw_list->PathStroke(color, false, 3.f);
     };
 
     if (SplineMode)
     {
-        constexpr int32_t MinSamplesPerSecond = 30;
-
+        if (startIt != endIt && endIt != script.Actions().end()) {
+            drawSpline(ctx, startIt->at, endIt->at, IM_COL32_BLACK, false);
+        }
         const FunscriptAction* prevAction = nullptr;
-
         for (; startIt != endIt; startIt++) {
             auto& action = *startIt;
-
             auto p1 = getPointForAction(ctx, action);
             ActionScreenCoordinates.emplace_back(p1);
             ActionPositionWindow.emplace_back(action);
-
 
             if (prevAction != nullptr) {
                 // calculate speed relative to maximum speed
@@ -94,44 +134,11 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
                 speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
                 speed_color.Value.w = 1.f;
 
-                ctx.draw_list->PathClear();
                 float currentTime = prevAction->at;
                 float endTime = action.at;
-                const float duration = (endTime - currentTime);
 
-                auto putPoint = [getPointForTimePos](auto& ctx, float timeMs) noexcept {
-                    float pos = Util::Clamp<float>(ctx.script->Spline(timeMs) * 100.f, 0.f, 100.f);
-                    ctx.draw_list->PathLineTo(getPointForTimePos(ctx, timeMs, pos));
-                };
-
-                if (ctx.visibleSizeMs / duration >= 125.f)
-                {
-                    // for better performance
-                    // when splines get really small, they get drawn as straigth lines
-                    putPoint(ctx, currentTime);
-                    putPoint(ctx, endTime);
-                }
-                else
-                {
-                    const float timeStep = duration / (duration * (MinSamplesPerSecond / 1000.f));
-
-                    putPoint(ctx, currentTime);
-                    currentTime += timeStep;
-                    while (currentTime < endTime)
-                    {
-                        putPoint(ctx, currentTime);
-                        currentTime += timeStep;
-                    }
-                    putPoint(ctx, endTime);
-                }
-
-
-                auto tmpSize = ctx.draw_list->_Path.Size;
-                ctx.draw_list->PathStroke(IM_COL32_BLACK, false, 3.f);
-                ctx.draw_list->_Path.Size = tmpSize;
-                ctx.draw_list->PathStroke(ImGui::ColorConvertFloat4ToU32(speed_color), false, 3.f);
+                drawSpline(ctx, currentTime, endTime, ImGui::ColorConvertFloat4ToU32(speed_color), false);
             }
-
             prevAction = &action;
         }
     }
@@ -155,6 +162,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
                 speed_color.Value.w = 1.f;
                 
                 ctx.draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
+
                 ColoredLines.emplace_back(std::move(BaseOverlay::ColoredLine{ p1, p2, ImGui::ColorConvertFloat4ToU32(speed_color) }));
             }
 
@@ -180,19 +188,39 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
             endIt += 1;
 
         constexpr auto selectedLines = IM_COL32(3, 194, 252, 255);
+        if (SplineMode)
+        {
+            const FunscriptAction* prev_action = nullptr;
+            for (; startIt != endIt; startIt++) {
+                auto&& action = *startIt;
+                auto point = getPointForAction(ctx, action);
 
-        const FunscriptAction* prev_action = nullptr;
-        for (; startIt != endIt; startIt++) {
-            auto&& action = *startIt;
-            auto point = getPointForAction(ctx, action);
+                if (prev_action != nullptr) {
+                    // draw highlight line
+                    float currentTime = prev_action->at;
+                    float endTime = action.at;
+                    drawSpline(ctx, currentTime, endTime, selectedLines, false);
+                }
 
-            if (prev_action != nullptr) {
-                // draw highlight line
-                ctx.draw_list->AddLine(getPointForAction(ctx, *prev_action), point, selectedLines, 3.0f);
+                SelectedActionScreenCoordinates.emplace_back(point);
+                prev_action = &action;
             }
+        }
+        else
+        {
+            const FunscriptAction* prev_action = nullptr;
+            for (; startIt != endIt; startIt++) {
+                auto&& action = *startIt;
+                auto point = getPointForAction(ctx, action);
 
-            SelectedActionScreenCoordinates.emplace_back(point);
-            prev_action = &action;
+                if (prev_action != nullptr) {
+                    // draw highlight line
+                    ctx.draw_list->AddLine(getPointForAction(ctx, *prev_action), point, selectedLines, 3.0f);
+                }
+
+                SelectedActionScreenCoordinates.emplace_back(point);
+                prev_action = &action;
+            }
         }
     }
 }

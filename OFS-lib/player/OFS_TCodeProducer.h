@@ -124,7 +124,7 @@ public:
 		this->currentIndex = 0;
 		std::shared_ptr<const Funscript> locked;
 		if (GetScript(locked)) {
-			if (locked->Actions().size() <= 1) { return; }
+			if (locked->Actions().size() <= 1) { this->scriptIndex = -1; return; }
 			auto [min, max] = std::minmax_element(locked->Actions().begin(), locked->Actions().end(),
 				[](auto act1, auto act2) {
 					return act1.pos < act2.pos;
