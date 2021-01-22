@@ -1303,6 +1303,7 @@ void OpenFunscripter::ScriptTimelineActionClicked(SDL_Event& ev) noexcept
 
 void OpenFunscripter::DragNDrop(SDL_Event& ev) noexcept
 {
+    clearLoadedScripts();
     openFile(ev.drop.file);
     SDL_free(ev.drop.file);
 }
