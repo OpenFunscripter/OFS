@@ -200,6 +200,13 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
             openPort(port_list[current_port]);
         }
     }
+    if (port != nullptr && ImGui::Button("Close port", ImVec2(-1.f, 0.f))) {
+        auto tmp = port;
+        status = -1;
+        port = nullptr;
+        c_serial_close(tmp);
+        c_serial_free(tmp);
+    }
 
     ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
 
@@ -230,8 +237,8 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
 
         ImGui::Separator();
         ImGui::TextUnformatted("Global settings");
-        ImGui::InputInt("Delay", &delay, 10, 10);
-        ImGui::SliderInt("Tickrate", &tickrate, 60, 300, "%d", ImGuiSliderFlags_AlwaysClamp);
+        ImGui::InputInt("Delay", &delay, 10, 10); Util::Tooltip("Negative: Backward in time.\nPositive: Forward in time.");
+        ImGui::SliderInt("Tickrate (Hz)", &tickrate, 60, 300, "%d", ImGuiSliderFlags_AlwaysClamp); 
         ImGui::Checkbox("Spline", &TCodeChannel::SplineMode);
         Util::Tooltip("Smooth motion instead of linear.");
         ImGui::SameLine(); ImGui::Checkbox("Remap", &TCodeChannel::RemapToFullRange);

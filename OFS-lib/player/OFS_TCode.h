@@ -15,7 +15,7 @@ public:
 
 	int status = -1;
 
-	int32_t tickrate = 60;
+	int32_t tickrate = 250;
 	int32_t delay = 0;
 
 

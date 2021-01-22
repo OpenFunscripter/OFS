@@ -68,6 +68,11 @@ void FrameOverlay::previousFrame() noexcept
     OpenFunscripter::ptr->player->previousFrame();
 }
 
+float FrameOverlay::steppingInterval() noexcept
+{
+    return timeline->frameTimeMs;
+}
+
 void TempoOverlay::DrawSettings() noexcept
 {
     BaseOverlay::DrawSettings();
@@ -185,4 +190,11 @@ void TempoOverlay::previousFrame() noexcept
     int32_t newPositionMs = (beatIdx * beatTimeMs) + (tempo.beat_offset_seconds * 1000.f);
 
     app->player->setPositionExact(newPositionMs);
+}
+
+float TempoOverlay::steppingInterval() noexcept
+{
+    auto app = OpenFunscripter::ptr;
+    auto& tempo = app->ActiveFunscript()->Userdata<OFS_ScriptSettings>().tempoSettings;
+    return ((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX];
 }

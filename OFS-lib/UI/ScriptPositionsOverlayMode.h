@@ -47,6 +47,7 @@ public:
 	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept {}
 	virtual void nextFrame() noexcept {}
 	virtual void previousFrame() noexcept {}
+	virtual float steppingInterval() noexcept = 0;
 
 	static void DrawActionLines(const OverlayDrawingCtx& ctx) noexcept;
 	static void DrawSecondsLabel(const OverlayDrawingCtx& ctx) noexcept;
@@ -58,6 +59,7 @@ class EmptyOverlay : public BaseOverlay {
 public:
 	EmptyOverlay(class ScriptTimeline* timeline) : BaseOverlay(timeline) {}
 	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept override;
+	virtual float steppingInterval() noexcept;
 };
 
 

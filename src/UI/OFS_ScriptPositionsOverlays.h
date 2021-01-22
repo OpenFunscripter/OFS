@@ -59,6 +59,7 @@ public:
 	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept override;
 	virtual void nextFrame() noexcept override;
 	virtual void previousFrame() noexcept override;
+	virtual float steppingInterval() noexcept;
 };
 
 
@@ -70,4 +71,5 @@ public:
 	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept override;
 	virtual void nextFrame() noexcept override;
 	virtual void previousFrame() noexcept override;
+	virtual float steppingInterval() noexcept;
 };

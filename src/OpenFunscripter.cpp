@@ -885,7 +885,7 @@ void OpenFunscripter::register_bindings()
             "Move actions left with snapping",
             false,
             [&](void*) {
-                move_actions_horizontal_with_video(-player->getFrameTimeMs());
+                move_actions_horizontal_with_video(-scriptPositions.overlay->steppingInterval());
             }
         );
         move_actions_left_snapped.key = Keybinding(
@@ -898,7 +898,7 @@ void OpenFunscripter::register_bindings()
             "Move actions right with snapping",
             false,
             [&](void*) {
-                move_actions_horizontal_with_video(player->getFrameTimeMs());
+                move_actions_horizontal_with_video(scriptPositions.overlay->steppingInterval());
             }
         );
         move_actions_right_snapped.key = Keybinding(
@@ -911,7 +911,7 @@ void OpenFunscripter::register_bindings()
             "Move actions left",
             false,
             [&](void*) {
-                move_actions_horizontal(-player->getFrameTimeMs());
+                move_actions_horizontal(-scriptPositions.overlay->steppingInterval());
             }
         );
         move_actions_left.key = Keybinding(
@@ -924,7 +924,7 @@ void OpenFunscripter::register_bindings()
             "Move actions right",
             false,
             [&](void*) {
-                move_actions_horizontal(player->getFrameTimeMs());
+                move_actions_horizontal(scriptPositions.overlay->steppingInterval());
             }
         );
         move_actions_right.key = Keybinding(

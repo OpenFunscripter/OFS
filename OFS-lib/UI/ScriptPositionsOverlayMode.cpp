@@ -47,6 +47,11 @@ void EmptyOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
     BaseOverlay::DrawActionLines(ctx);
 }
 
+float EmptyOverlay::steppingInterval() noexcept
+{
+    return timeline->frameTimeMs;
+}
+
 void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
 {
     auto& script = *ctx.script;
