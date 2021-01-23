@@ -68,7 +68,12 @@ void FrameOverlay::previousFrame() noexcept
     OpenFunscripter::ptr->player->previousFrame();
 }
 
-float FrameOverlay::steppingInterval() noexcept
+float FrameOverlay::steppingIntervalBackward(float fromMs) noexcept
+{
+    return -timeline->frameTimeMs;
+}
+
+float FrameOverlay::steppingIntervalForward(float fromMs) noexcept
 {
     return timeline->frameTimeMs;
 }
@@ -158,6 +163,39 @@ void TempoOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
     }
 }
 
+static int32_t GetNextPosition(float beatTimeMs, float currentTimeMs, float beatOffset) noexcept
+{
+    float beatIdx = ((currentTimeMs - (beatOffset * 1000.f)) / beatTimeMs);
+    beatIdx = std::floor(beatIdx);
+
+    beatIdx += 1.f;
+
+    int32_t newPositionMs = (beatIdx * beatTimeMs) + (beatOffset * 1000.f);
+
+    if (newPositionMs == std::round(currentTimeMs)) {
+        // ugh
+        newPositionMs += beatTimeMs;
+    }
+
+    return newPositionMs;
+}
+
+static int32_t GetPreviousPosition(float beatTimeMs, float currentTimeMs, float beatOffset) noexcept
+{
+    float beatIdx = ((currentTimeMs - (beatOffset*1000.f)) / beatTimeMs);
+    beatIdx = std::ceil(beatIdx);
+
+    beatIdx -= 1.f;
+    int32_t newPositionMs = (beatIdx * beatTimeMs) + (beatOffset * 1000.f);
+
+    if(newPositionMs == std::round(currentTimeMs)) {
+        // ugh
+        newPositionMs -= beatTimeMs;
+    }
+
+    return newPositionMs;
+}
+
 void TempoOverlay::nextFrame() noexcept
 {
     auto app = OpenFunscripter::ptr;
@@ -165,12 +203,7 @@ void TempoOverlay::nextFrame() noexcept
 
     float beatTimeMs = ((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX];
     float currentMs = app->player->getCurrentPositionMsInterp();
-    int32_t beatIdx = std::ceil(currentMs / beatTimeMs);
-    if (std::abs(tempo.beat_offset_seconds) >= 0.001f) {
-        beatIdx -= (tempo.beat_offset_seconds * 1000.f) / beatTimeMs;
-    }
-    beatIdx += 1;
-    int32_t newPositionMs = (beatIdx * beatTimeMs) + (tempo.beat_offset_seconds * 1000.f);
+    int32_t newPositionMs = GetNextPosition(beatTimeMs, currentMs, tempo.beat_offset_seconds);
 
     app->player->setPositionExact(newPositionMs);
 }
@@ -182,19 +215,23 @@ void TempoOverlay::previousFrame() noexcept
 
     float beatTimeMs = ((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX];
     float currentMs = app->player->getCurrentPositionMsInterp();
-    int32_t beatIdx = std::ceil(currentMs / beatTimeMs);
-    if (std::abs(tempo.beat_offset_seconds) >= 0.001f) {
-        beatIdx -= (tempo.beat_offset_seconds * 1000.f) / beatTimeMs;
-    }
-    beatIdx -= 1;
-    int32_t newPositionMs = (beatIdx * beatTimeMs) + (tempo.beat_offset_seconds * 1000.f);
+    int32_t newPositionMs = GetPreviousPosition(beatTimeMs, currentMs, tempo.beat_offset_seconds);
 
     app->player->setPositionExact(newPositionMs);
 }
 
-float TempoOverlay::steppingInterval() noexcept
+float TempoOverlay::steppingIntervalForward(float fromMs) noexcept
 {
     auto app = OpenFunscripter::ptr;
     auto& tempo = app->ActiveFunscript()->Userdata<OFS_ScriptSettings>().tempoSettings;
-    return ((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX];
+    float beatTimeMs = ((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX];
+    return GetNextPosition(beatTimeMs, fromMs, tempo.beat_offset_seconds) - fromMs;
+}
+
+float TempoOverlay::steppingIntervalBackward(float fromMs) noexcept
+{
+    auto app = OpenFunscripter::ptr;
+    auto& tempo = app->ActiveFunscript()->Userdata<OFS_ScriptSettings>().tempoSettings;
+    float beatTimeMs = ((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX];
+    return GetPreviousPosition(beatTimeMs, fromMs, tempo.beat_offset_seconds) - fromMs;
 }

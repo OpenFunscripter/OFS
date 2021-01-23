@@ -47,9 +47,14 @@ void EmptyOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
     BaseOverlay::DrawActionLines(ctx);
 }
 
-float EmptyOverlay::steppingInterval() noexcept
+float EmptyOverlay::steppingIntervalForward(float fromMs) noexcept
 {
     return timeline->frameTimeMs;
+}
+
+float EmptyOverlay::steppingIntervalBackward(float fromMs) noexcept
+{
+    return -timeline->frameTimeMs;
 }
 
 void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept

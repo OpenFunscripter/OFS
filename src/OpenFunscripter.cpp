@@ -28,6 +28,14 @@
 // BUG: Simulator 3D move widget doesn't show when settings window is in a separate platform window/viewport
 // BUG: scripts not getting unloaded when loading new video when using drag'n drop
 
+// TODO: clear paste area before pasting. I can't think of a reason why I never did that do begin with.
+
+// TODO: [MAJOR] waveform rework
+//     - when loading the waveform use some streaming api to reduce ram usage
+//     - add multiple different colored layers (low freq, mid freq & high freq)
+//     - user reproc++ to call ffmpeg
+//     - move it into it's own class
+
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
 constexpr std::array<const char*, 6> SupportedVideoExtensions {
@@ -838,25 +846,42 @@ void OpenFunscripter::register_bindings()
     }
 
     // MOVE LEFT/RIGHT
-    auto move_actions_horizontal = [](int32_t time_ms) {
+    auto move_actions_horizontal = [](bool forward) {
         auto app = OpenFunscripter::ptr;
         
         if (app->ActiveFunscript()->HasSelection()) {
+            int32_t time_ms = forward
+                ? app->scriptPositions.overlay->steppingIntervalForward(app->ActiveFunscript()->Selection().front().at)
+                : app->scriptPositions.overlay->steppingIntervalBackward(app->ActiveFunscript()->Selection().front().at);
+
             app->undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, app->ActiveFunscript().get());
             app->ActiveFunscript()->MoveSelectionTime(time_ms, app->player->getFrameTimeMs());
         }
         else {
             auto closest = ptr->ActiveFunscript()->GetClosestAction(app->player->getCurrentPositionMsInterp());
             if (closest != nullptr) {
-                app->undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, app->ActiveFunscript().get());
+                int32_t time_ms = forward
+                    ? app->scriptPositions.overlay->steppingIntervalForward(closest->at)
+                    : app->scriptPositions.overlay->steppingIntervalBackward(closest->at);
+
                 FunscriptAction moved(closest->at + time_ms, closest->pos);
-                app->ActiveFunscript()->EditAction(*closest, moved);
+                auto closestInMoveRange = app->ActiveFunscript()->GetActionAtTime(moved.at, app->player->getFrameTimeMs());
+                if (closestInMoveRange == nullptr
+                    || (forward && closestInMoveRange->at < moved.at)
+                    || (!forward && closestInMoveRange->at > moved.at)) {
+                    app->undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, app->ActiveFunscript().get());
+                    app->ActiveFunscript()->EditAction(*closest, moved);
+                }
             }
         }
     };
-    auto move_actions_horizontal_with_video = [](int32_t time_ms) {
+    auto move_actions_horizontal_with_video = [](bool forward) {
         auto app = OpenFunscripter::ptr;
         if (app->ActiveFunscript()->HasSelection()) {
+            int32_t time_ms = forward
+                ? app->scriptPositions.overlay->steppingIntervalForward(app->ActiveFunscript()->Selection().front().at)
+                : app->scriptPositions.overlay->steppingIntervalBackward(app->ActiveFunscript()->Selection().front().at);
+
             app->undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, app->ActiveFunscript().get());
             app->ActiveFunscript()->MoveSelectionTime(time_ms, app->player->getFrameTimeMs());
             auto closest = ptr->ActiveFunscript()->GetClosestActionSelection(app->player->getCurrentPositionMsInterp());
@@ -866,10 +891,20 @@ void OpenFunscripter::register_bindings()
         else {
             auto closest = app->ActiveFunscript()->GetClosestAction(ptr->player->getCurrentPositionMsInterp());
             if (closest != nullptr) {
-                app->undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, app->ActiveFunscript().get());
+                int32_t time_ms = forward
+                    ? app->scriptPositions.overlay->steppingIntervalForward(closest->at)
+                    : app->scriptPositions.overlay->steppingIntervalBackward(closest->at);
+
                 FunscriptAction moved(closest->at + time_ms, closest->pos);
-                app->ActiveFunscript()->EditAction(*closest, moved);
-                app->player->setPositionExact(moved.at);
+                auto closestInMoveRange = app->ActiveFunscript()->GetActionAtTime(moved.at, app->player->getFrameTimeMs());
+
+                if (closestInMoveRange == nullptr 
+                    || (forward && closestInMoveRange->at < moved.at) 
+                    || (!forward && closestInMoveRange->at > moved.at)) {
+                    app->undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, app->ActiveFunscript().get());
+                    app->ActiveFunscript()->EditAction(*closest, moved);
+                    app->player->setPositionExact(moved.at);
+                }
             }
         }
     };
@@ -924,7 +959,7 @@ void OpenFunscripter::register_bindings()
             "Move actions left with snapping",
             false,
             [&](void*) {
-                move_actions_horizontal_with_video(-scriptPositions.overlay->steppingInterval());
+                move_actions_horizontal_with_video(false);
             }
         );
         move_actions_left_snapped.key = Keybinding(
@@ -937,7 +972,7 @@ void OpenFunscripter::register_bindings()
             "Move actions right with snapping",
             false,
             [&](void*) {
-                move_actions_horizontal_with_video(scriptPositions.overlay->steppingInterval());
+                move_actions_horizontal_with_video(true);
             }
         );
         move_actions_right_snapped.key = Keybinding(
@@ -950,7 +985,7 @@ void OpenFunscripter::register_bindings()
             "Move actions left",
             false,
             [&](void*) {
-                move_actions_horizontal(-scriptPositions.overlay->steppingInterval());
+                move_actions_horizontal(false);
             }
         );
         move_actions_left.key = Keybinding(
@@ -963,7 +998,7 @@ void OpenFunscripter::register_bindings()
             "Move actions right",
             false,
             [&](void*) {
-                move_actions_horizontal(scriptPositions.overlay->steppingInterval());
+                move_actions_horizontal(true);
             }
         );
         move_actions_right.key = Keybinding(
