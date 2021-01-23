@@ -761,7 +761,7 @@ void VideoplayerWindow::cycleLoopAB() noexcept
 		MpvData.ab_loop_a = 0.f;
 		MpvData.ab_loop_b = 0.f;
 		showText("Loop cleared.");
-		LoopState == LoopEnum::Clear;
+		LoopState = LoopEnum::Clear;
 	}
 }
 
