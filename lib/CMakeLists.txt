@@ -28,7 +28,32 @@ add_subdirectory("glm")
 # ==============
 # == CSerial ===
 # ==============
-add_subdirectory("CSerial")
+SET(CSERIAL_VERSION_MAJOR 0)
+SET(CSERIAL_VERSION_MINOR 2)
+SET(CSERIAL_VERSION_PATCH 0)
+SET(CSERIAL_VERSION_STRING ${CSERIAL_VERSION_MAJOR}.${CSERIAL_VERSION_MINOR}.${CSERIAL_VERSION_PATCH})
+INCLUDE(CheckIncludeFiles)
+INCLUDE(GNUInstallDirs)
+CHECK_INCLUDE_FILES(linux/serial.h HAVE_LINUX_SERIAL)
+
+set(C_SERIAL_SOURCES
+	"CSerial/c_serial.c" )
+set(C_SERIAL_HEADERS 
+	"CSerial/c_serial.h"
+    "CSerial/simplelogger_defs.h")
+
+configure_file("CSerial/config.h.in" "CSerial/config.h")
+add_library(cserial_static STATIC ${C_SERIAL_SOURCES} ${C_SERIAL_HEADERS})
+target_include_directories(cserial_static PUBLIC "CSerial/" "${CMAKE_CURRENT_BINARY_DIR}/CSerial/")
+target_compile_definitions(cserial_static PUBLIC "-DCSERIAL_VERSION=${CSERIAL_VERSION_STRING}" )
+set_target_properties(cserial_static PROPERTIES VERSION ${CSERIAL_VERSION_STRING} SOVERSION ${CSERIAL_VERSION_MAJOR} )
+
+if(WIN32)
+	target_compile_definitions(cserial_static PUBLIC "-DCSERIAL_LIB")
+	target_compile_definitions(cserial_static PUBLIC CSERIAL_STATIC )
+endif(WIN32)
+
+#add_subdirectory("CSerial")
 
 
 # ==========
