@@ -15,7 +15,6 @@
 
 // FIX: Add type checking to the deserialization. 
 //      I assume it would crash if a field is specified but doesn't have the correct type.
-// TODO: reduce memory usage when generating waveform data
 // TODO: use a ringbuffer in the undosystem
 // TODO: improve shift click add action with simulator
 //       it bugs out if the simulator is on the same height as the script timeline
@@ -26,7 +25,6 @@
 // TODO: binding Lua scripts to keys or buttons
 
 // BUG: Simulator 3D move widget doesn't show when settings window is in a separate platform window/viewport
-// BUG: scripts not getting unloaded when loading new video when using drag'n drop
 
 // TODO: make speed coloring configurable
 
