@@ -210,33 +210,50 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
 
     ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
 
-    if (ImGui::CollapsingHeader("Options & Limits"))
+    if (ImGui::CollapsingHeader("Limits##ChannelLimits"))
     {
-        char buf[16];
-        ImGui::TextUnformatted("Linear limits");
-        auto& l0 = tcode.Get(TChannel::L0);
-        stbsp_snprintf(buf, sizeof(buf), "%s##%s_Limit", l0.Id, l0.Id);
-        ImGui::DragIntRange2(buf,
-            &l0.limits[0], &l0.limits[1], 1,
-            TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue,
-            "Min: %d", "Max: %d", ImGuiSliderFlags_AlwaysClamp);
+        char buf[32];
+        auto limitsGui = [&](TChannel chan) noexcept {
+            auto& c = tcode.Get(chan);
+            float availWidth = ImGui::GetContentRegionAvail().x;
 
-        ImGui::Separator();
-
-        ImGui::TextUnformatted("Rotation limits");
-        auto rotationGui = [&](TCodeChannel& c) noexcept {
-            stbsp_snprintf(buf, sizeof(buf), "%s##%s_Limit", c.Id, c.Id);
+            ImGui::SetNextItemWidth(availWidth * 0.6f);
+            stbsp_snprintf(buf, sizeof(buf),"##%s_Limit", c.Id);
             ImGui::DragIntRange2(buf,
                 &c.limits[0], &c.limits[1], 1,
                 TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue,
                 "Min: %d", "Max: %d", ImGuiSliderFlags_AlwaysClamp);
+
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(0.3f * availWidth);
+            stbsp_snprintf(buf, sizeof(buf), "%-6s (%s)##%s_Enable", TCodeChannels::Aliases[static_cast<int32_t>(chan)][2], c.Id, c.Id);
+            ImGui::Checkbox(buf, &c.Enabled);
         };
-        rotationGui(tcode.Get(TChannel::R0));
-        rotationGui(tcode.Get(TChannel::R1));
-        rotationGui(tcode.Get(TChannel::R2));
+
+        ImGui::TextUnformatted("Linear limits");
+        limitsGui(TChannel::L0);
+        limitsGui(TChannel::L1);
+        limitsGui(TChannel::L2);
+        limitsGui(TChannel::L3);
 
         ImGui::Separator();
-        ImGui::TextUnformatted("Global settings");
+
+        ImGui::TextUnformatted("Rotation limits");
+        limitsGui(TChannel::R0);
+        limitsGui(TChannel::R1);
+        limitsGui(TChannel::R2);
+
+        ImGui::Separator();
+
+        ImGui::TextUnformatted("Vibration limits");
+        limitsGui(TChannel::V0);
+        limitsGui(TChannel::V1);
+        limitsGui(TChannel::V2);
+
+        ImGui::Separator();
+    }
+    if (ImGui::CollapsingHeader("Global settings"))
+    {
         ImGui::InputInt("Delay", &delay, 10, 10); Util::Tooltip("Negative: Backward in time.\nPositive: Forward in time.");
         ImGui::SliderInt("Tickrate (Hz)", &tickrate, 60, 300, "%d", ImGuiSliderFlags_AlwaysClamp); 
         ImGui::Checkbox("Spline", &TCodeChannel::SplineMode);
@@ -251,10 +268,11 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
     Util::Tooltip("You can right click sliders.");
 
     for (int i = 0; i < tcode.channels.size(); i++) {
-        if (IgnoreChannel(static_cast<TChannel>(i))) { ImGui::Spacing(); continue; }
-        ImGui::PushID(i);
+        if(i == 4 || i == 7) ImGui::Spacing();
         auto& c = tcode.channels[i];
+        if (!c.Enabled) continue;
         auto& p = prod.producers[i];
+        ImGui::PushID(i);
         if (OFS::BoundedSliderInt(c.Id, &c.NextTCodeValue, TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue, c.limits[0], c.limits[1], "%d", ImGuiSliderFlags_AlwaysClamp));
         if (ImGui::BeginPopupContextItem())
         {
@@ -285,6 +303,7 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
 
         ImGui::PopID();
     }
+    ImGui::Spacing();
     
     if (!Thread.running) {
         if (ImGui::Button("Home", ImVec2(-1, 0))) {

@@ -39,31 +39,6 @@ public:
 	void sync(float currentTimeMs, float speed) noexcept;
 	void reset() noexcept;
 
-	inline bool IgnoreChannel(TChannel c) const noexcept {
-		switch (c) {
-			// handled channels
-			case TChannel::L0:
-			case TChannel::R0:
-			case TChannel::R1:
-			case TChannel::R2:
-			{
-				return false;
-			}
-
-			// ignored channels
-			case TChannel::L2:
-			case TChannel::L1:
-			case TChannel::V0:
-			case TChannel::V1:
-			case TChannel::V2:
-			{
-				return true;
-			}
-		}
-
-		return true;
-	}
-
 	template <class Archive>
 	inline void reflect(Archive& ar) {
 		OFS_REFLECT(tcode, ar);

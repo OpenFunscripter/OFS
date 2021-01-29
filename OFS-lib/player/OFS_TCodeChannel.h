@@ -23,6 +23,7 @@ public:
 	static bool SplineMode;
 	static bool RemapToFullRange;
 
+	bool Enabled = true;
 	bool Rebalance = false;
 
 	inline void SetId(const char id[3]) noexcept {
@@ -76,6 +77,7 @@ public:
 		OFS_REFLECT_PTR_NAMED("minimum", &limits[0], ar);
 		OFS_REFLECT_PTR_NAMED("maximum", &limits[1], ar);
 		OFS_REFLECT(Rebalance, ar);
+		OFS_REFLECT(Enabled, ar);
 	}
 };
 
@@ -84,16 +86,15 @@ enum class TChannel : int32_t {
 	L0 = 0,
 	L1 = 1,
 	L2 = 2,
+	L3 = 3,
 
-	// TODO: add L3/succ
+	R0 = 4,
+	R1 = 5,
+	R2 = 6,
 
-	R0 = 3,
-	R1 = 4,
-	R2 = 5,
-
-	V0 = 6,
-	V1 = 7,
-	V2 = 8,
+	V0 = 7,
+	V1 = 8,
+	V2 = 9,
 
 	TotalCount
 };
@@ -114,6 +115,7 @@ public:
 		Get(TChannel::L0).SetId("L0");
 		Get(TChannel::L1).SetId("L1");
 		Get(TChannel::L2).SetId("L2");
+		Get(TChannel::L3).SetId("L3");
 
 		Get(TChannel::R0).SetId("R0");
 		Get(TChannel::R1).SetId("R1");
