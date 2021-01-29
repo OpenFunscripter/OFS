@@ -28,17 +28,6 @@
 // BUG: Simulator 3D move widget doesn't show when settings window is in a separate platform window/viewport
 // BUG: scripts not getting unloaded when loading new video when using drag'n drop
 
-// TODO: clear paste area before pasting. I can't think of a reason why I never did that do begin with.
-
-// TODO: [MAJOR] waveform rework
-//     - when loading the waveform use some streaming api to reduce ram usage
-//     - add multiple different colored layers (low freq, mid freq & high freq)
-//     - user reproc++ to call ffmpeg
-//     - move it into it's own class
-
-
-// TODO: replace RamerDouglasPeucker algo with an iterative implementation
-// TODO: backup system doesn't handle long paths ??????? investigate
 // TODO: make speed coloring configurable
 
 // the video player supports a lot more than these
@@ -1434,7 +1423,6 @@ void OpenFunscripter::autoBackup() noexcept
         return;
     }
     
-    char path_buf[1024];
     for (auto&& script : LoadedFunscripts) {
 
         auto scriptName = Util::Filename(script->current_path);
@@ -1452,12 +1440,9 @@ void OpenFunscripter::autoBackup() noexcept
         auto time = std::chrono::system_clock::now();
         auto in_time_t = std::chrono::system_clock::to_time_t(time);
         auto tm = std::localtime(&in_time_t);
-        stbsp_snprintf(path_buf, sizeof(path_buf), "%s_%02d-%02d-%02d.funscript.backup", 
-            scriptBackupDir.filename().u8string().c_str(), 
-            tm->tm_hour,
-            tm->tm_hour,
-            tm->tm_min
-        );
+        std::stringstream ss;
+        ss << scriptBackupDir.filename().u8string();
+        ss << '_' << tm->tm_hour << '-' << tm->tm_min << '-' << tm->tm_sec << ".funscript.backup";
 
         std::error_code ec;
         auto iterator = std::filesystem::directory_iterator(scriptBackupDir, ec);
@@ -1473,7 +1458,7 @@ void OpenFunscripter::autoBackup() noexcept
             }
         }
 
-        auto savePath = scriptBackupDir / path_buf;
+        auto savePath = scriptBackupDir / ss.str();
         LOGF_INFO("Backup at \"%s\"", savePath.u8string().c_str());
         saveScript(script.get(), savePath.u8string(), false);
     }
@@ -1926,7 +1911,14 @@ void OpenFunscripter::pasteSelection() noexcept
     undoSystem->Snapshot(StateType::PASTE_COPIED_ACTIONS, false, ActiveFunscript().get());
     // paste CopiedSelection relatively to position
     // NOTE: assumes CopiedSelection is ordered by time
-    int offset_ms = std::round(player->getCurrentPositionMsInterp()) - CopiedSelection.begin()->at;
+    int currentMs = std::round(player->getCurrentPositionMsInterp());
+    int offset_ms = currentMs - CopiedSelection.begin()->at;
+
+    if (CopiedSelection.size() >= 2)
+    {
+        FUN_ASSERT(CopiedSelection.front().at < CopiedSelection.back().at, "order is messed up");
+        ActiveFunscript()->RemoveActionsInInterval(currentMs, currentMs + (CopiedSelection.back().at - CopiedSelection.front().at));
+    }
 
     for (auto&& action : CopiedSelection) {
         ActiveFunscript()->PasteAction(FunscriptAction(action.at + offset_ms, action.pos), 1);
@@ -1936,6 +1928,13 @@ void OpenFunscripter::pasteSelection() noexcept
 
 void OpenFunscripter::pasteSelectionExact() noexcept {
     if (CopiedSelection.size() == 0) return;
+    
+    if (CopiedSelection.size() >= 2)
+    {
+        FUN_ASSERT(CopiedSelection.front().at < CopiedSelection.back().at, "order is messed up");
+        ActiveFunscript()->RemoveActionsInInterval(CopiedSelection.front().at, CopiedSelection.back().at);
+    }
+
     // paste without altering timestamps
     undoSystem->Snapshot(StateType::PASTE_COPIED_ACTIONS, false, ActiveFunscript().get());
     for (auto&& action : CopiedSelection) {

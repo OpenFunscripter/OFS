@@ -387,6 +387,18 @@ void Funscript::SetActions(const std::vector<FunscriptAction>& override_with) no
 	NotifyActionsChanged(true);
 }
 
+void Funscript::RemoveActionsInInterval(int32_t fromMs, int32_t toMs) noexcept
+{
+	data.Actions.erase(
+		std::remove_if(data.Actions.begin(), data.Actions.end(),
+			[&](auto action) {
+				return action.at >= fromMs && action.at <= toMs;
+			}), data.Actions.end()
+	);
+	checkForInvalidatedActions();
+	NotifyActionsChanged(true);
+}
+
 void Funscript::RangeExtendSelection(int32_t rangeExtend) noexcept
 {
 	auto ExtendRange = [](std::vector<FunscriptAction*>& actions, int32_t rangeExtend) -> void {

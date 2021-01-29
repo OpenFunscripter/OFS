@@ -190,6 +190,8 @@ public:
 	inline bool HasUnsavedEdits() const { return unsavedEdits; }
 	inline const std::chrono::system_clock::time_point& EditTime() const { return editTime; }
 
+	void RemoveActionsInInterval(int32_t fromMs, int32_t toMs) noexcept;
+
 	// selection api
 	void RangeExtendSelection(int32_t rangeExtend) noexcept;
 	bool ToggleSelection(FunscriptAction action) noexcept;

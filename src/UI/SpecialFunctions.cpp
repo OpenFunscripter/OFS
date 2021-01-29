@@ -124,73 +124,60 @@ void RamerDouglasPeucker::SelectionChanged(SDL_Event& ev) noexcept
     }
 }
 
-inline static double PerpendicularDistance(const FunscriptAction pt, const FunscriptAction lineStart, const FunscriptAction lineEnd) noexcept
+static float PerpendicularDistance(FunscriptAction pt, FunscriptAction lineStart, FunscriptAction lineEnd)
 {
-    double dx = (double)lineEnd.at - lineStart.at;
-    double dy = (double)lineEnd.pos - lineStart.pos;
+    float dx = lineEnd.at - lineStart.at;
+    float dy = lineEnd.pos - lineStart.pos;
 
-    //Normalise
-    double mag = std::sqrt(dx * dx + dy * dy);
-    if (mag > 0.0)
+    // Normalize
+    float mag = (float)std::sqrtf(dx * dx + dy * dy);
+    if (mag > 0.0f)
     {
-        dx /= mag; dy /= mag;
+        dx /= mag;
+        dy /= mag;
     }
+    float pvx = pt.at - lineStart.at;
+    float pvy = pt.pos - lineStart.pos;
 
-    double pvx = (double)pt.at - lineStart.at;
-    double pvy = (double)pt.pos - lineStart.pos;
+    // Get dot product (project pv onto normalized direction)
+    float pvdot = dx * pvx + dy * pvy;
 
-    //Get dot product (project pv onto normalized direction)
-    double pvdot = dx * pvx + dy * pvy;
+    // Scale line direction vector and subtract it from pv
+    float ax = pvx - pvdot * dx;
+    float ay = pvy - pvdot * dy;
 
-    //Scale line direction vector
-    double dsx = pvdot * dx;
-    double dsy = pvdot * dy;
-
-    //Subtract this from pv
-    double ax = pvx - dsx;
-    double ay = pvy - dsy;
-
-    return std::sqrt(ax * ax + ay * ay);
+    return (float)std::sqrtf(ax * ax + ay * ay);
 }
 
-inline static void RamerDouglasPeuckerAlgo(const std::vector<FunscriptAction>& pointList, double epsilon, std::vector<FunscriptAction>& out) noexcept
+static void RamerDouglasPeuckerIterative(std::vector<FunscriptAction>& points, float epsilon, std::vector<FunscriptAction>& output)
 {
-    // Find the point with the maximum distance from line between start and end
-    double dmax = 0.0;
-    size_t index = 0;
-    size_t end = pointList.size() - 1;
-    for (size_t i = 1; i < end; i++)
+    size_t start = 0;
+    size_t end = points.size() - 1;
+
+    while (start < end)
     {
-        double d = PerpendicularDistance(pointList[i], pointList[0], pointList[end]);
-        if (d > dmax)
+        output.push_back(points[start]);
+        size_t newEnd = end;
+        while (true)
         {
-            index = i;
-            dmax = d;
+            size_t maxDistanceIndex = 0;
+            float maxDistance = 0.0f;
+            for (size_t i = start + 1; i < newEnd; i++)
+            {
+                float d = PerpendicularDistance(points[i], points[start], points[newEnd]);
+                if (d > maxDistance)
+                {
+                    maxDistanceIndex = i;
+                    maxDistance = d;
+                }
+            }
+            if (maxDistance <= epsilon)
+                break;
+            newEnd = maxDistanceIndex;
         }
+        start = newEnd;
     }
-
-    // If max distance is greater than epsilon, recursively simplify
-    if (dmax > epsilon)
-    {
-        // Recursive call
-        std::vector<FunscriptAction> recResults1;
-        std::vector<FunscriptAction> recResults2;
-        std::vector<FunscriptAction> firstLine(pointList.begin(), pointList.begin() + index + 1);
-        std::vector<FunscriptAction> lastLine(pointList.begin() + index, pointList.end());
-        RamerDouglasPeuckerAlgo(firstLine, epsilon, recResults1);
-        RamerDouglasPeuckerAlgo(lastLine, epsilon, recResults2);
-
-        // Build the result list
-        out.assign(recResults1.begin(), recResults1.end() - 1);
-        out.insert(out.end(), recResults2.begin(), recResults2.end());
-    }
-    else
-    {
-        //Just return start and end points
-        out.clear();
-        out.push_back(pointList[0]);
-        out.push_back(pointList[end]);
-    }
+    output.push_back(points[end]);
 }
 
 void RamerDouglasPeucker::DrawUI() noexcept
@@ -213,7 +200,7 @@ void RamerDouglasPeucker::DrawUI() noexcept
             ctx().RemoveSelectedActions();
             std::vector<FunscriptAction> newActions;
             newActions.reserve(selection.size());
-            RamerDouglasPeuckerAlgo(selection, epsilon, newActions);
+            RamerDouglasPeuckerIterative(selection, epsilon, newActions);
             for (auto&& action : newActions) {
                 ctx().AddAction(action);
             }
