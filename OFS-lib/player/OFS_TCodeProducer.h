@@ -64,7 +64,7 @@ private:
 		}
 		else
 		{
-			pos = Util::Lerp<float>(nextAction.pos / 100.f, startAction.pos / 100.f, progress);
+			pos = Util::Lerp<float>(startAction.pos / 100.f, nextAction.pos / 100.f, progress);
 		}
 
 		if (Invert) { pos = glm::abs(pos - 1.f); }
