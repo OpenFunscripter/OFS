@@ -7,6 +7,7 @@ std::vector<ImVec2> BaseOverlay::SelectedActionScreenCoordinates;
 std::vector<ImVec2> BaseOverlay::ActionScreenCoordinates;
 std::vector<FunscriptAction> BaseOverlay::ActionPositionWindow;
 bool BaseOverlay::SplineMode = true;
+bool BaseOverlay::ShowActions = true;
 
 BaseOverlay::BaseOverlay(ScriptTimeline* timeline) noexcept
 {
@@ -59,6 +60,7 @@ float EmptyOverlay::steppingIntervalBackward(float fromMs) noexcept
 
 void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
 {
+    if (!BaseOverlay::ShowActions) return;
     auto& script = *ctx.script;
 
     auto startIt = script.Actions().begin() + ctx.actionFromIdx;
@@ -75,7 +77,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
     };
 
 
-    auto drawSpline = [](const OverlayDrawingCtx& ctx, float currentTime, float endTime, int32_t color, bool background)
+    auto drawSpline = [](const OverlayDrawingCtx& ctx, float currentTime, float endTime, int32_t color, float width)
     {
         constexpr int32_t MinSamplesPerSecond = 60;
         auto getPointForTimePos = [](const OverlayDrawingCtx& ctx, float timeMs, float pos) {
@@ -115,20 +117,13 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
             putPoint(ctx, endTime);
         }
 
-
-        if(background)
-        {
-            auto tmpSize = ctx.draw_list->_Path.Size;
-            ctx.draw_list->PathStroke(IM_COL32_BLACK, false, 7.f);
-            ctx.draw_list->_Path.Size = tmpSize;
-        }
-        ctx.draw_list->PathStroke(color, false, 3.f);
+        ctx.draw_list->PathStroke(color, false, width);
     };
 
     if (SplineMode)
     {
         if (startIt != endIt && endIt != script.Actions().end()) {
-            drawSpline(ctx, startIt->at, endIt->at, IM_COL32_BLACK, false);
+            drawSpline(ctx, startIt->at, endIt->at, IM_COL32_BLACK, 7.f);
         }
         const FunscriptAction* prevAction = nullptr;
         for (; startIt != endIt; startIt++) {
@@ -147,7 +142,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
                 float currentTime = prevAction->at;
                 float endTime = action.at;
 
-                drawSpline(ctx, currentTime, endTime, ImGui::ColorConvertFloat4ToU32(speed_color), false);
+                drawSpline(ctx, currentTime, endTime, ImGui::ColorConvertFloat4ToU32(speed_color), 3.f);
             }
             prevAction = &action;
         }

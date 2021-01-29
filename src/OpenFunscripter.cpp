@@ -36,6 +36,11 @@
 //     - user reproc++ to call ffmpeg
 //     - move it into it's own class
 
+
+// TODO: replace RamerDouglasPeucker algo with an iterative implementation
+// TODO: backup system doesn't handle long paths ??????? investigate
+// TODO: make speed coloring configurable
+
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
 constexpr std::array<const char*, 6> SupportedVideoExtensions {

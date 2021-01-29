@@ -15,6 +15,8 @@
 #include "EventSystem.h"
 #include "SDL_events.h"
 
+#include "OFS_Waveform.h"
+
 
 class ScriptTimelineEvents {
 public:
@@ -39,9 +41,6 @@ static bool OutputAudioFile(const char* ffmpeg_path, const char* video_path, con
 
 class ScriptTimeline
 {
-	std::vector<float> audio_waveform_avg;
-	bool ffmpegInProgress = false;
-
 public:
 	ImVec2 active_canvas_pos;
 	ImVec2 active_canvas_size;
@@ -94,11 +93,12 @@ private:
 	void updateSelection(bool clear);
 	void FfmpegAudioProcessingFinished(SDL_Event& ev) noexcept;
 
-	bool ShowAudioWaveform = false;
-	float ScaleAudio = 1.f;
 	float WindowSizeSeconds = 5.f;
 	int32_t startSelectionMs = -1;
-
+	
+	bool ShowAudioWaveform = false;
+	float ScaleAudio = 1.f;
+	OFS_Waveform waveform;
 public:
 	static constexpr const char* PositionsId = "Positions";
 
@@ -106,7 +106,7 @@ public:
 	const float MIN_WINDOW_SIZE = 1.f; // this limit is also arbitrary and not enforced
 	void setup(UndoSystem* undo);
 
-	inline void ClearAudioWaveform() noexcept { audio_waveform_avg.clear(); }
+	inline void ClearAudioWaveform() noexcept { waveform.Clear(); }
 	inline void setStartSelection(int32_t ms) noexcept { startSelectionMs = ms; }
 	inline int32_t selectionStart() const noexcept { return startSelectionMs; }
 	void ShowScriptPositions(bool* open, float currentPositionMs, float durationMs, float frameTimeMs, const std::vector<std::shared_ptr<Funscript>>& scripts, Funscript* activeScript) noexcept;

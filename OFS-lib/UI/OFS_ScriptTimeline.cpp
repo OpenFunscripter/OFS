@@ -7,13 +7,6 @@
 #include "SDL.h"
 #include "stb_sprintf.h"
 
-//#define MINIMP3_ONLY_SIMD
-//#define MINIMP3_NO_SIMD
-#define MINIMP3_ONLY_MP3
-#define MINIMP3_FLOAT_OUTPUT
-#define MINIMP3_IMPLEMENTATION
-#include "minimp3_ex.h"
-
 #include <array>
 
 int32_t ScriptTimelineEvents::FfmpegAudioProcessingFinished = 0;
@@ -50,7 +43,6 @@ void ScriptTimeline::updateSelection(bool clear)
 void ScriptTimeline::FfmpegAudioProcessingFinished(SDL_Event& ev) noexcept
 {
 	ShowAudioWaveform = true;
-	ffmpegInProgress = false;
 	LOG_INFO("Audio processing complete.");
 }
 
@@ -411,111 +403,42 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("Rendering")) {
+				ImGui::MenuItem("Show actions", 0, &BaseOverlay::ShowActions);
 				ImGui::MenuItem("Spline mode", 0, &BaseOverlay::SplineMode);
 				ImGui::EndMenu();
 			}
+
+			auto updateAudioWaveformThread = [](void* userData) -> int {
+				auto& ctx = *((ScriptTimeline*)userData);
+				std::error_code ec;
+				auto basePath = Util::Basepath();
+#if WIN32
+				auto ffmpegPath = basePath / "ffmpeg.exe";
+#else
+				auto ffmpegPath = std::filesystem::path("ffmpeg");
+#endif
+				auto outputPath = Util::Prefpath("tmp");
+				if (!Util::CreateDirectories(outputPath)) {
+					return 0;
+				}
+				outputPath = (std::filesystem::path(outputPath) / "audio.mp3").u8string();
+
+				bool succ = ctx.waveform.GenerateMP3(ffmpegPath.u8string(), std::string(ctx.videoPath), outputPath);
+				if (!succ) { LOGF_ERROR("Failed to output mp3 from video. (ffmpeg_path: \"%s\")", ffmpegPath.u8string().c_str()); return 0;	}
+				succ = ctx.waveform.LoadMP3(outputPath);
+				if (!succ) { LOGF_ERROR("Failed load mp3. (path: \"%s\")", outputPath.c_str());	return 0; }
+				EventSystem::PushEvent(ScriptTimelineEvents::FfmpegAudioProcessingFinished);
+				return 0;
+			};
 			if (ImGui::BeginMenu("Audio waveform")) {
 				ImGui::SliderFloat("Waveform scale", &ScaleAudio, 0.25f, 10.f);
-				if (ImGui::MenuItem("Enable waveform", NULL, &ShowAudioWaveform, !ffmpegInProgress)) {}
-				if (ImGui::MenuItem(ffmpegInProgress ? "Processing audio..." : "Update waveform", NULL, false, !ffmpegInProgress && videoPath != nullptr)) {
-					if (!ffmpegInProgress) {
+				if (ImGui::MenuItem("Enable waveform", NULL, &ShowAudioWaveform, !waveform.BusyGenerating())) {}
+				if (ImGui::MenuItem(waveform.BusyGenerating() 
+					? "Processing audio..." 
+					: "Update waveform", NULL, false, !waveform.BusyGenerating() && videoPath != nullptr)) {
+					if (!waveform.BusyGenerating()) {
 						ShowAudioWaveform = false; // gets switched true after processing
-						ffmpegInProgress = true;
-
-						auto ffmpegThread = [](void* userData) -> int {
-							auto& ctx = *((ScriptTimeline*)userData);
-
-							std::error_code ec;
-							auto base_path = Util::Basepath();
-	#if WIN32
-							auto ffmpeg_path = base_path / "ffmpeg.exe";
-	#else
-							auto ffmpeg_path = std::filesystem::path("ffmpeg");
-	#endif
-							auto output_path = Util::Prefpath("tmp");
-							if (!Util::CreateDirectories(output_path)) {
-								return 0;
-							}
-							output_path = (std::filesystem::path(output_path) / "audio.mp3").string();
-							auto video_path = ctx.videoPath;
-
-							bool succ = OutputAudioFile(ffmpeg_path.string().c_str(), video_path, output_path.c_str());
-							if (!succ) {
-								LOGF_ERROR("Failed to output mp3 from video. (ffmpeg_path: \"%s\")", ffmpeg_path.string().c_str());
-								ctx.ShowAudioWaveform = false;
-								ctx.ffmpegInProgress = false;
-								return 0;
-							}
-
-							mp3dec_t mp3d;
-							mp3dec_file_info_t info;
-
-							if (mp3dec_load(&mp3d, output_path.c_str(), &info, NULL, NULL))
-							{
-								LOGF_ERROR("failed to load \"%s\"", output_path.c_str());
-								ctx.ShowAudioWaveform = false;
-								ctx.ffmpegInProgress = false;
-								return 0;
-							}
-
-							const int samples_per_line = info.hz / 1024.f; // controls the resolution
-
-							FUN_ASSERT(info.channels == 1, "expected one audio channels");
-							// create one vector of floats for each requested channel
-							ctx.audio_waveform_avg.clear();
-							ctx.audio_waveform_avg.reserve((info.samples / samples_per_line) + 1);
-
-							// for each requested channel
-							for (size_t offset = 0; offset < info.samples; offset += samples_per_line)
-							{
-								int sample_count = (info.samples - offset >= samples_per_line)
-									? samples_per_line
-									: info.samples - offset;
-
-								float average(0);
-								for (int i = offset; i < offset + sample_count; i++)
-								{
-									float sample = info.buffer[i];
-									float abs_sample = std::abs(sample);
-									average += abs_sample;
-								}
-								average /= sample_count;
-								ctx.audio_waveform_avg.push_back(average);
-
-								//float peak(0);
-								//for (int i = offset; i < offset + sample_count; i++)
-								//{
-								//	float sample = info.buffer[i];
-								//	peak = std::max(peak, sample);
-								//}
-								//ctx.audio_waveform_avg.push_back(peak);
-							}
-
-							auto map2range = [](float x, float in_min, float in_max, float out_min, float out_max)
-							{
-								return Util::Clamp<float>(
-									out_min + (out_max - out_min) * (x - in_min) / (in_max - in_min),
-									out_min,
-									out_max
-									);
-							};
-
-							ctx.audio_waveform_avg.shrink_to_fit();
-							auto min = std::min_element(ctx.audio_waveform_avg.begin(), ctx.audio_waveform_avg.end());
-							auto max = std::max_element(ctx.audio_waveform_avg.begin(), ctx.audio_waveform_avg.end());
-							if (*min != 0.f || *max != 1.f) {
-								for (auto& val : ctx.audio_waveform_avg)
-								{
-									val = map2range(val, *min, *max, 0.f, 1.f);
-								}
-							}
-							free(info.buffer);
-							SDL_Event ev;
-							ev.type = ScriptTimelineEvents::FfmpegAudioProcessingFinished;
-							SDL_PushEvent(&ev);
-							return 0;
-						};
-						auto handle = SDL_CreateThread(ffmpegThread, "OpenFunscripterFfmpegThread", this);
+						auto handle = SDL_CreateThread(updateAudioWaveformThread, "OFS_GenWaveform", this);
 						SDL_DetachThread(handle);
 					}
 				}
@@ -540,6 +463,11 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 	ImGui::End();
 }
 
+
+constexpr uint32_t HighRangeCol = IM_COL32(0xE3, 0x42, 0x34, 0xff);
+constexpr uint32_t MidRangeCol = IM_COL32(0xE8, 0xD7, 0x5A, 0xff);
+constexpr uint32_t LowRangeCol = IM_COL32(0xF7, 0x65, 0x38, 0xff); // IM_COL32(0xff, 0xba, 0x08, 0xff);
+
 void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 {
 	auto& canvas_pos = ctx.canvas_pos;
@@ -550,70 +478,43 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 		const float rel_start = offset_ms / durationMs;
 		const float rel_end = ((float)(offset_ms)+visibleSizeMs) / durationMs;
 
-		auto& audio_waveform = audio_waveform_avg;
-
-		int32_t start_index = rel_start * (float)audio_waveform.size();
-		int32_t end_index = rel_end * (float)audio_waveform.size();
+		int32_t start_index = rel_start * (float)waveform.SampleCount();
+		int32_t end_index = rel_end * (float)waveform.SampleCount();
 		const int total_samples = end_index - start_index;
-		const int line_merge = 1 + (total_samples / 2000);
+		const int line_merge = 1 + (total_samples / 2100);
 		const int actual_total_samples = total_samples / line_merge;
-		//LOGF_INFO("total_samples=%d actual_total_samples=%d", total_samples, actual_total_samples);
 
 		const float line_width = ((1.f / ((float)actual_total_samples)) * canvas_size.x) + 0.75f;
 		start_index -= start_index % line_merge;
 		end_index -= end_index % line_merge;
 		end_index += line_merge;
 
-		for (int i = start_index; i < end_index - (line_merge + line_merge); i += line_merge) {
-			const float total_pos_x = ((((float)i - start_index) / (float)total_samples)) * canvas_size.x;
-			float total_len;
-			if (i < 0 || (i + line_merge) >= audio_waveform.size()) {
-				total_len = 0.f;
-				continue;
-			}
-			else {
-				float sample = audio_waveform[i];
-				for (int x = 1; x < line_merge; x++) {
-					// find peak
-					sample = std::max(sample, audio_waveform[i + x]);
-				}
-				total_len = canvas_size.y * sample * ScaleAudio;
-				if (total_len < 2.f) {
+		auto renderWaveform = [&](std::vector<float> samples, uint32_t color, float cullBelow)
+		{
+			for (int i = start_index; i < end_index - (line_merge + line_merge); i += line_merge) {
+				const float total_pos_x = ((((float)i - start_index) / (float)total_samples)) * canvas_size.x;
+				float total_len;
+				if (i < 0 || (i + line_merge) >= samples.size()) {
+					total_len = 0.f;
 					continue;
 				}
+				else {
+					float sample = samples[i];
+					for (int x = 1; x < line_merge; x++) {
+						// find peak
+						sample = std::max(sample, samples[i + x]);
+					}
+					if (sample < cullBelow) { continue; }
+					total_len = canvas_size.y * sample * ScaleAudio;
+				}
+				draw_list->AddLine(
+					canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) + (total_len / 2.f)),
+					canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) - (total_len / 2.f)),
+					color, line_width);
 			}
-			draw_list->AddLine(
-				canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) + (total_len / 2.f)),
-				canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) - (total_len / 2.f)),
-				IM_COL32(227, 66, 52, 255), line_width);
-		}
+		};
+		renderWaveform(waveform.SamplesHigh, HighRangeCol, waveform.MidMax);
+		renderWaveform(waveform.SamplesMid, MidRangeCol, waveform.LowMax);
+		renderWaveform(waveform.SamplesLow, LowRangeCol, 0.f);
 	}
-}
-
-bool OutputAudioFile(const char* ffmpeg_path, const char* video_path, const char* output_path) {
-	char buffer[1024];
-#if WIN32
-	constexpr const char* fmt = "\"\"%s\" -i \"%s\" -b:a 320k -ac 1 -y \"%s\"\"";
-#else
-	constexpr const char* fmt = "\"%s\" -i \"%s\" -b:a 320k -ac 1 -y \"%s\"";
-#endif
-	int num = stbsp_snprintf(buffer, sizeof(buffer), fmt,
-		ffmpeg_path,
-		video_path,
-		output_path);
-
-	FUN_ASSERT(num < sizeof(buffer), "buffer to small");
-
-	if (num >= sizeof(buffer)) {
-		return false;
-	}
-
-#if WIN32
-	auto wide = Util::Utf8ToUtf16(buffer);
-	bool success = _wsystem(wide.c_str()) == 0;
-#else
-	bool success = std::system(buffer) == 0;
-#endif
-
-	return success;
 }

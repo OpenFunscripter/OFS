@@ -17,6 +17,8 @@ set(OFS_LIB_SOURCES
 	"UI/OFS_ScriptTimeline.cpp"
 	"UI/ScriptPositionsOverlayMode.cpp"
 
+	"UI/OFS_Waveform.cpp"
+
 	"imgui_impl/imgui_impl_opengl3.cpp"
 	"imgui_impl/imgui_impl_sdl.cpp" 
 
