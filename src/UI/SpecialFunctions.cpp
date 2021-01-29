@@ -130,7 +130,7 @@ static float PerpendicularDistance(FunscriptAction pt, FunscriptAction lineStart
     float dy = lineEnd.pos - lineStart.pos;
 
     // Normalize
-    float mag = (float)std::sqrtf(dx * dx + dy * dy);
+    float mag = (float)std::sqrt(dx * dx + dy * dy);
     if (mag > 0.0f)
     {
         dx /= mag;
@@ -146,7 +146,7 @@ static float PerpendicularDistance(FunscriptAction pt, FunscriptAction lineStart
     float ax = pvx - pvdot * dx;
     float ay = pvy - pvdot * dy;
 
-    return (float)std::sqrtf(ax * ax + ay * ay);
+    return (float)std::sqrt(ax * ax + ay * ay);
 }
 
 static void RamerDouglasPeuckerIterative(std::vector<FunscriptAction>& points, float epsilon, std::vector<FunscriptAction>& output)
