@@ -8,7 +8,7 @@ std::array<const std::vector<const char*>, static_cast<size_t>(TChannel::TotalCo
 	std::vector<const char*>{"l0", "L0", "stroke" },
 	std::vector<const char*>{"l1", "L1", "sway" },
 	std::vector<const char*>{"l2", "L2", "surge" },
-	std::vector<const char*>{"l3", "L3", "suck" },
+	std::vector<const char*>{"l3", "L3", "suck", "valve" },
 	std::vector<const char*>{"r0", "R0", "twist" },
 	std::vector<const char*>{"r1", "R1", "roll" },
 	std::vector<const char*>{"r2", "R2", "pitch" },

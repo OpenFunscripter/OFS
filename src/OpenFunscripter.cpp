@@ -2092,14 +2092,16 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     );
                     return it != app->LoadedFunscripts.end();
                 };
-                auto addNewShortcut = [this, fileAlreadyLoaded](std::string&& postfix)
+                auto addNewShortcut = [this, fileAlreadyLoaded](const char* axisExt)
                 {
-                    if (ImGui::MenuItem(postfix.c_str()))
+                    if (ImGui::MenuItem(axisExt))
                     {
                         std::string newScriptPath;
                         {
                             auto root = Util::PathFromString(RootFunscript()->current_path);
-                            root.replace_extension(postfix + ".funscript");
+                            std::stringstream ss;
+                            ss << '.' << axisExt << ".funscript";
+                            root.replace_extension(ss.str());
                             newScriptPath = root.u8string();
                         }
 
@@ -2114,10 +2116,10 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 };
                 if (ImGui::BeginMenu("Add..."))
                 {
-                    addNewShortcut(".pitch");
-                    addNewShortcut(".roll");
-                    addNewShortcut(".twist");
-                    addNewShortcut(".suck");
+                    for (int i = 1; i < TCodeChannels::Aliases.size() - 1; i++)
+                    {
+                        addNewShortcut(TCodeChannels::Aliases[i][2]);
+                    }
                     ImGui::EndMenu();
                 }
                 if (ImGui::MenuItem("Add new")) {
