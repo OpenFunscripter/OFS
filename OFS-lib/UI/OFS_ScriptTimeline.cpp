@@ -431,7 +431,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 				return 0;
 			};
 			if (ImGui::BeginMenu("Audio waveform")) {
-				ImGui::SliderFloat("Waveform scale", &ScaleAudio, 0.25f, 10.f);
+				ImGui::DragFloat("Waveform scale", &ScaleAudio, 0.01f, 0.01f, 10.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
 				if (ImGui::MenuItem("Enable waveform", NULL, &ShowAudioWaveform, !waveform.BusyGenerating())) {}
 				if (ImGui::MenuItem(waveform.BusyGenerating() 
 					? "Processing audio..." 
@@ -481,7 +481,7 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 		int32_t start_index = rel_start * (float)waveform.SampleCount();
 		int32_t end_index = rel_end * (float)waveform.SampleCount();
 		const int total_samples = end_index - start_index;
-		const int line_merge = 1 + (total_samples / 2100);
+		const int line_merge = 1 + (total_samples / 1500);
 		const int actual_total_samples = total_samples / line_merge;
 
 		const float line_width = ((1.f / ((float)actual_total_samples)) * canvas_size.x) + 0.75f;

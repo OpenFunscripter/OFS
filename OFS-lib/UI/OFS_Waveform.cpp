@@ -4,7 +4,7 @@
 //#define MINIMP3_ONLY_SIMD
 //#define MINIMP3_NO_SIMD
 #define MINIMP3_ONLY_MP3
-#define MINIMP3_FLOAT_OUTPUT
+//#define MINIMP3_FLOAT_OUTPUT
 #define MINIMP3_IMPLEMENTATION
 #include "minimp3.h"
 #include "minimp3_ex.h"
@@ -20,6 +20,14 @@ bool OFS_Waveform::LoadMP3(const std::string& path) noexcept
 
 	mp3dec_init(&mp3d);
 
+	struct Mp3Context {
+		OFS_Waveform* wave = nullptr;
+		float lowPeak = 0.f;
+		float midPeak = 0.f;
+		float highPeak = 0.f;
+	};
+	Mp3Context ctx;
+	ctx.wave = this;
 	mp3dec_iterate(path.c_str(),
 		[](void* user_data, const uint8_t* frame,
 			int frame_size, int free_format_bytes,
@@ -29,57 +37,62 @@ bool OFS_Waveform::LoadMP3(const std::string& path) noexcept
 			constexpr float LowRangeMin = 0.f; constexpr float LowRangeMax = 500.f;
 			constexpr float MidRangeMin = 501.f; constexpr float MidRangeMax = 6000.f;
 			constexpr float HighRangeMin = 6001.f; constexpr float HighRangeMax = 20000.f;
-			OFS_Waveform* ctx = (OFS_Waveform*)user_data;
-			float pcm[MINIMP3_MAX_SAMPLES_PER_FRAME];
+			Mp3Context* ctx = (Mp3Context*)user_data;
+			mp3d_sample_t pcm[MINIMP3_MAX_SAMPLES_PER_FRAME];
 			auto samples = mp3dec_decode_frame(&mp3d, frame, buf_size, pcm, info);
 
 			FUN_ASSERT(samples <= 1152, "got more samples than expected");
 			// 1152 is the sample count per frame
-			constexpr int SamplesPerLine = 1152/24;
+			constexpr int SamplesPerLine = 1152/32;
 
-			auto floatToInt = [](float pcmVal) -> int32_t
-			{
-				pcmVal = pcmVal * 32768;
-				//if (pcmVal > 32767) pcmVal = 32767;
-				//if (pcmVal < -32768) pcmVal = -32768;
-				return pcmVal;
+			//auto floatToInt = [](float pcmVal) -> int32_t
+			//{
+			//	pcmVal = pcmVal * 32768.f;
+			//	//if (pcmVal > 32767) pcmVal = 32767;
+			//	//if (pcmVal < -32768) pcmVal = -32768;
+			//	return pcmVal;
+			//};
+
+			auto shortToFloat = [](int16_t pcmVal) -> float {
+				return (1.0f/32768.0f) * pcmVal;
 			};
 
 			for(int sampleIdx=0; sampleIdx < samples; sampleIdx += SamplesPerLine)
 			{
-				float lowPeak = 0.f, midPeak = 0.f, highPeak = 0.f;
+				//float lowPeak = 0.f, midPeak = 0.f, highPeak = 0.f;
+				//int16_t lowPeak = 0, midPeak = 0, highPeak = 0;
 				for (int i = 0; i < SamplesPerLine; i++) { 
-					float sample = pcm[sampleIdx + i];
-					//if (sample < 0.f) continue;
-					sample = std::abs(sample);
+					mp3d_sample_t sample = pcm[sampleIdx + i];
+					if (sample == 0) continue;
+					sample = std::abs(sample/2);
 
-					if (floatToInt(sample) <= LowRangeMax) {
+					if (sample <= LowRangeMax) {
 						// low range
 						//lowPeak = std::max(lowPeak, sample);
-						lowPeak += sample;
+						ctx->lowPeak += sample;
 					}
-					else if (floatToInt(sample) <= MidRangeMax) {
+					if (sample <= MidRangeMax) {
 						// mid range
 						//midPeak = std::max(midPeak, sample);
-						midPeak += sample;
+						ctx->midPeak += sample;
 					}
-					else if (floatToInt(sample) <= HighRangeMax) {
+					if (sample <= HighRangeMax) {
 						// high range
 						//highPeak = std::max(highPeak, sample);
-						highPeak += sample;
+						ctx->highPeak += sample;
 					}
 				}
-				lowPeak /= (float)SamplesPerLine;
-				midPeak /= (float)SamplesPerLine;
-				highPeak /= (float)SamplesPerLine;
+				ctx->lowPeak /= (float)SamplesPerLine;
+				ctx->midPeak /= (float)SamplesPerLine;
+				ctx->highPeak /= (float)SamplesPerLine;
 
-				ctx->SamplesLow.push_back(lowPeak);
-				ctx->SamplesMid.push_back(midPeak);
-				ctx->SamplesHigh.push_back(highPeak);
+				ctx->wave->SamplesLow.push_back(ctx->lowPeak);
+				ctx->wave->SamplesMid.push_back(ctx->midPeak);
+				ctx->wave->SamplesHigh.push_back(ctx->highPeak);
 			}
 
 			return 0;
-	}, this);
+	}, &ctx);
 
 	SamplesLow.shrink_to_fit();
 	SamplesMid.shrink_to_fit();
