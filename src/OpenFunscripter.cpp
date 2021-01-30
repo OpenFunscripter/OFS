@@ -2114,8 +2114,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         }
                     }
                 };
-                if (ImGui::BeginMenu("Add..."))
-                {
+                if (ImGui::BeginMenu("Add...")) {
                     for (int i = 1; i < TCodeChannels::Aliases.size() - 1; i++)
                     {
                         addNewShortcut(TCodeChannels::Aliases[i][2]);

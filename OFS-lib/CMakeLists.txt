@@ -93,6 +93,7 @@ message("Compiling with git hash: ${LATEST_GIT_HASH}")
 target_compile_definitions(${PROJECT_NAME} PUBLIC 
 	"OFS_LATEST_GIT_TAG=${LATEST_GIT_TAG}"
 	"OFS_LATEST_GIT_HASH=${LATEST_GIT_HASH}"
+	"IMGUI_IMPL_OPENGL_LOADER_GLAD"
 )
 
 
