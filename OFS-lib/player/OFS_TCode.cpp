@@ -167,7 +167,7 @@ static struct TCodeThreadData {
     TCodeProducer* producer = nullptr;
 } Thread;
 
-void TCodePlayer::DrawWindow(bool* open) noexcept
+void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
 {
     if (!*open) return;
 
@@ -306,9 +306,25 @@ void TCodePlayer::DrawWindow(bool* open) noexcept
     ImGui::Spacing();
     
     if (!Thread.running) {
-        if (ImGui::Button("Home", ImVec2(-1, 0))) {
-            tcode.reset();
-            auto cmd = tcode.GetCommand(0, 1);
+        //if (ImGui::Button("Home", ImVec2(-1, 0))) {
+        //    tcode.reset();
+        //    auto cmd = tcode.GetCommand();
+        //    if (cmd != nullptr && status >= 0) {
+        //        int len = strlen(cmd);
+        //        status = c_serial_write_data(port, (void*)cmd, &len);
+        //        if (status < 0) {
+        //            LOG_ERROR("Failed to write to serial port.");
+        //        }
+        //    }
+        //}
+
+        // move to the current position
+        if (lastPausedTimeMs != currentTimeMs) {
+            lastPausedTimeMs = currentTimeMs;
+            int32_t ms = std::round(currentTimeMs);
+            prod.sync(ms, 1.f);
+            prod.tick(ms, 1.f);
+            const char* cmd = tcode.GetCommandSpeed(20);
             if (cmd != nullptr && status >= 0) {
                 int len = strlen(cmd);
                 status = c_serial_write_data(port, (void*)cmd, &len);
@@ -402,7 +418,7 @@ static int32_t TCodeThread(void* threadData) noexcept {
         }
         
         // update channels
-        const char* cmd = data->channel->GetCommand(currentTimeMs, tickrate);
+        const char* cmd = data->channel->GetCommand();
 
         if (cmd != nullptr && data->player->status >= 0) {
             int len = strlen(cmd);
@@ -457,6 +473,7 @@ void TCodePlayer::setScripts(std::vector<std::weak_ptr<const Funscript>>&& scrip
             }
         }
     }
+    prod.SetChannels(&tcode);
 }
 
 void TCodePlayer::play(float currentTimeMs, std::vector<std::weak_ptr<const Funscript>> scripts) noexcept
@@ -471,7 +488,6 @@ void TCodePlayer::play(float currentTimeMs, std::vector<std::weak_ptr<const Funs
         
         setScripts(std::move(scripts));
 
-        prod.SetChannels(&tcode);
         auto t = SDL_CreateThread(TCodeThread, "TCodePlayer", &Thread);
         SDL_DetachThread(t);
     }

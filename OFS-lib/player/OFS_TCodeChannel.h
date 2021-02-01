@@ -56,9 +56,19 @@ public:
 		NextTCodeValue = GetPos(relativePos);
 	}
 
-	inline const char* getCommand(int32_t currentTimeMs, int32_t tickrate) noexcept {
-		if (NextTCodeValue != LastTCodeValue) {
+	inline const char* getCommand() noexcept {
+		if (Enabled && NextTCodeValue != LastTCodeValue) {
 			stbsp_snprintf(LastCommand, sizeof(LastCommand), "%s%d", Id, NextTCodeValue);
+			LastTCodeValue = NextTCodeValue;
+			return LastCommand;
+		}
+		return nullptr;
+	}
+
+	inline const char* getCommandSpeed(int32_t speed) noexcept
+	{
+		if (Enabled && NextTCodeValue != LastTCodeValue) {
+			stbsp_snprintf(LastCommand, sizeof(LastCommand), "%s%dS%d", Id, NextTCodeValue, speed);
 			LastTCodeValue = NextTCodeValue;
 			return LastCommand;
 		}
@@ -108,7 +118,7 @@ public:
 	std::stringstream ss;
 	std::string lastCommand;
 
-	TCodeChannels()
+	TCodeChannels() noexcept
 	{
 		for (auto& c : channels) { c.reset(); }
 
@@ -132,12 +142,12 @@ public:
 		return channels[static_cast<size_t>(c)];
 	}
 
-	const char* GetCommand(int32_t CurrentTimeMs, int32_t tickrate) noexcept {
+	inline const char* GetCommand() noexcept {
 		bool gotCmd = false;
 
 		ss.str("");
 		for (auto& c : channels) {
-			auto cmd = c.getCommand(CurrentTimeMs, tickrate);
+			auto cmd = c.getCommand();
 			if (cmd != nullptr) {
 				gotCmd = true;
 				ss << cmd << ' ';
@@ -152,7 +162,27 @@ public:
 		return nullptr;
 	}
 
-	void reset() noexcept {
+	inline const char* GetCommandSpeed(int32_t speed) noexcept
+	{
+		bool gotCmd = false;
+		ss.str("");
+		for (auto& c : channels) {
+			auto cmd = c.getCommandSpeed(speed);
+			if (cmd != nullptr) {
+				gotCmd = true;
+				ss << cmd << ' ';
+			}
+		}
+		if (gotCmd) {
+			ss << '\n';
+			lastCommand = ss.str();
+			return lastCommand.c_str();
+		}
+
+		return nullptr;
+	}
+
+	inline void reset() noexcept {
 		for (auto& c : channels) c.reset();
 	}
 

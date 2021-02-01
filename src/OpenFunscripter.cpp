@@ -1480,7 +1480,7 @@ void OpenFunscripter::step() noexcept {
         if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { saveScript(ActiveFunscript().get(), "", false); }
         scripting->DrawScriptingMode(NULL);
 
-        tcode.DrawWindow(&settings->data().show_tcode);
+        tcode.DrawWindow(&settings->data().show_tcode, player->getCurrentPositionMsInterp());
 
         if (keybinds.ShowBindingWindow()) {
             keybinds.save();
