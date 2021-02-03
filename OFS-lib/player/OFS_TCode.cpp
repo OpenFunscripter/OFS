@@ -319,18 +319,16 @@ void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
         //}
 
         // move to the current position
-        if (lastPausedTimeMs != currentTimeMs) {
-            lastPausedTimeMs = currentTimeMs;
-            int32_t ms = std::round(currentTimeMs);
-            prod.sync(ms, 1.f);
-            prod.tick(ms, 1.f);
-            const char* cmd = tcode.GetCommandSpeed(20);
-            if (cmd != nullptr && status >= 0) {
-                int len = strlen(cmd);
-                status = c_serial_write_data(port, (void*)cmd, &len);
-                if (status < 0) {
-                    LOG_ERROR("Failed to write to serial port.");
-                }
+
+        int32_t ms = std::round(currentTimeMs);
+        prod.sync(ms, 1.f);
+        prod.tick(ms, 1.f);
+        const char* cmd = tcode.GetCommandSpeed(500);
+        if (cmd != nullptr && status >= 0) {
+            int len = strlen(cmd);
+            status = c_serial_write_data(port, (void*)cmd, &len);
+            if (status < 0) {
+                LOG_ERROR("Failed to write to serial port.");
             }
         }
     }

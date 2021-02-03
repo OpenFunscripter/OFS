@@ -100,7 +100,7 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 				continue;
 			case MPV_FORMAT_DOUBLE:
 				//if (mp_event->reply_userdata != MpvPosition) {
-					LOGF_DEBUG("Property \"%s\" has changed to %lf", prop->name, *(double*)prop->data);
+					//LOGF_DEBUG("Property \"%s\" has changed to %lf", prop->name, *(double*)prop->data);
 				//}
 				break;
 			case MPV_FORMAT_FLAG:
@@ -139,6 +139,7 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 			case MpvFramesPerSecond:
 				MpvData.fps = *(double*)prop->data;
 				MpvData.average_frame_time = (1.0 / MpvData.fps);
+				LOGF_DEBUG("frame time: %lf", MpvData.average_frame_time);
 				break;
 			case MpvDuration:
 				MpvData.duration = *(double*)prop->data;
