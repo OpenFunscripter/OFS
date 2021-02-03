@@ -218,9 +218,9 @@ public:
 	inline void setPositionExact(int32_t time_ms, bool pausesVideo = false) noexcept {
 		time_ms = Util::Clamp<int32_t>(time_ms, 0, getDuration() * 1000.f);
 		float rel_pos = ((float)time_ms) / (getDuration() * 1000.f);
-		setPositionRelative(rel_pos, pausesVideo); 
+		setPositionPercent(rel_pos, pausesVideo);
 	}
-	void setPositionRelative(float rel_pos, bool pausesVideo) noexcept;
+	void setPositionPercent(float rel_pos, bool pausesVideo) noexcept;
 	
 	void seekRelative(int32_t ms) noexcept;
 	

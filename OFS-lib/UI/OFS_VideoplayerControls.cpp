@@ -195,7 +195,7 @@ void OFS_VideoplayerControls::DrawTimeline(bool* open, TimelineCustomDrawFunc&& 
         if (!player->isPaused()) {
             hasSeeked = true;
         }
-        player->setPositionRelative(position, true);
+        player->setPositionPercent(position, true);
     }
     if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && hasSeeked) {
         player->setPaused(false);

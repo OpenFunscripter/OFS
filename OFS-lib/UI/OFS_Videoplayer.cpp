@@ -100,7 +100,7 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 				continue;
 			case MPV_FORMAT_DOUBLE:
 				//if (mp_event->reply_userdata != MpvPosition) {
-				//	LOGF_DEBUG("Property \"%s\" has changed to %lf", prop->name, *(double*)prop->data);
+					LOGF_DEBUG("Property \"%s\" has changed to %lf", prop->name, *(double*)prop->data);
 				//}
 				break;
 			case MPV_FORMAT_FLAG:
@@ -671,10 +671,10 @@ void VideoplayerWindow::setVolume(float volume) noexcept
 	mpv_command_async(mpv, 0, cmd);
 }
 
-void VideoplayerWindow::setPositionRelative(float pos, bool pausesVideo) noexcept
+void VideoplayerWindow::setPositionPercent(float pos, bool pausesVideo) noexcept
 {
 	MpvData.percent_pos = pos;
-	stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f%", (float)(pos * 100.0f));
+	stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f", (float)(pos * 100.0f));
 	const char* cmd[]{ "seek", tmp_buf, "absolute-percent+exact", NULL };
 	if (pausesVideo) {
 		setPaused(true);
@@ -700,14 +700,14 @@ void VideoplayerWindow::nextFrame() noexcept
 {
 	if (isPaused()) {
 		// use same method as previousFrame for consistency
-		float relSeek = ((getFrameTimeMs() * 1.000001f) / 1000.f);
+		double relSeek = ((getFrameTimeMs() * 1.000001) / 1000.);
 		MpvData.percent_pos += (relSeek / MpvData.duration);
 		MpvData.percent_pos = Util::Clamp(MpvData.percent_pos, 0.0, 1.0);
-
-		stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f", relSeek);
-		const char* cmd[]{ "seek", tmp_buf, "exact", NULL };
+		setPositionPercent(MpvData.percent_pos, false);
+		//stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.015lf", relSeek);
+		//const char* cmd[]{ "seek", tmp_buf, "exact", NULL };
 		//const char* cmd[]{ "frame-step", NULL };
-		mpv_command_async(mpv, 0, cmd);
+		//mpv_command_async(mpv, 0, cmd);
 	}
 }
 
@@ -716,14 +716,14 @@ void VideoplayerWindow::previousFrame() noexcept
 	if (isPaused()) {
 		// this seeks much faster
 		// https://github.com/mpv-player/mpv/issues/4019#issuecomment-358641908
-		float relSeek = ((getFrameTimeMs() * 1.000001f) / 1000.f);
+		double relSeek = ((getFrameTimeMs() * 1.000001) / 1000.);
 		MpvData.percent_pos -= (relSeek / MpvData.duration);
 		MpvData.percent_pos = Util::Clamp(MpvData.percent_pos, 0.0, 1.0);
-
-		stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "-%.08f", relSeek);
-		const char* cmd[]{ "seek", tmp_buf, "exact", NULL };
+		setPositionPercent(MpvData.percent_pos, false);
+		//stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "-%.015lf", relSeek);
+		//const char* cmd[]{ "seek", tmp_buf, "exact", NULL };
 		//const char* cmd[]{ "frame-back-step", NULL };
-		mpv_command_async(mpv, 0, cmd);
+		//mpv_command_async(mpv, 0, cmd);
 	}
 }
 
