@@ -14,6 +14,8 @@
 
 #include "Funscript.h"
 
+#include "OFS_Reflection.h"
+
 class Simulator3D
 {
 private:
@@ -58,9 +60,20 @@ private:
 	float yaw = 0.f;
 
 	void reset() noexcept;
+
+	void load(const std::string& path) noexcept;
+	void save(const std::string& path) noexcept;
 public:
+	~Simulator3D();
 	void setup() noexcept;
 
 	void ShowWindow(bool* open, int32_t currentMs, bool easing, const std::vector<std::shared_ptr<Funscript>>& scripts) noexcept;
 	void renderSim() noexcept;
+
+
+	template <class Archive>
+	inline void reflect(Archive& ar) {
+		OFS_REFLECT(translation, ar);
+		OFS_REFLECT(Zoom, ar);
+	}
 };

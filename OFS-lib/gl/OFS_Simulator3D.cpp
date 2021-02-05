@@ -7,6 +7,8 @@
 #include "glm/gtx/matrix_decompose.hpp"
 #include "glm/gtx/rotate_vector.hpp"
 
+#include "OFS_Serialization.h"
+
 
 // cube pos + normals
 constexpr float vertices[] = {
@@ -72,6 +74,28 @@ void Simulator3D::reset() noexcept
     ImGuizmo::SetOrthographic(true);
 }
 
+void Simulator3D::load(const std::string& path) noexcept
+{
+    bool succ;
+    nlohmann::json json = Util::LoadJson(path.c_str(), &succ);
+    if (succ) {
+        OFS::serializer::load(this, &json);
+    }
+}
+
+void Simulator3D::save(const std::string& path) noexcept
+{
+    nlohmann::json json;
+    OFS::serializer::save(this, &json);
+    Util::WriteJson(json, path.c_str(), true);
+}
+
+Simulator3D::~Simulator3D()
+{
+    auto path = Util::Prefpath("sim3d.json");
+    save(path);
+}
+
 void Simulator3D::setup() noexcept
 {
 	lightShader = std::make_unique<LightingShader>();
@@ -92,17 +116,14 @@ void Simulator3D::setup() noexcept
     glEnableVertexAttribArray(1);
 
     reset();
+    auto path = Util::Prefpath("sim3d.json");
+    load(path);
 }
 
 void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, const std::vector<std::shared_ptr<Funscript>>& scripts) noexcept
 {
     if (open != nullptr && !*open) { return; }
-
-    
-
     const int32_t loadedScriptsCount = scripts.size();
-
-
     auto viewport = ImGui::GetMainViewport();
     
     float ratio = viewport->Size.x / viewport->Size.y;
@@ -132,8 +153,7 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, const s
             ? scripts[twistIndex]->SplineClamped(currentMs) - 50.f
             : scripts[twistIndex]->GetPositionAtTime(currentMs) - 50.f) / 50.f) * twistSpeed;
 
-        if (!std::isnan(spin))
-        {
+        if (!std::isnan(spin)) {
             yaw += spin;
         }
     }

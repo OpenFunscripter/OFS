@@ -5,6 +5,8 @@
 
 #include <memory>
 
+#include "glm/mat4x4.hpp"
+
 template<typename T>
 struct reflect_member {
 	reflect_member(const char* name, T* ptr) {
@@ -58,5 +60,29 @@ struct reflect_function<ImRect, Archive>
 	void reflect(ImRect& obj, Archive& ar) {
 		OFS_REFLECT_NAMED("Min", obj.Min, ar);
 		OFS_REFLECT_NAMED("Max", obj.Max, ar);
+	}
+};
+
+template<typename Archive>
+struct reflect_function<glm::mat4, Archive>
+{
+	void reflect(glm::mat4& obj, Archive& ar)
+	{
+		OFS_REFLECT(obj[0][0], ar);
+		OFS_REFLECT(obj[0][1], ar);
+		OFS_REFLECT(obj[0][2], ar);
+		OFS_REFLECT(obj[0][3], ar);
+		OFS_REFLECT(obj[1][0], ar);
+		OFS_REFLECT(obj[1][1], ar);
+		OFS_REFLECT(obj[1][2], ar);
+		OFS_REFLECT(obj[1][3], ar);
+		OFS_REFLECT(obj[2][0], ar);
+		OFS_REFLECT(obj[2][1], ar);
+		OFS_REFLECT(obj[2][2], ar);
+		OFS_REFLECT(obj[2][3], ar);
+		OFS_REFLECT(obj[3][0], ar);
+		OFS_REFLECT(obj[3][1], ar);
+		OFS_REFLECT(obj[3][2], ar);
+		OFS_REFLECT(obj[3][3], ar);
 	}
 };

@@ -150,6 +150,7 @@ public:
 		std::shared_ptr<const Funscript> scriptPtr;
 		if (channel == nullptr || scripts == nullptr) return;
 		if (!GetScript(scriptPtr)) return;
+		// TODO: check if out of sync first
 
 		auto& actions = scriptPtr->Actions();
 
