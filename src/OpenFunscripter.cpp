@@ -1567,21 +1567,7 @@ void OpenFunscripter::step() noexcept {
         if(settings->data().show_action_editor)
         {
             ImGui::Begin(ActionEditorId, &settings->data().show_action_editor);
-            if (player->isPaused()) {
-                auto scriptAction = ActiveFunscript()->GetActionAtTime(player->getCurrentPositionMsInterp(), player->getFrameTimeMs());
 
-                if (scriptAction == nullptr)
-                {
-                    // create action
-                    static int newActionPosition = 0;
-                    ImGui::SliderInt("Position", &newActionPosition, 0, 100);
-                    if (ImGui::Button("New Action")) {
-                        addEditAction(newActionPosition);
-                    }
-                }
-            }
-
-            ImGui::Separator();
             ImGui::Columns(1, 0, false);
             if (ImGui::Button("100", ImVec2(-1, 0))) {
                 addEditAction(100);
@@ -1599,6 +1585,22 @@ void OpenFunscripter::step() noexcept {
             ImGui::Columns(1, 0, false);
             if (ImGui::Button("0", ImVec2(-1, 0))) {
                 addEditAction(0);
+            }
+
+            if (player->isPaused()) {
+                ImGui::Separator();
+
+                auto scriptAction = ActiveFunscript()->GetActionAtTime(player->getCurrentPositionMsInterp(), player->getFrameTimeMs());
+
+                if (scriptAction == nullptr)
+                {
+                    // create action
+                    static int newActionPosition = 0;
+                    ImGui::SliderInt("Position", &newActionPosition, 0, 100);
+                    if (ImGui::Button("New Action")) {
+                        addEditAction(newActionPosition);
+                    }
+                }
             }
 
             ImGui::Separator();
