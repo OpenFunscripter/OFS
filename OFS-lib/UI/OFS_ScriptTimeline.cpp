@@ -495,7 +495,6 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 				const float total_pos_x = ((((float)i - start_index) / (float)total_samples)) * canvas_size.x;
 				float total_len;
 				if (i < 0 || (i + line_merge) >= samples.size()) {
-					total_len = 0.f;
 					continue;
 				}
 				else {
@@ -513,8 +512,13 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 					color, line_width);
 			}
 		};
+
+#if 0 // TODO: this has bad perf
 		renderWaveform(waveform.SamplesHigh, HighRangeCol, waveform.MidMax);
 		renderWaveform(waveform.SamplesMid, MidRangeCol, waveform.LowMax);
 		renderWaveform(waveform.SamplesLow, LowRangeCol, 0.f);
+#else
+		renderWaveform(waveform.SamplesHigh, HighRangeCol, 0.f);
+#endif
 	}
 }

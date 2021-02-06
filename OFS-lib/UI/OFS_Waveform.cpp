@@ -45,14 +45,6 @@ bool OFS_Waveform::LoadMP3(const std::string& path) noexcept
 			// 1152 is the sample count per frame
 			constexpr int SamplesPerLine = 1152/32;
 
-			//auto floatToInt = [](float pcmVal) -> int32_t
-			//{
-			//	pcmVal = pcmVal * 32768.f;
-			//	//if (pcmVal > 32767) pcmVal = 32767;
-			//	//if (pcmVal < -32768) pcmVal = -32768;
-			//	return pcmVal;
-			//};
-
 			auto shortToFloat = [](int16_t pcmVal) -> float {
 				return (1.0f/32768.0f) * pcmVal;
 			};
