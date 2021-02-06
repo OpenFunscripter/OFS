@@ -199,7 +199,9 @@ OpenFunscripter::~OpenFunscripter()
 
 bool OpenFunscripter::setup()
 {
+#ifndef NDEBUG
     SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
+#endif
     FUN_ASSERT(ptr == nullptr, "there can only be one instance");
     ptr = this;
     auto prefPath = Util::Prefpath("");
