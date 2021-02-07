@@ -1828,12 +1828,28 @@ void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
     
     ImColor color;
     color.Value.w = 1.f;
-    while (relPos <= 1.f) {
+    const float shadowStep = 1.f / height;
+    ImColor black = IM_COL32_BLACK;
+
+    for (int x = 0; x < width; x++) 
+    {
         rect.x = std::round(relPos * width);
         playerControls.TimelineGradient.computeColorAt(relPos, &color.Value.x);
-        SDL_FillRect(surface, &rect, ImGui::ColorConvertFloat4ToU32(color));
+        black.Value.w = 0.f;
+        for (int y = 0; y < height; y++) {
+
+            uint32_t* target_pixel = (uint32_t*)((uint8_t*)surface->pixels + y * surface->pitch + x * sizeof(uint32_t));
+            ImColor mix = color;
+            mix.Value.x = mix.Value.x * (1.f - black.Value.w) + black.Value.x * black.Value.w;
+            mix.Value.y = mix.Value.y * (1.f - black.Value.w) + black.Value.y * black.Value.w;
+            mix.Value.z = mix.Value.z * (1.f - black.Value.w) + black.Value.z * black.Value.w;
+            
+            *target_pixel = ImGui::ColorConvertFloat4ToU32(mix);
+            black.Value.w += shadowStep;
+        }
         relPos += relStep;
     }
+
     Util::SavePNG(path, surface->pixels, surface->w, surface->h, 4, true);
 
     if (mustLock) { SDL_UnlockSurface(surface); }
