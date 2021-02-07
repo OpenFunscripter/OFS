@@ -422,11 +422,14 @@ void RecordingImpl::update() noexcept
     else if (recordingJustStopped) {
         recordingJustStopped = false;
 
+        int32_t offsetMs = app->settings->data().action_insert_delay_ms;
         if (app->settings->data().mirror_mode) {
             app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, true, app->ActiveFunscript().get());
             for (auto&& script : app->LoadedFunscripts) {
                 for (auto&& action : app->scriptPositions.RecordingBuffer) {
-                    if (action.at >= 0) {
+                    if (action.at >= 0) 
+                    {
+                        action.at += offsetMs;
                         script->AddActionSafe(action);
                     }
                 }
@@ -436,6 +439,7 @@ void RecordingImpl::update() noexcept
             app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, false, app->ActiveFunscript().get());
             for (auto&& action : app->scriptPositions.RecordingBuffer) {
                 if (action.at >= 0) {
+                    action.at += offsetMs;
                     ctx().AddActionSafe(action);
                 }
             }
