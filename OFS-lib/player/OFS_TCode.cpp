@@ -65,7 +65,7 @@ bool TCodePlayer::openPort(struct sp_port* openthis) noexcept
     }
 
     if (sp_set_baudrate(port, 115200) != SP_OK) {
-        LOGF_ERROR("Failed to set baud rate to 115200.");
+        LOG_ERROR("Failed to set baud rate to 115200.");
         sp_close(port);
         sp_free_port(port);
         port = nullptr;
@@ -178,7 +178,7 @@ void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
             int x = 0;
             LOG_DEBUG("Available serial ports:\n");
             while (port_list[x] != NULL) {
-                LOGF_DEBUG("%s\n", port_list[x]);
+                LOGF_DEBUG("%s\n", port_list[x]->description);
                 x++;
             }
             port_count = x;
