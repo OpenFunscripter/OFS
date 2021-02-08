@@ -69,7 +69,7 @@ set(LIBSERIALPORT_SOURCES
 	${LIBSERIALPORT_SOURCES}
 	"libserialport/windows.c"
 )
-elseif(UNIX AND NOT UNIX)
+elseif(UNIX AND NOT APPLE)
 set(LIBSERIALPORT_SOURCES
 	${LIBSERIALPORT_SOURCES}
 	"libserialport/linux.c"
