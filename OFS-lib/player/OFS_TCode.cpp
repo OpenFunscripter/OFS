@@ -71,7 +71,6 @@ bool TCodePlayer::openPort(const char* name) noexcept
     c_serial_set_stop_bits(port, CSERIAL_STOP_BITS_1);
     c_serial_set_parity(port, CSERIAL_PARITY_NONE);
     c_serial_set_flow_control(port, CSERIAL_FLOW_SOFTWARE);
-    c_serial_set_rts_control(port, CSERIAL_RTS_SOFTWARE);
     
     LOGF_DEBUG("Baud rate is %d\n", c_serial_get_baud_rate(port));
 
@@ -420,6 +419,14 @@ static int32_t TCodeThread(void* threadData) noexcept {
         const char* cmd = data->channel->GetCommand();
 
         if (cmd != nullptr && data->player->status >= 0) {
+            int avail;
+            c_serial_get_available(data->player->port, &avail);
+            if (avail > 0) {
+                auto buf = new char[avail];
+                c_serial_control_lines_t lines;
+                c_serial_read_data(data->player->port, buf, &avail, &lines);
+                delete[] buf;
+            }
             int len = strlen(cmd);
             data->player->status = c_serial_write_data(data->player->port, (void*)cmd, &len);
             if (data->player->status < 0) {
