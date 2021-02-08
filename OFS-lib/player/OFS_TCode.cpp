@@ -70,8 +70,9 @@ bool TCodePlayer::openPort(const char* name) noexcept
     c_serial_set_data_bits(port, CSERIAL_BITS_8);
     c_serial_set_stop_bits(port, CSERIAL_STOP_BITS_1);
     c_serial_set_parity(port, CSERIAL_PARITY_NONE);
-    c_serial_set_flow_control(port, CSERIAL_FLOW_HARDWARE);
-
+    c_serial_set_flow_control(port, CSERIAL_FLOW_SOFTWARE);
+    c_serial_set_rts_control(port, CSERIAL_RTS_SOFTWARE);
+    
     LOGF_DEBUG("Baud rate is %d\n", c_serial_get_baud_rate(port));
 
     /*
