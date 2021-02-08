@@ -91,7 +91,10 @@ target_include_directories(libserialport PUBLIC "libserialport/")
 if(WIN32)
 target_compile_definitions(libserialport PUBLIC LIBSERIALPORT_MSBUILD)
 else()
-target_compile_definitions(libserialport PUBLIC LIBSERIALPORT_ATBUILD SP_PRIV)
+target_compile_definitions(libserialport PUBLIC 
+	"LIBSERIALPORT_ATBUILD"
+	"SP_PRIV="
+	"SP_API=")
 endif()
 
 # ==========
