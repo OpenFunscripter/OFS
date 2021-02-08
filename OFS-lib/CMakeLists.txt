@@ -61,7 +61,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	imgui_stdlib
 	tinyfiledialogs
 	utf8::cpp
-	cserial_static
+	libserialport
 	glm
 	implot
 	ImGuizmo

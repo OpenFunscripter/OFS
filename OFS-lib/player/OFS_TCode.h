@@ -11,9 +11,8 @@ class TCodePlayer {
 public:
 	int current_port = 0;
 	int port_count = 0;
-	const char** port_list = nullptr;
-	int status = -1;
-	struct c_serial_port* port = nullptr;
+	struct sp_port** port_list = nullptr;
+	struct sp_port* port = nullptr;
 
 	int32_t tickrate = 250;
 	int32_t delay = 0;
@@ -25,7 +24,7 @@ public:
 	TCodePlayer();
 	~TCodePlayer();
 	
-	bool openPort(const char* name) noexcept;
+	bool openPort(struct sp_port* port) noexcept;
 	void loadSettings(const std::string& path) noexcept;
 	void save() noexcept;
 

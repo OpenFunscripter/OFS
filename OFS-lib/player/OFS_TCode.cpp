@@ -13,7 +13,8 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
 
-#include "c_serial.h"
+#include "libserialport.h"
+#include "libserialport_internal.h"
 
 #include <chrono>
 
@@ -43,46 +44,40 @@ struct ScrollingBuffer {
     }
 };
 
-bool TCodePlayer::openPort(const char* name) noexcept
+bool TCodePlayer::openPort(struct sp_port* openthis) noexcept
 {
     if (port != nullptr) {
-        c_serial_free(port);
+        sp_close(port);
+        sp_free_port(port);
         port = nullptr;
     }
 
-    if (c_serial_new(&port, NULL) < 0) {
-        LOG_ERROR("ERROR: Unable to create new serial port\n");
+    if (sp_get_port_by_name(openthis->name, &port) != SP_OK) {
+        LOGF_ERROR("Failed to get port \"%s\"", openthis->description);
+        return false;
+    }
+
+    if (sp_open(port, sp_mode::SP_MODE_WRITE) != SP_OK) {
+        LOGF_ERROR("Failed to open port \"%s\"", port->description);
+        sp_free_port(port);
         port = nullptr;
-        status = -1;
         return false;
     }
 
-    /*
-     * The port name is the device to open(/dev/ttyS0 on Linux,
-     * COM1 on Windows)
-     */
-    if (c_serial_set_port_name(port, name) < 0) {
-        LOG_ERROR("ERROR: can't set port name\n");
+    if (sp_set_baudrate(port, 115200) != SP_OK) {
+        LOGF_ERROR("Failed to set baud rate to 115200.");
+        sp_close(port);
+        sp_free_port(port);
+        port = nullptr;
         return false;
     }
 
-    c_serial_set_baud_rate(port, CSERIAL_BAUD_115200);
-    c_serial_set_data_bits(port, CSERIAL_BITS_8);
-    c_serial_set_stop_bits(port, CSERIAL_STOP_BITS_1);
-    c_serial_set_parity(port, CSERIAL_PARITY_NONE);
-    c_serial_set_flow_control(port, CSERIAL_FLOW_SOFTWARE);
-    
-    LOGF_DEBUG("Baud rate is %d\n", c_serial_get_baud_rate(port));
-
-    /*
-    * We want to get all line flags when they change
-    */
-    c_serial_set_serial_line_change_flags(port, CSERIAL_LINE_FLAG_ALL);
-    status = c_serial_open(port);
-    if (status < 0) {
-        LOG_ERROR("ERROR: Can't open serial port\n");
-        return false;
-    }
+    //c_serial_set_baud_rate(port, CSERIAL_BAUD_115200);
+    //c_serial_set_data_bits(port, CSERIAL_BITS_8);
+    //c_serial_set_stop_bits(port, CSERIAL_STOP_BITS_1);
+    //c_serial_set_parity(port, CSERIAL_PARITY_NONE);
+    //c_serial_set_flow_control(port, CSERIAL_FLOW_NONE);
+    //c_serial_set_rts_control(port, CSERIAL_RTS_SOFTWARE);
     return true;
 }
 
@@ -121,10 +116,6 @@ bool TCodePlayer::openPort(const char* name) noexcept
 
 TCodePlayer::TCodePlayer()
 {
-	c_serial_set_global_log_function(
-		[](const char* logger_name, const struct SL_LogLocation* location, const enum SL_LogLevel level, const char* log_string) {
-			LOGF_INFO("%s: %s",logger_name, log_string);
-		});
 #ifndef NDEBUG
     if(ImPlot::GetCurrentContext() == nullptr)
         ImPlot::CreateContext();
@@ -174,22 +165,24 @@ void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
     ImGui::Begin("T-Code", open, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::Combo("Port", &current_port, [](void* data, int idx, const char** out_text) -> bool {
         const char** port_list = (const char**)data;
-        *out_text = port_list[idx];
+        *out_text = ((sp_port*)port_list[idx])->description;
         return true;
         }, port_list, port_count);
     ImGui::SameLine();
     if (ImGui::Button("Reload")) {
         if (port_list != nullptr) {
-            c_serial_free_serial_ports_list(port_list);
+            sp_free_port_list(port_list);
         }
-        port_list = c_serial_get_serial_ports_list();
-        int x = 0;
-        LOG_DEBUG("Available serial ports:\n");
-        while (port_list[x] != NULL) {
-            LOGF_DEBUG("%s\n", port_list[x]);
-            x++;
+        if (sp_list_ports(&port_list) == SP_OK) {
+            // count ports
+            int x = 0;
+            LOG_DEBUG("Available serial ports:\n");
+            while (port_list[x] != NULL) {
+                LOGF_DEBUG("%s\n", port_list[x]);
+                x++;
+            }
+            port_count = x;
         }
-        port_count = x;
     }
 
     if (port_list != nullptr
@@ -201,11 +194,9 @@ void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
         }
     }
     if (port != nullptr && ImGui::Button("Close port", ImVec2(-1.f, 0.f))) {
-        auto tmp = port;
-        status = -1;
+        sp_close(port);
+        sp_free_port(port);
         port = nullptr;
-        c_serial_close(tmp);
-        c_serial_free(tmp);
     }
 
     ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
@@ -294,8 +285,7 @@ void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
             ImGui::EndPopup();
         }
         ImGui::SameLine(); ImGui::Text(" " ICON_ARROW_RIGHT " %s", c.LastCommand);
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
             ImGui::BeginTooltip();
             ImGui::TextUnformatted(TCodeChannels::Aliases[i][2]);
             ImGui::EndTooltip();
@@ -324,10 +314,9 @@ void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
         prod.sync(ms, 1.f);
         prod.tick(ms, 1.f);
         const char* cmd = tcode.GetCommandSpeed(500);
-        if (cmd != nullptr && status >= 0) {
+        if (cmd != nullptr /*&& status >= 0*/) {
             int len = strlen(cmd);
-            status = c_serial_write_data(port, (void*)cmd, &len);
-            if (status < 0) {
+            if (sp_blocking_write(port, cmd, len, 0) != SP_OK) {
                 LOG_ERROR("Failed to write to serial port.");
             }
         }
@@ -363,7 +352,6 @@ void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
     static ImPlotAxisFlags rt_axis = ImPlotAxisFlags_NoTickLabels;
     ImPlot::SetNextPlotLimitsX(t - history, t, ImGuiCond_Always);
     if (ImPlot::BeginPlot("##EuroComp", NULL, NULL, ImVec2(-1, -1), 0, rt_axis, rt_axis | ImPlotAxisFlags_LockMin)) {
-
         ImPlot::PlotLine("RawSpeed", &RawSpeed.Data[0].x, &RawSpeed.Data[0].y, RawSpeed.Data.size(), RawSpeed.Offset, 2 * sizeof(float));
         ImPlot::PlotLine("FilteredSpeed", &FilteredSpeed.Data[0].x, &FilteredSpeed.Data[0].y, FilteredSpeed.Data.size(), FilteredSpeed.Offset, 2 * sizeof(float));
 
@@ -418,20 +406,10 @@ static int32_t TCodeThread(void* threadData) noexcept {
         // update channels
         const char* cmd = data->channel->GetCommand();
 
-        if (cmd != nullptr && data->player->status >= 0) {
-            int avail;
-            c_serial_get_available(data->player->port, &avail);
-            if (avail > 0) {
-                auto buf = new char[avail];
-                c_serial_control_lines_t lines;
-                c_serial_read_data(data->player->port, buf, &avail, &lines);
-                delete[] buf;
-            }
+        if (cmd != nullptr /* && data->player->status >= 0*/) {
             int len = strlen(cmd);
-            data->player->status = c_serial_write_data(data->player->port, (void*)cmd, &len);
-            if (data->player->status < 0) {
+            if (sp_blocking_write(data->player->port, cmd, len, 0) != SP_OK) {
                 LOG_ERROR("Failed to write to serial port.");
-                break;
             }
         }
 
