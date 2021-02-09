@@ -314,7 +314,7 @@ void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
         prod.sync(ms, 1.f);
         prod.tick(ms, 1.f);
         const char* cmd = tcode.GetCommandSpeed(500);
-        if (cmd != nullptr /*&& status >= 0*/) {
+        if (cmd != nullptr && port != nullptr) {
             int len = strlen(cmd);
             if (sp_blocking_write(port, cmd, len, 0) != SP_OK) {
                 LOG_ERROR("Failed to write to serial port.");
@@ -406,7 +406,7 @@ static int32_t TCodeThread(void* threadData) noexcept {
         // update channels
         const char* cmd = data->channel->GetCommand();
 
-        if (cmd != nullptr /* && data->player->status >= 0*/) {
+        if (cmd != nullptr && data->player->port != nullptr) {
             int len = strlen(cmd);
             if (sp_blocking_write(data->player->port, cmd, len, 0) != SP_OK) {
                 LOG_ERROR("Failed to write to serial port.");
