@@ -168,8 +168,7 @@ void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
         *out_text = ((sp_port*)port_list[idx])->description;
         return true;
         }, port_list, port_count);
-    ImGui::SameLine();
-    if (ImGui::Button("Reload")) {
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
         if (port_list != nullptr) {
             sp_free_port_list(port_list);
         }
@@ -184,6 +183,7 @@ void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
             port_count = x;
         }
     }
+    ImGui::SameLine();
 
     if (port_list != nullptr
         && port_list[0] != nullptr
