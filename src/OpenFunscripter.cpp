@@ -28,6 +28,8 @@
 
 // TODO: make speed coloring configurable
 
+// TODO: add bindings to move in +5 -5 steps
+
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
 constexpr std::array<const char*, 6> SupportedVideoExtensions {

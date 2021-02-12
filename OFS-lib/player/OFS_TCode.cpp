@@ -408,7 +408,7 @@ static int32_t TCodeThread(void* threadData) noexcept {
 
         if (cmd != nullptr && data->player->port != nullptr) {
             int len = strlen(cmd);
-            if (sp_blocking_write(data->player->port, cmd, len, 0) != SP_OK) {
+            if (sp_blocking_write(data->player->port, cmd, len, 0) > SP_OK) {
                 LOG_ERROR("Failed to write to serial port.");
             }
         }
