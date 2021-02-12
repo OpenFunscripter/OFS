@@ -316,7 +316,7 @@ void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
         const char* cmd = tcode.GetCommandSpeed(500);
         if (cmd != nullptr && port != nullptr) {
             int len = strlen(cmd);
-            if (sp_blocking_write(port, cmd, len, 0) != SP_OK) {
+            if (sp_blocking_write(port, cmd, len, 0) > SP_OK) {
                 LOG_ERROR("Failed to write to serial port.");
             }
         }
