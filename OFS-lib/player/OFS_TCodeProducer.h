@@ -36,7 +36,6 @@ public:
 	float FilteredSpeed = 0.f;
 #endif
 
-	bool Invert = false;
 	bool NeedsResync = false;
 private:
 	float ScriptMinPos;
@@ -66,8 +65,6 @@ private:
 		{
 			pos = Util::Lerp<float>(startAction.pos / 100.f, nextAction.pos / 100.f, progress);
 		}
-
-		if (Invert) { pos = glm::abs(pos - 1.f); }
 
 		RawSpeed = std::abs(pos - LastValue) / (1.f/freq);
 

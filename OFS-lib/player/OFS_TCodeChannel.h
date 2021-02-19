@@ -25,6 +25,7 @@ public:
 
 	bool Enabled = true;
 	bool Rebalance = false;
+	bool Invert = false;
 
 	inline void SetId(const char id[3]) noexcept {
 		strcpy(Id, id);
@@ -53,6 +54,7 @@ public:
 	inline void SetNextPos(float relativePos) noexcept
 	{
 		if (std::isnan(relativePos)) return;
+		if (Invert) { relativePos = glm::abs(relativePos - 1.f); }
 		NextTCodeValue = GetPos(relativePos);
 	}
 
@@ -87,6 +89,7 @@ public:
 		OFS_REFLECT_PTR_NAMED("minimum", &limits[0], ar);
 		OFS_REFLECT_PTR_NAMED("maximum", &limits[1], ar);
 		OFS_REFLECT(Rebalance, ar);
+		OFS_REFLECT(Invert, ar);
 		OFS_REFLECT(Enabled, ar);
 	}
 };

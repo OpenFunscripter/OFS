@@ -267,7 +267,7 @@ void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
         if (OFS::BoundedSliderInt(c.Id, &c.NextTCodeValue, TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue, c.limits[0], c.limits[1], "%d", ImGuiSliderFlags_AlwaysClamp));
         if (ImGui::BeginPopupContextItem())
         {
-            ImGui::MenuItem("Invert", NULL, &p.Invert);
+            ImGui::MenuItem("Invert", NULL, &c.Invert);
             ImGui::MenuItem("Rebalance", NULL, &c.Rebalance); Util::Tooltip("Balance around 500 even with unevenly spread limits.");
             ImGui::Separator();
             auto activeIdx = prod.GetProd(static_cast<TChannel>(i)).ScriptIdx();
