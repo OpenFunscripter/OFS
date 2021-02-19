@@ -1,6 +1,6 @@
 // This is an auto-generated header-only single-file distribution of libcluon.
-// Date: Mon, 20 Jul 2020 19:22:33 +0000
-// Version: 0.0.136
+// Date: Thu, 04 Feb 2021 12:20:57 +0000
+// Version: 0.0.140
 //
 //
 // Implementation of N4562 std::experimental::any (merged into C++17) for C++11 compilers.
@@ -8062,14 +8062,16 @@ class LIBCLUON_API ToCSVVisitor {
     void visit(uint32_t &id, std::string &&typeName, std::string &&name, T &value) noexcept {
         (void)id;
         (void)typeName;
-        constexpr bool IS_NESTED{true};
-        ToCSVVisitor csvVisitor(name, m_delimiter, m_withHeader, IS_NESTED);
-        value.accept(csvVisitor);
+        if ((0 == m_mask.count(id)) || m_mask[id]) {
+            constexpr bool IS_NESTED{true};
+            ToCSVVisitor csvVisitor(name, m_delimiter, m_withHeader, IS_NESTED);
+            value.accept(csvVisitor);
 
-        if (m_fillHeader) {
-            m_bufferHeader << csvVisitor.m_bufferHeader.str();
+            if (m_fillHeader) {
+                m_bufferHeader << csvVisitor.m_bufferHeader.str();
+            }
+            m_bufferValues << csvVisitor.m_bufferValues.str();
         }
-        m_bufferValues << csvVisitor.m_bufferValues.str();
     }
 
    private:
