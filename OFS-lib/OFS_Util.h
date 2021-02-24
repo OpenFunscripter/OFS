@@ -121,18 +121,17 @@ public:
 	}
 
 	template<typename T>
-	inline static T MapRange(T val, T a1, T a2, T b1, T b2)
-	{
+	inline static T MapRange(T val, T a1, T a2, T b1, T b2) noexcept {
 		return b1 + (val - a1) * (b2 - b1) / (a2 - a1);
 	}
 
 	template<typename T>
-	inline static T Lerp(T startVal, T endVal, float t) {
+	inline static T Lerp(T startVal, T endVal, float t) noexcept {
 		return startVal + ((endVal - startVal) * t);
 	}
 
-	inline static auto LoadJson(const std::string& file, bool* success) { return LoadJson(file.c_str(), success, file.size()); }
-	inline static nlohmann::json LoadJson(const char* file, bool* success, int32_t path_len = 0) {
+	inline static auto LoadJson(const std::string& file, bool* success) noexcept { return LoadJson(file.c_str(), success, file.size()); }
+	inline static nlohmann::json LoadJson(const char* file, bool* success, int32_t path_len = 0) noexcept {
 		auto handle = OpenFile(file, "rb", path_len == 0 ? strlen(file) : path_len);
 		nlohmann::json j;
 		if (handle != nullptr) {
@@ -163,20 +162,19 @@ public:
 			ss << "\\\\?\\" << path;
 			handle = SDL_RWFromFile(ss.str().c_str(), mode);
 		}
-		else
-		{
+		else {
 			handle = SDL_RWFromFile(path, mode);
 		}
 #else
-		auto handle = SDL_RWFromFile(file.c_str(), mode);
+		auto handle = SDL_RWFromFile(path, mode);
 #endif
 		return handle;
 	}
 
-	inline static void WriteJson(const nlohmann::json& json, const std::string& file, bool pretty = false) {
+	inline static void WriteJson(const nlohmann::json& json, const std::string& file, bool pretty = false) noexcept {
 		return WriteJson(json, file.c_str(), pretty, file.size());
 	}
-	inline static void WriteJson(const nlohmann::json& json, const char* file, bool pretty = false, int32_t path_len = 0) {
+	inline static void WriteJson(const nlohmann::json& json, const char* file, bool pretty = false, int32_t path_len = 0) noexcept {
 		auto handle = OpenFile(file, "wb", path_len == 0 ? strlen(file) : path_len);
 		if (handle != nullptr) {
 			auto jsonText = json.dump((pretty) ? 4 : -1, ' ');
@@ -188,7 +186,7 @@ public:
 		}
 	}
 
-	static inline size_t FormatTime(char* buffer, size_t buf_size, float time_seconds, bool with_ms) {
+	static inline size_t FormatTime(char* buffer, size_t buf_size, float time_seconds, bool with_ms) noexcept {
 		if (std::isinf(time_seconds) || std::isnan(time_seconds)) time_seconds = 0.f;
 		auto duration = std::chrono::duration<double>(time_seconds);
 		std::time_t t = duration.count();
@@ -206,28 +204,28 @@ public:
 	static int OpenFileExplorer(const std::string& path);
 	static int OpenUrl(const std::string& url);
 
-	inline static std::filesystem::path Basepath() {
+	inline static std::filesystem::path Basepath() noexcept {
 		char* base = SDL_GetBasePath();
 		std::filesystem::path path(base);
 		SDL_free(base);
 		return path;
 	}
 
-	inline static std::string Filename(const std::string& path) {
+	inline static std::string Filename(const std::string& path) noexcept {
 		return std::filesystem::path(path)
 			.replace_extension("")
 			.filename()
 			.string();
 	}
 
-	inline static bool FileExists(const std::string& file) {
+	inline static bool FileExists(const std::string& file) noexcept {
 		bool exists = false;
 #if WIN32
 		std::wstring wfile = Util::Utf8ToUtf16(file);
 		struct _stati64 s;
 		exists = _wstati64(wfile.c_str(), &s) == 0;
 #else
-		auto handle = OpenFile(file.c_str(), "r");
+		auto handle = OpenFile(file.c_str(), "r", file.size());
 		if (handle != nullptr) {
 			SDL_RWclose(handle);
 			exists = true;
@@ -238,7 +236,7 @@ public:
 #endif
 		return exists;
 	}
-	inline static bool FileNamesMatch(std::filesystem::path path1, std::filesystem::path path2) {
+	inline static bool FileNamesMatch(std::filesystem::path path1, std::filesystem::path path2) noexcept {
 		path1.replace_extension(""); path2.replace_extension();
 		return path1.filename() == path2.filename();
 	}
@@ -247,20 +245,17 @@ public:
 	static void ForceMinumumWindowSize(class ImGuiWindow* window) noexcept;
 
 	// http://www.martinbroadhurst.com/how-to-trim-a-stdstring.html
-	static std::string& ltrim(std::string& str, const std::string& chars = "\t\n\v\f\r ") noexcept
-	{
+	static std::string& ltrim(std::string& str, const std::string& chars = "\t\n\v\f\r ") noexcept {
 		str.erase(0, str.find_first_not_of(chars));
 		return str;
 	}
 
-	static std::string& rtrim(std::string& str, const std::string& chars = "\t\n\v\f\r ") noexcept
-	{
+	static std::string& rtrim(std::string& str, const std::string& chars = "\t\n\v\f\r ") noexcept {
 		str.erase(str.find_last_not_of(chars) + 1);
 		return str;
 	}
 
-	static std::string& trim(std::string& str, const std::string& chars = "\t\n\v\f\r ") noexcept 
-	{
+	static std::string& trim(std::string& str, const std::string& chars = "\t\n\v\f\r ") noexcept {
 		return ltrim(rtrim(str, chars), chars);
 	}
 
@@ -306,7 +301,7 @@ public:
 
 	static std::string Resource(const std::string& path) noexcept;
 
-	static std::string Prefpath(const std::string& path) {
+	static std::string Prefpath(const std::string& path) noexcept {
 		static const char* cachedPref = SDL_GetPrefPath("OFS", "OFS_data");
 		static std::filesystem::path prefPath(cachedPref);
 		std::filesystem::path rel(path);
@@ -314,7 +309,7 @@ public:
 		return (prefPath / rel).string();
 	}
 
-	static std::string PrefpathOFP(const std::string& path) {
+	static std::string PrefpathOFP(const std::string& path) noexcept {
 		static const char* cachedPref = SDL_GetPrefPath("OFS", "OFP_data");
 		static std::filesystem::path prefPath(cachedPref);
 		std::filesystem::path rel(path);
@@ -322,7 +317,7 @@ public:
 		return (prefPath / rel).string();
 	}
 
-	static bool CreateDirectories(const std::filesystem::path& dirs) {
+	static bool CreateDirectories(const std::filesystem::path& dirs) noexcept {
 		std::error_code ec;
 		std::filesystem::create_directories(dirs, ec);
 		if (ec) {
