@@ -168,7 +168,7 @@ public:
 			handle = SDL_RWFromFile(path, mode);
 		}
 #else
-		auto handle = SDL_RWFromFile(file.c_str(), openWith);
+		auto handle = SDL_RWFromFile(file.c_str(), mode);
 #endif
 		return handle;
 	}
