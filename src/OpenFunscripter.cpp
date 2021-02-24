@@ -1424,43 +1424,35 @@ void OpenFunscripter::autoBackup() noexcept
     if (!Util::CreateDirectories(backupDir)) {
         return;
     }
+
+    std::error_code ec;
+    auto iterator = std::filesystem::directory_iterator(backupDir, ec);
+    for (auto it = std::filesystem::begin(iterator); it != std::filesystem::end(iterator); it++) {
+        if (it->path().has_extension()) {
+            if (it->path().extension() == ".backup") {
+                LOGF_INFO("Removing \"%s\"", it->path().u8string().c_str());
+                std::filesystem::remove(it->path(), ec);
+                if (ec) {
+                    LOGF_ERROR("%s", ec.message().c_str());
+                }
+            }
+        }
+    }
     
     for (auto&& script : LoadedFunscripts) {
 
         auto scriptName = Util::Filename(script->current_path);
         Util::trim(scriptName);
-#ifdef WIN32
-        auto scriptBackupDir = backupDir / Util::Utf8ToUtf16(scriptName);
-#else
-        auto scriptBackupDir = backupDir / scriptName;
-#endif
-        if (!Util::CreateDirectories(scriptBackupDir)) {
-            continue;
-        }
 
         char time_buf[64];
         auto time = std::chrono::system_clock::now();
         auto in_time_t = std::chrono::system_clock::to_time_t(time);
         auto tm = std::localtime(&in_time_t);
         std::stringstream ss;
-        ss << scriptBackupDir.filename().u8string();
+        ss << scriptName;
         ss << '_' << tm->tm_hour << '-' << tm->tm_min << '-' << tm->tm_sec << ".funscript.backup";
 
-        std::error_code ec;
-        auto iterator = std::filesystem::directory_iterator(scriptBackupDir, ec);
-        for (auto it = std::filesystem::begin(iterator); it != std::filesystem::end(iterator); it++) {
-            if (it->path().has_extension()) {
-                if (it->path().extension() == ".backup") {
-                    LOGF_INFO("Removing \"%s\"", it->path().u8string().c_str());
-                    std::filesystem::remove(it->path(), ec);
-                    if (ec) {
-                        LOGF_ERROR("%s", ec.message().c_str());
-                    }
-                }
-            }
-        }
-
-        auto savePath = scriptBackupDir / ss.str();
+        auto savePath = backupDir / ss.str();
         LOGF_INFO("Backup at \"%s\"", savePath.u8string().c_str());
         saveScript(script.get(), savePath.u8string(), false);
     }

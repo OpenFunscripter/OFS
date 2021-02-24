@@ -11,6 +11,7 @@
 #include <filesystem>
 #include <functional>
 #include <vector>
+#include <sstream>
 
 #include "stb_sprintf.h"
 #include "stb_image.h"
@@ -130,9 +131,9 @@ public:
 		return startVal + ((endVal - startVal) * t);
 	}
 
-	inline static auto LoadJson(const std::string& file, bool* success) { return LoadJson(file.c_str(), success); }
-	inline static nlohmann::json LoadJson(const char* file, bool* success) {
-		auto handle = SDL_RWFromFile(file, "rb");
+	inline static auto LoadJson(const std::string& file, bool* success) { return LoadJson(file.c_str(), success, file.size()); }
+	inline static nlohmann::json LoadJson(const char* file, bool* success, int32_t path_len = 0) {
+		auto handle = OpenFile(file, "rb", path_len == 0 ? strlen(file) : path_len);
 		nlohmann::json j;
 		if (handle != nullptr) {
 			size_t size = handle->size(handle);
@@ -153,11 +154,30 @@ public:
 		return j;
 	}
 
-	inline static void WriteJson(const nlohmann::json& json, const std::string& file, bool pretty = false) {
-		return WriteJson(json, file.c_str(), pretty);
+	inline static SDL_RWops* OpenFile(const char* path, const char* mode, int32_t path_len) noexcept
+	{
+#ifdef WIN32
+		SDL_RWops* handle = nullptr;
+		if (path_len >= _MAX_PATH) {
+			std::stringstream ss;
+			ss << "\\\\?\\" << path;
+			handle = SDL_RWFromFile(ss.str().c_str(), mode);
+		}
+		else
+		{
+			handle = SDL_RWFromFile(path, mode);
+		}
+#else
+		auto handle = SDL_RWFromFile(file.c_str(), openWith);
+#endif
+		return handle;
 	}
-	inline static void WriteJson(const nlohmann::json& json, const char* file, bool pretty = false) {
-		auto handle = SDL_RWFromFile(file, "wb");
+
+	inline static void WriteJson(const nlohmann::json& json, const std::string& file, bool pretty = false) {
+		return WriteJson(json, file.c_str(), pretty, file.size());
+	}
+	inline static void WriteJson(const nlohmann::json& json, const char* file, bool pretty = false, int32_t path_len = 0) {
+		auto handle = OpenFile(file, "wb", path_len == 0 ? strlen(file) : path_len);
 		if (handle != nullptr) {
 			auto jsonText = json.dump((pretty) ? 4 : -1, ' ');
 			SDL_RWwrite(handle, jsonText.data(), sizeof(char), jsonText.size());
@@ -207,7 +227,7 @@ public:
 		struct _stati64 s;
 		exists = _wstati64(wfile.c_str(), &s) == 0;
 #else
-		auto handle = SDL_RWFromFile(file.c_str(), "r");
+		auto handle = OpenFile(file.c_str(), "r");
 		if (handle != nullptr) {
 			SDL_RWclose(handle);
 			exists = true;
