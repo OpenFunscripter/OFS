@@ -100,10 +100,14 @@ public:
 	virtual ~CustomLua() noexcept;
 	void SelectionChanged(SDL_Event& ev) noexcept;
 	virtual void DrawUI() noexcept override;
+
+	void HandleBinding(class Binding* binding) noexcept;
+	void RunScript(const std::string& name) noexcept;
 };
 
 class SpecialFunctionsWindow {
-	std::unique_ptr<FunctionBase> function;
+	CustomLua lua;
+	FunctionBase* function = nullptr;
 public:
 	static constexpr const char* SpecialFunctionsId = "Special functions";
 	SpecialFunctionsWindow() noexcept;

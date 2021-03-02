@@ -13,7 +13,6 @@
 #include <sstream>
 #include <unordered_map>
 
-
 class KeybindingEvents
 {
 public:
@@ -23,6 +22,7 @@ public:
 };
 
 using BindingAction = std::function<void(void*)>;
+using DynamicBindingHandler = std::function<void(class Binding*)>;
 
 struct Keybinding
 {
@@ -47,6 +47,7 @@ struct Keybinding
 	}
 };
 
+
 struct ControllerBinding {
 	int32_t button = -1;
 	bool navmode = false;
@@ -70,6 +71,8 @@ struct Binding {
 	Keybinding key;
 	ControllerBinding controller;
 	BindingAction action;
+	void* userdata = nullptr;
+	std::string dynamicHandlerId = "";
 
 	Binding() {}
 
@@ -83,6 +86,13 @@ struct Binding {
 		OFS_REFLECT(key, ar);
 		OFS_REFLECT(controller, ar);
 		OFS_REFLECT(ignore_repeats, ar);
+		OFS_REFLECT(dynamicHandlerId, ar);
+	}
+
+	inline void execute() noexcept {
+		if (action != nullptr) {
+			action(userdata == nullptr ? this : userdata);
+		}
 	}
 };
 
@@ -102,6 +112,8 @@ struct Keybindings {
 	std::string config_version = CurrentKeybindingsVersion;
 	std::vector<KeybindingGroup> groups;
 
+	KeybindingGroup DynamicBindings{"Dynamic"};
+
 	template<class Archive>
 	inline void reflect(Archive& ar) {
 		OFS_REFLECT(config_version, ar);
@@ -111,6 +123,7 @@ struct Keybindings {
 			return;
 		}
 		OFS_REFLECT(groups, ar);
+		OFS_REFLECT(DynamicBindings, ar);
 	}
 };
 
@@ -122,6 +135,8 @@ class KeybindingSystem
 	std::unordered_map<std::string, std::string> binding_string_cache;
 	bool ControllerOnly = false;
 	std::string filterString;
+
+	std::unordered_map<std::string, DynamicBindingHandler> dynamicHandlers;
 
 	void addKeyString(const char* name);
 	void addKeyString(char name);
@@ -137,6 +152,9 @@ class KeybindingSystem
 	int32_t lastAxis = 0;
 
 	std::string keybindingPath;
+
+
+	void addBindingsGroup(KeybindingGroup& group, bool& save, bool deletable = false) noexcept;
 public:
 	bool ShowWindow = false;
 
@@ -148,5 +166,13 @@ public:
 	const Keybindings& getBindings() const { return ActiveBindings; }
 	void setBindings(const Keybindings& bindings);
 	void registerBinding(const KeybindingGroup& group);
+
+	void addDynamicBinding(Binding&& binding) noexcept;
+	void removeDynamicBinding(const std::string& id) noexcept;
+
+	void registerDynamicHandler(const std::string& id, DynamicBindingHandler&& handler) noexcept {
+		dynamicHandlers.insert(std::make_pair(id, handler));
+	}
+
 	bool ShowBindingWindow();
 };

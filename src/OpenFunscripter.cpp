@@ -22,13 +22,8 @@
 // TODO: extend "range extender" functionality ( only extend bottom/top, range reducer )
 // TODO: render simulator relative to video position & zoom
 
-// TODO: binding Lua scripts to keys or buttons
-
 // BUG: Simulator 3D move widget doesn't show when settings window is in a separate platform window/viewport
-
 // TODO: make speed coloring configurable
-
-// TODO: add bindings to move in +5 -5 steps
 
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts

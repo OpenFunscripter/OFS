@@ -162,6 +162,29 @@ void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
 
     // this prevents keybindings from being processed when typing into a textbox etc.
     if (ImGui::IsAnyItemActive()) return;
+
+    // process dynamic bindings
+    for (auto& binding : ActiveBindings.DynamicBindings.bindings)
+    {
+        if (key.repeat && binding.ignore_repeats) continue;
+        
+        if (key.keysym.sym == binding.key.key) {
+            bool modifierMismatch = false;
+            for (auto possibleModifier : possibleModifiers) {
+                if ((modstate & possibleModifier) != (binding.key.modifiers & possibleModifier)) {
+                    modifierMismatch = true;
+                    break;
+                }
+            }
+            if (modifierMismatch) continue;
+        }
+        else { continue; }
+        // execute binding
+        auto& handler = dynamicHandlers.find(binding.dynamicHandlerId);
+        handler->second(&binding);
+        return;
+    }
+
     // process bindings
     for (auto& group : ActiveBindings.groups) {
         for (auto& binding : group.bindings) {
@@ -182,7 +205,7 @@ void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
             }
 
             // execute binding
-            binding.action(0);
+            binding.execute();
             return;
         }
     }
@@ -192,6 +215,31 @@ void KeybindingSystem::ProcessControllerBindings(SDL_Event& ev, bool repeat) noe
 {
     auto& cbutton = ev.cbutton;
     bool navmodeActive = ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_NavEnableGamepad;
+
+    // process dynamic bindings
+    for (auto& binding : ActiveBindings.DynamicBindings.bindings)
+    {
+        if ((binding.ignore_repeats && repeat) || binding.controller.button < 0) { continue; }
+
+        if (binding.controller.button == cbutton.button) {
+            if (navmodeActive) {
+                // navmode bindings get processed during navmode
+                // everything else doesn't get processed during navmode
+                if (binding.controller.navmode) {
+                    // execute binding
+                    auto& handler = dynamicHandlers.find(binding.dynamicHandlerId);
+                    handler->second(&binding);
+                }
+            }
+            else {
+                // execute binding
+                auto& handler = dynamicHandlers.find(binding.dynamicHandlerId);
+                handler->second(&binding);
+            }
+        }
+        return;
+    }
+
     // process bindings
     for (auto&& group : ActiveBindings.groups) {
         for (auto& binding : group.bindings) {
@@ -201,11 +249,11 @@ void KeybindingSystem::ProcessControllerBindings(SDL_Event& ev, bool repeat) noe
                     // navmode bindings get processed during navmode
                     // everything else doesn't get processed during navmode
                     if (binding.controller.navmode) {
-                        binding.action(0);
+                        binding.execute();
                     }
                 }
                 else {
-                    binding.action(0);
+                    binding.execute();
                 }
             }
         }
@@ -319,6 +367,7 @@ void KeybindingSystem::setBindings(const Keybindings& bindings)
             }
         }
     }
+    ActiveBindings.DynamicBindings = bindings.DynamicBindings;
 }
 
 void KeybindingSystem::registerBinding(const KeybindingGroup& group)
@@ -327,6 +376,36 @@ void KeybindingSystem::registerBinding(const KeybindingGroup& group)
     for (auto& binding : ActiveBindings.groups.back().bindings) {
         binding.key.key_str = loadKeyString(binding.key.key, binding.key.modifiers);
         binding_string_cache[binding.identifier] = binding.key.key_str;
+    }
+}
+
+void KeybindingSystem::addDynamicBinding(Binding&& binding) noexcept
+{
+    auto it = std::find_if(ActiveBindings.DynamicBindings.bindings.begin(), ActiveBindings.DynamicBindings.bindings.end(),
+        [&](auto& b) {
+            return b.identifier == binding.identifier;
+    });
+    binding.key.key_str = loadKeyString(binding.key.key, binding.key.modifiers);
+    if (it == ActiveBindings.DynamicBindings.bindings.end())
+    {
+        ActiveBindings.DynamicBindings.bindings.emplace_back(std::move(binding));
+    }
+    else
+    {
+        *it = std::move(binding);
+    }
+}
+
+void KeybindingSystem::removeDynamicBinding(const std::string& identifier) noexcept
+{
+    auto it = std::find_if(ActiveBindings.DynamicBindings.bindings.begin(), ActiveBindings.DynamicBindings.bindings.end(),
+        [&](auto& b) {
+            return b.identifier == identifier;
+        });
+    if (it != ActiveBindings.DynamicBindings.bindings.end()) {
+        // fast remove
+        *it = ActiveBindings.DynamicBindings.bindings.back();
+        ActiveBindings.DynamicBindings.bindings.pop_back();
     }
 }
 
@@ -355,79 +434,15 @@ bool KeybindingSystem::ShowBindingWindow()
         auto& style = ImGui::GetStyle();
         ImGui::Separator();
         int id = 0;
-        std::vector<Binding*> filteredBindings;
         for(auto&& group : ActiveBindings.groups)
         {
-            int32_t headerFlags = ImGuiTreeNodeFlags_None;
-            filteredBindings.clear();
-            for (auto&& binding : group.bindings) {
-                if (ControllerOnly && binding.controller.button < 0) { continue; }
-                if (!filterString.empty() && !Util::ContainsInsensitive(binding.description, filterString)) { continue; }
-                filteredBindings.emplace_back(&binding);
-            }
-            if (filteredBindings.size() == 0) { continue; }
-            if (ControllerOnly || !filterString.empty()) {
-                headerFlags |= ImGuiTreeNodeFlags_DefaultOpen;
-            }
-
-            ImGui::Columns(1);
-            if (ImGui::CollapsingHeader(group.name.c_str(), headerFlags)) {
-                ImGui::PushID(group.name.c_str());
-                
-                ImGui::Columns(4, "bindings");
-                ImGui::Separator();
-                ImGui::Text("Action"); ImGui::NextColumn();
-                ImGui::Text("Keyboard"); ImGui::NextColumn();
-                ImGui::Text("Controller"); ImGui::NextColumn();
-                ImGui::Text("Ignore repeats"); ImGui::NextColumn();
-                for (auto bindingPtr : filteredBindings /*group.bindings*/) {
-                    auto& binding = *bindingPtr;
-
-                    ImGui::PushID(id++);
-                    ImGui::TextUnformatted(binding.description.c_str()); ImGui::NextColumn();
-                    if(ImGui::Button(!binding.key.key_str.empty() ? binding.key.key_str.c_str() : "-- Not set --", ImVec2(-1.f, 0.f))) {
-                        changingController = false;
-                        currentlyChanging = &binding;
-                        currentlyHeldKeys.str("");
-                        ImGui::OpenPopup("Change key");
-                    }
-                    ImGui::NextColumn();
-                    if (ImGui::Button(GetButtonString(binding.controller.button), ImVec2(-1.f, 0.f))) {
-                        changingController = true;
-                        currentlyChanging = &binding;
-                        ImGui::OpenPopup("Change button");
-                    }
-                    ImGui::NextColumn();
-                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (ImGui::GetColumnWidth(3) / 2.f) - (2.f * ImGui::GetFontSize()) + style.ItemSpacing.x);
-                    if (ImGui::Checkbox("", &binding.ignore_repeats)) { save = true; }
-                    ImGui::NextColumn();
-                    if (ImGui::BeginPopupModal("Change key", 0, ImGuiWindowFlags_AlwaysAutoResize)) 
-                    {
-                        if (currentlyHeldKeys.tellp() == 0)
-                            ImGui::TextUnformatted("Press any key...\nEscape to clear.");
-                        else
-                            ImGui::Text(currentlyHeldKeys.str().c_str());
-                        if (!currentlyChanging) {
-                            save = true; // autosave
-                            ImGui::CloseCurrentPopup();
-                        }
-                        ImGui::EndPopup();
-                    }
-
-                    if (ImGui::BeginPopupModal("Change button")) {
-                        ImGui::TextUnformatted("Press any button...\nEscape to clear.");
-                        if (!currentlyChanging) {
-                            save = true; // autosave
-                            ImGui::CloseCurrentPopup();
-                        }
-                        ImGui::EndPopup();
-                    }
-
-                    ImGui::PopID();
-                }
-                ImGui::PopID();
-            }
+            ImGui::PushID(id++);
+            addBindingsGroup(group, save);
+            ImGui::PopID();
         }
+        ImGui::PushID(id++);
+        addBindingsGroup(ActiveBindings.DynamicBindings, save, true);
+        ImGui::PopID();
         ImGui::Columns(1);
         ImGui::Separator();
 
@@ -443,4 +458,99 @@ int32_t KeybindingEvents::ControllerButtonRepeat = 0;
 void KeybindingEvents::RegisterEvents() noexcept
 {
     ControllerButtonRepeat = SDL_RegisterEvents(1);
+}
+
+void KeybindingSystem::addBindingsGroup(KeybindingGroup& group, bool& save, bool deletable) noexcept
+{
+    int32_t headerFlags = ImGuiTreeNodeFlags_None;
+    std::vector<Binding*> filteredBindings;
+    auto& style = ImGui::GetStyle();
+
+    for (auto&& binding : group.bindings) {
+        if (ControllerOnly && binding.controller.button < 0) { continue; }
+        if (!filterString.empty() && !Util::ContainsInsensitive(binding.description, filterString)) { continue; }
+        filteredBindings.emplace_back(&binding);
+    }
+    if (filteredBindings.size() == 0) { return; }
+    if (ControllerOnly || !filterString.empty()) {
+        headerFlags |= ImGuiTreeNodeFlags_DefaultOpen;
+    }
+
+    ImGui::Columns(1);
+    if (ImGui::CollapsingHeader(group.name.c_str(), headerFlags)) {
+        ImGui::PushID(group.name.c_str());
+
+        ImGui::Columns(4, "bindings");
+        ImGui::Separator();
+        ImGui::Text("Action"); ImGui::NextColumn();
+        ImGui::Text("Keyboard"); ImGui::NextColumn();
+        ImGui::Text("Controller"); ImGui::NextColumn();
+        ImGui::Text("Ignore repeats"); ImGui::NextColumn();
+
+        Binding* deleteBinding = nullptr;
+        for (auto bindingPtr : filteredBindings) {
+            auto& binding = *bindingPtr;
+            ImGui::PushID(bindingPtr->description.c_str());
+            ImGui::TextUnformatted(binding.description.c_str()); ImGui::NextColumn();
+            if (ImGui::Button(!binding.key.key_str.empty() ? binding.key.key_str.c_str() : "-- Not set --", ImVec2(-1.f, 0.f))) {
+                changingController = false;
+                currentlyChanging = &binding;
+                currentlyHeldKeys.str("");
+                ImGui::OpenPopup("Change key");
+            }
+            ImGui::NextColumn();
+            if (ImGui::Button(GetButtonString(binding.controller.button), ImVec2(-1.f, 0.f))) {
+                changingController = true;
+                currentlyChanging = &binding;
+                ImGui::OpenPopup("Change button");
+            }
+            ImGui::NextColumn();
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (ImGui::GetColumnWidth(3) / 2.f) - (2.f * ImGui::GetFontSize()) + style.ItemSpacing.x);
+            if (ImGui::Checkbox("", &binding.ignore_repeats)) { save = true; }
+            if (deletable) {
+                ImGui::SameLine();
+                if (ImGui::Button(ICON_TRASH))
+                {
+                    deleteBinding = bindingPtr;
+                }
+            }
+            ImGui::NextColumn();
+            if (ImGui::BeginPopupModal("Change key", 0, ImGuiWindowFlags_AlwaysAutoResize))
+            {
+                if (currentlyHeldKeys.tellp() == 0)
+                    ImGui::TextUnformatted("Press any key...\nEscape to clear.");
+                else
+                    ImGui::Text(currentlyHeldKeys.str().c_str());
+                if (!currentlyChanging) {
+                    save = true; // autosave
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            }
+
+            if (ImGui::BeginPopupModal("Change button")) {
+                ImGui::TextUnformatted("Press any button...\nEscape to clear.");
+                if (!currentlyChanging) {
+                    save = true; // autosave
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            }
+            ImGui::PopID();
+        }
+
+        // online dynamic bindings are deletable
+        if (deleteBinding) {
+            auto it = std::find_if(ActiveBindings.DynamicBindings.bindings.begin(), ActiveBindings.DynamicBindings.bindings.end(),
+                [&](auto& b) {
+                    return &b == deleteBinding;
+                });
+            if (it != ActiveBindings.DynamicBindings.bindings.end()) {
+                ActiveBindings.DynamicBindings.bindings.erase(it);
+                deleteBinding = nullptr;
+                save = true;
+            }
+        }
+        ImGui::PopID();
+    }
 }

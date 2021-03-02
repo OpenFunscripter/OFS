@@ -21,15 +21,19 @@ SpecialFunctionsWindow::SpecialFunctionsWindow() noexcept
 
 void SpecialFunctionsWindow::SetFunction(SpecialFunctions functionEnum) noexcept
 {
+    if (function != nullptr && function != &lua) {
+        delete function; function = nullptr;
+    }
+
 	switch (functionEnum) {
 	case SpecialFunctions::RANGE_EXTENDER:
-		function = std::make_unique<FunctionRangeExtender>();
+		function = new FunctionRangeExtender();
 		break;
     case SpecialFunctions::RAMER_DOUGLAS_PEUCKER:
-        function = std::make_unique<RamerDouglasPeucker>();
+        function = new RamerDouglasPeucker();
         break;
     case SpecialFunctions::CUSTOM_LUA_FUNCTIONS:
-        function = std::make_unique<CustomLua>();
+        function = &lua;
         break;
 	default:
 		break;
@@ -251,7 +255,7 @@ CustomLua::CustomLua() noexcept
     else {
         LOG_ERROR("Failed to create lua vm.");
     }
-
+    app->keybinds.registerDynamicHandler("CustomLua", [this](Binding* b) {HandleBinding(b); });
 }
 
 CustomLua::~CustomLua() noexcept
@@ -853,6 +857,17 @@ void CustomLua::DrawUI() noexcept
                 else {
                     ImGui::TextDisabled("Script has no settings or they aren't loaded.");
                 }
+                if (ImGui::Button("Bind script", ImVec2(-1.f, 0.f))) {
+                    auto app = OpenFunscripter::ptr;
+                    Binding binding(
+                        script.absolutePath,
+                        script.name,
+                        false,
+                        [](void* user) {} // this gets handled by CustomLua::HandleBinding
+                    );
+                    binding.dynamicHandlerId = "CustomLua";
+                    app->keybinds.addDynamicBinding(std::move(binding));
+                }
                 ImGui::Button("Script", ImVec2(-1.f, 0.f));
                 Util::Tooltip("Left click to run.\nMiddle click to load settings.\nRight click to edit.");
                 if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
@@ -888,6 +903,25 @@ void CustomLua::DrawUI() noexcept
         ImGui::SetScrollHereY(1.0f);
     }
     ImGui::EndChild();
+}
+
+void CustomLua::HandleBinding(Binding* binding) noexcept
+{
+    RunScript(binding->description);
+}
+
+void CustomLua::RunScript(const std::string& name) noexcept
+{
+    auto it = std::find_if(scripts.begin(), scripts.end(),
+        [&](auto& script) {
+            return script.name == name;
+    });
+    if (it != scripts.end()) {
+        runScript(&(*it));
+    }
+    else {
+        LOGF_WARN("Script \"%s\" doesn't exist.", name.c_str());
+    }
 }
 
 CustomLua::LuaScript::Settings::~Settings()
