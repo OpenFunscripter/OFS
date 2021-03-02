@@ -1653,7 +1653,7 @@ bool OpenFunscripter::openFile(const std::string& file)
 {
     if (!Util::FileExists(file)) return false;
     
-    std::filesystem::path file_path(file);
+    std::filesystem::path file_path = Util::PathFromString(file);
     std::filesystem::path base_path = file_path;
     base_path.replace_extension("");
     std::string video_path;
