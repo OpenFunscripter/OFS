@@ -239,6 +239,8 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
 				data->path = "";
 			}
 		}
+		std::replace(data->path.begin(), data->path.end(), '\"', ' ');
+		std::replace(data->path.begin(), data->path.end(), '\'', ' ');
 
 		auto result = tinyfd_saveFileDialog(data->title.c_str(), data->path.c_str(), data->filters.size(), data->filters.data(), !data->filterText.empty() ? data->filterText.c_str() : NULL);
 
