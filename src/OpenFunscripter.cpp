@@ -950,6 +950,49 @@ void OpenFunscripter::register_bindings()
         );
 
 
+        auto& move_actions_up_five = group.bindings.emplace_back(
+            "move_actions_up_five",
+            "Move actions +5 up",
+            false,
+            [&](void*) {
+                if (ActiveFunscript()->HasSelection())
+                {
+                    undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, ActiveFunscript().get());
+                    ActiveFunscript()->MoveSelectionPosition(5);
+                }
+                else
+                {
+                    auto closest = ActiveFunscript()->GetClosestAction(player->getCurrentPositionMsInterp());
+                    if (closest != nullptr) {
+                        undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, ActiveFunscript().get());
+                        ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->at, Util::Clamp<int32_t>(closest->pos + 5, 0, 100)));
+                    }
+                }
+            }
+        );
+
+        auto& move_actions_down_five = group.bindings.emplace_back(
+            "move_actions_down_five",
+            "Move actions -5 down",
+            false,
+            [&](void*) {
+                if (ActiveFunscript()->HasSelection())
+                {
+                    undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, ActiveFunscript().get());
+                    ActiveFunscript()->MoveSelectionPosition(-5);
+                }
+                else
+                {
+                    auto closest = ActiveFunscript()->GetClosestAction(player->getCurrentPositionMsInterp());
+                    if (closest != nullptr) {
+                        undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, ActiveFunscript().get());
+                        ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->at, Util::Clamp<int32_t>(closest->pos - 5, 0, 100)));
+                    }
+                }
+            }
+        );
+
+
         auto& move_actions_left_snapped = group.bindings.emplace_back(
             "move_actions_left_snapped",
             "Move actions left with snapping",
