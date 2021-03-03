@@ -180,7 +180,7 @@ void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
         }
         else { continue; }
         // execute binding
-        auto& handler = dynamicHandlers.find(binding.dynamicHandlerId);
+        auto handler = dynamicHandlers.find(binding.dynamicHandlerId);
         handler->second(&binding);
         return;
     }
@@ -227,13 +227,13 @@ void KeybindingSystem::ProcessControllerBindings(SDL_Event& ev, bool repeat) noe
                 // everything else doesn't get processed during navmode
                 if (binding.controller.navmode) {
                     // execute binding
-                    auto& handler = dynamicHandlers.find(binding.dynamicHandlerId);
+                    auto handler = dynamicHandlers.find(binding.dynamicHandlerId);
                     handler->second(&binding);
                 }
             }
             else {
                 // execute binding
-                auto& handler = dynamicHandlers.find(binding.dynamicHandlerId);
+                auto handler = dynamicHandlers.find(binding.dynamicHandlerId);
                 handler->second(&binding);
             }
         }
