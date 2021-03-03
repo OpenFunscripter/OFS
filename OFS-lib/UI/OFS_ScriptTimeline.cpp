@@ -241,40 +241,13 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 	for (auto&& script : scripts) {
 		if (script->Enabled) { drawingCtx.drawnScriptCount++; }
 	}
-	const auto availSize = ImGui::GetContentRegionAvail() - ImVec2(0.f , style.ItemSpacing.y*((float)drawingCtx.drawnScriptCount-1));
+	const auto availSize = ImGui::GetContentRegionAvail() - ImVec2(0.f , style.ItemSpacing.y*((float)drawingCtx.drawnScriptCount-1) + (style.ItemSpacing.y * 1.5f));
 	const auto startCursor = ImGui::GetCursorScreenPos();
-
-	
-	for (auto&& scriptPtr : scripts) {
-		if (!scriptPtr->Enabled) { continue; }
-		auto& script = *scriptPtr;
-		drawingCtx.canvas_pos = ImGui::GetCursorScreenPos();
-		drawingCtx.canvas_size = ImVec2(availSize.x, availSize.y / (float)drawingCtx.drawnScriptCount);
-		const bool IsActivated = drawingCtx.drawnScriptCount ? scriptPtr.get() == activeScript : false;
-		
-		if (drawingCtx.drawnScriptCount == 1) {
-			active_canvas_pos = drawingCtx.canvas_pos;
-			active_canvas_size = drawingCtx.canvas_size;
-		} else if (IsActivated) {
-			active_canvas_pos = drawingCtx.canvas_pos;
-			active_canvas_size = drawingCtx.canvas_size;
-			constexpr float activatedBorderThicknes = 5.f;
-			draw_list->AddRect(
-				drawingCtx.canvas_pos - ImVec2(activatedBorderThicknes, activatedBorderThicknes),
-				ImVec2(drawingCtx.canvas_pos.x + drawingCtx.canvas_size.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y) + ImVec2(activatedBorderThicknes, activatedBorderThicknes),
-				IM_COL32(0, 180, 0, 255),
-				0.f, ImDrawCornerFlags_All,
-				activatedBorderThicknes
-			);
-		}
-		ImVec2 newCursor(drawingCtx.canvas_pos.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y + style.ItemSpacing.y);
-		if (newCursor.y < (startCursor.y + availSize.y)) { ImGui::SetCursorScreenPos(newCursor); }
-	}
-
 
 	ImGui::SetCursorScreenPos(startCursor);
 	for(int i=0; i < scripts.size(); i++) {
 		auto& scriptPtr = scripts[i];
+
 		auto& script = *scriptPtr.get();
 		if (!script.Enabled) { continue; }
 		
@@ -285,10 +258,27 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 		ImRect itemBB(drawingCtx.canvas_pos, drawingCtx.canvas_pos + drawingCtx.canvas_size);
 		ImGui::ItemAdd(itemBB, itemID);
 
-		draw_list->AddRectFilledMultiColor(drawingCtx.canvas_pos, ImVec2(drawingCtx.canvas_pos.x + drawingCtx.canvas_size.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y),
-			IM_COL32(0, 0, 50, 255), IM_COL32(0, 0, 50, 255),
-			IM_COL32(0, 0, 20, 255), IM_COL32(0, 0, 20, 255)
-		);
+		const bool IsActivated = scriptPtr.get() == activeScript;
+		if (drawingCtx.drawnScriptCount == 1) {
+			active_canvas_pos = drawingCtx.canvas_pos;
+			active_canvas_size = drawingCtx.canvas_size;
+		} else if (IsActivated) {
+			active_canvas_pos = drawingCtx.canvas_pos;
+			active_canvas_size = drawingCtx.canvas_size;
+		}
+
+		if (IsActivated) {
+			draw_list->AddRectFilledMultiColor(drawingCtx.canvas_pos, ImVec2(drawingCtx.canvas_pos.x + drawingCtx.canvas_size.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y),
+				IM_COL32(1.2f*50, 0, 1.2f*50, 255), IM_COL32(1.2f*50, 0, 1.2f*50, 255),
+				IM_COL32(1.2f*20, 0, 1.2f*20, 255), IM_COL32(1.2f*20, 0, 1.2f*20, 255)
+			);
+		}
+		else {
+			draw_list->AddRectFilledMultiColor(drawingCtx.canvas_pos, ImVec2(drawingCtx.canvas_pos.x + drawingCtx.canvas_size.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y),
+				IM_COL32(0, 0, 50, 255), IM_COL32(0, 0, 50, 255),
+				IM_COL32(0, 0, 20, 255), IM_COL32(0, 0, 20, 255)
+			);
+		}
 
 		auto startIt = std::find_if(script.Actions().begin(), script.Actions().end(),
 		    [&](auto& act) { return act.at >= offset_ms; });
@@ -312,10 +302,12 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 
 		// border
 		constexpr float borderThicknes = 1.f;
+		uint32_t borderColor = IsActivated ? IM_COL32(0, 180, 0, 255) : IM_COL32(255, 255, 255, 255);
+		if (script.HasSelection()) { borderColor = ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_SliderGrabActive]); }
 		draw_list->AddRect(
 			drawingCtx.canvas_pos,
 			ImVec2(drawingCtx.canvas_pos.x + drawingCtx.canvas_size.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y),
-			script.HasSelection() ? ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_SliderGrabActive]) : IM_COL32(255, 255, 255, 255),
+			borderColor,
 			0.f, ImDrawCornerFlags_All,
 			borderThicknes
 		);
@@ -377,7 +369,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 				selectColor, 3.0f
 			);
 		}
-		ImVec2 newCursor(drawingCtx.canvas_pos.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y + style.ItemSpacing.y);
+		ImVec2 newCursor(drawingCtx.canvas_pos.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y + (style.ItemSpacing.y * 1.5f));
 		if (newCursor.y < (startCursor.y + availSize.y)) { ImGui::SetCursorScreenPos(newCursor); }
 
 
