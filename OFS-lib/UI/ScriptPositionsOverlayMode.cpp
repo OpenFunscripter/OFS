@@ -76,10 +76,9 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
         return ImVec2(x, y);
     };
 
-
     auto drawSpline = [](const OverlayDrawingCtx& ctx, float currentTime, float endTime, int32_t color, float width)
     {
-        constexpr int32_t MinSamplesPerSecond = 60;
+        constexpr int32_t MinSamplesPerSecond = 40;
         auto getPointForTimePos = [](const OverlayDrawingCtx& ctx, float timeMs, float pos) {
             float relative_x = (float)(timeMs - ctx.offset_ms) / ctx.visibleSizeMs;
             float x = (ctx.canvas_size.x) * relative_x;
