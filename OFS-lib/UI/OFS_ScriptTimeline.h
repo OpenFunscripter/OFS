@@ -42,8 +42,6 @@ static bool OutputAudioFile(const char* ffmpeg_path, const char* video_path, con
 class ScriptTimeline
 {
 public:
-	ImVec2 active_canvas_pos;
-	ImVec2 active_canvas_size;
 	float offset_ms;
 	float visibleSizeMs;
 	bool IsSelecting = false;
@@ -60,8 +58,15 @@ public:
 	float frameTimeMs = 16.66667;
 	
 	const std::vector<std::shared_ptr<Funscript>>* Scripts = nullptr;
+	
 	int activeScriptIdx = 0;
+	ImVec2 active_canvas_pos;
+	ImVec2 active_canvas_size;
+
 	int hovereScriptIdx = 0;
+	ImVec2 hovered_canvas_pos;
+	ImVec2 hovered_canvas_size;
+
 	UndoSystem* undoSystem = nullptr;
 private:
 

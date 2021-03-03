@@ -64,7 +64,6 @@ void ScriptTimeline::mouse_pressed(SDL_Event& ev) noexcept
 	auto& button = ev.button;
 	auto mousePos = ImGui::GetMousePos();
 	auto modstate = SDL_GetModState();
-	auto activeScript = (*Scripts)[activeScriptIdx].get();
 
 	FunscriptAction* clickedAction = nullptr;
 
@@ -103,10 +102,15 @@ void ScriptTimeline::mouse_pressed(SDL_Event& ev) noexcept
 
 			if (hovereScriptIdx != activeScriptIdx) {
 				EventSystem::PushEvent(ScriptTimelineEvents::ActiveScriptChanged, (void*)(intptr_t)hovereScriptIdx);
+				activeScriptIdx = hovereScriptIdx;
+				active_canvas_pos = hovered_canvas_pos;
+				active_canvas_size = hovered_canvas_size;
 			}
 		}
 	}
+	
 	if (undoSystem == nullptr) return;
+	auto activeScript = (*Scripts)[activeScriptIdx].get();
 
 	if (button.button == SDL_BUTTON_LEFT) {
 		if (modstate & KMOD_SHIFT && PositionsItemHovered) {
@@ -280,8 +284,11 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 			continue;
 		}
 
-		if (ImGui::IsItemHovered()) {
+		bool ItemIsHovered = ImGui::IsItemHovered();
+		if (ItemIsHovered) {
 			hovereScriptIdx = i;
+			hovered_canvas_pos = drawingCtx.canvas_pos;
+			hovered_canvas_size = drawingCtx.canvas_size;
 		}
 
 		const bool IsActivated = scriptPtr.get() == activeScript;
@@ -303,6 +310,15 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 			draw_list->AddRectFilledMultiColor(drawingCtx.canvas_pos, ImVec2(drawingCtx.canvas_pos.x + drawingCtx.canvas_size.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y),
 				IM_COL32(0, 0, 50, 255), IM_COL32(0, 0, 50, 255),
 				IM_COL32(0, 0, 20, 255), IM_COL32(0, 0, 20, 255)
+			);
+		}
+
+		if (ItemIsHovered)
+		{
+			draw_list->AddRectFilled(
+				drawingCtx.canvas_pos, 
+				ImVec2(drawingCtx.canvas_pos.x + drawingCtx.canvas_size.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y),
+				IM_COL32(255, 255, 255, 20)
 			);
 		}
 
