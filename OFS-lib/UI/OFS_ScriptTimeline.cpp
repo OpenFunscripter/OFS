@@ -59,7 +59,7 @@ void ScriptTimeline::setup(UndoSystem* undoSystem)
 
 void ScriptTimeline::mouse_pressed(SDL_Event& ev) noexcept
 {
-	if (Scripts == nullptr) return;
+	if (Scripts == nullptr || (*Scripts).size() <= activeScriptIdx) return;
 
 	auto& button = ev.button;
 	auto mousePos = ImGui::GetMousePos();
@@ -172,7 +172,7 @@ void ScriptTimeline::mouse_released(SDL_Event& ev) noexcept
 
 void ScriptTimeline::mouse_drag(SDL_Event& ev) noexcept
 {
-	if (Scripts == nullptr) return;
+	if (Scripts == nullptr || (*Scripts).size() <= activeScriptIdx) return;
 
 	auto& motion = ev.motion;
 	auto& activeScript = (*Scripts)[activeScriptIdx];
@@ -291,7 +291,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 			hovered_canvas_size = drawingCtx.canvas_size;
 		}
 
-		const bool IsActivated = scriptPtr.get() == activeScript;
+		const bool IsActivated = scriptPtr.get() == activeScript && drawingCtx.drawnScriptCount > 1;
 		if (drawingCtx.drawnScriptCount == 1) {
 			active_canvas_pos = drawingCtx.canvas_pos;
 			active_canvas_size = drawingCtx.canvas_size;
@@ -313,12 +313,11 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 			);
 		}
 
-		if (ItemIsHovered)
-		{
+		if (ItemIsHovered) {
 			draw_list->AddRectFilled(
 				drawingCtx.canvas_pos, 
 				ImVec2(drawingCtx.canvas_pos.x + drawingCtx.canvas_size.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y),
-				IM_COL32(255, 255, 255, 20)
+				IM_COL32(255, 255, 255, 10)
 			);
 		}
 
