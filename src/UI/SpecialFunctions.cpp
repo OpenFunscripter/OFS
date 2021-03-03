@@ -278,11 +278,13 @@ void CustomLua::updateScripts() noexcept
 {
     auto luaCorePathString = Util::Resource("lua");
     auto luaUserPathString = Util::Prefpath("lua");
+    auto luaUserLibPathString = Util::Prefpath("lua/lib");
 
     auto luaCorePath = Util::PathFromString(luaCorePathString);
     auto luaUserPath = Util::PathFromString(luaUserPathString);
     Util::CreateDirectories(luaCorePath);
-    Util::CreateDirectories(luaUserPath);
+    //Util::CreateDirectories(luaUserPath);
+    Util::CreateDirectories(luaUserLibPathString);
 
     scripts.clear();
 
@@ -357,6 +359,20 @@ static int LuaDoFile(lua_State* L, const char* path) {
     return -1;
 }
 
+static int addToLuaPath(lua_State* L, const char* path)
+{
+    lua_getglobal(L, "package");
+    lua_getfield(L, -1, "path"); // get field "path" from table at top of stack (-1)
+    std::string cur_path = lua_tostring(L, -1); // grab path string from top of stack
+    cur_path.append(";"); // do your path magic here
+    cur_path.append(path);
+    lua_pop(L, 1); // get rid of the string on the stack we just pushed on line 5
+    lua_pushstring(L, cur_path.c_str()); // push the new one
+    lua_setfield(L, -2, "path"); // set the field "path" in table at -2 with value at top of stack
+    lua_pop(L, 1); // get rid of package table from top of stack
+    return 0; // all done!
+}
+
 void CustomLua::resetVM() noexcept
 {
     SDL_AtomicLock(&SpinLock);
@@ -376,6 +392,14 @@ void CustomLua::resetVM() noexcept
         lua_getglobal(Thread.L, "_G");
         luaL_setfuncs(Thread.L, printlib, 0);
         lua_pop(Thread.L, 1);
+
+        {
+            // allows scripts to "require" dependencies lua/ & lua/lib/
+            auto prefpath = Util::Prefpath("lua/lib/?.lua");
+            addToLuaPath(Thread.L, prefpath.c_str());
+            prefpath = Util::Prefpath("lua/?.lua");
+            addToLuaPath(Thread.L, prefpath.c_str());
+        }
 
         auto LuaSetProgress = [](lua_State* L) -> int {
             if (lua_isnumber(L, 1)) {
