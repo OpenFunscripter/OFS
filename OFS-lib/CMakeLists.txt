@@ -18,6 +18,7 @@ set(OFS_LIB_SOURCES
 	"UI/ScriptPositionsOverlayMode.cpp"
 
 	"UI/OFS_Waveform.cpp"
+	"UI/OFS_Profiler.cpp"
 
 	"imgui_impl/imgui_impl_opengl3.cpp"
 	"imgui_impl/imgui_impl_sdl.cpp" 
@@ -101,6 +102,13 @@ if(OFS_BENCHMARKS)
 else()
 	target_compile_definitions(${PROJECT_NAME} PUBLIC OFS_BENCHMARK=0)
 endif()
+
+if(OFS_PROFILE)
+	target_compile_definitions(${PROJECT_NAME} PUBLIC OFS_PROFILE=1)
+else()
+	target_compile_definitions(${PROJECT_NAME} PUBLIC OFS_PROFILE=0)
+endif()
+
 
 
 if(WIN32)

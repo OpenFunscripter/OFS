@@ -1,8 +1,10 @@
 ﻿#include "OpenFunscripter.h"
 #include "OFS_Util.h"
+#include "OFS_Profiling.h"
 
 #include "GradientBar.h"
 #include "FunscriptHeatmap.h"
+
 
 #include <filesystem>
 
@@ -1330,6 +1332,7 @@ void OpenFunscripter::new_frame() noexcept
 
 void OpenFunscripter::render() noexcept
 {
+    OFS_PROFILEPATH(__FUNCTION__);
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     // Update and Render additional Platform Windows
@@ -1348,6 +1351,7 @@ void OpenFunscripter::render() noexcept
 
 void OpenFunscripter::process_events() noexcept
 {
+    OFS_PROFILEPATH(__FUNCTION__);
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
@@ -1431,6 +1435,7 @@ void OpenFunscripter::MpvPlayPauseChange(SDL_Event& ev) noexcept
 }
 
 void OpenFunscripter::update() noexcept {
+    OFS_PROFILEPATH(__FUNCTION__);
     ActiveFunscript()->update();
     ControllerInput::UpdateControllers(settings->data().buttonRepeatIntervalMs);
     scripting->update();
@@ -1503,6 +1508,9 @@ void OpenFunscripter::step() noexcept {
     update();
     new_frame();
     {
+        OFS_PROFILEPATH("ImGui");
+        OFS_SHOWPROFILER();
+
         // IMGUI HERE
         CreateDockspace();
         sim3D->ShowWindow(&settings->data().show_simulator_3d, player->getCurrentPositionMsInterp(), BaseOverlay::SplineMode, LoadedFunscripts);

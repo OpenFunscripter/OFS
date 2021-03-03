@@ -2,6 +2,8 @@
 
 #include "SDL.h"
 #include "OFS_Util.h"
+#include "OFS_Profiling.h"
+
 #include "EventSystem.h"
 #include "OFS_Serialization.h"
 #include "FunscriptUndoSystem.h"

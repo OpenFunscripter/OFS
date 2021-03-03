@@ -1,5 +1,6 @@
 #include "FunscriptHeatmap.h"
 #include "OFS_Util.h"
+#include "OFS_Profiling.h"
 #include <array>
 
 void OFS::UpdateHeatmapGradient(float totalDurationMs, ImGradient& grad, const std::vector<FunscriptAction>& actions) noexcept

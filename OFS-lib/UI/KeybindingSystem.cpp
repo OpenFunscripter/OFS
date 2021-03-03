@@ -2,6 +2,7 @@
 
 #include "OFS_Serialization.h"
 #include "EventSystem.h"
+#include "OFS_Profiling.h"
 
 #include "imgui.h"
 #include "imgui_stdlib.h"

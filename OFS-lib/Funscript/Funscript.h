@@ -15,6 +15,7 @@
 #include "SDL_mutex.h"
 
 #include "FunscriptSpline.h"
+#include "OFS_Profiling.h"
 
 class FunscriptUndoSystem;
 
