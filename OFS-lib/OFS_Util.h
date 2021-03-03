@@ -341,6 +341,9 @@ public:
 
 
 
+/*
+* This is not useful in hot code paths.
+*/
 class OFS_Benchmark
 {
 private:
@@ -363,9 +366,17 @@ public:
 };
 
 #if OFS_BENCHMARK == 1
+#include <string.h>
+
+#if WIN32
+#define __FILENAME__ (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
+#else
+#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+#endif
+
 #define OFS_CONCAT_(x,y) x##y
 #define OFS_CONCAT(x,y) OFS_CONCAT_(x,y)
-#define OFS_BENCHMARK(function) OFS_Benchmark OFS_CONCAT(xBenchmarkx_,__LINE__) ## (function, __FILE__, __LINE__)
+#define OFS_BENCHMARK(function) OFS_Benchmark OFS_CONCAT(xBenchmarkx_,__LINE__) ## (function, __FILENAME__, __LINE__)
 #else
 #define OFS_BENCHMARK(function)
 #endif
