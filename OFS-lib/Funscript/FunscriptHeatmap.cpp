@@ -4,6 +4,7 @@
 
 void OFS::UpdateHeatmapGradient(float totalDurationMs, ImGradient& grad, const std::vector<FunscriptAction>& actions) noexcept
 {
+    OFS_BENCHMARK(__FUNCTION__);
     grad.clear();
     grad.addMark(0.f, IM_COL32(0, 0, 0, 255));
     grad.addMark(1.f, IM_COL32(0, 0, 0, 255));

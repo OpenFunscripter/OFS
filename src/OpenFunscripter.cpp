@@ -1449,6 +1449,7 @@ void OpenFunscripter::autoBackup() noexcept
     if (timeSinceBackup.count() < 61.f) {
         return;
     }
+    OFS_BENCHMARK(__FUNCTION__);
     last_backup = std::chrono::system_clock::now();
 
     auto backupDir = std::filesystem::path(Util::Prefpath("backup"));
@@ -1799,6 +1800,7 @@ void OpenFunscripter::updateTitle() noexcept
 
 void OpenFunscripter::saveScript(Funscript* script, const std::string& path, bool override_location) noexcept
 {
+    OFS_BENCHMARK(__FUNCTION__);
     if (script == RootFunscript().get()) {
         // associate scripts
         auto& scriptSettings = script->Userdata<OFS_ScriptSettings>();
@@ -1819,6 +1821,7 @@ void OpenFunscripter::saveScript(Funscript* script, const std::string& path, boo
 
 void OpenFunscripter::saveScripts() noexcept
 {
+    OFS_BENCHMARK(__FUNCTION__);
     for (auto&& script : LoadedFunscripts) {
         script->metadata.title = std::filesystem::path(script->current_path)
             .replace_extension("")
