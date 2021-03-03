@@ -365,7 +365,7 @@ public:
 #if OFS_BENCHMARK 1
 #define OFS_CONCAT_(x,y) x##y
 #define OFS_CONCAT(x,y) OFS_CONCAT_(x,y)
-#define OFS_BENCHMARK(function) OFS_Benchmark OFS_CONCAT(benchmark_,__LINE__) ## (function, __FILE__, __LINE__)
+#define OFS_BENCHMARK(function) OFS_Benchmark OFS_CONCAT(xBenchmarkx_,__LINE__) ## (function, __FILE__, __LINE__)
 #else
 #define OFS_BENCHMARK(function)
 #endif

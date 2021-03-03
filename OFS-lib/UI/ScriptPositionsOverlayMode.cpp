@@ -204,7 +204,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
                     // draw highlight line
                     float currentTime = prev_action->at;
                     float endTime = action.at;
-                    drawSpline(ctx, currentTime, endTime, selectedLines, false);
+                    drawSpline(ctx, currentTime, endTime, selectedLines, 3.f);
                 }
 
                 SelectedActionScreenCoordinates.emplace_back(point);
