@@ -338,3 +338,34 @@ public:
 
 	static std::filesystem::path FfmpegPath() noexcept;
 };
+
+
+
+class OFS_Benchmark
+{
+private:
+	const char* Function = nullptr;
+	int Line =0;
+	const char* File = nullptr;
+	std::chrono::high_resolution_clock::time_point start;
+public:
+	inline OFS_Benchmark(const char* function, const char* file, int line) noexcept
+		: Function(function), Line(line), File(file)
+	{
+		start = std::chrono::high_resolution_clock::now();
+	}
+
+	inline ~OFS_Benchmark() noexcept
+	{
+		std::chrono::duration<float, std::milli> delta = std::chrono::high_resolution_clock::now() - start;
+		LOGF_INFO("Benchmark: %s:%d\n\t\"%s\" took %.3f ms to exceute.", File, Line, Function, delta.count());
+	}
+};
+
+#if OFS_BENCHMARK 1
+#define OFS_CONCAT_(x,y) x##y
+#define OFS_CONCAT(x,y) OFS_CONCAT_(x,y)
+#define OFS_BENCHMARK(function) OFS_Benchmark OFS_CONCAT(benchmark_,__LINE__) ## (function, __FILE__, __LINE__)
+#else
+#define OFS_BENCHMARK(function)
+#endif

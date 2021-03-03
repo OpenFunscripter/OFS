@@ -76,6 +76,7 @@ void Funscript::startSaveThread(const std::string& path, nlohmann::json&& json) 
 	threadData->path = path;
 	threadData->jsonObj = std::move(json); // give ownership to the thread
 	auto thread = [](void* user) -> int {
+		OFS_BENCHMARK("SaveFunscriptThread");
 		SaveThreadData* data = static_cast<SaveThreadData*>(user);
 		SDL_LockMutex(data->mutex);
 #ifdef NDEBUG

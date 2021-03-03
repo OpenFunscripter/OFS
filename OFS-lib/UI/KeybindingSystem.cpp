@@ -179,7 +179,9 @@ void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
             if (modifierMismatch) continue;
         }
         else { continue; }
+        
         // execute binding
+        OFS_BENCHMARK(binding.identifier.c_str());
         auto handler = dynamicHandlers.find(binding.dynamicHandlerId);
         handler->second(&binding);
         return;
@@ -205,6 +207,7 @@ void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
             }
 
             // execute binding
+            OFS_BENCHMARK(binding.identifier.c_str());
             binding.execute();
             return;
         }
@@ -227,12 +230,14 @@ void KeybindingSystem::ProcessControllerBindings(SDL_Event& ev, bool repeat) noe
                 // everything else doesn't get processed during navmode
                 if (binding.controller.navmode) {
                     // execute binding
+                    OFS_BENCHMARK(binding.identifier.c_str());
                     auto handler = dynamicHandlers.find(binding.dynamicHandlerId);
                     handler->second(&binding);
                 }
             }
             else {
                 // execute binding
+                OFS_BENCHMARK(binding.identifier.c_str());
                 auto handler = dynamicHandlers.find(binding.dynamicHandlerId);
                 handler->second(&binding);
             }
@@ -249,10 +254,12 @@ void KeybindingSystem::ProcessControllerBindings(SDL_Event& ev, bool repeat) noe
                     // navmode bindings get processed during navmode
                     // everything else doesn't get processed during navmode
                     if (binding.controller.navmode) {
+                        OFS_BENCHMARK(binding.identifier.c_str());
                         binding.execute();
                     }
                 }
                 else {
+                    OFS_BENCHMARK(binding.identifier.c_str());
                     binding.execute();
                 }
             }

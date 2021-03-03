@@ -267,6 +267,7 @@ inline void Funscript::AllocUser() noexcept
 template<class UserSettings>
 inline bool Funscript::open(const std::string& file, const std::string& usersettings)
 {
+	OFS_BENCHMARK(__FUNCTION__);
 	current_path = file;
 	scriptOpened = true;
 
@@ -313,6 +314,8 @@ inline bool Funscript::open(const std::string& file, const std::string& usersett
 template<class UserSettings>
 inline void Funscript::save(const std::string& path, const std::string& usersettings, bool override_location)
 {
+	OFS_BENCHMARK(__FUNCTION__);
+
 	setScriptTemplate();
 	saveMetadata();
 	saveSettings<UserSettings>(usersettings, static_cast<UserSettings*>(userdata.get()));

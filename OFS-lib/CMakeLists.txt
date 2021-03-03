@@ -96,6 +96,12 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 	"IMGUI_IMPL_OPENGL_LOADER_GLAD"
 )
 
+if(OFS_BENCHMARKS)
+	target_compile_definitions(${PROJECT_NAME} PUBLIC OFS_BENCHMARK=1)
+else()
+	target_compile_definitions(${PROJECT_NAME} PUBLIC OFS_BENCHMARK=0)
+endif()
+
 
 if(WIN32)
 	target_include_directories(${PROJECT_NAME} PUBLIC 

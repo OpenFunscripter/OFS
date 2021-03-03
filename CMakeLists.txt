@@ -8,6 +8,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
 # =============
 # == OPTIONS ==
 # =============
+option(OFS_BENCHMARKS OFF)
 
 # ====================
 # === DEPENDENCIES ===
