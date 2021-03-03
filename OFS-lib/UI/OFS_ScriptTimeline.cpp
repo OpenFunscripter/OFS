@@ -59,9 +59,13 @@ void ScriptTimeline::setup(UndoSystem* undoSystem)
 
 void ScriptTimeline::mouse_pressed(SDL_Event& ev) noexcept
 {
+	if (Scripts == nullptr) return;
+
 	auto& button = ev.button;
 	auto mousePos = ImGui::GetMousePos();
 	auto modstate = SDL_GetModState();
+	auto activeScript = (*Scripts)[activeScriptIdx].get();
+
 	FunscriptAction* clickedAction = nullptr;
 
 	if (PositionsItemHovered) {
@@ -76,24 +80,30 @@ void ScriptTimeline::mouse_pressed(SDL_Event& ev) noexcept
 			SDL_PushEvent(&ev);
 			return;
 		}
-
-		// test if an action has been clicked
-		int index = 0;
-		for (auto& vert : overlay->ActionScreenCoordinates) {
-			const ImVec2 size(10, 10);
-			ImRect rect(vert - size, vert + size);
-			if (rect.Contains(mousePos)) {
-				clickedAction = &overlay->ActionPositionWindow[index];
-				static FunscriptAction clickedActionStatic;
-				clickedActionStatic = *clickedAction;
+		else if (button.button == SDL_BUTTON_LEFT && button.clicks == 1)
+		{
+			// test if an action has been clicked
+			int index = 0;
+			for (auto& vert : overlay->ActionScreenCoordinates) {
+				const ImVec2 size(10, 10);
+				ImRect rect(vert - size, vert + size);
+				if (rect.Contains(mousePos)) {
+					clickedAction = &overlay->ActionPositionWindow[index];
+					static FunscriptAction clickedActionStatic;
+					clickedActionStatic = *clickedAction;
 				
-				SDL_Event ev;
-				ev.type = ScriptTimelineEvents::FunscriptActionClicked;
-				ev.user.data1 = &clickedActionStatic;
-				SDL_PushEvent(&ev);
-				break;
+					SDL_Event ev;
+					ev.type = ScriptTimelineEvents::FunscriptActionClicked;
+					ev.user.data1 = &clickedActionStatic;
+					SDL_PushEvent(&ev);
+					break;
+				}
+				index++;
 			}
-			index++;
+
+			if (hovereScriptIdx != activeScriptIdx) {
+				EventSystem::PushEvent(ScriptTimelineEvents::ActiveScriptChanged, (void*)(intptr_t)hovereScriptIdx);
+			}
 		}
 	}
 	if (undoSystem == nullptr) return;
@@ -158,7 +168,11 @@ void ScriptTimeline::mouse_released(SDL_Event& ev) noexcept
 
 void ScriptTimeline::mouse_drag(SDL_Event& ev) noexcept
 {
+	if (Scripts == nullptr) return;
+
 	auto& motion = ev.motion;
+	auto& activeScript = (*Scripts)[activeScriptIdx];
+
 	if (IsSelecting) {
 		rel_x2 = (ImGui::GetMousePos().x - active_canvas_pos.x) / active_canvas_size.x;
 	}
@@ -215,12 +229,17 @@ void ScriptTimeline::videoLoaded(SDL_Event& ev) noexcept
 	videoPath = (const char*)ev.user.data1;
 }
 
-void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, float durationMs, float frameTimeMs, const std::vector<std::shared_ptr<Funscript>>& scripts, Funscript* activeScript) noexcept
+void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, float durationMs, float frameTimeMs, const std::vector<std::shared_ptr<Funscript>>* scripts, int activeScriptIdx) noexcept
 {
-	if (open != nullptr && !*open)return;
+	if (open != nullptr && !*open) return;
 
-	this->activeScript = activeScript;
+	FUN_ASSERT(scripts, "scripts is null");
+
+	this->Scripts = scripts;
+	this->activeScriptIdx = activeScriptIdx;
 	this->frameTimeMs = frameTimeMs;
+
+	const auto activeScript = (*Scripts)[activeScriptIdx].get();
 
 	auto& style = ImGui::GetStyle();
 	visibleSizeMs = WindowSizeSeconds * 1000.0;
@@ -238,15 +257,15 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 	PositionsItemHovered = ImGui::IsWindowHovered();
 
 	drawingCtx.drawnScriptCount = 0;
-	for (auto&& script : scripts) {
+	for (auto&& script : *Scripts) {
 		if (script->Enabled) { drawingCtx.drawnScriptCount++; }
 	}
 	const auto availSize = ImGui::GetContentRegionAvail() - ImVec2(0.f , style.ItemSpacing.y*((float)drawingCtx.drawnScriptCount-1) + (style.ItemSpacing.y * 1.5f));
 	const auto startCursor = ImGui::GetCursorScreenPos();
 
 	ImGui::SetCursorScreenPos(startCursor);
-	for(int i=0; i < scripts.size(); i++) {
-		auto& scriptPtr = scripts[i];
+	for(int i=0; i < (*Scripts).size(); i++) {
+		auto& scriptPtr = (*Scripts)[i];
 
 		auto& script = *scriptPtr.get();
 		if (!script.Enabled) { continue; }
@@ -256,7 +275,14 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 		drawingCtx.canvas_size = ImVec2(availSize.x, availSize.y / (float)drawingCtx.drawnScriptCount);
 		const ImGuiID itemID = ImGui::GetID(script.metadata.title.c_str());
 		ImRect itemBB(drawingCtx.canvas_pos, drawingCtx.canvas_pos + drawingCtx.canvas_size);
-		ImGui::ItemAdd(itemBB, itemID);
+		ImGui::ItemSize(itemBB);
+		if (!ImGui::ItemAdd(itemBB, itemID)) {
+			continue;
+		}
+
+		if (ImGui::IsItemHovered()) {
+			hovereScriptIdx = i;
+		}
 
 		const bool IsActivated = scriptPtr.get() == activeScript;
 		if (drawingCtx.drawnScriptCount == 1) {
@@ -377,13 +403,13 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 		if (ImGui::BeginPopupContextItem())
 		{
 			if (ImGui::BeginMenu("Scripts")) {
-				for (auto&& script : scripts) {
+				for (auto&& script : *Scripts) {
 					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, drawingCtx.drawnScriptCount == 1 && script->Enabled);
 					if (ImGui::Checkbox(script->metadata.title.c_str(), &script->Enabled) && !script->Enabled) {
 						if (script.get() == activeScript) {
 							// find a enabled script which can be set active
-							for (int i = 0; i < scripts.size(); i++) {
-								if (scripts[i]->Enabled) {									
+							for (int i = 0; i < (*Scripts).size(); i++) {
+								if ((*Scripts)[i]->Enabled) {									
 									EventSystem::PushEvent(ScriptTimelineEvents::ActiveScriptChanged, (void*)(intptr_t)i);
 									break;
 								}

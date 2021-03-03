@@ -1597,7 +1597,7 @@ void OpenFunscripter::step() noexcept {
         };
 
         playerControls.DrawTimeline(NULL, drawBookmarks);
-        scriptPositions.ShowScriptPositions(NULL, player->getCurrentPositionMsInterp(), player->getDuration()*1000.f, player->getFrameTimeMs(), LoadedFunscripts, ActiveFunscript().get());
+        scriptPositions.ShowScriptPositions(NULL, player->getCurrentPositionMsInterp(), player->getDuration()*1000.f, player->getFrameTimeMs(), &LoadedFunscripts, ActiveFunscriptIdx);
 
         if(settings->data().show_action_editor)
         {

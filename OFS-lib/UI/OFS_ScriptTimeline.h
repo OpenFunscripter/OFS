@@ -58,7 +58,10 @@ public:
 	
 	const char* videoPath = nullptr;
 	float frameTimeMs = 16.66667;
-	Funscript* activeScript = nullptr;
+	
+	const std::vector<std::shared_ptr<Funscript>>* Scripts = nullptr;
+	int activeScriptIdx = 0;
+	int hovereScriptIdx = 0;
 	UndoSystem* undoSystem = nullptr;
 private:
 
@@ -109,7 +112,7 @@ public:
 	inline void ClearAudioWaveform() noexcept { waveform.Clear(); }
 	inline void setStartSelection(int32_t ms) noexcept { startSelectionMs = ms; }
 	inline int32_t selectionStart() const noexcept { return startSelectionMs; }
-	void ShowScriptPositions(bool* open, float currentPositionMs, float durationMs, float frameTimeMs, const std::vector<std::shared_ptr<Funscript>>& scripts, Funscript* activeScript) noexcept;
+	void ShowScriptPositions(bool* open, float currentPositionMs, float durationMs, float frameTimeMs, const std::vector<std::shared_ptr<Funscript>>* scripts, int activeScriptIdx) noexcept;
 
 	void DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept;
 };
