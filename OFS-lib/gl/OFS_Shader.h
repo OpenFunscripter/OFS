@@ -10,6 +10,98 @@ public:
 };
 
 
+class BlurShader : public ShaderBase
+{
+private:
+	static constexpr const char* vtx_shader = R"(
+			#version 330 core
+			uniform mat4 ProjMtx;
+			in vec2 Position;
+			in vec2 UV;
+			in vec4 Color;
+			out vec2 Frag_UV;
+			out vec4 Frag_Color;
+			void main()
+			{
+				Frag_UV = UV;
+				Frag_Color = Color;
+				gl_Position = ProjMtx * vec4(Position.xy,0,1);
+			}
+	)";
+
+	static constexpr const char* frag_shader2 = R"(
+			#version 330 core
+			uniform sampler2D Texture;
+
+			in vec2 Frag_UV;
+			in vec4 Frag_Color;
+			uniform mat4 ProjMtx;
+
+			uniform vec2 Resolution;
+			uniform float Time;
+
+			out vec4 Out_Color;
+
+	)";
+
+	static constexpr const char* frag_shader = R"(
+			#version 330 core
+			uniform sampler2D Texture;
+
+			in vec2 Frag_UV;
+			in vec4 Frag_Color;
+			uniform mat4 ProjMtx;
+
+			uniform vec2 Resolution;
+			uniform float Time;
+
+			out vec4 Out_Color;
+			void main()
+			{
+				//Out_Color = vec4(1.f, 0.f, 0.f, 1.f);
+
+				float Pi = 6.28318530718; // Pi*2
+    
+				// GAUSSIAN BLUR SETTINGS {{{
+				float Directions = 32.0; // BLUR DIRECTIONS (Default 16.0 - More is better but slower)
+				float Quality = 4.0; // BLUR QUALITY (Default 4.0 - More is better but slower)
+				float Size = 64.0; // BLUR SIZE (Radius)
+				// GAUSSIAN BLUR SETTINGS }}}
+   
+				vec2 Radius = Size/Resolution.xy;
+    
+				// Normalized pixel coordinates (from 0 to 1)
+				vec2 uv = Frag_UV;
+				// Pixel colour
+				vec4 Color = texture(Texture, uv);
+    
+				// Blur calculations
+				for( float d=0.0; d<Pi; d+=Pi/Directions)
+				{
+					for(float i=1.0/Quality; i<=1.0; i+=1.0/Quality)
+					{
+						Color += texture(Texture, uv+vec2(cos(d),sin(d))*Radius*i);		
+					}
+				}
+    
+				// Output to screen
+				Color /= Quality * Directions - 15.0;
+
+				float l = (0.299*Color.r + 0.587*Color.g + 0.114*Color.b);
+				Out_Color = vec4(l, l, l, 1.f);
+				//Out_Color = Color;
+			}
+	)";
+
+public:
+	BlurShader()
+		: ShaderBase(vtx_shader, frag_shader)
+	{}
+	void ProjMtx(const float* mat4) noexcept;
+	void Resolution(const float* vec2) noexcept;
+	void Time(float time) noexcept;
+};
+
 
 class VrShader : public ShaderBase {
 private:

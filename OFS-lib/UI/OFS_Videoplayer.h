@@ -48,14 +48,10 @@ private:
 	uint32_t framebuffer_obj = 0;
 	uint32_t render_texture = 0;
 	
-	struct ScreenshotSavingThreadData {
-		int w;
-		int h;
-		uint8_t* dataBuffer = nullptr;
-		std::string filename;
-	};
 
 	std::unique_ptr<class VrShader> vr_shader;
+	std::unique_ptr<class BlurShader> blurShader;
+
 	ImGuiViewport* player_viewport;
 	
 	ImVec2 video_draw_size;
@@ -135,7 +131,7 @@ private:
 	void notifyVideoLoaded() noexcept;
 
 	void drawVrVideo(ImDrawList* draw_list) noexcept;
-	void draw2dVideo(ImDrawList* draw_list) noexcept;
+	void draw2dVideo(ImDrawList* draw_list, bool blur) noexcept;
 	void videoRightClickMenu() noexcept;
 
 	void showText(const char* text) noexcept;

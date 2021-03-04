@@ -122,3 +122,18 @@ void LightingShader::LightPos(const float* vec3) noexcept
 void LightingShader::ViewPos(const float* vec3) noexcept {
 	glUniform3fv(glGetUniformLocation(program, "viewPos"), 1, vec3);
 }
+
+void BlurShader::ProjMtx(const float* mat4) noexcept
+{
+	glUniformMatrix4fv(glGetUniformLocation(program, "ProjMtx"), 1, GL_FALSE, mat4);
+}
+
+void BlurShader::Resolution(const float* vec2) noexcept
+{
+	glUniform2fv(glGetUniformLocation(program, "Resolution"), 1, vec2);
+}
+
+void BlurShader::Time(float time) noexcept
+{
+	glUniform1f(glGetUniformLocation(program, "Time"), time);
+}
