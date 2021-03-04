@@ -76,7 +76,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
         return ImVec2(x, y);
     };
 
-    auto drawSpline = [](const OverlayDrawingCtx& ctx, float currentTime, float endTime, int32_t color, float width)
+    auto drawSpline = [getPointForAction](const OverlayDrawingCtx& ctx, FunscriptAction startAction, FunscriptAction endAction, uint32_t color, float width)
     {
         constexpr int32_t MinSamplesPerSecond = 40;
         auto getPointForTimePos = [](const OverlayDrawingCtx& ctx, float timeMs, float pos) {
@@ -93,37 +93,41 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
         };
 
         ctx.draw_list->PathClear();
-        const float duration = (endTime - currentTime);
+        const float duration = (endAction.at - startAction.at);
 
-        if (ctx.visibleSizeMs / duration >= 100.f)
+        if (ctx.visibleSizeMs / duration >= 100.f || startAction.pos == endAction.pos)
         {
             // for better performance
             // when splines get really small, they get drawn as straigth lines
-            putPoint(ctx, currentTime);
-            putPoint(ctx, endTime);
+            auto p1 = getPointForAction(ctx, startAction);
+            auto p2 = getPointForAction(ctx, endAction);
+            ctx.draw_list->PathLineTo(p1);
+            ctx.draw_list->PathLineTo(p2);
+            ctx.draw_list->PathStroke(IM_COL32_BLACK, false, 7.f);
+            ColoredLines.emplace_back(std::move(BaseOverlay::ColoredLine{ p1, p2, color }));
         }
         else
         {
             const float timeStep = duration / (duration * (MinSamplesPerSecond / 1000.f));
 
+            float currentTime = startAction.at;
             putPoint(ctx, currentTime);
             currentTime += timeStep;
-            while (currentTime < endTime)
+            while (currentTime < endAction.at)
             {
                 putPoint(ctx, currentTime);
                 currentTime += timeStep;
             }
-            putPoint(ctx, endTime);
+            putPoint(ctx, endAction.at);
+            auto tmpSize = ctx.draw_list->_Path.Size;
+            ctx.draw_list->PathStroke(IM_COL32_BLACK, false, 7.f);
+            ctx.draw_list->_Path.Size = tmpSize;
+            ctx.draw_list->PathStroke(color, false, width);
         }
-
-        ctx.draw_list->PathStroke(color, false, width);
     };
 
     if (SplineMode)
     {
-        if (startIt != endIt && endIt != script.Actions().end()) {
-            drawSpline(ctx, startIt->at, endIt->at, IM_COL32_BLACK, 7.f);
-        }
         const FunscriptAction* prevAction = nullptr;
         for (; startIt != endIt; startIt++) {
             auto& action = *startIt;
@@ -138,10 +142,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
                 speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
                 speed_color.Value.w = 1.f;
 
-                float currentTime = prevAction->at;
-                float endTime = action.at;
-
-                drawSpline(ctx, currentTime, endTime, ImGui::ColorConvertFloat4ToU32(speed_color), 3.f);
+                drawSpline(ctx, *prevAction, action, ImGui::ColorConvertFloat4ToU32(speed_color), 3.f);
             }
             prevAction = &action;
         }
@@ -166,17 +167,16 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
                 speed_color.Value.w = 1.f;
                 
                 ctx.draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
-
                 ColoredLines.emplace_back(std::move(BaseOverlay::ColoredLine{ p1, p2, ImGui::ColorConvertFloat4ToU32(speed_color) }));
             }
 
             prevAction = &action;
         }
 
-        // this is so that the black background line gets rendered first
-        for (auto&& line : ColoredLines) {
-            ctx.draw_list->AddLine(line.p1, line.p2, line.color, 3.f);
-        }
+    }
+    // this is so that the black background line gets rendered first
+    for (auto&& line : ColoredLines) {
+        ctx.draw_list->AddLine(line.p1, line.p2, line.color, 3.f);
     }
 
 
@@ -201,9 +201,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
 
                 if (prev_action != nullptr) {
                     // draw highlight line
-                    float currentTime = prev_action->at;
-                    float endTime = action.at;
-                    drawSpline(ctx, currentTime, endTime, selectedLines, 3.f);
+                    drawSpline(ctx, *prev_action, action, selectedLines, 3.f);
                 }
 
                 SelectedActionScreenCoordinates.emplace_back(point);
