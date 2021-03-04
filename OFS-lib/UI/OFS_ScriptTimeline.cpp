@@ -265,7 +265,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 	for (auto&& script : *Scripts) {
 		if (script->Enabled) { drawingCtx.drawnScriptCount++; }
 	}
-	const auto availSize = ImGui::GetContentRegionAvail() - ImVec2(0.f , style.ItemSpacing.y*((float)drawingCtx.drawnScriptCount-1) + (style.ItemSpacing.y * 1.5f));
+	const auto availSize = ImGui::GetContentRegionAvail() - ImVec2(0.f , style.ItemSpacing.y*((float)drawingCtx.drawnScriptCount-1) + (style.ItemSpacing.y * 1.501f));
 	const auto startCursor = ImGui::GetCursorScreenPos();
 
 	ImGui::SetCursorScreenPos(startCursor);
@@ -277,7 +277,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 		
 		drawingCtx.scriptIdx = i;
 		drawingCtx.canvas_pos = ImGui::GetCursorScreenPos();
-		drawingCtx.canvas_size = ImVec2(availSize.x, availSize.y / (float)drawingCtx.drawnScriptCount);
+		drawingCtx.canvas_size = ImVec2(availSize.x, (availSize.y - 1.f) / (float)drawingCtx.drawnScriptCount);
 		const ImGuiID itemID = ImGui::GetID(script.metadata.title.c_str());
 		ImRect itemBB(drawingCtx.canvas_pos, drawingCtx.canvas_pos + drawingCtx.canvas_size);
 		ImGui::ItemSize(itemBB);
