@@ -6,23 +6,26 @@ std::vector<OFS_Codepath> OFS_Profiler::Stack;
 std::vector<OFS_Codepath> OFS_Profiler::Frame;
 std::vector<OFS_Codepath> OFS_Profiler::LastFrame;
 
+static void Print(const std::vector<OFS_Codepath>& paths) noexcept
+{
+	for (int i = paths.size()-1; i >= 0; i--) {
+		auto& p = paths[i];
+		float startX = ImGui::GetStyle().ItemInnerSpacing.x + (p.Depth * ImGui::GetFontSize());
+		ImGui::SetCursorPosX(startX);
+		ImGui::Text("|- %s: %.3f ms", p.Name.c_str(), p.Duration.count());
+
+		if (!p.Children.empty()) {
+			Print(p.Children);
+		}
+	}
+}
+
 void OFS_Profiler::ShowProfiler() noexcept
 {
 	ImGui::Begin("OFS Profiler");
-
 	if (!LastFrame.empty()) {
-		auto startX = ImGui::GetCursorPosX();
-		int currentDepth = LastFrame.back().Depth;
-		for (int i = LastFrame.size() - 1; i != 0; i--) {
-			auto& path = LastFrame[i];
-			if (path.Depth != currentDepth) startX = path.Depth * ImGui::GetFontSize();
-
-			ImGui::SetCursorPosX(startX);
-			ImGui::Text("> %s: %.3f ms", path.Name.c_str(), path.Duration.count());
-			currentDepth = path.Depth;
-		}
+		Print(LastFrame);
 	}
-
 	ImGui::End();
 }
 
@@ -34,5 +37,27 @@ void OFS_Profiler::BeginProfiling() noexcept
 
 void OFS_Profiler::EndProfiling() noexcept
 {
-	LastFrame.swap(Frame);
+	LastFrame.clear();
+	int depth = 0;
+	
+	std::vector<std::vector<OFS_Codepath>*> stack;
+	stack.push_back(&LastFrame);
+
+	for (int i = Frame.size() - 1; i >= 0; i--) {
+		auto& p = Frame[i];
+		
+		if (p.Depth > depth) {
+			stack.push_back(&stack.back()->back().Children);
+			auto& f = stack.back()->emplace_back(std::move(p));
+		}
+		else if (p.Depth < depth) {
+			do { stack.pop_back(); } while (p.Depth < stack.back()->back().Depth);
+			auto& f = stack.back()->emplace_back(std::move(p));
+		}
+		else {
+			auto& f = stack.back()->emplace_back(std::move(p));
+		}
+
+		depth = p.Depth;
+	}
 }

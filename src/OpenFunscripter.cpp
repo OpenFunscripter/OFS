@@ -321,8 +321,7 @@ bool OpenFunscripter::setup()
     // callback that renders the simulator right after the video
     player->OnRenderCallback = [](const ImDrawList * parent_list, const ImDrawCmd * cmd) {
         auto app = OpenFunscripter::ptr;
-        if (app->settings->data().show_simulator_3d)
-        {
+        if (app->settings->data().show_simulator_3d) {
             app->sim3D->renderSim();
         }
     };

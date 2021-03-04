@@ -55,6 +55,7 @@ public:
 	bool Done = false;
 	std::chrono::high_resolution_clock::time_point Start;
 	std::chrono::duration<float, std::milli> Duration;
+	std::vector<OFS_Codepath> Children;
 };
 
 class OFS_Profiler
@@ -85,6 +86,7 @@ public:
 		Stack.pop_back();
 		p.Duration = std::chrono::high_resolution_clock::now() - p.Start;
 		p.Done = true;
+
 		Frame.emplace_back(std::move(p));
 	}
 
