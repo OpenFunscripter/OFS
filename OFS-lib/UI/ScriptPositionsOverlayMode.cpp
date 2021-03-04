@@ -76,7 +76,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
         return ImVec2(x, y);
     };
 
-    auto drawSpline = [getPointForAction](const OverlayDrawingCtx& ctx, FunscriptAction startAction, FunscriptAction endAction, uint32_t color, float width)
+    auto drawSpline = [getPointForAction](const OverlayDrawingCtx& ctx, FunscriptAction startAction, FunscriptAction endAction, uint32_t color, float width, bool background = true)
     {
         constexpr int32_t MinSamplesPerSecond = 40;
         auto getPointForTimePos = [](const OverlayDrawingCtx& ctx, float timeMs, float pos) {
@@ -101,9 +101,11 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
             // when splines get really small, they get drawn as straigth lines
             auto p1 = getPointForAction(ctx, startAction);
             auto p2 = getPointForAction(ctx, endAction);
-            ctx.draw_list->PathLineTo(p1);
-            ctx.draw_list->PathLineTo(p2);
-            ctx.draw_list->PathStroke(IM_COL32_BLACK, false, 7.f);
+            if (background) {
+                ctx.draw_list->PathLineTo(p1);
+                ctx.draw_list->PathLineTo(p2);
+                ctx.draw_list->PathStroke(IM_COL32_BLACK, false, 7.f);
+            }
             ColoredLines.emplace_back(std::move(BaseOverlay::ColoredLine{ p1, p2, color }));
         }
         else
@@ -174,11 +176,6 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
         }
 
     }
-    // this is so that the black background line gets rendered first
-    for (auto&& line : ColoredLines) {
-        ctx.draw_list->AddLine(line.p1, line.p2, line.color, 3.f);
-    }
-
 
     if (script.HasSelection()) {
         auto startIt = std::find_if(script.Selection().begin(), script.Selection().end(),
@@ -201,7 +198,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
 
                 if (prev_action != nullptr) {
                     // draw highlight line
-                    drawSpline(ctx, *prev_action, action, selectedLines, 3.f);
+                    drawSpline(ctx, *prev_action, action, selectedLines, 3.f, false);
                 }
 
                 SelectedActionScreenCoordinates.emplace_back(point);
@@ -224,6 +221,11 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
                 prev_action = &action;
             }
         }
+    }
+
+    // this is so that the black background line gets rendered first
+    for (auto&& line : ColoredLines) {
+        ctx.draw_list->AddLine(line.p1, line.p2, line.color, 3.f);
     }
 }
 
