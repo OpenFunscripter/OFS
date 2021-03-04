@@ -64,10 +64,12 @@ class OFS_Profiler
 	static std::vector<OFS_Codepath> Frame;
 	static std::vector<OFS_Codepath> LastFrame;
 
-	std::string Path;
+	static bool RecordOnce;
+	static bool Live;
 public:
 	inline OFS_Profiler(const std::string& Path) noexcept
 	{
+		if (!Live && !RecordOnce) return;
 		OFS_Codepath newPath;
 		newPath.Name = Path;
 		newPath.Start = std::chrono::high_resolution_clock::now();
@@ -82,6 +84,7 @@ public:
 
 	inline ~OFS_Profiler() noexcept
 	{
+		if (!Live && !RecordOnce) return;
 		auto p = std::move(Stack.back());
 		Stack.pop_back();
 		p.Duration = std::chrono::high_resolution_clock::now() - p.Start;

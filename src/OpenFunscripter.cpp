@@ -1542,7 +1542,6 @@ void OpenFunscripter::step() noexcept {
                 OFS::UpdateHeatmapGradient(player->getDuration() * 1000.f, playerControls.TimelineGradient, ActiveFunscript()->Actions());
             }
 
-
             auto drawBookmarks = [&](ImDrawList* draw_list, const ImRect& frame_bb, bool item_hovered)
             {
                 OFS_PROFILEPATH("drawBookmarks");
@@ -2566,6 +2565,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
 bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
 {
     if (!*open) return false;
+    OFS_PROFILEPATH(__FUNCTION__);
     bool save = false;
     auto& metadata = ActiveFunscript()->metadata;
     ImGui::Begin("Metadata Editor", open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoDocking);
@@ -2705,6 +2705,7 @@ void OpenFunscripter::SetFullscreen(bool fullscreen) {
 
 void OpenFunscripter::CreateDockspace() noexcept
 {
+    OFS_PROFILEPATH(__FUNCTION__);
     const bool opt_fullscreen_persistant = true;
     const bool opt_fullscreen = opt_fullscreen_persistant;
     static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None | ImGuiDockNodeFlags_PassthruCentralNode;
@@ -2757,6 +2758,7 @@ void OpenFunscripter::CreateDockspace() noexcept
 void OpenFunscripter::ShowAboutWindow(bool* open) noexcept
 {
     if (!*open) return;
+    OFS_PROFILEPATH(__FUNCTION__);
     ImGui::Begin("About", open, ImGuiWindowFlags_None 
         | ImGuiWindowFlags_AlwaysAutoResize
         | ImGuiWindowFlags_NoDocking

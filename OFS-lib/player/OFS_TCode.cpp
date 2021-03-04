@@ -72,47 +72,8 @@ bool TCodePlayer::openPort(struct sp_port* openthis) noexcept
         return false;
     }
 
-    //c_serial_set_baud_rate(port, CSERIAL_BAUD_115200);
-    //c_serial_set_data_bits(port, CSERIAL_BITS_8);
-    //c_serial_set_stop_bits(port, CSERIAL_STOP_BITS_1);
-    //c_serial_set_parity(port, CSERIAL_PARITY_NONE);
-    //c_serial_set_flow_control(port, CSERIAL_FLOW_NONE);
-    //c_serial_set_rts_control(port, CSERIAL_RTS_SOFTWARE);
     return true;
 }
-
-//void TCodePlayer::tick() noexcept
-//{
-//    if (status < 0) return;
-//
-//    data_length = sizeof(data);
-//    if (status >= 0) {
-//        status = c_serial_read_data(port, data, &data_length, &lines);
-//        if (status < 0) {
-//            LOG_ERROR("Failed to read from serial port.");
-//            return;
-//        }
-//    }
-//
-//    LOGF_DEBUG("Got %d bytes of data\n", data_length);
-//    
-//    for (int x = 0; x < data_length; x++) {
-//        LOGF_DEBUG("    0x%02X (ASCII: %c)\n", data[x], data[x]);
-//    }
-//    LOGF_DEBUG("Serial line state: CD: %d CTS: %d DSR: %d DTR: %d RTS: %d RI: %d\n",
-//        lines.cd,
-//        lines.cts,
-//        lines.dsr,
-//        lines.dtr,
-//        lines.rts,
-//        lines.ri);
-//
-//    status = c_serial_write_data(port, data, &data_length);
-//    if (status < 0) {
-//        LOG_ERROR("Failed to write to serial port.");
-//        return;
-//    }
-//}
 
 TCodePlayer::TCodePlayer()
 {
@@ -161,6 +122,7 @@ static struct TCodeThreadData {
 void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
 {
     if (!*open) return;
+    OFS_PROFILEPATH(__FUNCTION__);
 
     ImGui::Begin("T-Code", open, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::Combo("Port", &current_port, [](void* data, int idx, const char** out_text) -> bool {
@@ -296,20 +258,7 @@ void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
     ImGui::Spacing();
     
     if (!Thread.running) {
-        //if (ImGui::Button("Home", ImVec2(-1, 0))) {
-        //    tcode.reset();
-        //    auto cmd = tcode.GetCommand();
-        //    if (cmd != nullptr && status >= 0) {
-        //        int len = strlen(cmd);
-        //        status = c_serial_write_data(port, (void*)cmd, &len);
-        //        if (status < 0) {
-        //            LOG_ERROR("Failed to write to serial port.");
-        //        }
-        //    }
-        //}
-
         // move to the current position
-
         int32_t ms = std::round(currentTimeMs);
         prod.sync(ms, 1.f);
         prod.tick(ms, 1.f);

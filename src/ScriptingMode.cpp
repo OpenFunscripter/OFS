@@ -22,6 +22,7 @@ void ScriptingMode::setup()
 
 void ScriptingMode::DrawScriptingMode(bool* open) noexcept
 {
+    OFS_PROFILEPATH(__FUNCTION__);
 	ImGui::Begin(ScriptingModeId, open);
     ImGui::PushItemWidth(-1);
     // ATTENTION: order needs to be the same as the enum

@@ -123,6 +123,7 @@ void Simulator3D::setup() noexcept
 void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, const std::vector<std::shared_ptr<Funscript>>& scripts) noexcept
 {
     if (open != nullptr && !*open) { return; }
+    OFS_PROFILEPATH(__FUNCTION__);
     const int32_t loadedScriptsCount = scripts.size();
     auto viewport = ImGui::GetMainViewport();
     
