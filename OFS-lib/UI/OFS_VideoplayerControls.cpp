@@ -1,8 +1,8 @@
 #include "OFS_VideoplayerControls.h"
 #include "OFS_Util.h"
+#include "OFS_Profiling.h"
 
 #include "SDL_timer.h"
-
 static char tmp_buf[2][32];
 
 void OFS_VideoplayerControls::VideoLoaded(SDL_Event& ev) noexcept
@@ -29,6 +29,7 @@ void OFS_VideoplayerControls::setup() noexcept
 
 bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* position, TimelineCustomDrawFunc&& customDraw) noexcept
 {
+    OFS_PROFILEPATH(__FUNCTION__);
     bool change = false;
 
     ImGuiWindow* window = ImGui::GetCurrentWindow();
@@ -127,6 +128,7 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
 void OFS_VideoplayerControls::DrawTimeline(bool* open, TimelineCustomDrawFunc&& customDraw) noexcept
 {
     if (open != nullptr && !*open) return;
+    OFS_PROFILEPATH(__FUNCTION__);
     FUN_ASSERT(player != nullptr, "nullptr");
     ImGui::Begin(PlayerTimeId, open);
 
@@ -209,6 +211,7 @@ void OFS_VideoplayerControls::DrawTimeline(bool* open, TimelineCustomDrawFunc&& 
 void OFS_VideoplayerControls::DrawControls(bool* open) noexcept
 {
     if (open != nullptr && !*open) return;
+    OFS_PROFILEPATH(__FUNCTION__);
     FUN_ASSERT(player != nullptr, "nullptr");
 
     ImGui::Begin(PlayerControlId, open);

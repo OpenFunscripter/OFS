@@ -50,47 +50,60 @@ public:
 class OFS_Codepath
 {
 public:
-	//std::string Name;
+	std::string Name;
+	int16_t Depth = 0;
+	bool Done = false;
 	std::chrono::high_resolution_clock::time_point Start;
-	std::chrono::duration<float, std::milli> LastDuration;
+	std::chrono::duration<float, std::milli> Duration;
 };
 
 class OFS_Profiler
 {
-	static std::map<std::string, OFS_Codepath> Paths;
+	static std::vector<OFS_Codepath> Stack;
+	static std::vector<OFS_Codepath> Frame;
+	static std::vector<OFS_Codepath> LastFrame;
+
 	std::string Path;
 public:
 	inline OFS_Profiler(const std::string& Path) noexcept
 	{
-		this->Path = Path;
-		auto it = Paths.find(Path);
-		if (it == Paths.end())
+		OFS_Codepath newPath;
+		newPath.Name = Path;
+		newPath.Start = std::chrono::high_resolution_clock::now();
+		if (!Stack.empty())
 		{
-			OFS_Codepath newPath;
-			newPath.Start = std::chrono::high_resolution_clock::now();
-			auto p = Paths.insert(std::move(std::make_pair(Path, std::move(newPath))));
+			if (!Stack.back().Done) {
+				newPath.Depth = Stack.back().Depth + 1;
+			}
 		}
-		else
-		{			
-			it->second.Start = std::chrono::high_resolution_clock::now();
-		}
+		Stack.emplace_back(std::move(newPath));
 	}
 
 	inline ~OFS_Profiler() noexcept
 	{
-		auto it = Paths.find(Path);
-		it->second.LastDuration = std::chrono::high_resolution_clock::now() - it->second.Start;
+		auto p = std::move(Stack.back());
+		Stack.pop_back();
+		p.Duration = std::chrono::high_resolution_clock::now() - p.Start;
+		p.Done = true;
+		Frame.emplace_back(std::move(p));
 	}
 
 	static void ShowProfiler() noexcept;
+
+	static void BeginProfiling() noexcept;
+	static void EndProfiling() noexcept;
 };
 
 
 #if OFS_PROFILE == 1
 #define OFS_PROFILEPATH(path) OFS_Profiler OFS_CONCAT(xProfilerx,__LINE__) ## ( path )
 #define OFS_SHOWPROFILER() OFS_Profiler::ShowProfiler();
+#define OFS_BEGINPROFILING() OFS_Profiler::BeginProfiling()
+#define OFS_ENDPROFILING() OFS_Profiler::EndProfiling();
 #else
 #define OFS_PROFILEPATH(path)
 #define OFS_SHOWPROFILER() 
+#define OFS_BEGINPROFILING()
+#define OFS_ENDPROFILING()
 #endif
 

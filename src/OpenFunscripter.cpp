@@ -1318,6 +1318,7 @@ void OpenFunscripter::register_bindings()
 
 void OpenFunscripter::new_frame() noexcept
 {
+    OFS_PROFILEPATH(__FUNCTION__);
     ImGuiIO& io = ImGui::GetIO();
     glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
     glClearColor(0.1f, 0.1f, 0.1f, 1.f);
@@ -1503,166 +1504,173 @@ void OpenFunscripter::autoBackup() noexcept
 }
 
 void OpenFunscripter::step() noexcept {
-
-    process_events();
-    update();
-    new_frame();
+    OFS_BEGINPROFILING();
     {
-        OFS_PROFILEPATH("ImGui");
-        OFS_SHOWPROFILER();
-
-        // IMGUI HERE
-        CreateDockspace();
-        sim3D->ShowWindow(&settings->data().show_simulator_3d, player->getCurrentPositionMsInterp(), BaseOverlay::SplineMode, LoadedFunscripts);
-
-        ShowAboutWindow(&ShowAbout);
-        specialFunctions->ShowFunctionsWindow(&settings->data().show_special_functions);
-        ActiveFunscript()->undoSystem->ShowUndoRedoHistory(&settings->data().show_history);
-        simulator.ShowSimulator(&settings->data().show_simulator);
-        ShowStatisticsWindow(&settings->data().show_statistics);
-        if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { saveScript(ActiveFunscript().get(), "", false); }
-        scripting->DrawScriptingMode(NULL);
-
-        tcode.DrawWindow(&settings->data().show_tcode, player->getCurrentPositionMsInterp());
-
-        if (keybinds.ShowBindingWindow()) {
-            keybinds.save();
-        }
-
-        if (settings->ShowPreferenceWindow()) {
-            settings->saveSettings();
-        }
-
-        playerControls.DrawControls(NULL);
-
-        if (updateTimelineGradient) {
-            updateTimelineGradient = false;
-            OFS::UpdateHeatmapGradient(player->getDuration()*1000.f, playerControls.TimelineGradient, ActiveFunscript()->Actions());
-        }
-
-
-        auto drawBookmarks = [&](ImDrawList* draw_list, const ImRect& frame_bb, bool item_hovered)
+        OFS_PROFILEPATH(__FUNCTION__);
+        process_events();
+        update();
+        new_frame();
         {
-            auto& style = ImGui::GetStyle();
-            bool show_text = item_hovered || settings->data().always_show_bookmark_labels;
+            OFS_PROFILEPATH("ImGui");
+            OFS_SHOWPROFILER();
 
-            // bookmarks
-            auto& scriptSettings = ActiveFunscript()->Userdata<OFS_ScriptSettings>();
-            for (int i = 0; i < scriptSettings.Bookmarks.size(); i++) {
-                auto& bookmark = scriptSettings.Bookmarks[i];
-                auto nextBookmarkPtr = i + 1 < scriptSettings.Bookmarks.size() ? &scriptSettings.Bookmarks[i + 1] : nullptr;
+            // IMGUI HERE
+            CreateDockspace();
+            sim3D->ShowWindow(&settings->data().show_simulator_3d, player->getCurrentPositionMsInterp(), BaseOverlay::SplineMode, LoadedFunscripts);
 
-                constexpr float rectWidth = 7.f;
-                const float fontSize = ImGui::GetFontSize();
-                const uint32_t textColor = ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]);
+            ShowAboutWindow(&ShowAbout);
+            specialFunctions->ShowFunctionsWindow(&settings->data().show_special_functions);
+            ActiveFunscript()->undoSystem->ShowUndoRedoHistory(&settings->data().show_history);
+            simulator.ShowSimulator(&settings->data().show_simulator);
+            ShowStatisticsWindow(&settings->data().show_statistics);
+            if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { saveScript(ActiveFunscript().get(), "", false); }
+            scripting->DrawScriptingMode(NULL);
 
-                // if an end_marker appears before a start marker we render it as if was a regular bookmark
-                if (bookmark.type == OFS_ScriptSettings::Bookmark::BookmarkType::START_MARKER) {
-                    if (i + 1 < scriptSettings.Bookmarks.size()
-                        && nextBookmarkPtr != nullptr && nextBookmarkPtr->type == OFS_ScriptSettings::Bookmark::BookmarkType::END_MARKER) {
-                        ImVec2 p1((frame_bb.Min.x + (frame_bb.GetWidth() * (bookmark.at / (player->getDuration() * 1000.0)))) - (rectWidth / 2.f), frame_bb.Min.y);
-                        ImVec2 p2(p1.x + rectWidth, frame_bb.Min.y + frame_bb.GetHeight() + (style.ItemSpacing.y * 3.0f));
+            tcode.DrawWindow(&settings->data().show_tcode, player->getCurrentPositionMsInterp());
 
-                        ImVec2 next_p1((frame_bb.Min.x + (frame_bb.GetWidth() * (nextBookmarkPtr->at / (player->getDuration() * 1000.0)))) - (rectWidth / 2.f), frame_bb.Min.y);
-                        ImVec2 next_p2(next_p1.x + rectWidth, frame_bb.Min.y + frame_bb.GetHeight() + (style.ItemSpacing.y * 3.0f));
+            if (keybinds.ShowBindingWindow()) {
+                keybinds.save();
+            }
 
-                        if (show_text) {
-                            draw_list->AddRectFilled(
-                                p1 + ImVec2(rectWidth / 2.f, 0),
-                                next_p2 - ImVec2(rectWidth / 2.f, -fontSize),
-                                IM_COL32(255, 0, 0, 100),
-                                8.f);
+            if (settings->ShowPreferenceWindow()) {
+                settings->saveSettings();
+            }
+
+            playerControls.DrawControls(NULL);
+
+            if (updateTimelineGradient) {
+                updateTimelineGradient = false;
+                OFS::UpdateHeatmapGradient(player->getDuration() * 1000.f, playerControls.TimelineGradient, ActiveFunscript()->Actions());
+            }
+
+
+            auto drawBookmarks = [&](ImDrawList* draw_list, const ImRect& frame_bb, bool item_hovered)
+            {
+                OFS_PROFILEPATH("drawBookmarks");
+
+                auto& style = ImGui::GetStyle();
+                bool show_text = item_hovered || settings->data().always_show_bookmark_labels;
+
+                // bookmarks
+                auto& scriptSettings = ActiveFunscript()->Userdata<OFS_ScriptSettings>();
+                for (int i = 0; i < scriptSettings.Bookmarks.size(); i++) {
+                    auto& bookmark = scriptSettings.Bookmarks[i];
+                    auto nextBookmarkPtr = i + 1 < scriptSettings.Bookmarks.size() ? &scriptSettings.Bookmarks[i + 1] : nullptr;
+
+                    constexpr float rectWidth = 7.f;
+                    const float fontSize = ImGui::GetFontSize();
+                    const uint32_t textColor = ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]);
+
+                    // if an end_marker appears before a start marker we render it as if was a regular bookmark
+                    if (bookmark.type == OFS_ScriptSettings::Bookmark::BookmarkType::START_MARKER) {
+                        if (i + 1 < scriptSettings.Bookmarks.size()
+                            && nextBookmarkPtr != nullptr && nextBookmarkPtr->type == OFS_ScriptSettings::Bookmark::BookmarkType::END_MARKER) {
+                            ImVec2 p1((frame_bb.Min.x + (frame_bb.GetWidth() * (bookmark.at / (player->getDuration() * 1000.0)))) - (rectWidth / 2.f), frame_bb.Min.y);
+                            ImVec2 p2(p1.x + rectWidth, frame_bb.Min.y + frame_bb.GetHeight() + (style.ItemSpacing.y * 3.0f));
+
+                            ImVec2 next_p1((frame_bb.Min.x + (frame_bb.GetWidth() * (nextBookmarkPtr->at / (player->getDuration() * 1000.0)))) - (rectWidth / 2.f), frame_bb.Min.y);
+                            ImVec2 next_p2(next_p1.x + rectWidth, frame_bb.Min.y + frame_bb.GetHeight() + (style.ItemSpacing.y * 3.0f));
+
+                            if (show_text) {
+                                draw_list->AddRectFilled(
+                                    p1 + ImVec2(rectWidth / 2.f, 0),
+                                    next_p2 - ImVec2(rectWidth / 2.f, -fontSize),
+                                    IM_COL32(255, 0, 0, 100),
+                                    8.f);
+                            }
+
+                            draw_list->AddRectFilled(p1, p2, textColor, 8.f);
+                            draw_list->AddRectFilled(next_p1, next_p2, textColor, 8.f);
+
+                            if (show_text) {
+                                auto size = ImGui::CalcTextSize(bookmark.name.c_str());
+                                size.x /= 2.f;
+                                size.y += 4.f;
+                                float offset = (next_p2.x - p1.x) / 2.f;
+                                draw_list->AddText(next_p2 - ImVec2(offset, -fontSize) - size, textColor, bookmark.name.c_str());
+                            }
+
+                            i += 1; // skip end marker
+                            continue;
                         }
+                    }
 
-                        draw_list->AddRectFilled(p1, p2, textColor, 8.f);
-                        draw_list->AddRectFilled(next_p1, next_p2, textColor, 8.f);
+                    ImVec2 p1((frame_bb.Min.x + (frame_bb.GetWidth() * (bookmark.at / (player->getDuration() * 1000.0)))) - (rectWidth / 2.f), frame_bb.Min.y);
+                    ImVec2 p2(p1.x + rectWidth, frame_bb.Min.y + frame_bb.GetHeight() + (style.ItemSpacing.y * 3.0f));
 
-                        if (show_text) {
-                            auto size = ImGui::CalcTextSize(bookmark.name.c_str());
-                            size.x /= 2.f;
-                            size.y += 4.f;
-                            float offset = (next_p2.x - p1.x) / 2.f;
-                            draw_list->AddText(next_p2 - ImVec2(offset, -fontSize) - size, textColor, bookmark.name.c_str());
+                    draw_list->AddRectFilled(p1, p2, ImColor(style.Colors[ImGuiCol_Text]), 8.f);
+
+                    if (show_text) {
+                        auto size = ImGui::CalcTextSize(bookmark.name.c_str());
+                        size.x /= 2.f;
+                        size.y /= 8.f;
+                        draw_list->AddText(p2 - size, textColor, bookmark.name.c_str());
+                    }
+                }
+            };
+
+            playerControls.DrawTimeline(NULL, drawBookmarks);
+            scriptPositions.ShowScriptPositions(NULL, player->getCurrentPositionMsInterp(), player->getDuration() * 1000.f, player->getFrameTimeMs(), &LoadedFunscripts, ActiveFunscriptIdx);
+
+            if (settings->data().show_action_editor)
+            {
+                ImGui::Begin(ActionEditorId, &settings->data().show_action_editor);
+                OFS_PROFILEPATH(ActionEditorId);
+
+                ImGui::Columns(1, 0, false);
+                if (ImGui::Button("100", ImVec2(-1, 0))) {
+                    addEditAction(100);
+                }
+                for (int i = 9; i != 0; i--) {
+                    if (i % 3 == 0) {
+                        ImGui::Columns(3, 0, false);
+                    }
+                    sprintf(tmp_buf[0], "%d", i * 10);
+                    if (ImGui::Button(tmp_buf[0], ImVec2(-1, 0))) {
+                        addEditAction(i * 10);
+                    }
+                    ImGui::NextColumn();
+                }
+                ImGui::Columns(1, 0, false);
+                if (ImGui::Button("0", ImVec2(-1, 0))) {
+                    addEditAction(0);
+                }
+
+                if (player->isPaused()) {
+                    ImGui::Separator();
+
+                    auto scriptAction = ActiveFunscript()->GetActionAtTime(player->getCurrentPositionMsInterp(), player->getFrameTimeMs());
+
+                    if (scriptAction == nullptr)
+                    {
+                        // create action
+                        static int newActionPosition = 0;
+                        ImGui::SliderInt("Position", &newActionPosition, 0, 100);
+                        if (ImGui::Button("New Action")) {
+                            addEditAction(newActionPosition);
                         }
-
-                        i += 1; // skip end marker
-                        continue;
                     }
                 }
 
-                ImVec2 p1((frame_bb.Min.x + (frame_bb.GetWidth() * (bookmark.at / (player->getDuration() * 1000.0)))) - (rectWidth / 2.f), frame_bb.Min.y);
-                ImVec2 p2(p1.x + rectWidth, frame_bb.Min.y + frame_bb.GetHeight() + (style.ItemSpacing.y * 3.0f));
-
-                draw_list->AddRectFilled(p1, p2, ImColor(style.Colors[ImGuiCol_Text]), 8.f);
-
-                if (show_text) {
-                    auto size = ImGui::CalcTextSize(bookmark.name.c_str());
-                    size.x /= 2.f;
-                    size.y /= 8.f;
-                    draw_list->AddText(p2 - size, textColor, bookmark.name.c_str());
-                }
-            }
-        };
-
-        playerControls.DrawTimeline(NULL, drawBookmarks);
-        scriptPositions.ShowScriptPositions(NULL, player->getCurrentPositionMsInterp(), player->getDuration()*1000.f, player->getFrameTimeMs(), &LoadedFunscripts, ActiveFunscriptIdx);
-
-        if(settings->data().show_action_editor)
-        {
-            ImGui::Begin(ActionEditorId, &settings->data().show_action_editor);
-
-            ImGui::Columns(1, 0, false);
-            if (ImGui::Button("100", ImVec2(-1, 0))) {
-                addEditAction(100);
-            }
-            for (int i = 9; i != 0; i--) {
-                if (i % 3 == 0) {
-                    ImGui::Columns(3, 0, false);
-                }
-                sprintf(tmp_buf[0], "%d", i * 10);
-                if (ImGui::Button(tmp_buf[0], ImVec2(-1, 0))) {
-                    addEditAction(i * 10);
-                }
-                ImGui::NextColumn();
-            }
-            ImGui::Columns(1, 0, false);
-            if (ImGui::Button("0", ImVec2(-1, 0))) {
-                addEditAction(0);
-            }
-
-            if (player->isPaused()) {
                 ImGui::Separator();
-
-                auto scriptAction = ActiveFunscript()->GetActionAtTime(player->getCurrentPositionMsInterp(), player->getFrameTimeMs());
-
-                if (scriptAction == nullptr)
-                {
-                    // create action
-                    static int newActionPosition = 0;
-                    ImGui::SliderInt("Position", &newActionPosition, 0, 100);
-                    if (ImGui::Button("New Action")) {
-                        addEditAction(newActionPosition);
-                    }
-                }
+                ImGui::End();
             }
 
-            ImGui::Separator();
-            ImGui::End();
+            if (DebugDemo) {
+                ImGui::ShowDemoWindow(&DebugDemo);
+            }
+
+            if (DebugMetrics) {
+                ImGui::ShowMetricsWindow(&DebugMetrics);
+            }
+
+            player->DrawVideoPlayer(NULL, &settings->data().draw_video);
         }
 
-        if (DebugDemo) {
-            ImGui::ShowDemoWindow(&DebugDemo);
-        }
-
-        if (DebugMetrics) {
-            ImGui::ShowMetricsWindow(&DebugMetrics);
-        }
-
-        player->DrawVideoPlayer(NULL, &settings->data().draw_video);
+        sim3D->renderSim();
+        render();
     }
-
-    sim3D->renderSim();
-    render();
+    OFS_ENDPROFILING();
     SDL_GL_SwapWindow(window);
 }
 
@@ -2766,6 +2774,7 @@ void OpenFunscripter::ShowAboutWindow(bool* open) noexcept
 void OpenFunscripter::ShowStatisticsWindow(bool* open) noexcept
 {
     if (!*open) return;
+    OFS_PROFILEPATH(__FUNCTION__);
     ImGui::Begin(StatisticsId, open, ImGuiWindowFlags_None);
     const int32_t currentMs = std::round(player->getCurrentPositionMs());
     const FunscriptAction* front = ActiveFunscript()->GetActionAtTime(currentMs, 0);

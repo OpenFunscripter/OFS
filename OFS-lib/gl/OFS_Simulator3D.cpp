@@ -286,6 +286,7 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, const s
 
 void Simulator3D::renderSim() noexcept
 {
+    OFS_PROFILEPATH(__FUNCTION__);
     auto viewport = ImGui::GetMainViewport();
     glViewport(0, 0, viewport->Size.x, viewport->Size.y);
     glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
