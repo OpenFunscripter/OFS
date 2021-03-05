@@ -425,7 +425,7 @@ bool KeybindingSystem::ShowBindingWindow()
 
     if (ImGui::BeginPopupModal("Keys", &ShowWindow, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysVerticalScrollbar))
     {
-        OFS_PROFILEPATH(__FUNCTION__);
+        OFS_PROFILE(__FUNCTION__);
 
         constexpr bool disable_indent = true;
         if constexpr (disable_indent)

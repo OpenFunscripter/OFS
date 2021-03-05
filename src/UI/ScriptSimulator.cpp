@@ -74,7 +74,7 @@ void ScriptSimulator::CenterSimulator()
 void ScriptSimulator::ShowSimulator(bool* open) 
 {
     if (*open) {
-        OFS_PROFILEPATH(__FUNCTION__);
+        OFS_PROFILE(__FUNCTION__);
         auto app = OpenFunscripter::ptr;
         float currentPos = 0;
 

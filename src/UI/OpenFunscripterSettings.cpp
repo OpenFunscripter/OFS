@@ -53,7 +53,7 @@ bool OpenFunscripterSettings::ShowPreferenceWindow()
 
 	if (ImGui::BeginPopupModal("Preferences", &ShowWindow, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		OFS_PROFILEPATH(__FUNCTION__);
+		OFS_PROFILE(__FUNCTION__);
 
 		ImGui::InputText("Font", scripterSettings.font_override.empty() ? (char*)"Default font" : (char*)scripterSettings.font_override.c_str(),
 			scripterSettings.font_override.size(), ImGuiInputTextFlags_ReadOnly);

@@ -98,17 +98,16 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 )
 
 if(OFS_BENCHMARKS)
-	target_compile_definitions(${PROJECT_NAME} PUBLIC OFS_BENCHMARK=1)
+	target_compile_definitions(${PROJECT_NAME} PUBLIC OFS_BENCHMARK_ENABLED=1)
 else()
-	target_compile_definitions(${PROJECT_NAME} PUBLIC OFS_BENCHMARK=0)
+	target_compile_definitions(${PROJECT_NAME} PUBLIC OFS_BENCHMARK_ENABLED=0)
 endif()
 
 if(OFS_PROFILE)
-	target_compile_definitions(${PROJECT_NAME} PUBLIC OFS_PROFILE=1)
+	target_compile_definitions(${PROJECT_NAME} PUBLIC OFS_PROFILE_ENABLED=1)
 else()
-	target_compile_definitions(${PROJECT_NAME} PUBLIC OFS_PROFILE=0)
+	target_compile_definitions(${PROJECT_NAME} PUBLIC OFS_PROFILE_ENABLED=0)
 endif()
-
 
 
 if(WIN32)

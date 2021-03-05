@@ -39,7 +39,7 @@ public:
 #define OFS_CONCAT_(x,y) x##y
 #define OFS_CONCAT(x,y) OFS_CONCAT_(x,y)
 
-#if OFS_BENCHMARK == 1
+#if OFS_BENCHMARK_ENABLED == 1
 #define OFS_BENCHMARK(function) OFS_Benchmark OFS_CONCAT(xBenchmarkx_,__LINE__) ## (function, __FILENAME__, __LINE__)
 #else
 #define OFS_BENCHMARK(function)
@@ -100,13 +100,13 @@ public:
 };
 
 
-#if OFS_PROFILE == 1
-#define OFS_PROFILEPATH(path) OFS_Profiler OFS_CONCAT(xProfilerx,__LINE__) ## ( path )
+#if OFS_PROFILE_ENABLED == 1
+#define OFS_PROFILE(path) OFS_Profiler OFS_CONCAT(xProfilerx,__LINE__) ## ( path )
 #define OFS_SHOWPROFILER() OFS_Profiler::ShowProfiler();
 #define OFS_BEGINPROFILING() OFS_Profiler::BeginProfiling()
 #define OFS_ENDPROFILING() OFS_Profiler::EndProfiling();
 #else
-#define OFS_PROFILEPATH(path)
+#define OFS_PROFILE(path)
 #define OFS_SHOWPROFILER() 
 #define OFS_BEGINPROFILING()
 #define OFS_ENDPROFILING()

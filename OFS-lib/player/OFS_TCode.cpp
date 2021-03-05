@@ -122,7 +122,7 @@ static struct TCodeThreadData {
 void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
 {
     if (!*open) return;
-    OFS_PROFILEPATH(__FUNCTION__);
+    OFS_PROFILE(__FUNCTION__);
 
     ImGui::Begin("T-Code", open, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::Combo("Port", &current_port, [](void* data, int idx, const char** out_text) -> bool {

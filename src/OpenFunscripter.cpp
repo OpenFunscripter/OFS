@@ -1317,7 +1317,7 @@ void OpenFunscripter::register_bindings()
 
 void OpenFunscripter::new_frame() noexcept
 {
-    OFS_PROFILEPATH(__FUNCTION__);
+    OFS_PROFILE(__FUNCTION__);
     ImGuiIO& io = ImGui::GetIO();
     glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
     glClearColor(0.1f, 0.1f, 0.1f, 1.f);
@@ -1332,7 +1332,7 @@ void OpenFunscripter::new_frame() noexcept
 
 void OpenFunscripter::render() noexcept
 {
-    OFS_PROFILEPATH(__FUNCTION__);
+    OFS_PROFILE(__FUNCTION__);
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     // Update and Render additional Platform Windows
@@ -1351,7 +1351,7 @@ void OpenFunscripter::render() noexcept
 
 void OpenFunscripter::process_events() noexcept
 {
-    OFS_PROFILEPATH(__FUNCTION__);
+    OFS_PROFILE(__FUNCTION__);
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
@@ -1435,7 +1435,7 @@ void OpenFunscripter::MpvPlayPauseChange(SDL_Event& ev) noexcept
 }
 
 void OpenFunscripter::update() noexcept {
-    OFS_PROFILEPATH(__FUNCTION__);
+    OFS_PROFILE(__FUNCTION__);
     ActiveFunscript()->update();
     ControllerInput::UpdateControllers(settings->data().buttonRepeatIntervalMs);
     scripting->update();
@@ -1505,12 +1505,12 @@ void OpenFunscripter::autoBackup() noexcept
 void OpenFunscripter::step() noexcept {
     OFS_BEGINPROFILING();
     {
-        OFS_PROFILEPATH(__FUNCTION__);
+        OFS_PROFILE(__FUNCTION__);
         process_events();
         update();
         new_frame();
         {
-            OFS_PROFILEPATH("ImGui");
+            OFS_PROFILE("ImGui");
             OFS_SHOWPROFILER();
 
             // IMGUI HERE
@@ -1544,7 +1544,7 @@ void OpenFunscripter::step() noexcept {
 
             auto drawBookmarks = [&](ImDrawList* draw_list, const ImRect& frame_bb, bool item_hovered)
             {
-                OFS_PROFILEPATH("drawBookmarks");
+                OFS_PROFILE("drawBookmarks");
 
                 auto& style = ImGui::GetStyle();
                 bool show_text = item_hovered || settings->data().always_show_bookmark_labels;
@@ -1613,7 +1613,7 @@ void OpenFunscripter::step() noexcept {
             if (settings->data().show_action_editor)
             {
                 ImGui::Begin(ActionEditorId, &settings->data().show_action_editor);
-                OFS_PROFILEPATH(ActionEditorId);
+                OFS_PROFILE(ActionEditorId);
 
                 ImGui::Columns(1, 0, false);
                 if (ImGui::Button("100", ImVec2(-1, 0))) {
@@ -2565,7 +2565,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
 bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
 {
     if (!*open) return false;
-    OFS_PROFILEPATH(__FUNCTION__);
+    OFS_PROFILE(__FUNCTION__);
     bool save = false;
     auto& metadata = ActiveFunscript()->metadata;
     ImGui::Begin("Metadata Editor", open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoDocking);
@@ -2705,7 +2705,7 @@ void OpenFunscripter::SetFullscreen(bool fullscreen) {
 
 void OpenFunscripter::CreateDockspace() noexcept
 {
-    OFS_PROFILEPATH(__FUNCTION__);
+    OFS_PROFILE(__FUNCTION__);
     const bool opt_fullscreen_persistant = true;
     const bool opt_fullscreen = opt_fullscreen_persistant;
     static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None | ImGuiDockNodeFlags_PassthruCentralNode;
@@ -2758,7 +2758,7 @@ void OpenFunscripter::CreateDockspace() noexcept
 void OpenFunscripter::ShowAboutWindow(bool* open) noexcept
 {
     if (!*open) return;
-    OFS_PROFILEPATH(__FUNCTION__);
+    OFS_PROFILE(__FUNCTION__);
     ImGui::Begin("About", open, ImGuiWindowFlags_None 
         | ImGuiWindowFlags_AlwaysAutoResize
         | ImGuiWindowFlags_NoDocking
@@ -2775,7 +2775,7 @@ void OpenFunscripter::ShowAboutWindow(bool* open) noexcept
 void OpenFunscripter::ShowStatisticsWindow(bool* open) noexcept
 {
     if (!*open) return;
-    OFS_PROFILEPATH(__FUNCTION__);
+    OFS_PROFILE(__FUNCTION__);
     ImGui::Begin(StatisticsId, open, ImGuiWindowFlags_None);
     const int32_t currentMs = std::round(player->getCurrentPositionMs());
     const FunscriptAction* front = ActiveFunscript()->GetActionAtTime(currentMs, 0);

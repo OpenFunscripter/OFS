@@ -43,7 +43,7 @@ void SpecialFunctionsWindow::SetFunction(SpecialFunctions functionEnum) noexcept
 void SpecialFunctionsWindow::ShowFunctionsWindow(bool* open) noexcept
 {
 	if (open != nullptr && !(*open)) { return; }
-    OFS_PROFILEPATH(__FUNCTION__);
+    OFS_PROFILE(__FUNCTION__);
 	ImGui::Begin(SpecialFunctionsId, open, ImGuiWindowFlags_None);
 	ImGui::SetNextItemWidth(-1.f);
     if (ImGui::Combo("##Functions", (int32_t*)&OpenFunscripter::ptr->settings->data().currentSpecialFunction,

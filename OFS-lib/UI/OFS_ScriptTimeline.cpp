@@ -236,7 +236,7 @@ void ScriptTimeline::videoLoaded(SDL_Event& ev) noexcept
 void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, float durationMs, float frameTimeMs, const std::vector<std::shared_ptr<Funscript>>* scripts, int activeScriptIdx) noexcept
 {
 	if (open != nullptr && !*open) return;
-	OFS_PROFILEPATH(__FUNCTION__);
+	OFS_PROFILE(__FUNCTION__);
 
 	FUN_ASSERT(scripts, "scripts is null");
 
@@ -343,7 +343,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 		// by default it draws the frame and time dividers
 		// DrawAudioWaveform called in scripting mode to control the draw order. spaghetti
 		{
-			OFS_PROFILEPATH(drawingCtx.script->metadata.title.c_str());
+			OFS_PROFILE(drawingCtx.script->metadata.title.c_str());
 			overlay->DrawScriptPositionContent(drawingCtx);
 		}
 

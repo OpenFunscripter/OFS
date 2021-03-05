@@ -8,7 +8,7 @@ void FunscriptUndoSystem::SnapshotRedo(int32_t type) noexcept
 void FunscriptUndoSystem::ShowUndoRedoHistory(bool* open)
 {
 	if (*open) {
-		OFS_PROFILEPATH(__FUNCTION__);
+		OFS_PROFILE(__FUNCTION__);
 		ImGui::SetNextWindowSizeConstraints(ImVec2(200, 100), ImVec2(200, 200));
 		ImGui::Begin(UndoHistoryId, open, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
 		ImGui::TextDisabled("Redo stack");

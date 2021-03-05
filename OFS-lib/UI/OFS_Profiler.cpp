@@ -28,7 +28,7 @@ static void Print(const std::vector<OFS_Codepath>& paths) noexcept
 
 void OFS_Profiler::ShowProfiler() noexcept
 {
-	OFS_PROFILEPATH(__FUNCTION__);
+	OFS_PROFILE(__FUNCTION__);
 	ImGui::Begin("OFS Profiler");
 	if (ImGui::Button("Record one frame")) {
 		RecordOnceTmp = true;

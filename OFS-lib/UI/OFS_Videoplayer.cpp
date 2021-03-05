@@ -426,7 +426,7 @@ void VideoplayerWindow::notifyVideoLoaded() noexcept
 
 void VideoplayerWindow::drawVrVideo(ImDrawList* draw_list) noexcept
 {
-	OFS_PROFILEPATH(__FUNCTION__);
+	OFS_PROFILE(__FUNCTION__);
 	if (!settings.LockedPosition && videoHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !dragStarted) {
 		dragStarted = true;
 	}
@@ -475,7 +475,7 @@ void VideoplayerWindow::drawVrVideo(ImDrawList* draw_list) noexcept
 
 void VideoplayerWindow::draw2dVideo(ImDrawList* draw_list) noexcept
 {
-	OFS_PROFILEPATH(__FUNCTION__);
+	OFS_PROFILE(__FUNCTION__);
 	ImVec2 videoSize(MpvData.video_width, MpvData.video_height);
 	ImVec2 dst = ImGui::GetContentRegionAvail();
 	base_scale_factor = std::min(dst.x / videoSize.x, dst.y / videoSize.y);
@@ -567,7 +567,7 @@ void VideoplayerWindow::clearLoop() noexcept
 
 void VideoplayerWindow::DrawVideoPlayer(bool* open, bool* draw_video) noexcept
 {
-	OFS_PROFILEPATH(__FUNCTION__);
+	OFS_PROFILE(__FUNCTION__);
 	// this redraw has to happen even if the video isn't actually shown in the gui
 	if (redraw_video) { renderToTexture(); }
 	if (open != nullptr && !*open) return;

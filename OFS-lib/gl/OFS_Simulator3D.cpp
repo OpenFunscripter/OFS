@@ -123,7 +123,7 @@ void Simulator3D::setup() noexcept
 void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, const std::vector<std::shared_ptr<Funscript>>& scripts) noexcept
 {
     if (open != nullptr && !*open) { return; }
-    OFS_PROFILEPATH(__FUNCTION__);
+    OFS_PROFILE(__FUNCTION__);
     const int32_t loadedScriptsCount = scripts.size();
     auto viewport = ImGui::GetMainViewport();
     
@@ -287,7 +287,7 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, const s
 
 void Simulator3D::renderSim() noexcept
 {
-    OFS_PROFILEPATH(__FUNCTION__);
+    OFS_PROFILE(__FUNCTION__);
     auto viewport = ImGui::GetMainViewport();
     glViewport(0, 0, viewport->Size.x, viewport->Size.y);
     glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
