@@ -131,7 +131,7 @@ private:
 	void notifyVideoLoaded() noexcept;
 
 	void drawVrVideo(ImDrawList* draw_list) noexcept;
-	void draw2dVideo(ImDrawList* draw_list, bool blur) noexcept;
+	void draw2dVideo(ImDrawList* draw_list) noexcept;
 	void videoRightClickMenu() noexcept;
 
 	void showText(const char* text) noexcept;

@@ -473,7 +473,7 @@ void VideoplayerWindow::drawVrVideo(ImDrawList* draw_list) noexcept
 	video_draw_size = ImGui::GetItemRectSize();
 }
 
-void VideoplayerWindow::draw2dVideo(ImDrawList* draw_list, bool blur) noexcept
+void VideoplayerWindow::draw2dVideo(ImDrawList* draw_list) noexcept
 {
 	OFS_PROFILEPATH(__FUNCTION__);
 	ImVec2 videoSize(MpvData.video_width, MpvData.video_height);
@@ -524,31 +524,6 @@ void VideoplayerWindow::draw2dVideo(ImDrawList* draw_list, bool blur) noexcept
 	}
 
 	player_viewport = ImGui::GetCurrentWindowRead()->Viewport;
-	if (blur) {
-		draw_list->AddCallback(
-			[](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
-				auto& ctx = *(VideoplayerWindow*)cmd->UserCallbackData;
-
-				auto draw_data = ctx.player_viewport->DrawData;
-				ctx.blurShader->use();
-
-				float L = draw_data->DisplayPos.x;
-				float R = draw_data->DisplayPos.x + draw_data->DisplaySize.x;
-				float T = draw_data->DisplayPos.y;
-				float B = draw_data->DisplayPos.y + draw_data->DisplaySize.y;
-				const float ortho_projection[4][4] =
-				{
-					{ 2.0f / (R - L), 0.0f, 0.0f, 0.0f },
-					{ 0.0f, 2.0f / (T - B), 0.0f, 0.0f },
-					{ 0.0f, 0.0f, -1.0f, 0.0f },
-					{ (R + L) / (L - R),  (T + B) / (B - T),  0.0f,   1.0f },
-				};
-				ctx.blurShader->ProjMtx(&ortho_projection[0][0]);
-				float r[2]{ (float)ctx.MpvData.video_width, (float)ctx.MpvData.video_height };
-				ctx.blurShader->Resolution(r);
-				ctx.blurShader->Time(SDL_GetTicks() / 1000.f);
-			}, this);
-	}
 	OFS::ImageWithId(ImGui::GetID("videoImage"), (void*)(intptr_t)render_texture, videoSize, uv0, uv1);
 	videoRightClickMenu();
 }
@@ -599,36 +574,36 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open, bool* draw_video) noexcept
 	ImGui::Begin(PlayerId, open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
 
 
-	viewport_pos = ImGui::GetWindowViewport()->Pos;
-
-	auto draw_list = ImGui::GetWindowDrawList();
-	if (settings.activeMode != VideoMode::VR_MODE) {
-		draw2dVideo(draw_list, !*draw_video);
+	if (*draw_video) {
+		viewport_pos = ImGui::GetWindowViewport()->Pos;
+		auto draw_list = ImGui::GetWindowDrawList();
+		if (settings.activeMode != VideoMode::VR_MODE) {
+			draw2dVideo(draw_list);
+		}
+		else if(*draw_video) {
+			drawVrVideo(draw_list);
+		}
+		if (OnRenderCallback != nullptr) { draw_list->AddCallback(OnRenderCallback, this); }
+		// this reset is for the simulator 3d, vr mode or both
+		draw_list->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
+	
+		videoHovered = ImGui::IsItemHovered() && ImGui::IsWindowHovered();
+		video_draw_size = ImGui::GetItemRectSize();
+	
+		// cancel drag
+		if ((dragStarted && !videoHovered) || ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+			dragStarted = false;
+			settings.prev_translation = settings.current_translation;
+			settings.prev_vr_rotation = settings.current_vr_rotation;
+		}
+	
+		// recenter
+		if (videoHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Middle)) {
+			resetTranslationAndZoom();
+		}
 	}
-	else if(*draw_video) {
-		drawVrVideo(draw_list);
-	}
-	if (OnRenderCallback != nullptr) { draw_list->AddCallback(OnRenderCallback, this); }
-	// this reset is for the simulator 3d, vr mode or both
-	draw_list->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
-
-	videoHovered = ImGui::IsItemHovered() && ImGui::IsWindowHovered();
-	video_draw_size = ImGui::GetItemRectSize();
-
-	// cancel drag
-	if ((dragStarted && !videoHovered) || ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
-		dragStarted = false;
-		settings.prev_translation = settings.current_translation;
-		settings.prev_vr_rotation = settings.current_vr_rotation;
-	}
-
-	// recenter
-	if (videoHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Middle)) {
-		resetTranslationAndZoom();
-	}
-
-	if (!*draw_video) {
-		ImGui::SetCursorPos(settings.video_pos);
+	else
+	{
 		if (ImGui::Button("Click to enable video")) {
 			*draw_video = true;
 		}
