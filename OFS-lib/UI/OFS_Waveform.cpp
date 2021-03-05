@@ -1,5 +1,6 @@
 #include "OFS_Waveform.h"
 #include "OFS_Util.h"
+#include "OFS_Profiling.h"
 
 //#define MINIMP3_ONLY_SIMD
 //#define MINIMP3_NO_SIMD
@@ -11,6 +12,8 @@
 
 bool OFS_Waveform::LoadMP3(const std::string& path) noexcept
 {
+	OFS_BENCHMARK(__FUNCTION__);
+
 	static mp3dec_t mp3d;
 	mp3dec_file_info_t info;
 
@@ -78,9 +81,9 @@ bool OFS_Waveform::LoadMP3(const std::string& path) noexcept
 				ctx->midPeak /= (float)SamplesPerLine;
 				ctx->highPeak /= (float)SamplesPerLine;
 
-				ctx->wave->SamplesLow.push_back(ctx->lowPeak);
-				ctx->wave->SamplesMid.push_back(ctx->midPeak);
-				ctx->wave->SamplesHigh.push_back(ctx->highPeak);
+				ctx->wave->SamplesLow.emplace_back(ctx->lowPeak);
+				ctx->wave->SamplesMid.emplace_back(ctx->midPeak);
+				ctx->wave->SamplesHigh.emplace_back(ctx->highPeak);
 			}
 
 			return 0;
