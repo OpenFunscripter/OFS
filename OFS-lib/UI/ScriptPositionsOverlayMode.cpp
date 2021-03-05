@@ -214,7 +214,8 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
 
                 if (prev_action != nullptr) {
                     // draw highlight line
-                    ctx.draw_list->AddLine(getPointForAction(ctx, *prev_action), point, selectedLines, 3.0f);
+                    //ctx.draw_list->AddLine(getPointForAction(ctx, *prev_action), point, selectedLines, 3.0f);
+                    ColoredLines.emplace_back(std::move(BaseOverlay::ColoredLine{ getPointForAction(ctx, *prev_action), point, selectedLines }));
                 }
 
                 SelectedActionScreenCoordinates.emplace_back(point);
