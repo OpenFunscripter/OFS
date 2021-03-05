@@ -263,6 +263,7 @@ private:
 			uniform float aspect_ratio;
 
 			uniform sampler1D audio;
+			uniform float scaleAudio;
 
 			in vec2 Frag_UV;
 			in vec4 Frag_Color;
@@ -271,7 +272,7 @@ private:
 
 			void main()
 			{
-				float sample = texture(audio, Frag_UV.x).x;
+				float sample = texture(audio, Frag_UV.x).x * scaleAudio;
 				//Out_Color = vec4(sample.xyz, 1.f); //vec4(sample, sample, sample, 1.f);
 				//Out_Color = vec4(Frag_UV, 0.f, 1.f);
 				
@@ -308,6 +309,7 @@ public:
 	void ProjMtx(const float* mat4) noexcept;
 	void Resolution(const float* vec2) noexcept;
 	void AudioData(uint32_t unit) noexcept;
+	void ScaleFactor(float scale) noexcept;
 };
 
 class LightingShader : public ShaderBase

@@ -589,6 +589,7 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 				};
 				ctx->WaveShader->ProjMtx(&ortho_projection[0][0]);
 				ctx->WaveShader->AudioData(1);
+				ctx->WaveShader->ScaleFactor(ctx->ScaleAudio);
 			}, timeline);
 			ctx.draw_list->AddImage(0, ctx.canvas_pos, ctx.canvas_pos + ctx.canvas_size);
 			ctx.draw_list->AddCallback(ImDrawCallback_ResetRenderState, 0);

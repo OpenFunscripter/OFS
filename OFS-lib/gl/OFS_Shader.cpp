@@ -153,3 +153,8 @@ void WaveformShader::AudioData(uint32_t unit) noexcept
 	auto i = glGetUniformLocation(program, "audio");
 	glUniform1i(i, unit);
 }
+
+void WaveformShader::ScaleFactor(float scale) noexcept
+{
+	glUniform1f(glGetUniformLocation(program, "scaleAudio"), scale);
+}
