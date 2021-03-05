@@ -80,7 +80,6 @@ private:
 	SDL_mutex* saveMutex = nullptr;
 
 	void setBaseScript(nlohmann::json& base);
-	void setScriptTemplate() noexcept;
 	void checkForInvalidatedActions() noexcept;
 	
 	FunscriptData data;
@@ -94,6 +93,7 @@ private:
 	void moveActionsPosition(std::vector<FunscriptAction*> moving, int32_t pos_offset);
 	inline void sortSelection() noexcept { sortActions(data.selection); }
 	inline void sortActions(std::vector<FunscriptAction>& actions) noexcept {
+		OFS_BENCHMARK(__FUNCTION__);
 		std::sort(actions.begin(), actions.end(),
 			[](auto& a, auto& b) { return a.at < b.at; }
 		);
@@ -117,7 +117,7 @@ private:
 	template<class UserSettings>
 	void saveSettings(const std::string& name, UserSettings* user) noexcept;
 
-	void startSaveThread(const std::string& path, nlohmann::json&& json) noexcept;
+	void startSaveThread(const std::string& path, std::vector<FunscriptAction>&& actions, nlohmann::json&& json) noexcept;
 	
 	bool SplineNeedsUpdate = true;
 public:
@@ -248,6 +248,7 @@ void Funscript::loadSettings(const std::string& name, UserSettings* user) noexce
 template<class UserSettings>
 void Funscript::saveSettings(const std::string& name, UserSettings* user) noexcept
 {
+	OFS_BENCHMARK(__FUNCTION__);
 	OFS::serializer::save(user, &Json[name]);
 }
 
@@ -317,7 +318,6 @@ inline void Funscript::save(const std::string& path, const std::string& usersett
 {
 	OFS_BENCHMARK(__FUNCTION__);
 
-	setScriptTemplate();
 	saveMetadata();
 	saveSettings<UserSettings>(usersettings, static_cast<UserSettings*>(userdata.get()));
 
@@ -327,21 +327,11 @@ inline void Funscript::save(const std::string& path, const std::string& usersett
 	// make sure actions are sorted
 	sortActions(data.Actions);
 
-	for (auto& action : data.Actions) {
-		// a little validation just in case
-		if (action.at < 0)
-			continue;
-
-		nlohmann::json actionObj = {
-			{ "at", action.at },
-			{ "pos", Util::Clamp<int32_t>(action.pos, 0, 100) }
-		};
-		actions.emplace_back(std::move(actionObj));
-	}
-
 	if (override_location) {
 		current_path = path;
 		unsavedEdits = false;
 	}
-	startSaveThread(path, std::move(Json));
+
+	auto copyActions = data.Actions;
+	startSaveThread(path, std::move(copyActions), std::move(Json));
 }

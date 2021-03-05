@@ -37,17 +37,6 @@ void Funscript::setBaseScript(nlohmann::json& base)
 	BaseLoaded.erase("metadata");
 }
 
-void Funscript::setScriptTemplate() noexcept
-{
-	// setup a base funscript template
-	Json = nlohmann::json(BaseLoaded);
-	Json["actions"] = nlohmann::json::array();
-	Json["version"] = "1.0";
-	Json["inverted"] = false;
-	Json["range"] = 100; // I think this is mostly ignored anyway
-	Json["OpenFunscripter"] = nlohmann::json::object();
-}
-
 void Funscript::NotifySelectionChanged() noexcept
 {
 	selectionChanged = true;
@@ -63,24 +52,51 @@ void Funscript::loadMetadata() noexcept
 
 void Funscript::saveMetadata() noexcept
 {
+	OFS_BENCHMARK(__FUNCTION__);
 	OFS::serializer::save(&metadata, &Json["metadata"]);
 }
 
-void Funscript::startSaveThread(const std::string& path, nlohmann::json&& json) noexcept
+void Funscript::startSaveThread(const std::string& path, std::vector<FunscriptAction>&& actions, nlohmann::json&& json) noexcept
 {
+	OFS_BENCHMARK(__FUNCTION__);
 	struct SaveThreadData {
 		nlohmann::json jsonObj;
+		std::vector<FunscriptAction> actions;
 		std::string path;
+		nlohmann::json* base;
 		SDL_mutex* mutex;
 	};
 	SaveThreadData* threadData = new SaveThreadData();
 	threadData->mutex = saveMutex;
 	threadData->path = path;
 	threadData->jsonObj = std::move(json); // give ownership to the thread
+	threadData->actions = std::move(actions);
+	threadData->base = &BaseLoaded;
+
 	auto thread = [](void* user) -> int {
 		OFS_BENCHMARK("SaveFunscriptThread");
 		SaveThreadData* data = static_cast<SaveThreadData*>(user);
 		SDL_LockMutex(data->mutex);
+
+		data->jsonObj["actions"] = nlohmann::json::array();
+		data->jsonObj["version"] = "1.0";
+		data->jsonObj["inverted"] = false;
+		data->jsonObj["range"] = 100; // I think this is mostly ignored anyway
+
+		data->jsonObj.merge_patch(*data->base);
+		auto& actions = data->jsonObj["actions"];
+		for (auto&& action : data->actions) {
+			// a little validation just in case
+			if (action.at < 0)
+				continue;
+
+			nlohmann::json actionObj = {
+				{ "at", action.at },
+				{ "pos", Util::Clamp<int32_t>(action.pos, 0, 100) }
+			};
+			actions.emplace_back(std::move(actionObj));
+	}
+
 #ifdef NDEBUG
 		Util::WriteJson(data->jsonObj, data->path.c_str());
 #else
@@ -115,7 +131,6 @@ void Funscript::update() noexcept
 
 void Funscript::saveMinium(const std::string& path) noexcept
 {
-	setScriptTemplate();
 	saveMetadata();
 
 	auto& actions = Json["actions"];
@@ -146,17 +161,7 @@ void Funscript::saveMinium(const std::string& path) noexcept
 	}
 	else { filteredActions = data.Actions; }
 
-	for(auto&& action : filteredActions) {
-	//for (auto&& action : data.Actions) {
-		if (action.at < 0)
-			continue;
-		nlohmann::json actionObj = {
-			{ "at", action.at },
-			{ "pos", Util::Clamp<int32_t>(action.pos, 0, 100) }
-		};
-		actions.emplace_back(std::move(actionObj));
-	}
-	startSaveThread(path, std::move(Json));
+	startSaveThread(path, std::move(filteredActions), std::move(Json));
 }
 
 float Funscript::GetPositionAtTime(int32_t time_ms) noexcept
