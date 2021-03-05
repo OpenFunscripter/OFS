@@ -256,7 +256,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 	drawingCtx.totalDurationMs = durationMs;
 	if (drawingCtx.totalDurationMs == 0.f) return;
 	
-	ImGui::Begin(PositionsId, open, ImGuiWindowFlags_None);
+	ImGui::Begin(PositionsId, open, ImGuiWindowFlags_None /*ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse*/);
 	auto draw_list = ImGui::GetWindowDrawList();
 	drawingCtx.draw_list = draw_list;
 	PositionsItemHovered = ImGui::IsWindowHovered();
@@ -265,7 +265,9 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 	for (auto&& script : *Scripts) {
 		if (script->Enabled) { drawingCtx.drawnScriptCount++; }
 	}
-	const auto availSize = ImGui::GetContentRegionAvail() - ImVec2(0.f , style.ItemSpacing.y*((float)drawingCtx.drawnScriptCount-1) + (style.ItemSpacing.y * 1.501f));
+
+	const float verticalSpacingBetweenScripts = style.ItemSpacing.y*2.f;
+	const auto availSize = ImGui::GetContentRegionAvail() - ImVec2(0.f , verticalSpacingBetweenScripts*((float)drawingCtx.drawnScriptCount-1));
 	const auto startCursor = ImGui::GetCursorScreenPos();
 
 	ImGui::SetCursorScreenPos(startCursor);
@@ -414,7 +416,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 				selectColor, 3.0f
 			);
 		}
-		ImVec2 newCursor(drawingCtx.canvas_pos.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y + (style.ItemSpacing.y * 1.5f));
+		ImVec2 newCursor(drawingCtx.canvas_pos.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y + verticalSpacingBetweenScripts);
 		if (newCursor.y < (startCursor.y + availSize.y)) { ImGui::SetCursorScreenPos(newCursor); }
 
 
