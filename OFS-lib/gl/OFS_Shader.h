@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 class ShaderBase {
 protected:
 	unsigned int program = 0;
@@ -234,6 +236,79 @@ public:
 	void AspectRatio(float aspect) noexcept;
 };
 
+
+class WaveformShader : public ShaderBase
+{
+private:
+	static constexpr const char* vtx_shader = R"(
+			#version 330 core
+			uniform mat4 ProjMtx;
+			in vec2 Position;
+			in vec2 UV;
+			in vec4 Color;
+			out vec2 Frag_UV;
+			out vec4 Frag_Color;
+			void main()
+			{
+				Frag_UV = UV;
+				Frag_Color = Color;
+				gl_Position = ProjMtx * vec4(Position.xy,0,1);
+			}
+	)";
+	static constexpr const char* frag_shader = R"(
+			#version 330 core
+			uniform sampler2D Texture;
+			uniform vec2 rotation;
+			uniform float zoom;
+			uniform float aspect_ratio;
+
+			uniform sampler1D audio;
+
+			in vec2 Frag_UV;
+			in vec4 Frag_Color;
+
+			out vec4 Out_Color;
+
+			void main()
+			{
+				float sample = texture(audio, Frag_UV.x).x;
+				//Out_Color = vec4(sample.xyz, 1.f); //vec4(sample, sample, sample, 1.f);
+				//Out_Color = vec4(Frag_UV, 0.f, 1.f);
+				
+				float padding = (1.f - sample) / 2.f;
+
+				if(Frag_UV.y >= padding && Frag_UV.y <= (1.f - padding)) {
+					Out_Color = vec4(0.89f, 0.259f, 0.204f, 1.f);
+					//Out_Color = vec4(1.f, 0.f, 1.f, 1.f);
+				}
+				else {
+					if(Frag_UV.y < padding) {
+						Out_Color = vec4(0.89f, 0.0f, 0.204f, (Frag_UV.y / padding) * .4f);
+					}
+					else {
+						Out_Color = vec4(0.89f, 0.0f, 0.204f, ((1.f - Frag_UV.y) / padding) * .4f);
+					}
+					//Out_Color = vec4(0.89f, 0.259f, 0.204f, 1.f);
+					//Out_Color = vec4(0.f, 0.f, 0.f, 0.f);
+				}
+				//Out_Color = vec4(1.f, 0.f, 1.f, sample);
+				//if(sample > Frag_UV.y - 0.5) {
+				//	Out_Color = vec4(1.f, 0.f, 1.f, 1.f);
+				//}
+				//else {
+				//	Out_Color = vec4(0.f, 0.f, 0.f, 0.f);
+				//}
+			}
+	)";
+public:
+	WaveformShader()
+		: ShaderBase(vtx_shader, frag_shader)
+	{}
+
+	void ProjMtx(const float* mat4) noexcept;
+	void Resolution(const float* vec2) noexcept;
+	void AudioData(uint32_t unit) noexcept;
+};
 
 class LightingShader : public ShaderBase
 {

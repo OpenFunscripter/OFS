@@ -7,7 +7,11 @@
 #include "SDL.h"
 #include "stb_sprintf.h"
 
+#include <memory>
 #include <array>
+
+#include "OFS_Shader.h"
+#include "glad/glad.h"
 
 int32_t ScriptTimelineEvents::FfmpegAudioProcessingFinished = 0;
 int32_t ScriptTimelineEvents::ScriptpositionWindowDoubleClick = 0;
@@ -55,6 +59,13 @@ void ScriptTimeline::setup(UndoSystem* undoSystem)
 	EventSystem::ev().Subscribe(SDL_MOUSEBUTTONUP, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouse_released));
 	EventSystem::ev().Subscribe(ScriptTimelineEvents::FfmpegAudioProcessingFinished, EVENT_SYSTEM_BIND(this, &ScriptTimeline::FfmpegAudioProcessingFinished));
 	EventSystem::ev().Subscribe(VideoEvents::MpvVideoLoaded, EVENT_SYSTEM_BIND(this, &ScriptTimeline::videoLoaded));
+
+	glCreateTextures(GL_TEXTURE_1D, 1, &WaveformTex);
+	glBindTexture(GL_TEXTURE_1D, WaveformTex);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	WaveShader = std::make_unique<WaveformShader>();
 }
 
 void ScriptTimeline::mouse_pressed(SDL_Event& ev) noexcept
@@ -421,7 +432,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 
 
 		// right click context menu
-		if (ImGui::BeginPopupContextItem())
+		if (ImGui::BeginPopupContextItem(script.metadata.title.c_str()))
 		{
 			if (ImGui::BeginMenu("Scripts")) {
 				for (auto&& script : *Scripts) {
@@ -509,6 +520,13 @@ constexpr uint32_t LowRangeCol = IM_COL32(0xF7, 0x65, 0x38, 0xff); // IM_COL32(0
 
 void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 {
+
+#ifndef NDEBUG
+	if (!ShowAudioWaveform) {
+		waveform.LoadMP3(Util::Prefpath("tmp/audio.mp3"));
+		EventSystem::PushEvent(ScriptTimelineEvents::FfmpegAudioProcessingFinished);
+	}
+#endif
 	auto& canvas_pos = ctx.canvas_pos;
 	auto& canvas_size = ctx.canvas_size;
 	const auto draw_list = ctx.draw_list;
@@ -520,7 +538,7 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 		int32_t start_index = rel_start * (float)waveform.SampleCount();
 		int32_t end_index = rel_end * (float)waveform.SampleCount();
 		const int total_samples = end_index - start_index;
-		const int line_merge = 1 + (total_samples / 1500);
+		const int line_merge = 1 + (total_samples / 2000);
 		const int actual_total_samples = total_samples / line_merge;
 
 		const float line_width = ((1.f / ((float)actual_total_samples)) * canvas_size.x) + 0.75f;
@@ -528,12 +546,15 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 		end_index -= end_index % line_merge;
 		end_index += line_merge;
 
+
 		auto renderWaveform = [&](std::vector<float> samples, uint32_t color, float cullBelow)
 		{
+			WaveformLineBuffer.clear();
 			for (int i = start_index; i < end_index - (line_merge + line_merge); i += line_merge) {
 				const float total_pos_x = ((((float)i - start_index) / (float)total_samples)) * canvas_size.x;
 				float total_len;
 				if (i < 0 || (i + line_merge) >= samples.size()) {
+					WaveformLineBuffer.emplace_back(0.f);
 					continue;
 				}
 				else {
@@ -542,14 +563,35 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 						// find peak
 						sample = std::max(sample, samples[i + x]);
 					}
-					if (sample < cullBelow) { continue; }
-					total_len = canvas_size.y * sample * ScaleAudio;
+					WaveformLineBuffer.emplace_back(sample);
 				}
-				draw_list->AddLine(
-					canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) + (total_len / 2.f)),
-					canvas_pos + ImVec2(total_pos_x, (canvas_size.y / 2.f) - (total_len / 2.f)),
-					color, line_width);
 			}
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_1D, WaveformTex);
+			glTexImage1D(GL_TEXTURE_1D, 0, GL_RED, WaveformLineBuffer.size(), 0, GL_RED, GL_FLOAT, WaveformLineBuffer.data());
+			draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
+				ScriptTimeline* ctx = (ScriptTimeline*)cmd->UserCallbackData;
+				
+				glActiveTexture(GL_TEXTURE1);
+				glBindTexture(GL_TEXTURE_1D, ctx->WaveformTex);
+				ctx->WaveShader->use();
+				auto draw_data = ImGui::GetDrawData();
+				float L = draw_data->DisplayPos.x;
+				float R = draw_data->DisplayPos.x + draw_data->DisplaySize.x;
+				float T = draw_data->DisplayPos.y;
+				float B = draw_data->DisplayPos.y + draw_data->DisplaySize.y;
+				const float ortho_projection[4][4] =
+				{
+					{ 2.0f / (R - L), 0.0f, 0.0f, 0.0f },
+					{ 0.0f, 2.0f / (T - B), 0.0f, 0.0f },
+					{ 0.0f, 0.0f, -1.0f, 0.0f },
+					{ (R + L) / (L - R),  (T + B) / (B - T),  0.0f,   1.0f },
+				};
+				ctx->WaveShader->ProjMtx(&ortho_projection[0][0]);
+				ctx->WaveShader->AudioData(1);
+			}, this);
+			draw_list->AddImage(0, ctx.canvas_pos, ctx.canvas_pos + ctx.canvas_size);
+			draw_list->AddCallback(ImDrawCallback_ResetRenderState, 0);
 		};
 
 #if 0 // TODO: this has bad perf

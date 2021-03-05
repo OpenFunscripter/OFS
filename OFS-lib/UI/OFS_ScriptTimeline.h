@@ -51,8 +51,12 @@ public:
 	float rel_x2 = 0.0f;
 
 	std::unique_ptr<BaseOverlay> overlay;
-
 	std::vector<FunscriptAction> RecordingBuffer;
+	
+	std::vector<float> WaveformLineBuffer;
+	unsigned int WaveformTex = 0;
+	std::unique_ptr<class WaveformShader> WaveShader;
+
 	
 	const char* videoPath = nullptr;
 	float frameTimeMs = 16.66667;

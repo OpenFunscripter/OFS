@@ -137,3 +137,19 @@ void BlurShader::Time(float time) noexcept
 {
 	glUniform1f(glGetUniformLocation(program, "Time"), time);
 }
+
+void WaveformShader::ProjMtx(const float* mat4) noexcept
+{
+	glUniformMatrix4fv(glGetUniformLocation(program, "ProjMtx"), 1, GL_FALSE, mat4);
+}
+
+void WaveformShader::Resolution(const float* vec2) noexcept
+{
+	glUniform2fv(glGetUniformLocation(program, "Resolution"), 1, vec2);
+}
+
+void WaveformShader::AudioData(uint32_t unit) noexcept
+{
+	auto i = glGetUniformLocation(program, "audio");
+	glUniform1i(i, unit);
+}
