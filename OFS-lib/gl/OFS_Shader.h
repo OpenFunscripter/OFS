@@ -299,18 +299,17 @@ private:
 				{
 					vec2 uPos = Frag_UV;
 	
-					uPos.y -= 0.5;	//center waves
-	
+					uPos.y -= 0.5;	//center waves		
+					
 					vec3 color = vec3(0.0);
 					float levels = texture(audio, uPos.x).x * .5 + 0.2;	//audio
-					//levels *= map(sin(Time*(levels + 1.f)), -1.f, 1.f, 0.75f, 1.25f);
-				
+					
 					const float k = 5.;	//how many waves
 					for( float i = 1.0; i < k; ++i )
 					{
 						float t = ((Time/2.f) * exp(0.1f)) + ((ScriptPos + 1.f) * 0.01f);
 	
-						uPos.y += exp(6.0*levels) * sin( uPos.x*exp(i) - t) * 0.01;
+						uPos.y += exp(scaleAudio * 6.0 * levels) * sin( uPos.x*exp(i) - t) * 0.01;
 						float fTemp = abs(1.0/(50.0*k) / uPos.y);
 						color += vec3( fTemp*(i*0.03), fTemp*i/k, pow(fTemp,0.93)*1.2 ).zyx;
 					}

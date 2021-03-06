@@ -481,8 +481,8 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 				return 0;
 			};
 			if (ImGui::BeginMenu("Audio waveform")) {
-				ImGui::SetNextItemWidth(ImGui::GetFontSize()*5.f);
 				ImGui::DragFloat("Scale", &ScaleAudio, 0.01f, 0.01f, 10.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+				ImGui::ColorEdit3("Color", &WaveformColor.Value.x, ImGuiColorEditFlags_None);
 				if (ImGui::MenuItem("Enable waveform", NULL, &ShowAudioWaveform, !waveform.BusyGenerating())) {}
 				if (ImGui::MenuItem(waveform.BusyGenerating() 
 					? "Processing audio..." 
@@ -493,7 +493,6 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 						SDL_DetachThread(handle);
 					}
 				}
-				ImGui::ColorEdit3("Color", &WaveformColor.Value.x, ImGuiColorEditFlags_None);
 				if (ShowAudioWaveform) { if (ImGui::MenuItem("Enable P-Mode " ICON_WARNING_SIGN, 0, &WaveformPartyMode)) {} }
 				ImGui::EndMenu();
 			}
