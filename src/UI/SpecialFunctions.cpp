@@ -354,16 +354,10 @@ static constexpr struct luaL_Reg printlib[] = {
 };
 
 static int LuaDoFile(lua_State* L, const char* path) {
-    // luaL_dofile doesn't handle spaces in paths ...
-    auto handle = SDL_RWFromFile(path, "r");
-    if (handle != nullptr) {
-        size_t buf_size = SDL_RWsize(handle);
-        char* buffer = new char[buf_size+1];
-        SDL_RWread(handle, buffer, sizeof(char), buf_size);
-        buffer[buf_size] = '\0';
-        SDL_RWclose(handle);
-        int result = luaL_dostring(L, buffer);
-        delete[] buffer;
+    std::vector<uint8_t> file;
+    if (Util::ReadFile(path, file) > 0) {
+        file.emplace_back('\0');
+        int result = luaL_dostring(L, (const char*)file.data());
         return result;
     }
     return -1;

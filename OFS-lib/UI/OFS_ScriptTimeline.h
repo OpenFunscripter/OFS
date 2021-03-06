@@ -118,7 +118,7 @@ public:
 	const float MIN_WINDOW_SIZE = 1.f; // this limit is also arbitrary and not enforced
 	void setup(UndoSystem* undo);
 
-	inline void ClearAudioWaveform() noexcept { waveform.Clear(); }
+	inline void ClearAudioWaveform() noexcept { ShowAudioWaveform = false; waveform.Clear(); }
 	inline void setStartSelection(int32_t ms) noexcept { startSelectionMs = ms; }
 	inline int32_t selectionStart() const noexcept { return startSelectionMs; }
 	void ShowScriptPositions(bool* open, float currentPositionMs, float durationMs, float frameTimeMs, const std::vector<std::shared_ptr<Funscript>>* scripts, int activeScriptIdx) noexcept;

@@ -171,6 +171,19 @@ public:
 		return handle;
 	}
 
+	inline static size_t ReadFile(const char* path, std::vector<uint8_t>& buffer) noexcept
+	{
+		auto file = OpenFile(path, "r", strlen(path));
+		if (file) {
+			buffer.clear();
+			buffer.resize(SDL_RWsize(file));
+			SDL_RWread(file, buffer.data(), sizeof(uint8_t), buffer.size());
+			SDL_RWclose(file);
+			return buffer.size();
+		}
+		return 0;
+	}
+
 	inline static void WriteJson(const nlohmann::json& json, const std::string& file, bool pretty = false) noexcept {
 		return WriteJson(json, file.c_str(), pretty, file.size());
 	}

@@ -522,7 +522,7 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 
-#ifndef NDEBUG
+#if 0
 	if (!ShowAudioWaveform) {
 		waveform.LoadMP3(Util::Prefpath("tmp/audio.mp3"));
 		EventSystem::PushEvent(ScriptTimelineEvents::FfmpegAudioProcessingFinished);
