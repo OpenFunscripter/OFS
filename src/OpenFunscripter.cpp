@@ -785,6 +785,28 @@ void OpenFunscripter::register_bindings()
             KMOD_CTRL
         );
 
+        auto& select_all_left = group.bindings.emplace_back(
+            "select_all_left",
+            "Select all left",
+            true,
+            [&](void*) { ActiveFunscript()->SelectTime(0, player->getCurrentPositionMsInterp()); }
+        );
+        select_all_left.key = Keybinding(
+            SDLK_LEFT,
+            KMOD_CTRL | KMOD_ALT
+        );
+
+        auto& select_all_right = group.bindings.emplace_back(
+            "select_all_right",
+            "Select all right",
+            true,
+            [&](void*) { ActiveFunscript()->SelectTime(player->getCurrentPositionMsInterp(), player->getDuration()*1000.f); }
+        );
+        select_all_right.key = Keybinding(
+            SDLK_RIGHT,
+            KMOD_CTRL | KMOD_ALT
+        );
+
         auto& toggle_mirror_mode = group.bindings.emplace_back(
             "toggle_mirror_mode",
             "Toggle mirror mode",
@@ -2352,10 +2374,10 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             }
 
             if (ImGui::BeginMenu("Special")) {
-                if (ImGui::MenuItem("Select all left")) {
+                if (ImGui::MenuItem("Select all left", BINDING_STRING("select_all_left"), false)) {
                     ActiveFunscript()->SelectTime(0, player->getCurrentPositionMsInterp());
                 }
-                if (ImGui::MenuItem("Select all right")) {
+                if (ImGui::MenuItem("Select all right", BINDING_STRING("select_all_right"), false)) {
                     ActiveFunscript()->SelectTime(player->getCurrentPositionMsInterp(), player->getDuration()*1000.f);
                 }
                 ImGui::Separator();
