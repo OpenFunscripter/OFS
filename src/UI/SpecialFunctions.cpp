@@ -329,7 +329,16 @@ static int LuaPrint(lua_State* L) noexcept
     std::stringstream ss;
     for (int i = 1; i <= nargs; ++i) {
          const char* str = lua_tostring(L, i);
-         if (str != nullptr) { ss << str; }
+         if (str != nullptr) {
+             size_t len = strlen(str);
+             if (len >= 1024) {
+                 ss.write(str, 1024);
+                 ss << "[...] " << len << " characters were truncated";
+             }
+             else {
+                ss << str; 
+             }
+         }
     }
     ss << std::endl;
 
