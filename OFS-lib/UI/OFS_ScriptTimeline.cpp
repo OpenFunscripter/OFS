@@ -548,6 +548,7 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 		end_index += line_merge;
 
 
+		WaveformViewport = ImGui::GetWindowViewport();
 		auto renderWaveform = [](const std::vector<float>& samples, ScriptTimeline* timeline, const OverlayDrawingCtx& ctx, int start_index, int end_index)
 		{
 			OFS_PROFILE("renderWaveform");
@@ -577,7 +578,7 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 				glActiveTexture(GL_TEXTURE1);
 				glBindTexture(GL_TEXTURE_1D, ctx->WaveformTex);
 				ctx->WaveShader->use();
-				auto draw_data = ImGui::GetDrawData();
+				auto draw_data = ctx->WaveformViewport->DrawData;
 				float L = draw_data->DisplayPos.x;
 				float R = draw_data->DisplayPos.x + draw_data->DisplaySize.x;
 				float T = draw_data->DisplayPos.y;

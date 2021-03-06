@@ -58,6 +58,7 @@ public:
 	std::unique_ptr<class WaveformShader> WaveShader;
 	bool WaveformPartyMode = false;
 	ImColor WaveformColor = IM_COL32(227, 66, 52, 255);
+	ImGuiViewport* WaveformViewport = nullptr;
 
 	
 	const char* videoPath = nullptr;
