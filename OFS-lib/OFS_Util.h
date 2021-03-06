@@ -43,7 +43,7 @@
 #define ICON_REFRESH "\xef\x80\xa1"
 #define ICON_TRASH "\xef\x87\xb8"
 #define ICON_RANDOM "\xef\x81\xb4"
-
+#define ICON_WARNING_SIGN "\xef\x81\xb1"
 //#ifndef NDEBUG
 #define LOG_INFO(msg)  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, msg)
 #define LOG_WARN(msg)  SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, msg)

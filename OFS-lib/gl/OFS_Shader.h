@@ -264,41 +264,61 @@ private:
 
 			uniform sampler1D audio;
 			uniform float scaleAudio;
+			uniform float Time;
+			uniform float ScriptPos;
+			uniform bool PartyMode;
+			uniform vec3 Color;
 
 			in vec2 Frag_UV;
 			in vec4 Frag_Color;
 
 			out vec4 Out_Color;
 
+			float map(float value, float min1, float max1, float min2, float max2) {
+			  return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
+			}
+
 			void main()
 			{
 				float sample = texture(audio, Frag_UV.x).x * scaleAudio;
-				//Out_Color = vec4(sample.xyz, 1.f); //vec4(sample, sample, sample, 1.f);
-				//Out_Color = vec4(Frag_UV, 0.f, 1.f);
-				
 				float padding = (1.f - sample) / 2.f;
-
+				
 				if(Frag_UV.y >= padding && Frag_UV.y <= (1.f - padding)) {
-					Out_Color = vec4(0.89f, 0.259f, 0.204f, 1.f);
-					//Out_Color = vec4(1.f, 0.f, 1.f, 1.f);
+					Out_Color = vec4(Color, 1.f);
 				}
-				else {
+				else if(PartyMode) {
 					if(Frag_UV.y < padding) {
-						Out_Color = vec4(0.89f, 0.0f, 0.204f, (Frag_UV.y / padding) * .4f);
+						Out_Color = vec4(Color.r, 0.0f, Color.b, (Frag_UV.y / padding) * .4f);
 					}
 					else {
-						Out_Color = vec4(0.89f, 0.0f, 0.204f, ((1.f - Frag_UV.y) / padding) * .4f);
+						Out_Color = vec4(Color.r, 0.0f, Color.b, ((1.f - Frag_UV.y) / padding) * .4f);
 					}
-					//Out_Color = vec4(0.89f, 0.259f, 0.204f, 1.f);
-					//Out_Color = vec4(0.f, 0.f, 0.f, 0.f);
 				}
-				//Out_Color = vec4(1.f, 0.f, 1.f, sample);
-				//if(sample > Frag_UV.y - 0.5) {
-				//	Out_Color = vec4(1.f, 0.f, 1.f, 1.f);
-				//}
-				//else {
-				//	Out_Color = vec4(0.f, 0.f, 0.f, 0.f);
-				//}
+
+				if(PartyMode)
+				{
+					vec2 uPos = Frag_UV;
+	
+					uPos.y -= 0.5;	//center waves
+	
+					vec3 color = vec3(0.0);
+					float levels = texture(audio, uPos.x).x * .5 + 0.2;	//audio
+					//levels *= map(sin(Time*(levels + 1.f)), -1.f, 1.f, 0.75f, 1.25f);
+				
+					const float k = 5.;	//how many waves
+					for( float i = 1.0; i < k; ++i )
+					{
+						float t = ((Time/2.f) * exp(0.1f)) + ((ScriptPos + 1.f) * 0.01f);
+	
+						uPos.y += exp(6.0*levels) * sin( uPos.x*exp(i) - t) * 0.01;
+						float fTemp = abs(1.0/(50.0*k) / uPos.y);
+						color += vec3( fTemp*(i*0.03), fTemp*i/k, pow(fTemp,0.93)*1.2 ).zyx;
+					}
+	
+					vec4 color_final = vec4(color, 0.0);
+					color_final.a = color_final.x + color_final.y + color_final.z;
+					Out_Color += color_final;
+				}
 			}
 	)";
 public:
@@ -310,6 +330,10 @@ public:
 	void Resolution(const float* vec2) noexcept;
 	void AudioData(uint32_t unit) noexcept;
 	void ScaleFactor(float scale) noexcept;
+	void Time(float time) noexcept;
+	void PartyMode(bool enable) noexcept;
+	void ScriptPos(float pos) noexcept;
+	void Color(float* vec3) noexcept;
 };
 
 class LightingShader : public ShaderBase

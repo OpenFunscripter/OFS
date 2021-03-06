@@ -158,3 +158,23 @@ void WaveformShader::ScaleFactor(float scale) noexcept
 {
 	glUniform1f(glGetUniformLocation(program, "scaleAudio"), scale);
 }
+
+void WaveformShader::Time(float time) noexcept
+{
+	glUniform1f(glGetUniformLocation(program, "Time"), time);
+}
+
+void WaveformShader::PartyMode(bool enable) noexcept
+{
+	glUniform1i(glGetUniformLocation(program, "PartyMode"), enable);
+}
+
+void WaveformShader::ScriptPos(float pos) noexcept
+{
+	glUniform1f(glGetUniformLocation(program, "ScriptPos"), pos);
+}
+
+void WaveformShader::Color(float* vec3) noexcept
+{
+	glUniform3fv(glGetUniformLocation(program, "Color"), 1, vec3);
+}

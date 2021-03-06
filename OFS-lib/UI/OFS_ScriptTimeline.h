@@ -56,6 +56,8 @@ public:
 	std::vector<float> WaveformLineBuffer;
 	unsigned int WaveformTex = 0;
 	std::unique_ptr<class WaveformShader> WaveShader;
+	bool WaveformPartyMode = false;
+	ImColor WaveformColor = IM_COL32(227, 66, 52, 255);
 
 	
 	const char* videoPath = nullptr;

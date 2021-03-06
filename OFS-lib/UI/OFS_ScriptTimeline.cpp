@@ -481,7 +481,8 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 				return 0;
 			};
 			if (ImGui::BeginMenu("Audio waveform")) {
-				ImGui::DragFloat("Waveform scale", &ScaleAudio, 0.01f, 0.01f, 10.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+				ImGui::SetNextItemWidth(ImGui::GetFontSize()*5.f);
+				ImGui::DragFloat("Scale", &ScaleAudio, 0.01f, 0.01f, 10.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
 				if (ImGui::MenuItem("Enable waveform", NULL, &ShowAudioWaveform, !waveform.BusyGenerating())) {}
 				if (ImGui::MenuItem(waveform.BusyGenerating() 
 					? "Processing audio..." 
@@ -492,6 +493,8 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 						SDL_DetachThread(handle);
 					}
 				}
+				ImGui::ColorEdit3("Color", &WaveformColor.Value.x, ImGuiColorEditFlags_None);
+				if (ShowAudioWaveform) { if (ImGui::MenuItem("Enable P-Mode " ICON_WARNING_SIGN, 0, &WaveformPartyMode)) {} }
 				ImGui::EndMenu();
 			}
 			ImGui::EndPopup();
@@ -590,6 +593,9 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 				ctx->WaveShader->ProjMtx(&ortho_projection[0][0]);
 				ctx->WaveShader->AudioData(1);
 				ctx->WaveShader->ScaleFactor(ctx->ScaleAudio);
+				ctx->WaveShader->Time(SDL_GetTicks() / 1000.f);
+				ctx->WaveShader->PartyMode(ctx->WaveformPartyMode);
+				ctx->WaveShader->Color(&ctx->WaveformColor.Value.x);
 			}, timeline);
 			ctx.draw_list->AddImage(0, ctx.canvas_pos, ctx.canvas_pos + ctx.canvas_size);
 			ctx.draw_list->AddCallback(ImDrawCallback_ResetRenderState, 0);
