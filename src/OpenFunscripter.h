@@ -82,6 +82,10 @@ private:
 	void ScriptTimelineActiveScriptChanged(SDL_Event& ev) noexcept;
 
 
+	void selectTopPoints() noexcept;
+	void selectMiddlePoints() noexcept;
+	void selectBottomPoints() noexcept;
+
 	void cutSelection() noexcept;
 	void copySelection() noexcept;
 	void pasteSelection() noexcept;

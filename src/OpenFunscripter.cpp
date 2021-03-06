@@ -27,6 +27,8 @@
 // BUG: Simulator 3D move widget doesn't show when settings window is in a separate platform window/viewport
 // TODO: make speed coloring configurable
 
+// TODO: Different selection modes
+
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
 constexpr std::array<const char*, 6> SupportedVideoExtensions {
@@ -805,6 +807,27 @@ void OpenFunscripter::register_bindings()
         select_all_right.key = Keybinding(
             SDLK_RIGHT,
             KMOD_CTRL | KMOD_ALT
+        );
+
+        auto& select_top_points = group.bindings.emplace_back(
+            "select_top_points",
+            "Select top points",
+            true,
+            [&](void*) { selectTopPoints(); }
+        );
+
+        auto& select_middle_points = group.bindings.emplace_back(
+            "select_middle_points",
+            "Select middle points",
+            true,
+            [&](void*) { selectMiddlePoints(); }
+        );
+
+        auto& select_bottom_points = group.bindings.emplace_back(
+            "select_bottom_points",
+            "Select bottom points",
+            true,
+            [&](void*) { selectBottomPoints(); }
         );
 
         auto& toggle_mirror_mode = group.bindings.emplace_back(
@@ -2403,22 +2426,19 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 ImGui::EndMenu();
             }
             ImGui::Separator();
-            if (ImGui::MenuItem("Top points only", NULL, false)) {
+            if (ImGui::MenuItem("Top points only", BINDING_STRING("select_top_points"), false)) {
                 if (ActiveFunscript()->HasSelection()) {
-                    undoSystem->Snapshot(StateType::TOP_POINTS_ONLY, false, ActiveFunscript().get());
-                    ActiveFunscript()->SelectTopActions();
+                    selectTopPoints();
                 }
             }
-            if (ImGui::MenuItem("Mid points only", NULL, false)) {
+            if (ImGui::MenuItem("Mid points only", BINDING_STRING("select_middle_points"), false)) {
                 if (ActiveFunscript()->HasSelection()) {
-                    undoSystem->Snapshot(StateType::MID_POINTS_ONLY, false, ActiveFunscript().get());
-                    ActiveFunscript()->SelectMidActions();
+                    selectMiddlePoints();
                 }
             }
-            if (ImGui::MenuItem("Bottom points only", NULL, false)) {
+            if (ImGui::MenuItem("Bottom points only", BINDING_STRING("select_bottom_points"), false)) {
                 if (ActiveFunscript()->HasSelection()) {
-                    undoSystem->Snapshot(StateType::BOTTOM_POINTS_ONLY, false, ActiveFunscript().get());
-                    ActiveFunscript()->SelectBottomActions();
+                    selectBottomPoints();
                 }
             }
             ImGui::Separator();
@@ -2876,4 +2896,22 @@ void OpenFunscripter::ScriptTimelineSelectTime(SDL_Event& ev) noexcept
 void OpenFunscripter::ScriptTimelineActiveScriptChanged(SDL_Event& ev) noexcept
 {
     UpdateNewActiveScript((intptr_t)ev.user.data1);
+}
+
+void OpenFunscripter::selectTopPoints() noexcept
+{
+    undoSystem->Snapshot(StateType::TOP_POINTS_ONLY, false, ActiveFunscript().get());
+    ActiveFunscript()->SelectTopActions();
+}
+
+void OpenFunscripter::selectMiddlePoints() noexcept
+{
+    undoSystem->Snapshot(StateType::MID_POINTS_ONLY, false, ActiveFunscript().get());
+    ActiveFunscript()->SelectMidActions();
+}
+
+void OpenFunscripter::selectBottomPoints() noexcept
+{
+    undoSystem->Snapshot(StateType::BOTTOM_POINTS_ONLY, false, ActiveFunscript().get());
+    ActiveFunscript()->SelectBottomActions();
 }
