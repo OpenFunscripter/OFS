@@ -586,10 +586,11 @@ void CustomLua::resetVM() noexcept
 
         std::stringstream builder;
         for (auto&& action : actions) {
-            stbsp_snprintf(tmp, sizeof(tmp), "CurrentScript:AddActionUnordered(%d, %d, %s)\n",
+            stbsp_snprintf(tmp, sizeof(tmp), "CurrentScript:AddActionUnordered(%d, %d, %s, %d)\n",
                 action.at,
                 action.pos,
-                script->IsSelected(action) ? "true" : "false" // script->IsSelected is really slow. maybe for large selections checking an std::unordered_set  is probably alot faster
+                script->IsSelected(action) ? "true" : "false", // script->IsSelected is really slow. maybe for large selections checking an std::unordered_set  is probably alot faster
+                action.tag
             );
             builder << tmp;
             
@@ -674,6 +675,7 @@ bool CollectScriptOutputs(LuaThread& thread, lua_State* L) noexcept
     int32_t size;
     int32_t at;
     int32_t pos;
+    int32_t tag;
     bool selected;
     
     int32_t i;
@@ -725,11 +727,17 @@ bool CollectScriptOutputs(LuaThread& thread, lua_State* L) noexcept
             selected = lua_toboolean(L, -1);
             lua_pop(L, 1); // pop selected
 
+            lua_getfield(L, -1, "tag"); // push tag
+            CHECK_OR_FAIL(lua_isnumber(L, -1));
+            tag = lua_tonumber(L, -1);
+            lua_pop(L, 1); // pop tag
+
             pos = Util::Clamp(pos, 0, 100);
             at = std::max(at, 0);
+            tag = (uint8_t)tag;
 
-            currentScript.actions.insert(FunscriptAction(at, pos));
-            if (selected) { currentScript.selection.insert(FunscriptAction(at, pos)); }
+            currentScript.actions.insert(FunscriptAction(at, pos, tag));
+            if (selected) { currentScript.selection.insert(FunscriptAction(at, pos, tag)); }
 
             lua_pop(L, 1); // pop single action
         }

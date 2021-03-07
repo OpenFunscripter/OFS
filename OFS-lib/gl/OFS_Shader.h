@@ -307,9 +307,9 @@ private:
 					const float k = 5.;	//how many waves
 					for( float i = 1.0; i < k; ++i )
 					{
-						float t = ((Time/2.f) * exp(0.1f)) + ((ScriptPos + 1.f) * 0.01f);
+						float t = (2.f * Time * exp(0.1f)) + ((ScriptPos + 1.f) * 0.01f);
 	
-						uPos.y += exp(scaleAudio * 6.0 * levels) * sin( uPos.x*exp(i) - t) * 0.01;
+						uPos.y += exp((ScriptPos*0.01f) +  scaleAudio * 6.0 * levels) * sin( uPos.x*exp(i) - t) * 0.01;
 						float fTemp = abs(1.0/(50.0*k) / uPos.y);
 						color += vec3( fTemp*(i*0.03), fTemp*i/k, pow(fTemp,0.93)*1.2 ).zyx;
 					}

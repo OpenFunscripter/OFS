@@ -572,6 +572,7 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 			glActiveTexture(GL_TEXTURE1);
 			glBindTexture(GL_TEXTURE_1D, timeline->WaveformTex);
 			glTexImage1D(GL_TEXTURE_1D, 0, GL_RED, timeline->WaveformLineBuffer.size(), 0, GL_RED, GL_FLOAT, timeline->WaveformLineBuffer.data());
+
 			ctx.draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) noexcept {
 				ScriptTimeline* ctx = (ScriptTimeline*)cmd->UserCallbackData;
 				
@@ -593,7 +594,7 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 				ctx->WaveShader->ProjMtx(&ortho_projection[0][0]);
 				ctx->WaveShader->AudioData(1);
 				ctx->WaveShader->ScaleFactor(ctx->ScaleAudio);
-				ctx->WaveShader->Time(SDL_GetTicks() / 1000.f);
+				ctx->WaveShader->Time((SDL_GetTicks() / 1000.f));
 				ctx->WaveShader->PartyMode(ctx->WaveformPartyMode);
 				ctx->WaveShader->Color(&ctx->WaveformColor.Value.x);
 			}, timeline);

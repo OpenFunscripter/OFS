@@ -4,7 +4,7 @@
 
 -- This file contains a really basic api to modify funscripts.
 
-Action = {at = 0, pos = 0}
+Action = {at = 0, pos = 0, selected = false, tag = 0}
 
 -- internal use only
 function Action:new(o)
@@ -14,6 +14,8 @@ function Action:new(o)
    self.__tostring = function(self) return string.format("at:%d pos:%d", self.at, self.pos) end
    self.at = at or 0
    self.pos = pos or 0
+   self.tag = tag or 0 -- an arbitrary tag that scripts can set which will persist till OFS gets closesd. 
+                       -- it's one byte so only values from 0 to 255 are valid
    self.selected = false
    return o
 end
@@ -79,11 +81,12 @@ end
 -- adds action & ignores ordering
 -- OFS will order them correctly after the script ran
 -- using this function when order doesn't matter greatly improves performance
-function Funscript:AddActionUnordered(at, pos, selected)
+function Funscript:AddActionUnordered(at, pos, selected, tag)
    local newAction = Action:new()
    newAction.at = at
    newAction.pos = pos
    newAction.selected = selected or false
+   newAction.tag = tag or 0
 
    table.insert(self.actions, newAction)
 end

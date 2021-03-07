@@ -37,8 +37,6 @@ public:
 
 using ActionClickedEventArgs = std::tuple<SDL_Event, FunscriptAction>;
 
-static bool OutputAudioFile(const char* ffmpeg_path, const char* video_path, const char* output_path);
-
 class ScriptTimeline
 {
 public:
