@@ -43,7 +43,7 @@ public:
 
 	inline float Sample(const std::vector<FunscriptAction>& actions, float timeMs) noexcept 
 	{
-		if (actions.size() == 0) { return NAN; }
+		if (actions.size() == 0) { return 0.f; }
 		else if (actions.size() == 1) { return actions.front().pos; }
 		else if (cacheIdx + 1 >= actions.size()) { cacheIdx = 0; }
 
@@ -77,13 +77,12 @@ public:
 			return catmull_rom_spline(actions, it->second, timeMs);
 		}
 
-		// I don't know if I like this probably better to just return 0.f
-		return NAN;
+		return 0.f;
 	}
 
 	inline float SampleAtIndex(const std::vector<FunscriptAction>& actions, int32_t index, float timeMs) const noexcept
 	{
-		if (actions.size() == 0) { return NAN; }
+		if (actions.size() == 0) { return 0.f; }
 		if (index + 1 < actions.size())
 		{
 			if (actions[index].at <= timeMs && actions[index + 1].at >= timeMs)
@@ -92,6 +91,6 @@ public:
 			}
 		}
 
-		return NAN;
+		return 0.f;
 	}
 };
