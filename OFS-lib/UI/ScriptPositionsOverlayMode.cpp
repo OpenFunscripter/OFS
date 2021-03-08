@@ -79,7 +79,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
     auto drawSpline = [getPointForAction](const OverlayDrawingCtx& ctx, FunscriptAction startAction, FunscriptAction endAction, uint32_t color, float width, bool background = true)
     {
         constexpr int32_t MinSamplesPerSecond = 40;
-        auto getPointForTimePos = [](const OverlayDrawingCtx& ctx, float timeMs, float pos) {
+        auto getPointForTimePos = [](const OverlayDrawingCtx& ctx, float timeMs, float pos) noexcept {
             float relative_x = (float)(timeMs - ctx.offset_ms) / ctx.visibleSizeMs;
             float x = (ctx.canvas_size.x) * relative_x;
             float y = (ctx.canvas_size.y) * (1 - (pos / 100.f));
@@ -93,8 +93,8 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
         };
 
         ctx.draw_list->PathClear();
-        const float duration = (endAction.at - startAction.at);
-
+        float duration = (endAction.at - startAction.at);
+        
         if (ctx.visibleSizeMs / duration >= 100.f || startAction.pos == endAction.pos)
         {
             // for better performance
@@ -110,13 +110,33 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
         }
         else
         {
+            float currentTime;
+            if (startAction.at < ctx.offset_ms && endAction.at > (ctx.offset_ms + ctx.visibleSizeMs)) {
+                // clip at the invisible area in both direction
+                duration = ctx.visibleSizeMs;
+                currentTime = ctx.offset_ms;
+                endAction.at = (ctx.offset_ms + ctx.visibleSizeMs) + 1;
+            }
+            else if (startAction.at < ctx.offset_ms) {
+                // clip invisible area on the left
+                duration = endAction.at - ctx.offset_ms;
+                currentTime = ctx.offset_ms;
+            }
+            else if (endAction.at > (ctx.offset_ms + ctx.visibleSizeMs)) {
+                // clip invisble area on the right
+                endAction.at = (ctx.offset_ms + ctx.visibleSizeMs) + 1;
+                duration = endAction.at - startAction.at;
+                currentTime = startAction.at;
+            }
+            else {
+                currentTime = startAction.at;
+            }
+
             const float timeStep = duration / (duration * (MinSamplesPerSecond / 1000.f));
 
-            float currentTime = startAction.at;
             putPoint(ctx, currentTime);
             currentTime += timeStep;
-            while (currentTime < endAction.at)
-            {
+            while (currentTime < endAction.at) {
                 putPoint(ctx, currentTime);
                 currentTime += timeStep;
             }
