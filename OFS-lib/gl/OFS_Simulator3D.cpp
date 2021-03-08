@@ -188,7 +188,7 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, const s
 
 
     if (TranslateEnabled) {
-        auto draw_list = ImGui::GetForegroundDrawList();
+        auto draw_list = ImGui::GetForegroundDrawList(ImGui::GetMainViewport());
         ImGuizmo::SetDrawlist(draw_list);
         ImGuizmo::SetRect(viewport->Pos.x, viewport->Pos.y, viewport->Size.x, viewport->Size.y);
         if (ImGuizmo::Manipulate(glm::value_ptr(view),

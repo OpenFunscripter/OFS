@@ -24,11 +24,15 @@
 // TODO: extend "range extender" functionality ( only extend bottom/top, range reducer )
 // TODO: render simulator relative to video position & zoom
 
-// BUG: Simulator 3D move widget doesn't show when settings window is in a separate platform window/viewport
 // TODO: make speed coloring configurable
 
-// TODO: Different selection modes
+// TODO: Add configurable modifier keys ( same for mouse buttons ??? )
+//       Extend KeybindingSystem with named keys/modifiers which can be changed but don't have an explicit action which gets called
+//       So in places where you would need to know which modifier has to be held for a certain thing to happen you'd query the 
+//       KeybindingSystem via a unique string/enum key
 
+// TODO: Different selection modes via held modifier keys ( select top points, bottom, etc. )
+ 
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
 constexpr std::array<const char*, 6> SupportedVideoExtensions {
@@ -1931,8 +1935,7 @@ void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
     const float shadowStep = 1.f / height;
     ImColor black = IM_COL32_BLACK;
 
-    for (int x = 0; x < width; x++) 
-    {
+    for (int x = 0; x < width; x++) {
         rect.x = std::round(relPos * width);
         playerControls.TimelineGradient.computeColorAt(relPos, &color.Value.x);
         black.Value.w = 0.f;

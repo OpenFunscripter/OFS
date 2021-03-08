@@ -58,8 +58,7 @@ private:
 			uniform float Time;
 
 			out vec4 Out_Color;
-			void main()
-			{
+			void main()	{
 				//Out_Color = vec4(1.f, 0.f, 0.f, 1.f);
 
 				float Pi = 6.28318530718; // Pi*2
@@ -115,8 +114,7 @@ private:
 			in vec4 Color;
 			out vec2 Frag_UV;
 			out vec4 Frag_Color;
-			void main()
-			{
+			void main()	{
 				Frag_UV = UV;
 				Frag_Color = Color;
 				gl_Position = ProjMtx * vec4(Position.xy,0,1);
@@ -148,8 +146,7 @@ private:
 				return vec3(c.y*p.x + s.y*p.z, p.y, -s.y*p.x + c.y*p.z);
 			}
 
-			void main()
-			{
+			void main()	{
 				float inverse_aspect = 1.f / aspect_ratio;
 				float hfovRad = hfovDegrees * DEG2RAD;
 				float vfovRad = -2.f * atan(tan(hfovRad/2.f)*inverse_aspect);
@@ -248,8 +245,7 @@ private:
 			in vec4 Color;
 			out vec2 Frag_UV;
 			out vec4 Frag_Color;
-			void main()
-			{
+			void main()	{
 				Frag_UV = UV;
 				Frag_Color = Color;
 				gl_Position = ProjMtx * vec4(Position.xy,0,1);
@@ -278,8 +274,7 @@ private:
 			  return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
 			}
 
-			void main()
-			{
+			void main()	{
 				float sample = texture(audio, Frag_UV.x).x * scaleAudio;
 				float padding = (1.f - sample) / 2.f;
 				
@@ -295,18 +290,15 @@ private:
 					}
 				}
 
-				if(PartyMode)
-				{
+				if(PartyMode) {
 					vec2 uPos = Frag_UV;
-	
 					uPos.y -= 0.5;	//center waves		
 					
 					vec3 color = vec3(0.0);
 					float levels = texture(audio, uPos.x).x * .5 + 0.2;	//audio
 					
 					const float k = 5.;	//how many waves
-					for( float i = 1.0; i < k; ++i )
-					{
+					for(float i = 1.0; i < k; ++i) {
 						float t = (2.f * Time * exp(0.1f)) + ((ScriptPos + 1.f) * 0.01f);
 	
 						uPos.y += exp((ScriptPos*0.01f) +  scaleAudio * 6.0 * levels) * sin( uPos.x*exp(i) - t) * 0.01;
@@ -350,8 +342,7 @@ private:
 		uniform mat4 view;
 		uniform mat4 projection;
 
-		void main()
-		{
+		void main() {
 			FragPos = vec3(model * vec4(aPos, 1.0));
 			Normal = mat3(transpose(inverse(model))) * aNormal;  
     
@@ -371,8 +362,7 @@ private:
 		uniform vec3 lightColor;
 		uniform vec4 objectColor;
 
-		void main()
-		{
+		void main() {
 			// ambient
 			float ambientStrength = 0.1;
 			vec3 ambient = ambientStrength * lightColor;
