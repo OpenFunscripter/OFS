@@ -28,6 +28,8 @@
 #define UTF_CPP_CPLUSPLUS 199711L 
 #include "utf8.h"
 
+char Util::FormatBuffer[4096];
+
 bool Util::LoadTextureFromFile(const char* filename, unsigned int* out_texture, int* out_width, int* out_height) noexcept
 {
 	// Load from file

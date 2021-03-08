@@ -171,6 +171,20 @@ public:
 		return handle;
 	}
 
+	inline static size_t AppendToFile(const char* path, const char* buffer, size_t size, bool newLine) noexcept
+	{
+		size_t written = 0;
+		auto file = OpenFile(path, "a", strlen(path));
+		if (file) {
+			written = SDL_RWwrite(file, buffer, sizeof(char), size);
+			if (newLine) {
+				SDL_RWwrite(file, "\n", 1, 1);
+			}
+			SDL_RWclose(file);
+		}
+		return written;
+	}
+
 	inline static size_t ReadFile(const char* path, std::vector<uint8_t>& buffer) noexcept
 	{
 		auto file = OpenFile(path, "r", strlen(path));
@@ -350,4 +364,14 @@ public:
 	static bool SavePNG(const std::string& path, void* buffer, int32_t width, int32_t height, int32_t channels = 3, bool flipVertical = true) noexcept;
 
 	static std::filesystem::path FfmpegPath() noexcept;
+
+
+	static char FormatBuffer[4096];
+	inline static const char* Format(const char* fmt, ...) noexcept
+	{
+		va_list argp;
+		va_start(argp, fmt);
+		stbsp_vsnprintf(FormatBuffer, sizeof(FormatBuffer), fmt, argp);
+		return FormatBuffer;
+	}
 };
