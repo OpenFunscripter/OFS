@@ -16,6 +16,11 @@ inline Funscript& ScripingModeBaseImpl::ctx() {
 
 void ScriptingMode::setup()
 {
+    modes[ScriptingModeEnum::DEFAULT_MODE] = std::make_unique<DefaultModeImpl>();
+    modes[ScriptingModeEnum::ALTERNATING] = std::make_unique<AlternatingImpl>();
+    modes[ScriptingModeEnum::RECORDING] = std::make_unique<RecordingImpl>();
+    modes[ScriptingModeEnum::DYNAMIC_INJECTION] = std::make_unique<DynamicInjectionImpl>();
+
     setMode(ScriptingModeEnum::DEFAULT_MODE);
     setOverlay(ScriptingOverlayModes::FRAME);
 }
@@ -70,29 +75,14 @@ void ScriptingMode::DrawScriptingMode(bool* open) noexcept
 
 void ScriptingMode::setMode(ScriptingModeEnum mode) noexcept
 {
-    active_mode = mode;
-    switch (mode) {
-    case ScriptingModeEnum::ALTERNATING:
-    {
-        impl = std::make_unique<AlternatingImpl>();
-        break;
+    if (impl) { impl->finish(); }
+    if (mode >= ScriptingModeEnum::DEFAULT_MODE && mode < ScriptingModeEnum::COUNT) {
+        active_mode = mode;
     }
-    case ScriptingModeEnum::DYNAMIC_INJECTION:
-    {
-        impl = std::make_unique<DynamicInjectionImpl>();
-        break;
+    else {
+        active_mode = ScriptingModeEnum::DEFAULT_MODE;
     }
-    case ScriptingModeEnum::RECORDING:
-    {
-        impl = std::make_unique<RecordingImpl>();
-        break;
-    }
-    default:
-    {
-        impl = std::make_unique<DefaultModeImpl>();
-        break;
-    }
-    }
+    impl = modes[active_mode].get();
 }
 
 void ScriptingMode::setOverlay(ScriptingOverlayModes mode) noexcept
@@ -101,13 +91,13 @@ void ScriptingMode::setOverlay(ScriptingOverlayModes mode) noexcept
     auto timeline = &OpenFunscripter::ptr->scriptPositions;
     switch (mode)
     {
-    case FRAME:
+    case ScriptingOverlayModes::FRAME:
         OpenFunscripter::ptr->scriptPositions.overlay = std::make_unique<FrameOverlay>(timeline);
         break;
-    case TEMPO:
+    case ScriptingOverlayModes::TEMPO:
         OpenFunscripter::ptr->scriptPositions.overlay = std::make_unique<TempoOverlay>(timeline);
         break;
-    case EMPTY:
+    case ScriptingOverlayModes::EMPTY:
         OpenFunscripter::ptr->scriptPositions.overlay = std::make_unique<EmptyOverlay>(timeline);
         break;
     default:
@@ -446,5 +436,15 @@ void RecordingImpl::update() noexcept
             }
         }
         app->scriptPositions.RecordingBuffer.clear();
+    }
+}
+
+void RecordingImpl::finish() noexcept
+{
+    // this fixes a bug when the mode gets changed during a recording
+    if (recordingActive) {
+        recordingActive = false;
+        recordingJustStopped = true;
+        update();
     }
 }

@@ -16,6 +16,7 @@ enum ScriptingModeEnum {
 	ALTERNATING,
 	DYNAMIC_INJECTION,
 	RECORDING,
+	COUNT
 };
 
 class ScripingModeBaseImpl 
@@ -30,6 +31,7 @@ public:
 		ctx().AddAction(action);
 	}
 
+	virtual void finish() noexcept {};
 	virtual void update() noexcept {};
 };
 
@@ -100,16 +102,18 @@ public:
 	virtual void DrawModeSettings() noexcept override;
 	virtual void addAction(FunscriptAction action) noexcept override;
 	virtual void update() noexcept override;
+	virtual void finish() noexcept override;
 };
 
 class OpenFunscripter;
 class ScriptingMode {
-	std::unique_ptr<ScripingModeBaseImpl> impl;
+	std::array<std::unique_ptr<ScripingModeBaseImpl>, ScriptingModeEnum::COUNT> modes;
+	ScripingModeBaseImpl* impl = nullptr;
 	ScriptingModeEnum active_mode;
 	ScriptingOverlayModes active_overlay;
 public:
 	ScriptingModeEnum mode() const { return active_mode; }
-	ScripingModeBaseImpl& Impl() { return *impl.get(); }
+	ScripingModeBaseImpl& Impl() { return *impl; }
 
 	static constexpr const char* ScriptingModeId = "Mode";
 	void setup();
@@ -121,6 +125,4 @@ public:
 	void NextFrame() noexcept;
 	void PreviousFrame() noexcept;
 	void update() noexcept;
-
-	inline const std::unique_ptr<ScripingModeBaseImpl>& CurrentImpl() const { return impl; }
 };
