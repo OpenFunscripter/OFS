@@ -173,22 +173,26 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
             ///    mode = SimMode::EditingRotation;
             ///}
 
-            auto editAxisSlider = [](const char* name, float* value, float min, float max, bool* IsEditing, std::shared_ptr<Funscript>& script) noexcept
+            auto addEditAction = [](std::shared_ptr<Funscript>& script, float value, float min, float max) noexcept
+            {
+                auto app = OpenFunscripter::ptr;
+                /* HACK: this would normally be false
+                   but makes ofs more easy to use in this case. */
+                app->undoSystem->Snapshot(StateType::ADD_EDIT_ACTION, true, script.get());
+                float range = std::abs(max - min);
+                float pos = ((value + std::abs(min)) / range) * 100.f;
+                FunscriptAction action(app->player->getCurrentPositionMsInterp(), pos);
+                script->AddEditAction(action, app->player->getFrameTimeMs());
+            };
+
+            auto editAxisSlider = [addEditAction](const char* name, float* value, float min, float max, bool* IsEditing, std::shared_ptr<Funscript>& script) noexcept
             {
                 if(ImGui::SliderFloat(name, value, min, max, "%.3f", ImGuiSliderFlags_AlwaysClamp))
                 {
                     *IsEditing = true;
                 }
                 if (*IsEditing && ImGui::IsItemDeactivated()) {
-                    LOG_DEBUG("foo");
-                    auto app = OpenFunscripter::ptr;
-                                                                        /* HACK: this would normally be false 
-                                                                           but makes ofs more easy to use in this case. */
-                    app->undoSystem->Snapshot(StateType::ADD_EDIT_ACTION, true , script.get());
-                    float range = std::abs(max - min);
-                    float pos = ((*value + std::abs(min)) / range) * 100.f;
-                    FunscriptAction action(app->player->getCurrentPositionMsInterp(), pos);
-                    script->AddEditAction(action, app->player->getFrameTimeMs());
+                    addEditAction(script, *value, min, max);
                     *IsEditing = false;
                 }
             };
@@ -205,6 +209,19 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
                 editAxisSlider("Yaw", &yaw, -(twistRange / 2.f), (twistRange / 2.f), &IsEditing, scripts[twistIndex]);
             }
 
+            if (ImGui::Button("Insert current position", ImVec2(-1.f, 0.f))) {
+                if (rollIndex >= 0 && rollIndex < loadedScriptsCount) {
+                    addEditAction(scripts[rollIndex], roll, -(rollRange / 2.f), (rollRange / 2.f));
+                }
+                if (pitchIndex >= 0 && pitchIndex < loadedScriptsCount) {
+                    addEditAction(scripts[pitchIndex], pitch, -(pitchRange / 2.f), (pitchRange / 2.f));
+                }
+                if (twistIndex >= 0 && twistIndex < loadedScriptsCount) {
+                    addEditAction(scripts[twistIndex], yaw, -(twistRange / 2.f), (twistRange / 2.f));
+                }
+            }
+
+            
 
                 //auto draw_list = ImGui::GetForegroundDrawList(ImGui::GetMainViewport());
                 //ImGuizmo::SetDrawlist(draw_list);
