@@ -24,7 +24,6 @@ set(OFS_LIB_SOURCES
 	"imgui_impl/imgui_impl_sdl.cpp" 
 
 	"gl/OFS_Shader.cpp"
-	"gl/OFS_Simulator3D.cpp"
 	"gl/OFS_Texture.cpp"
 
 	"player/OFS_TCode.cpp"

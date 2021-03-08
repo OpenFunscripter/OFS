@@ -17,6 +17,8 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "UI/OFS_ScriptPositionsOverlays.cpp"
 
   "event/OFS_Events.cpp"
+
+  "gl/OFS_Simulator3D.cpp"
 )
 
 

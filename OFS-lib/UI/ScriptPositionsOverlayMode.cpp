@@ -111,32 +111,35 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
         else
         {
             float currentTime;
+            float endTime;
             if (startAction.at < ctx.offset_ms && endAction.at > (ctx.offset_ms + ctx.visibleSizeMs)) {
                 // clip at the invisible area in both direction
-                duration = ctx.visibleSizeMs;
                 currentTime = ctx.offset_ms;
-                endAction.at = (ctx.offset_ms + ctx.visibleSizeMs) + 1;
+                endTime = (ctx.offset_ms + ctx.visibleSizeMs) + 1.f;
+                duration = ctx.visibleSizeMs;
             }
             else if (startAction.at < ctx.offset_ms) {
                 // clip invisible area on the left
-                duration = endAction.at - ctx.offset_ms;
                 currentTime = ctx.offset_ms;
+                endTime = endAction.at;
+                duration = endAction.at - ctx.offset_ms;
             }
             else if (endAction.at > (ctx.offset_ms + ctx.visibleSizeMs)) {
                 // clip invisble area on the right
-                endAction.at = (ctx.offset_ms + ctx.visibleSizeMs) + 1;
-                duration = endAction.at - startAction.at;
                 currentTime = startAction.at;
+                endTime = (ctx.offset_ms + ctx.visibleSizeMs) + 1.f;
+                duration = endTime - startAction.at;
             }
             else {
                 currentTime = startAction.at;
+                endTime = endAction.at;
             }
 
             const float timeStep = duration / (duration * (MinSamplesPerSecond / 1000.f));
 
             putPoint(ctx, currentTime);
             currentTime += timeStep;
-            while (currentTime < endAction.at) {
+            while (currentTime < endTime) {
                 putPoint(ctx, currentTime);
                 currentTime += timeStep;
             }

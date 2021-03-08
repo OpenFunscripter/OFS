@@ -19,6 +19,16 @@
 class Simulator3D
 {
 private:
+	//enum SimMode
+	//{
+	//	Viewing,
+	//	EditingRotation
+	//};
+	//SimMode mode = SimMode::Viewing;
+	bool IsEditing = false;
+	glm::mat4 EditRotatationMat = glm::mat4(1.f);
+
+
 	std::unique_ptr<LightingShader> lightShader;
 
 	unsigned int VBO = 0;
@@ -31,7 +41,7 @@ private:
 
 	float rollRange = 60.f;
 	float pitchRange = 90.f;
-	float twistSpeed = 4.f;
+	float twistRange = 360.f;
 
     glm::mat4 projection;
 	glm::mat4 view;
@@ -42,6 +52,7 @@ private:
 
 	glm::mat4 twistBox;
 
+	glm::vec3 direction;
 	glm::vec3 viewPos;
 	glm::vec3 lightPos;
 
@@ -67,7 +78,7 @@ public:
 	~Simulator3D();
 	void setup() noexcept;
 
-	void ShowWindow(bool* open, int32_t currentMs, bool easing, const std::vector<std::shared_ptr<Funscript>>& scripts) noexcept;
+	void ShowWindow(bool* open, int32_t currentMs, bool easing, std::vector<std::shared_ptr<Funscript>>& scripts) noexcept;
 	void renderSim() noexcept;
 
 
