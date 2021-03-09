@@ -80,7 +80,9 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
 
     auto drawSpline = [getPointForAction](const OverlayDrawingCtx& ctx, FunscriptAction startAction, FunscriptAction endAction, uint32_t color, float width, bool background = true)
     {
-        constexpr float MinIntervalSamplesMs = 30.f;
+        constexpr float SamplesPerTwothousandPixels = 150.f;
+        const float MaximumSamples = SamplesPerTwothousandPixels * (ctx.canvas_size.x / 2000.f);
+
         auto getPointForTimePos = [](const OverlayDrawingCtx& ctx, float timeMs, float pos) noexcept {
             float relative_x = (float)(timeMs - ctx.offset_ms) / ctx.visibleSizeMs;
             float x = (ctx.canvas_size.x) * relative_x;
@@ -98,8 +100,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
         float visibleDuration;
         float currentTime;
         float endTime;
-        if (startAction.at >= ctx.offset_ms && endAction.at <= (ctx.offset_ms + ctx.visibleSizeMs))
-        {
+        if (startAction.at >= ctx.offset_ms && endAction.at <= (ctx.offset_ms + ctx.visibleSizeMs)) {
             currentTime = startAction.at;
             endTime = endAction.at;
             visibleDuration = endTime - currentTime;
@@ -122,8 +123,15 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
             endTime = (ctx.offset_ms + ctx.visibleSizeMs) + 1.f;
             visibleDuration = endTime - startAction.at;
         }
+        // detail gets dynamically reduced by increasing the timeStep,
+        // at which is being sampled from the spline
+        //const float actualDuration = endAction.at - startAction.at;
+        const float ratio = visibleDuration / ctx.visibleSizeMs;
+        const float SampleCount = MaximumSamples * ratio;
+
+        const float timeStep = visibleDuration / SampleCount;
         
-        if (startAction.pos == endAction.pos) {
+        if (SampleCount < 3.f || startAction.pos == endAction.pos) {
             auto p1 = getPointForAction(ctx, startAction);
             auto p2 = getPointForAction(ctx, endAction);
             if (background) {
@@ -134,13 +142,6 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
             ColoredLines.emplace_back(std::move(BaseOverlay::ColoredLine{ p1, p2, color }));
         }
         else {
-            // detail gets dynamically reduced by increasing the timeStep,
-            // at which is being sampled from the spline
-            float actualDuration = endAction.at - startAction.at;
-            float ratio = ctx.visibleSizeMs / actualDuration;
-            if (ratio < 1.f) { ratio = (visibleDuration / 1000.f) / ratio; }
-
-            const float timeStep = std::max(ratio*MinIntervalSamplesMs, MinIntervalSamplesMs);
             putPoint(ctx, currentTime);
             currentTime += timeStep;
             while (currentTime < endTime) {

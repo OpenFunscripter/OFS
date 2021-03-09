@@ -115,8 +115,8 @@ private:
 public:
 	static constexpr const char* PositionsId = "Positions";
 
-	const float MAX_WINDOW_SIZE = 300.f; // this limit is arbitrary and not enforced
-	const float MIN_WINDOW_SIZE = 1.f; // this limit is also arbitrary and not enforced
+	static constexpr float MAX_WINDOW_SIZE = 300.f; // this limit is arbitrary and not enforced
+	static constexpr float MIN_WINDOW_SIZE = 1.f; // this limit is also arbitrary and not enforced
 	void setup(UndoSystem* undo);
 
 	inline void ClearAudioWaveform() noexcept { ShowAudioWaveform = false; waveform.Clear(); }
