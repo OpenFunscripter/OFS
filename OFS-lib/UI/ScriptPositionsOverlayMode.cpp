@@ -93,9 +93,35 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
         };
 
         ctx.draw_list->PathClear();
-        float duration = (endAction.at - startAction.at);
+        float duration;
+        float currentTime;
+        float endTime;
+        if (startAction.at >= ctx.offset_ms && endAction.at <= (ctx.offset_ms + ctx.visibleSizeMs))
+        {
+            currentTime = startAction.at;
+            endTime = endAction.at;
+            duration = endTime - currentTime;
+        }
+        else if (startAction.at < ctx.offset_ms && endAction.at > (ctx.offset_ms + ctx.visibleSizeMs)) {
+            // clip at the invisible area in both direction
+            currentTime = ctx.offset_ms;
+            endTime = (ctx.offset_ms + ctx.visibleSizeMs) + 1.f;
+            duration = ctx.visibleSizeMs;
+        }
+        else if (startAction.at < ctx.offset_ms) {
+            // clip invisible area on the left
+            currentTime = ctx.offset_ms;
+            endTime = endAction.at;
+            duration = endAction.at - ctx.offset_ms;
+        }
+        else if (endAction.at > (ctx.offset_ms + ctx.visibleSizeMs)) {
+            // clip invisble area on the right
+            currentTime = startAction.at;
+            endTime = (ctx.offset_ms + ctx.visibleSizeMs) + 1.f;
+            duration = endTime - startAction.at;
+        }
         
-        if (ctx.visibleSizeMs / duration >= 100.f || startAction.pos == endAction.pos)
+        if (duration / ctx.visibleSizeMs >= 0.2f || startAction.pos == endAction.pos)
         {
             // for better performance
             // when splines get really small, they get drawn as straigth lines
@@ -110,31 +136,6 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
         }
         else
         {
-            float currentTime;
-            float endTime;
-            if (startAction.at < ctx.offset_ms && endAction.at > (ctx.offset_ms + ctx.visibleSizeMs)) {
-                // clip at the invisible area in both direction
-                currentTime = ctx.offset_ms;
-                endTime = (ctx.offset_ms + ctx.visibleSizeMs) + 1.f;
-                duration = ctx.visibleSizeMs;
-            }
-            else if (startAction.at < ctx.offset_ms) {
-                // clip invisible area on the left
-                currentTime = ctx.offset_ms;
-                endTime = endAction.at;
-                duration = endAction.at - ctx.offset_ms;
-            }
-            else if (endAction.at > (ctx.offset_ms + ctx.visibleSizeMs)) {
-                // clip invisble area on the right
-                currentTime = startAction.at;
-                endTime = (ctx.offset_ms + ctx.visibleSizeMs) + 1.f;
-                duration = endTime - startAction.at;
-            }
-            else {
-                currentTime = startAction.at;
-                endTime = endAction.at;
-            }
-
             const float timeStep = duration / (duration * (MinSamplesPerSecond / 1000.f));
 
             putPoint(ctx, currentTime);

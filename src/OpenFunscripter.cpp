@@ -32,7 +32,9 @@
 //       KeybindingSystem via a unique string/enum key
 
 // TODO: Different selection modes via held modifier keys ( select top points, bottom, etc. )
- 
+
+// TODO: OFS_ScriptTimeline selections cause alot of unnecessary overdraw. find a way to not have any overdraw
+
 // the video player supports a lot more than these
 // these are the ones looked for when loading funscripts
 constexpr std::array<const char*, 6> SupportedVideoExtensions {
