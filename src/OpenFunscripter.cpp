@@ -1481,7 +1481,7 @@ void OpenFunscripter::MpvPlayPauseChange(SDL_Event& ev) noexcept
     {
         std::vector<std::weak_ptr<const Funscript>> scripts;
         scripts.assign(LoadedFunscripts.begin(), LoadedFunscripts.end());
-        tcode.play(player->getCurrentPositionMsInterp(), scripts);
+        tcode.play(player->getCurrentPositionMsInterp(), std::move(scripts));
     }
 }
 

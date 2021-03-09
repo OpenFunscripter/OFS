@@ -31,7 +31,7 @@ public:
 	void DrawWindow(bool* open, float currentTimeMs) noexcept;
 
 	void setScripts(std::vector<std::weak_ptr<const Funscript>>&& scripts) noexcept;
-	void play(float currentTimeMs, std::vector<std::weak_ptr<const Funscript>> scripts) noexcept;
+	void play(float currentTimeMs, std::vector<std::weak_ptr<const Funscript>>&& scripts) noexcept;
 	void stop() noexcept;
 	void sync(float currentTimeMs, float speed) noexcept;
 	void reset() noexcept;
