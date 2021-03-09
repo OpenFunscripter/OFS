@@ -1,6 +1,8 @@
 #include "ScriptPositionsOverlayMode.h"
 #include "OFS_ScriptTimeline.h"
 
+#include <cmath>
+
 ImGradient BaseOverlay::speedGradient;
 std::vector<BaseOverlay::ColoredLine> BaseOverlay::ColoredLines;
 std::vector<ImVec2> BaseOverlay::SelectedActionScreenCoordinates;
@@ -78,7 +80,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
 
     auto drawSpline = [getPointForAction](const OverlayDrawingCtx& ctx, FunscriptAction startAction, FunscriptAction endAction, uint32_t color, float width, bool background = true)
     {
-        constexpr int32_t MinSamplesPerSecond = 40;
+        constexpr float MinIntervalSamplesMs = 30.f;
         auto getPointForTimePos = [](const OverlayDrawingCtx& ctx, float timeMs, float pos) noexcept {
             float relative_x = (float)(timeMs - ctx.offset_ms) / ctx.visibleSizeMs;
             float x = (ctx.canvas_size.x) * relative_x;
@@ -93,38 +95,35 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
         };
 
         ctx.draw_list->PathClear();
-        float duration;
+        float visibleDuration;
         float currentTime;
         float endTime;
         if (startAction.at >= ctx.offset_ms && endAction.at <= (ctx.offset_ms + ctx.visibleSizeMs))
         {
             currentTime = startAction.at;
             endTime = endAction.at;
-            duration = endTime - currentTime;
+            visibleDuration = endTime - currentTime;
         }
         else if (startAction.at < ctx.offset_ms && endAction.at > (ctx.offset_ms + ctx.visibleSizeMs)) {
             // clip at the invisible area in both direction
             currentTime = ctx.offset_ms;
             endTime = (ctx.offset_ms + ctx.visibleSizeMs) + 1.f;
-            duration = ctx.visibleSizeMs;
+            visibleDuration = ctx.visibleSizeMs;
         }
         else if (startAction.at < ctx.offset_ms) {
             // clip invisible area on the left
             currentTime = ctx.offset_ms;
             endTime = endAction.at;
-            duration = endAction.at - ctx.offset_ms;
+            visibleDuration = endAction.at - ctx.offset_ms;
         }
         else if (endAction.at > (ctx.offset_ms + ctx.visibleSizeMs)) {
             // clip invisble area on the right
             currentTime = startAction.at;
             endTime = (ctx.offset_ms + ctx.visibleSizeMs) + 1.f;
-            duration = endTime - startAction.at;
+            visibleDuration = endTime - startAction.at;
         }
         
-        if (duration / ctx.visibleSizeMs >= 0.2f || startAction.pos == endAction.pos)
-        {
-            // for better performance
-            // when splines get really small, they get drawn as straigth lines
+        if (startAction.pos == endAction.pos) {
             auto p1 = getPointForAction(ctx, startAction);
             auto p2 = getPointForAction(ctx, endAction);
             if (background) {
@@ -134,10 +133,14 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
             }
             ColoredLines.emplace_back(std::move(BaseOverlay::ColoredLine{ p1, p2, color }));
         }
-        else
-        {
-            const float timeStep = duration / (duration * (MinSamplesPerSecond / 1000.f));
+        else {
+            // detail gets dynamically reduced by increasing the timeStep,
+            // at which is being sampled from the spline
+            float actualDuration = endAction.at - startAction.at;
+            float ratio = ctx.visibleSizeMs / actualDuration;
+            if (ratio < 1.f) { ratio = (visibleDuration / 1000.f) / ratio; }
 
+            const float timeStep = std::max(ratio*MinIntervalSamplesMs, MinIntervalSamplesMs);
             putPoint(ctx, currentTime);
             currentTime += timeStep;
             while (currentTime < endTime) {
@@ -152,8 +155,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
         }
     };
 
-    if (SplineMode)
-    {
+    if (SplineMode) {
         const FunscriptAction* prevAction = nullptr;
         for (; startIt != endIt; startIt++) {
             auto& action = *startIt;
@@ -173,8 +175,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
             prevAction = &action;
         }
     }
-    else
-    {
+    else {
         const FunscriptAction* prevAction = nullptr;
         for (; startIt != endIt; startIt++) {
             auto& action = *startIt;
@@ -213,8 +214,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
             endIt += 1;
 
         constexpr auto selectedLines = IM_COL32(3, 194, 252, 255);
-        if (SplineMode)
-        {
+        if (SplineMode) {
             const FunscriptAction* prev_action = nullptr;
             for (; startIt != endIt; startIt++) {
                 auto&& action = *startIt;
@@ -229,8 +229,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
                 prev_action = &action;
             }
         }
-        else
-        {
+        else {
             const FunscriptAction* prev_action = nullptr;
             for (; startIt != endIt; startIt++) {
                 auto&& action = *startIt;
