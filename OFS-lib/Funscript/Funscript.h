@@ -273,17 +273,19 @@ inline bool Funscript::open(const std::string& file, const std::string& usersett
 	current_path = file;
 	scriptOpened = true;
 
-	nlohmann::json json;
-	json = Util::LoadJson(file, &scriptOpened);
+	{
+		nlohmann::json json;
+		json = Util::LoadJson(file, &scriptOpened);
 
-	if (!scriptOpened || !json.is_object() && json["actions"].is_array()) {
-		LOGF_ERROR("Failed to parse funscript. \"%s\"", file.c_str());
-		return false;
+		if (!scriptOpened || !json.is_object() && json["actions"].is_array()) {
+			LOGF_ERROR("Failed to parse funscript. \"%s\"", file.c_str());
+			return false;
+		}
+
+		setBaseScript(json);
+		Json = std::move(json);
 	}
-
-	setBaseScript(json);
-	Json = json;
-	auto actions = json["actions"];
+	auto actions = Json["actions"];
 	data.Actions.clear();
 
 	std::set<FunscriptAction> actionSet;
@@ -310,6 +312,12 @@ inline bool Funscript::open(const std::string& file, const std::string& usersett
 	}
 
 	NotifyActionsChanged(false);
+
+	Json.erase("version");
+	Json.erase("inverted");
+	Json.erase("range");
+	Json.erase("OpenFunscripter");
+	Json.erase("metadata");
 	return true;
 }
 

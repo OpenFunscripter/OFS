@@ -1831,9 +1831,11 @@ bool OpenFunscripter::openFile(const std::string& file)
     if (result) {
         auto& scriptSettings = RootFunscript()->Userdata<OFS_ScriptSettings>();
         for (auto& associated : scriptSettings.associatedScripts) {
-            auto associated_script = std::make_unique<Funscript>();
-            if (associated_script->open<OFS_ScriptSettings>(associated, "OpenFunscripter")) {
-                LoadedFunscripts.emplace_back(std::move(associated_script));
+            if (Util::FileExists(associated)) {
+                auto associated_script = std::make_unique<Funscript>();
+                if (associated_script->open<OFS_ScriptSettings>(associated, "OpenFunscripter")) {
+                    LoadedFunscripts.emplace_back(std::move(associated_script));
+                }
             }
         }
     }
@@ -2319,13 +2321,27 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 saveActiveScriptAs();
             }
             if (ImGui::MenuItem(ICON_SHARE" Share...")) {
-                auto savePath = std::filesystem::path(settings->data().last_path) / (Util::Filename(ActiveFunscript()->current_path) + "_share.funscript");
-                Util::SaveFileDialog("Share funscript", savePath.u8string(),
-                    [&](auto& result) {
-                        if (result.files.size() > 0) {
-                            ActiveFunscript()->saveMinium(result.files[0]);
-                        }
-                    }, { "Funscript", "*.funscript" });
+                if (LoadedFunscripts.size() == 1) {
+                    auto savePath = Util::PathFromString(settings->data().last_path) / (Util::Filename(ActiveFunscript()->current_path) + "_share.funscript");
+                    Util::SaveFileDialog("Share funscript", savePath.u8string(),
+                        [&](auto& result) {
+                            if (result.files.size() > 0) {
+                                ActiveFunscript()->saveMinium(result.files[0]);
+                            }
+                        }, { "Funscript", "*.funscript" });
+                }
+                else if(LoadedFunscripts.size() > 1)
+                {
+                    Util::OpenDirectoryDialog("Choose output directory.\nAll scripts will get saved with an _share appended", settings->data().last_path,
+                        [&](auto& result) {
+                            if (result.files.size() > 0) {
+                                for (auto& script : LoadedFunscripts) {
+                                    auto savePath = Util::PathFromString(result.files[0]) / (Util::Filename(script->current_path) + "_share.funscript");
+                                    script->saveMinium(savePath.u8string());
+                                }
+                            }
+                        });
+                }
             }
             Util::Tooltip("Saves the bare minium.");
             ImGui::Separator();
