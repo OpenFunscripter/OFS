@@ -134,7 +134,7 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
     
     ImGui::Begin("Simulator 3D", open, ImGuiWindowFlags_None);
 
-    if (!IsEditing) {
+    if (Editing == IsEditing::No) {
         if (posIndex >= 0 && posIndex < loadedScriptsCount) {
             scriptPos = easing 
                 ? scripts[posIndex]->SplineClamped(currentMs)
@@ -162,54 +162,66 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
 
     if (ImGui::BeginTabBar("##3D tab bar", ImGuiTabBarFlags_None))
     {
-        if (ImGui::BeginTabItem("Scripting")) {
-            
-            ///if (mode != SimMode::EditingRotation) {
-            ///    EditRotatationMat = glm::mat4(1.f);
-            ///    EditRotatationMat = glm::rotate(EditRotatationMat, glm::radians(roll), glm::vec3(0.f, 0.f, -1.f));
-            ///    EditRotatationMat = glm::rotate(EditRotatationMat, glm::radians(pitch), glm::vec3(1.f, 0.f, 0.f));
-            ///    //EditRotatationMat = glm::rotate(EditRotatationMat, glm::radians(yaw), glm::vec3(0.f, 1.f, 0.f));
-            ///    EditRotatationMat = glm::translate(EditRotatationMat, glm::vec3(0.f, 0.f, -simDistance));
-            ///    mode = SimMode::EditingRotation;
-            ///}
-
+        if (ImGui::BeginTabItem("Edit")) {
             auto addEditAction = [](std::shared_ptr<Funscript>& script, float value, float min, float max) noexcept
             {
                 auto app = OpenFunscripter::ptr;
-                /* HACK: this would normally be false
-                   but makes ofs more easy to use in this case. */
-                app->undoSystem->Snapshot(StateType::ADD_EDIT_ACTION, true, script.get());
                 float range = std::abs(max - min);
                 float pos = ((value + std::abs(min)) / range) * 100.f;
                 FunscriptAction action(app->player->getCurrentPositionMsInterp(), pos);
                 script->AddEditAction(action, app->player->getFrameTimeMs());
             };
 
-            auto editAxisSlider = [addEditAction](const char* name, float* value, float min, float max, bool* IsEditing, std::shared_ptr<Funscript>& script) noexcept
+            auto editAxisSlider = [](const char* name, float* value, float min, float max, IsEditing* IsEditing, int* IsEditingIdx, int idx, float scrollStep) 
+                noexcept -> bool
             {
-                if(ImGui::SliderFloat(name, value, min, max, "%.3f", ImGuiSliderFlags_AlwaysClamp))
-                {
-                    *IsEditing = true;
+                auto& io = ImGui::GetIO();
+                if(ImGui::SliderFloat(name, value, min, max, "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
+                    *IsEditing = IsEditing::ClickDrag;
+                    *IsEditingIdx = idx;
                 }
-                if (*IsEditing && ImGui::IsItemDeactivated()) {
-                    addEditAction(script, *value, min, max);
-                    *IsEditing = false;
+                
+                bool hovered = ImGui::IsItemHovered();
+                if (hovered && io.MouseWheel != 0.f) {
+                    float step = std::abs(max - min) * (scrollStep/99.9f);
+                    *IsEditing = IsEditing::Mousewheel;
+                    *IsEditingIdx = idx;
+                    *value = Util::Clamp(*value + io.MouseWheel * step, min, max);
                 }
+                if ((*IsEditing & IsEditing::ClickDrag) && ImGui::IsItemDeactivated() 
+                    || ((*IsEditing & IsEditing::Mousewheel) && !hovered)) {
+                    bool CurrentlyBeingEdited = *IsEditingIdx == idx;
+                    if (CurrentlyBeingEdited) {
+                        *IsEditing = IsEditing::No;
+                        *IsEditingIdx = -1;
+                        return true;
+                    }
+                }
+                return false;
             };
 
-            //if (mode == SimMode::EditingRotation) {
-
+            bool editOccured = false;
             if (rollIndex >= 0 && rollIndex < loadedScriptsCount) {
-                editAxisSlider("Roll", &roll, -(rollRange / 2.f), (rollRange / 2.f), &IsEditing, scripts[rollIndex]);
+                editOccured = editAxisSlider("Roll", 
+                    &roll, -(rollRange / 2.f), (rollRange / 2.f), 
+                    &Editing,  &EditingIdx, rollIndex, EditingScrollMultiplier) || editOccured;
             }
             if (pitchIndex >= 0 && pitchIndex < loadedScriptsCount) {
-                editAxisSlider("Pitch", &pitch, -(pitchRange / 2.f), (pitchRange / 2.f), &IsEditing, scripts[pitchIndex]);
+                editOccured = editAxisSlider("Pitch", 
+                    &pitch, -(pitchRange / 2.f), (pitchRange / 2.f), 
+                    &Editing, &EditingIdx, pitchIndex, EditingScrollMultiplier) || editOccured;
             }
             if (twistIndex >= 0 && twistIndex < loadedScriptsCount) {
-                editAxisSlider("Yaw", &yaw, -(twistRange / 2.f), (twistRange / 2.f), &IsEditing, scripts[twistIndex]);
+                editOccured = editAxisSlider("Yaw", 
+                    &yaw, -(twistRange / 2.f), (twistRange / 2.f), 
+                    &Editing, &EditingIdx, twistIndex, EditingScrollMultiplier) || editOccured;
             }
 
-            if (ImGui::Button("Insert current position", ImVec2(-1.f, 0.f))) {
+            if (ImGui::Button("Insert current position", ImVec2(-1.f, 0.f)) || editOccured) {
+                auto app = OpenFunscripter::ptr;
+                                                                    /* HACK: this would normally be false
+                                                                       but makes ofs more easy to use in this case. */
+                app->undoSystem->Snapshot(StateType::ADD_EDIT_ACTION, true, nullptr);
                 if (rollIndex >= 0 && rollIndex < loadedScriptsCount) {
                     addEditAction(scripts[rollIndex], roll, -(rollRange / 2.f), (rollRange / 2.f));
                 }
@@ -221,52 +233,15 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
                 }
             }
 
-            
+            ImGui::Separator();
 
-                //auto draw_list = ImGui::GetForegroundDrawList(ImGui::GetMainViewport());
-                //ImGuizmo::SetDrawlist(draw_list);
-                //ImGuizmo::SetRect(viewport->Pos.x, viewport->Pos.y, viewport->Size.x, viewport->Size.y);
-                //
-                //if (ImGuizmo::Manipulate(glm::value_ptr(view),
-                //    glm::value_ptr(projection),
-                //    ImGuizmo::OPERATION::ROTATE,
-                //    ImGuizmo::MODE::LOCAL,
-                //    glm::value_ptr(EditRotatationMat))) {
-                //    auto g = ImGui::GetCurrentContext();
-                //    auto window = ImGui::GetCurrentWindow();
-                //    g->HoveredRootWindow = window;
-                //    g->HoveredWindow = window;
-                //    g->HoveredDockNode = window->DockNode;
-                //}
-                //glm::vec3 t, r, s;
-                //ImGuizmo::DecomposeMatrixToComponents(
-                //    glm::value_ptr(EditRotatationMat),
-                //    glm::value_ptr(t),
-                //    glm::value_ptr(r),
-                //    glm::value_ptr(s));
-                //
-                //roll = -r.z;
-                //pitch = r.x;
-                //if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
-                //}
-
-                //if (ImGuizmo::Manipulate(glm::value_ptr(view),
-                //    glm::value_ptr(projection),
-                //    ImGuizmo::OPERATION::TRANSLATE,
-                //    ImGuizmo::MODE::WORLD,
-                //    glm::value_ptr(translation), NULL, NULL)) {
-                //    auto g = ImGui::GetCurrentContext();
-                //    auto window = ImGui::GetCurrentWindow();
-                //    g->HoveredRootWindow = window;
-                //    g->HoveredWindow = window;
-                //    g->HoveredDockNode = window->DockNode;
-                //}
-            //}
+            if (ImGui::InputFloat("Scroll (%)", &EditingScrollMultiplier, 1.f, 1.f, "%.3f", ImGuiInputTextFlags_None)) {
+                EditingScrollMultiplier = Util::Clamp(EditingScrollMultiplier, 1.f, 20.f);
+            }
+            Util::Tooltip("You can use the mousewheel on the sliders above.");
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Configuration")) {
-            //mode = SimMode::Viewing;
-
             if (ImGui::Button("Reset", ImVec2(-1.f, 0.f))) {
                 reset();
             }
@@ -329,8 +304,6 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
         ImGui::EndTabBar();
     }
     ImGui::End();
-
-    //LOGF_DEBUG("roll: %f pitch: %f yaw: %f", roll, pitch, yaw);
 
     // TODO: use more efficient way of doing getting this vector...
     {

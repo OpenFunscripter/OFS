@@ -19,15 +19,15 @@
 class Simulator3D
 {
 private:
-	//enum SimMode
-	//{
-	//	Viewing,
-	//	EditingRotation
-	//};
-	//SimMode mode = SimMode::Viewing;
-	bool IsEditing = false;
-	glm::mat4 EditRotatationMat = glm::mat4(1.f);
-
+	enum IsEditing : uint8_t
+	{
+		No = 0,
+		Mousewheel = 0x1,
+		ClickDrag = 0x2
+	};
+	IsEditing Editing = IsEditing::No;
+	int EditingIdx = -1;
+	float EditingScrollMultiplier = 5.f;
 
 	std::unique_ptr<LightingShader> lightShader;
 
@@ -37,7 +37,6 @@ private:
 
 	static constexpr float MaxZoom = 10.f;
 	float Zoom = 3.f;
-
 
 	float rollRange = 60.f;
 	float pitchRange = 90.f;
