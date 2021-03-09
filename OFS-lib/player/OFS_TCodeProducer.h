@@ -10,10 +10,6 @@
 
 #include "SDL_timer.h"
 
-// TODO: add rebalance option. 
-//		 balance a channel around 500.
-//		 meaning a position of 50 would always turn into 500 even if the limits are uneven
-
 
 class TCodeChannelProducer
 {

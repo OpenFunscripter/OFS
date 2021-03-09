@@ -409,7 +409,7 @@ void TCodePlayer::setScripts(std::vector<std::weak_ptr<const Funscript>>&& scrip
     prod.SetChannels(&tcode);
 }
 
-void TCodePlayer::play(float currentTimeMs, std::vector<std::weak_ptr<const Funscript>> scripts) noexcept
+void TCodePlayer::play(float currentTimeMs, std::vector<std::weak_ptr<const Funscript>>&& scripts) noexcept
 {
     if (!Thread.running) {
         Thread.running = true;
