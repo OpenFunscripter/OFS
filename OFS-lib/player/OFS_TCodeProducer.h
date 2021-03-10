@@ -10,7 +10,6 @@
 
 #include "SDL_timer.h"
 
-
 class TCodeChannelProducer
 {
 private:

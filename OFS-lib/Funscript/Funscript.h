@@ -219,8 +219,7 @@ public:
 	void InvertSelection() noexcept;
 
 
-	inline const float Spline(float timeMs)
-	{
+	inline const float Spline(float timeMs) noexcept {
 		auto& actions = Actions();
 		if (SplineNeedsUpdate) {
 			ScriptSpline.Update(actions);
@@ -230,8 +229,7 @@ public:
 		return ScriptSpline.Sample(actions, timeMs);
 	}
 
-	inline const float SplineClamped(float timeMs)
-	{
+	inline const float SplineClamped(float timeMs) noexcept {
 		return Util::Clamp<float>(Spline(timeMs) * 100.f, 0.f, 100.f);
 	}
 };

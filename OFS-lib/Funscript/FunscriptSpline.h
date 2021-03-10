@@ -44,7 +44,7 @@ public:
 	inline float Sample(const std::vector<FunscriptAction>& actions, float timeMs) noexcept 
 	{
 		if (actions.size() == 0) { return 0.f; }
-		else if (actions.size() == 1) { return actions.front().pos; }
+		else if (actions.size() == 1) { return actions.front().pos / 100.f; }
 		else if (cacheIdx + 1 >= actions.size()) { cacheIdx = 0; }
 
 		if (actions[cacheIdx].at <= timeMs && actions[cacheIdx + 1].at >= timeMs)
@@ -66,8 +66,7 @@ public:
 			if (it == SplineActionMap.end()) { 
 				return actions.back().pos / 100.f; 
 			}
-			else if (it == SplineActionMap.begin())
-			{
+			else if (it == SplineActionMap.begin())			{
 				return actions.front().pos / 100.f;
 			}
 
