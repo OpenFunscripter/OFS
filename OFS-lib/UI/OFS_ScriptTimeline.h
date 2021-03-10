@@ -82,12 +82,12 @@ private:
 
 	void videoLoaded(SDL_Event& ev) noexcept;
 
-	inline ImVec2 getPointForAction(ImVec2 canvas_pos, ImVec2 canvas_size, FunscriptAction action) noexcept {
-		float relative_x = (float)(action.at - offset_ms) / visibleSizeMs;
-		float x = (canvas_size.x) * relative_x;
-		float y = (canvas_size.y) * (1 - (action.pos / 100.0));
-		x += canvas_pos.x;
-		y += canvas_pos.y;
+	inline static ImVec2 getPointForAction(const OverlayDrawingCtx& ctx, FunscriptAction action) noexcept {
+		float relative_x = (float)(action.at - ctx.offset_ms) / ctx.visibleSizeMs;
+		float x = (ctx.canvas_size.x) * relative_x;
+		float y = (ctx.canvas_size.y) * (1 - (action.pos / 100.0));
+		x += ctx.canvas_pos.x;
+		y += ctx.canvas_pos.y;
 		return ImVec2(x, y);
 	}
 

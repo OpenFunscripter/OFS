@@ -386,19 +386,20 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 			draw_list->_Path.Size = tmp;
 			draw_list->PathStroke(col, false, 5.f);
 		};
-		auto pathRawSection = [this, &drawingCtx](auto draw_list, auto rawActions, int32_t fromIndex, int32_t toIndex) {
+		auto pathRawSection =
+			[](const OverlayDrawingCtx& ctx, const std::vector<FunscriptAction>& rawActions, int32_t fromIndex, int32_t toIndex) noexcept {
 			for (int i = fromIndex; i < toIndex; i++) {
 				auto action = rawActions[i];
 				if (action.at >= 0) {
-					auto point = getPointForAction(drawingCtx.canvas_pos, drawingCtx.canvas_size, action);
-					draw_list->PathLineTo(point);
+					auto point = getPointForAction(ctx, action);
+					ctx.draw_list->PathLineTo(point);
 				}
 			}
 		};
-		int32_t startIndex = Util::Clamp<int32_t>((offset_ms / frameTimeMs), 0, recording.size());
-		int32_t endIndex = Util::Clamp<int32_t>(((float)offset_ms + visibleSizeMs) / frameTimeMs, startIndex, recording.size());
+		int32_t startIndex = Util::Clamp<int32_t>((offset_ms / frameTimeMs), 0, recording.size() - 1);
+		int32_t endIndex = Util::Clamp<int32_t>(((float)offset_ms + visibleSizeMs) / frameTimeMs, startIndex, recording.size() - 1);
 
-		pathRawSection(draw_list, recording, startIndex, endIndex);
+		pathRawSection(drawingCtx, recording, startIndex, endIndex);
 		pathStroke(draw_list, IM_COL32(0, 255, 0, 180));
 
 
