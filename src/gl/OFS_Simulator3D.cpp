@@ -140,18 +140,31 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
                 ? scripts[posIndex]->SplineClamped(currentMs)
                 : scriptPos = scripts[posIndex]->GetPositionAtTime(currentMs);
         }
-        if (rollIndex >= 0 && rollIndex < loadedScriptsCount) {
+        
+        if (RollOverride >= 0) {
+            roll = RollOverride - 50.f;
+            roll = (rollRange / 2.f) * (roll / 50.f);
+            RollOverride = -1.f;
+        }
+        else if (rollIndex >= 0 && rollIndex < loadedScriptsCount) {
             roll = easing 
                 ? scripts[rollIndex]->SplineClamped(currentMs) - 50.f
                 : roll = scripts[rollIndex]->GetPositionAtTime(currentMs) - 50.f;
             roll = (rollRange/2.f) * (roll / 50.f);
         }
-        if (pitchIndex >= 0 && pitchIndex < loadedScriptsCount) {
+
+        if (PitchOverride >= 0) {
+            pitch = PitchOverride - 50.f;
+            pitch = (pitchRange / 2.f) * (pitch / 50.f);
+            PitchOverride = -1.f;
+        }
+        else if (pitchIndex >= 0 && pitchIndex < loadedScriptsCount) {
             pitch =  easing 
                 ? scripts[pitchIndex]->SplineClamped(currentMs) - 50.f
                 : scripts[pitchIndex]->GetPositionAtTime(currentMs) - 50.f;
             pitch = (pitchRange/2.f) * (pitch / 50.f);
         }
+
         if (twistIndex >= 0 && twistIndex < loadedScriptsCount) {
             float spin = easing 
                 ? scripts[twistIndex]->SplineClamped(currentMs) - 50.f

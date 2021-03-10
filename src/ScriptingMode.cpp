@@ -21,7 +21,7 @@ void ScriptingMode::setup()
     modes[ScriptingModeEnum::RECORDING] = std::make_unique<RecordingImpl>();
     modes[ScriptingModeEnum::DYNAMIC_INJECTION] = std::make_unique<DynamicInjectionImpl>();
 
-    setMode(ScriptingModeEnum::DEFAULT_MODE);
+    setMode(ScriptingModeEnum::RECORDING);
     setOverlay(ScriptingOverlayModes::FRAME);
 }
 
@@ -246,6 +246,85 @@ void AlternatingImpl::addAction(FunscriptAction action) noexcept
     ctx().AddAction(action);
 }
 
+inline void RecordingImpl::singleAxisRecording() noexcept
+{
+    auto app = OpenFunscripter::ptr;
+    uint32_t frameEstimate = app->player->getCurrentFrameEstimate();
+    app->scriptPositions.RecordingBuffer[frameEstimate]
+        = std::move(std::make_pair(FunscriptAction(app->player->getCurrentPositionMs(), currentPosY), FunscriptAction()));
+    app->simulator.positionOverride = currentPosY;
+}
+
+inline void RecordingImpl::twoAxisRecording() noexcept
+{
+    auto app = OpenFunscripter::ptr;
+    uint32_t frameEstimate = app->player->getCurrentFrameEstimate();
+    int32_t at = app->player->getCurrentPositionMs();
+    app->scriptPositions.RecordingBuffer[frameEstimate]
+        = std::move(std::make_pair(FunscriptAction(at, currentPosX), FunscriptAction(at, 100 - currentPosY)));
+    app->sim3D->RollOverride = currentPosX;
+    app->sim3D->PitchOverride = 100 - currentPosY;
+}
+
+inline void RecordingImpl::finishSingleAxisRecording() noexcept
+{
+    auto app = OpenFunscripter::ptr;
+    int32_t offsetMs = app->settings->data().action_insert_delay_ms;
+    if (app->settings->data().mirror_mode) {
+        app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, true, app->ActiveFunscript().get());
+        for (auto&& script : app->LoadedFunscripts) {
+            for (auto&& actionP : app->scriptPositions.RecordingBuffer) {
+                auto& action = actionP.first;
+                if (action.at >= 0) {
+                    action.at += offsetMs;
+                    script->AddActionSafe(action);
+                }
+            }
+        }
+    }
+    else {
+        app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, false, app->ActiveFunscript().get());
+        for (auto&& actionP : app->scriptPositions.RecordingBuffer) {
+            auto& action = actionP.first;
+            if (action.at >= 0) {
+                action.at += offsetMs;
+                ctx().AddActionSafe(action);
+            }
+        }
+    }
+    app->scriptPositions.RecordingBuffer.clear();
+}
+
+inline void RecordingImpl::finishTwoAxisRecording() noexcept
+{
+    auto app = OpenFunscripter::ptr;
+    int32_t offsetMs = app->settings->data().action_insert_delay_ms;
+    app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, true, nullptr);
+    int32_t rollIdx = app->sim3D->rollIndex;
+    int32_t pitchIdx = app->sim3D->pitchIndex;
+    if (rollIdx > 0 && rollIdx < app->LoadedFunscripts.size()) {
+        auto& script = app->LoadedFunscripts[rollIdx];
+        for (auto&& actionP : app->scriptPositions.RecordingBuffer) {
+            auto& actionX = actionP.first;
+            if (actionX.at >= 0) {
+                actionX.at += offsetMs;
+                script->AddActionSafe(actionX);
+            }
+        }
+    }
+    if (pitchIdx > 0 && pitchIdx < app->LoadedFunscripts.size()) {
+        auto& script = app->LoadedFunscripts[pitchIdx];
+        for (auto&& actionP : app->scriptPositions.RecordingBuffer) {
+            auto& actionY = actionP.second;
+            if (actionY.at >= 0) {
+                actionY.at += offsetMs;
+                script->AddActionSafe(actionY);
+            }
+        }
+    }
+    app->scriptPositions.RecordingBuffer.clear();
+}
+
 // recording
 RecordingImpl::RecordingImpl()
 {
@@ -296,36 +375,25 @@ void RecordingImpl::ControllerAxisMotion(SDL_Event& ev)
         break;
     }
 
-    //float value = std::max(right_len, left_len);
-    //value = std::max(value, left_trigger);
-    //value = std::max(value, right_trigger);
 
-    if (std::abs(right_y) > std::abs(left_y)) {
-        float right_len = std::sqrt(/*(right_x * right_x) +*/ (right_y * right_y));
-        if (right_y < 0.f) {
-            // up
-            value = right_len;
-        }
-        else {
-            // down
-            value = -right_len;
-        }
+    if (std::abs(right_x) > std::abs(left_x)) {
+        valueX = right_x;
     }
     else {
-        float left_len = std::sqrt(/*(left_x * left_x) +*/ (left_y * left_y));
-        if (left_y < 0.f) {
-            // up
-            value = left_len;
-        }
-        else {
-            // down
-            value = -left_len;
-        }
+        valueX = left_x;
+    }
+
+    if (std::abs(right_y) > std::abs(left_y)) {
+        valueY = -right_y;
+    }
+    else {
+        valueY = -left_y;
     }
 }
 
 void RecordingImpl::DrawModeSettings() noexcept
 {
+    auto app = OpenFunscripter::ptr;
 
     ImGui::Combo("Mode", (int*)&activeMode,
         "Mouse\0"
@@ -339,33 +407,51 @@ void RecordingImpl::DrawModeSettings() noexcept
         ImGui::SliderInt("Deadzone", &ControllerDeadzone, 0, std::numeric_limits<int16_t>::max());
         ImGui::Checkbox("Center", &controllerCenter);
         if (controllerCenter) {
-            currentPos = Util::Clamp<int32_t>(50.f + (50.f * value), 0, 100);
+            currentPosX = Util::Clamp<int32_t>(50.f + (50.f * valueX), 0, 100);
+            currentPosY = Util::Clamp<int32_t>(50.f + (50.f * valueY), 0, 100);
         }
         else {
-            currentPos = Util::Clamp<int32_t>(100.f * std::abs(value), 0, 100);
+            currentPosX = Util::Clamp<int32_t>(100.f * std::abs(valueX), 0, 100);
+            currentPosY = Util::Clamp<int32_t>(100.f * std::abs(valueY), 0, 100);
+        }
+        if (!recordingActive) {
+            ImGui::SameLine();
+            ImGui::Checkbox("Two axes", &twoAxesMode);
+            Util::Tooltip("Recording pitch & roll at once.\nUsing Simulator 3D settings.\nOnly works with a controller.");
         }
         break;
     }
     case RecordingMode::Mouse:
     {
-        value = OpenFunscripter::ptr->simulator.getMouseValue();
-        currentPos = Util::Clamp<int32_t>(50.f + (50.f * value), 0, 100);
+        twoAxesMode = false;
+        valueY = app->simulator.getMouseValue();
+        currentPosY = Util::Clamp<int32_t>(50.f + (50.f * valueY), 0, 100);
         break;
     }
     }
 
     ImGui::Checkbox("Invert", &inverted); ImGui::SameLine(); ImGui::Checkbox("Record on play", &automaticRecording);
     if (inverted) { 
-        currentPos = std::abs(currentPos - 100); 
+        currentPosX = 100 - currentPosX;
+        currentPosY = 100 - currentPosY; 
     }
-    ImGui::TextUnformatted("Position"); 
-    ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-    ImGui::SliderInt("##Pos", &currentPos, 0, 100);
-    ImGui::PopItemFlag();
+    if (twoAxesMode) {
+        ImGui::TextUnformatted("X / Y");
+        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+        ImGui::SliderInt("##PosX", &currentPosX, 0, 100);
+        ImGui::SliderInt("##PosY", &currentPosY, 0, 100);
+        ImGui::PopItemFlag();
+    }
+    else
+    {
+        ImGui::TextUnformatted("Position"); 
+        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+        ImGui::SliderInt("##Pos", &currentPosY, 0, 100);
+        ImGui::PopItemFlag();
+    }
 
 
     ImGui::Spacing();
-    auto app = OpenFunscripter::ptr;
     bool playing = !app->player->isPaused();
     if (automaticRecording && playing && recordingActive != playing) {
         autoBackupTmp = app->AutoBackup;
@@ -400,9 +486,8 @@ void RecordingImpl::update() noexcept
 {
     auto app = OpenFunscripter::ptr;
     if (recordingActive) {
-        uint32_t frameEstimate = app->player->getCurrentFrameEstimate();
-        app->scriptPositions.RecordingBuffer[frameEstimate] = std::move(FunscriptAction(app->player->getCurrentPositionMs(), currentPos));
-        app->simulator.positionOverride = currentPos;
+        if (twoAxesMode) { twoAxisRecording(); }
+        else { singleAxisRecording(); }
     }
     else if (recordingJustStarted) {
         recordingJustStarted = false;
@@ -412,30 +497,9 @@ void RecordingImpl::update() noexcept
     }
     else if (recordingJustStopped) {
         recordingJustStopped = false;
-
-        int32_t offsetMs = app->settings->data().action_insert_delay_ms;
-        if (app->settings->data().mirror_mode) {
-            app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, true, app->ActiveFunscript().get());
-            for (auto&& script : app->LoadedFunscripts) {
-                for (auto&& action : app->scriptPositions.RecordingBuffer) {
-                    if (action.at >= 0) 
-                    {
-                        action.at += offsetMs;
-                        script->AddActionSafe(action);
-                    }
-                }
-            }
-        }
-        else {
-            app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, false, app->ActiveFunscript().get());
-            for (auto&& action : app->scriptPositions.RecordingBuffer) {
-                if (action.at >= 0) {
-                    action.at += offsetMs;
-                    ctx().AddActionSafe(action);
-                }
-            }
-        }
-        app->scriptPositions.RecordingBuffer.clear();
+        if (twoAxesMode) { finishTwoAxisRecording(); }
+        else { finishSingleAxisRecording(); }
+        automaticRecording = false;
     }
 }
 

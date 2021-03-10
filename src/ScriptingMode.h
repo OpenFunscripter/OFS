@@ -73,13 +73,17 @@ private:
 	float right_trigger = 0.f;
 	float left_trigger = 0.f;
 
-	float value = 0.f;
+	float valueX = 0.f;
+	float valueY = 0.f;
 
 	int32_t ControllerDeadzone = 1750;
-	int32_t currentPos = 0;
+	int32_t currentPosX = 0;
+	int32_t currentPosY = 0;
 	bool controllerCenter = true;
 	bool automaticRecording = true;
 	bool inverted = false;
+
+	bool twoAxesMode = true;
 
 	bool autoBackupTmp = false;
 	float epsilon = 0.f;
@@ -87,13 +91,19 @@ private:
 	bool recordingActive = false;
 	bool recordingJustStopped = false;
 	bool recordingJustStarted = false;
+
+	void singleAxisRecording() noexcept;
+	void twoAxisRecording() noexcept;
+
+	void finishSingleAxisRecording() noexcept;
+	void finishTwoAxisRecording() noexcept;
 public:
 	// Attention: don't change order
 	enum RecordingMode : int32_t {
 		Mouse,
 		Controller,
 	};
-	RecordingMode activeMode = RecordingMode::Mouse;
+	RecordingMode activeMode = RecordingMode::Controller;
 	RecordingImpl();
 	~RecordingImpl();
 

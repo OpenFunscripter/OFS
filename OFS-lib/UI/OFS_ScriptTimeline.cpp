@@ -377,30 +377,42 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 		const FunscriptAction* prevAction = nullptr;
 		auto& recording = RecordingBuffer;
 
-		auto pathStroke = [](auto draw_list, uint32_t col) {
+		auto pathStroke = [](auto draw_list, uint32_t col) noexcept {
 			// sort of a hack ...
 			// PathStroke sets  _Path.Size = 0
 			// so we reset it in order to draw the same path twice
-			auto tmp = draw_list->_Path.Size;
-			draw_list->PathStroke(IM_COL32(0, 0, 0, 255), false, 7.0f);
-			draw_list->_Path.Size = tmp;
+			// auto tmp = draw_list->_Path.Size;
+			// draw_list->PathStroke(IM_COL32(0, 0, 0, 255), false, 7.0f);
+			// draw_list->_Path.Size = tmp;
 			draw_list->PathStroke(col, false, 5.f);
 		};
 		auto pathRawSection =
-			[](const OverlayDrawingCtx& ctx, const std::vector<FunscriptAction>& rawActions, int32_t fromIndex, int32_t toIndex) noexcept {
-			for (int i = fromIndex; i < toIndex; i++) {
-				auto action = rawActions[i];
+			[pathStroke](const OverlayDrawingCtx& ctx, const auto& rawActions, int32_t fromIndex, int32_t toIndex) noexcept {
+			for (int i = fromIndex; i <= toIndex; i++) {
+				auto& action = rawActions[i].first;
 				if (action.at >= 0) {
 					auto point = getPointForAction(ctx, action);
 					ctx.draw_list->PathLineTo(point);
 				}
 			}
-		};
-		int32_t startIndex = Util::Clamp<int32_t>((offset_ms / frameTimeMs), 0, recording.size() - 1);
-		int32_t endIndex = Util::Clamp<int32_t>(((float)offset_ms + visibleSizeMs) / frameTimeMs, startIndex, recording.size() - 1);
+			pathStroke(ctx.draw_list, IM_COL32(0, 255, 0, 180));
 
-		pathRawSection(drawingCtx, recording, startIndex, endIndex);
-		pathStroke(draw_list, IM_COL32(0, 255, 0, 180));
+			for (int i = fromIndex; i <= toIndex; i++) {
+				auto& action = rawActions[i].second;
+				if (action.at >= 0) {
+					auto point = getPointForAction(ctx, action);
+					ctx.draw_list->PathLineTo(point);
+				}
+			}
+
+			pathStroke(ctx.draw_list, IM_COL32(255, 255, 0, 180));
+		};
+
+		if (scriptPtr.get() == activeScript && recording.size() > 0) {
+			int32_t startIndex = Util::Clamp<int32_t>((offset_ms / frameTimeMs), 0, recording.size() - 1);
+			int32_t endIndex = Util::Clamp<int32_t>(((float)offset_ms + visibleSizeMs) / frameTimeMs, startIndex, recording.size() - 1);
+			pathRawSection(drawingCtx, recording, startIndex, endIndex);
+		}
 
 
 		// current position indicator -> |

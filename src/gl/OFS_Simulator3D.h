@@ -55,25 +55,31 @@ private:
 	glm::vec3 viewPos;
 	glm::vec3 lightPos;
 
+public:
 	int32_t posIndex = 0;
 	int32_t rollIndex = 1;
 	int32_t pitchIndex = 2;
 	int32_t twistIndex = 3;
-	
+private:
+
 	ImColor boxColor = IM_COL32(245, 164, 66, (int)(0.8f * 255));
 	ImColor containerColor = IM_COL32(66, 135, 245, (int)(0.6f * 255));
 	ImColor twistBoxColor = IM_COL32(255, 0, 0, 150);
 
+	float scriptPos = 0.f;
 	float roll = 0.f;
 	float pitch = 0.f;
-	float scriptPos = 0.f;
 	float yaw = 0.f;
+
 
 	void reset() noexcept;
 
 	void load(const std::string& path) noexcept;
 	void save(const std::string& path) noexcept;
 public:
+	int32_t RollOverride = -1;
+	int32_t PitchOverride = -1;
+
 	~Simulator3D();
 	void setup() noexcept;
 

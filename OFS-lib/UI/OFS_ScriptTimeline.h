@@ -49,7 +49,7 @@ public:
 	float rel_x2 = 0.0f;
 
 	std::unique_ptr<BaseOverlay> overlay;
-	std::vector<FunscriptAction> RecordingBuffer;
+	std::vector<std::pair<FunscriptAction, FunscriptAction>> RecordingBuffer;
 	
 	std::vector<float> WaveformLineBuffer;
 	unsigned int WaveformTex = 0;
