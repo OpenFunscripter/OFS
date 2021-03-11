@@ -579,28 +579,15 @@ void CustomLua::resetVM() noexcept
         Thread.ClipboardCount = app->FunscriptClipboard().size();
 
         std::stringstream builder;
-        for (auto&& action : actions) {
-            stbsp_snprintf(tmp, sizeof(tmp), "CurrentScript:AddActionUnordered(%d, %d, %s, %d)\n",
+
+        // clipboard
+        for (auto&& action : app->FunscriptClipboard()) {
+            stbsp_snprintf(tmp, sizeof(tmp), "Clipboard:AddActionUnordered(%d, %d, false, %d)\n",
                 action.at,
                 action.pos,
-                script->IsSelected(action) ? "true" : "false", // script->IsSelected is really slow. maybe for large selections checking an std::unordered_set  is probably alot faster
                 action.tag
             );
             builder << tmp;
-            
-            // update progressbar
-            index++;
-            if (index % 100 == 0 && totalWork > 0) {
-                stbsp_snprintf(tmp, sizeof(tmp), "SetProgress(%f)\n", (float)index / totalWork);
-                builder << tmp;
-            }
-        }
-        for (auto&& action : app->FunscriptClipboard()) {
-            stbsp_snprintf(tmp, sizeof(tmp), "Clipboard:AddActionUnordered(%d, %d, false)\n",
-                action.at,
-                action.pos
-            );
-            builder << tmp;
 
             index++;
             // update progressbar
@@ -610,23 +597,17 @@ void CustomLua::resetVM() noexcept
                 builder << tmp;
             }
         }
-        stbsp_snprintf(tmp, sizeof(tmp), "CurrentScript.title=[[%s]]\n", script->metadata.title.c_str());
-        builder << tmp;
-
-        stbsp_snprintf(tmp, sizeof(tmp), "CurrentScript.path=[[%s]]\n", script->current_path.c_str());
-        builder << tmp;
 
         stbsp_snprintf(tmp, sizeof(tmp), "CurrentScriptIdx=%d\n", scriptIndex+1); // !!! lua indexing starts at 1 !!!
         builder << tmp;
 
-
+        std::unordered_set<FunscriptAction, FunscriptActionHashfunction> SelectedActions;
         for (int i = 0; i < app->LoadedFunscripts.size(); i++) {
-            if (i == scriptIndex) { 
-                builder << "table.insert(LoadedScripts, CurrentScript)\n";
-                continue; 
-            }
             auto& loadedScript = app->LoadedFunscripts[i];
+            SelectedActions.clear(); SelectedActions.insert(loadedScript->Selection().begin(), loadedScript->Selection().end());
+
             builder << "table.insert(LoadedScripts,Funscript:new())\n";
+
             // i+1 because lua indexing starts at 1 !!!
             stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d].title=[[%s]]\n", i+1, loadedScript->metadata.title.c_str());
             builder << tmp;
@@ -634,16 +615,22 @@ void CustomLua::resetVM() noexcept
             builder << tmp;
 
             for (auto&& action : loadedScript->Actions()) {
-                stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d]:AddActionUnordered(%d,%d,%s)\n",
+                stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d]:AddActionUnordered(%d,%d,%s,%d)\n",
                     i + 1, // !!! lua indexing starts at 1 !!!
                     action.at,
                     action.pos,
-                    loadedScript->IsSelected(action) ? "true" : "false" // script->IsSelected is really slow. maybe for large selections checking an std::unordered_set  is probably alot faster
+                    SelectedActions.find(action) != SelectedActions.end() ? "true" : "false",
+                    action.tag
                 );
                 builder << tmp;
             }
-        }
 
+            if (i == scriptIndex) { 
+                stbsp_snprintf(tmp, sizeof(tmp), "CurrentScript=LoadedScripts[%d]\n", i + 1, loadedScript->current_path.c_str());
+                builder << tmp;
+                continue; 
+            }
+        }
 
         {
             // paths
