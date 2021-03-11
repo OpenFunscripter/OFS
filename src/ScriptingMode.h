@@ -83,7 +83,7 @@ private:
 	bool automaticRecording = true;
 	bool inverted = false;
 
-	bool twoAxesMode = true;
+	bool twoAxesMode = false;
 
 	bool autoBackupTmp = false;
 	float epsilon = 0.f;

@@ -21,7 +21,7 @@ void ScriptingMode::setup()
     modes[ScriptingModeEnum::RECORDING] = std::make_unique<RecordingImpl>();
     modes[ScriptingModeEnum::DYNAMIC_INJECTION] = std::make_unique<DynamicInjectionImpl>();
 
-    setMode(ScriptingModeEnum::RECORDING);
+    setMode(ScriptingModeEnum::DEFAULT_MODE);
     setOverlay(ScriptingOverlayModes::FRAME);
 }
 
