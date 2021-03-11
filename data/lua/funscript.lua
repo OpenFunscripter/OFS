@@ -20,10 +20,10 @@ function Action:new(o)
    return o
 end
 
-Funscript = { title = "" }
+Funscript = { title = "", path = "" }
 
 -- tostring function for funscript
-function ScriptToString(self)
+function FunscriptToString(self)
    local result = "actions: "
    for i,v in ipairs(self.actions) do
       result = result..tostring(v)
@@ -38,9 +38,10 @@ function Funscript:new(o)
    o = o or {}
    setmetatable(o, self)
    self.__index = self
-   self.__tostring = ScriptToString
+   self.__tostring = FunscriptToString
    
    o.title = "" -- this is a readonly property filled in by OFS
+   o.path = "" -- this is a readonly property. contains the file path
    o.actions = {}
    return o
 end
@@ -127,7 +128,6 @@ function Funscript:GetClosestActionAfter(time_ms)
          return v
       end
    end
-
    return nil
 end
 
@@ -138,7 +138,6 @@ function Funscript:GetClosestActionBefore(time_ms)
          return self.actions[i-1]
       end
    end
-
    return nil
 end
 
@@ -150,15 +149,23 @@ LoadedScripts = {}  -- contains an array of all loaded scripts. should MUST NOT 
 
 CurrentTimeMs = 0 -- holds the current player time in ms. can also set the current position
 FrameTimeMs = 0  -- holds the time of a single frame in ms 60 fps => 1/60 seconds
-TotalTimeMs = 0 -- hold the total time of the video in ms
+TotalTimeMs = 0 -- hold the total duration of the video in ms
 
 Clipboard = Funscript:new() -- contains the currently copied actions. this is readonly
 
--- utility functions
+VideoFilePath = "" -- the path of the currently loaded video
+VideoFileDirectory = "" -- the directory of the currently loaded video
 
+
+-- native functions
+-- right now there's two functions which you can call from lua which call back into OFS
+-- SetProgress(float) -- to set the progress for long processes with a value from 0.0 to 1.0
+-- SetSettings(table) -- call SetSettings with a lua table to export variables which can be edited in OFS. check out the examples for concrete usage
+
+-- utility functions which can be called
 -- round a number
 function round(x)
-   return x>=0 and math.floor(x+0.5) or math.ceil(x-0.5)
+   return x >= 0 and math.floor(x+0.5) or math.ceil(x-0.5)
 end
 
 -- clamp a value

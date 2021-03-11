@@ -417,43 +417,37 @@ void CustomLua::resetVM() noexcept
 
         auto LuaSetSettings = [](lua_State* L) -> int {
             if (!Thread.dry_run && Thread.script->settings.values.size() > 0) {
-                char tmp[1024];
                 std::stringstream ss;
-                stbsp_snprintf(tmp, sizeof(tmp), "%s = {}\n", Thread.script->settings.name.c_str());
-                ss << tmp;
+                ss << Util::Format("%s = {}\n", Thread.script->settings.name.c_str());
                 for (auto&& value : Thread.script->settings.values) {
                     switch (value.type) {
                     case LuaScript::Settings::Value::Type::Bool:
                     {
                         bool* b = (bool*)&Thread.script->settings.buffer[value.offset];
-                        stbsp_snprintf(tmp, sizeof(tmp), "%s.%s = %s\n", Thread.script->settings.name.c_str(),
+                        ss << Util::Format("%s.%s = %s\n", Thread.script->settings.name.c_str(),
                             value.name.c_str(),
                             *b ? "true" : "false");
-                        ss << tmp;
                         break;
                     }
                     case LuaScript::Settings::Value::Type::Float:
                     {
                         float* f = (float*)&Thread.script->settings.buffer[value.offset];
-                        stbsp_snprintf(tmp, sizeof(tmp), "%s.%s = %f\n", Thread.script->settings.name.c_str(),
+                        ss << Util::Format("%s.%s = %f\n", Thread.script->settings.name.c_str(),
                             value.name.c_str(),
                             *f);
-                        ss << tmp;
                         break;
                     }
                     case LuaScript::Settings::Value::Type::String:
                     {
                         std::string* s = (std::string*)&Thread.script->settings.buffer[value.offset];
-                        stbsp_snprintf(tmp, sizeof(tmp), "%s.%s = \"%s\"\n", Thread.script->settings.name.c_str(),
+                        ss << Util::Format("%s.%s = \"%s\"\n", Thread.script->settings.name.c_str(),
                             value.name.c_str(),
                             s->c_str());
-                        ss << tmp;
                         break;
                     }
                     }
                 }
-                stbsp_snprintf(tmp, sizeof(tmp), "return %s\n", Thread.script->settings.name.c_str());
-                ss << tmp;
+                ss << Util::Format("return %s\n", Thread.script->settings.name.c_str());
                 luaL_dostring(L, ss.str().c_str());
             }
             // only a dry_run will update settings
@@ -616,7 +610,10 @@ void CustomLua::resetVM() noexcept
                 builder << tmp;
             }
         }
-        stbsp_snprintf(tmp, sizeof(tmp), "CurrentScript.title=\"%s\"\n", script->metadata.title.c_str());
+        stbsp_snprintf(tmp, sizeof(tmp), "CurrentScript.title=[[%s]]\n", script->metadata.title.c_str());
+        builder << tmp;
+
+        stbsp_snprintf(tmp, sizeof(tmp), "CurrentScript.path=[[%s]]\n", script->current_path.c_str());
         builder << tmp;
 
         stbsp_snprintf(tmp, sizeof(tmp), "CurrentScriptIdx=%d\n", scriptIndex+1); // !!! lua indexing starts at 1 !!!
@@ -629,13 +626,15 @@ void CustomLua::resetVM() noexcept
                 continue; 
             }
             auto& loadedScript = app->LoadedFunscripts[i];
-            builder << "table.insert(LoadedScripts, Funscript:new())\n";
+            builder << "table.insert(LoadedScripts,Funscript:new())\n";
             // i+1 because lua indexing starts at 1 !!!
-            stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d].title = \"%s\"\n", i+1, loadedScript->metadata.title.c_str());
+            stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d].title=[[%s]]\n", i+1, loadedScript->metadata.title.c_str());
+            builder << tmp;
+            stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d].path=[[%s]]\n", i+1, loadedScript->current_path.c_str());
             builder << tmp;
 
             for (auto&& action : loadedScript->Actions()) {
-                stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d]:AddActionUnordered(%d, %d, %s)\n",
+                stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d]:AddActionUnordered(%d,%d,%s)\n",
                     i + 1, // !!! lua indexing starts at 1 !!!
                     action.at,
                     action.pos,
@@ -646,15 +645,25 @@ void CustomLua::resetVM() noexcept
         }
 
 
-        stbsp_snprintf(tmp, sizeof(tmp), "CurrentScript.title=\"%s\"\n", script->metadata.title.c_str());
-        builder << tmp;
+        {
+            // paths
+            stbsp_snprintf(tmp, sizeof(tmp), "VideoFilePath=[[%s]]\n", app->player->getVideoPath());
+            builder << tmp;
 
+            auto vPath = app->player->getVideoPath();
+            if (vPath) {
+                auto path = Util::PathFromString(vPath);
+                path.replace_filename("");
+                stbsp_snprintf(tmp, sizeof(tmp), "VideoFileDirectory=[[%s]]\n", path.u8string().c_str());
+                builder << tmp;
+            }
+        }
 
         stbsp_snprintf(tmp, sizeof(tmp), "CurrentTimeMs=%lf\n", app->player->getCurrentPositionMsInterp());
         builder << tmp;
         stbsp_snprintf(tmp, sizeof(tmp), "FrameTimeMs=%lf\n", app->player->getFrameTimeMs());
         builder << tmp;
-        stbsp_snprintf(tmp, sizeof(tmp), "TotalTimeMs=%lf\n", static_cast<float>(app->player->getDuration() * 1000.f));
+        stbsp_snprintf(tmp, sizeof(tmp), "TotalTimeMs=%f\n", static_cast<float>(app->player->getDuration() * 1000.f));
         builder << tmp;
 
 
@@ -662,7 +671,7 @@ void CustomLua::resetVM() noexcept
         stbsp_snprintf(tmp, sizeof(tmp), "SetProgress(%f)\n", 0.f);
         builder << tmp;
 
-        Thread.setupScript = builder.str();
+        Thread.setupScript = std::move(builder.str());
     }
 }
 
@@ -772,7 +781,8 @@ void CustomLua::runScript(LuaScript* script, bool dry_run) noexcept
         WriteToConsole(tmp);
 
         auto startTime = std::chrono::high_resolution_clock::now();
-        luaL_dostring(data.L, data.setupScript.c_str());
+        int suc = luaL_dostring(data.L, data.setupScript.c_str()); 
+        FUN_ASSERT_F(suc == 0, "setup failed:\n%s", lua_tostring(Thread.L, -1));
         auto endTime = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
       
