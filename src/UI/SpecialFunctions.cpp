@@ -232,8 +232,8 @@ struct LuaThread {
     int32_t ClipboardCount = 0;
 
     float progress = 0.f;
+    int32_t NewPositionMs = -1;
 
-    int32_t NewPositionMs = 0;
     struct ScriptOutput {
         std::unordered_set<FunscriptAction, FunscriptActionHashfunction> actions;
         std::unordered_set<FunscriptAction, FunscriptActionHashfunction> selection;
@@ -646,7 +646,8 @@ void CustomLua::resetVM() noexcept
             }
         }
 
-        stbsp_snprintf(tmp, sizeof(tmp), "CurrentTimeMs=%lf\n", app->player->getCurrentPositionMsInterp());
+        Thread.NewPositionMs = app->player->getCurrentPositionMsInterp();
+        stbsp_snprintf(tmp, sizeof(tmp), "CurrentTimeMs=%d\n", Thread.NewPositionMs);
         builder << tmp;
         stbsp_snprintf(tmp, sizeof(tmp), "FrameTimeMs=%lf\n", app->player->getFrameTimeMs());
         builder << tmp;
@@ -742,7 +743,8 @@ bool CollectScriptOutputs(LuaThread& thread, lua_State* L) noexcept
 
     lua_getglobal(L, "CurrentTimeMs");
     CHECK_OR_FAIL(lua_isnumber(L, -1));
-    thread.NewPositionMs = lua_tonumber(L, -1);
+    int32_t newPosMs = lua_tonumber(L, -1);
+    thread.NewPositionMs = newPosMs == thread.NewPositionMs ? -1 : newPosMs;
 
     return true;
 
@@ -827,7 +829,9 @@ void CustomLua::runScript(LuaScript* script, bool dry_run) noexcept
                         script->SetSelection(tmpBuffer, true);
                     }
 
-                    app->player->setPositionExact(data.NewPositionMs);
+                    if (data.NewPositionMs >= 0) {
+                        app->player->setPositionExact(data.NewPositionMs);
+                    }
                     data.running = false;
                 }, &data);
             }
