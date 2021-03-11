@@ -673,6 +673,7 @@ bool CollectScriptOutputs(LuaThread& thread, lua_State* L) noexcept
     int32_t at;
     int32_t pos;
     int32_t tag;
+    int32_t newPosMs;
     bool selected;
     
     int32_t i;
@@ -743,7 +744,7 @@ bool CollectScriptOutputs(LuaThread& thread, lua_State* L) noexcept
 
     lua_getglobal(L, "CurrentTimeMs");
     CHECK_OR_FAIL(lua_isnumber(L, -1));
-    int32_t newPosMs = lua_tonumber(L, -1);
+    newPosMs = lua_tonumber(L, -1);
     thread.NewPositionMs = newPosMs == thread.NewPositionMs ? -1 : newPosMs;
 
     return true;
