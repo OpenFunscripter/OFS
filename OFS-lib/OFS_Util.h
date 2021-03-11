@@ -96,7 +96,7 @@
 		}
 #else
 
-#define FUN_ASSERT_X(expr, format, ...)
+#define FUN_ASSERT_F(expr, format, ...)
 #define FUN_ASSERT(expr, msg)
 
 #endif
