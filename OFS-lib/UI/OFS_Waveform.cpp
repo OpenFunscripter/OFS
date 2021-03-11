@@ -13,6 +13,7 @@
 bool OFS_Waveform::LoadMP3(const std::string& path) noexcept
 {
 	OFS_BENCHMARK(__FUNCTION__);
+	generating = true;
 
 	static mp3dec_t mp3d;
 	mp3dec_file_info_t info;
@@ -118,6 +119,7 @@ bool OFS_Waveform::LoadMP3(const std::string& path) noexcept
 	LowMax = Util::MapRange(LowMax, min, max, 0.f, 1.f);
 	MidMax = Util::MapRange(MidMax, min, max, 0.f, 1.f);
 
+	generating = false;
 	return true;
 }
 

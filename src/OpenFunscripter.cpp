@@ -840,7 +840,7 @@ void OpenFunscripter::register_bindings()
             "toggle_mirror_mode",
             "Toggle mirror mode",
             true,
-            [&](void*) { if (LoadedFunscripts.size() > 0) { settings->data().mirror_mode = !settings->data().mirror_mode; }}
+            [&](void*) { if (LoadedFunscripts.size() > 1) { settings->data().mirror_mode = !settings->data().mirror_mode; }}
         );
         toggle_mirror_mode.key = Keybinding(
             SDLK_PRINTSCREEN,
