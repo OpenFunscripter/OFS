@@ -546,45 +546,39 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 	auto& canvas_pos = ctx.canvas_pos;
 	auto& canvas_size = ctx.canvas_size;
 	const auto draw_list = ctx.draw_list;
-	if (ShowAudioWaveform) {
+	if (ShowAudioWaveform & waveform.SampleCount() > 0) {
 		const float durationMs = ctx.totalDurationMs;
 		const float rel_start = offset_ms / durationMs;
-		const float rel_end = ((float)(offset_ms)+visibleSizeMs) / durationMs;
-
+		const float rel_end = (offset_ms+visibleSizeMs) / durationMs;
 		int32_t start_index = rel_start * (float)waveform.SampleCount();
 		int32_t end_index = rel_end * (float)waveform.SampleCount();
 		const int total_samples = end_index - start_index;
-		const int line_merge = 1 + (total_samples / 2000);
-
-		start_index -= start_index % line_merge;
-		end_index -= end_index % line_merge;
-		end_index += line_merge;
-
 
 		WaveformViewport = ImGui::GetWindowViewport();
 		auto renderWaveform = [](const std::vector<float>& samples, ScriptTimeline* timeline, const OverlayDrawingCtx& ctx, int start_index, int end_index)
 		{
 			OFS_PROFILE("renderWaveform");
 			const int total_samples = end_index - start_index;
-			const int line_merge = 1 + (total_samples / 2000);
+
+			const int line_merge = 1 + (total_samples / ctx.canvas_size.x);
+
 			timeline->WaveformLineBuffer.clear();
-			for (int i = start_index; i < end_index - (line_merge + line_merge); i += line_merge) {
-				if (i < 0 || (i + line_merge) >= samples.size()) {
-					timeline->WaveformLineBuffer.emplace_back(0.f);
-					continue;
+			float sample = 0.f;
+			for (int i = start_index; i <= end_index; i++) {
+				if (i >= 0 && i < samples.size()) {
+					float s = samples[i];
+					sample = std::max(sample, s);
 				}
-				else {
-					float sample = samples[i];
-					for (int x = 1; x < line_merge; x++) {
-						// find peak
-						sample = std::max(sample, samples[i + x]);
-					}
+
+				if (i % line_merge == 0) {
 					timeline->WaveformLineBuffer.emplace_back(sample);
+					sample = 0.f;
 				}
 			}
 			glActiveTexture(GL_TEXTURE1);
 			glBindTexture(GL_TEXTURE_1D, timeline->WaveformTex);
 			glTexImage1D(GL_TEXTURE_1D, 0, GL_RED, timeline->WaveformLineBuffer.size(), 0, GL_RED, GL_FLOAT, timeline->WaveformLineBuffer.data());
+			LOGF_INFO("line count: %d", timeline->WaveformLineBuffer.size());
 
 			ctx.draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) noexcept {
 				ScriptTimeline* ctx = (ScriptTimeline*)cmd->UserCallbackData;
