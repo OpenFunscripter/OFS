@@ -140,6 +140,7 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
                 ? scripts[posIndex]->SplineClamped(currentMs)
                 : scriptPos = scripts[posIndex]->GetPositionAtTime(currentMs);
         }
+        else { scriptPos = 0.f; }
         
         if (RollOverride >= 0) {
             roll = RollOverride - 50.f;
@@ -152,6 +153,7 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
                 : roll = scripts[rollIndex]->GetPositionAtTime(currentMs) - 50.f;
             roll = (rollRange/2.f) * (roll / 50.f);
         }
+        else { roll = 0.f; }
 
         if (PitchOverride >= 0) {
             pitch = PitchOverride - 50.f;
@@ -164,6 +166,7 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
                 : scripts[pitchIndex]->GetPositionAtTime(currentMs) - 50.f;
             pitch = (pitchRange/2.f) * (pitch / 50.f);
         }
+        else { pitch = 0.f; }
 
         if (twistIndex >= 0 && twistIndex < loadedScriptsCount) {
             float spin = easing 
@@ -171,6 +174,7 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
                 : scripts[twistIndex]->GetPositionAtTime(currentMs) - 50.f;
             yaw = (twistRange/2.f) * (spin / 50.f);
         }
+        else { yaw = 0.f; }
     }
 
     if (ImGui::BeginTabBar("##3D tab bar", ImGuiTabBarFlags_None))
