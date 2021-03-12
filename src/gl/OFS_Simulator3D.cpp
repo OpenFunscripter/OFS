@@ -175,6 +175,67 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
 
     if (ImGui::BeginTabBar("##3D tab bar", ImGuiTabBarFlags_None))
     {
+        if (ImGui::BeginTabItem("Configuration")) {
+            if (ImGui::Button("Reset", ImVec2(-1.f, 0.f))) {
+                reset();
+            }
+
+            if (ImGui::Button("Move", ImVec2(-1.f, 0.f))) { TranslateEnabled = !TranslateEnabled; }
+            glm::mat3 rot(1.f);
+            glm::vec3 scale(1.f);
+
+
+            if (TranslateEnabled) {
+                auto draw_list = ImGui::GetForegroundDrawList(ImGui::GetMainViewport());
+                ImGuizmo::SetDrawlist(draw_list);
+                ImGuizmo::SetRect(viewport->Pos.x, viewport->Pos.y, viewport->Size.x, viewport->Size.y);
+                if (ImGuizmo::Manipulate(glm::value_ptr(view),
+                    glm::value_ptr(projection),
+                    ImGuizmo::OPERATION::TRANSLATE,
+                    ImGuizmo::MODE::WORLD,
+                    glm::value_ptr(translation), NULL, NULL)) {
+                    auto g = ImGui::GetCurrentContext();
+                    auto window = ImGui::GetCurrentWindow();
+                    g->HoveredRootWindow = window;
+                    g->HoveredWindow = window;
+                    g->HoveredDockNode = window->DockNode;
+                }
+            }
+
+            ImGui::SliderFloat("Distance", &Zoom, 0.1f, MaxZoom);
+            ImGui::SliderAngle("Global yaw", &globalYaw, -180.f, 180.f);
+            ImGui::SliderAngle("Global pitch", &globalPitch, -90.f, 90.f);
+
+            if (ImGui::CollapsingHeader("Settings")) {
+                ImGui::ColorEdit4("Box", &boxColor.Value.x);
+                ImGui::ColorEdit4("Container", &containerColor.Value.x);
+                ImGui::ColorEdit4("Twist", &twistBoxColor.Value.x);
+
+                ImGui::InputFloat("Roll deg", &rollRange);
+                ImGui::InputFloat("Pitch deg", &pitchRange);
+                ImGui::InputFloat("Twist deg", &twistRange);
+            }
+
+            auto ScriptCombo = [&](auto Id, int32_t* index) {
+                //auto app = OpenFunscripter::ptr;
+                if (ImGui::BeginCombo(Id, *index >= 0 && *index < loadedScriptsCount ? scripts[*index]->metadata.title.c_str() : "None", ImGuiComboFlags_PopupAlignLeft)) {
+                    if (ImGui::Selectable("None", *index < 0) || ImGui::IsItemHovered()) {
+                        *index = -1;
+                    }
+                    for (int i = 0; i < loadedScriptsCount; i++) {
+                        if (ImGui::Selectable(scripts[i]->metadata.title.c_str(), *index == i) || ImGui::IsItemHovered()) {
+                            *index = i;
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+            };
+            ScriptCombo("Position", &posIndex);
+            ScriptCombo("Roll", &rollIndex);
+            ScriptCombo("Pitch", &pitchIndex);
+            ScriptCombo("Twist", &twistIndex);
+            ImGui::EndTabItem();
+        }
         if (ImGui::BeginTabItem("Edit")) {
             auto addEditAction = [](std::shared_ptr<Funscript>& script, float value, float min, float max) noexcept
             {
@@ -254,66 +315,6 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
             Util::Tooltip("You can use the mousewheel on the sliders above.");
             ImGui::EndTabItem();
         }
-        if (ImGui::BeginTabItem("Configuration")) {
-            if (ImGui::Button("Reset", ImVec2(-1.f, 0.f))) {
-                reset();
-            }
-
-            if (ImGui::Button("Move", ImVec2(-1.f, 0.f))) { TranslateEnabled = !TranslateEnabled; }
-            glm::mat3 rot(1.f);
-            glm::vec3 scale(1.f);
-
-
-            if (TranslateEnabled) {
-                auto draw_list = ImGui::GetForegroundDrawList(ImGui::GetMainViewport());
-                ImGuizmo::SetDrawlist(draw_list);
-                ImGuizmo::SetRect(viewport->Pos.x, viewport->Pos.y, viewport->Size.x, viewport->Size.y);
-                if (ImGuizmo::Manipulate(glm::value_ptr(view),
-                    glm::value_ptr(projection),
-                    ImGuizmo::OPERATION::TRANSLATE,
-                    ImGuizmo::MODE::WORLD,
-                    glm::value_ptr(translation), NULL, NULL)) {
-                    auto g = ImGui::GetCurrentContext();
-                    auto window = ImGui::GetCurrentWindow();
-                    g->HoveredRootWindow = window;
-                    g->HoveredWindow = window;
-                    g->HoveredDockNode = window->DockNode;
-                }
-            }
-
-            ImGui::SliderFloat("Distance", &Zoom, 0.1f, MaxZoom);
-
-
-            if (ImGui::CollapsingHeader("Settings")) {
-                ImGui::ColorEdit4("Box", &boxColor.Value.x);
-                ImGui::ColorEdit4("Container", &containerColor.Value.x);
-                ImGui::ColorEdit4("Twist", &twistBoxColor.Value.x);
-
-                ImGui::InputFloat("Roll deg", &rollRange);
-                ImGui::InputFloat("Pitch deg", &pitchRange);
-                ImGui::InputFloat("Twist deg", &twistRange);
-            }
-
-            auto ScriptCombo = [&](auto Id, int32_t* index) {
-                //auto app = OpenFunscripter::ptr;
-                if (ImGui::BeginCombo(Id, *index >= 0 && *index < loadedScriptsCount ? scripts[*index]->metadata.title.c_str() : "None", ImGuiComboFlags_PopupAlignLeft)) {
-                    if (ImGui::Selectable("None", *index < 0) || ImGui::IsItemHovered()) {
-                        *index = -1;
-                    }
-                    for (int i = 0; i < loadedScriptsCount; i++) {
-                        if (ImGui::Selectable(scripts[i]->metadata.title.c_str(), *index == i) || ImGui::IsItemHovered()) {
-                            *index = i;
-                        }
-                    }
-                    ImGui::EndCombo();
-                }
-            };
-            ScriptCombo("Position", &posIndex);
-            ScriptCombo("Roll", &rollIndex);
-            ScriptCombo("Pitch", &pitchIndex);
-            ScriptCombo("Twist", &twistIndex);
-            ImGui::EndTabItem();
-        }
         ImGui::EndTabBar();
     }
     ImGui::End();
@@ -321,6 +322,10 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
     // TODO: use more efficient way of doing getting this vector...
     {
         glm::mat4 directionMtx = translation;
+
+        directionMtx = glm::rotate(directionMtx, globalYaw, glm::vec3(0.f, 1.f, 0.f));
+        directionMtx = glm::rotate(directionMtx, globalPitch, glm::vec3(1.f, 0.f, 0.f));
+
         directionMtx = glm::rotate(directionMtx, glm::radians(roll), glm::vec3(0.f, 0.f, -1.f));
         directionMtx = glm::rotate(directionMtx, glm::radians(pitch), glm::vec3(1.f, 0.f, 0.f));
         directionMtx = glm::rotate(directionMtx, glm::radians(yaw), glm::vec3(0.f, 1.f, 0.f));
@@ -344,21 +349,35 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
     // container model matrix
     containerModel = glm::mat4(1.f);
     containerModel = glm::translate(containerModel, ((direction * ((cubeHeight + antiZBufferFight)/2.f))) + position);
+    
+    // global
+    containerModel = glm::rotate(containerModel, globalYaw, glm::vec3(0.f, 1.f, 0.f));    
+    containerModel = glm::rotate(containerModel, globalPitch, glm::vec3(1.f, 0.f, 0.f));
+    // local
     containerModel = glm::rotate(containerModel, glm::radians(roll), glm::vec3(0.f, 0.f, -1.f));
     containerModel = glm::rotate(containerModel, glm::radians(pitch), glm::vec3(1.f, 0.f, 0.f));
-    //containerModel = glm::rotate(containerModel, glm::radians(yaw), glm::vec3(0.f, 1.f, 0.f));    
+    
     containerModel = glm::scale(containerModel, glm::vec3(simCubeSize, (simLength + simCubeSize) - cubeHeight, simCubeSize)*1.01f);
 
     // box model matrix
     boxModel = glm::mat4(1.f);
     boxModel = glm::translate(boxModel, (-(direction * ((simLength + simCubeSize) - (cubeHeight - antiZBufferFight)))/2.f) + position);
+    
+    // global
+    boxModel = glm::rotate(boxModel, globalYaw, glm::vec3(0.f, 1.f, 0.f));
+    boxModel = glm::rotate(boxModel, globalPitch, glm::vec3(1.f, 0.f, 0.f));
+    // local
     boxModel = glm::rotate(boxModel, glm::radians(roll), glm::vec3(0.f, 0.f, -1.f));
     boxModel = glm::rotate(boxModel, glm::radians(pitch), glm::vec3(1.f, 0.f, 0.f));
-    //boxModel = glm::rotate(boxModel, glm::radians(yaw), glm::vec3(0.f, 1.f, 0.f));
+    
     boxModel = glm::scale(boxModel, glm::vec3(simCubeSize, cubeHeight, simCubeSize));
 
     twistBox = glm::mat4(1.f);
     twistBox = glm::translate(twistBox, position + (direction*(cubeHeight-1.25f)));
+
+    twistBox = glm::rotate(twistBox, globalYaw, glm::vec3(0.f, 1.f, 0.f));
+    twistBox = glm::rotate(twistBox, globalPitch, glm::vec3(1.f, 0.f, 0.f));
+
     twistBox = glm::rotate(twistBox, glm::radians(roll), glm::vec3(0.f, 0.f, -1.f));
     twistBox = glm::rotate(twistBox, glm::radians(pitch), glm::vec3(1.f, 0.f, 0.f));
     twistBox = glm::rotate(twistBox, glm::radians(yaw), glm::vec3(0.f, 1.f, 0.f));

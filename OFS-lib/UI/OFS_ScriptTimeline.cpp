@@ -578,7 +578,6 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 			glActiveTexture(GL_TEXTURE1);
 			glBindTexture(GL_TEXTURE_1D, timeline->WaveformTex);
 			glTexImage1D(GL_TEXTURE_1D, 0, GL_RED, timeline->WaveformLineBuffer.size(), 0, GL_RED, GL_FLOAT, timeline->WaveformLineBuffer.data());
-			LOGF_INFO("line count: %d", timeline->WaveformLineBuffer.size());
 
 			ctx.draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) noexcept {
 				ScriptTimeline* ctx = (ScriptTimeline*)cmd->UserCallbackData;

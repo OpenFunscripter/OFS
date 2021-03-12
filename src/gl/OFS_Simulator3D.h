@@ -71,6 +71,8 @@ private:
 	float pitch = 0.f;
 	float yaw = 0.f;
 
+	float globalYaw = 0.f;
+	float globalPitch = 0.f;
 
 	void reset() noexcept;
 
