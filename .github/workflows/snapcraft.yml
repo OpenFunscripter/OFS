@@ -27,8 +27,6 @@ jobs:
 
       - name: Install Snapcraft
         uses: samuelmeuli/action-snapcraft@v1
-        with:
-            use_lxd: true
 
       - name: Build
         run: |
