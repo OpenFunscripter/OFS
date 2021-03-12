@@ -8,7 +8,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   crafting:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     env:
       SNAP_NAME: "Unknown"     
     # Steps represent a sequence of tasks that will be executed as part of the job
@@ -27,7 +27,9 @@ jobs:
 
       - name: Install Snapcraft
         uses: samuelmeuli/action-snapcraft@v1
-
+        with:
+            use_lxd: true
+            
       - name: Build
         run: |
           sg lxd -c 'snapcraft --use-lxd'
