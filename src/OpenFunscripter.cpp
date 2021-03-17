@@ -1828,23 +1828,65 @@ bool OpenFunscripter::openFile(const std::string& file)
         // do not return false here future me
     }
 
-    if (result) {
-        auto& scriptSettings = RootFunscript()->Userdata<OFS_ScriptSettings>();
-        for (auto& associated : scriptSettings.associatedScripts) {
-            if (Util::FileExists(associated)) {
-                auto associated_script = std::make_unique<Funscript>();
-                if (associated_script->open<OFS_ScriptSettings>(associated, "OpenFunscripter")) {
-                    LoadedFunscripts.emplace_back(std::move(associated_script));
+    auto loadRelatedScripts = [](OpenFunscripter* app, const std::string& file) noexcept
+    {
+        std::vector<std::filesystem::path> relatedFiles;
+        {
+            auto filename = Util::Filename(file);
+            auto searchDirectory = Util::PathFromString(file);
+            searchDirectory.remove_filename();
+            std::error_code ec;
+            std::filesystem::directory_iterator dirIt(searchDirectory, ec);
+            for (auto&& pIt : dirIt) {
+                auto p = pIt.path();
+                auto extension = p.extension().u8string();
+                auto currentFilename = p.filename().replace_extension("").u8string();
+                if ( extension == ".funscript" 
+                    && Util::StringStartsWith(currentFilename, filename)
+                    && currentFilename != filename)
+                {
+                    LOGF_DEBUG("%s", p.u8string().c_str());
+                    relatedFiles.emplace_back(std::move(p));
                 }
             }
         }
-    }
+        // reorder for 3d simulator
+        std::array<std::string, 3> desiredOrder {
+            // it's in reverse order
+            ".twist.funscript",
+            ".pitch.funscript",
+            ".roll.funscript"
+        };
+        if (relatedFiles.size() > 1) {
+            for (auto& ending : desiredOrder) {
+                for(int i=0; i < relatedFiles.size(); i++) {
+                    auto& path = relatedFiles[i];
+                    if (Util::StringEndsWith(path.u8string(), ending)) {
+                        auto move = std::move(path);
+                        relatedFiles.erase(relatedFiles.begin() + i);
+                        relatedFiles.emplace_back(std::move(move));
+                        break;
+                    }
+                }
+            }
+        }
+        // load the related files
+        for(int i = relatedFiles.size()-1; i >= 0; i--) {
+            auto& file = relatedFiles[i];
+            auto relatedScript = std::make_unique<Funscript>();
+            if (relatedScript->open<OFS_ScriptSettings>(file.u8string(), "OpenFunscripter")) {
+                app->LoadedFunscripts.emplace_back(std::move(relatedScript));
+            }
+        }
+    };
+
+    if (result) { loadRelatedScripts(this, file); }
 
     RootFunscript()->current_path = funscript_path;
 
     updateTitle();
 
-    auto last_path = std::filesystem::path(file);
+    auto last_path = Util::PathFromString(file);
     last_path.replace_filename("");
     last_path /= "";
     settings->data().last_path = last_path.u8string();
@@ -1874,16 +1916,6 @@ void OpenFunscripter::updateTitle() noexcept
 void OpenFunscripter::saveScript(Funscript* script, const std::string& path, bool override_location) noexcept
 {
     OFS_BENCHMARK(__FUNCTION__);
-    if (script == RootFunscript().get()) {
-        // associate scripts
-        auto& scriptSettings = script->Userdata<OFS_ScriptSettings>();
-        scriptSettings.associatedScripts.clear();
-        for (auto& loadedScript : LoadedFunscripts) {
-            if (loadedScript.get() == script) { continue; }
-            scriptSettings.associatedScripts.emplace_back(loadedScript->current_path);
-        }
-    }
-
     if (path.empty()) {
         script->save<OFS_ScriptSettings>("OpenFunscripter");
     }

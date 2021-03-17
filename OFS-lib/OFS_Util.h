@@ -300,9 +300,21 @@ public:
 		return (it != string1.end());
 	}
 
-	inline static bool StringEndswith(const std::string& string, const std::string& ending) noexcept {
+	inline static bool StringEndsWith(const std::string& string, const std::string& ending) noexcept {
 		if (string.length() >= ending.length()) {
 			return (0 == string.compare(string.length() - ending.length(), ending.length(), ending));
+		}
+		return false;
+	}
+
+	inline static bool StringStartsWith(const std::string& string, const std::string& start) noexcept
+	{
+		if (string.length() >= start.length()) {
+			for (int i = 0; i < start.size(); i++)
+			{
+				if (string[i] != start[i]) return false;
+			}
+			return true;
 		}
 		return false;
 	}

@@ -397,8 +397,7 @@ void TCodePlayer::setScripts(std::vector<std::weak_ptr<const Funscript>>&& scrip
                 auto& aliases = TCodeChannels::Aliases[i];
                 for (auto& alias : aliases)
                 {
-                    if (Util::StringEndswith(locked->metadata.title, alias))
-                    {
+                    if (Util::StringEndsWith(locked->metadata.title, alias)) {
                         prod.GetProd(static_cast<TChannel>(i)).SetScript(scriptIndex);
                         break;
                     }

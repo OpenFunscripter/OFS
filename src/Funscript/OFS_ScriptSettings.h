@@ -40,11 +40,11 @@ struct OFS_ScriptSettings {
 				return;
 			}
 
-			if (Util::StringEndswith(name, startMarker)) {
+			if (Util::StringEndsWith(name, startMarker)) {
 				type = BookmarkType::START_MARKER;
 				name.erase(name.end() - sizeof(startMarker) + 1, name.end());
 			}
-			else if (Util::StringEndswith(name, endMarker)) {
+			else if (Util::StringEndsWith(name, endMarker)) {
 				type = BookmarkType::END_MARKER;
 				// don't remove _end because it helps distinguish the to markers
 				//name.erase(name.end() - sizeof(endMarker) + 1, name.end());
@@ -70,7 +70,6 @@ struct OFS_ScriptSettings {
 	std::string version = "OFS " OFS_LATEST_GIT_TAG "@" OFS_LATEST_GIT_HASH;
 	std::vector<Bookmark> Bookmarks;
 	int32_t last_pos_ms = 0;
-	std::vector<std::string> associatedScripts;
 	static VideoplayerWindow::OFS_VideoPlayerSettings* player;
 
 	struct TempoModeSettings {
@@ -92,7 +91,6 @@ struct OFS_ScriptSettings {
 	inline void reflect(Archive& ar) {
 		OFS_REFLECT(version, ar);
 		OFS_REFLECT(tempoSettings, ar);
-		OFS_REFLECT(associatedScripts, ar);
 		OFS_REFLECT(Bookmarks, ar);
 		OFS_REFLECT(last_pos_ms, ar);
 		OFS_REFLECT_PTR(player, ar);
