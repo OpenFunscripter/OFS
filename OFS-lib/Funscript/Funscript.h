@@ -71,7 +71,7 @@ public:
 	std::shared_ptr<void> userdata = nullptr;
 private:
 	nlohmann::json Json;
-	nlohmann::json BaseLoaded;
+	nlohmann::json BaseLoaded = nlohmann::json::object();
 	std::chrono::system_clock::time_point editTime;
 	bool scriptOpened = false;
 	bool funscriptChanged = false; // used to fire only one event every frame a change occurs
