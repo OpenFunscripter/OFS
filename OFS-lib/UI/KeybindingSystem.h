@@ -30,12 +30,12 @@ struct Keybinding
 	SDL_Keycode key;
 	Uint16 modifiers;
 
-	Keybinding()
-		: key(0), modifiers(0)/*, ignore_repeats(false)*/
+	Keybinding() noexcept
+		: key(0), modifiers(0)
 	{}
 
-	Keybinding(SDL_Keycode key, Uint16 mod/*, bool ignore_repeat*/)
-		: key(key), modifiers(mod)/*, ignore_repeats(ignore_repeat)*/
+	Keybinding(SDL_Keycode key, Uint16 mod) noexcept
+		: key(key), modifiers(mod)
 	{}
 
 	template <class Archive>
@@ -43,18 +43,16 @@ struct Keybinding
 		OFS_REFLECT(key_str, ar);
 		OFS_REFLECT(key, ar);
 		OFS_REFLECT(modifiers, ar);
-		/*OFS_REFLECT(ignore_repeats, ar);*/
 	}
 };
-
 
 struct ControllerBinding {
 	int32_t button = -1;
 	bool navmode = false;
 
-	ControllerBinding()
+	ControllerBinding() noexcept
 		: button(-1), navmode(false) {}
-	ControllerBinding(int32_t button, bool navmode)
+	ControllerBinding(int32_t button, bool navmode) noexcept
 		: button(button), navmode(navmode) {}
 
 	template<class Archive>
@@ -74,9 +72,9 @@ struct Binding {
 	void* userdata = nullptr;
 	std::string dynamicHandlerId = "";
 
-	Binding() {}
+	Binding() noexcept {}
 
-	Binding(const std::string& id, const std::string& description, bool ignore_repeats, BindingAction action)
+	Binding(const std::string& id, const std::string& description, bool ignore_repeats, BindingAction action) noexcept
 		: identifier(id), description(description), ignore_repeats(ignore_repeats), action(action) {}
 
 	template<class Archive>
@@ -107,10 +105,44 @@ struct KeybindingGroup {
 	}
 };
 
+
+struct PassiveBinding
+{
+	std::string identifier;
+	std::string description;
+	Keybinding key;
+
+	PassiveBinding() noexcept {}
+
+	PassiveBinding(const std::string& id, const std::string& description) noexcept
+		: identifier(id), description(description)
+	{}
+
+	template<class Archive>
+	inline void reflect(Archive& ar) {
+		OFS_REFLECT(identifier, ar);
+		OFS_REFLECT(description, ar);
+		OFS_REFLECT(key, ar);
+	}
+};
+
+struct PassiveBindingGroup
+{
+	std::string name;
+	std::vector<PassiveBinding> bindings;
+
+	template<class Archive>
+	inline void reflect(Archive& ar) {
+		OFS_REFLECT(name, ar);
+		OFS_REFLECT(bindings, ar);
+	}
+};
+
 constexpr const char* CurrentKeybindingsVersion = "1";
 struct Keybindings {
 	std::string config_version = CurrentKeybindingsVersion;
 	std::vector<KeybindingGroup> groups;
+	std::vector<PassiveBindingGroup> passiveGroups;
 
 	KeybindingGroup DynamicBindings{"Dynamic"};
 
@@ -123,38 +155,46 @@ struct Keybindings {
 			return;
 		}
 		OFS_REFLECT(groups, ar);
+		OFS_REFLECT(passiveGroups, ar);
 		OFS_REFLECT(DynamicBindings, ar);
 	}
 };
 
 class KeybindingSystem 
 {
+private:
 	std::stringstream currentlyHeldKeys;
 	Binding* currentlyChanging = nullptr;
+	PassiveBinding* currentlyChangingPassive = nullptr;
+	uint32_t passiveChangingStateTicks = 0;
+
 	bool changingController = false;
-	std::unordered_map<std::string, std::string> binding_string_cache;
 	bool ControllerOnly = false;
 	std::string filterString;
 
-	std::unordered_map<std::string, DynamicBindingHandler> dynamicHandlers;
-
-	void addKeyString(const char* name);
-	void addKeyString(char name);
 	Keybindings ActiveBindings;
-	std::string loadKeyString(SDL_Keycode key, int mod);
+	std::unordered_map<std::string, DynamicBindingHandler> dynamicHandlers;
+	std::unordered_map<std::string, std::string> bindingStringLUT;
+	std::unordered_map<std::string, PassiveBinding> passiveBindingLUT;
+	std::string keybindingPath;
+
+	void addKeyString(const char* name) noexcept;
+	void addKeyString(char name) noexcept;
+	std::string loadKeyString(SDL_Keycode key, int mod) noexcept;
 	
 	void ProcessControllerBindings(SDL_Event& ev, bool repeat) noexcept;
+
+	void handleBindingModification(SDL_Event& ev, uint16_t modstate) noexcept;
+	void handlePassiveBindingModification(SDL_Event& ev, uint16_t modstate) noexcept;
 
 	void KeyPressed(SDL_Event& ev) noexcept;
 	void ControllerButtonRepeat(SDL_Event& ev) noexcept;
 	void ControllerButtonDown(SDL_Event& ev) noexcept;
 
-	int32_t lastAxis = 0;
-
-	std::string keybindingPath;
-
-
 	void addBindingsGroup(KeybindingGroup& group, bool& save, bool deletable = false) noexcept;
+
+	void addPassiveBindingGroup(PassiveBindingGroup& group, bool& save) noexcept;
+	void passiveBindingTab(bool& save) noexcept;
 public:
 	bool ShowWindow = false;
 
@@ -163,9 +203,10 @@ public:
 
 	void setup(class EventSystem& events);
 	const std::string& getBindingString(const char* binding_id) noexcept;
-	const Keybindings& getBindings() const { return ActiveBindings; }
-	void setBindings(const Keybindings& bindings);
-	void registerBinding(const KeybindingGroup& group);
+	const Keybindings& getBindings() const noexcept { return ActiveBindings; }
+	void setBindings(const Keybindings& bindings) noexcept;
+	void registerBinding(KeybindingGroup&& group) noexcept;
+	void registerPassiveBindingGroup(PassiveBindingGroup&& pgroup) noexcept;
 
 	void addDynamicBinding(Binding&& binding) noexcept;
 	void removeDynamicBinding(const std::string& id) noexcept;
@@ -174,5 +215,8 @@ public:
 		dynamicHandlers.insert(std::make_pair(id, handler));
 	}
 
-	bool ShowBindingWindow();
+	bool ShowBindingWindow() noexcept;
+
+	static KeybindingSystem* ptr;
+	static bool PassiveBinding(const char* name) noexcept;
 };

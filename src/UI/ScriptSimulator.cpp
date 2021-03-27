@@ -50,8 +50,8 @@ void ScriptSimulator::MouseMovement(SDL_Event& ev)
 void ScriptSimulator::MouseDown(SDL_Event& ev)
 {
     auto& button = ev.button;
-    auto modstate = SDL_GetModState();
-    if (modstate & KMOD_SHIFT && button.button == SDL_BUTTON_LEFT) {
+    bool clickAddMofifer = KeybindingSystem::PassiveBinding("click_add_point_simulator");
+    if (clickAddMofifer && button.button == SDL_BUTTON_LEFT) {
         if (MouseBetweenSimulator) {
             auto app = OpenFunscripter::ptr;
             app->undoSystem->Snapshot(StateType::ADD_EDIT_ACTION, false, app->ActiveFunscript().get());
@@ -59,7 +59,6 @@ void ScriptSimulator::MouseDown(SDL_Event& ev)
         }
     }
 }
-
 
 void ScriptSimulator::CenterSimulator()
 {

@@ -13,6 +13,8 @@
 #include "OFS_Shader.h"
 #include "glad/glad.h"
 
+#include "KeybindingSystem.h"
+
 int32_t ScriptTimelineEvents::FfmpegAudioProcessingFinished = 0;
 int32_t ScriptTimelineEvents::ScriptpositionWindowDoubleClick = 0;
 int32_t ScriptTimelineEvents::FunscriptActionClicked = 0;
@@ -74,7 +76,6 @@ void ScriptTimeline::mouse_pressed(SDL_Event& ev) noexcept
 
 	auto& button = ev.button;
 	auto mousePos = ImGui::GetMousePos();
-	auto modstate = SDL_GetModState();
 
 	FunscriptAction* clickedAction = nullptr;
 
@@ -101,11 +102,6 @@ void ScriptTimeline::mouse_pressed(SDL_Event& ev) noexcept
 					clickedAction = &overlay->ActionPositionWindow[index];
 					static FunscriptAction clickedActionStatic;
 					clickedActionStatic = *clickedAction;
-				
-					SDL_Event ev;
-					ev.type = ScriptTimelineEvents::FunscriptActionClicked;
-					ev.user.data1 = &clickedActionStatic;
-					SDL_PushEvent(&ev);
 					break;
 				}
 				index++;
@@ -122,9 +118,10 @@ void ScriptTimeline::mouse_pressed(SDL_Event& ev) noexcept
 	
 	if (undoSystem == nullptr) return;
 	auto activeScript = (*Scripts)[activeScriptIdx].get();
+	bool movePointModifer = KeybindingSystem::PassiveBinding("move_point_modifier");
 
 	if (button.button == SDL_BUTTON_LEFT) {
-		if (modstate & KMOD_SHIFT && PositionsItemHovered) {
+		if (movePointModifer && PositionsItemHovered) {
 			//auto app = OpenFunscripter::ptr;
 			if (clickedAction != nullptr) {
 				// start move

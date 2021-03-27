@@ -462,7 +462,7 @@ void OpenFunscripter::register_bindings()
             0
         );
 
-        keybinds.registerBinding(group);
+        keybinds.registerBinding(std::move(group));
     }
 
     {
@@ -527,7 +527,7 @@ void OpenFunscripter::register_bindings()
         );
 
 
-        keybinds.registerBinding(group);
+        keybinds.registerBinding(std::move(group));
     }
     {
         KeybindingGroup group;
@@ -693,7 +693,7 @@ void OpenFunscripter::register_bindings()
             SDLK_LEFT,
             KMOD_CTRL
         );
-        keybinds.registerBinding(group);
+        keybinds.registerBinding(std::move(group));
     }
     
     {
@@ -885,7 +885,7 @@ void OpenFunscripter::register_bindings()
             SDLK_F10,
             0
         );
-        keybinds.registerBinding(group);
+        keybinds.registerBinding(std::move(group));
     }
 
     // MOVE LEFT/RIGHT
@@ -1161,7 +1161,7 @@ void OpenFunscripter::register_bindings()
             0
         );
 
-        keybinds.registerBinding(group);
+        keybinds.registerBinding(std::move(group));
     }
     // FUNCTIONS
     {
@@ -1210,7 +1210,7 @@ void OpenFunscripter::register_bindings()
             0
         );
 
-        keybinds.registerBinding(group);
+        keybinds.registerBinding(std::move(group));
     }
 
     // VIDEO CONTROL
@@ -1254,7 +1254,7 @@ void OpenFunscripter::register_bindings()
             0
         );
 
-        keybinds.registerBinding(group);
+        keybinds.registerBinding(std::move(group));
     }
 
     {
@@ -1306,7 +1306,7 @@ void OpenFunscripter::register_bindings()
             SDL_CONTROLLER_BUTTON_A,
             false
         );
-        
+
         auto& toggle_recording_mode = group.bindings.emplace_back(
             "toggle_recording_mode",
             "Toggle recording mode",
@@ -1361,7 +1361,39 @@ void OpenFunscripter::register_bindings()
             SDL_CONTROLLER_BUTTON_X,
             false
         );
-        keybinds.registerBinding(group);
+        keybinds.registerBinding(std::move(group));
+    }
+
+    // passive modifiers
+    {
+        PassiveBindingGroup group;
+        group.name = "Point timeline";
+
+        auto& move_point_modifier = group.bindings.emplace_back(
+            "move_point_modifier",
+            "Click drag point"
+        );
+        move_point_modifier.key = Keybinding(
+            0,
+            KMOD_SHIFT
+        );
+
+        keybinds.registerPassiveBindingGroup(std::move(group));
+    }
+
+    {
+        PassiveBindingGroup group;
+        group.name = "Simulator";
+        auto& click_add_point_simulator = group.bindings.emplace_back(
+            "click_add_point_simulator",
+            "Click simulator to add a point"
+        );
+        click_add_point_simulator.key = Keybinding(
+            0,
+            KMOD_SHIFT
+        );
+
+        keybinds.registerPassiveBindingGroup(std::move(group));
     }
 }
 
@@ -1593,7 +1625,7 @@ void OpenFunscripter::step() noexcept {
                 OFS::UpdateHeatmapGradient(player->getDuration() * 1000.f, playerControls.TimelineGradient, ActiveFunscript()->Actions());
             }
 
-            auto drawBookmarks = [&](ImDrawList* draw_list, const ImRect& frame_bb, bool item_hovered)
+            auto drawBookmarks = [&](ImDrawList* draw_list, const ImRect& frame_bb, bool item_hovered) noexcept
             {
                 OFS_PROFILE("drawBookmarks");
 
