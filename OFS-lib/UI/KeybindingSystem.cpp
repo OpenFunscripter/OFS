@@ -608,7 +608,7 @@ bool KeybindingSystem::PassiveModifier(const char* name) noexcept
     auto it = ptr->passiveBindingLUT.find(name);
     if (it != ptr->passiveBindingLUT.end()) {
         uint16_t modstate = GetModifierState(SDL_GetModState());
-        if (modstate & it->second.key.modifiers) {
+        if (modstate & it->second.key.modifiers || modstate == 0 && it->second.key.modifiers == 0) {
             return true;
         }
     }
