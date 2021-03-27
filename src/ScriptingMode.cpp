@@ -178,20 +178,23 @@ void AlternatingImpl::DrawModeSettings() noexcept
     ImGui::Checkbox("Fixed range", &fixedRangeEnabled);
     if (fixedRangeEnabled) {
         bool inputActive = false;
-        
-        ImGui::LabelText("BottomLabel", "%s", "Fixed bottom");
-        ImGui::InputInt("Fixed bottom", &fixedBottom, 1, 100);
+        auto& style = ImGui::GetStyle();
+        float availdWidth = ImGui::GetContentRegionAvail().x - style.ItemSpacing.x;
+
+        ImGui::SetNextItemWidth(availdWidth/2.f);
+        ImGui::InputInt("##Fixed bottom", &fixedBottom, 1, 100);
         inputActive = inputActive || ImGui::IsItemActive();
         
-        ImGui::LabelText("TopLabel", "%s", "Fixed top");
-        ImGui::InputInt("Fixed top", &fixedTop);
+        ImGui::SameLine();
+
+        ImGui::SetNextItemWidth(availdWidth / 2.f);
+        ImGui::InputInt("##Fixed top", &fixedTop);
         inputActive = inputActive || ImGui::IsItemActive();
 
         fixedBottom = Util::Clamp<int>(fixedBottom, 0, 100);
         fixedTop = Util::Clamp<int>(fixedTop, 0, 100);
         
-        if (fixedBottom > fixedTop && !inputActive)
-        {
+        if (fixedBottom > fixedTop && !inputActive) {
             // correct user error :^)
             auto tmp = fixedBottom;
             fixedBottom = fixedTop;
