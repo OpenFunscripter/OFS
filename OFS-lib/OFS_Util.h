@@ -198,6 +198,17 @@ public:
 		return 0;
 	}
 
+	inline static size_t WriteFile(const char* path, uint8_t* buffer, size_t size) noexcept
+	{
+		auto file = OpenFile(path, "wb", strlen(path));
+		if (file) {
+			auto written = SDL_RWwrite(file, buffer, sizeof(uint8_t), size);
+			SDL_RWclose(file);
+			return written;
+		}
+		return 0;
+	}
+
 	inline static void WriteJson(const nlohmann::json& json, const std::string& file, bool pretty = false) noexcept {
 		return WriteJson(json, file.c_str(), pretty, file.size());
 	}
