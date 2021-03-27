@@ -10,6 +10,11 @@ ScripingModeBaseImpl::ScripingModeBaseImpl()
 {
 }
 
+void ScripingModeBaseImpl::addEditAction(FunscriptAction action) noexcept
+{
+    ctx().AddEditAction(action, OpenFunscripter::ptr->player->getFrameTimeMs());
+}
+
 inline Funscript& ScripingModeBaseImpl::ctx() {
     return OpenFunscripter::script();
 }
@@ -112,13 +117,7 @@ void ScriptingMode::addEditAction(FunscriptAction action) noexcept
         // apply offset
         action.at += app->settings->data().action_insert_delay_ms;
     }
-    auto ptr = OpenFunscripter::script().GetActionAtTime(action.at, app->player->getFrameTimeMs());
-    if (ptr != nullptr) {
-        app->ActiveFunscript()->EditAction(*ptr, FunscriptAction(ptr->at, action.pos));
-    }
-    else {
-	    impl->addAction(action);
-    }
+	impl->addEditAction(action);
 }
 
 void ScriptingMode::NextFrame() noexcept
@@ -160,7 +159,7 @@ void DynamicInjectionImpl::DrawModeSettings() noexcept
 }
 
 // dynamic injection
-void DynamicInjectionImpl::addAction(FunscriptAction action) noexcept
+void DynamicInjectionImpl::addEditAction(FunscriptAction action) noexcept
 {
     auto previous = ctx().GetPreviousActionBehind(action.at);
     if (previous != nullptr) {
@@ -168,82 +167,49 @@ void DynamicInjectionImpl::addAction(FunscriptAction action) noexcept
 
         int32_t inject_duration = inject_at - previous->at;
         int32_t inject_pos = Util::Clamp<int32_t>(previous->pos + (top_bottom_direction * (inject_duration / 1000.0) * target_speed), 0.0, 100.0);
-        ctx().AddAction(FunscriptAction(inject_at, inject_pos));
+        ScripingModeBaseImpl::addEditAction(FunscriptAction(inject_at, inject_pos));
     }
-    ctx().AddAction(action);
+    ScripingModeBaseImpl::addEditAction(action);
 }
 
 // alternating
 void AlternatingImpl::DrawModeSettings() noexcept
 {
-    ImGui::Checkbox("Fixed range", &fixed_range_enabled);
-    if (fixed_range_enabled) {
-        bool input_active = false;
+    ImGui::Checkbox("Fixed range", &fixedRangeEnabled);
+    if (fixedRangeEnabled) {
+        bool inputActive = false;
         
         ImGui::LabelText("BottomLabel", "%s", "Fixed bottom");
-        ImGui::InputInt("Fixed bottom", &fixed_bottom, 1, 100);
-        input_active = input_active || ImGui::IsItemActive();
+        ImGui::InputInt("Fixed bottom", &fixedBottom, 1, 100);
+        inputActive = inputActive || ImGui::IsItemActive();
         
         ImGui::LabelText("TopLabel", "%s", "Fixed top");
-        ImGui::InputInt("Fixed top", &fixed_top);
-        input_active = input_active || ImGui::IsItemActive();
+        ImGui::InputInt("Fixed top", &fixedTop);
+        inputActive = inputActive || ImGui::IsItemActive();
 
-        fixed_bottom = Util::Clamp<int>(fixed_bottom, 0, 100);
-        fixed_top = Util::Clamp<int>(fixed_top, 0, 100);
+        fixedBottom = Util::Clamp<int>(fixedBottom, 0, 100);
+        fixedTop = Util::Clamp<int>(fixedTop, 0, 100);
         
-        if (fixed_bottom > fixed_top && !input_active)
+        if (fixedBottom > fixedTop && !inputActive)
         {
             // correct user error :^)
-            auto tmp = fixed_bottom;
-            fixed_bottom = fixed_top;
-            fixed_top = tmp;
+            auto tmp = fixedBottom;
+            fixedBottom = fixedTop;
+            fixedTop = tmp;
         }
     }
 }
 
-void AlternatingImpl::addAction(FunscriptAction action) noexcept
+void AlternatingImpl::addEditAction(FunscriptAction action) noexcept
 {
-    auto previous = ctx().GetPreviousActionBehind(action.at);
-    if (fixed_range_enabled) {
-        if (previous != nullptr) {
-            if (previous->pos >= fixed_top)
-            {
-                ctx().AddAction(FunscriptAction(action.at, fixed_bottom));
-            }
-            else {
-                ctx().AddAction(FunscriptAction(action.at, fixed_top));
-            }
-        }
-        else {
-            if (std::abs(action.pos - fixed_bottom) > std::abs(action.pos - fixed_top))
-                ctx().AddAction(FunscriptAction(action.at, fixed_top));
-            else
-                ctx().AddAction(FunscriptAction(action.at, fixed_bottom));
-        }
-        return;
+    if (fixedRangeEnabled) {
+        action.pos = nextPosition ? fixedBottom : fixedTop;
     }
-
-    if (previous != nullptr) {
-
-        if (action.pos >= 50) {
-            if (previous->pos - action.pos >= 0) {
-                ctx().AddAction(FunscriptAction(action.at, 100 - action.pos));
-            }
-            else {
-                ctx().AddAction(action);
-            }
-        }
-        else {
-            if (action.pos - previous->pos >= 0) {
-                ctx().AddAction(FunscriptAction(action.at, 100 - action.pos));
-            }
-            else {
-                ctx().AddAction(action);
-            }
-        }
-        return;
+    else {
+        action.pos = nextPosition ? 100 - action.pos : action.pos;
     }
-    ctx().AddAction(action);
+    ScripingModeBaseImpl::addEditAction(action);
+    nextPosition = !nextPosition;
 }
 
 inline void RecordingImpl::singleAxisRecording() noexcept
@@ -474,12 +440,6 @@ void RecordingImpl::DrawModeSettings() noexcept
         ImGui::TextUnformatted("Recording paused");
         ImGui::PopStyleColor();
     }   
-}
-
-void RecordingImpl::addAction(FunscriptAction action) noexcept
-{
-    // same as default
-    ctx().AddAction(action);
 }
 
 void RecordingImpl::update() noexcept

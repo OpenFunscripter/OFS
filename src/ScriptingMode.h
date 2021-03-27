@@ -27,9 +27,7 @@ public:
 	ScripingModeBaseImpl();
 	virtual ~ScripingModeBaseImpl() {}
 	virtual void DrawModeSettings() noexcept = 0;
-	virtual void addAction(FunscriptAction action) noexcept {
-		ctx().AddAction(action);
-	}
+	virtual void addEditAction(FunscriptAction action) noexcept;
 
 	virtual void finish() noexcept {};
 	virtual void update() noexcept {};
@@ -51,18 +49,19 @@ protected:
 	int top_bottom_direction = 1; // 1 for top and -1 for bottom injection
 public:
 	virtual void DrawModeSettings() noexcept override;
-	virtual void addAction(FunscriptAction action) noexcept override;
+	virtual void addEditAction(FunscriptAction action) noexcept override;
 };
 
 
 class AlternatingImpl : public ScripingModeBaseImpl
 {
-	int32_t fixed_bottom = 0;
-	int32_t fixed_top = 100;
-	bool fixed_range_enabled = false;
+	int32_t fixedBottom = 0;
+	int32_t fixedTop = 100;
+	bool fixedRangeEnabled = false;
+	bool nextPosition = false;
 public:
 	virtual void DrawModeSettings() noexcept override;
-	virtual void addAction(FunscriptAction action) noexcept override;
+	virtual void addEditAction(FunscriptAction action) noexcept override;
 };
 
 class RecordingImpl : public ScripingModeBaseImpl
@@ -110,7 +109,6 @@ public:
 	void ControllerAxisMotion(SDL_Event& ev);
 	void setRecordingMode(RecordingMode mode) noexcept { activeMode = mode; }
 	virtual void DrawModeSettings() noexcept override;
-	virtual void addAction(FunscriptAction action) noexcept override;
 	virtual void update() noexcept override;
 	virtual void finish() noexcept override;
 };
@@ -131,7 +129,6 @@ public:
 	void setMode(ScriptingModeEnum mode) noexcept;
 	void setOverlay(ScriptingOverlayModes mode) noexcept;
 	void addEditAction(FunscriptAction action) noexcept;
-	inline void addAction(FunscriptAction action) noexcept { impl->addAction(action); }
 	void NextFrame() noexcept;
 	void PreviousFrame() noexcept;
 	void update() noexcept;
