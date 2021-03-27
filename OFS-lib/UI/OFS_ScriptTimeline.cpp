@@ -118,7 +118,7 @@ void ScriptTimeline::mouse_pressed(SDL_Event& ev) noexcept
 	
 	if (undoSystem == nullptr) return;
 	auto activeScript = (*Scripts)[activeScriptIdx].get();
-	bool movePointModifer = KeybindingSystem::PassiveBinding("move_point_modifier");
+	bool movePointModifer = KeybindingSystem::PassiveModifier("move_point_modifier");
 
 	if (button.button == SDL_BUTTON_LEFT) {
 		if (movePointModifer && PositionsItemHovered) {

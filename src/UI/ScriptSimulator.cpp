@@ -50,7 +50,7 @@ void ScriptSimulator::MouseMovement(SDL_Event& ev)
 void ScriptSimulator::MouseDown(SDL_Event& ev)
 {
     auto& button = ev.button;
-    bool clickAddMofifer = KeybindingSystem::PassiveBinding("click_add_point_simulator");
+    bool clickAddMofifer = KeybindingSystem::PassiveModifier("click_add_point_simulator");
     if (clickAddMofifer && button.button == SDL_BUTTON_LEFT) {
         if (MouseBetweenSimulator) {
             auto app = OpenFunscripter::ptr;

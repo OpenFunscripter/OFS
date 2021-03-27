@@ -218,5 +218,5 @@ public:
 	bool ShowBindingWindow() noexcept;
 
 	static KeybindingSystem* ptr;
-	static bool PassiveBinding(const char* name) noexcept;
+	static bool PassiveModifier(const char* name) noexcept;
 };

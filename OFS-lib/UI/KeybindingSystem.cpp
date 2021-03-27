@@ -603,7 +603,7 @@ bool KeybindingSystem::ShowBindingWindow() noexcept
     return save;
 }
 
-bool KeybindingSystem::PassiveBinding(const char* name) noexcept
+bool KeybindingSystem::PassiveModifier(const char* name) noexcept
 {
     auto it = ptr->passiveBindingLUT.find(name);
     if (it != ptr->passiveBindingLUT.end()) {
