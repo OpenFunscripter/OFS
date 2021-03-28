@@ -1,4 +1,5 @@
 #include "OFS_Util.h"
+#include "OFS_Util.h"
 
 #include "EventSystem.h"
 
@@ -273,6 +274,7 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
 		delete result;
 	};
 	auto handle = SDL_CreateThread(thread, "SaveFileDialog", threadData);
+	SDL_DetachThread(handle);
 }
 
 void Util::OpenDirectoryDialog(const std::string& title, const std::string& path, FileDialogResultHandler&& handler) noexcept
@@ -325,6 +327,48 @@ void Util::OpenDirectoryDialog(const std::string& title, const std::string& path
 		delete result;
 	};
 	auto handle = SDL_CreateThread(thread, "SaveFileDialog", threadData);
+	SDL_DetachThread(handle);
+}
+
+void Util::YesNoCancelDialog(const std::string& title, const std::string& message, YesNoDialogResultHandler&& handler)
+{
+	struct YesNoCancelThreadData
+	{
+		std::string title;
+		std::string message;
+		EventSystem::SingleShotEventHandler handler;
+	};
+	auto thread = [](void* user) -> int
+	{
+		YesNoCancelThreadData* data = (YesNoCancelThreadData*)user;
+		auto result = tinyfd_messageBox(data->title.c_str(), data->message.c_str(), "yesnocancel", NULL, 1);
+		Util::YesNoCancel enumResult;
+		switch (result)
+		{
+		case 0:
+			enumResult = Util::YesNoCancel::No;
+			break;
+		case 1:
+			enumResult = Util::YesNoCancel::Yes;
+			break;
+		case 2:
+			enumResult = Util::YesNoCancel::Cancel;
+			break;
+		}
+		EventSystem::SingleShot(std::move(data->handler), (void*)(intptr_t)enumResult);
+		delete data;
+		return 0;
+	};
+	
+	auto threadData = new YesNoCancelThreadData;
+	threadData->title = title;
+	threadData->message = message;
+	threadData->handler = [handler](void* ctx) {
+		auto result = (Util::YesNoCancel)(intptr_t)ctx;
+		handler(result);
+	};
+	auto handle = SDL_CreateThread(thread, "YesNoCancelDialog", threadData);
+	SDL_DetachThread(handle);
 }
 
 std::string Util::Resource(const std::string& path) noexcept

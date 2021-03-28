@@ -1,7 +1,7 @@
-tiny file dialogs ( cross-platform C C++ ) v3.8.3 [Nov 1, 2020] zlib licence
+tiny file dialogs ( cross-platform C C++ ) v3.8.7 [Feb 25, 2021] zlib licence
  _________
-/         \   Beep Popup InputBox PasswordBox MessageBox ColorPicker
-|tiny file|   OpenFileDialog SaveFileDialog SelectFolderDialog
+/         \   Tray-popup InputBox PasswordBox MessageBox Notification Beep
+|tiny file|   ColorPicker OpenFileDialog SaveFileDialog SelectFolderDialog
 | dialogs |   ASCII UTF-8 (and also MBCS & UTF-16 for windows)
 \____  ___/   Native dialog library for WINDOWS MAC OSX GTK+ QT CONSOLE
      \|       SSH support via automatic switch to console mode or X forwarding
@@ -16,10 +16,18 @@ Bindings for LUA and C# dll, Haskell, Fortran. Included in LWJGL(java), Rust, Al
 
                    http://tinyfiledialogs.sourceforge.net
          git clone http://git.code.sf.net/p/tinyfiledialogs/code tinyfd
- _____________________________________________________________________
-|                                                                     |
-| my email address is at the top of the header file tinyfiledialogs.h |
-|_____________________________________________________________________|
+ ____________________________________________________________________________
+|  ________________________________________________________________________  |
+| |  ____________________________________________________________________  | |
+| | | If you like tinyfiledialogs, please upvote my stackoverflow answer | | |
+| | |                https://stackoverflow.com/a/47651444                | | |
+| | |____________________________________________________________________| | |
+| |________________________________________________________________________| |
+|____________________________________________________________________________|
+     _____________________________________________________________________
+    |                                                                     |
+    | my email address is at the top of the header file tinyfiledialogs.h |
+    |_____________________________________________________________________|
  ________________________________________________________________________________
 |  ____________________________________________________________________________  |
 | |                                                                            | |
@@ -29,7 +37,7 @@ Bindings for LUA and C# dll, Haskell, Fortran. Included in LWJGL(java), Rust, Al
 | |                                                                            | |
 | |  - in tinyfiledialogs, char is UTF-8 by default (since v3.6)               | |
 | |  - but fopen() expects MBCS (not UTF-8)                                    | |
-| |  - if you want char to be MBCS: set tinyfd_winUtf8 to 0                    | |
+| |  - if you want char to be MBCS: set tinyfd_winUtf8 = 0                     | |
 | |                                                                            | |
 | |  - alternatively, tinyfiledialogs provides                                 | |
 | |                        functions to convert between UTF-8, UTF-16 and MBCS | |
@@ -98,8 +106,9 @@ char const * tinyfd_colorChooser(
 |___________________________________________________________________________________|
 
 - This is not for ios nor android (it works in termux though).
-- The code is pure C, perfectly compatible with C++.
-- windows is fully supported from XP to 10 (maybe even older versions)
+- The files can be renamed with extension ".cpp" as the code is 100% compatible C C++
+  (just comment out << extern "C" >> in the header file)
+- Windows is fully supported from XP to 10 (maybe even older versions)
 - C# & LUA via dll, see files in the folder EXTRAS
 - OSX supported from 10.4 to latest (maybe even older versions)
 - Do not use " and ' as the dialogs will be display with a warning
@@ -151,20 +160,20 @@ $ gcc -o hello hello.c tinyfiledialogs.c
 ( or clang tcc owcc cc CC )
 
 Windows :
-    MinGW needs gcc >= v4.9 otherwise some headers are incomplete
-    > gcc -o hello.exe hello.c tinyfiledialogs.c -LC:/mingw/lib -lcomdlg32 -lole32
+  MinGW needs gcc >= v4.9 otherwise some headers are incomplete
+  > gcc -o hello.exe hello.c tinyfiledialogs.c -LC:/mingw/lib -lcomdlg32 -lole32
 
-    TinyCC needs >= v0.9.27 (+ tweaks - contact me) otherwise some headers are missing
-    > tcc -o hello.exe hello.c tinyfiledialogs.c ^
-        -isystem C:\tcc\winapi-full-for-0.9.27\include\winapi ^
-        -lcomdlg32 -lole32 -luser32 -lshell32
+  TinyCC needs >= v0.9.27 (+ tweaks - contact me) otherwise some headers are missing
+  > tcc -o hello.exe hello.c tinyfiledialogs.c ^
+      -isystem C:\tcc\winapi-full-for-0.9.27\include\winapi ^
+      -lcomdlg32 -lole32 -luser32 -lshell32
 
-    Borland C: > bcc32c -o hello.exe hello.c tinyfiledialogs.c
-    OpenWatcom v2: create a character-mode executable project.
+  Borland C: > bcc32c -o hello.exe hello.c tinyfiledialogs.c
+  OpenWatcom v2: create a character-mode executable project.
 
-    VisualStudio :
-      Create a console application project,
-      it links against comdlg32.lib & ole32.lib.
+  VisualStudio :
+    Create a console application project,
+    it links against comdlg32.lib & ole32.lib.
 
-    VisualStudio command line :
-      > cl hello.c tinyfiledialogs.c comdlg32.lib ole32.lib user32.lib shell32.lib /W4
+  VisualStudio command line :
+> cl hello.c tinyfiledialogs.c comdlg32.lib ole32.lib user32.lib shell32.lib /W4

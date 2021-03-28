@@ -1,7 +1,10 @@
+/* If you are using a C++ compiler to compile tinyfiledialogs.c (maybe renamed with an extension ".cpp")
+then comment out << extern "C" >> bellow in this header file) */
+
 /*_________
- /         \ tinyfiledialogs.h v3.8.3 [Nov 1, 2020] zlib licence
+ /         \ tinyfiledialogs.h v3.8.7 [Feb 25, 2021] zlib licence
  |tiny file| Unique header file created [November 9, 2014]
- | dialogs | Copyright (c) 2014 - 2020 Guillaume Vareille http://ysengrin.com
+ | dialogs | Copyright (c) 2014 - 2021 Guillaume Vareille http://ysengrin.com
  \____  ___/ http://tinyfiledialogs.sourceforge.net
       \|     git clone http://git.code.sf.net/p/tinyfiledialogs/code tinyfd
  ____________________________________________
@@ -47,8 +50,9 @@ misrepresented as being the original software.
 #define TINYFILEDIALOGS_H
 
 #ifdef	__cplusplus
-extern "C" { /* if tinydialogs.c is compiled as C++ code rather than C code, you may need to comment this out
-			    and the corresponding closing bracket near the end of this file. */
+/* if tinydialogs.c is compiled as C++ code rather than C code, you may need to comment this out
+				and the corresponding closing bracket near the end of this file. */
+extern "C" {
 #endif
 
 /******************************************************************************************************/
@@ -82,7 +86,7 @@ int tinyfd_setGlobalInt(char const * aIntVariableName, int aValue); /* returns -
 **************/
 
 
-extern char const tinyfd_version[8]; /* contains tinyfd current version number */
+extern char tinyfd_version[8]; /* contains tinyfd current version number */
 extern char tinyfd_needs[]; /* info about requirements */
 extern int tinyfd_verbose; /* 0 (default) or 1 : on unix, prints the command line calls */
 extern int tinyfd_silent; /* 1 (default) or 0 : on unix, hide errors and warnings from called dialogs */
@@ -259,8 +263,9 @@ wchar_t * tinyfd_colorChooserW(
 |________________________________________________________________________________|
 
 - This is not for ios nor android (it works in termux though).
-- The code is pure C, perfectly compatible with C++.
-- windows is fully supported from XP to 10 (maybe even older versions)
+- The files can be renamed with extension ".cpp" as the code is 100% compatible C C++
+  (just comment out << extern "C" >> in the header file)
+- Windows is fully supported from XP to 10 (maybe even older versions)
 - C# & LUA via dll, see files in the folder EXTRAS
 - OSX supported from 10.4 to latest (maybe even older versions)
 - Do not use " and ' as the dialogs will be displayed with a warning

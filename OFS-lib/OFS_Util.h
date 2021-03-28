@@ -349,6 +349,17 @@ public:
 		const std::string& path,
 		FileDialogResultHandler&& handler) noexcept;
 
+	enum class YesNoCancel
+	{
+		Yes,
+		No,
+		Cancel
+	};
+
+	using YesNoDialogResultHandler = std::function<void(YesNoCancel)>;
+	static void YesNoCancelDialog(const std::string& title, const std::string& message,
+		YesNoDialogResultHandler&& handler);
+
 	static std::string Resource(const std::string& path) noexcept;
 
 	static std::string Prefpath(const std::string& path) noexcept {

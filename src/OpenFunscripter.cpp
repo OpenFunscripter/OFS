@@ -15,6 +15,8 @@
 
 #include "ImGuizmo.h"
 
+#include "asap.h"
+
 // FIX: Add type checking to the deserialization. 
 //      I assume it would crash if a field is specified but doesn't have the correct type.
 // TODO: use a ringbuffer in the undosystem
@@ -1442,13 +1444,13 @@ void OpenFunscripter::process_events() noexcept
         switch (event.type) {
         case SDL_QUIT:
         {
-            exit_app = true;
-        }
+            exitApp();
             break;
+        }
         case SDL_WINDOWEVENT:
         {
             if (event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window)) {
-                exit_app = true;
+                exitApp();
             }
             break;
         }
@@ -1533,16 +1535,22 @@ void OpenFunscripter::update() noexcept {
 void OpenFunscripter::autoBackup() noexcept
 {
     if (ActiveFunscript()->current_path.empty()) { return; }
-    std::chrono::duration<float> timeSinceBackup = std::chrono::system_clock::now() - last_backup;
-    if (timeSinceBackup.count() < 61.f) {
-        return;
-    }
+    std::chrono::duration<float> timeSinceBackup = std::chrono::steady_clock::now() - lastBackup;
+    if (timeSinceBackup.count() < 61.f) { return; }
     OFS_BENCHMARK(__FUNCTION__);
-    last_backup = std::chrono::system_clock::now();
+    lastBackup = std::chrono::steady_clock::now();
 
     auto backupDir = std::filesystem::path(Util::Prefpath("backup"));
     auto name = Util::Filename(player->getVideoPath());
     name = Util::trim(name); // this needs to be trimmed because trailing spaces
+    
+    static auto BackupStartPoint = asap::now();
+    name = Util::Format("%s_%02d%02d%02d_%02d%02d%02d", 
+        name.c_str(), BackupStartPoint.year(), 
+        BackupStartPoint.month(), 
+        BackupStartPoint.mday(), 
+        BackupStartPoint.hour(), BackupStartPoint.minute(), BackupStartPoint.second());
+
 #ifdef WIN32
     backupDir /= Util::Utf8ToUtf16(name);
 #else
@@ -1567,21 +1575,44 @@ void OpenFunscripter::autoBackup() noexcept
     }
     
     for (auto&& script : LoadedFunscripts) {
-
         auto scriptName = Util::Filename(script->current_path);
         Util::trim(scriptName);
-
-        char time_buf[64];
-        auto time = std::chrono::system_clock::now();
-        auto in_time_t = std::chrono::system_clock::to_time_t(time);
-        auto tm = std::localtime(&in_time_t);
-        std::stringstream ss;
-        ss << scriptName;
-        ss << '_' << tm->tm_hour << '-' << tm->tm_min << '-' << tm->tm_sec << ".funscript.backup";
-
-        auto savePath = backupDir / ss.str();
+        auto time = asap::now();
+        auto savePath = backupDir
+            / Util::Format("%s_%02d-%02d-%02d.funscript.backup", scriptName.c_str(), time.hour(), time.minute(), time.second());
         LOGF_INFO("Backup at \"%s\"", savePath.u8string().c_str());
         saveScript(script.get(), savePath.u8string(), false);
+    }
+}
+
+void OpenFunscripter::exitApp() noexcept
+{
+    // this ensures this only gets called once
+    static bool ExitInProgress = false;
+    if (ExitInProgress) return;
+
+    ExitInProgress = true;
+    bool unsavedChanges = false;
+    for (auto&& script : LoadedFunscripts) {
+        unsavedChanges = unsavedChanges || script->HasUnsavedEdits();
+    }
+
+    if (unsavedChanges) {
+        Util::YesNoCancelDialog("Unsaved changes", "Do you want to save and exit?",
+            [&](Util::YesNoCancel result) {
+                if (result == Util::YesNoCancel::Yes) {
+                    saveScripts();
+                    ShouldExit = true;
+                }
+                else if (result == Util::YesNoCancel::No) {
+                    ShouldExit = true;
+                }
+                // cancel does nothing
+                ExitInProgress = false;
+            });
+    }
+    else {
+        ShouldExit = true;  
     }
 }
 
@@ -1766,7 +1797,7 @@ int OpenFunscripter::run() noexcept
     new_frame();
     setupDefaultLayout(false);
     render();
-    while (!exit_app) {
+    while (!ShouldExit) {
         const int32_t maxFrameTicks = std::round(1000.0 / settings->data().framerateLimit);
         auto tickStart = SDL_GetTicks();
         step();
@@ -1924,7 +1955,7 @@ bool OpenFunscripter::openFile(const std::string& file)
     settings->data().last_path = last_path.u8string();
     settings->saveSettings();
 
-    last_backup = std::chrono::system_clock::now();
+    lastBackup = std::chrono::steady_clock::now();
 
     return result;
 }

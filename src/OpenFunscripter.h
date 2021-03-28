@@ -37,7 +37,7 @@ class OpenFunscripter {
 private:
 	SDL_Window* window;
 	SDL_GLContext gl_context;
-	bool exit_app = false;
+	bool ShouldExit = false;
 	
 	// TODO: move this into a bitset
 	bool ShowMetadataEditor = false;
@@ -48,7 +48,7 @@ private:
 	
 	std::vector<FunscriptAction> CopiedSelection;
 
-	std::chrono::system_clock::time_point last_backup;
+	std::chrono::steady_clock::time_point lastBackup;
 
 	bool updateTimelineGradient = false;
 	char tmp_buf[2][32];
@@ -61,6 +61,8 @@ private:
 	void new_frame() noexcept;
 	void render() noexcept;
 	void autoBackup() noexcept;
+
+	void exitApp() noexcept;
 
 	bool load_fonts(const char* font_override = nullptr) noexcept;
 	bool imgui_setup() noexcept;
