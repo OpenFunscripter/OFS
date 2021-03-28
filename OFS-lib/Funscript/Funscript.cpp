@@ -290,6 +290,7 @@ void Funscript::AddEditAction(FunscriptAction action, float frameTimeMs) noexcep
 	auto close = getActionAtTime(data.Actions, action.at, frameTimeMs);
 	if (close != nullptr) {
 		*close = action;
+		NotifyActionsChanged(true);
 	}
 	else {
 		AddAction(action);
