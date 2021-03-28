@@ -1438,22 +1438,38 @@ void OpenFunscripter::process_events() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     SDL_Event event;
+    bool IsExiting = false;
     while (SDL_PollEvent(&event))
     {
         ImGui_ImplSDL2_ProcessEvent(&event);
         switch (event.type) {
         case SDL_QUIT:
         {
-            exitApp();
+            if (!IsExiting) {
+                exitApp();
+                IsExiting = true;
+            }
             break;
         }
         case SDL_WINDOWEVENT:
         {
             if (event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window)) {
-                exitApp();
+                if (!IsExiting) {
+                    exitApp();
+                    IsExiting = true;
+                }
             }
             break;
         }
+#ifndef NDEBUG
+        case SDL_KEYDOWN:
+        {
+            if (event.key.keysym.sym == SDLK_ESCAPE) {
+                exitApp(true);
+            }
+            break;
+        }
+#endif
         }
         events->PushEvent(event);
     }
@@ -1585,13 +1601,13 @@ void OpenFunscripter::autoBackup() noexcept
     }
 }
 
-void OpenFunscripter::exitApp() noexcept
+void OpenFunscripter::exitApp(bool force) noexcept
 {
-    // this ensures this only gets called once
-    static bool ExitInProgress = false;
-    if (ExitInProgress) return;
+    if(force) {
+        ShouldExit = true;
+        return;
+    }
 
-    ExitInProgress = true;
     bool unsavedChanges = false;
     for (auto&& script : LoadedFunscripts) {
         unsavedChanges = unsavedChanges || script->HasUnsavedEdits();
@@ -1607,8 +1623,10 @@ void OpenFunscripter::exitApp() noexcept
                 else if (result == Util::YesNoCancel::No) {
                     ShouldExit = true;
                 }
-                // cancel does nothing
-                ExitInProgress = false;
+                else {
+                    // cancel does nothing
+                    ShouldExit = false;
+                }
             });
     }
     else {

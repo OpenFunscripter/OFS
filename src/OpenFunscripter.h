@@ -62,7 +62,7 @@ private:
 	void render() noexcept;
 	void autoBackup() noexcept;
 
-	void exitApp() noexcept;
+	void exitApp(bool force = false) noexcept;
 
 	bool load_fonts(const char* font_override = nullptr) noexcept;
 	bool imgui_setup() noexcept;
