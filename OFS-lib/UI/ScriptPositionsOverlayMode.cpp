@@ -123,15 +123,15 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
             endTime = (ctx.offset_ms + ctx.visibleSizeMs) + 1.f;
             visibleDuration = endTime - startAction.at;
         }
+
         // detail gets dynamically reduced by increasing the timeStep,
         // at which is being sampled from the spline
-        //const float actualDuration = endAction.at - startAction.at;
         const float ratio = visibleDuration / ctx.visibleSizeMs;
         const float SampleCount = MaximumSamples * ratio;
 
         const float timeStep = visibleDuration / SampleCount;
         
-        if (SampleCount < 3.f || startAction.pos == endAction.pos) {
+        if (SampleCount < 3.f) {
             auto p1 = getPointForAction(ctx, startAction);
             auto p2 = getPointForAction(ctx, endAction);
             if (background) {
