@@ -1371,11 +1371,11 @@ void OpenFunscripter::register_bindings()
         PassiveBindingGroup group;
         group.name = "Point timeline";
 
-        auto& move_point_modifier = group.bindings.emplace_back(
-            "move_point_modifier",
-            "Click drag point"
+        auto& move_or_add_point_modifier = group.bindings.emplace_back(
+            "move_or_add_point_modifier",
+            "Click drag/add point on the timeline"
         );
-        move_point_modifier.key = Keybinding(
+        move_or_add_point_modifier.key = Keybinding(
             0,
             KMOD_SHIFT
         );

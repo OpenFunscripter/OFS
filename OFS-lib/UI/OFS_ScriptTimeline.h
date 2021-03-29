@@ -96,7 +96,7 @@ private:
 		float relative_y = localCoord.y / canvas_size.y;
 		float at_ms = offset_ms + (relative_x * visibleSizeMs);
 		// fix frame alignment
-		at_ms =  std::max<float>((int32_t)std::round(at_ms / frameTime) * frameTime, 0.f);
+		at_ms =  std::max<float>(std::round(at_ms / frameTime) * frameTime, 0.f);
 		float pos = Util::Clamp<float>(100.f - (relative_y * 100.f), 0.f, 100.f);
 		return FunscriptAction(at_ms, pos);
 	}

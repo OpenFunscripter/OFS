@@ -118,11 +118,10 @@ void ScriptTimeline::mouse_pressed(SDL_Event& ev) noexcept
 	
 	if (undoSystem == nullptr) return;
 	auto activeScript = (*Scripts)[activeScriptIdx].get();
-	bool movePointModifer = KeybindingSystem::PassiveModifier("move_point_modifier");
+	bool moveOrAddPointModifer = KeybindingSystem::PassiveModifier("move_or_add_point_modifier");
 
 	if (button.button == SDL_BUTTON_LEFT) {
-		if (movePointModifer && PositionsItemHovered) {
-			//auto app = OpenFunscripter::ptr;
+		if (moveOrAddPointModifer && PositionsItemHovered) {
 			if (clickedAction != nullptr) {
 				// start move
 				activeScript->ClearSelection();
@@ -131,15 +130,16 @@ void ScriptTimeline::mouse_pressed(SDL_Event& ev) noexcept
 				undoSystem->Snapshot(StateType::MOUSE_MOVE_ACTION, false, activeScript);
 				return;
 			}
-
-			// shift click an action into the window
-			auto action = getActionForPoint(active_canvas_pos, active_canvas_size, mousePos, frameTimeMs);
-			auto edit = activeScript->GetActionAtTime(action.at, frameTimeMs);
-			undoSystem->Snapshot(StateType::ADD_ACTION, false, activeScript);
-			if (edit != nullptr) { activeScript->RemoveAction(*edit); }
-			activeScript->AddAction(action);
+			else {
+				// click a point into existence
+				auto action = getActionForPoint(active_canvas_pos, active_canvas_size, mousePos, frameTimeMs);
+				auto edit = activeScript->GetActionAtTime(action.at, frameTimeMs);
+				undoSystem->Snapshot(StateType::ADD_ACTION, false, activeScript);
+				if (edit != nullptr) { activeScript->RemoveAction(*edit); }
+				activeScript->AddAction(action);
+			}
 		}
-		// clicking an action  fires an event
+		// clicking an action fires an event
 		else if (PositionsItemHovered && clickedAction != nullptr) {
 			static ActionClickedEventArgs args;
 			args = std::tuple<SDL_Event, FunscriptAction>(ev, *clickedAction);
@@ -198,30 +198,24 @@ void ScriptTimeline::mouse_drag(SDL_Event& ev) noexcept
 			if ((newAction.at - toBeMoved.at) > 0) {
 				nearbyAction = activeScript->GetNextActionAhead(toBeMoved.at);
 				if (nearbyAction != nullptr) {
-					if (std::abs(nearbyAction->at - newAction.at) > frameTimeMs) {
-						nearbyAction = nullptr;
+					if (std::abs(nearbyAction->at - newAction.at) < std::round(frameTimeMs)) {
+						return;
 					}
 				}
 			}
 			else if((newAction.at - toBeMoved.at) < 0) {
 				nearbyAction = activeScript->GetPreviousActionBehind(toBeMoved.at);
 				if (nearbyAction != nullptr) {
-					if (std::abs(nearbyAction->at - newAction.at) > frameTimeMs) {
-						nearbyAction = nullptr;
+					if (std::abs(nearbyAction->at - newAction.at) < std::round(frameTimeMs)) {
+						return;
 					}
  				}
 			}
 
-			if (nearbyAction == nullptr) {
-				activeScript->RemoveAction(toBeMoved);
-				activeScript->ClearSelection();
-				activeScript->AddAction(newAction);
-				activeScript->SetSelection(newAction, true);
-			}
-			else {
-				activeScript->ClearSelection();
-				IsMoving = false;
-			}
+			activeScript->RemoveAction(toBeMoved);
+			activeScript->ClearSelection();
+			activeScript->AddAction(newAction);
+			activeScript->SetSelection(newAction, true);
 		}
 	}
 }
