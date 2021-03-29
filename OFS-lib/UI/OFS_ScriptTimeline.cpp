@@ -96,7 +96,7 @@ void ScriptTimeline::mouse_pressed(SDL_Event& ev) noexcept
 			// test if an action has been clicked
 			int index = 0;
 			for (auto& vert : overlay->ActionScreenCoordinates) {
-				const ImVec2 size(10, 10);
+				const ImVec2 size(20, 20);
 				ImRect rect(vert - size, vert + size);
 				if (rect.Contains(mousePos)) {
 					clickedAction = &overlay->ActionPositionWindow[index];
