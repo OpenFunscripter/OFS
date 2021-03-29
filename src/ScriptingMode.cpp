@@ -175,6 +175,12 @@ void DynamicInjectionImpl::addEditAction(FunscriptAction action) noexcept
 // alternating
 void AlternatingImpl::DrawModeSettings() noexcept
 {
+    if (fixedRangeEnabled) {
+        ImGui::TextDisabled("Next point is at %d.", nextPosition ? fixedBottom : fixedTop);
+    }
+    else {
+        ImGui::TextDisabled("Next point is %s.", nextPosition ? "inverted" : "not inverted");
+    }
     ImGui::Checkbox("Fixed range", &fixedRangeEnabled);
     if (fixedRangeEnabled) {
         bool inputActive = false;
