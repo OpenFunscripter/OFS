@@ -469,13 +469,13 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 #if WIN32
 				auto ffmpegPath = basePath / "ffmpeg.exe";
 #else
-				auto ffmpegPath = std::filesystem::path("ffmpeg");
+				auto ffmpegPath = Util::PathFromString("ffmpeg");
 #endif
 				auto outputPath = Util::Prefpath("tmp");
 				if (!Util::CreateDirectories(outputPath)) {
 					return 0;
 				}
-				outputPath = (std::filesystem::path(outputPath) / "audio.mp3").u8string();
+				outputPath = (Util::PathFromString(outputPath) / "audio.mp3").u8string();
 
 				bool succ = ctx.waveform.GenerateMP3(ffmpegPath.u8string(), std::string(ctx.videoPath), outputPath);
 				if (!succ) { LOGF_ERROR("Failed to output mp3 from video. (ffmpeg_path: \"%s\")", ffmpegPath.u8string().c_str()); return 0;	}

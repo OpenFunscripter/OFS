@@ -1373,11 +1373,11 @@ void OpenFunscripter::register_bindings()
 
         auto& move_or_add_point_modifier = group.bindings.emplace_back(
             "move_or_add_point_modifier",
-            "Click drag/add point on the timeline"
+            "Click drag/add point in the timeline"
         );
         move_or_add_point_modifier.key = Keybinding(
             0,
-            KMOD_SHIFT
+            0
         );
 
         keybinds.registerPassiveBindingGroup(std::move(group));
