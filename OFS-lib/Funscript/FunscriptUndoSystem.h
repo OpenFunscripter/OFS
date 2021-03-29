@@ -35,8 +35,8 @@ class FunscriptUndoSystem
 	std::vector<ScriptState> RedoStack;
 
 	void Snapshot(int32_t type, bool clearRedo = true) noexcept;
-	void Undo() noexcept;
-	void Redo() noexcept;
+	bool Undo() noexcept;
+	bool Redo() noexcept;
 	void ClearRedo() noexcept;
 
 public:

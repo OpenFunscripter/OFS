@@ -1842,14 +1842,12 @@ void OpenFunscripter::SetCursorType(ImGuiMouseCursor id) noexcept
 
 void OpenFunscripter::Undo() noexcept
 {
-    undoSystem->Undo(ActiveFunscript().get());
-    scripting->undo();
+    if(undoSystem->Undo(ActiveFunscript().get())) scripting->undo();
 }
 
 void OpenFunscripter::Redo() noexcept
 {
-    undoSystem->Redo(ActiveFunscript().get());
-    scripting->redo();
+    if(undoSystem->Redo(ActiveFunscript().get())) scripting->redo();
 }
 
 bool OpenFunscripter::openFile(const std::string& file)

@@ -69,8 +69,8 @@ public:
 	}
 
 	void Snapshot(StateType type, bool multi_script, class Funscript* active, bool clearRedo = true) noexcept;
-	void Undo(class Funscript* active) noexcept;
-	void Redo(class Funscript* active) noexcept;
+	bool Undo(class Funscript* active) noexcept;
+	bool Redo(class Funscript* active) noexcept;
 
 	inline bool UndoEmpty() const noexcept { return UndoStack.empty(); }
 	inline bool RedoEmpty() const noexcept { return RedoStack.empty(); }

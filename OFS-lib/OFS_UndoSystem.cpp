@@ -68,37 +68,42 @@ void UndoSystem::Snapshot(StateType type, bool multi_script, Funscript* active, 
 	}
 }
 
-void UndoSystem::Undo(Funscript* active) noexcept
+bool UndoSystem::Undo(Funscript* active) noexcept
 {
-	if (UndoStack.empty()) return;
+	if (UndoStack.empty()) return false;
+	bool undidSomething = false;
 
 	if (UndoStack.back().IsMultiscriptModification) {
 		for (auto&& script : *LoadedScripts) {
-			script->undoSystem->Undo();
+			undidSomething = undidSomething || script->undoSystem->Undo();
 		}
 	}
 	else {
-		active->undoSystem->Undo();
+		undidSomething = undidSomething || active->undoSystem->Undo();
 	}
-
 	RedoStack.emplace_back(std::move(UndoStack.back()));
 	UndoStack.pop_back();
+
+	return undidSomething;
 }
 
-void UndoSystem::Redo(Funscript* active) noexcept
+bool UndoSystem::Redo(Funscript* active) noexcept
 {
-	if (RedoStack.empty()) return;
+	if (RedoStack.empty()) return false;
+	bool redidSomething = false;
 
 	if (RedoStack.back().IsMultiscriptModification) {
 		for (auto&& script : *LoadedScripts) {
-			script->undoSystem->Redo();
+			redidSomething = redidSomething || script->undoSystem->Redo();
 		}
 	}
 	else {
-		active->undoSystem->Redo();
+		redidSomething = redidSomething || active->undoSystem->Redo();
 	}
 	UndoStack.emplace_back(std::move(RedoStack.back()));
 	RedoStack.pop_back();
+
+	return redidSomething;
 }
 
 void UndoSystem::ClearRedo() noexcept

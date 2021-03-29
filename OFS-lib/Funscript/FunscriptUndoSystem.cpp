@@ -51,20 +51,22 @@ void FunscriptUndoSystem::Snapshot(int32_t type, bool clearRedo) noexcept
 		ClearRedo();
 }
 
-void FunscriptUndoSystem::Undo() noexcept
+bool FunscriptUndoSystem::Undo() noexcept
 {
-	if (UndoStack.empty()) return;
+	if (UndoStack.empty()) return false;
 	SnapshotRedo(UndoStack.back().type);
 	script->rollback(UndoStack.back().Data()); // copy data
 	UndoStack.pop_back(); // pop of the stack
+	return true;
 }
 
-void FunscriptUndoSystem::Redo() noexcept
+bool FunscriptUndoSystem::Redo() noexcept
 {
-	if (RedoStack.empty()) return;
+	if (RedoStack.empty()) return false;
 	Snapshot(RedoStack.back().type, false);
 	script->rollback(RedoStack.back().Data()); // copy data
 	RedoStack.pop_back(); // pop of the stack
+	return true;
 }
 
 void FunscriptUndoSystem::ClearRedo() noexcept
