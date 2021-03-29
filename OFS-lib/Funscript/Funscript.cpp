@@ -291,6 +291,7 @@ void Funscript::AddEditAction(FunscriptAction action, float frameTimeMs) noexcep
 	if (close != nullptr) {
 		*close = action;
 		NotifyActionsChanged(true);
+		checkForInvalidatedActions();
 	}
 	else {
 		AddAction(action);
