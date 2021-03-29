@@ -707,7 +707,7 @@ void OpenFunscripter::register_bindings()
             "Undo",
             false,
             [&](void*) { 
-                undoSystem->Undo(ActiveFunscript().get());
+                this->Undo();
             }
         );
         undo.key = Keybinding(
@@ -720,7 +720,7 @@ void OpenFunscripter::register_bindings()
             "Redo",
             false,
             [&](void*) { 
-                undoSystem->Redo(ActiveFunscript().get()); 
+                this->Redo();
             }
         ); 
         redo.key = Keybinding(
@@ -1840,6 +1840,18 @@ void OpenFunscripter::SetCursorType(ImGuiMouseCursor id) noexcept
     ImGui::SetMouseCursor(id);
 }
 
+void OpenFunscripter::Undo() noexcept
+{
+    undoSystem->Undo(ActiveFunscript().get());
+    scripting->undo();
+}
+
+void OpenFunscripter::Redo() noexcept
+{
+    undoSystem->Redo(ActiveFunscript().get());
+    scripting->redo();
+}
+
 bool OpenFunscripter::openFile(const std::string& file)
 {
     if (!Util::FileExists(file)) return false;
@@ -2503,10 +2515,10 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Undo", BINDING_STRING("undo"), false, !undoSystem->UndoEmpty())) {
-                undoSystem->Undo(ActiveFunscript().get());
+                this->Undo();
             }
             if (ImGui::MenuItem("Redo", BINDING_STRING("redo"), false, !undoSystem->RedoEmpty())) {
-                undoSystem->Redo(ActiveFunscript().get());
+                this->Redo();
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Cut", BINDING_STRING("cut"), false, ActiveFunscript()->HasSelection())) {

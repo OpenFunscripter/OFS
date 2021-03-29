@@ -29,8 +29,11 @@ public:
 	virtual void DrawModeSettings() noexcept = 0;
 	virtual void addEditAction(FunscriptAction action) noexcept;
 
-	virtual void finish() noexcept {};
-	virtual void update() noexcept {};
+	virtual void undo() noexcept {};
+	virtual void redo() noexcept {};
+
+	virtual void finish() noexcept {}; // called when the mode changes
+	virtual void update() noexcept {}; // called everyframe
 };
 
 class DefaultModeImpl : public ScripingModeBaseImpl
@@ -62,6 +65,9 @@ class AlternatingImpl : public ScripingModeBaseImpl
 public:
 	virtual void DrawModeSettings() noexcept override;
 	virtual void addEditAction(FunscriptAction action) noexcept override;
+
+	virtual void undo() noexcept override;
+	virtual void redo() noexcept override;
 };
 
 class RecordingImpl : public ScripingModeBaseImpl
@@ -128,6 +134,9 @@ public:
 	void DrawScriptingMode(bool* open) noexcept;
 	void setMode(ScriptingModeEnum mode) noexcept;
 	void setOverlay(ScriptingOverlayModes mode) noexcept;
+	
+	void undo() noexcept;
+	void redo() noexcept;
 	void addEditAction(FunscriptAction action) noexcept;
 	void NextFrame() noexcept;
 	void PreviousFrame() noexcept;

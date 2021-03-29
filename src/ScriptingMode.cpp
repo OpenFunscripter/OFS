@@ -110,6 +110,16 @@ void ScriptingMode::setOverlay(ScriptingOverlayModes mode) noexcept
     }
 }
 
+void ScriptingMode::undo() noexcept
+{
+    impl->undo();
+}
+
+void ScriptingMode::redo() noexcept
+{
+    impl->redo();
+}
+
 void ScriptingMode::addEditAction(FunscriptAction action) noexcept
 {
     auto app = OpenFunscripter::ptr;
@@ -218,6 +228,16 @@ void AlternatingImpl::addEditAction(FunscriptAction action) noexcept
         action.pos = nextPosition ? 100 - action.pos : action.pos;
     }
     ScripingModeBaseImpl::addEditAction(action);
+    nextPosition = !nextPosition;
+}
+
+void AlternatingImpl::undo() noexcept
+{
+    nextPosition = !nextPosition;
+}
+
+void AlternatingImpl::redo() noexcept
+{
     nextPosition = !nextPosition;
 }
 

@@ -97,7 +97,7 @@ void FunctionRangeExtender::DrawUI() noexcept
                 app->undoSystem->Snapshot(StateType::RANGE_EXTEND, false, app->ActiveFunscript().get());
             }
             else {
-                app->undoSystem->Undo(app->ActiveFunscript().get());
+                app->Undo();
                 app->undoSystem->Snapshot(StateType::RANGE_EXTEND, false, app->ActiveFunscript().get());
             }
             createUndoState = false;

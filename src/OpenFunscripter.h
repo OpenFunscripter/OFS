@@ -97,7 +97,6 @@ private:
 	void isolateAction() noexcept;
 	void repeatLastStroke() noexcept;
 
-	
 	void saveScript(Funscript* script, const std::string& path, bool override_location) noexcept;
 	void saveScripts() noexcept;
 
@@ -177,4 +176,7 @@ public:
 	inline const std::vector<FunscriptAction>& FunscriptClipboard() const { return CopiedSelection; }
 
 	inline bool LoadOverrideFont(const std::string& font) noexcept { return load_fonts(font.empty() ? nullptr : font.c_str()); }
+
+	void Undo() noexcept;
+	void Redo() noexcept;
 };
