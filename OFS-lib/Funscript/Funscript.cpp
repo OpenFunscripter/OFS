@@ -768,14 +768,14 @@ void Funscript::EqualizeSelection() noexcept
 	auto first = data.selection.front();
 	auto last = data.selection.back();
 	float duration = last.at - first.at;
-	int32_t step_ms = std::round(duration / (float)(data.selection.size()-1));
+	float stepMs = duration / (float)(data.selection.size()-1);
 		
 	auto copySelection = data.selection;
 	RemoveSelectedActions(); // clears selection
 
 	for (int i = 1; i < copySelection.size()-1; i++) {
 		auto& newAction = copySelection[i];
-		newAction.at = first.at + (i * step_ms);
+		newAction.at = first.at + std::round(i * stepMs);
 	}
 
 	for (auto& action : copySelection)
