@@ -194,6 +194,7 @@ public:
 	
 	inline void AddAction(FunscriptAction newAction) noexcept { addAction(data.Actions, newAction); }
 	void AddActionSafe(FunscriptAction newAction) noexcept;
+	void AddActionRange(const std::vector<FunscriptAction>& range, bool checkDuplicates = true) noexcept;
 
 	bool EditAction(FunscriptAction oldAction, FunscriptAction newAction) noexcept;
 	void AddEditAction(FunscriptAction action, float frameTimeMs) noexcept;

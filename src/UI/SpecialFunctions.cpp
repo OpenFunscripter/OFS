@@ -129,8 +129,7 @@ void RamerDouglasPeucker::SelectionChanged(SDL_Event& ev) noexcept
     }
 }
 
-static float PerpendicularDistance(FunscriptAction pt, FunscriptAction lineStart, FunscriptAction lineEnd)
-{
+static float PointLineDistance(FunscriptAction pt, FunscriptAction lineStart, FunscriptAction lineEnd) {
     float dx = lineEnd.at - lineStart.at;
     float dy = lineEnd.pos - lineStart.pos;
 
@@ -154,42 +153,65 @@ static float PerpendicularDistance(FunscriptAction pt, FunscriptAction lineStart
     return (float)std::sqrt(ax * ax + ay * ay);
 }
 
-static void RamerDouglasPeuckerIterative(std::vector<FunscriptAction>& points, float epsilon, std::vector<FunscriptAction>& output)
-{
-    size_t start = 0;
-    size_t end = points.size() - 1;
+static std::vector<bool> DouglasPeucker(const std::vector<FunscriptAction>& points, int startIndex, int lastIndex, float epsilon) {
+    std::stack<std::pair<int, int>> stk;
+    stk.push(std::make_pair(startIndex, lastIndex));
 
-    while (start < end)
-    {
-        output.push_back(points[start]);
-        size_t newEnd = end;
-        while (true)
-        {
-            size_t maxDistanceIndex = 0;
-            float maxDistance = 0.0f;
-            for (size_t i = start + 1; i < newEnd; i++)
-            {
-                float d = PerpendicularDistance(points[i], points[start], points[newEnd]);
-                if (d > maxDistance)
-                {
-                    maxDistanceIndex = i;
-                    maxDistance = d;
+    int globalStartIndex = startIndex;
+    auto bitArray = std::vector<bool>();
+    bitArray.resize(lastIndex - startIndex + 1, true);
+
+    while (stk.size() > 0) {
+        startIndex = stk.top().first;
+        lastIndex = stk.top().second;
+        stk.pop();
+
+        float dmax = 0.f;
+        int index = startIndex;
+
+        for (int i = index + 1; i < lastIndex; ++i) {
+            if (bitArray[i - globalStartIndex]) {
+                float d = PointLineDistance(points[i], points[startIndex], points[lastIndex]);
+
+                if (d > dmax) {
+                    index = i;
+                    dmax = d;
                 }
             }
-            if (maxDistance <= epsilon)
-                break;
-            newEnd = maxDistanceIndex;
         }
-        start = newEnd;
+
+        if (dmax > epsilon) {
+            stk.push(std::make_pair(startIndex, index));
+            stk.push(std::make_pair(index, lastIndex));
+        }
+        else {
+            for (int i = startIndex + 1; i < lastIndex; ++i) {
+                bitArray[i - globalStartIndex] = false;
+            }
+        }
     }
-    output.push_back(points[end]);
+
+    return bitArray;
+}
+
+static void DouglasPeucker(const std::vector<FunscriptAction>& points, float epsilon, std::vector<FunscriptAction>& newActions) {
+    auto bitArray = DouglasPeucker(points, 0, points.size() - 1, epsilon);
+    std::vector<FunscriptAction> resList;
+    resList.reserve(points.size());
+
+    for (int i = 0, n = points.size(); i < n; ++i) {
+        if (bitArray[i]) {
+            resList.push_back(points[i]);
+        }
+    }
+    newActions.swap(resList);
 }
 
 void RamerDouglasPeucker::DrawUI() noexcept
 {
     auto app = OpenFunscripter::ptr;
     if (app->script().SelectionSize() > 4 || (app->script().undoSystem->MatchUndoTop(StateType::SIMPLIFY))) {
-        if (ImGui::DragFloat("Epsilon", &epsilon, 0.1f)) {
+        if (ImGui::DragFloat("Epsilon", &epsilon, 0.001f, 0.f, 0.f, "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
             epsilon = std::max(epsilon, 0.f);
             if (createUndoState ||
                 !app->script().undoSystem->MatchUndoTop(StateType::SIMPLIFY)) {
@@ -205,14 +227,12 @@ void RamerDouglasPeucker::DrawUI() noexcept
             ctx().RemoveSelectedActions();
             std::vector<FunscriptAction> newActions;
             newActions.reserve(selection.size());
-            RamerDouglasPeuckerIterative(selection, epsilon, newActions);
-            for (auto&& action : newActions) {
-                ctx().AddAction(action);
-            }
+            float scaledEpsilon = epsilon * (float)((selection.back().at - selection.front().at)/100000.f);
+            DouglasPeucker(selection, scaledEpsilon, newActions);
+            ctx().AddActionRange(newActions, false);
         }
     }
-    else
-    {
+    else {
         ImGui::Text("Select atleast 5 actions to simplify.");
     }
 }

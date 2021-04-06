@@ -108,7 +108,7 @@ public:
 		Mouse,
 		Controller,
 	};
-	RecordingMode activeMode = RecordingMode::Controller;
+	RecordingMode activeMode = RecordingMode::Mouse;
 	RecordingImpl();
 	~RecordingImpl();
 

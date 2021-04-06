@@ -10,7 +10,7 @@
 
 #include <algorithm>
 #include <limits>
-#include <set>
+#include <unordered_set>
 
 Funscript::Funscript() 
 {
@@ -269,6 +269,25 @@ void Funscript::AddActionSafe(FunscriptAction newAction) noexcept
 	{
 		LOGF_WARN("Failed to add action because there's already an action at %d ms", newAction.at);
 	}
+}
+
+void Funscript::AddActionRange(const std::vector<FunscriptAction>& range, bool checkDuplicates) noexcept
+{
+	if (checkDuplicates) {
+		std::unordered_set<FunscriptAction, FunscriptActionHashfunction> set;
+		set.insert(data.Actions.begin(), data.Actions.end());
+		for (auto action : range) {
+			if (set.find(action) == set.end()) {
+				data.Actions.push_back(action);
+			}
+		}
+	}
+	else {
+		data.Actions.insert(data.Actions.end(), range.begin(), range.end());
+	}
+
+	sortActions(data.Actions);
+	NotifyActionsChanged(true);
 }
 
 bool Funscript::EditAction(FunscriptAction oldAction, FunscriptAction newAction) noexcept
