@@ -537,7 +537,7 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 	auto& canvas_pos = ctx.canvas_pos;
 	auto& canvas_size = ctx.canvas_size;
 	const auto draw_list = ctx.draw_list;
-	if (ShowAudioWaveform & waveform.SampleCount() > 0) {
+	if (ShowAudioWaveform && waveform.SampleCount() > 0) {
 		const float durationMs = ctx.totalDurationMs;
 		const float rel_start = offset_ms / durationMs;
 		const float rel_end = (offset_ms+visibleSizeMs) / durationMs;

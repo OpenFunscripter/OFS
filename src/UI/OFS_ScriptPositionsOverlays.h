@@ -60,8 +60,8 @@ public:
 	virtual void nextFrame() noexcept override;
 	virtual void previousFrame() noexcept override;
 
-	virtual float steppingIntervalForward(float fromMs) noexcept;
-	virtual float steppingIntervalBackward(float fromMs) noexcept;
+	virtual float steppingIntervalForward(float fromMs) noexcept override;
+	virtual float steppingIntervalBackward(float fromMs) noexcept override;
 };
 
 
@@ -74,6 +74,6 @@ public:
 	virtual void nextFrame() noexcept override;
 	virtual void previousFrame() noexcept override;
 
-	virtual float steppingIntervalForward(float fromMs) noexcept;
-	virtual float steppingIntervalBackward(float fromMs) noexcept;
+	virtual float steppingIntervalForward(float fromMs) noexcept override;
+	virtual float steppingIntervalBackward(float fromMs) noexcept override;
 };

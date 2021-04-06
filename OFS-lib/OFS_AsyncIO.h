@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <vector>
+#include <string>
 
 #include "SDL_thread.h"
 #include "SDL_mutex.h"
