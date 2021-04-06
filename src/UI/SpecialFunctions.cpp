@@ -135,8 +135,7 @@ static float PointLineDistance(FunscriptAction pt, FunscriptAction lineStart, Fu
 
     // Normalize
     float mag = (float)std::sqrt(dx * dx + dy * dy);
-    if (mag > 0.0f)
-    {
+    if (mag > 0.0f) {
         dx /= mag;
         dy /= mag;
     }
@@ -191,20 +190,18 @@ static std::vector<bool> DouglasPeucker(const std::vector<FunscriptAction>& poin
         }
     }
 
-    return bitArray;
+    return std::move(bitArray);
 }
 
 static void DouglasPeucker(const std::vector<FunscriptAction>& points, float epsilon, std::vector<FunscriptAction>& newActions) {
     auto bitArray = DouglasPeucker(points, 0, points.size() - 1, epsilon);
-    std::vector<FunscriptAction> resList;
-    resList.reserve(points.size());
+    newActions.reserve(points.size());
 
     for (int i = 0, n = points.size(); i < n; ++i) {
         if (bitArray[i]) {
-            resList.push_back(points[i]);
+            newActions.push_back(points[i]);
         }
     }
-    newActions.swap(resList);
 }
 
 void RamerDouglasPeucker::DrawUI() noexcept

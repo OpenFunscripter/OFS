@@ -148,6 +148,7 @@ public:
 		}
 		else {
 			LOGF_ERROR("Failed to load json: \"%s\"", file);
+			*success = false;
 		}
 		
 		return j;

@@ -66,6 +66,8 @@ class OFS_Profiler
 
 	static bool RecordOnce;
 	static bool Live;
+	static uint32_t EventCount;
+	static uint32_t MaxEventsAllTime;
 public:
 	inline OFS_Profiler(const std::string& Path) noexcept
 	{
@@ -97,6 +99,23 @@ public:
 
 	static void BeginProfiling() noexcept;
 	static void EndProfiling() noexcept;
+
+	inline static void BeginEvents() noexcept
+	{
+		EventCount = 0;
+	}
+
+	inline static void CountEvent() noexcept
+	{
+		++EventCount;
+	}
+
+	inline static void EndEvents() noexcept
+	{
+		if (EventCount > MaxEventsAllTime) {
+			MaxEventsAllTime = EventCount;
+		}
+	}
 };
 
 
@@ -105,10 +124,18 @@ public:
 #define OFS_SHOWPROFILER() OFS_Profiler::ShowProfiler();
 #define OFS_BEGINPROFILING() OFS_Profiler::BeginProfiling()
 #define OFS_ENDPROFILING() OFS_Profiler::EndProfiling();
+
+#define OFS_BEGIN_EVENT_PROFILING() OFS_Profiler::BeginEvents()
+#define OFS_COUNT_EVENT() OFS_Profiler::CountEvent()
+#define OFS_END_EVENT_PROFILING() OFS_Profiler::EndEvents()
 #else
 #define OFS_PROFILE(path)
 #define OFS_SHOWPROFILER() 
 #define OFS_BEGINPROFILING()
 #define OFS_ENDPROFILING()
+
+#define OFS_BEGIN_EVENT_PROFILING()
+#define OFS_COUNT_EVENT()
+#define OFS_END_EVENT_PROFILING()
 #endif
 

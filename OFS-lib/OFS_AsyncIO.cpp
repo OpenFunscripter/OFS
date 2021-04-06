@@ -9,7 +9,7 @@ static int AsyncIO_Thread(void* data) noexcept
 		if (io->ShouldExit && io->Writes.empty()) {
 			break;
 		}
-		else {
+		else if(io->Writes.empty()) {
 			SDL_CondWait(io->WakeThreadCondition, io->ThreadMutex);
 			if (io->Writes.empty()) break;
 		}
@@ -35,11 +35,11 @@ void OFS_AsyncIO::Init() noexcept
 
 void OFS_AsyncIO::Shutdown() noexcept
 {
-	FUN_ASSERT(Writes.empty(), "Writes not empty!!!");
 	ShouldExit = true;
 	SDL_CondBroadcast(WakeThreadCondition);
 	int result;
 	SDL_WaitThread(IO_Thread, &result);
+	FUN_ASSERT(Writes.empty(), "Writes not empty!!!");
 	SDL_DestroyCond(WakeThreadCondition);
 	SDL_DestroyMutex(ThreadMutex);
 }

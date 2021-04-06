@@ -8,6 +8,8 @@ std::vector<OFS_Codepath> OFS_Profiler::LastFrame;
 
 bool OFS_Profiler::Live = true;
 bool OFS_Profiler::RecordOnce = false;
+uint32_t OFS_Profiler::EventCount = 0;
+uint32_t OFS_Profiler::MaxEventsAllTime = 0;
 
 static bool LiveTmp = true;
 static bool RecordOnceTmp = false;
@@ -30,6 +32,8 @@ void OFS_Profiler::ShowProfiler() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	ImGui::Begin("OFS Profiler");
+	ImGui::Text("Events this Frame: %d\nMax events: %d", EventCount, MaxEventsAllTime);
+	ImGui::Separator();
 	if (ImGui::Button("Record one frame")) {
 		RecordOnceTmp = true;
 	}

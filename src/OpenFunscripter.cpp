@@ -5,7 +5,6 @@
 #include "GradientBar.h"
 #include "FunscriptHeatmap.h"
 
-
 #include <filesystem>
 
 #include "stb_sprintf.h"
@@ -200,7 +199,6 @@ OpenFunscripter::~OpenFunscripter()
     controllerInput.reset();
     specialFunctions.reset();
     LoadedProject.reset();
-    //for (auto&& script : LoadedFunscripts()) { script.reset(); }
 
     settings->saveSettings();
     player.reset();
@@ -475,15 +473,26 @@ void OpenFunscripter::register_bindings()
         group.name = "Core";
 
         // SAVE
-        auto& save = group.bindings.emplace_back(
-            "save",
-            "Save",
+        auto& save_project = group.bindings.emplace_back(
+            "save_project",
+            "Save project",
             true,
             [&](void*) { saveProject(); }
         );
-        save.key = Keybinding(
+        save_project.key = Keybinding(
             SDLK_s,
             KMOD_CTRL
+        );
+
+        auto& quick_export = group.bindings.emplace_back(
+            "quick_export",
+            "Quick export",
+            "true",
+            [&](void*) { quickExport(); }
+        );
+        quick_export.key = Keybinding(
+            SDLK_s,
+            KMOD_CTRL | KMOD_SHIFT
         );
 
         auto& sync_timestamp = group.bindings.emplace_back(
@@ -1440,10 +1449,12 @@ void OpenFunscripter::render() noexcept
 void OpenFunscripter::process_events() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
+    OFS_BEGIN_EVENT_PROFILING();
     SDL_Event event;
     bool IsExiting = false;
     while (SDL_PollEvent(&event))
     {
+        OFS_COUNT_EVENT();
         ImGui_ImplSDL2_ProcessEvent(&event);
         switch (event.type) {
         case SDL_QUIT:
@@ -1476,6 +1487,7 @@ void OpenFunscripter::process_events() noexcept
         }
         events->PushEvent(event);
     }
+    OFS_END_EVENT_PROFILING();
 }
 
 void OpenFunscripter::FunscriptChanged(SDL_Event& ev) noexcept
@@ -1510,11 +1522,13 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
     player->setPositionExact(LoadedProject->Settings.last_pos_ms);
     ActiveFunscript()->NotifyActionsChanged(false);
 
-    auto name = Util::Filename(player->getVideoPath());
-    ActiveFunscript()->metadata.title = name;
-    auto recentFile = OpenFunscripterSettings::RecentFile{ name, std::string(player->getVideoPath()), LoadedProject->LastPath };
-    settings->addRecentFile(recentFile);
-    scriptPositions.ClearAudioWaveform();
+    const char* VideoName = (const char*)ev.user.data1;
+    if (VideoName)
+    {
+        auto recentFile = OpenFunscripterSettings::RecentFile{ Util::Filename(VideoName), std::string(player->getVideoPath()), LoadedProject->LastPath };
+        settings->addRecentFile(recentFile);
+        scriptPositions.ClearAudioWaveform();
+    }
 
     tcode.reset();
     {
@@ -1555,7 +1569,7 @@ void OpenFunscripter::autoBackup() noexcept
 {
     if (ActiveFunscript()->CurrentPath.empty()) { return; }
     std::chrono::duration<float> timeSinceBackup = std::chrono::steady_clock::now() - lastBackup;
-    if (timeSinceBackup.count() < 61.f) { return; }
+    if (timeSinceBackup.count() < 5.f) { return; }
     OFS_BENCHMARK(__FUNCTION__);
     lastBackup = std::chrono::steady_clock::now();
 
@@ -1593,15 +1607,11 @@ void OpenFunscripter::autoBackup() noexcept
         }
     }
     
-    //for (auto&& script : LoadedFunscripts()) {
-    //    auto scriptName = Util::Filename(script->current_path);
-    //    Util::trim(scriptName);
-    //    auto time = asap::now();
-    //    auto savePath = backupDir
-    //        / Util::Format("%s_%02d-%02d-%02d.funscript.backup", scriptName.c_str(), time.hour(), time.minute(), time.second());
-    //    LOGF_INFO("Backup at \"%s\"", savePath.u8string().c_str());
-    //    saveScript(script.get(), savePath.u8string(), false);
-    //}
+    auto time = asap::now();
+    auto savePath = backupDir
+        / Util::Format("%s_%02d-%02d-%02d.OFS.backup", name.c_str(), time.hour(), time.minute(), time.second());
+    LOGF_INFO("Backup at \"%s\"", savePath.u8string().c_str());
+    LoadedProject->Save(savePath.u8string());
 }
 
 void OpenFunscripter::exitApp(bool force) noexcept
@@ -1862,140 +1872,25 @@ bool OpenFunscripter::openFile(const std::string& file)
     
     bool result = true;
     std::filesystem::path filePath = Util::PathFromString(file);
-    
-    //std::string videoPath;
-    //std::string funscriptPath;
 
     if (filePath.extension().u8string() == OFS_Project::Extension)
     {
-        LoadedProject->Load(filePath.u8string());
+        if (!LoadedProject->Load(filePath.u8string()))
+        {
+            // TODO: alert user that loading has failed
+        }
     }
     else {
         // import
-        LoadedProject->Import(filePath.u8string());
+        if (LoadedProject->Import(filePath.u8string()))
+        {
+            // TODO: alert user that import has failed
+        }
     }
-    //else if(filePath.extension().u8string() == ".funscript") {
-    //    // import
-    //    LoadedProject->Import(filePath.u8string());
-    //}
 
     if (LoadedProject->Loaded) {
         player->openVideo(LoadedProject->MediaPath);
     }
-
-    //else if (filePath.extension().u8string() == ".funscript")
-    //{
-    //    funscriptPath = file;
-    //
-    //    // try find video
-    //    std::string videoPath;
-    //    for (auto&& extension : SupportedVideoExtensions) {
-    //        videoPath = basePath.u8string() + extension;
-    //        if (Util::FileExists(videoPath)) {
-    //            videoPath = videoPath;
-    //            break;
-    //        }
-    //    }
-    //
-    //    if (video_path.empty()) {
-    //        // try find audio
-    //        for (auto&& extension : SupportedAudioExtensions) {
-    //            videoPath = base_path.u8string() + extension;
-    //            if (Util::FileExists(videoPath)) {
-    //                video_path = videoPath;
-    //                break;
-    //            }
-    //        }
-    //    }
-    //}
-    //else {
-    //    video_path = file;
-    //    if (ScriptLoaded() && !Util::FileNamesMatch(video_path, RootFunscript()->current_path)) {
-    //        funscript_path = base_path.u8string() + ".funscript";
-    //    }
-    //    else {
-    //        funscript_path = RootFunscript()->current_path;
-    //    }
-    //}
-    //
-    //if (video_path.empty()) {
-    //    if (!Util::FileNamesMatch(player->getVideoPath(), funscript_path)) {
-    //        LOG_WARN("No video found.\nLoading scripts without a video is not supported.");
-    //        player->closeVideo();
-    //    }
-    //}
-    //else {
-    //    player->openVideo(video_path);
-    //}
-    //
-    //auto openFunscript = [this](const std::string& file) -> bool {
-    //    RootFunscript() = std::make_unique<Funscript>();
-    //    if (!Util::FileExists(file)) {
-    //        return false;
-    //    }
-    //    return RootFunscript()->open(file);
-    //};
-    //
-    //// try load funscript
-    //bool result = openFunscript(funscript_path);
-    //if (!result) {
-    //    LOGF_WARN("Couldn't find funscript. \"%s\"", funscript_path.c_str());
-    //    // do not return false here future me
-    //}
-    //
-    //auto loadRelatedScripts = [](OpenFunscripter* app, const std::string& file) noexcept
-    //{
-    //    std::vector<std::filesystem::path> relatedFiles;
-    //    {
-    //        auto filename = Util::Filename(file);
-    //        auto searchDirectory = Util::PathFromString(file);
-    //        searchDirectory.remove_filename();
-    //        std::error_code ec;
-    //        std::filesystem::directory_iterator dirIt(searchDirectory, ec);
-    //        for (auto&& pIt : dirIt) {
-    //            auto p = pIt.path();
-    //            auto extension = p.extension().u8string();
-    //            auto currentFilename = p.filename().replace_extension("").u8string();
-    //            if ( extension == ".funscript" 
-    //                && Util::StringStartsWith(currentFilename, filename)
-    //                && currentFilename != filename)
-    //            {
-    //                LOGF_DEBUG("%s", p.u8string().c_str());
-    //                relatedFiles.emplace_back(std::move(p));
-    //            }
-    //        }
-    //    }
-    //    // reorder for 3d simulator
-    //    std::array<std::string, 3> desiredOrder {
-    //        // it's in reverse order
-    //        ".twist.funscript",
-    //        ".pitch.funscript",
-    //        ".roll.funscript"
-    //    };
-    //    if (relatedFiles.size() > 1) {
-    //        for (auto& ending : desiredOrder) {
-    //            for(int i=0; i < relatedFiles.size(); i++) {
-    //                auto& path = relatedFiles[i];
-    //                if (Util::StringEndsWith(path.u8string(), ending)) {
-    //                    auto move = std::move(path);
-    //                    relatedFiles.erase(relatedFiles.begin() + i);
-    //                    relatedFiles.emplace_back(std::move(move));
-    //                    break;
-    //                }
-    //            }
-    //        }
-    //    }
-    //    // load the related files
-    //    for(int i = relatedFiles.size()-1; i >= 0; i--) {
-    //        auto& file = relatedFiles[i];
-    //        app->LoadedProject->ImportFunscript(file.u8string());
-    //    }
-    //};
-    //
-    //if (result) { loadRelatedScripts(this, file); }
-    //
-    //RootFunscript()->current_path = funscript_path;
-
     updateTitle();
 
     auto lastPath = Util::PathFromString(LoadedProject->LastPath);
@@ -2028,16 +1923,12 @@ void OpenFunscripter::updateTitle() noexcept
 void OpenFunscripter::saveProject() noexcept
 {
     OFS_BENCHMARK(__FUNCTION__);
-    for (auto&& script : LoadedProject->Funscripts) {
-        script->metadata.title = Util::PathFromString(script->CurrentPath)
-            .replace_extension("")
-            .filename()
-            .u8string();
-        script->metadata.duration = player->getDuration();
-        LoadedProject->Settings.last_pos_ms = player->getCurrentPositionMs();
-    }
-    LoadedProject->Settings.last_pos_ms = player->getCurrentPositionMs();
     LoadedProject->Save();
+}
+
+void OpenFunscripter::quickExport() noexcept
+{
+    LoadedProject->ExportFunscripts();
 }
 
 void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
@@ -2312,7 +2203,7 @@ void OpenFunscripter::saveActiveScriptAs()
         [&](auto& result) {
             if (result.files.size() > 0) {
                 LoadedProject->ExportFunscript(result.files[0], ActiveFunscriptIdx);
-                std::filesystem::path dir(result.files[0]);
+                std::filesystem::path dir = Util::PathFromString(result.files[0]);
                 dir.remove_filename();
                 settings->data().last_path = dir.u8string();
             }
@@ -2435,19 +2326,25 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             }
             ImGui::Separator();
 
-            if (ImGui::MenuItem("Save", BINDING_STRING("save"))) {
+            if (ImGui::MenuItem("Save project", BINDING_STRING("save_project"))) {
                 saveProject();
             }
-            if (ImGui::MenuItem("Save as...")) {
+            if (ImGui::MenuItem("Quick export", BINDING_STRING("quick_export"))) {
+                quickExport();
+            }
+            if (ImGui::MenuItem(ICON_SHARE " Export active script")) {
                 saveActiveScriptAs();
             }
-            if (ImGui::MenuItem(ICON_SHARE" Share...")) {
+            if (ImGui::MenuItem(ICON_SHARE " Export all")) {
                 if (LoadedFunscripts().size() == 1) {
                     auto savePath = Util::PathFromString(settings->data().last_path) / (Util::Filename(ActiveFunscript()->CurrentPath) + "_share.funscript");
                     Util::SaveFileDialog("Share funscript", savePath.u8string(),
                         [&](auto& result) {
                             if (result.files.size() > 0) {
-                                ActiveFunscript()->saveMinium(result.files[0]);
+                                LoadedProject->ExportFunscript(result.files[0], ActiveFunscriptIdx);
+                                std::filesystem::path dir = Util::PathFromString(result.files[0]);
+                                dir.remove_filename();
+                                settings->data().last_path = dir.u8string();
                             }
                         }, { "Funscript", "*.funscript" });
                 }
@@ -2456,10 +2353,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     Util::OpenDirectoryDialog("Choose output directory.\nAll scripts will get saved with an _share appended", settings->data().last_path,
                         [&](auto& result) {
                             if (result.files.size() > 0) {
-                                for (auto& script : LoadedFunscripts()) {
-                                    auto savePath = Util::PathFromString(result.files[0]) / (Util::Filename(script->CurrentPath) + "_share.funscript");
-                                    script->saveMinium(savePath.u8string());
-                                }
+                                LoadedProject->ExportFunscripts(result.files[0]);
                             }
                         });
                 }

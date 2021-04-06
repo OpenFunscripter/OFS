@@ -92,6 +92,14 @@ void OFS_Project::LoadScripts(const std::string& funscriptPath) noexcept
 	{
 		loadRelatedScripts(this, funscriptPath);
 	}
+	else {
+		// insert empty script
+		if (!MediaPath.empty())
+		{
+			Loaded = true;
+			AddFunscript(funscriptPath);
+		}
+	}
 }
 
 OFS_Project::OFS_Project() noexcept
@@ -111,46 +119,65 @@ void OFS_Project::Clear() noexcept
 	Funscripts.clear();
 	Funscripts.emplace_back(std::move(std::make_shared<Funscript>()));
 	Settings = OFS_ScriptSettings();
+	FUN_ASSERT(OFS_ScriptSettings::player != nullptr, "player not set");
+	*OFS_ScriptSettings::player = VideoplayerWindow::OFS_VideoPlayerSettings();
 }
 
-void OFS_Project::Load(const std::string& path) noexcept
+bool OFS_Project::Load(const std::string& path) noexcept
 {
 	FUN_ASSERT(!path.empty(), "path empty");
+	auto ProjectPath = Util::PathFromString(path);
+	if (ProjectPath.extension().u8string() != OFS_Project::Extension) {
+		return false;
+	}
+
+	Valid = false;
 	LastPath = path;
 	ProjectBuffer.clear();
-	if (Util::ReadFile(path.c_str(), ProjectBuffer) > 0) {
+	if (Util::ReadFile(ProjectPath.u8string().c_str(), ProjectBuffer) > 0) {
 		Funscripts.clear();
 		OFS_BENCHMARK(__FUNCTION__);
 		auto state = OFS_Binary::Deserialize(ProjectBuffer, *this);
-		if (state == bitsery::ReaderError::NoError) {
+		if (state == bitsery::ReaderError::NoError && Valid) {
 			Loaded = true;
+			return true;
 		}
 		else {
 			Clear();
 		}
 	}
-	else {
-		FUN_ASSERT(false, "foo");
-	}
+	return false;
 }
 
 void OFS_Project::Save(const std::string& path) noexcept
 {
 	FUN_ASSERT(!path.empty(), "path empty");
+	Valid = true;
+
+	auto app = OpenFunscripter::ptr;
+	for (auto&& script : Funscripts) {
+		script->metadata.title = Util::PathFromString(script->CurrentPath)
+			.replace_extension("")
+			.filename()
+			.u8string();
+		script->metadata.duration = app->player->getDuration();
+		Settings.last_pos_ms = app->player->getCurrentPositionMs();
+	}
+	Settings.last_pos_ms = app->player->getCurrentPositionMs();
+
+	size_t writtenSize = 0;
 	{
 		OFS_BENCHMARK(__FUNCTION__);
 		SDL_LockMutex(ProjectMut);
 
 		ProjectBuffer.clear();
-		OFS_Binary::Serialize(ProjectBuffer, *this);
+		writtenSize = OFS_Binary::Serialize(ProjectBuffer, *this);
 	}
 	
-	auto app = OpenFunscripter::ptr;
-
 	OFS_AsyncIO::Write write;
-	write.Path = LastPath;
+	write.Path = path;
 	write.Buffer = ProjectBuffer.data();
-	write.Size = ProjectBuffer.size();
+	write.Size = writtenSize;
 	write.Userdata = (void*)ProjectMut;
 	write.Callback = [](auto& w)
 	{
@@ -164,7 +191,21 @@ void OFS_Project::Save(const std::string& path) noexcept
 
 void OFS_Project::AddFunscript(const std::string& path) noexcept
 {
-	FUN_ASSERT(false, "not implemented");
+	FUN_ASSERT(Loaded, "Project not loaded");
+	// this can either be a new one or an existing one
+	auto script = std::make_shared<Funscript>();
+	if (script->open(path)) {
+		// add existing script to project
+		Funscripts.emplace_back(std::move(script));
+		Save();
+	}
+	else {
+		// add empty script to project
+		script = std::make_shared<Funscript>();
+		script->CurrentPath = path;
+		Funscripts.emplace_back(std::move(script));
+		Save();
+	}
 }
 
 void OFS_Project::RemoveFunscript(int idx) noexcept
@@ -202,7 +243,7 @@ bool OFS_Project::ImportFunscript(const std::string& path) noexcept
 	return false;
 }
 
-void OFS_Project::Import(const std::string& path) noexcept
+bool OFS_Project::Import(const std::string& path) noexcept
 {
 	Loaded = false;
 	std::filesystem::path basePath = Util::PathFromString(path);
@@ -216,30 +257,31 @@ void OFS_Project::Import(const std::string& path) noexcept
 		basePath.replace_extension(".funscript");
 		LoadScripts(basePath.u8string());
 	}
-	//if (!Util::FileExists(MediaPath)) {
-	//	Loaded = false;
-	//	Clear();
-	//	return;
-	//}
-	//basePath.replace_extension("");
-    //auto funscriptPath = basePath.u8string() + ".funscript";
-	//if (ImportFunscript(funscriptPath)) {
-	//	LastPath = basePath.u8string() + OFS_Project::Extension;
-	//	Loaded = true;
-	//	Save();
-	//}
-	//else {
-	//	Clear();
-	//	Loaded = false;
-	//}
+	return Loaded;
 }
 
 void OFS_Project::ExportFunscript(const std::string& outputPath, int idx) noexcept
 {
-	FUN_ASSERT(false, "not implemented");
+	FUN_ASSERT(idx >= 0 && idx < Funscripts.size(), "out of bounds");
+	Funscripts[idx]->saveMinium(outputPath);
 }
 
 void OFS_Project::ExportFunscripts(const std::string& outputPath) noexcept
 {
-	FUN_ASSERT(false, "not implemented");
+	auto outPath = Util::PathFromString(outputPath);
+	for (auto& script : Funscripts) {
+		auto savePath =  outPath / (Util::Filename(script->CurrentPath) + ".funscript");
+		script->saveMinium(savePath.u8string());
+	}
+}
+
+void OFS_Project::ExportFunscripts() noexcept
+{
+	for (auto& script : Funscripts)
+	{
+		FUN_ASSERT(!script->CurrentPath.empty(), "path is empty");
+		if (!script->CurrentPath.empty()) {
+			script->saveMinium(script->CurrentPath);
+		}
+	}
 }

@@ -98,6 +98,8 @@ struct OFS_ScriptSettings {
 				s.container(o.Bookmarks, o.Bookmarks.max_size());
 				s.value4b(o.last_pos_ms);
 				s.object(o.tempoSettings);
+				FUN_ASSERT(o.player != nullptr, "player not set");
+				s.object(*o.player);
 			});
 	}
 

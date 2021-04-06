@@ -99,8 +99,8 @@ private:
 	void isolateAction() noexcept;
 	void repeatLastStroke() noexcept;
 
-	//void saveScript(Funscript* script, const std::string& path, bool override_location) noexcept;
 	void saveProject() noexcept;
+	void quickExport() noexcept;
 
 	void saveHeatmap(const char* path, int width, int height);
 	void updateTitle() noexcept;
