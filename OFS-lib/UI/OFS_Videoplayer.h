@@ -4,6 +4,7 @@
 #include "imgui_internal.h"
 
 #include "OFS_Reflection.h"
+#include "OFS_BinarySerialization.h"
 #include "OFS_Util.h"
 #include "OFS_Shader.h"
 
