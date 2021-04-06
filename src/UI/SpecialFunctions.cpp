@@ -212,7 +212,20 @@ void RamerDouglasPeucker::DrawUI() noexcept
             epsilon = std::max(epsilon, 0.f);
             if (createUndoState ||
                 !app->script().undoSystem->MatchUndoTop(StateType::SIMPLIFY)) {
-                // NOOP
+                // calculate average distance in selection
+                int count = 0;
+                for (int i = 0; i < ctx().Selection().size() - 1; ++i)
+                {
+                    auto action1 = ctx().Selection()[i];
+                    auto action2 = ctx().Selection()[i + 1];
+                    
+                    int x = action1.at - action2.at;
+                    int y = action1.pos - action2.pos;
+                    float distance = std::sqrt((x * x) + (y * y));
+                    averageDistance += distance;
+                    ++count;
+                }
+                averageDistance /= (float)count;
             }
             else {
                 app->undoSystem->Undo(app->ActiveFunscript().get());
@@ -224,7 +237,7 @@ void RamerDouglasPeucker::DrawUI() noexcept
             ctx().RemoveSelectedActions();
             std::vector<FunscriptAction> newActions;
             newActions.reserve(selection.size());
-            float scaledEpsilon = epsilon * (float)((selection.back().at - selection.front().at)/100000.f);
+            float scaledEpsilon = epsilon * averageDistance;
             DouglasPeucker(selection, scaledEpsilon, newActions);
             ctx().AddActionRange(newActions, false);
         }
@@ -626,9 +639,9 @@ void CustomLua::resetVM() noexcept
             builder << "table.insert(LoadedScripts,Funscript:new())\n";
 
             // i+1 because lua indexing starts at 1 !!!
-            stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d].title=[[%s]]\n", i+1, loadedScript->metadata.title.c_str());
+            stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d].title=[[%s]]\n", i+1, loadedScript->Title.c_str());
             builder << tmp;
-            stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d].path=[[%s]]\n", i+1, loadedScript->CurrentPath.c_str());
+            stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d].path=[[%s]]\n", i+1, loadedScript->Path().c_str());
             builder << tmp;
 
             for (auto&& action : loadedScript->Actions()) {
@@ -643,7 +656,7 @@ void CustomLua::resetVM() noexcept
             }
 
             if (i == scriptIndex) { 
-                stbsp_snprintf(tmp, sizeof(tmp), "CurrentScript=LoadedScripts[%d]\n", i + 1, loadedScript->CurrentPath.c_str());
+                stbsp_snprintf(tmp, sizeof(tmp), "CurrentScript=LoadedScripts[%d]\n", i + 1, loadedScript->Path().c_str());
                 builder << tmp;
                 continue; 
             }

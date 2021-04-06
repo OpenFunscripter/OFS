@@ -36,6 +36,7 @@ public:
 class RamerDouglasPeucker : public FunctionBase
 {
 	float epsilon = 0.0f;
+	float averageDistance = 0.f;
 	bool createUndoState = true;
 public:
 	RamerDouglasPeucker() noexcept;
