@@ -129,41 +129,6 @@ void Funscript::update() noexcept
 	}
 }
 
-void Funscript::saveMinium(const std::string& path) noexcept
-{
-	saveMetadata();
-
-	auto& actions = Json["actions"];
-	actions.clear();
-	sortActions(data.Actions);
-	
-	std::vector<FunscriptAction> filteredActions;
-	if (data.Actions.size() >= 3) {
-		filteredActions.reserve(data.Actions.size());
-		filteredActions.emplace_back(data.Actions.front());
-		for (int i = 1; i < data.Actions.size() - 1; i++) {
-			auto previous = filteredActions.back();
-			auto current = data.Actions[i];
-			auto next = data.Actions[i + 1];
-
-			float speedPreviousToNext = std::abs(previous.pos - next.pos) / (float)(next.at - previous.at);
-
-			float speedPreviousToCurrent = std::abs(previous.pos - current.pos) / (float)(current.at - previous.at);
-			float speedCurrentToNext = std::abs(current.pos - next.pos) / (float)(next.at - current.at);
-
-			float avgSpeedSegments = (speedPreviousToCurrent + speedCurrentToNext) / 2.f;
-
-			if (std::abs(speedPreviousToNext - avgSpeedSegments) > (speedPreviousToNext * 0.005)) {
-				filteredActions.emplace_back(current);
-			}
-		}
-		filteredActions.emplace_back(data.Actions.back());
-	}
-	else { filteredActions = data.Actions; }
-
-	startSaveThread(path, std::move(filteredActions), std::move(Json));
-}
-
 float Funscript::GetPositionAtTime(int32_t time_ms) noexcept
 {
 	if (data.Actions.size() == 0) {	return 0; } 

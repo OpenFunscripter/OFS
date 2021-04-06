@@ -174,8 +174,6 @@ public:
 	void save() noexcept { save(CurrentPath, true); }
 	void save(const std::string& path, bool override_location = true);
 	
-	void saveMinium(const std::string& path) noexcept;
-
 	inline void reserveActionMemory(int32_t frameCount) { 
 		data.Actions.reserve(frameCount);
 	}
@@ -316,11 +314,35 @@ inline void Funscript::save(const std::string& path, bool override_location)
 	// make sure actions are sorted
 	sortActions(data.Actions);
 
+	std::vector<FunscriptAction> filteredActions;
+	if (data.Actions.size() >= 3) {
+		filteredActions.reserve(data.Actions.size());
+		filteredActions.emplace_back(data.Actions.front());
+		for (int i = 1; i < data.Actions.size() - 1; i++) {
+			auto previous = filteredActions.back();
+			auto current = data.Actions[i];
+			auto next = data.Actions[i + 1];
+
+			float speedPreviousToNext = std::abs(previous.pos - next.pos) / (float)(next.at - previous.at);
+
+			float speedPreviousToCurrent = std::abs(previous.pos - current.pos) / (float)(current.at - previous.at);
+			float speedCurrentToNext = std::abs(current.pos - next.pos) / (float)(next.at - current.at);
+
+			float avgSpeedSegments = (speedPreviousToCurrent + speedCurrentToNext) / 2.f;
+
+			if (std::abs(speedPreviousToNext - avgSpeedSegments) > (speedPreviousToNext * 0.005)) {
+				filteredActions.emplace_back(current);
+			}
+		}
+		filteredActions.emplace_back(data.Actions.back());
+	}
+	else { filteredActions = data.Actions; }
+
+
 	if (override_location) {
 		CurrentPath = path;
 		unsavedEdits = false;
 	}
 
-	auto copyActions = data.Actions;
-	startSaveThread(path, std::move(copyActions), std::move(Json));
+	startSaveThread(path, std::move(filteredActions), std::move(Json));
 }

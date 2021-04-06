@@ -1569,7 +1569,7 @@ void OpenFunscripter::autoBackup() noexcept
 {
     if (ActiveFunscript()->CurrentPath.empty()) { return; }
     std::chrono::duration<float> timeSinceBackup = std::chrono::steady_clock::now() - lastBackup;
-    if (timeSinceBackup.count() < 5.f) { return; }
+    if (timeSinceBackup.count() < 61.f) { return; }
     OFS_BENCHMARK(__FUNCTION__);
     lastBackup = std::chrono::steady_clock::now();
 

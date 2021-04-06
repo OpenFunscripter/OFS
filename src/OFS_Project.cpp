@@ -263,7 +263,7 @@ bool OFS_Project::Import(const std::string& path) noexcept
 void OFS_Project::ExportFunscript(const std::string& outputPath, int idx) noexcept
 {
 	FUN_ASSERT(idx >= 0 && idx < Funscripts.size(), "out of bounds");
-	Funscripts[idx]->saveMinium(outputPath);
+	Funscripts[idx]->save(outputPath);
 }
 
 void OFS_Project::ExportFunscripts(const std::string& outputPath) noexcept
@@ -271,7 +271,7 @@ void OFS_Project::ExportFunscripts(const std::string& outputPath) noexcept
 	auto outPath = Util::PathFromString(outputPath);
 	for (auto& script : Funscripts) {
 		auto savePath =  outPath / (Util::Filename(script->CurrentPath) + ".funscript");
-		script->saveMinium(savePath.u8string());
+		script->save(savePath.u8string());
 	}
 }
 
@@ -281,7 +281,7 @@ void OFS_Project::ExportFunscripts() noexcept
 	{
 		FUN_ASSERT(!script->CurrentPath.empty(), "path is empty");
 		if (!script->CurrentPath.empty()) {
-			script->saveMinium(script->CurrentPath);
+			script->save(script->CurrentPath);
 		}
 	}
 }
