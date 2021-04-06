@@ -114,6 +114,7 @@ OFS_Project::~OFS_Project() noexcept
 
 void OFS_Project::Clear() noexcept
 {
+	Loaded = false;
 	LastPath.clear();
 	MediaPath.clear();
 	Funscripts.clear();

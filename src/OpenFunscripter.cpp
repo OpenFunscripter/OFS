@@ -1931,6 +1931,14 @@ void OpenFunscripter::quickExport() noexcept
     LoadedProject->ExportFunscripts();
 }
 
+void OpenFunscripter::closeProject() noexcept
+{
+    LoadedProject->Clear();
+    player->closeVideo();
+    playerControls.videoPreview->closeVideo();
+    updateTitle();
+}
+
 void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
 {
     SDL_Surface* surface;
@@ -2231,10 +2239,11 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
 
         if (ImGui::BeginMenu("File"))
         {
-            if (ImGui::MenuItem(ICON_FOLDER_OPEN" Open video / script")) {
+            if (ImGui::MenuItem(ICON_FOLDER_OPEN" Open project/video/script")) {
                 showOpenFileDialog();
             }
-            if (ImGui::BeginMenu("Open...", player->isLoaded())) {
+            Util::Tooltip("Videos & scripts get imported into a new project.");
+            if (ImGui::BeginMenu("Open...", LoadedProject->Loaded)) {
                 auto fileAlreadyLoaded = [](const std::string& path) -> bool {
                     auto app = OpenFunscripter::ptr;
                     auto it = std::find_if(app->LoadedFunscripts().begin(), app->LoadedFunscripts().end(),
@@ -2324,6 +2333,10 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 }
                 ImGui::EndMenu();
             }
+            if (ImGui::MenuItem("Save & close project", NULL, false, LoadedProject->Loaded)) {
+                LoadedProject->Save();
+                closeProject();
+            }
             ImGui::Separator();
 
             if (ImGui::MenuItem("Save project", BINDING_STRING("save_project"))) {
@@ -2358,7 +2371,6 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         });
                 }
             }
-            Util::Tooltip("Saves the bare minium.");
             ImGui::Separator();
             if (ImGui::MenuItem("Enable auto backup", NULL, &AutoBackup)) {}
             if (ImGui::MenuItem("Open backup directory")) {

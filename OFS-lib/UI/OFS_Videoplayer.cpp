@@ -571,8 +571,13 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open, bool* draw_video) noexcept
 	// this redraw has to happen even if the video isn't actually shown in the gui
 	if (redraw_video) { renderToTexture(); }
 	if (open != nullptr && !*open) return;
+	
 	ImGui::Begin(PlayerId, open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
 
+	if (!MpvData.video_loaded) {
+		ImGui::End();
+		return;
+	}
 
 	if (*draw_video) {
 		viewport_pos = ImGui::GetWindowViewport()->Pos;

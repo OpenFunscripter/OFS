@@ -102,6 +102,8 @@ private:
 	void saveProject() noexcept;
 	void quickExport() noexcept;
 
+	void closeProject() noexcept;
+
 	void saveHeatmap(const char* path, int width, int height);
 	void updateTitle() noexcept;
 
