@@ -283,6 +283,8 @@ bool OpenFunscripter::setup()
     KeybindingEvents::RegisterEvents();
     ScriptTimelineEvents::RegisterEvents();
 
+    IO = std::make_unique<OFS_AsyncIO>();
+    IO->Init();
     LoadedProject = std::make_unique<OFS_Project>();
 
     player = std::make_unique<VideoplayerWindow>();
@@ -1829,6 +1831,7 @@ int OpenFunscripter::run() noexcept
 
 void OpenFunscripter::shutdown() noexcept
 {
+    IO->Shutdown();
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
@@ -2025,14 +2028,14 @@ void OpenFunscripter::updateTitle() noexcept
 void OpenFunscripter::saveProject() noexcept
 {
     OFS_BENCHMARK(__FUNCTION__);
-    //for (auto&& script : LoadedProject->Funscripts) {
-    //    script->metadata.title = Util::PathFromString(script->CurrentPath)
-    //        .replace_extension("")
-    //        .filename()
-    //        .u8string();
-    //    script->metadata.duration = player->getDuration();
-    //    LoadedProject->Settings.last_pos_ms = player->getCurrentPositionMs();
-    //}
+    for (auto&& script : LoadedProject->Funscripts) {
+        script->metadata.title = Util::PathFromString(script->CurrentPath)
+            .replace_extension("")
+            .filename()
+            .u8string();
+        script->metadata.duration = player->getDuration();
+        LoadedProject->Settings.last_pos_ms = player->getCurrentPositionMs();
+    }
     LoadedProject->Settings.last_pos_ms = player->getCurrentPositionMs();
     LoadedProject->Save();
 }

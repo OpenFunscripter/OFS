@@ -134,14 +134,6 @@ void OFS_Project::Load(const std::string& path) noexcept
 	}
 }
 
-struct SaveThreadData
-{
-	std::string* path;
-	ByteBuffer* buffer;
-	SDL_mutex* mut;
-} ThreadData;
-
-
 void OFS_Project::Save(const std::string& path) noexcept
 {
 	FUN_ASSERT(!path.empty(), "path empty");
@@ -153,26 +145,21 @@ void OFS_Project::Save(const std::string& path) noexcept
 		OFS_Binary::Serialize(ProjectBuffer, *this);
 	}
 	
-	auto saveThread = [](void* data)
-	{
-		OFS_BENCHMARK(__FUNCTION__ " Thread");
-		SaveThreadData* save = (SaveThreadData*)data;
-		Util::WriteFile(save->path->c_str(), save->buffer->data(), save->buffer->size());
+	auto app = OpenFunscripter::ptr;
 
-		EventSystem::SingleShot([](void* mutex) {
-			// mutex gets unlocked back on the main thread via event
-			SDL_UnlockMutex((SDL_mutex*)mutex);
-		}, save->mut);
-		return 0;
-	};
+	OFS_AsyncIO::Write write;
+	write.Path = LastPath;
+	write.Buffer = ProjectBuffer.data();
+	write.Size = ProjectBuffer.size();
+	write.Userdata = (void*)ProjectMut;
+	write.Callback = [](auto& w)
 	{
-		OFS_BENCHMARK("CreateSaveThread");
-		ThreadData.buffer = &ProjectBuffer;
-		ThreadData.path = &LastPath;
-		ThreadData.mut = ProjectMut;
-		auto thread = SDL_CreateThread(saveThread, __FUNCTION__, &ThreadData);
-		SDL_DetachThread(thread);
-	}
+		EventSystem::SingleShot([](void* mutex) {
+			 //mutex gets unlocked back on the main thread via event
+			SDL_UnlockMutex((SDL_mutex*)mutex);
+		}, w.Userdata);
+	};
+	app->IO->PushWrite(std::move(write));
 }
 
 void OFS_Project::AddFunscript(const std::string& path) noexcept

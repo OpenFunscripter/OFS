@@ -29,6 +29,7 @@
 #include "OFS_VideoplayerControls.h"
 #include "OFS_TCode.h"
 #include "OFS_Project.h"
+#include "OFS_AsyncIO.h"
 
 #include <memory>
 #include <array>
@@ -152,6 +153,7 @@ public:
 	std::unique_ptr<Simulator3D> sim3D;
 
 	std::unique_ptr<OFS_Project> LoadedProject;
+	std::unique_ptr<OFS_AsyncIO> IO;
 
 	bool setup();
 	int run() noexcept;
