@@ -27,17 +27,11 @@
 
 // TODO: make speed coloring configurable
 
-// TODO: Add configurable modifier keys ( same for mouse buttons ??? )
-//       Extend KeybindingSystem with named keys/modifiers which can be changed but don't have an explicit action which gets called
-//       So in places where you would need to know which modifier has to be held for a certain thing to happen you'd query the 
-//       KeybindingSystem via a unique string/enum key
-
 // TODO: Different selection modes via held modifier keys ( select top points, bottom, etc. )
-
 // TODO: OFS_ScriptTimeline selections cause alot of unnecessary overdraw. find a way to not have any overdraw
 
 // the video player supports a lot more than these
-// these are the ones looked for when loading funscripts
+// these are the ones looked for when importing funscripts
 std::array<const char*, 6> OpenFunscripter::SupportedVideoExtensions {
     ".mp4",
     ".mkv",
@@ -284,9 +278,15 @@ bool OpenFunscripter::setup()
     IO = std::make_unique<OFS_AsyncIO>();
     IO->Init();
     LoadedProject = std::make_unique<OFS_Project>();
-
     player = std::make_unique<VideoplayerWindow>();
+    if (!player->setup(settings->data().force_hw_decoding)) {
+        LOG_ERROR("Failed to init video player");
+        return false;
+    }
     OFS_ScriptSettings::player = &player->settings;
+    playerControls.setup();
+    playerControls.player = player.get();
+    closeProject();
 
     undoSystem = std::make_unique<UndoSystem>(&LoadedProject->Funscripts);
 
@@ -295,14 +295,9 @@ bool OpenFunscripter::setup()
     keybinds.load(Util::Prefpath("keybinds.json"));
 
     scriptPositions.setup(undoSystem.get());
-    clearLoadedScripts(); // initialized std::vector with one Funscript
 
     scripting = std::make_unique<ScriptingMode>();
     scripting->setup();
-    if (!player->setup(settings->data().force_hw_decoding)) {
-        LOG_ERROR("Failed to init video player");
-        return false;
-    }
     events->Subscribe(FunscriptEvents::FunscriptActionsChangedEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FunscriptChanged));
     events->Subscribe(SDL_DROPFILE, EVENT_SYSTEM_BIND(this, &OpenFunscripter::DragNDrop));
     events->Subscribe(VideoEvents::MpvVideoLoaded, EVENT_SYSTEM_BIND(this, &OpenFunscripter::MpvVideoLoaded));
@@ -338,10 +333,6 @@ bool OpenFunscripter::setup()
             app->sim3D->renderSim();
         }
     };
-
-    playerControls.setup();
-    playerControls.player = player.get();
-
     tcode.loadSettings(Util::Prefpath("tcode.json"));
 
     SDL_ShowWindow(window);
@@ -394,12 +385,6 @@ void OpenFunscripter::setupDefaultLayout(bool force) noexcept
         simulator.CenterSimulator();
         ImGui::DockBuilderFinish(MainDockspaceID);
     }
-}
-
-void OpenFunscripter::clearLoadedScripts() noexcept
-{
-    ActiveFunscriptIdx = 0;
-    LoadedProject->Clear();
 }
 
 void OpenFunscripter::register_bindings()
@@ -1510,14 +1495,15 @@ void OpenFunscripter::ScriptTimelineActionClicked(SDL_Event& ev) noexcept
 
 void OpenFunscripter::DragNDrop(SDL_Event& ev) noexcept
 {
-    clearLoadedScripts();
-    openFile(ev.drop.file);
+    if (closeProject()) {
+        openFile(ev.drop.file);
+    }
     SDL_free(ev.drop.file);
 }
 
 void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
 {
-    ActiveFunscript()->metadata.duration = player->getDuration();
+    LoadedProject->Metadata.duration = player->getDuration();
     ActiveFunscript()->reserveActionMemory(player->getTotalNumFrames());
     player->setPositionExact(LoadedProject->Settings.last_pos_ms);
     ActiveFunscript()->NotifyActionsChanged(false);
@@ -1567,7 +1553,7 @@ void OpenFunscripter::update() noexcept {
 
 void OpenFunscripter::autoBackup() noexcept
 {
-    if (ActiveFunscript()->CurrentPath.empty()) { return; }
+    if (ActiveFunscript()->Path().empty()) { return; }
     std::chrono::duration<float> timeSinceBackup = std::chrono::steady_clock::now() - lastBackup;
     if (timeSinceBackup.count() < 61.f) { return; }
     OFS_BENCHMARK(__FUNCTION__);
@@ -1621,10 +1607,7 @@ void OpenFunscripter::exitApp(bool force) noexcept
         return;
     }
 
-    bool unsavedChanges = false;
-    for (auto&& script : LoadedFunscripts()) {
-        unsavedChanges = unsavedChanges || script->HasUnsavedEdits();
-    }
+    bool unsavedChanges = LoadedProject->HasUnsavedEdits();
 
     if (unsavedChanges) {
         Util::YesNoCancelDialog("Unsaved changes", "Do you want to save and exit?",
@@ -1866,29 +1849,56 @@ void OpenFunscripter::Redo() noexcept
     if(undoSystem->Redo(ActiveFunscript().get())) scripting->redo();
 }
 
-bool OpenFunscripter::openFile(const std::string& file)
+bool OpenFunscripter::openFile(const std::string& file) noexcept
 {
     if (!Util::FileExists(file)) return false;
     
-    bool result = true;
     std::filesystem::path filePath = Util::PathFromString(file);
 
-    if (filePath.extension().u8string() == OFS_Project::Extension)
-    {
-        if (!LoadedProject->Load(filePath.u8string()))
-        {
-            // TODO: alert user that loading has failed
-        }
+    if (filePath.extension().u8string() == OFS_Project::Extension) {
+        return openProject(filePath.u8string());
     }
     else {
-        // import
-        if (LoadedProject->Import(filePath.u8string()))
-        {
-            // TODO: alert user that import has failed
-        }
+        return importFile(filePath.u8string());
     }
+}
 
+bool OpenFunscripter::importFile(const std::string& file) noexcept
+{
+    closeProject();
+    if (!LoadedProject->Import(file))
+    {
+        auto msg = "OpenFunscripter failed to import.\n"
+            "Does a project with the same name already exist?\n"
+            "If yes open that instead of reimporting a script/video.";
+        Util::MessageBoxAlert("Failed to import", msg);
+        closeProject();
+        return false;
+    }
+    initProject();
+    return true;
+}
+
+bool OpenFunscripter::openProject(const std::string& file) noexcept
+{
+    closeProject();
+    if (!LoadedProject->Load(file)) {
+        Util::MessageBoxAlert("Failed to load", "The project failed to load.\nfuck.");
+        closeProject();
+        return false;
+    }
+    initProject();
+    return true;
+}
+
+void OpenFunscripter::initProject() noexcept
+{
     if (LoadedProject->Loaded) {
+        if (LoadedProject->ProjectSettings.NudgeMetadata) {
+            ShowMetadataEditor = true;
+            LoadedProject->ProjectSettings.NudgeMetadata = false;
+            LoadedProject->Save();
+        }
         player->openVideo(LoadedProject->MediaPath);
     }
     updateTitle();
@@ -1900,8 +1910,6 @@ bool OpenFunscripter::openFile(const std::string& file)
     settings->saveSettings();
 
     lastBackup = std::chrono::steady_clock::now();
-
-    return result;
 }
 
 void OpenFunscripter::UpdateNewActiveScript(int32_t activeIndex) noexcept
@@ -1913,10 +1921,9 @@ void OpenFunscripter::UpdateNewActiveScript(int32_t activeIndex) noexcept
 
 void OpenFunscripter::updateTitle() noexcept
 {
-    std::stringstream ss;
-    ss.str(std::string());
-    
-    ss << "OpenFunscripter " OFS_LATEST_GIT_TAG "@" OFS_LATEST_GIT_HASH " - \"" << LoadedProject->LastPath << "\"";
+    std::stringstream ss;   
+    ss << "OpenFunscripter " OFS_LATEST_GIT_TAG "@" OFS_LATEST_GIT_HASH;
+    if(LoadedProject->Loaded) ss << " - \"" << LoadedProject->LastPath << "\"";
     SDL_SetWindowTitle(window, ss.str().c_str());
 }
 
@@ -1928,15 +1935,26 @@ void OpenFunscripter::saveProject() noexcept
 
 void OpenFunscripter::quickExport() noexcept
 {
+    LoadedProject->Save();
     LoadedProject->ExportFunscripts();
 }
 
-void OpenFunscripter::closeProject() noexcept
+bool OpenFunscripter::closeProject() noexcept
 {
-    LoadedProject->Clear();
-    player->closeVideo();
-    playerControls.videoPreview->closeVideo();
-    updateTitle();
+    if (LoadedProject->HasUnsavedEdits())
+    {
+        FUN_ASSERT(false, "not implemented");
+        return false;
+    }
+    else
+    {
+        ActiveFunscriptIdx = 0;
+        LoadedProject->Clear();
+        player->closeVideo();
+        playerControls.videoPreview->closeVideo();
+        updateTitle();
+    }
+    return true;
 }
 
 void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
@@ -2188,24 +2206,9 @@ void OpenFunscripter::repeatLastStroke() noexcept
     }
 }
 
-void OpenFunscripter::showOpenFileDialog()
-{
-    Util::OpenFileDialog("Choose a file", settings->data().last_path,
-        [&](auto& result) {
-            if (result.files.size() > 0) {
-                auto file = result.files[0];
-                if (Util::FileExists(file))
-                {
-                    clearLoadedScripts();
-                    openFile(file);
-                }
-            }
-        }, false);
-}
-
 void OpenFunscripter::saveActiveScriptAs()
 {
-    std::filesystem::path path = Util::PathFromString(ActiveFunscript()->CurrentPath);
+    std::filesystem::path path = Util::PathFromString(ActiveFunscript()->Path());
     path.make_preferred();
     Util::SaveFileDialog("Save", path.u8string(),
         [&](auto& result) {
@@ -2224,7 +2227,8 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
     
     ImColor alertCol(ImGui::GetStyle().Colors[ImGuiCol_MenuBarBg]);
     std::chrono::duration<float> saveDuration;
-    if (player->isLoaded() && ActiveFunscript()->HasUnsavedEdits()) {
+    bool unsavedEdits = LoadedProject->HasUnsavedEdits();
+    if (player->isLoaded() && unsavedEdits) {
         saveDuration = std::chrono::system_clock::now() - ActiveFunscript()->EditTime();
         const float timeUnit = saveDuration.count() / 60.f;
         if (timeUnit >= 5.f) {
@@ -2239,16 +2243,41 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
 
         if (ImGui::BeginMenu("File"))
         {
-            if (ImGui::MenuItem(ICON_FOLDER_OPEN" Open project/video/script")) {
-                showOpenFileDialog();
+            if (ImGui::MenuItem(ICON_FOLDER_OPEN" Open project")) {
+                Util::OpenFileDialog("Open project", settings->data().last_path,
+                    [&](auto& result) {
+                        if (result.files.size() > 0) {
+                            auto& file = result.files[0];
+                            auto path = Util::PathFromString(file);
+                            if (path.extension().u8string() != OFS_Project::Extension) {
+                                Util::MessageBoxAlert("Wrong file", "That's not a project file.");
+                                return;
+                            }
+                            else if (Util::FileExists(file)) {
+                                openProject(file);
+                            }
+                        }
+                    }, false);
+            }
+            if (ImGui::MenuItem("Import video/script", 0, false, !LoadedProject->Loaded))
+            {
+                Util::OpenFileDialog("Import video/script", settings->data().last_path,
+                    [&](auto& result) {
+                        if (result.files.size() > 0) {
+                            auto& file = result.files[0];
+                            if (Util::FileExists(file)) {
+                                importFile(file);
+                            }
+                        }
+                    }, false);
             }
             Util::Tooltip("Videos & scripts get imported into a new project.");
-            if (ImGui::BeginMenu("Open...", LoadedProject->Loaded)) {
+            if (ImGui::BeginMenu("Load...", LoadedProject->Loaded)) {
                 auto fileAlreadyLoaded = [](const std::string& path) -> bool {
                     auto app = OpenFunscripter::ptr;
                     auto it = std::find_if(app->LoadedFunscripts().begin(), app->LoadedFunscripts().end(),
                         [file = std::filesystem::path(path)](auto& script) {
-                            return Util::PathFromString(script->CurrentPath) == file;
+                            return Util::PathFromString(script->Path()) == file;
                         }
                     );
                     return it != app->LoadedFunscripts().end();
@@ -2259,7 +2288,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     {
                         std::string newScriptPath;
                         {
-                            auto root = Util::PathFromString(RootFunscript()->CurrentPath);
+                            auto root = Util::PathFromString(RootFunscript()->Path());
                             std::stringstream ss;
                             ss << '.' << axisExt << ".funscript";
                             root.replace_extension(ss.str());
@@ -2275,6 +2304,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     for (int i = 1; i < TCodeChannels::Aliases.size() - 1; i++) {
                         addNewShortcut(TCodeChannels::Aliases[i][2]);
                     }
+                    addNewShortcut("raw");
                     ImGui::EndMenu();
                 }
                 if (ImGui::MenuItem("Add new")) {
@@ -2306,7 +2336,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::BeginMenu("Unload", LoadedFunscripts().size() > 1)) {
                 int unloadIndex = -1;
                 for(int i=0; i < LoadedFunscripts().size(); i++) {
-                    if (ImGui::MenuItem(LoadedFunscripts()[i]->metadata.title.c_str())) {
+                    if (ImGui::MenuItem(LoadedFunscripts()[i]->Title.c_str())) {
                         unloadIndex = i;
                     }
                 }
@@ -2333,7 +2363,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 }
                 ImGui::EndMenu();
             }
-            if (ImGui::MenuItem("Save & close project", NULL, false, LoadedProject->Loaded)) {
+            if (LoadedProject->Loaded && ImGui::MenuItem("Save and close project", NULL, false, LoadedProject->Loaded)) {
                 LoadedProject->Save();
                 closeProject();
             }
@@ -2342,34 +2372,39 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem("Save project", BINDING_STRING("save_project"))) {
                 saveProject();
             }
-            if (ImGui::MenuItem("Quick export", BINDING_STRING("quick_export"))) {
-                quickExport();
-            }
-            if (ImGui::MenuItem(ICON_SHARE " Export active script")) {
-                saveActiveScriptAs();
-            }
-            if (ImGui::MenuItem(ICON_SHARE " Export all")) {
-                if (LoadedFunscripts().size() == 1) {
-                    auto savePath = Util::PathFromString(settings->data().last_path) / (Util::Filename(ActiveFunscript()->CurrentPath) + "_share.funscript");
-                    Util::SaveFileDialog("Share funscript", savePath.u8string(),
-                        [&](auto& result) {
-                            if (result.files.size() > 0) {
-                                LoadedProject->ExportFunscript(result.files[0], ActiveFunscriptIdx);
-                                std::filesystem::path dir = Util::PathFromString(result.files[0]);
-                                dir.remove_filename();
-                                settings->data().last_path = dir.u8string();
-                            }
-                        }, { "Funscript", "*.funscript" });
+            if (ImGui::BeginMenu("Export...", LoadedProject->Loaded))
+            {
+                if (ImGui::MenuItem(ICON_SHARE " Quick export", BINDING_STRING("quick_export"))) {
+                    quickExport();
                 }
-                else if(LoadedFunscripts().size() > 1)
-                {
-                    Util::OpenDirectoryDialog("Choose output directory.\nAll scripts will get saved with an _share appended", settings->data().last_path,
-                        [&](auto& result) {
-                            if (result.files.size() > 0) {
-                                LoadedProject->ExportFunscripts(result.files[0]);
-                            }
-                        });
+                Util::Tooltip("Exports all scripts as .funscript in their default paths.");
+                if (ImGui::MenuItem(ICON_SHARE " Export active script")) {
+                    saveActiveScriptAs();
                 }
+                if (ImGui::MenuItem(ICON_SHARE " Export all")) {
+                    if (LoadedFunscripts().size() == 1) {
+                        auto savePath = Util::PathFromString(settings->data().last_path) / (ActiveFunscript()->Title + "_share.funscript");
+                        Util::SaveFileDialog("Share funscript", savePath.u8string(),
+                            [&](auto& result) {
+                                if (result.files.size() > 0) {
+                                    LoadedProject->ExportFunscript(result.files[0], ActiveFunscriptIdx);
+                                    std::filesystem::path dir = Util::PathFromString(result.files[0]);
+                                    dir.remove_filename();
+                                    settings->data().last_path = dir.u8string();
+                                }
+                            }, { "Funscript", "*.funscript" });
+                    }
+                    else if(LoadedFunscripts().size() > 1)
+                    {
+                        Util::OpenDirectoryDialog("Choose output directory.\nAll scripts will get saved with an _share appended", settings->data().last_path,
+                            [&](auto& result) {
+                                if (result.files.size() > 0) {
+                                    LoadedProject->ExportFunscripts(result.files[0]);
+                                }
+                            });
+                    }
+                }
+                ImGui::EndMenu();
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Enable auto backup", NULL, &AutoBackup)) {}
@@ -2399,7 +2434,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.f);
             ImGui::InputInt("##height", &settings->data().heatmapSettings.defaultHeight);
             if (ImGui::MenuItem("Save heatmap")) { 
-                std::string filename = ActiveFunscript()->metadata.title + "_Heatmap.png";
+                std::string filename = ActiveFunscript()->Title + "_Heatmap.png";
                 auto defaultPath = Util::PathFromString(settings->data().heatmapSettings.defaultPath);
                 Util::ConcatPathSafe(defaultPath, filename);
                 Util::SaveFileDialog("Save heatmap", defaultPath.u8string(),
@@ -2647,7 +2682,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             bool navmodeActive = ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_NavEnableGamepad;
             ImGui::Text(ICON_GAMEPAD " " ICON_LONG_ARROW_RIGHT " %s", (navmodeActive) ? "Navigation" : "Scripting");
         }
-        if (player->isLoaded() && ActiveFunscript()->HasUnsavedEdits()) {
+        if (player->isLoaded() && unsavedEdits) {
             const float timeUnit = saveDuration.count() / 60.f;
             ImGui::SameLine(region.x - ImGui::GetFontSize()*13.5f);
             ImGui::TextColored(ImGui::GetStyle().Colors[ImGuiCol_Text], "unsaved changes %d minutes ago", (int)(timeUnit));
@@ -2661,117 +2696,125 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
 bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
 {
     if (!*open) return false;
+    else {
+        ImGui::OpenPopup("Metadata Editor");
+    }
+
     OFS_PROFILE(__FUNCTION__);
     bool save = false;
-    auto& metadata = ActiveFunscript()->metadata;
-    ImGui::Begin("Metadata Editor", open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoDocking);
-    ImGui::LabelText("Title", "%s", metadata.title.c_str());
-    Util::FormatTime(tmp_buf[0], sizeof(tmp_buf), metadata.duration, false);
-    ImGui::LabelText("Duration", "%s", tmp_buf[0]);
-
-    ImGui::InputText("Creator", &metadata.creator);
-    ImGui::InputText("Url", &metadata.script_url);
-    ImGui::InputText("Video url", &metadata.video_url);
-    ImGui::InputTextMultiline("Description", &metadata.description, ImVec2(0.f, ImGui::GetFontSize()*3.f));
-    ImGui::InputTextMultiline("Notes", &metadata.notes, ImVec2(0.f, ImGui::GetFontSize() * 3.f));
-
+    auto& metadata = LoadedProject->Metadata;
+    
+    if (ImGui::BeginPopupModal("Metadata Editor", open, ImGuiWindowFlags_NoDocking))
     {
-        enum LicenseType : int32_t {
-            None,
-            Free,
-            Paid
+        ImGui::InputText("Title", &metadata.title);
+        metadata.duration = player->getDuration();
+        Util::FormatTime(tmp_buf[0], sizeof(tmp_buf), metadata.duration, false);
+        ImGui::LabelText("Duration", "%s", tmp_buf[0]);
+
+        ImGui::InputText("Creator", &metadata.creator);
+        ImGui::InputText("Url", &metadata.script_url);
+        ImGui::InputText("Video url", &metadata.video_url);
+        ImGui::InputTextMultiline("Description", &metadata.description, ImVec2(0.f, ImGui::GetFontSize()*3.f));
+        ImGui::InputTextMultiline("Notes", &metadata.notes, ImVec2(0.f, ImGui::GetFontSize() * 3.f));
+
+        {
+            enum LicenseType : int32_t {
+                None,
+                Free,
+                Paid
+            };
+            static LicenseType currentLicense = LicenseType::None;
+
+            if (ImGui::Combo("License", (int32_t*)&currentLicense, " \0Free\0Paid\0")) {
+                switch (currentLicense) {
+                case  LicenseType::None:
+                    metadata.license = "";
+                    break;
+                case LicenseType::Free:
+                    metadata.license = "Free";
+                    break;
+                case LicenseType::Paid:
+                    metadata.license = "Paid";
+                    break;
+                }
+            }
+            if (!metadata.license.empty()) {
+                ImGui::SameLine(); ImGui::Text("-> \"%s\"", metadata.license.c_str());
+            }
+        }
+    
+        auto renderTagButtons = [](std::vector<std::string>& tags)
+        {
+            auto availableWidth = ImGui::GetContentRegionAvail().x;
+            int removeIndex = -1;
+            for (int i = 0; i < tags.size(); i++) {
+                ImGui::PushID(i);
+                auto& tag = tags[i];
+
+                if (ImGui::Button(tag.c_str())) {
+                    removeIndex = i;
+                }
+                auto nextLineCursor = ImGui::GetCursorPos();
+                ImGui::SameLine();
+                if (ImGui::GetCursorPosX() + ImGui::GetItemRectSize().x >= availableWidth) {
+                    ImGui::SetCursorPos(nextLineCursor);
+                }
+
+                ImGui::PopID();
+            }
+            if (removeIndex != -1) {
+                tags.erase(tags.begin() + removeIndex);
+            }
         };
-        static LicenseType currentLicense = LicenseType::None;
 
-        if (ImGui::Combo("License", (int32_t*)&currentLicense, " \0Free\0Paid\0")) {
-            switch (currentLicense) {
-            case  LicenseType::None:
-                metadata.license = "";
-                break;
-            case LicenseType::Free:
-                metadata.license = "Free";
-                break;
-            case LicenseType::Paid:
-                metadata.license = "Paid";
-                break;
+        ImGui::TextUnformatted("Tags");
+        static std::string newTag;
+        auto addTag = [&metadata](std::string& newTag) {
+            Util::trim(newTag);
+            if (!newTag.empty()) {
+                metadata.tags.emplace_back(newTag); newTag.clear();
             }
-        }
-        if (!metadata.license.empty()) {
-            ImGui::SameLine(); ImGui::Text("-> \"%s\"", metadata.license.c_str());
-        }
-    }
-    
-    auto renderTagButtons = [](std::vector<std::string>& tags)
-    {
-        auto availableWidth = ImGui::GetContentRegionAvail().x;
-        int removeIndex = -1;
-        for (int i = 0; i < tags.size(); i++) {
-            ImGui::PushID(i);
-            auto& tag = tags[i];
+            ImGui::ActivateItem(ImGui::GetID("##Tag"));
+        };
 
-            if (ImGui::Button(tag.c_str())) {
-                removeIndex = i;
+        if (ImGui::InputText("##Tag", &newTag, ImGuiInputTextFlags_EnterReturnsTrue)) {
+            addTag(newTag);
+        };
+        ImGui::SameLine();
+        if (ImGui::Button("Add", ImVec2(-1.f, 0.f))) { 
+            addTag(newTag);
+        }
+    
+        auto& style = ImGui::GetStyle();
+
+        renderTagButtons(metadata.tags);
+        ImGui::NewLine();
+
+        ImGui::TextUnformatted("Performers");
+        static std::string newPerformer;
+        auto addPerformer = [&metadata](std::string& newPerformer) {
+            Util::trim(newPerformer);
+            if (!newPerformer.empty()) {
+                metadata.performers.emplace_back(newPerformer); newPerformer.clear(); 
             }
-            auto nextLineCursor = ImGui::GetCursorPos();
-            ImGui::SameLine();
-            if (ImGui::GetCursorPosX() + ImGui::GetItemRectSize().x >= availableWidth) {
-                ImGui::SetCursorPos(nextLineCursor);
-            }
-
-            ImGui::PopID();
+            ImGui::ActivateItem(ImGui::GetID("##Performer"));
+        };
+        if (ImGui::InputText("##Performer", &newPerformer, ImGuiInputTextFlags_EnterReturnsTrue)) {
+            addPerformer(newPerformer);
         }
-        if (removeIndex != -1) {
-            tags.erase(tags.begin() + removeIndex);
+        ImGui::SameLine();
+        if (ImGui::Button("Add##Performer", ImVec2(-1.f, 0.f))) {
+            addPerformer(newPerformer);
         }
-    };
 
-    ImGui::TextUnformatted("Tags");
-    static std::string newTag;
-    auto addTag = [&metadata](std::string& newTag) {
-        Util::trim(newTag);
-        if (!newTag.empty()) {
-            metadata.tags.emplace_back(newTag); newTag.clear();
-        }
-        ImGui::ActivateItem(ImGui::GetID("##Tag"));
-    };
 
-    if (ImGui::InputText("##Tag", &newTag, ImGuiInputTextFlags_EnterReturnsTrue)) {
-        addTag(newTag);
-    };
-    ImGui::SameLine();
-    if (ImGui::Button("Add", ImVec2(-1.f, 0.f))) { 
-        addTag(newTag);
-    }
+        renderTagButtons(metadata.performers);
+        ImGui::NewLine();
     
-    auto& style = ImGui::GetStyle();
-
-    renderTagButtons(metadata.tags);
-    ImGui::NewLine();
-
-    ImGui::TextUnformatted("Performers");
-    static std::string newPerformer;
-    auto addPerformer = [&metadata](std::string& newPerformer) {
-        Util::trim(newPerformer);
-        if (!newPerformer.empty()) {
-            metadata.performers.emplace_back(newPerformer); newPerformer.clear(); 
-        }
-        ImGui::ActivateItem(ImGui::GetID("##Performer"));
-    };
-    if (ImGui::InputText("##Performer", &newPerformer, ImGuiInputTextFlags_EnterReturnsTrue)) {
-        addPerformer(newPerformer);
+        if (ImGui::Button("Save", ImVec2(-1.f, 0.f))) { save = true; }
+        Util::ForceMinumumWindowSize(ImGui::GetCurrentWindow());
+        ImGui::EndPopup();
     }
-    ImGui::SameLine();
-    if (ImGui::Button("Add##Performer", ImVec2(-1.f, 0.f))) {
-        addPerformer(newPerformer);
-    }
-
-
-    renderTagButtons(metadata.performers);
-    ImGui::NewLine();
-    
-    if (ImGui::Button("Save", ImVec2(-1.f, 0.f))) { save = true; }
-    Util::ForceMinumumWindowSize(ImGui::GetCurrentWindow());
-    ImGui::End();
     return save;
 }
 

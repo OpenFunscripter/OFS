@@ -120,6 +120,7 @@ void OFS_Project::Clear() noexcept
 	Funscripts.clear();
 	Funscripts.emplace_back(std::move(std::make_shared<Funscript>()));
 	Settings = OFS_ScriptSettings();
+	ProjectSettings = OFS_Project::ProjSettings();
 	FUN_ASSERT(OFS_ScriptSettings::player != nullptr, "player not set");
 	*OFS_ScriptSettings::player = VideoplayerWindow::OFS_VideoPlayerSettings();
 }
@@ -127,6 +128,7 @@ void OFS_Project::Clear() noexcept
 bool OFS_Project::Load(const std::string& path) noexcept
 {
 	FUN_ASSERT(!path.empty(), "path empty");
+	Clear();
 	auto ProjectPath = Util::PathFromString(path);
 	if (ProjectPath.extension().u8string() != OFS_Project::Extension) {
 		return false;
@@ -156,14 +158,11 @@ void OFS_Project::Save(const std::string& path) noexcept
 	Valid = true;
 
 	auto app = OpenFunscripter::ptr;
-	for (auto&& script : Funscripts) {
-		script->metadata.title = Util::PathFromString(script->CurrentPath)
-			.replace_extension("")
-			.filename()
-			.u8string();
-		script->metadata.duration = app->player->getDuration();
-		Settings.last_pos_ms = app->player->getCurrentPositionMs();
-	}
+	Metadata.title = Util::PathFromString(LastPath)
+		.replace_extension("")
+		.filename()
+		.u8string();
+	Metadata.duration = app->player->getDuration();
 	Settings.last_pos_ms = app->player->getCurrentPositionMs();
 
 	size_t writtenSize = 0;
@@ -188,6 +187,9 @@ void OFS_Project::Save(const std::string& path) noexcept
 		}, w.Userdata);
 	};
 	app->IO->PushWrite(std::move(write));
+
+	// this resets HasUnsavedEdits()
+	for (auto& script : Funscripts) script->SetSavedFromOutside();
 }
 
 void OFS_Project::AddFunscript(const std::string& path) noexcept
@@ -203,7 +205,7 @@ void OFS_Project::AddFunscript(const std::string& path) noexcept
 	else {
 		// add empty script to project
 		script = std::make_shared<Funscript>();
-		script->CurrentPath = path;
+		script->UpdatePath(path);
 		Funscripts.emplace_back(std::move(script));
 		Save();
 	}
@@ -247,14 +249,22 @@ bool OFS_Project::ImportFunscript(const std::string& path) noexcept
 bool OFS_Project::Import(const std::string& path) noexcept
 {
 	Loaded = false;
-	std::filesystem::path basePath = Util::PathFromString(path);
+
+	auto basePath = Util::PathFromString(path);
+	LastPath = basePath.replace_extension("").u8string() + OFS_Project::Extension;
+	if (Util::FileExists(LastPath)) {
+		// there already exists a project file 
+		// and we don't want to overwrite it
+		return false;
+	}
+
+	basePath = Util::PathFromString(path);
 	if (basePath.extension().u8string() == ".funscript") {
 		LoadScripts(path);
 	}
 	else {
 		// assume media
 		MediaPath = path;
-		LastPath = basePath.replace_extension("").u8string() + OFS_Project::Extension;
 		basePath.replace_extension(".funscript");
 		LoadScripts(basePath.u8string());
 	}
@@ -264,6 +274,7 @@ bool OFS_Project::Import(const std::string& path) noexcept
 void OFS_Project::ExportFunscript(const std::string& outputPath, int idx) noexcept
 {
 	FUN_ASSERT(idx >= 0 && idx < Funscripts.size(), "out of bounds");
+	Funscripts[idx]->LocalMetadata = Metadata; // copy metadata
 	Funscripts[idx]->save(outputPath);
 }
 
@@ -271,7 +282,8 @@ void OFS_Project::ExportFunscripts(const std::string& outputPath) noexcept
 {
 	auto outPath = Util::PathFromString(outputPath);
 	for (auto& script : Funscripts) {
-		auto savePath =  outPath / (Util::Filename(script->CurrentPath) + ".funscript");
+		auto savePath =  outPath / (script->Title + ".funscript");
+		script->LocalMetadata = Metadata; // copy metadata
 		script->save(savePath.u8string());
 	}
 }
@@ -280,9 +292,20 @@ void OFS_Project::ExportFunscripts() noexcept
 {
 	for (auto& script : Funscripts)
 	{
-		FUN_ASSERT(!script->CurrentPath.empty(), "path is empty");
-		if (!script->CurrentPath.empty()) {
-			script->save(script->CurrentPath);
+		FUN_ASSERT(!script->Path().empty(), "path is empty");
+		if (!script->Path().empty()) {
+			script->LocalMetadata = Metadata; // copy metadata
+			script->save(script->Path());
 		}
 	}
+}
+
+bool OFS_Project::HasUnsavedEdits() noexcept
+{
+	bool unsavedChanges = false;
+	for (auto&& script : Funscripts) {
+		unsavedChanges = unsavedChanges || script->HasUnsavedEdits();
+		if (unsavedChanges) break;
+	}
+	return unsavedChanges;
 }

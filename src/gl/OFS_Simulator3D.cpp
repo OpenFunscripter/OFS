@@ -222,12 +222,12 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
 
             auto ScriptCombo = [&](auto Id, int32_t* index) {
                 //auto app = OpenFunscripter::ptr;
-                if (ImGui::BeginCombo(Id, *index >= 0 && *index < loadedScriptsCount ? scripts[*index]->metadata.title.c_str() : "None", ImGuiComboFlags_PopupAlignLeft)) {
+                if (ImGui::BeginCombo(Id, *index >= 0 && *index < loadedScriptsCount ? scripts[*index]->Title.c_str() : "None", ImGuiComboFlags_PopupAlignLeft)) {
                     if (ImGui::Selectable("None", *index < 0) || ImGui::IsItemHovered()) {
                         *index = -1;
                     }
                     for (int i = 0; i < loadedScriptsCount; i++) {
-                        if (ImGui::Selectable(scripts[i]->metadata.title.c_str(), *index == i) || ImGui::IsItemHovered()) {
+                        if (ImGui::Selectable(scripts[i]->Title.c_str(), *index == i) || ImGui::IsItemHovered()) {
                             *index = i;
                         }
                     }

@@ -361,6 +361,8 @@ public:
 	static void YesNoCancelDialog(const std::string& title, const std::string& message,
 		YesNoDialogResultHandler&& handler);
 
+	static void MessageBoxAlert(const std::string& title, const std::string& message) noexcept;
+
 	static std::string Resource(const std::string& path) noexcept;
 
 	static std::string Prefpath(const std::string& path) noexcept {

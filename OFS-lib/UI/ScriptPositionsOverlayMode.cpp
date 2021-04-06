@@ -287,7 +287,7 @@ void BaseOverlay::DrawHeightLines(const OverlayDrawingCtx& ctx) noexcept
 void BaseOverlay::DrawScriptLabel(const OverlayDrawingCtx& ctx) noexcept
 {
     auto& style = ImGui::GetStyle();
-    auto& title = ctx.script->metadata.title;
+    auto& title = ctx.script->Title;
     auto textSize = ImGui::CalcTextSize(title.c_str());
     ctx.draw_list->AddText(
         ctx.canvas_pos + ctx.canvas_size - style.FramePadding - textSize,

@@ -1,5 +1,6 @@
 #include "OFS_Util.h"
 #include "OFS_Util.h"
+#include "OFS_Util.h"
 
 #include "EventSystem.h"
 
@@ -30,6 +31,14 @@
 #include "utf8.h"
 
 char Util::FormatBuffer[4096];
+
+
+static void SanitizeString(std::string& str) noexcept
+{
+	// tinyfiledialogs doesn't like quotes
+	std::replace(str.begin(), str.end(), '\"', ' ');
+	std::replace(str.begin(), str.end(), '\'', ' ');
+}
 
 bool Util::LoadTextureFromFile(const char* filename, unsigned int* out_texture, int* out_width, int* out_height) noexcept
 {
@@ -242,8 +251,8 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
 				data->path = "";
 			}
 		}
-		std::replace(data->path.begin(), data->path.end(), '\"', ' ');
-		std::replace(data->path.begin(), data->path.end(), '\'', ' ');
+
+		SanitizeString(data->path);
 
 		auto result = tinyfd_saveFileDialog(data->title.c_str(), data->path.c_str(), data->filters.size(), data->filters.data(), !data->filterText.empty() ? data->filterText.c_str() : NULL);
 
@@ -368,6 +377,33 @@ void Util::YesNoCancelDialog(const std::string& title, const std::string& messag
 		handler(result);
 	};
 	auto handle = SDL_CreateThread(thread, "YesNoCancelDialog", threadData);
+	SDL_DetachThread(handle);
+}
+
+void Util::MessageBoxAlert(const std::string& title, const std::string& message) noexcept
+{
+	struct MessageBoxData
+	{
+		std::string title;
+		std::string message;
+	};
+
+	auto thread = [](void* data) -> int
+	{
+		MessageBoxData* msg = (MessageBoxData*)data;
+
+		SanitizeString(msg->title);
+		SanitizeString(msg->message);
+		tinyfd_messageBox(msg->title.c_str(), msg->message.c_str(), "ok", "info", 1);
+
+		delete msg;
+		return 0;
+	};
+
+	auto threadData = new MessageBoxData;
+	threadData->title = title;
+	threadData->message = message;
+	auto handle = SDL_CreateThread(thread, "MessageBoxAlert", threadData);
 	SDL_DetachThread(handle);
 }
 

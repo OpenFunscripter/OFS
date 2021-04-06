@@ -90,7 +90,9 @@ public:
 					s.value8b(o.duration);
 				});
 		}
-	} metadata;
+	};
+	// this is used when loading from json or serializing to json
+	Funscript::Metadata LocalMetadata;
 
 	template<typename S>
 	void serialize(S& s)
@@ -98,8 +100,9 @@ public:
 		s.ext(*this, bitsery::ext::Growable{},
 			[](S& s, Funscript& o) {
 				s.container(o.data.Actions, o.data.Actions.max_size());
-				s.object(o.metadata);
+				// Metadata is centralized in OFS_Project
 				s.text1b(o.CurrentPath, o.CurrentPath.max_size());
+				s.text1b(o.Title, o.Title.max_size());
 			});
 	}
 
@@ -148,6 +151,8 @@ private:
 	void startSaveThread(const std::string& path, std::vector<FunscriptAction>&& actions, nlohmann::json&& json) noexcept;
 	
 	bool SplineNeedsUpdate = true;
+	
+	std::string CurrentPath;
 public:
 	Funscript();
 	~Funscript();
@@ -163,11 +168,23 @@ public:
 
 	FunscriptSpline ScriptSpline;
 	std::unique_ptr<FunscriptUndoSystem> undoSystem;
-	std::string CurrentPath;
+
+	std::string Title;
 	bool Enabled = true;
 
-	inline void rollback(const FunscriptData& data) noexcept { this->data = data; NotifyActionsChanged(true); }
+	inline void UpdatePath(const std::string& path) noexcept	{
+		CurrentPath = path;
+		Title = Util::PathFromString(CurrentPath)
+			.replace_extension("")
+			.filename()
+			.u8string();
+	}
 
+	inline void SetSavedFromOutside() noexcept { unsavedEdits = false;	}
+
+	inline const std::string& Path() const noexcept { return CurrentPath; }
+
+	inline void rollback(const FunscriptData& data) noexcept { this->data = data; NotifyActionsChanged(true); }
 	void update() noexcept;
 
 	bool open(const std::string& file);
@@ -253,7 +270,7 @@ public:
 inline bool Funscript::open(const std::string& file)
 {
 	OFS_BENCHMARK(__FUNCTION__);
-	CurrentPath = file;
+	UpdatePath(file);
 	scriptOpened = true;
 
 	{
@@ -284,13 +301,6 @@ inline bool Funscript::open(const std::string& file)
 	data.Actions.assign(actionSet.begin(), actionSet.end());
 
 	loadMetadata();
-
-	if (metadata.title.empty()) {
-		metadata.title = Util::PathFromString(CurrentPath)
-			.replace_extension("")
-			.filename()
-			.string();
-	}
 
 	NotifyActionsChanged(false);
 

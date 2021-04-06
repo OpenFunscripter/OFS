@@ -25,8 +25,26 @@ public:
 
 	bool Valid = false;
 	bool Loaded = false;
+
+	struct ProjSettings
+	{
+		// when this is true
+		// the user gets nudged to enter metadata
+		bool NudgeMetadata = true;
+
+		template<typename S>
+		void serialize(S& s)
+		{
+			s.ext(*this, bitsery::ext::Growable{},
+				[](S& s, ProjSettings& o) {
+					s.boolValue(o.NudgeMetadata);
+				});
+		}
+	} ProjectSettings;
+
 	std::string LastPath;
 	OFS_ScriptSettings Settings;
+	Funscript::Metadata Metadata;
 	std::vector<std::shared_ptr<Funscript>> Funscripts;
 	std::string MediaPath;
 
@@ -51,6 +69,8 @@ public:
 	void ExportFunscripts(const std::string& outputPath) noexcept;
 	void ExportFunscripts() noexcept;
 
+	bool HasUnsavedEdits() noexcept;
+
 	template<typename S>
 	void serialize(S& s)
 	{
@@ -68,6 +88,8 @@ public:
 					[](S& s, std::shared_ptr<Funscript>& script) {
 					s.ext(script, bitsery::ext::StdSmartPtr{});
 				});
+				s.object(o.Metadata);
+				s.object(o.ProjectSettings);
 				o.Valid = true;
 			});
 	}

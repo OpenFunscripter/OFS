@@ -102,7 +102,7 @@ private:
 	void saveProject() noexcept;
 	void quickExport() noexcept;
 
-	void closeProject() noexcept;
+	bool closeProject() noexcept;
 
 	void saveHeatmap(const char* path, int width, int height);
 	void updateTitle() noexcept;
@@ -111,16 +111,19 @@ private:
 	void removeAction() noexcept;
 	void addEditAction(int pos) noexcept;
 
-	void showOpenFileDialog();
+	//void showOpenFileDialog();
 	void saveActiveScriptAs();
-	bool openFile(const std::string& file);
+
+	bool openFile(const std::string& file) noexcept;
+	bool importFile(const std::string& file) noexcept;
+	bool openProject(const std::string& file) noexcept;
+	void initProject() noexcept;
 	
 	void SetFullscreen(bool fullscreen);
 
 
 	void setupDefaultLayout(bool force) noexcept;
-
-	void clearLoadedScripts() noexcept;
+	//void clearLoadedScripts() noexcept;
 
 	// UI
 	void CreateDockspace() noexcept;

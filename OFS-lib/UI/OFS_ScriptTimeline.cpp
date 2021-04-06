@@ -282,7 +282,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 		drawingCtx.scriptIdx = i;
 		drawingCtx.canvas_pos = ImGui::GetCursorScreenPos();
 		drawingCtx.canvas_size = ImVec2(availSize.x, (availSize.y - 1.f) / (float)drawingCtx.drawnScriptCount);
-		const ImGuiID itemID = ImGui::GetID(script.metadata.title.c_str());
+		const ImGuiID itemID = ImGui::GetID(script.Title.c_str());
 		ImRect itemBB(drawingCtx.canvas_pos, drawingCtx.canvas_pos + drawingCtx.canvas_size);
 		ImGui::ItemSize(itemBB);
 		if (!ImGui::ItemAdd(itemBB, itemID)) {
@@ -345,7 +345,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 		// by default it draws the frame and time dividers
 		// DrawAudioWaveform called in scripting mode to control the draw order. spaghetti
 		{
-			OFS_PROFILE(drawingCtx.script->metadata.title.c_str());
+			OFS_PROFILE(drawingCtx.script->Title.c_str());
 			overlay->DrawScriptPositionContent(drawingCtx);
 		}
 
@@ -436,12 +436,12 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 
 
 		// right click context menu
-		if (ImGui::BeginPopupContextItem(script.metadata.title.c_str()))
+		if (ImGui::BeginPopupContextItem(script.Title.c_str()))
 		{
 			if (ImGui::BeginMenu("Scripts")) {
 				for (auto&& script : *Scripts) {
 					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, drawingCtx.drawnScriptCount == 1 && script->Enabled);
-					if (ImGui::Checkbox(script->metadata.title.c_str(), &script->Enabled) && !script->Enabled) {
+					if (ImGui::Checkbox(script->Title.c_str(), &script->Enabled) && !script->Enabled) {
 						if (script.get() == activeScript) {
 							// find a enabled script which can be set active
 							for (int i = 0; i < (*Scripts).size(); i++) {

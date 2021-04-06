@@ -46,14 +46,14 @@ void Funscript::loadMetadata() noexcept
 {
 	if (Json.contains("metadata")) {
 		auto& meta = Json["metadata"];
-		OFS::serializer::load(&metadata, &meta);
+		OFS::serializer::load(&LocalMetadata, &meta);
 	}
 }
 
 void Funscript::saveMetadata() noexcept
 {
 	OFS_BENCHMARK(__FUNCTION__);
-	OFS::serializer::save(&metadata, &Json["metadata"]);
+	OFS::serializer::save(&LocalMetadata, &Json["metadata"]);
 }
 
 void Funscript::startSaveThread(const std::string& path, std::vector<FunscriptAction>&& actions, nlohmann::json&& json) noexcept

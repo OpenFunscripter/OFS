@@ -236,7 +236,7 @@ void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
             
             for (int32_t scriptIdx = 0; scriptIdx < prod.LoadedScripts.size(); scriptIdx++) {
                 if (auto script = prod.LoadedScripts[scriptIdx].lock()) {
-                    if (ImGui::MenuItem(script->metadata.title.c_str(), NULL, scriptIdx == activeIdx))
+                    if (ImGui::MenuItem(script->Title.c_str(), NULL, scriptIdx == activeIdx))
                     {
                         if (scriptIdx != activeIdx) { p.SetScript(scriptIdx); }
                         else { p.SetScript(-2); } // -1 for uninitialized & -2 for unset
@@ -397,7 +397,7 @@ void TCodePlayer::setScripts(std::vector<std::weak_ptr<const Funscript>>&& scrip
                 auto& aliases = TCodeChannels::Aliases[i];
                 for (auto& alias : aliases)
                 {
-                    if (Util::StringEndsWith(locked->metadata.title, alias)) {
+                    if (Util::StringEndsWith(locked->Title, alias)) {
                         prod.GetProd(static_cast<TChannel>(i)).SetScript(scriptIndex);
                         break;
                     }
