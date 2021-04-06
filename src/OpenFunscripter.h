@@ -28,6 +28,7 @@
 #include "OFS_Events.h"
 #include "OFS_VideoplayerControls.h"
 #include "OFS_TCode.h"
+#include "OFS_Project.h"
 
 #include <memory>
 #include <array>
@@ -97,8 +98,8 @@ private:
 	void isolateAction() noexcept;
 	void repeatLastStroke() noexcept;
 
-	void saveScript(Funscript* script, const std::string& path, bool override_location) noexcept;
-	void saveScripts() noexcept;
+	//void saveScript(Funscript* script, const std::string& path, bool override_location) noexcept;
+	void saveProject() noexcept;
 
 	void saveHeatmap(const char* path, int width, int height);
 	void updateTitle() noexcept;
@@ -127,6 +128,8 @@ private:
 public:
 	static OpenFunscripter* ptr;
 	static ImFont* DefaultFont2; // x2 size of default
+	static std::array<const char*, 6> SupportedVideoExtensions;
+	static std::array<const char*, 4> SupportedAudioExtensions;
 
 	~OpenFunscripter();
 
@@ -148,23 +151,28 @@ public:
 
 	std::unique_ptr<Simulator3D> sim3D;
 
-	std::vector<std::shared_ptr<Funscript>> LoadedFunscripts;
+	std::unique_ptr<OFS_Project> LoadedProject;
 
 	bool setup();
 	int run() noexcept;
 	void step() noexcept;
 	void shutdown() noexcept;
 
-	inline bool ScriptLoaded() const { return LoadedFunscripts.size() > 0; }
+	inline const std::vector<std::shared_ptr<Funscript>>& LoadedFunscripts() const noexcept
+	{
+		return LoadedProject->Funscripts;
+	}
+
+	inline bool ScriptLoaded() const { return LoadedFunscripts().size() > 0; }
 	inline std::shared_ptr<Funscript>& ActiveFunscript() noexcept {
 		FUN_ASSERT(ScriptLoaded(), "No script loaded");
-		return LoadedFunscripts[ActiveFunscriptIdx]; 
+		return LoadedProject->Funscripts[ActiveFunscriptIdx]; 
 	}
 
 	inline std::shared_ptr<Funscript>& RootFunscript() noexcept {
 		FUN_ASSERT(ScriptLoaded(), "No script loaded");
 		// when multiple funscripts are loaded the root funscript will store paths to the associated scripts
-		return LoadedFunscripts[0];
+		return LoadedProject->Funscripts[0];
 	}
 
 	void UpdateNewActiveScript(int32_t activeIndex) noexcept;

@@ -66,6 +66,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	implot
 	ImGuizmo
 	reproc++
+	bitsery
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)

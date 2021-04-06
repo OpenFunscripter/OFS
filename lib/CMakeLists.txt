@@ -24,6 +24,12 @@ target_include_directories(glad PUBLIC "glad/include/")
 # ==========
 add_subdirectory("glm")
 
+# ==============
+# == bitsery ===
+# ==============
+#add_library(bitsery INTERFACE)
+#target_include_directories(bitsery INTERFACE "bitsery/include")
+add_subdirectory("bitsery/")
 
 # ==============
 # == CSerial ===

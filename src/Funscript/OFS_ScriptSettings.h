@@ -54,16 +54,15 @@ struct OFS_ScriptSettings {
 			}
 		}
 
-		template <class Archive>
-		inline void reflect(Archive& ar) {
-			OFS_REFLECT(at, ar);
-			OFS_REFLECT(name, ar);
-			OFS_REFLECT(type, ar);
-
-			// HACK: convert existing bookmarks to their correct type
-			if (type != BookmarkType::START_MARKER) {
-				UpdateType();
-			}
+		template<typename S>
+		void serialize(S& s)
+		{
+			s.ext(*this, bitsery::ext::Growable{},
+				[](S& s, Bookmark& o) {
+					s.text1b(o.name, o.name.max_size());
+					s.value4b(o.at);
+					o.UpdateType();
+				});
 		}
 	};
 
@@ -76,24 +75,30 @@ struct OFS_ScriptSettings {
 		int bpm = 100;
 		float beat_offset_seconds = 0.f;
 		int multiIDX = 0;
-
-		template <class Archive>
-		inline void reflect(Archive& ar) {
-			OFS_REFLECT(bpm, ar);
-			OFS_REFLECT(beat_offset_seconds, ar);
-			OFS_REFLECT(multiIDX, ar);
+		
+		template<typename S>
+		void serialize(S& s)
+		{
+			s.ext(*this, bitsery::ext::Growable{},
+				[](S& s, TempoModeSettings& o) {
+					s.value4b(o.bpm);
+					s.value4b(o.beat_offset_seconds);
+					s.value4b(o.multiIDX);
+				});
 		}
 
 	} tempoSettings;
 
-
-	template <class Archive>
-	inline void reflect(Archive& ar) {
-		OFS_REFLECT(version, ar);
-		OFS_REFLECT(tempoSettings, ar);
-		OFS_REFLECT(Bookmarks, ar);
-		OFS_REFLECT(last_pos_ms, ar);
-		OFS_REFLECT_PTR(player, ar);
+	template<typename S>
+	void serialize(S& s)
+	{
+		s.ext(*this, bitsery::ext::Growable{},
+			[](S& s, OFS_ScriptSettings& o) {
+				s.text1b(o.version, o.version.max_size());
+				s.container(o.Bookmarks, o.Bookmarks.max_size());
+				s.value4b(o.last_pos_ms);
+				s.object(o.tempoSettings);
+			});
 	}
 
 	// bookmarks

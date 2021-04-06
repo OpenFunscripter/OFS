@@ -68,7 +68,7 @@ void ScriptingMode::DrawScriptingMode(bool* open) noexcept
     auto app = OpenFunscripter::ptr;
     ImGui::DragInt("Offset (ms)", &app->settings->data().action_insert_delay_ms);
     Util::Tooltip("Applies an offset to actions inserted while the video is playing.\n- : inserts earlier\n+ : inserts later");
-    if (app->LoadedFunscripts.size() > 1) {
+    if (app->LoadedFunscripts().size() > 1) {
         ImGui::Checkbox("Mirror mode", &OpenFunscripter::ptr->settings->data().mirror_mode);
         Util::Tooltip("Mirrors add/edit/remove action across all loaded scripts.");
     }
@@ -267,7 +267,7 @@ inline void RecordingImpl::finishSingleAxisRecording() noexcept
     int32_t offsetMs = app->settings->data().action_insert_delay_ms;
     if (app->settings->data().mirror_mode) {
         app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, true, app->ActiveFunscript().get());
-        for (auto&& script : app->LoadedFunscripts) {
+        for (auto&& script : app->LoadedFunscripts()) {
             for (auto&& actionP : app->scriptPositions.RecordingBuffer) {
                 auto& action = actionP.first;
                 if (action.at >= 0) {
@@ -297,8 +297,8 @@ inline void RecordingImpl::finishTwoAxisRecording() noexcept
     app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, true, nullptr);
     int32_t rollIdx = app->sim3D->rollIndex;
     int32_t pitchIdx = app->sim3D->pitchIndex;
-    if (rollIdx > 0 && rollIdx < app->LoadedFunscripts.size()) {
-        auto& script = app->LoadedFunscripts[rollIdx];
+    if (rollIdx > 0 && rollIdx < app->LoadedFunscripts().size()) {
+        auto& script = app->LoadedFunscripts()[rollIdx];
         for (auto&& actionP : app->scriptPositions.RecordingBuffer) {
             auto& actionX = actionP.first;
             if (actionX.at >= 0) {
@@ -307,8 +307,8 @@ inline void RecordingImpl::finishTwoAxisRecording() noexcept
             }
         }
     }
-    if (pitchIdx > 0 && pitchIdx < app->LoadedFunscripts.size()) {
-        auto& script = app->LoadedFunscripts[pitchIdx];
+    if (pitchIdx > 0 && pitchIdx < app->LoadedFunscripts().size()) {
+        auto& script = app->LoadedFunscripts()[pitchIdx];
         for (auto&& actionP : app->scriptPositions.RecordingBuffer) {
             auto& actionY = actionP.second;
             if (actionY.at >= 0) {

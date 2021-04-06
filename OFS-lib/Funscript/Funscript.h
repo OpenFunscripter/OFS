@@ -4,6 +4,7 @@
 #include "FunscriptAction.h"
 #include "OFS_Reflection.h"
 #include "OFS_Serialization.h"
+#include "OFS_BinarySerialization.h"
 
 #include <vector>
 #include <string>
@@ -66,9 +67,42 @@ public:
 
 		bool loadFromFunscript(const std::string& path) noexcept;
 		bool writeToFunscript(const std::string& path) noexcept;
+
+		template<typename S>
+		void serialize(S& s)
+		{
+			s.ext(*this, bitsery::ext::Growable{},
+				[](S& s, Metadata& o) {
+					s.container(o.tags, o.tags.max_size(), [](S& s, std::string& tag) {
+						s.text1b(tag, tag.max_size());
+						});
+					s.container(o.performers, o.performers.max_size(), [](S& s, std::string& performer) {
+						s.text1b(performer, performer.max_size());
+						});
+					s.text1b(o.type, o.type.max_size());
+					s.text1b(o.title, o.title.max_size());
+					s.text1b(o.creator, o.creator.max_size());
+					s.text1b(o.script_url, o.script_url.max_size());
+					s.text1b(o.video_url, o.video_url.max_size());
+					s.text1b(o.description, o.description.max_size());
+					s.text1b(o.license, o.license.max_size());
+					s.text1b(o.notes, o.notes.max_size());
+					s.value8b(o.duration);
+				});
+		}
 	} metadata;
 
-	std::shared_ptr<void> userdata = nullptr;
+	template<typename S>
+	void serialize(S& s)
+	{
+		s.ext(*this, bitsery::ext::Growable{},
+			[](S& s, Funscript& o) {
+				s.container(o.data.Actions, o.data.Actions.max_size());
+				s.object(o.metadata);
+				s.text1b(o.CurrentPath, o.CurrentPath.max_size());
+			});
+	}
+
 private:
 	nlohmann::json Json;
 	nlohmann::json BaseLoaded = nlohmann::json::object();
@@ -111,12 +145,6 @@ private:
 	void loadMetadata() noexcept;
 	void saveMetadata() noexcept;
 
-	template<class UserSettings>
-	void loadSettings(const std::string& name, UserSettings* user) noexcept;
-
-	template<class UserSettings>
-	void saveSettings(const std::string& name, UserSettings* user) noexcept;
-
 	void startSaveThread(const std::string& path, std::vector<FunscriptAction>&& actions, nlohmann::json&& json) noexcept;
 	
 	bool SplineNeedsUpdate = true;
@@ -135,27 +163,16 @@ public:
 
 	FunscriptSpline ScriptSpline;
 	std::unique_ptr<FunscriptUndoSystem> undoSystem;
-	std::string current_path;
+	std::string CurrentPath;
 	bool Enabled = true;
-
-	template<class UserType>
-	inline UserType& Userdata() noexcept;
-
-	template<class UserType>
-	inline void AllocUser() noexcept;
 
 	inline void rollback(const FunscriptData& data) noexcept { this->data = data; NotifyActionsChanged(true); }
 
 	void update() noexcept;
 
-	template<class UserType>
-	bool open(const std::string& file, const std::string& usersettings);
-
-	template<class UserType>
-	void save(const std::string& usersettings) noexcept { save<UserType>(current_path, usersettings, true); }
-
-	template<class UserType>
-	void save(const std::string& path, const std::string& usersettings, bool override_location = true);
+	bool open(const std::string& file);
+	void save() noexcept { save(CurrentPath, true); }
+	void save(const std::string& path, bool override_location = true);
 	
 	void saveMinium(const std::string& path) noexcept;
 
@@ -234,41 +251,10 @@ public:
 	}
 };
 
-
-template<class UserSettings>
-void Funscript::loadSettings(const std::string& name, UserSettings* user) noexcept {
-	if (Json.contains(name)) {
-		auto& settings = Json[name];
-		OFS::serializer::load(user, &settings);
-	}
-}
-
-template<class UserSettings>
-void Funscript::saveSettings(const std::string& name, UserSettings* user) noexcept
+inline bool Funscript::open(const std::string& file)
 {
 	OFS_BENCHMARK(__FUNCTION__);
-	OFS::serializer::save(user, &Json[name]);
-}
-
-template<class UserSettings>
-inline UserSettings& Funscript::Userdata() noexcept
-{
-	if (userdata == nullptr) { AllocUser<UserSettings>(); }
-	return *(UserSettings*)userdata.get();
-}
-
-template<class UserSettings>
-inline void Funscript::AllocUser() noexcept
-{
-	FUN_ASSERT(userdata == nullptr, "there was already userdata");
-	userdata = std::make_shared<UserSettings>();
-}
-
-template<class UserSettings>
-inline bool Funscript::open(const std::string& file, const std::string& usersettings)
-{
-	OFS_BENCHMARK(__FUNCTION__);
-	current_path = file;
+	CurrentPath = file;
 	scriptOpened = true;
 
 	{
@@ -299,11 +285,9 @@ inline bool Funscript::open(const std::string& file, const std::string& usersett
 	data.Actions.assign(actionSet.begin(), actionSet.end());
 
 	loadMetadata();
-	AllocUser<UserSettings>();	
-	loadSettings<UserSettings>(usersettings, static_cast<UserSettings*>(userdata.get()));
 
 	if (metadata.title.empty()) {
-		metadata.title = std::filesystem::path(current_path)
+		metadata.title = Util::PathFromString(CurrentPath)
 			.replace_extension("")
 			.filename()
 			.string();
@@ -319,13 +303,11 @@ inline bool Funscript::open(const std::string& file, const std::string& usersett
 	return true;
 }
 
-template<class UserSettings>
-inline void Funscript::save(const std::string& path, const std::string& usersettings, bool override_location)
+inline void Funscript::save(const std::string& path, bool override_location)
 {
 	OFS_BENCHMARK(__FUNCTION__);
 
 	saveMetadata();
-	saveSettings<UserSettings>(usersettings, static_cast<UserSettings*>(userdata.get()));
 
 	auto& actions = Json["actions"];
 	actions.clear();
@@ -334,7 +316,7 @@ inline void Funscript::save(const std::string& path, const std::string& usersett
 	sortActions(data.Actions);
 
 	if (override_location) {
-		current_path = path;
+		CurrentPath = path;
 		unsavedEdits = false;
 	}
 

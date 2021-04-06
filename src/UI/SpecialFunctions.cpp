@@ -572,7 +572,7 @@ void CustomLua::resetVM() noexcept
         int32_t totalWork = actions.size() + app->FunscriptClipboard().size();
 
         Thread.TotalActionCount = 0;
-        for (auto&& script : app->LoadedFunscripts) {
+        for (auto&& script : app->LoadedFunscripts()) {
             Thread.TotalActionCount += script->Actions().size();
         }
         
@@ -602,8 +602,8 @@ void CustomLua::resetVM() noexcept
         builder << tmp;
 
         std::unordered_set<FunscriptAction, FunscriptActionHashfunction> SelectedActions;
-        for (int i = 0; i < app->LoadedFunscripts.size(); i++) {
-            auto& loadedScript = app->LoadedFunscripts[i];
+        for (int i = 0; i < app->LoadedFunscripts().size(); i++) {
+            auto& loadedScript = app->LoadedFunscripts()[i];
             SelectedActions.clear(); SelectedActions.insert(loadedScript->Selection().begin(), loadedScript->Selection().end());
 
             builder << "table.insert(LoadedScripts,Funscript:new())\n";
@@ -611,7 +611,7 @@ void CustomLua::resetVM() noexcept
             // i+1 because lua indexing starts at 1 !!!
             stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d].title=[[%s]]\n", i+1, loadedScript->metadata.title.c_str());
             builder << tmp;
-            stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d].path=[[%s]]\n", i+1, loadedScript->current_path.c_str());
+            stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d].path=[[%s]]\n", i+1, loadedScript->CurrentPath.c_str());
             builder << tmp;
 
             for (auto&& action : loadedScript->Actions()) {
@@ -626,7 +626,7 @@ void CustomLua::resetVM() noexcept
             }
 
             if (i == scriptIndex) { 
-                stbsp_snprintf(tmp, sizeof(tmp), "CurrentScript=LoadedScripts[%d]\n", i + 1, loadedScript->current_path.c_str());
+                stbsp_snprintf(tmp, sizeof(tmp), "CurrentScript=LoadedScripts[%d]\n", i + 1, loadedScript->CurrentPath.c_str());
                 builder << tmp;
                 continue; 
             }
@@ -666,7 +666,7 @@ void CustomLua::resetVM() noexcept
 bool CollectScriptOutputs(LuaThread& thread, lua_State* L) noexcept
 {
     auto app = OpenFunscripter::ptr;
-    int32_t scriptCount = app->LoadedFunscripts.size();
+    int32_t scriptCount = app->LoadedFunscripts().size();
     char tmp[1024];
 
     int32_t size;
@@ -816,8 +816,8 @@ void CustomLua::runScript(LuaScript* script, bool dry_run) noexcept
                     std::vector<FunscriptAction> tmpBuffer;
                     app->undoSystem->Snapshot(StateType::CUSTOM_LUA, true, app->ActiveFunscript().get());
 
-                    for (int i = 0; i < app->LoadedFunscripts.size(); i++) {
-                        auto& script = app->LoadedFunscripts[i];
+                    for (int i = 0; i < app->LoadedFunscripts().size(); i++) {
+                        auto& script = app->LoadedFunscripts()[i];
                         auto& output = data.outputs[i];
 
                         tmpBuffer.clear();

@@ -2,11 +2,12 @@
 
 #include "OFS_Reflection.h"
 //#include "OFS_Serialization.h"
+#include "OFS_BinarySerialization.h"
+
 #include <cstdint>
 #include <limits>
 
 #include<functional>
-
 struct FunscriptAction
 {
 public:
@@ -14,6 +15,18 @@ public:
 	int16_t pos;
 	uint8_t flags; // unused
 	uint8_t tag;
+
+	template<typename S>
+	void serialize(S& s)
+	{
+		s.ext(*this, bitsery::ext::Growable{},
+			[](S& s, FunscriptAction& o) {
+				s.value4b(o.at);
+				s.value2b(o.pos);
+				s.value1b(o.flags);
+				s.value1b(o.tag);
+			});
+	}
 
 	FunscriptAction() noexcept
 		: at(std::numeric_limits<int32_t>::min()), pos(std::numeric_limits<int16_t>::min()), flags(0), tag(0) {

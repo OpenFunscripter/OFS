@@ -10,6 +10,7 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "UI/OpenFunscripterSettings.cpp"
 
   "ScriptingMode.cpp"
+  "OFS_Project.cpp"
   
   "UI/ScriptSimulator.cpp"
   "UI/SpecialFunctions.cpp"

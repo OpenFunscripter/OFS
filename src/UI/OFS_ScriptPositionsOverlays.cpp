@@ -82,7 +82,7 @@ void TempoOverlay::DrawSettings() noexcept
 {
     BaseOverlay::DrawSettings();
     auto app = OpenFunscripter::ptr;
-    auto& tempo = app->ActiveFunscript()->Userdata<OFS_ScriptSettings>().tempoSettings;
+    auto& tempo = app->LoadedProject->Settings.tempoSettings;
     if (ImGui::InputInt("BPM", &tempo.bpm, 1, 100)) {
         tempo.bpm = std::max(1, tempo.bpm);
     }
@@ -107,7 +107,7 @@ void TempoOverlay::DrawSettings() noexcept
 void TempoOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept
 {
     auto app = OpenFunscripter::ptr;
-    auto& tempo = app->ActiveFunscript()->Userdata<OFS_ScriptSettings>().tempoSettings;
+    auto& tempo = app->LoadedProject->Settings.tempoSettings;
     BaseOverlay::DrawHeightLines(ctx);
     timeline->DrawAudioWaveform(ctx);
     BaseOverlay::DrawActionLines(ctx);
@@ -199,7 +199,7 @@ static int32_t GetPreviousPosition(float beatTimeMs, float currentTimeMs, float 
 void TempoOverlay::nextFrame() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    auto& tempo = app->ActiveFunscript()->Userdata<OFS_ScriptSettings>().tempoSettings;
+    auto& tempo = app->LoadedProject->Settings.tempoSettings;
 
     float beatTimeMs = ((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX];
     float currentMs = app->player->getCurrentPositionMsInterp();
@@ -211,7 +211,7 @@ void TempoOverlay::nextFrame() noexcept
 void TempoOverlay::previousFrame() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    auto& tempo = app->ActiveFunscript()->Userdata<OFS_ScriptSettings>().tempoSettings;
+    auto& tempo = app->LoadedProject->Settings.tempoSettings;
 
     float beatTimeMs = ((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX];
     float currentMs = app->player->getCurrentPositionMsInterp();
@@ -223,7 +223,7 @@ void TempoOverlay::previousFrame() noexcept
 float TempoOverlay::steppingIntervalForward(float fromMs) noexcept
 {
     auto app = OpenFunscripter::ptr;
-    auto& tempo = app->ActiveFunscript()->Userdata<OFS_ScriptSettings>().tempoSettings;
+    auto& tempo = app->LoadedProject->Settings.tempoSettings;
     float beatTimeMs = ((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX];
     return GetNextPosition(beatTimeMs, fromMs, tempo.beat_offset_seconds) - fromMs;
 }
@@ -231,7 +231,7 @@ float TempoOverlay::steppingIntervalForward(float fromMs) noexcept
 float TempoOverlay::steppingIntervalBackward(float fromMs) noexcept
 {
     auto app = OpenFunscripter::ptr;
-    auto& tempo = app->ActiveFunscript()->Userdata<OFS_ScriptSettings>().tempoSettings;
+    auto& tempo = app->LoadedProject->Settings.tempoSettings;
     float beatTimeMs = ((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.multiIDX];
     return GetPreviousPosition(beatTimeMs, fromMs, tempo.beat_offset_seconds) - fromMs;
 }
