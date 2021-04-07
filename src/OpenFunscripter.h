@@ -43,6 +43,7 @@ private:
 	
 	// TODO: move this into a bitset
 	bool ShowMetadataEditor = false;
+	bool ShowProjectEditor = false;
 	bool Fullscreen = false;
 	bool DebugMetrics = false;
 	bool DebugDemo = false;
@@ -101,8 +102,9 @@ private:
 
 	void saveProject() noexcept;
 	void quickExport() noexcept;
-
 	bool closeProject() noexcept;
+	void pickDifferentMedia() noexcept;
+
 
 	void saveHeatmap(const char* path, int width, int height);
 	void updateTitle() noexcept;
@@ -111,7 +113,6 @@ private:
 	void removeAction() noexcept;
 	void addEditAction(int pos) noexcept;
 
-	//void showOpenFileDialog();
 	void saveActiveScriptAs();
 
 	bool openFile(const std::string& file) noexcept;
@@ -121,9 +122,7 @@ private:
 	
 	void SetFullscreen(bool fullscreen);
 
-
 	void setupDefaultLayout(bool force) noexcept;
-	//void clearLoadedScripts() noexcept;
 
 	// UI
 	void CreateDockspace() noexcept;

@@ -20,13 +20,11 @@ class OpenFunscripterSettings
 public:
 	struct RecentFile {
 		std::string name;
-		std::string video_path;
-		std::string script_path;
+		std::string projectPath;
 		template <class Archive>
 		inline void reflect(Archive& ar) {
 			OFS_REFLECT(name, ar);
-			OFS_REFLECT(video_path, ar);
-			OFS_REFLECT(script_path, ar);
+			OFS_REFLECT(projectPath, ar);
 		}
 	};
 private:
@@ -125,7 +123,7 @@ public:
 	inline void addRecentFile(RecentFile& recentFile) noexcept {
 		auto it = std::find_if(scripterSettings.recentFiles.begin(), scripterSettings.recentFiles.end(),
 			[&](auto& file) {
-				return file.video_path == recentFile.video_path && file.script_path == recentFile.script_path;
+				return file.projectPath == recentFile.projectPath;
 		});
 		if (it != scripterSettings.recentFiles.end()) {
 			scripterSettings.recentFiles.erase(it);

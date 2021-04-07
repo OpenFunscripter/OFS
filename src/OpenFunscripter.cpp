@@ -309,13 +309,8 @@ bool OpenFunscripter::setup()
     events->Subscribe(ScriptTimelineEvents::ActiveScriptChanged, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActiveScriptChanged));
 
     if (!settings->data().recentFiles.empty()) {
-        // cache these here because openFile overrides them
-        std::string last_video = settings->data().recentFiles.back().video_path;
-        std::string last_script = settings->data().recentFiles.back().script_path;
-        if (!last_script.empty())
-            openFile(last_script);
-        if (!last_video.empty() && player->isLoaded())
-            openFile(last_video);
+        auto& project = settings->data().recentFiles.back().projectPath;
+        if(!project.empty()) openProject(project);
     }
 
     specialFunctions = std::make_unique<SpecialFunctionsWindow>();
@@ -1374,7 +1369,7 @@ void OpenFunscripter::register_bindings()
         );
         move_or_add_point_modifier.key = Keybinding(
             0,
-            0
+            KMOD_SHIFT
         );
 
         keybinds.registerPassiveBindingGroup(std::move(group));
@@ -1511,7 +1506,7 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
     const char* VideoName = (const char*)ev.user.data1;
     if (VideoName)
     {
-        auto recentFile = OpenFunscripterSettings::RecentFile{ Util::Filename(VideoName), std::string(player->getVideoPath()), LoadedProject->LastPath };
+        auto recentFile = OpenFunscripterSettings::RecentFile{ LoadedProject->Metadata.title, LoadedProject->LastPath };
         settings->addRecentFile(recentFile);
         scriptPositions.ClearAudioWaveform();
     }
@@ -1654,6 +1649,7 @@ void OpenFunscripter::step() noexcept {
                 LoadedProject->Save();
             }
             scripting->DrawScriptingMode(NULL);
+            LoadedProject->ShowProjectWindow(&ShowProjectEditor);
 
             tcode.DrawWindow(&settings->data().show_tcode, player->getCurrentPositionMsInterp());
 
@@ -1899,7 +1895,13 @@ void OpenFunscripter::initProject() noexcept
             LoadedProject->ProjectSettings.NudgeMetadata = false;
             LoadedProject->Save();
         }
-        player->openVideo(LoadedProject->MediaPath);
+
+        if (Util::FileExists(LoadedProject->MediaPath)) {
+            player->openVideo(LoadedProject->MediaPath);
+        }
+        else {
+            pickDifferentMedia();
+        }
     }
     updateTitle();
 
@@ -1955,6 +1957,19 @@ bool OpenFunscripter::closeProject() noexcept
         updateTitle();
     }
     return true;
+}
+
+void OpenFunscripter::pickDifferentMedia() noexcept
+{
+    Util::OpenFileDialog("Pick different media", LoadedProject->MediaPath,
+        [&](auto& result)
+        {
+            if (!result.files.empty() && Util::FileExists(result.files[0])) {
+                LoadedProject->MediaPath = result.files[0];
+                LoadedProject->Save();
+                player->openVideo(LoadedProject->MediaPath);
+            }
+        }, false);
 }
 
 void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
@@ -2257,7 +2272,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                                 openProject(file);
                             }
                         }
-                    }, false);
+                    }, false, {"*.OFS"}, "Project (.OFS)");
             }
             if (ImGui::MenuItem("Import video/script", 0, false, !LoadedProject->Loaded))
             {
@@ -2271,82 +2286,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         }
                     }, false);
             }
-            Util::Tooltip("Videos & scripts get imported into a new project.");
-            if (ImGui::BeginMenu("Load...", LoadedProject->Loaded)) {
-                auto fileAlreadyLoaded = [](const std::string& path) -> bool {
-                    auto app = OpenFunscripter::ptr;
-                    auto it = std::find_if(app->LoadedFunscripts().begin(), app->LoadedFunscripts().end(),
-                        [file = std::filesystem::path(path)](auto& script) {
-                            return Util::PathFromString(script->Path()) == file;
-                        }
-                    );
-                    return it != app->LoadedFunscripts().end();
-                };
-                auto addNewShortcut = [this, fileAlreadyLoaded](const char* axisExt)
-                {
-                    if (ImGui::MenuItem(axisExt))
-                    {
-                        std::string newScriptPath;
-                        {
-                            auto root = Util::PathFromString(RootFunscript()->Path());
-                            std::stringstream ss;
-                            ss << '.' << axisExt << ".funscript";
-                            root.replace_extension(ss.str());
-                            newScriptPath = root.u8string();
-                        }
-
-                        if (!fileAlreadyLoaded(newScriptPath)) {
-                            LoadedProject->AddFunscript(newScriptPath);
-                        }
-                    }
-                };
-                if (ImGui::BeginMenu("Add...")) {
-                    for (int i = 1; i < TCodeChannels::Aliases.size() - 1; i++) {
-                        addNewShortcut(TCodeChannels::Aliases[i][2]);
-                    }
-                    addNewShortcut("raw");
-                    ImGui::EndMenu();
-                }
-                if (ImGui::MenuItem("Add new")) {
-                    Util::SaveFileDialog("Add new funscript", settings->data().last_path,
-                        [fileAlreadyLoaded](auto& result) {
-                            if (result.files.size() > 0) {
-                                auto app = OpenFunscripter::ptr;
-                                if (!fileAlreadyLoaded(result.files[0])) {
-                                    app->LoadedProject->AddFunscript(result.files[0]);
-                                }
-                            }
-                        }, { "Funscript", "*.funscript" });
-                }
-                if (ImGui::MenuItem("Add existing")) {
-                    Util::OpenFileDialog("Add existing funscripts", settings->data().last_path,
-                        [fileAlreadyLoaded](auto& result) {
-                            if (result.files.size() > 0) {
-                                for (auto&& scriptPath : result.files) {
-                                    auto app = OpenFunscripter::ptr;
-                                    if (!fileAlreadyLoaded(scriptPath)) {
-                                        app->LoadedProject->AddFunscript(scriptPath);
-                                    }
-                                }
-                            }
-                        }, true, { "*.funscript" }, "Funscript");
-                }
-                ImGui::EndMenu();
-            }
-            if (ImGui::BeginMenu("Unload", LoadedFunscripts().size() > 1)) {
-                int unloadIndex = -1;
-                for(int i=0; i < LoadedFunscripts().size(); i++) {
-                    if (ImGui::MenuItem(LoadedFunscripts()[i]->Title.c_str())) {
-                        unloadIndex = i;
-                    }
-                }
-                if (unloadIndex >= 0) {
-                    LoadedProject->RemoveFunscript(unloadIndex);
-                    if (ActiveFunscriptIdx > 0) { ActiveFunscriptIdx--; }
-                    UpdateNewActiveScript(ActiveFunscriptIdx);
-                }
-                ImGui::EndMenu();
-            }
+            Util::Tooltip(LoadedProject->Loaded ? "Close current project first." : "Videos & scripts get imported into a new project.");
             if (ImGui::BeginMenu("Recent files")) {
                 if (settings->data().recentFiles.size() == 0) {
                     ImGui::TextDisabled("%s", "No recent files");
@@ -2355,17 +2295,11 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 for (auto it = recentFiles.rbegin(); it != recentFiles.rend(); it++) {
                     auto& recent = *it;
                     if (ImGui::MenuItem(recent.name.c_str())) {
-                        if (!recent.script_path.empty())
-                            openFile(recent.script_path);
-                        if (!recent.video_path.empty())
-                            openFile(recent.video_path);
+                        if (!recent.projectPath.empty())
+                            openFile(recent.projectPath);
                     }
                 }
                 ImGui::EndMenu();
-            }
-            if (LoadedProject->Loaded && ImGui::MenuItem("Save and close project", NULL, false, LoadedProject->Loaded)) {
-                LoadedProject->Save();
-                closeProject();
             }
             ImGui::Separator();
 
@@ -2410,6 +2344,104 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem("Enable auto backup", NULL, &AutoBackup)) {}
             if (ImGui::MenuItem("Open backup directory")) {
                 Util::OpenFileExplorer(Util::Prefpath("backup").c_str());
+            }
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Project", LoadedProject->Loaded))
+        {
+            if(ImGui::MenuItem("Configure", NULL, &ShowProjectEditor)) {}
+            ImGui::Separator();
+            if (ImGui::MenuItem("Pick different media")) {
+                pickDifferentMedia();
+            }
+            if (ImGui::BeginMenu("Add...", LoadedProject->Loaded)) {
+                auto fileAlreadyLoaded = [](const std::string& path) -> bool {
+                    auto app = OpenFunscripter::ptr;
+                    auto it = std::find_if(app->LoadedFunscripts().begin(), app->LoadedFunscripts().end(),
+                        [file = std::filesystem::path(path)](auto& script) {
+                        return Util::PathFromString(script->Path()) == file;
+                    }
+                    );
+                    return it != app->LoadedFunscripts().end();
+                };
+                auto addNewShortcut = [this, fileAlreadyLoaded](const char* axisExt)
+                {
+                    if (ImGui::MenuItem(axisExt))
+                    {
+                        std::string newScriptPath;
+                        {
+                            auto root = Util::PathFromString(RootFunscript()->Path());
+                            std::stringstream ss;
+                            ss << '.' << axisExt << ".funscript";
+                            root.replace_extension(ss.str());
+                            newScriptPath = root.u8string();
+                        }
+
+                        if (!fileAlreadyLoaded(newScriptPath)) {
+                            LoadedProject->AddFunscript(newScriptPath);
+                        }
+                    }
+                };
+                if (ImGui::BeginMenu("Shortcuts")) {
+                    for (int i = 1; i < TCodeChannels::Aliases.size() - 1; i++) {
+                        addNewShortcut(TCodeChannels::Aliases[i][2]);
+                    }
+                    addNewShortcut("raw");
+                    ImGui::EndMenu();
+                }
+                if (ImGui::MenuItem("Add new")) {
+                    Util::SaveFileDialog("Add new funscript", settings->data().last_path,
+                        [fileAlreadyLoaded](auto& result) {
+                            if (result.files.size() > 0) {
+                                auto app = OpenFunscripter::ptr;
+                                if (!fileAlreadyLoaded(result.files[0])) {
+                                    app->LoadedProject->AddFunscript(result.files[0]);
+                                }
+                            }
+                        }, { "Funscript", "*.funscript" });
+                }
+                if (ImGui::MenuItem("Add existing")) {
+                    Util::OpenFileDialog("Add existing funscripts", settings->data().last_path,
+                        [fileAlreadyLoaded](auto& result) {
+                            if (result.files.size() > 0) {
+                                for (auto&& scriptPath : result.files) {
+                                    auto app = OpenFunscripter::ptr;
+                                    if (!fileAlreadyLoaded(scriptPath)) {
+                                        app->LoadedProject->AddFunscript(scriptPath);
+                                    }
+                                }
+                            }
+                        }, true, { "*.funscript" }, "Funscript");
+                }
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Remove", LoadedFunscripts().size() > 1)) {
+                int unloadIndex = -1;
+                for (int i = 0; i < LoadedFunscripts().size(); i++) {
+                    if (ImGui::MenuItem(LoadedFunscripts()[i]->Title.c_str())) {
+                        unloadIndex = i;
+                    }
+                }
+                if (unloadIndex >= 0) {
+                    Util::YesNoCancelDialog("Remove script",
+                        "If the script has not been exported this can not be reverted.\n"
+                        "Continue?", 
+                        [this, unloadIndex](Util::YesNoCancel result)
+                        {
+                            if (result == Util::YesNoCancel::Yes)
+                            {
+                                LoadedProject->RemoveFunscript(unloadIndex);
+                                if (ActiveFunscriptIdx > 0) { ActiveFunscriptIdx--; }
+                                UpdateNewActiveScript(ActiveFunscriptIdx);
+                            }
+                        });
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::Separator();
+            if (LoadedProject->Loaded && ImGui::MenuItem("Save and close project", NULL, false, LoadedProject->Loaded)) {
+                LoadedProject->Save();
+                closeProject();
             }
             ImGui::EndMenu();
         }

@@ -121,6 +121,7 @@ void OFS_Project::Clear() noexcept
 	Funscripts.emplace_back(std::move(std::make_shared<Funscript>()));
 	Settings = OFS_ScriptSettings();
 	ProjectSettings = OFS_Project::ProjSettings();
+	Metadata = Funscript::Metadata();
 	FUN_ASSERT(OFS_ScriptSettings::player != nullptr, "player not set");
 	*OFS_ScriptSettings::player = VideoplayerWindow::OFS_VideoPlayerSettings();
 }
@@ -308,4 +309,40 @@ bool OFS_Project::HasUnsavedEdits() noexcept
 		if (unsavedChanges) break;
 	}
 	return unsavedChanges;
+}
+
+void OFS_Project::ShowProjectWindow(bool* open) noexcept
+{
+	if (*open) {
+		ImGui::OpenPopup("Project");
+	}
+
+	if (ImGui::BeginPopupModal("Project", open, ImGuiWindowFlags_NoDocking))
+	{
+		auto app = OpenFunscripter::ptr;
+		ImGui::PushID(Metadata.title.c_str());
+		
+		ImGui::Text("Media: %s", MediaPath.c_str()); 
+		ImGui::Separator();
+		ImGui::Spacing();
+		ImGui::TextDisabled("Scripts");
+		for (auto& script : Funscripts) {
+			if (ImGui::Button(script->Title.c_str(), ImVec2(-1.f, 0.f))) {
+				Util::SaveFileDialog("Change defaul location",
+					script->Path(),
+					[&](auto result) {
+						if (!result.files.empty()) {
+							auto newPath = Util::PathFromString(result.files[0]);
+							if (newPath.extension().u8string() == ".funscript") {
+								script->UpdatePath(newPath.u8string());
+							}
+						}
+					});
+			}
+			Util::Tooltip(script->Path().c_str());
+		}
+		ImGui::PopID();
+		Util::ForceMinumumWindowSize(ImGui::GetCurrentWindow());
+		ImGui::EndPopup();
+	}
 }

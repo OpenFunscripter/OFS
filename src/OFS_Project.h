@@ -71,6 +71,8 @@ public:
 
 	bool HasUnsavedEdits() noexcept;
 
+	void ShowProjectWindow(bool* open) noexcept;
+
 	template<typename S>
 	void serialize(S& s)
 	{
