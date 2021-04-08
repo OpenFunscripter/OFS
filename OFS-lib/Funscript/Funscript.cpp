@@ -253,11 +253,11 @@ FunscriptAction* Funscript::getPreviousActionBehind(int32_t time_ms) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	if (!SplineNeedsUpdate) {
-		auto indexIt = ScriptSpline.ActionMap.lower_bound(time_ms);
-		if (indexIt != ScriptSpline.ActionMap.end() 
-			&& indexIt->first < time_ms) {
+		auto indexIt = ScriptSpline.ActionMap.upper_bound(time_ms);
+		if (indexIt != ScriptSpline.ActionMap.end()
+			&& indexIt->second > 0) {
 			// index is valid
-			int index = indexIt->second;
+			int index = indexIt->second-1;
 			return &data.Actions[index];
 		}
 	}
