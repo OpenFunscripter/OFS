@@ -2,6 +2,7 @@
 #include "OFS_Util.h"
 #include "SDL_events.h"
 #include "SDL_thread.h"
+#include "OFS_Profiling.h"
 
 #include <vector>
 #include <functional>
@@ -59,9 +60,9 @@ public:
 
 	void setup() noexcept;
 
-
 	inline void Propagate(SDL_Event& event) noexcept
 	{
+		OFS_PROFILE(__FUNCTION__);
 		for (auto& handler : handlers) {
 			if (handler.eventType == event.type)
 				handler.func(event);
