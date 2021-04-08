@@ -1,13 +1,8 @@
 #include "GradientBar.h"
-
+#include "OFS_Profiling.h"
 #include "imgui_internal.h"
 
 #include <algorithm>
-
-ImGradient::~ImGradient()
-{
-
-}
 
 void ImGradient::addMark(float position, ImColor const color) noexcept
 {
@@ -24,6 +19,7 @@ void ImGradient::removeMark(const ImGradientMark& mark) noexcept
 
 void ImGradient::getColorAt(float position, float* color) const noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	position = ImClamp(position, 0.0f, 1.0f);
 	int cachePos = (position * 255);
 	cachePos *= 3;
@@ -34,6 +30,8 @@ void ImGradient::getColorAt(float position, float* color) const noexcept
 
 void ImGradient::computeColorAt(float position, float* color) const noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
+
 	position = ImClamp(position, 0.0f, 1.0f);
 
 	const ImGradientMark* lower = nullptr;
@@ -93,6 +91,7 @@ void ImGradient::computeColorAt(float position, float* color) const noexcept
 
 void ImGradient::refreshCache() noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	std::sort(m_marks.begin(), m_marks.end(), [](auto& a, auto& b) { return a.position < b.position; });
 	
 	for (int i = 0; i < 256; ++i)
@@ -103,6 +102,7 @@ void ImGradient::refreshCache() noexcept
 
 void ImGradient::DrawGradientBar(ImGradient* gradient, const ImVec2& bar_pos, float maxWidth, float height) noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	ImVec4 colorA = { 1,1,1,1 };
 	ImVec4 colorB = { 1,1,1,1 };
 	float prevX = bar_pos.x;

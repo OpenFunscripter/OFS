@@ -1,7 +1,6 @@
 #pragma once
-
+#include "OFS_Profiling.h"
 #include "FunscriptAction.h"
-
 #include <vector>
 #include <map>
 #include "glm/gtx/spline.hpp"
@@ -12,6 +11,7 @@ class FunscriptSpline
 
 	inline float catmull_rom_spline(const std::vector<FunscriptAction>& actions, int32_t i, float ms) const noexcept
 	{
+		OFS_PROFILE(__FUNCTION__);
 		int i0 = glm::clamp<int>(i - 1, 0, actions.size() - 1);
 		int i1 = glm::clamp<int>(i, 0, actions.size() - 1);
 		int i2 = glm::clamp<int>(i + 1, 0, actions.size() - 1);
@@ -34,6 +34,7 @@ public:
 
 	inline void Update(const std::vector<FunscriptAction>& actions) noexcept
 	{
+		OFS_PROFILE(__FUNCTION__);
 		ActionMap.clear();
 		for (int i = 0; i < actions.size(); i++) {
 			ActionMap.emplace(actions[i].at, i);
@@ -42,6 +43,7 @@ public:
 
 	inline float Sample(const std::vector<FunscriptAction>& actions, float timeMs) noexcept 
 	{
+		OFS_PROFILE(__FUNCTION__);
 		if (actions.size() == 0) { return 0.f; }
 		else if (actions.size() == 1) { return actions.front().pos / 100.f; }
 		else if (cacheIdx + 1 >= actions.size()) { cacheIdx = 0; }
@@ -80,6 +82,7 @@ public:
 
 	inline float SampleAtIndex(const std::vector<FunscriptAction>& actions, int32_t index, float timeMs) const noexcept
 	{
+		OFS_PROFILE(__FUNCTION__);
 		if (actions.size() == 0) { return 0.f; }
 		if (index + 1 < actions.size())
 		{

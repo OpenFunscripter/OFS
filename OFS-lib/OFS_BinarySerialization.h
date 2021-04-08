@@ -11,6 +11,8 @@
 #include <vector>
 #include <cstdint>
 
+#include "OFS_Profiling.h"
+
 using ByteBuffer = std::vector<uint8_t>;
 using OutputAdapter = bitsery::OutputBufferAdapter<ByteBuffer>;
 using InputAdapter = bitsery::InputBufferAdapter<ByteBuffer>;
@@ -26,6 +28,7 @@ struct OFS_Binary
     template<typename T>
     static size_t Serialize(ByteBuffer& buffer, T& obj) noexcept
     {
+        OFS_PROFILE(__FUNCTION__);
         TContext ctx{};
 
         ContextSerializer ser{ ctx, buffer };
@@ -39,6 +42,7 @@ struct OFS_Binary
     template<typename T>
     static auto Deserialize(ByteBuffer& buffer, T& obj) noexcept
     {
+        OFS_PROFILE(__FUNCTION__);
         TContext ctx{};
         ContextDeserializer des{ ctx, buffer.begin(), buffer.size() };
         des.object(obj);

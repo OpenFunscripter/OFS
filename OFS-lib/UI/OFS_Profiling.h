@@ -6,6 +6,10 @@
 #include <string>
 #include <cstring>
 
+#if OFS_PROFILE_ENABLED == 1
+#include "Tracy.hpp"
+#endif
+
 /*
 * This is not useful in hot code paths.
 */
@@ -45,97 +49,28 @@ public:
 #define OFS_BENCHMARK(function)
 #endif
 
-
-
-class OFS_Codepath
-{
-public:
-	std::string Name;
-	int16_t Depth = 0;
-	bool Done = false;
-	std::chrono::high_resolution_clock::time_point Start;
-	std::chrono::duration<float, std::milli> Duration;
-	std::vector<OFS_Codepath> Children;
-};
-
 class OFS_Profiler
 {
-	static std::vector<OFS_Codepath> Stack;
-	static std::vector<OFS_Codepath> Frame;
-	static std::vector<OFS_Codepath> LastFrame;
-
-	static bool RecordOnce;
-	static bool Live;
-	static uint32_t EventCount;
-	static uint32_t MaxEventsAllTime;
 public:
-	inline OFS_Profiler(const std::string& Path) noexcept
+	inline static void BeginProfiling() noexcept
 	{
-		if (!Live && !RecordOnce) return;
-		OFS_Codepath newPath;
-		newPath.Name = Path;
-		newPath.Start = std::chrono::high_resolution_clock::now();
-		if (!Stack.empty())
-		{
-			if (!Stack.back().Done) {
-				newPath.Depth = Stack.back().Depth + 1;
-			}
-		}
-		Stack.emplace_back(std::move(newPath));
+		FrameMark;
 	}
-
-	inline ~OFS_Profiler() noexcept
+	inline static void EndProfiling() noexcept
 	{
-		if (!Live && !RecordOnce) return;
-		auto p = std::move(Stack.back());
-		Stack.pop_back();
-		p.Duration = std::chrono::high_resolution_clock::now() - p.Start;
-		p.Done = true;
-
-		Frame.emplace_back(std::move(p));
-	}
-
-	static void ShowProfiler() noexcept;
-
-	static void BeginProfiling() noexcept;
-	static void EndProfiling() noexcept;
-
-	inline static void BeginEvents() noexcept
-	{
-		EventCount = 0;
-	}
-
-	inline static void CountEvent() noexcept
-	{
-		++EventCount;
-	}
-
-	inline static void EndEvents() noexcept
-	{
-		if (EventCount > MaxEventsAllTime) {
-			MaxEventsAllTime = EventCount;
-		}
+		//FrameMark;
+		FrameMarkEnd(nullptr);
 	}
 };
 
 
 #if OFS_PROFILE_ENABLED == 1
-#define OFS_PROFILE(path) OFS_Profiler OFS_CONCAT(xProfilerx,__LINE__) ## ( path )
-#define OFS_SHOWPROFILER() OFS_Profiler::ShowProfiler();
+#define OFS_PROFILE(name) ZoneScopedN(name)
 #define OFS_BEGINPROFILING() OFS_Profiler::BeginProfiling()
 #define OFS_ENDPROFILING() OFS_Profiler::EndProfiling();
-
-#define OFS_BEGIN_EVENT_PROFILING() OFS_Profiler::BeginEvents()
-#define OFS_COUNT_EVENT() OFS_Profiler::CountEvent()
-#define OFS_END_EVENT_PROFILING() OFS_Profiler::EndEvents()
 #else
-#define OFS_PROFILE(path)
-#define OFS_SHOWPROFILER() 
+#define OFS_PROFILE(name)
 #define OFS_BEGINPROFILING()
 #define OFS_ENDPROFILING()
-
-#define OFS_BEGIN_EVENT_PROFILING()
-#define OFS_COUNT_EVENT()
-#define OFS_END_EVENT_PROFILING()
 #endif
 

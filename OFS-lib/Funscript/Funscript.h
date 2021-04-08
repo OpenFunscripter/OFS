@@ -131,11 +131,13 @@ private:
 	inline void sortSelection() noexcept { sortActions(data.selection); }
 	inline void sortActions(std::vector<FunscriptAction>& actions) noexcept {
 		OFS_BENCHMARK(__FUNCTION__);
+		OFS_PROFILE(__FUNCTION__);
 		std::sort(actions.begin(), actions.end(),
 			[](auto& a, auto& b) { return a.at < b.at; }
 		);
 	}
 	inline void addAction(std::vector<FunscriptAction>& actions, FunscriptAction newAction) noexcept {
+		OFS_PROFILE(__FUNCTION__);
 		auto it = std::find_if(actions.begin(), actions.end(), [&](auto& action) {
 			return newAction.at < action.at;
 			});
@@ -270,6 +272,7 @@ public:
 inline bool Funscript::open(const std::string& file)
 {
 	OFS_BENCHMARK(__FUNCTION__);
+	OFS_PROFILE(__FUNCTION__);
 	UpdatePath(file);
 	scriptOpened = true;
 
@@ -315,7 +318,7 @@ inline bool Funscript::open(const std::string& file)
 inline void Funscript::save(const std::string& path, bool override_location)
 {
 	OFS_BENCHMARK(__FUNCTION__);
-
+	OFS_PROFILE(__FUNCTION__);
 	saveMetadata();
 
 	auto& actions = Json["actions"];

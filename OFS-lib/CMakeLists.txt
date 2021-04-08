@@ -69,6 +69,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	ImGuizmo
 	reproc++
 	bitsery
+	tracy
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)

@@ -1429,12 +1429,10 @@ void OpenFunscripter::render() noexcept
 void OpenFunscripter::process_events() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    OFS_BEGIN_EVENT_PROFILING();
     SDL_Event event;
     bool IsExiting = false;
     while (SDL_PollEvent(&event))
     {
-        OFS_COUNT_EVENT();
         ImGui_ImplSDL2_ProcessEvent(&event);
         switch (event.type) {
         case SDL_QUIT:
@@ -1467,7 +1465,6 @@ void OpenFunscripter::process_events() noexcept
         }
         events->Propagate(event);
     }
-    OFS_END_EVENT_PROFILING();
 }
 
 void OpenFunscripter::FunscriptChanged(SDL_Event& ev) noexcept
@@ -1498,6 +1495,7 @@ void OpenFunscripter::DragNDrop(SDL_Event& ev) noexcept
 
 void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     LoadedProject->Metadata.duration = player->getDuration();
     ActiveFunscript()->reserveActionMemory(player->getTotalNumFrames());
     player->setPositionExact(LoadedProject->Settings.lastPlayerPositionMs);
@@ -1521,6 +1519,7 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
 
 void OpenFunscripter::MpvPlayPauseChange(SDL_Event& ev) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     if ((intptr_t)ev.user.data1) // true == paused
     {
         tcode.stop();
@@ -1551,6 +1550,7 @@ void OpenFunscripter::autoBackup() noexcept
     if (ActiveFunscript()->Path().empty()) { return; }
     std::chrono::duration<float> timeSinceBackup = std::chrono::steady_clock::now() - lastBackup;
     if (timeSinceBackup.count() < 61.f) { return; }
+    OFS_PROFILE(__FUNCTION__);
     OFS_BENCHMARK(__FUNCTION__);
     lastBackup = std::chrono::steady_clock::now();
 
@@ -1634,8 +1634,6 @@ void OpenFunscripter::step() noexcept {
         new_frame();
         {
             OFS_PROFILE("ImGui");
-            OFS_SHOWPROFILER();
-
             // IMGUI HERE
             CreateDockspace();
             sim3D->ShowWindow(&settings->data().show_simulator_3d, player->getCurrentPositionMsInterp(), BaseOverlay::SplineMode, LoadedProject->Funscripts);
@@ -1670,7 +1668,7 @@ void OpenFunscripter::step() noexcept {
 
             auto drawBookmarks = [&](ImDrawList* draw_list, const ImRect& frame_bb, bool item_hovered) noexcept
             {
-                OFS_PROFILE("drawBookmarks");
+                OFS_PROFILE("DrawBookmarks");
 
                 auto& style = ImGui::GetStyle();
                 bool show_text = item_hovered || settings->data().always_show_bookmark_labels;
@@ -1742,8 +1740,7 @@ void OpenFunscripter::step() noexcept {
             }
             scriptPositions.ShowScriptPositions(NULL, player->getCurrentPositionMsInterp(), player->getDuration() * 1000.f, player->getFrameTimeMs(), &LoadedFunscripts(), ActiveFunscriptIdx);
 
-            if (settings->data().show_action_editor)
-            {
+            if (settings->data().show_action_editor) {
                 ImGui::Begin(ActionEditorId, &settings->data().show_action_editor);
                 OFS_PROFILE(ActionEditorId);
 
@@ -1845,21 +1842,22 @@ void OpenFunscripter::SetCursorType(ImGuiMouseCursor id) noexcept
 
 void OpenFunscripter::Undo() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     if(undoSystem->Undo(ActiveFunscript().get())) scripting->undo();
 }
 
 void OpenFunscripter::Redo() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     if(undoSystem->Redo(ActiveFunscript().get())) scripting->redo();
 }
 
 bool OpenFunscripter::openFile(const std::string& file) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     if (!Util::FileExists(file)) return false;
-    
     std::filesystem::path filePath = Util::PathFromString(file);
-
-    if (filePath.extension().u8string() == OFS_Project::Extension) {
+        if (filePath.extension().u8string() == OFS_Project::Extension) {
         return openProject(filePath.u8string());
     }
     else {
@@ -1869,6 +1867,7 @@ bool OpenFunscripter::openFile(const std::string& file) noexcept
 
 bool OpenFunscripter::importFile(const std::string& file) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     closeProject();
     if (!LoadedProject->Import(file))
     {
@@ -1885,6 +1884,7 @@ bool OpenFunscripter::importFile(const std::string& file) noexcept
 
 bool OpenFunscripter::openProject(const std::string& file) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     closeProject();
     if (!LoadedProject->Load(file)) {
         Util::MessageBoxAlert("Failed to load", "The project failed to load.\nfuck.");
@@ -1897,6 +1897,7 @@ bool OpenFunscripter::openProject(const std::string& file) noexcept
 
 void OpenFunscripter::initProject() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     if (LoadedProject->Loaded) {
         if (LoadedProject->ProjectSettings.NudgeMetadata) {
             ShowMetadataEditor = true;
@@ -1939,18 +1940,21 @@ void OpenFunscripter::updateTitle() noexcept
 
 void OpenFunscripter::saveProject() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     OFS_BENCHMARK(__FUNCTION__);
     LoadedProject->Save();
 }
 
 void OpenFunscripter::quickExport() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     LoadedProject->Save();
     LoadedProject->ExportFunscripts();
 }
 
 bool OpenFunscripter::closeProject() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     if (LoadedProject->HasUnsavedEdits())
     {
         FUN_ASSERT(false, "not implemented");
@@ -1982,6 +1986,7 @@ void OpenFunscripter::pickDifferentMedia() noexcept
 
 void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
 {
+    OFS_PROFILE(__FUNCTION__);
     SDL_Surface* surface;
     Uint32 rmask, gmask, bmask, amask;
 
@@ -2039,12 +2044,14 @@ void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
 
 void OpenFunscripter::removeAction(FunscriptAction action) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     undoSystem->Snapshot(StateType::REMOVE_ACTION, false, ActiveFunscript().get());
     ActiveFunscript()->RemoveAction(action);
 }
 
 void OpenFunscripter::removeAction() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     if (settings->data().mirror_mode && !ActiveFunscript()->HasSelection()) {
         undoSystem->Snapshot(StateType::REMOVE_ACTION, true, ActiveFunscript().get());
         for (auto&& script : LoadedFunscripts()) {
@@ -2070,6 +2077,7 @@ void OpenFunscripter::removeAction() noexcept
 
 void OpenFunscripter::addEditAction(int pos) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     if (settings->data().mirror_mode) {
         int32_t currentActiveScriptIdx = ActiveFunscriptIndex();
         undoSystem->Snapshot(StateType::ADD_EDIT_ACTIONS, true, ActiveFunscript().get());
@@ -2087,6 +2095,7 @@ void OpenFunscripter::addEditAction(int pos) noexcept
 
 void OpenFunscripter::cutSelection() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     if (ActiveFunscript()->HasSelection()) {
         copySelection();
         undoSystem->Snapshot(StateType::CUT_SELECTION, false, ActiveFunscript().get());
@@ -2096,6 +2105,7 @@ void OpenFunscripter::cutSelection() noexcept
 
 void OpenFunscripter::copySelection() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     if (ActiveFunscript()->HasSelection()) {
         CopiedSelection.clear();
         for (auto action : ActiveFunscript()->Selection()) {
@@ -2106,6 +2116,7 @@ void OpenFunscripter::copySelection() noexcept
 
 void OpenFunscripter::pasteSelection() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     if (CopiedSelection.size() == 0) return;
     undoSystem->Snapshot(StateType::PASTE_COPIED_ACTIONS, false, ActiveFunscript().get());
     // paste CopiedSelection relatively to position
@@ -2126,6 +2137,7 @@ void OpenFunscripter::pasteSelection() noexcept
 }
 
 void OpenFunscripter::pasteSelectionExact() noexcept {
+    OFS_PROFILE(__FUNCTION__);
     if (CopiedSelection.size() == 0) return;
     
     if (CopiedSelection.size() >= 2)
@@ -2141,8 +2153,8 @@ void OpenFunscripter::pasteSelectionExact() noexcept {
     }
 }
 
-void OpenFunscripter::equalizeSelection() noexcept
-{
+void OpenFunscripter::equalizeSelection() noexcept {
+    OFS_PROFILE(__FUNCTION__);
     if (!ActiveFunscript()->HasSelection()) {
         undoSystem->Snapshot(StateType::EQUALIZE_ACTIONS, false, ActiveFunscript().get());
         // this is a small hack
@@ -2167,8 +2179,8 @@ void OpenFunscripter::equalizeSelection() noexcept
     }
 }
 
-void OpenFunscripter::invertSelection() noexcept
-{
+void OpenFunscripter::invertSelection() noexcept {
+    OFS_PROFILE(__FUNCTION__);
     if (!ActiveFunscript()->HasSelection()) {
         // same hack as above 
         auto closest = ActiveFunscript()->GetClosestAction(player->getCurrentPositionMsInterp());
@@ -2185,8 +2197,8 @@ void OpenFunscripter::invertSelection() noexcept
     }
 }
 
-void OpenFunscripter::isolateAction() noexcept
-{
+void OpenFunscripter::isolateAction() noexcept {
+    OFS_PROFILE(__FUNCTION__);
     auto closest = ActiveFunscript()->GetClosestAction(player->getCurrentPositionMsInterp());
     if (closest != nullptr) {
         undoSystem->Snapshot(StateType::ISOLATE_ACTION, false, ActiveFunscript().get());
@@ -2203,8 +2215,8 @@ void OpenFunscripter::isolateAction() noexcept
     }
 }
 
-void OpenFunscripter::repeatLastStroke() noexcept
-{
+void OpenFunscripter::repeatLastStroke() noexcept {
+    OFS_PROFILE(__FUNCTION__);
     auto stroke = ActiveFunscript()->GetLastStroke(player->getCurrentPositionMsInterp());
     if (stroke.size() > 1) {
         int32_t offset_ms = player->getCurrentPositionMsInterp() - stroke.back().at;
@@ -2229,8 +2241,7 @@ void OpenFunscripter::repeatLastStroke() noexcept
     }
 }
 
-void OpenFunscripter::saveActiveScriptAs()
-{
+void OpenFunscripter::saveActiveScriptAs() {
     std::filesystem::path path = Util::PathFromString(ActiveFunscript()->Path());
     path.make_preferred();
     Util::SaveFileDialog("Save", path.u8string(),
@@ -2247,7 +2258,7 @@ void OpenFunscripter::saveActiveScriptAs()
 void OpenFunscripter::ShowMainMenuBar() noexcept
 {
 #define BINDING_STRING(binding) keybinds.getBindingString(binding) 
-    
+    OFS_PROFILE(__FUNCTION__);
     ImColor alertCol(ImGui::GetStyle().Colors[ImGuiCol_MenuBarBg]);
     std::chrono::duration<float> saveDuration;
     bool unsavedEdits = LoadedProject->HasUnsavedEdits();

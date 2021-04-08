@@ -1,7 +1,5 @@
 #pragma once
-
 #include <vector>
-
 #include "imgui.h"
 
 // lifted from: https://gist.github.com/galloscript/8a5d179e432e062550972afcd1ecf112
@@ -12,7 +10,7 @@ struct ImGradientMark
     float color[4];
     float position; //0 to 1
 
-    ImGradientMark(float r, float g, float b, float a, float pos) {
+    ImGradientMark(float r, float g, float b, float a, float pos) noexcept {
         color[0] = r;
         color[1] = g;
         color[2] = b;
@@ -20,7 +18,7 @@ struct ImGradientMark
         position = pos;
     }
 
-    inline bool operator==(const ImGradientMark& b) const {
+    inline bool operator==(const ImGradientMark& b) const noexcept {
         return this->position == b.position
             && this->color[0] == b.color[0]
             && this->color[1] == b.color[1]
@@ -35,7 +33,7 @@ class ImGradient
 {
 public:
     ImGradient() noexcept {}
-    ~ImGradient();
+    ~ImGradient() noexcept {};
 
     void getColorAt(float position, float* color) const noexcept;
     void addMark(float position, ImColor const color) noexcept;

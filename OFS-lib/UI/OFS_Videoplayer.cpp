@@ -40,6 +40,7 @@ static void on_mpv_render_update(void* ctx)
 void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 {
 	if (ev.user.data1 != this) return;
+	OFS_PROFILE(__FUNCTION__);
 	while (1) {
 		mpv_event* mp_event = mpv_wait_event(mpv, 0);
 		if (mp_event->event_id == MPV_EVENT_NONE)
@@ -214,6 +215,7 @@ void VideoplayerWindow::observeProperties() noexcept
 
 void VideoplayerWindow::renderToTexture() noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	redrawVideo = false;
 	mpv_opengl_fbo fbo{ 0 };
 	fbo.fbo = framebufferObj; fbo.w = MpvData.video_width; fbo.h = MpvData.video_height;

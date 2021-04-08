@@ -55,7 +55,6 @@ public:
 	virtual void addEditAction(FunscriptAction action) noexcept override;
 };
 
-
 class AlternatingImpl : public ScripingModeBaseImpl
 {
 	int32_t fixedBottom = 0;

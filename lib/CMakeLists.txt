@@ -233,6 +233,22 @@ target_include_directories(implot PUBLIC "implot")
 target_link_libraries(implot PUBLIC imgui)
 target_compile_features(implot PUBLIC cxx_std_17)
 
+
+# =============
+# === tracy ===
+# =============
+set(tracy_SOURCES
+	"tracy/TracyClient.cpp"
+)
+set(tracy_HEADERS
+	"tracy/Tracy.hpp"
+)
+add_library(tracy STATIC ${tracy_SOURCES} ${tracy_HEADERS})
+target_include_directories(tracy PUBLIC "tracy/")
+if(OFS_PROFILE)
+target_compile_definitions(tracy PUBLIC "TRACY_ENABLE")
+endif()
+
 # ============
 # = ImGuizmo =
 # ============

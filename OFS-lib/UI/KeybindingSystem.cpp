@@ -68,6 +68,7 @@ void KeybindingSystem::handleBindingModification(SDL_Event& ev, uint16_t modstat
 {
     auto& key = ev.key;
     if (key.repeat) return;
+    OFS_PROFILE(__FUNCTION__);
     if (key.keysym.sym == SDLK_ESCAPE) {
         if (changingController) {
             currentlyChanging->controller.button = SDL_CONTROLLER_BUTTON_INVALID;
@@ -140,6 +141,7 @@ void KeybindingSystem::handlePassiveBindingModification(SDL_Event& ev, uint16_t 
 {
     auto& key = ev.key;
     if (key.repeat) return;
+    OFS_PROFILE(__FUNCTION__);
     currentlyHeldKeys.str("");
 
     if (modstate & KMOD_CTRL) {
@@ -195,9 +197,9 @@ void KeybindingSystem::setup(EventSystem& events)
 
 void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     auto key = ev.key;
     auto modstate = GetModifierState(key.keysym.mod);
-   
     if (currentlyChanging != nullptr) {
         handleBindingModification(ev, modstate);
         return;
@@ -264,6 +266,7 @@ void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
 
 void KeybindingSystem::ProcessControllerBindings(SDL_Event& ev, bool repeat) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     auto& cbutton = ev.cbutton;
     bool navmodeActive = ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_NavEnableGamepad;
 
@@ -325,6 +328,7 @@ void KeybindingSystem::ControllerButtonRepeat(SDL_Event& ev) noexcept
 
 void KeybindingSystem::ControllerButtonDown(SDL_Event& ev) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     if (currentlyChanging != nullptr) {
         auto& cbutton = ev.cbutton;
         // check duplicate

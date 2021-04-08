@@ -2,6 +2,7 @@
 
 #include "OpenFunscripter.h"
 #include "OFS_Util.h"
+#include "OFS_Profiling.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -112,11 +113,13 @@ void ScriptingMode::setOverlay(ScriptingOverlayModes mode) noexcept
 
 void ScriptingMode::undo() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     impl->undo();
 }
 
 void ScriptingMode::redo() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     impl->redo();
 }
 
@@ -142,6 +145,7 @@ void ScriptingMode::PreviousFrame() noexcept
 
 void ScriptingMode::update() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     impl->update();
     OpenFunscripter::ptr->scriptPositions.overlay->update();
 }
@@ -149,6 +153,7 @@ void ScriptingMode::update() noexcept
 // dynamic top injection
 void DynamicInjectionImpl::DrawModeSettings() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     ImGui::SliderFloat("##Target speed (units/s)", &target_speed, min_speed, max_speed);
     Util::Tooltip("Target speed (units/s)");
     target_speed = std::round(Util::Clamp(target_speed, min_speed, max_speed));
@@ -185,6 +190,7 @@ void DynamicInjectionImpl::addEditAction(FunscriptAction action) noexcept
 // alternating
 void AlternatingImpl::DrawModeSettings() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     if (fixedRangeEnabled) {
         ImGui::TextDisabled("Next point is at %d.", nextPosition ? fixedBottom : fixedTop);
     }
@@ -243,6 +249,7 @@ void AlternatingImpl::redo() noexcept
 
 inline void RecordingImpl::singleAxisRecording() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
     uint32_t frameEstimate = app->player->getCurrentFrameEstimate();
     app->scriptPositions.RecordingBuffer[frameEstimate]
@@ -252,6 +259,7 @@ inline void RecordingImpl::singleAxisRecording() noexcept
 
 inline void RecordingImpl::twoAxisRecording() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
     uint32_t frameEstimate = app->player->getCurrentFrameEstimate();
     int32_t at = app->player->getCurrentPositionMs();
@@ -263,6 +271,7 @@ inline void RecordingImpl::twoAxisRecording() noexcept
 
 inline void RecordingImpl::finishSingleAxisRecording() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
     int32_t offsetMs = app->settings->data().action_insert_delay_ms;
     if (app->settings->data().mirror_mode) {
@@ -292,6 +301,7 @@ inline void RecordingImpl::finishSingleAxisRecording() noexcept
 
 inline void RecordingImpl::finishTwoAxisRecording() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
     int32_t offsetMs = app->settings->data().action_insert_delay_ms;
     app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, true, nullptr);
@@ -388,6 +398,7 @@ void RecordingImpl::ControllerAxisMotion(SDL_Event& ev)
 
 void RecordingImpl::DrawModeSettings() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
 
     ImGui::Combo("Mode", (int*)&activeMode,
@@ -473,6 +484,7 @@ void RecordingImpl::DrawModeSettings() noexcept
 
 void RecordingImpl::update() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
     if (recordingActive) {
         if (twoAxesMode) { twoAxisRecording(); }
@@ -494,6 +506,7 @@ void RecordingImpl::update() noexcept
 
 void RecordingImpl::finish() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     // this fixes a bug when the mode gets changed during a recording
     if (recordingActive) {
         recordingActive = false;

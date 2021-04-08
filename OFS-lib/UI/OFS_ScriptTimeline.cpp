@@ -331,7 +331,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 		// by default it draws the frame and time dividers
 		// DrawAudioWaveform called in scripting mode to control the draw order. spaghetti
 		{
-			OFS_PROFILE(drawingCtx.script->Title.c_str());
+			OFS_PROFILE("overlay->DrawScriptPositionContent(drawingCtx)");
 			overlay->DrawScriptPositionContent(drawingCtx);
 		}
 

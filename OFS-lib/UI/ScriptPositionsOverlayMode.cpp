@@ -1,5 +1,6 @@
 #include "ScriptPositionsOverlayMode.h"
 #include "OFS_ScriptTimeline.h"
+#include "OFS_Profiling.h"
 
 #include <cmath>
 
@@ -13,6 +14,7 @@ bool BaseOverlay::ShowActions = true;
 
 BaseOverlay::BaseOverlay(ScriptTimeline* timeline) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     this->timeline = timeline;
 
     if (speedGradient.getMarks().size() == 0) {
@@ -34,6 +36,7 @@ BaseOverlay::BaseOverlay(ScriptTimeline* timeline) noexcept
 
 void BaseOverlay::update() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     ActionScreenCoordinates.clear();
     ActionPositionWindow.clear();
     SelectedActionScreenCoordinates.clear();
@@ -46,6 +49,7 @@ void BaseOverlay::DrawSettings() noexcept
 
 void EmptyOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     timeline->DrawAudioWaveform(ctx);
     BaseOverlay::DrawActionLines(ctx);
 }
@@ -63,6 +67,7 @@ float EmptyOverlay::steppingIntervalBackward(float fromMs) noexcept
 void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
 {
     if (!BaseOverlay::ShowActions) return;
+    OFS_PROFILE(__FUNCTION__);
     auto& script = *ctx.script;
 
     auto startIt = script.Actions().begin() + ctx.actionFromIdx;
@@ -258,6 +263,7 @@ void BaseOverlay::DrawSecondsLabel(const OverlayDrawingCtx& ctx) noexcept
 {
     auto& style = ImGui::GetStyle();
     if (ctx.scriptIdx == ctx.drawnScriptCount - 1) {
+        OFS_PROFILE(__FUNCTION__);
         char tmp[16];
         stbsp_snprintf(tmp, sizeof(tmp), "%.2f seconds", ctx.visibleSizeMs / 1000.f);
         auto textSize = ImGui::CalcTextSize(tmp);
@@ -271,6 +277,7 @@ void BaseOverlay::DrawSecondsLabel(const OverlayDrawingCtx& ctx) noexcept
 
 void BaseOverlay::DrawHeightLines(const OverlayDrawingCtx& ctx) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     // height indicators
     for (int i = 0; i < 9; i++) {
         auto color = (i == 4) ? IM_COL32(150, 150, 150, 255) : IM_COL32(80, 80, 80, 255);
@@ -286,6 +293,7 @@ void BaseOverlay::DrawHeightLines(const OverlayDrawingCtx& ctx) noexcept
 
 void BaseOverlay::DrawScriptLabel(const OverlayDrawingCtx& ctx) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     auto& style = ImGui::GetStyle();
     auto& title = ctx.script->Title;
     auto textSize = ImGui::CalcTextSize(title.c_str());

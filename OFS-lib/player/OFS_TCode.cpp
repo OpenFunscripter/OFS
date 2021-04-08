@@ -6,6 +6,7 @@
 
 #include "SDL.h"
 #include "OFS_ImGui.h"
+#include "OFS_Profiling.h"
 
 #include "implot.h"
 

@@ -1,5 +1,6 @@
 #include "OFS_Project.h"
 #include "OFS_Util.h"
+#include "OFS_Profiling.h"
 
 #include "SDL_thread.h"
 
@@ -319,6 +320,7 @@ void OFS_Project::ShowProjectWindow(bool* open) noexcept
 
 	if (ImGui::BeginPopupModal("Project", open, ImGuiWindowFlags_NoDocking))
 	{
+		OFS_PROFILE(__FUNCTION__);
 		auto app = OpenFunscripter::ptr;
 		ImGui::PushID(Metadata.title.c_str());
 		
