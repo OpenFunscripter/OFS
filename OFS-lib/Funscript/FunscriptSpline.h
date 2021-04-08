@@ -11,7 +11,7 @@ class FunscriptSpline
 	std::map<int32_t, int32_t> SplineActionMap; // maps timeMs to Index in actions vector
 	int32_t cacheIdx = 0;
 
-	inline auto catmull_rom_spline(const std::vector<FunscriptAction>& actions, int32_t i, float ms) const noexcept
+	inline float catmull_rom_spline(const std::vector<FunscriptAction>& actions, int32_t i, float ms) const noexcept
 	{
 		int i0 = glm::clamp<int>(i - 1, 0, actions.size() - 1);
 		int i1 = glm::clamp<int>(i, 0, actions.size() - 1);
@@ -35,9 +35,8 @@ public:
 	inline void Update(const std::vector<FunscriptAction>& actions) noexcept
 	{
 		SplineActionMap.clear();
-		for (int i = 0; i < actions.size(); i++)
-		{
-			SplineActionMap.insert(std::make_pair(actions[i].at, i));
+		for (int i = 0; i < actions.size(); i++) {
+			SplineActionMap.emplace(actions[i].at, i);
 		}
 	}
 

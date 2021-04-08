@@ -1,12 +1,10 @@
 #include "OFS_Util.h"
-#include "OFS_Util.h"
-#include "OFS_Util.h"
 
 #include "EventSystem.h"
 
 #include <sstream>
 #include <filesystem>
-#include  "SDL.h"
+#include  "SDL_rwops.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -16,26 +14,20 @@
 #endif
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
-
-
 #include "glad/glad.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"
 
 #include "tinyfiledialogs.h"
-
-
-// we pretend whre on a lower standard because the cpp11 header wants to throw desperately and doesn't compile with -fno-exceptions
-#define UTF_CPP_CPLUSPLUS 199711L 
 #include "utf8.h"
 
 char Util::FormatBuffer[4096];
 
-
 static void SanitizeString(std::string& str) noexcept
 {
 	// tinyfiledialogs doesn't like quotes
+	// I'm starting to not like tinyfiledialogs...
 	std::replace(str.begin(), str.end(), '\"', ' ');
 	std::replace(str.begin(), str.end(), '\'', ' ');
 }

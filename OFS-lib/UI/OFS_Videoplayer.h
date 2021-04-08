@@ -45,18 +45,16 @@ public:
 private:
 	mpv_handle* mpv;
 	mpv_render_context* mpv_gl;
-	bool redraw_video = false;
-	uint32_t framebuffer_obj = 0;
-	uint32_t render_texture = 0;
-	
+	bool redrawVideo = false;
+	uint32_t framebufferObj = 0;
+	uint32_t renderTexture = 0;
+	char tmpBuf[32];
 
-	std::unique_ptr<class VrShader> vr_shader;
-	std::unique_ptr<class BlurShader> blurShader;
-
-	ImGuiViewport* player_viewport;
+	std::unique_ptr<class VrShader> vrShader;
+	ImGuiViewport* playerViewport;
 	
-	ImVec2 video_draw_size;
-	ImVec2 viewport_pos;
+	ImVec2 videoDrawSize;
+	ImVec2 viewportPos;
 
 	enum class LoopEnum : int32_t
 	{
@@ -107,13 +105,11 @@ private:
 		const char* file_path = nullptr;
 	} MpvData;
 
-	char tmp_buf[32];
+	float baseScaleFactor = 1.f;
 
-	float base_scale_factor = 1.f;
-
-	const float zoom_multi = 0.1f;
+	static constexpr float ZoomMulti = 0.05f;
 	
-	std::chrono::high_resolution_clock::time_point smooth_time;
+	std::chrono::high_resolution_clock::time_point smoothTime;
 
 	bool videoHovered = false;
 	bool dragStarted = false;
@@ -218,7 +214,7 @@ public:
 			return getCurrentPositionSeconds();
 		}
 		else {
-			std::chrono::duration<double> duration = std::chrono::high_resolution_clock::now() - smooth_time;
+			std::chrono::duration<double> duration = std::chrono::high_resolution_clock::now() - smoothTime;
 			return getCurrentPositionSeconds() + (duration.count() * MpvData.current_speed);
 		}
 	}

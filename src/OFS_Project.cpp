@@ -164,7 +164,7 @@ void OFS_Project::Save(const std::string& path) noexcept
 		.filename()
 		.u8string();
 	Metadata.duration = app->player->getDuration();
-	Settings.last_pos_ms = app->player->getCurrentPositionMs();
+	Settings.lastPlayerPositionMs = app->player->getCurrentPositionMs();
 
 	size_t writtenSize = 0;
 	{

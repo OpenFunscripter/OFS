@@ -25,18 +25,12 @@ static void* get_proc_address_mpv(void* fn_ctx, const char* name)
 
 static void on_mpv_events(void* ctx)
 {
-	SDL_Event event{ 0 };
-	event.type = VideoPreviewEvents::PreviewWakeUpMpvEvents;
-	event.user.data1 = ctx;
-	SDL_PushEvent(&event);
+	EventSystem::PushEvent(VideoPreviewEvents::PreviewWakeUpMpvEvents, ctx);
 }
 
 static void on_mpv_render_update(void* ctx)
 {
-	SDL_Event event{ 0 };
-	event.type = VideoPreviewEvents::PreviewWakeUpMpvRender;
-	event.user.data1 = ctx;
-	SDL_PushEvent(&event);
+	EventSystem::PushEvent(VideoPreviewEvents::PreviewWakeUpMpvRender, ctx);
 }
 
 void VideoPreview::updateRenderTexture() noexcept

@@ -59,68 +59,82 @@ void ShaderBase::use() noexcept
 	glUseProgram(program);
 }
 
+void VrShader::InitUniformLocations() noexcept
+{
+	ProjMtxLoc = glGetUniformLocation(program, "ProjMtx");
+	RotationLoc = glGetUniformLocation(program, "rotation");
+	ZoomLoc = glGetUniformLocation(program, "zoom");
+	VideoAspectLoc = glGetUniformLocation(program, "video_aspect_ratio");
+	AspectLoc = glGetUniformLocation(program, "aspect_ratio");
+}
+
 void VrShader::ProjMtx(const float* mat4) noexcept
 {
-	glUniformMatrix4fv(glGetUniformLocation(program, "ProjMtx"), 1, GL_FALSE, mat4);
+	glUniformMatrix4fv(ProjMtxLoc, 1, GL_FALSE, mat4);
 }
 
 void VrShader::Rotation(const float* vec2) noexcept
 {
-	glUniform2fv(glGetUniformLocation(program, "rotation"), 1, vec2);
+	glUniform2fv(RotationLoc, 1, vec2);
 }
 
 void VrShader::Zoom(float zoom) noexcept
 {
-	glUniform1f(glGetUniformLocation(program, "zoom"), zoom);
+	glUniform1f(ZoomLoc, zoom);
 }
 
 void VrShader::VideoAspectRatio(float aspect) noexcept {
-	glUniform1f(glGetUniformLocation(program, "video_aspect_ratio"), aspect);
+	glUniform1f(VideoAspectLoc, aspect);
 }
 
 void VrShader::AspectRatio(float aspect) noexcept
 {
-	glUniform1f(glGetUniformLocation(program, "aspect_ratio"), aspect);
+	glUniform1f(AspectLoc, aspect);
 }
 
-LightingShader::LightingShader()
-	: ShaderBase(vtx_shader, frag_shader)
+void LightingShader::initUniformLocations() noexcept
 {
+	ModelLoc = glGetUniformLocation(program, "model");
+	ProjectionLoc = glGetUniformLocation(program, "projection");
+	ViewLoc = glGetUniformLocation(program, "view");
+	ObjectColorLoc = glGetUniformLocation(program, "objectColor");
+	LightPosLoc = glGetUniformLocation(program, "lightPos");
+	ViewPosLoc = glGetUniformLocation(program, "viewPos");
 
 	float lcol[3]{ 1.f, 1.f, 1.f };
 	float vpos[3]{ 0.f, 0.f, 0.f };
 
+	glUniform3fv(ViewPosLoc, 1, vpos);
 	glUniform3fv(glGetUniformLocation(program, "lightColor"), 1, lcol);
-	glUniform3fv(glGetUniformLocation(program, "viewPos"), 1, vpos);
 }
 
 void LightingShader::ModelMtx(const float* mat4) noexcept
 {
-	glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, mat4);
+	glUniformMatrix4fv(ModelLoc, 1, GL_FALSE, mat4);
 }
 
 void LightingShader::ProjectionMtx(const float* mat4) noexcept
 {
-	glUniformMatrix4fv(glGetUniformLocation(program, "projection"), 1, GL_FALSE, mat4);
+	glUniformMatrix4fv(ProjectionLoc, 1, GL_FALSE, mat4);
 }
 
 void LightingShader::ViewMtx(const float* mat4) noexcept
 {
-	glUniformMatrix4fv(glGetUniformLocation(program, "view"), 1, GL_FALSE, mat4);
+	glUniformMatrix4fv(ViewLoc, 1, GL_FALSE, mat4);
 }
 
 void LightingShader::ObjectColor(const float* vec4) noexcept
 {
-	glUniform4fv(glGetUniformLocation(program, "objectColor"), 1, vec4);
+	glUniform4fv(ObjectColorLoc, 1, vec4);
 }
 
 void LightingShader::LightPos(const float* vec3) noexcept
 {
-	glUniform3fv(glGetUniformLocation(program, "lightPos"), 1, vec3);
+	glUniform3fv(LightPosLoc, 1, vec3);
 }
 
 void LightingShader::ViewPos(const float* vec3) noexcept {
-	glUniform3fv(glGetUniformLocation(program, "viewPos"), 1, vec3);
+	glUniform3fv(ViewPosLoc, 1, vec3);
 }
 
 void BlurShader::ProjMtx(const float* mat4) noexcept
@@ -138,43 +152,48 @@ void BlurShader::Time(float time) noexcept
 	glUniform1f(glGetUniformLocation(program, "Time"), time);
 }
 
-void WaveformShader::ProjMtx(const float* mat4) noexcept
+void WaveformShader::initUniformLocations() noexcept
 {
-	glUniformMatrix4fv(glGetUniformLocation(program, "ProjMtx"), 1, GL_FALSE, mat4);
+	ProjMtxLoc = glGetUniformLocation(program, "ProjMtx");
+	AudioLoc = glGetUniformLocation(program, "audio");
+	AudioScaleLoc = glGetUniformLocation(program, "scaleAudio");
+	TimeLoc = glGetUniformLocation(program, "Time");
+	PartyModeLoc = glGetUniformLocation(program, "PartyMode");
+	ScriptPosLoc = glGetUniformLocation(program, "ScriptPos");
+	ColorLoc = glGetUniformLocation(program, "Color");
 }
 
-void WaveformShader::Resolution(const float* vec2) noexcept
+void WaveformShader::ProjMtx(const float* mat4) noexcept
 {
-	glUniform2fv(glGetUniformLocation(program, "Resolution"), 1, vec2);
+	glUniformMatrix4fv(ProjMtxLoc, 1, GL_FALSE, mat4);
 }
 
 void WaveformShader::AudioData(uint32_t unit) noexcept
 {
-	auto i = glGetUniformLocation(program, "audio");
-	glUniform1i(i, unit);
+	glUniform1i(AudioLoc, unit);
 }
 
 void WaveformShader::ScaleFactor(float scale) noexcept
 {
-	glUniform1f(glGetUniformLocation(program, "scaleAudio"), scale);
+	glUniform1f(AudioScaleLoc, scale);
 }
 
 void WaveformShader::Time(float time) noexcept
 {
-	glUniform1f(glGetUniformLocation(program, "Time"), time);
+	glUniform1f(TimeLoc, time);
 }
 
 void WaveformShader::PartyMode(bool enable) noexcept
 {
-	glUniform1i(glGetUniformLocation(program, "PartyMode"), enable);
+	glUniform1i(PartyModeLoc, enable);
 }
 
 void WaveformShader::ScriptPos(float pos) noexcept
 {
-	glUniform1f(glGetUniformLocation(program, "ScriptPos"), pos);
+	glUniform1f(ScriptPosLoc, pos);
 }
 
 void WaveformShader::Color(float* vec3) noexcept
 {
-	glUniform3fv(glGetUniformLocation(program, "Color"), 1, vec3);
+	glUniform3fv(ColorLoc, 1, vec3);
 }

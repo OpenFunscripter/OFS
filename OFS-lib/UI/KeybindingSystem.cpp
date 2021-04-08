@@ -386,13 +386,12 @@ std::string KeybindingSystem::loadKeyString(SDL_Keycode key, int mod) noexcept
     return currentlyHeldKeys.str();
 }
 
-const std::string& KeybindingSystem::getBindingString(const char* binding_id) noexcept
+const char* KeybindingSystem::getBindingString(const char* binding_id) noexcept
 {
     auto it = bindingStringLUT.find(binding_id);
     if (it != bindingStringLUT.end())
-        return bindingStringLUT[binding_id];
-    static std::string empty("", 0);
-    return empty;
+        return bindingStringLUT[binding_id].c_str();
+    return "";
 }
 
 void KeybindingSystem::setBindings(const Keybindings& bindings) noexcept

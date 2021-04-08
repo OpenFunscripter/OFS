@@ -66,7 +66,13 @@ public:
 	void UnsubscribeAll(void* listener) noexcept;
 
 	// helper
-	static void PushEvent(int32_t type, void* user1 = nullptr) noexcept;
+	inline static void PushEvent(int32_t type, void* user1 = nullptr) noexcept
+	{
+		SDL_Event ev;
+		ev.type = type;
+		ev.user.data1 = user1;
+		SDL_PushEvent(&ev);
+	}
 	static void SingleShot(SingleShotEventHandler&& handler, void* ctx) noexcept;
 	[[nodiscard/*("this must be waited on")*/]]static std::unique_ptr<WaitableSingleShotEventData> WaitableSingleShot(SingleShotEventHandler&& handler, void* ctx) noexcept;
 

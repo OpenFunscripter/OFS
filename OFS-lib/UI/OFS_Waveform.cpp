@@ -15,7 +15,7 @@ bool OFS_Waveform::LoadMP3(const std::string& path) noexcept
 	OFS_BENCHMARK(__FUNCTION__);
 	generating = true;
 
-	static mp3dec_t mp3d;
+	mp3dec_t mp3d;
 	mp3dec_file_info_t info;
 
 	SamplesLow.clear();
@@ -25,6 +25,7 @@ bool OFS_Waveform::LoadMP3(const std::string& path) noexcept
 	mp3dec_init(&mp3d);
 
 	struct Mp3Context {
+		mp3dec_t* mp3d;
 		OFS_Waveform* wave = nullptr;
 		float lowPeak = 0.f;
 		float midPeak = 0.f;
@@ -32,6 +33,7 @@ bool OFS_Waveform::LoadMP3(const std::string& path) noexcept
 	};
 	Mp3Context ctx;
 	ctx.wave = this;
+	ctx.mp3d = &mp3d;
 	mp3dec_iterate(path.c_str(),
 		[](void* user_data, const uint8_t* frame,
 			int frame_size, int free_format_bytes,
@@ -43,7 +45,7 @@ bool OFS_Waveform::LoadMP3(const std::string& path) noexcept
 			constexpr float HighRangeMin = 6001.f; constexpr float HighRangeMax = 20000.f;
 			Mp3Context* ctx = (Mp3Context*)user_data;
 			mp3d_sample_t pcm[MINIMP3_MAX_SAMPLES_PER_FRAME];
-			auto samples = mp3dec_decode_frame(&mp3d, frame, buf_size, pcm, info);
+			auto samples = mp3dec_decode_frame(ctx->mp3d, frame, buf_size, pcm, info);
 
 			FUN_ASSERT(samples <= 1152, "got more samples than expected");
 			// 1152 is the sample count per frame

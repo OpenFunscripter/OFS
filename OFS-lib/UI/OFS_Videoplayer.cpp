@@ -29,18 +29,12 @@ static void* get_proc_address_mpv(void* fn_ctx, const char* name)
 
 static void on_mpv_events(void* ctx)
 {
-	SDL_Event event{ 0 };
-	event.type = VideoEvents::WakeupOnMpvEvents;
-	event.user.data1 = ctx;
-	SDL_PushEvent(&event);
+	EventSystem::PushEvent(VideoEvents::WakeupOnMpvEvents, ctx);
 }
 
 static void on_mpv_render_update(void* ctx)
 {
-	SDL_Event event{ 0 };
-	event.type = VideoEvents::WakeupOnMpvRenderUpdate;
-	event.user.data1 = ctx;
-	SDL_PushEvent(&event);
+	EventSystem::PushEvent(VideoEvents::WakeupOnMpvRenderUpdate, ctx);
 }
 
 void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
@@ -156,14 +150,14 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 				if (!MpvData.paused) {
 					MpvData.percent_pos = MpvData.real_percent_pos;
 				}
-				smooth_time = std::chrono::high_resolution_clock::now();
+				smoothTime = std::chrono::high_resolution_clock::now();
 				break;
 			case MpvSpeed:
 				MpvData.current_speed = *(double*)prop->data;
 				break;
 			case MpvPauseState:
 				MpvData.paused = *(int64_t*)prop->data;
-				smooth_time = std::chrono::high_resolution_clock::now();
+				smoothTime = std::chrono::high_resolution_clock::now();
 				EventSystem::PushEvent(VideoEvents::PlayPauseChanged, (void*)(intptr_t)MpvData.paused);
 				break;
 			case MpvFilePath:
@@ -198,7 +192,7 @@ void VideoplayerWindow::MpvRenderUpdate(SDL_Event& ev) noexcept
 	if (ev.user.data1 != this) return;
 	uint64_t flags = mpv_render_context_update(mpv_gl);
 	if (flags & MPV_RENDER_UPDATE_FRAME) {
-		redraw_video = true;
+		redrawVideo = true;
 	}
 }
 
@@ -220,9 +214,9 @@ void VideoplayerWindow::observeProperties() noexcept
 
 void VideoplayerWindow::renderToTexture() noexcept
 {
-	redraw_video = false;
+	redrawVideo = false;
 	mpv_opengl_fbo fbo{ 0 };
-	fbo.fbo = framebuffer_obj; fbo.w = MpvData.video_width; fbo.h = MpvData.video_height;
+	fbo.fbo = framebufferObj; fbo.w = MpvData.video_width; fbo.h = MpvData.video_height;
 	int enable = 1;
 	int disable = 0;
 	mpv_render_param params[] = {
@@ -237,12 +231,12 @@ void VideoplayerWindow::renderToTexture() noexcept
 
 void VideoplayerWindow::updateRenderTexture() noexcept
 {
-	if (framebuffer_obj == 0) {
-		glGenFramebuffers(1, &framebuffer_obj);
-		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_obj);
+	if (framebufferObj == 0) {
+		glGenFramebuffers(1, &framebufferObj);
+		glBindFramebuffer(GL_FRAMEBUFFER, framebufferObj);
 
-		glGenTextures(1, &render_texture);
-		glBindTexture(GL_TEXTURE_2D, render_texture);
+		glGenTextures(1, &renderTexture);
+		glBindTexture(GL_TEXTURE_2D, renderTexture);
 		const int default_width = 1920;
 		const int default_height = 1080;
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, default_width, default_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
@@ -251,7 +245,7 @@ void VideoplayerWindow::updateRenderTexture() noexcept
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 		// Set "renderedTexture" as our colour attachement #0
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, render_texture, 0);
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderTexture, 0);
 
 		// Set the list of draw buffers.
 		GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
@@ -263,7 +257,7 @@ void VideoplayerWindow::updateRenderTexture() noexcept
 	}
 	else {
 		// update size of render texture based on video resolution
-		glBindTexture(GL_TEXTURE_2D, render_texture);
+		glBindTexture(GL_TEXTURE_2D, renderTexture);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, MpvData.video_width, MpvData.video_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 	}
 }
@@ -342,8 +336,6 @@ bool VideoplayerWindow::setup(bool force_hw_decoding)
 	observeProperties();
 
 	setup_vr_mode();
-	blurShader = std::make_unique<BlurShader>();
-
 	setPaused(true);
 
 	return true;
@@ -353,8 +345,8 @@ VideoplayerWindow::~VideoplayerWindow()
 {
 	mpv_render_context_free(mpv_gl);
 	mpv_detach_destroy(mpv);
-	glDeleteTextures(1, &render_texture);
-	glDeleteFramebuffers(1, &framebuffer_obj);
+	glDeleteTextures(1, &renderTexture);
+	glDeleteFramebuffers(1, &framebufferObj);
 	EventSystem::ev().UnsubscribeAll(this);
 }
 
@@ -364,9 +356,9 @@ void VideoplayerWindow::mouse_scroll(SDL_Event& ev) noexcept
 
 	auto scroll = ev.wheel;
 	if (videoHovered) {
-		auto mouse_pos_in_vid = ImGui::GetMousePos() - viewport_pos - settings.video_pos;
-		float zoom_point_x = (mouse_pos_in_vid.x - (video_draw_size.x/2.f)) / video_draw_size.x;
-		float zoom_point_y = (mouse_pos_in_vid.y - (video_draw_size.y/2.f)) / video_draw_size.y;
+		auto mouse_pos_in_vid = ImGui::GetMousePos() - viewportPos - settings.video_pos;
+		float zoom_point_x = (mouse_pos_in_vid.x - (videoDrawSize.x/2.f)) / videoDrawSize.x;
+		float zoom_point_y = (mouse_pos_in_vid.y - (videoDrawSize.y/2.f)) / videoDrawSize.y;
 
 		float vid_width = MpvData.video_width;
 		float vid_height = MpvData.video_height;
@@ -387,15 +379,15 @@ void VideoplayerWindow::mouse_scroll(SDL_Event& ev) noexcept
 		const float old_scale = settings.zoom_factor;
 		// apply zoom
 		if (settings.activeMode == VideoMode::VR_MODE) {
-			settings.vr_zoom *= ((1+(zoom_multi * scroll.y)));
+			settings.vr_zoom *= ((1+(ZoomMulti * scroll.y)));
 			settings.vr_zoom = Util::Clamp(settings.vr_zoom, 0.05f, 2.0f);
 			return;
 		}
 
-		settings.zoom_factor *= 1 + (zoom_multi * scroll.y);
+		settings.zoom_factor *= 1 + (ZoomMulti * scroll.y);
 		settings.zoom_factor = Util::Clamp(settings.zoom_factor, 0.0f, 10.f);
 
-		const float scale_change = (settings.zoom_factor - old_scale) * base_scale_factor;
+		const float scale_change = (settings.zoom_factor - old_scale) * baseScaleFactor;
 		const float offset_x = -(zoom_point_x * scale_change);
 		const float offset_y = -(zoom_point_y * scale_change);
 
@@ -413,7 +405,7 @@ void VideoplayerWindow::setup_vr_mode() noexcept
 {
 	// VR MODE
 	// setup shader
-	vr_shader = std::make_unique<VrShader>();
+	vrShader = std::make_unique<VrShader>();
 }
 
 void VideoplayerWindow::notifyVideoLoaded() noexcept
@@ -436,16 +428,16 @@ void VideoplayerWindow::drawVrVideo(ImDrawList* draw_list) noexcept
 		settings.current_vr_rotation =
 			settings.prev_vr_rotation
 			+ (ImGui::GetMouseDragDelta(ImGuiMouseButton_Left) 
-				/ ImVec2((10000.f * settings.vr_zoom), (video_draw_size.y / video_draw_size.x) * 10000.f * settings.vr_zoom));
+				/ ImVec2((10000.f * settings.vr_zoom), (videoDrawSize.y / videoDrawSize.x) * 10000.f * settings.vr_zoom));
 	}
 
-	player_viewport = ImGui::GetCurrentWindowRead()->Viewport;
+	playerViewport = ImGui::GetCurrentWindowRead()->Viewport;
 	draw_list->AddCallback(
 		[](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
 			auto& ctx = *(VideoplayerWindow*)cmd->UserCallbackData;
 
-			auto draw_data = ctx.player_viewport->DrawData;
-			ctx.vr_shader->use();
+			auto draw_data = ctx.playerViewport->DrawData;
+			ctx.vrShader->use();
 
 			float L = draw_data->DisplayPos.x;
 			float R = draw_data->DisplayPos.x + draw_data->DisplaySize.x;
@@ -458,19 +450,19 @@ void VideoplayerWindow::drawVrVideo(ImDrawList* draw_list) noexcept
 				{ 0.0f, 0.0f, -1.0f, 0.0f },
 				{ (R + L) / (L - R),  (T + B) / (B - T),  0.0f,   1.0f },
 			};
-			ctx.vr_shader->ProjMtx(&ortho_projection[0][0]);
-			ctx.vr_shader->Rotation(&ctx.settings.current_vr_rotation.x);
-			ctx.vr_shader->Zoom(ctx.settings.vr_zoom);
-			ctx.vr_shader->AspectRatio(ctx.video_draw_size.x / ctx.video_draw_size.y);
+			ctx.vrShader->ProjMtx(&ortho_projection[0][0]);
+			ctx.vrShader->Rotation(&ctx.settings.current_vr_rotation.x);
+			ctx.vrShader->Zoom(ctx.settings.vr_zoom);
+			ctx.vrShader->AspectRatio(ctx.videoDrawSize.x / ctx.videoDrawSize.y);
 			// TODO: set this somewhere else get rid of the branch
 			if (ctx.MpvData.video_height > 0) {
-				ctx.vr_shader->VideoAspectRatio(ctx.MpvData.video_width /(float)ctx.MpvData.video_height);
+				ctx.vrShader->VideoAspectRatio(ctx.MpvData.video_width /(float)ctx.MpvData.video_height);
 			}
 		}, this);
 	//ImGui::Image((void*)(intptr_t)render_texture, ImGui::GetContentRegionAvail(), ImVec2(0.f, 1.f),	ImVec2(1.f, 0.f));
-	OFS::ImageWithId(ImGui::GetID("videoImage"), (void*)(intptr_t)render_texture, ImGui::GetContentRegionAvail(), ImVec2(0.f, 1.f), ImVec2(1.f, 0.f));
+	OFS::ImageWithId(ImGui::GetID("videoImage"), (void*)(intptr_t)renderTexture, ImGui::GetContentRegionAvail(), ImVec2(0.f, 1.f), ImVec2(1.f, 0.f));
 	videoRightClickMenu();
-	video_draw_size = ImGui::GetItemRectSize();
+	videoDrawSize = ImGui::GetItemRectSize();
 }
 
 void VideoplayerWindow::draw2dVideo(ImDrawList* draw_list) noexcept
@@ -478,9 +470,9 @@ void VideoplayerWindow::draw2dVideo(ImDrawList* draw_list) noexcept
 	OFS_PROFILE(__FUNCTION__);
 	ImVec2 videoSize(MpvData.video_width, MpvData.video_height);
 	ImVec2 dst = ImGui::GetContentRegionAvail();
-	base_scale_factor = std::min(dst.x / videoSize.x, dst.y / videoSize.y);
-	videoSize.x *= base_scale_factor;
-	videoSize.y *= base_scale_factor;
+	baseScaleFactor = std::min(dst.x / videoSize.x, dst.y / videoSize.y);
+	videoSize.x *= baseScaleFactor;
+	videoSize.y *= baseScaleFactor;
 
 	ImVec2 uv0(0.f, 1.f);
 	ImVec2 uv1(1.f, 0.f);
@@ -523,8 +515,8 @@ void VideoplayerWindow::draw2dVideo(ImDrawList* draw_list) noexcept
 		settings.current_translation = settings.prev_translation + ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
 	}
 
-	player_viewport = ImGui::GetCurrentWindowRead()->Viewport;
-	OFS::ImageWithId(ImGui::GetID("videoImage"), (void*)(intptr_t)render_texture, videoSize, uv0, uv1);
+	playerViewport = ImGui::GetCurrentWindowRead()->Viewport;
+	OFS::ImageWithId(ImGui::GetID("videoImage"), (void*)(intptr_t)renderTexture, videoSize, uv0, uv1);
 	videoRightClickMenu();
 }
 
@@ -569,7 +561,7 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open, bool* draw_video) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	// this redraw has to happen even if the video isn't actually shown in the gui
-	if (redraw_video) { renderToTexture(); }
+	if (redrawVideo) { renderToTexture(); }
 	if (open != nullptr && !*open) return;
 	
 	ImGui::Begin(PlayerId, open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
@@ -580,7 +572,7 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open, bool* draw_video) noexcept
 	}
 
 	if (*draw_video) {
-		viewport_pos = ImGui::GetWindowViewport()->Pos;
+		viewportPos = ImGui::GetWindowViewport()->Pos;
 		auto draw_list = ImGui::GetWindowDrawList();
 		if (settings.activeMode != VideoMode::VR_MODE) {
 			draw2dVideo(draw_list);
@@ -593,7 +585,7 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open, bool* draw_video) noexcept
 		draw_list->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
 	
 		videoHovered = ImGui::IsItemHovered() && ImGui::IsWindowHovered();
-		video_draw_size = ImGui::GetItemRectSize();
+		videoDrawSize = ImGui::GetItemRectSize();
 	
 		// cancel drag
 		if ((dragStarted && !videoHovered) || ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
@@ -622,8 +614,8 @@ void VideoplayerWindow::setSpeed(float speed) noexcept
 	speed = Util::Clamp<float>(speed, MinPlaybackSpeed, MaxPlaybackSpeed);
 	if (getSpeed() != speed) {
 		settings.playback_speed = speed;
-		stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.3f", speed);
-		const char* cmd[]{ "set", "speed", tmp_buf, NULL };
+		stbsp_snprintf(tmpBuf, sizeof(tmpBuf), "%.3f", speed);
+		const char* cmd[]{ "set", "speed", tmpBuf, NULL };
 		mpv_command_async(mpv, 0, cmd);
 	}
 }
@@ -681,16 +673,16 @@ void VideoplayerWindow::saveFrameToImage(const std::string& directory)
 
 void VideoplayerWindow::setVolume(float volume) noexcept
 {
-	stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.2f", (float)(volume*100.f));
-	const char* cmd[]{"set", "volume", tmp_buf, NULL};
+	stbsp_snprintf(tmpBuf, sizeof(tmpBuf), "%.2f", (float)(volume*100.f));
+	const char* cmd[]{"set", "volume", tmpBuf, NULL};
 	mpv_command_async(mpv, 0, cmd);
 }
 
 void VideoplayerWindow::setPositionPercent(float pos, bool pausesVideo) noexcept
 {
 	MpvData.percent_pos = pos;
-	stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.08f", (float)(pos * 100.0f));
-	const char* cmd[]{ "seek", tmp_buf, "absolute-percent+exact", NULL };
+	stbsp_snprintf(tmpBuf, sizeof(tmpBuf), "%.08f", (float)(pos * 100.0f));
+	const char* cmd[]{ "seek", tmpBuf, "absolute-percent+exact", NULL };
 	if (pausesVideo) {
 		setPaused(true);
 	}
@@ -774,6 +766,7 @@ void VideoplayerWindow::closeVideo() noexcept
 	const char* cmd[] = { "stop", NULL };
 	mpv_command_async(mpv, 0, cmd);
 	MpvData.video_loaded = false;
+	setPaused(true);
 }
 
 int32_t VideoEvents::MpvVideoLoaded = 0;

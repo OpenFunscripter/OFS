@@ -12,7 +12,7 @@
 
 struct OFS_ScriptSettings {
 	struct Bookmark {
-		enum BookmarkType {
+		enum class BookmarkType : uint8_t {
 			REGULAR,
 			START_MARKER,
 			END_MARKER
@@ -23,9 +23,9 @@ struct OFS_ScriptSettings {
 
 		static constexpr char startMarker[] = "_start";
 		static constexpr char endMarker[] = "_end";
-		Bookmark() {}
-
-		Bookmark(const std::string& name, int32_t at)
+		
+		Bookmark() noexcept {}
+		Bookmark(const std::string& name, int32_t at) noexcept
 			: name(name), at(at)
 		{
 			UpdateType();
@@ -46,8 +46,6 @@ struct OFS_ScriptSettings {
 			}
 			else if (Util::StringEndsWith(name, endMarker)) {
 				type = BookmarkType::END_MARKER;
-				// don't remove _end because it helps distinguish the to markers
-				//name.erase(name.end() - sizeof(endMarker) + 1, name.end());
 			}
 			else {
 				type = BookmarkType::REGULAR;
@@ -68,13 +66,13 @@ struct OFS_ScriptSettings {
 
 	std::string version = "OFS " OFS_LATEST_GIT_TAG "@" OFS_LATEST_GIT_HASH;
 	std::vector<Bookmark> Bookmarks;
-	int32_t last_pos_ms = 0;
+	int32_t lastPlayerPositionMs = 0;
 	static VideoplayerWindow::OFS_VideoPlayerSettings* player;
 
 	struct TempoModeSettings {
 		int bpm = 100;
-		float beat_offset_seconds = 0.f;
-		int multiIDX = 0;
+		float beatOffsetSeconds = 0.f;
+		int measureIndex = 0;
 		
 		template<typename S>
 		void serialize(S& s)
@@ -82,8 +80,8 @@ struct OFS_ScriptSettings {
 			s.ext(*this, bitsery::ext::Growable{},
 				[](S& s, TempoModeSettings& o) {
 					s.value4b(o.bpm);
-					s.value4b(o.beat_offset_seconds);
-					s.value4b(o.multiIDX);
+					s.value4b(o.beatOffsetSeconds);
+					s.value4b(o.measureIndex);
 				});
 		}
 
@@ -96,7 +94,7 @@ struct OFS_ScriptSettings {
 			[](S& s, OFS_ScriptSettings& o) {
 				s.text1b(o.version, o.version.max_size());
 				s.container(o.Bookmarks, o.Bookmarks.max_size());
-				s.value4b(o.last_pos_ms);
+				s.value4b(o.lastPlayerPositionMs);
 				s.object(o.tempoSettings);
 				FUN_ASSERT(o.player != nullptr, "player not set");
 				s.object(*o.player);

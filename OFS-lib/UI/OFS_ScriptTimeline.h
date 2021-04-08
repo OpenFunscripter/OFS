@@ -21,7 +21,10 @@
 class ScriptTimelineEvents {
 public:
 	static int32_t FfmpegAudioProcessingFinished;
+	
+	using ActionClickedEventArgs = std::tuple<SDL_Event, FunscriptAction>;
 	static int32_t FunscriptActionClicked;
+
 	static int32_t ScriptpositionWindowDoubleClick;
 	static int32_t ActiveScriptChanged;
 
@@ -35,24 +38,26 @@ public:
 	static void RegisterEvents() noexcept;
 };
 
-using ActionClickedEventArgs = std::tuple<SDL_Event, FunscriptAction>;
 
 class ScriptTimeline
 {
 public:
-	float offset_ms;
+	float offsetMs;
 	float visibleSizeMs;
 	bool IsSelecting = false;
 	bool IsMoving = false;
 	bool PositionsItemHovered = false;
-	float rel_x1 = 0.0f;
-	float rel_x2 = 0.0f;
+	float relX1 = 0.0f;
+	float relX2 = 0.0f;
+
+	ScriptTimelineEvents::ActionClickedEventArgs ActionClickEventData;
+	ScriptTimelineEvents::SelectTime SelectTimeEventData = {0};
 
 	std::unique_ptr<BaseOverlay> overlay;
 	std::vector<std::pair<FunscriptAction, FunscriptAction>> RecordingBuffer;
 	
 	std::vector<float> WaveformLineBuffer;
-	unsigned int WaveformTex = 0;
+	uint32_t WaveformTex = 0;
 	std::unique_ptr<class WaveformShader> WaveShader;
 	bool WaveformPartyMode = false;
 	ImColor WaveformColor = IM_COL32(227, 66, 52, 255);
@@ -64,12 +69,12 @@ public:
 	const std::vector<std::shared_ptr<Funscript>>* Scripts = nullptr;
 	
 	int activeScriptIdx = 0;
-	ImVec2 active_canvas_pos;
-	ImVec2 active_canvas_size;
+	ImVec2 activeCanvasPos;
+	ImVec2 activeCanvasSize;
 
 	int hovereScriptIdx = 0;
-	ImVec2 hovered_canvas_pos;
-	ImVec2 hovered_canvas_size;
+	ImVec2 hoveredCanvasPos;
+	ImVec2 hoveredCanvasSize;
 
 	UndoSystem* undoSystem = nullptr;
 private:
@@ -94,14 +99,14 @@ private:
 		localCoord = point - canvas_pos;
 		float relative_x = localCoord.x / canvas_size.x;
 		float relative_y = localCoord.y / canvas_size.y;
-		float at_ms = offset_ms + (relative_x * visibleSizeMs);
+		float at_ms = offsetMs + (relative_x * visibleSizeMs);
 		// fix frame alignment
 		at_ms =  std::max<float>(std::round(at_ms / frameTime) * frameTime, 0.f);
 		float pos = Util::Clamp<float>(100.f - (relative_y * 100.f), 0.f, 100.f);
 		return FunscriptAction(at_ms, pos);
 	}
 
-	void updateSelection(bool clear);
+	void updateSelection(bool clear) noexcept;
 	void FfmpegAudioProcessingFinished(SDL_Event& ev) noexcept;
 
 	float WindowSizeSeconds = 5.f;

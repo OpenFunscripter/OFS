@@ -1306,7 +1306,7 @@ void OpenFunscripter::register_bindings()
             "Toggle recording mode",
             true,
             [&](void*) {
-                static ScriptingModeEnum prevMode;
+                static ScriptingModeEnum prevMode = ScriptingModeEnum::RECORDING;
                 if (scripting->mode() != ScriptingModeEnum::RECORDING) {
                     prevMode = scripting->mode();
                     scripting->setMode(ScriptingModeEnum::RECORDING);
@@ -1477,7 +1477,7 @@ void OpenFunscripter::FunscriptChanged(SDL_Event& ev) noexcept
 
 void OpenFunscripter::ScriptTimelineActionClicked(SDL_Event& ev) noexcept
 {
-    auto& [btn_ev, action] = *((ActionClickedEventArgs*)ev.user.data1);
+    auto& [btn_ev, action] = *((ScriptTimelineEvents::ActionClickedEventArgs*)ev.user.data1);
     auto& button = btn_ev.button; // turns out I don't need this...
 
     if (SDL_GetModState() & KMOD_CTRL) {
@@ -1500,7 +1500,7 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
 {
     LoadedProject->Metadata.duration = player->getDuration();
     ActiveFunscript()->reserveActionMemory(player->getTotalNumFrames());
-    player->setPositionExact(LoadedProject->Settings.last_pos_ms);
+    player->setPositionExact(LoadedProject->Settings.lastPlayerPositionMs);
     ActiveFunscript()->NotifyActionsChanged(false);
 
     const char* VideoName = (const char*)ev.user.data1;
@@ -1767,22 +1767,18 @@ void OpenFunscripter::step() noexcept {
                 }
 
                 if (player->isPaused()) {
-                    ImGui::Separator();
-
+                    ImGui::Spacing();
                     auto scriptAction = ActiveFunscript()->GetActionAtTime(player->getCurrentPositionMsInterp(), player->getFrameTimeMs());
-
-                    if (scriptAction == nullptr)
-                    {
+                    if (!scriptAction) {
                         // create action
                         static int newActionPosition = 0;
-                        ImGui::SliderInt("Position", &newActionPosition, 0, 100);
-                        if (ImGui::Button("New Action")) {
+                        ImGui::SetNextItemWidth(-1.f);
+                        ImGui::SliderInt("##Position", &newActionPosition, 0, 100, "%d", ImGuiSliderFlags_AlwaysClamp);
+                        if (ImGui::Button("Add action", ImVec2(-1.f, 0.f))) {
                             addEditAction(newActionPosition);
                         }
                     }
                 }
-
-                ImGui::Separator();
                 ImGui::End();
             }
 
@@ -2238,7 +2234,7 @@ void OpenFunscripter::saveActiveScriptAs()
 
 void OpenFunscripter::ShowMainMenuBar() noexcept
 {
-#define BINDING_STRING(binding) keybinds.getBindingString(binding).c_str()  
+#define BINDING_STRING(binding) keybinds.getBindingString(binding) 
     
     ImColor alertCol(ImGui::GetStyle().Colors[ImGuiCol_MenuBarBg]);
     std::chrono::duration<float> saveDuration;
@@ -2750,7 +2746,7 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
         ImGui::InputTextMultiline("Notes", &metadata.notes, ImVec2(0.f, ImGui::GetFontSize() * 3.f));
 
         {
-            enum LicenseType : int32_t {
+            enum class LicenseType : int32_t {
                 None,
                 Free,
                 Paid
@@ -2877,14 +2873,14 @@ void OpenFunscripter::SetFullscreen(bool fullscreen) {
 void OpenFunscripter::CreateDockspace() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    const bool opt_fullscreen_persistant = true;
-    const bool opt_fullscreen = opt_fullscreen_persistant;
-    static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None | ImGuiDockNodeFlags_PassthruCentralNode;
+    constexpr bool opt_fullscreen_persistant = true;
+    constexpr bool opt_fullscreen = opt_fullscreen_persistant;
+    constexpr ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None | ImGuiDockNodeFlags_PassthruCentralNode;
 
     // We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
     // because it would be confusing to have two docking targets within each others.
     ImGuiWindowFlags window_flags = /*ImGuiWindowFlags_MenuBar |*/ ImGuiWindowFlags_NoDocking;
-    if (opt_fullscreen)
+    if constexpr (opt_fullscreen)
     {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(viewport->GetWorkPos());
@@ -2898,8 +2894,7 @@ void OpenFunscripter::CreateDockspace() noexcept
 
     // When using ImGuiDockNodeFlags_PassthruCentralNode, DockSpace() will render our background
     // and handle the pass-thru hole, so we ask Begin() to not render a background.
-    if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
-        window_flags |= ImGuiWindowFlags_NoBackground;
+    if constexpr (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode) window_flags |= ImGuiWindowFlags_NoBackground;
 
     // Important: note that we proceed even if Begin() returns false (aka window is collapsed).
     // This is because we want to keep our DockSpace() active. If a DockSpace() is inactive,
@@ -2911,13 +2906,11 @@ void OpenFunscripter::CreateDockspace() noexcept
     ImGui::Begin("MainDockSpace", 0, window_flags);
     ImGui::PopStyleVar();
 
-    if (opt_fullscreen)
-        ImGui::PopStyleVar(2);
+    if constexpr (opt_fullscreen) ImGui::PopStyleVar(2);
 
     // DockSpace
     ImGuiIO& io = ImGui::GetIO();
-    if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
-    {
+    if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
         ImGui::DockSpace(MainDockspaceID, ImVec2(0.0f, 0.0f), dockspace_flags);
     }
 

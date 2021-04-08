@@ -167,6 +167,13 @@ private:
 				Out_Color = texture(Texture, texCoord);
 			}
 	)";
+
+	int32_t ProjMtxLoc = 0;
+	int32_t RotationLoc = 0;
+	int32_t ZoomLoc = 0;
+	int32_t AspectLoc = 0;
+	int32_t VideoAspectLoc = 0;
+
 	// this shader handles SBS + top/bottom 180° & top/bottom 360°
 	// SBS 360° is untested
 	static constexpr const char* frag_shader = R"(
@@ -221,10 +228,14 @@ private:
 				Out_Color = texture(Texture, texCoord);
 			}
 	)";
+
+	void InitUniformLocations() noexcept;
 public:
 	VrShader() 
 		: ShaderBase(vtx_shader, frag_shader) 
-	{}
+	{
+		InitUniformLocations();
+	}
 
 	void ProjMtx(const float* mat4) noexcept;
 	void Rotation(const float* vec2) noexcept;
@@ -251,13 +262,17 @@ private:
 				gl_Position = ProjMtx * vec4(Position.xy,0,1);
 			}
 	)";
+
+	int32_t ProjMtxLoc = 0;
+	int32_t AudioLoc = 0;
+	int32_t AudioScaleLoc = 0;
+	int32_t TimeLoc = 0;
+	int32_t ScriptPosLoc = 0;
+	int32_t PartyModeLoc = 0;
+	int32_t ColorLoc = 0;
+
 	static constexpr const char* frag_shader = R"(
 			#version 330 core
-			uniform sampler2D Texture;
-			uniform vec2 rotation;
-			uniform float zoom;
-			uniform float aspect_ratio;
-
 			uniform sampler1D audio;
 			uniform float scaleAudio;
 			uniform float Time;
@@ -312,13 +327,16 @@ private:
 				}
 			}
 	)";
+
+	void initUniformLocations() noexcept;
 public:
 	WaveformShader()
 		: ShaderBase(vtx_shader, frag_shader)
-	{}
+	{
+		initUniformLocations();
+	}
 
 	void ProjMtx(const float* mat4) noexcept;
-	void Resolution(const float* vec2) noexcept;
 	void AudioData(uint32_t unit) noexcept;
 	void ScaleFactor(float scale) noexcept;
 	void Time(float time) noexcept;
@@ -349,7 +367,13 @@ private:
 			gl_Position = projection * view * vec4(FragPos, 1.0);
 		}
 	)";
-
+	int32_t ModelLoc = 0;
+	int32_t ViewLoc = 0;
+	int32_t ProjectionLoc = 0;
+	int32_t LightPosLoc = 0;
+	int32_t ViewPosLoc = 0;
+	int32_t ObjectColorLoc = 0;
+	
 	static constexpr const char* frag_shader = R"(
 		#version 330 core
 		out vec4 FragColor;
@@ -384,8 +408,12 @@ private:
 			FragColor = result;
 		} 
 	)";
+	void initUniformLocations() noexcept;
 public:
-	LightingShader();
+	LightingShader() noexcept : ShaderBase(vtx_shader, frag_shader)
+	{
+		initUniformLocations();
+	}
 
 	void ModelMtx(const float* mat4) noexcept;
 	void ProjectionMtx(const float* mat4) noexcept;

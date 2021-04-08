@@ -202,7 +202,7 @@ public:
 	void save() noexcept;
 
 	void setup(class EventSystem& events);
-	const std::string& getBindingString(const char* binding_id) noexcept;
+	const char* getBindingString(const char* binding_id) noexcept;
 	const Keybindings& getBindings() const noexcept { return ActiveBindings; }
 	void setBindings(const Keybindings& bindings) noexcept;
 	void registerBinding(KeybindingGroup&& group) noexcept;

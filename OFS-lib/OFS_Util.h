@@ -44,7 +44,8 @@
 #define ICON_TRASH "\xef\x87\xb8"
 #define ICON_RANDOM "\xef\x81\xb4"
 #define ICON_WARNING_SIGN "\xef\x81\xb1"
-//#ifndef NDEBUG
+
+#ifndef NDEBUG
 #define LOG_INFO(msg)  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, msg)
 #define LOG_WARN(msg)  SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, msg)
 #define LOG_DEBUG(msg)  SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, msg)
@@ -54,17 +55,17 @@
 #define LOGF_WARN( format, ...)	SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, format, __VA_ARGS__)
 #define LOGF_DEBUG(format, ...)	SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, format, __VA_ARGS__)
 #define LOGF_ERROR(format, ...)	SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, format, __VA_ARGS__)
-//#else
-//#define LOG_INFO(...)
-//#define LOG_WARN(...)
-//#define LOG_DEBUG(...)
-//#define LOG_ERROR(...)
-//
-//#define LOGF_INFO(...)
-//#define LOGF_WARN(...)
-//#define LOGF_DEBUG(...)
-//#define LOGF_ERROR(...)
-//#endif
+#else
+#define LOG_INFO(msg)  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, msg)
+#define LOG_WARN(msg)  SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, msg)
+#define LOG_DEBUG(msg)
+#define LOG_ERROR(msg)  SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, msg)
+
+#define LOGF_INFO( format, ...)	SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, format, __VA_ARGS__)
+#define LOGF_WARN( format, ...)	SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, format, __VA_ARGS__)
+#define LOGF_DEBUG(format, ...)
+#define LOGF_ERROR(format, ...)	SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, format, __VA_ARGS__)
+#endif
 
 #if defined(WIN32)
 #define FUN_DEBUG_BREAK() __debugbreak()
@@ -100,15 +101,6 @@
 #define FUN_ASSERT(expr, msg)
 
 #endif
-
-#if WIN32
-#define OFS_CMD_QUOTES R"(")"
-#else	   
-#define OFS_CMD_QUOTES
-#endif
-
-// for windows it's a good idea to quote the command
-#define OFS_SYSTEM_CMD(cmd) OFS_CMD_QUOTES cmd OFS_CMD_QUOTES
 
 class Util {
 public:

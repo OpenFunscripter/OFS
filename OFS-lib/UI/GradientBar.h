@@ -34,7 +34,7 @@ struct ImGradientMark
 class ImGradient
 {
 public:
-    ImGradient() {}
+    ImGradient() noexcept {}
     ~ImGradient();
 
     void getColorAt(float position, float* color) const noexcept;

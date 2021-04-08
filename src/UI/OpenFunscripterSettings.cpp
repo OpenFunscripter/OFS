@@ -85,7 +85,7 @@ bool OpenFunscripterSettings::ShowPreferenceWindow()
 		}
 		
 		if (ImGui::InputInt("Font size", (int*)&scripterSettings.default_font_size, 1, 1)) {
-			scripterSettings.default_font_size = Util::Clamp(scripterSettings.default_font_size, 16, 48);
+			scripterSettings.default_font_size = Util::Clamp(scripterSettings.default_font_size, 8, 64);
 			EventSystem::SingleShot([](void* ctx) {
 				// fonts can't be updated during a frame
 				// this updates the font during event processing
