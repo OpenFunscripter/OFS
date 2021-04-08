@@ -343,7 +343,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 			drawingCtx.canvas_pos,
 			ImVec2(drawingCtx.canvas_pos.x + drawingCtx.canvas_size.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y),
 			borderColor,
-			0.f, ImDrawCornerFlags_All,
+			0.f, ImDrawFlags_None,
 			borderThicknes
 		);
 

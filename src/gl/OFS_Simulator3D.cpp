@@ -200,7 +200,6 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
                     glm::value_ptr(translation), NULL, NULL)) {
                     auto g = ImGui::GetCurrentContext();
                     auto window = ImGui::GetCurrentWindow();
-                    g->HoveredRootWindow = window;
                     g->HoveredWindow = window;
                     g->HoveredDockNode = window->DockNode;
                 }

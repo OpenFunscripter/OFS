@@ -1805,11 +1805,23 @@ int OpenFunscripter::run() noexcept
     new_frame();
     setupDefaultLayout(false);
     render();
+    const uint64_t PerfFreq = SDL_GetPerformanceFrequency();
     while (!ShouldExit) {
-        const int32_t maxFrameTicks = std::round(1000.0 / settings->data().framerateLimit);
-        auto tickStart = SDL_GetTicks();
+        const uint64_t minFrameTime = (float)PerfFreq / (float)settings->data().framerateLimit;
+        uint64_t FrameStart = SDL_GetPerformanceCounter();
         step();
-        while (!settings->data().vsync && SDL_GetTicks() - tickStart < maxFrameTicks) { }
+        uint64_t FrameEnd = SDL_GetPerformanceCounter();
+        
+        {
+            int32_t sleepMs = ((float)(minFrameTime - (FrameEnd - FrameStart)) / (float)minFrameTime) * (1000.f / (float)settings->data().framerateLimit);
+            sleepMs -= 1;
+            if (sleepMs > 0 && sleepMs < 32) { SDL_Delay(sleepMs); }
+            FrameEnd = SDL_GetPerformanceCounter();
+        }
+        while (!settings->data().vsync && (FrameEnd - FrameStart) < minFrameTime) {
+            OFS_PAUSE_INTRIN();
+            FrameEnd = SDL_GetPerformanceCounter();
+        }
     }
 	return 0;
 }
@@ -2697,7 +2709,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     //    padStrings.push_back("--");
                     //}
                 }
-                ImGui::Combo("##ActiveControllers", &selectedController, padStrings.data(), padStrings.size());
+                ImGui::Combo("##ActiveControllers", &selectedController, padStrings.data(), (int32_t)padStrings.size());
                 Util::Tooltip("Selecting doesn't do anything right now.");
 
                 ImGui::EndMenu();
@@ -2735,8 +2747,8 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
     if (ImGui::BeginPopupModal("Metadata Editor", open, ImGuiWindowFlags_NoDocking))
     {
         ImGui::InputText("Title", &metadata.title);
-        metadata.duration = player->getDuration();
-        Util::FormatTime(tmp_buf[0], sizeof(tmp_buf), metadata.duration, false);
+        metadata.duration = (int64_t)player->getDuration();
+        Util::FormatTime(tmp_buf[0], sizeof(tmp_buf), (float)metadata.duration, false);
         ImGui::LabelText("Duration", "%s", tmp_buf[0]);
 
         ImGui::InputText("Creator", &metadata.creator);
@@ -2883,8 +2895,8 @@ void OpenFunscripter::CreateDockspace() noexcept
     if constexpr (opt_fullscreen)
     {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
-        ImGui::SetNextWindowPos(viewport->GetWorkPos());
-        ImGui::SetNextWindowSize(viewport->GetWorkSize());
+        ImGui::SetNextWindowPos(viewport->WorkPos);
+        ImGui::SetNextWindowSize(viewport->WorkSize);
         ImGui::SetNextWindowViewport(viewport->ID);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
