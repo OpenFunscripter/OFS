@@ -7,8 +7,8 @@ static char tmp_buf[2][32];
 
 void OFS_VideoplayerControls::VideoLoaded(SDL_Event& ev) noexcept
 {
-    if (ev.user.data1 != nullptr)
-    {
+    OFS_PROFILE(__FUNCTION__);
+    if (ev.user.data1 != nullptr) {
         videoPreview->previewVideo((const char*)ev.user.data1, 0.f);
     }
 }

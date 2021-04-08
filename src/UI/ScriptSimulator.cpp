@@ -24,6 +24,7 @@ void ScriptSimulator::setup()
 
 void ScriptSimulator::MouseMovement(SDL_Event& ev)
 {
+    OFS_PROFILE(__FUNCTION__);
     SDL_MouseMotionEvent& motion = ev.motion;
     // there's alot of indirection here
     const auto& simP1 = simulator.P1;
@@ -49,6 +50,7 @@ void ScriptSimulator::MouseMovement(SDL_Event& ev)
 
 void ScriptSimulator::MouseDown(SDL_Event& ev)
 {
+    OFS_PROFILE(__FUNCTION__);
     auto& button = ev.button;
     bool clickAddMofifer = KeybindingSystem::PassiveModifier("click_add_point_simulator");
     if (clickAddMofifer && button.button == SDL_BUTTON_LEFT) {

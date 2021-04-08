@@ -191,6 +191,7 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 void VideoplayerWindow::MpvRenderUpdate(SDL_Event& ev) noexcept
 {
 	if (ev.user.data1 != this) return;
+	OFS_PROFILE(__FUNCTION__);
 	uint64_t flags = mpv_render_context_update(mpv_gl);
 	if (flags & MPV_RENDER_UPDATE_FRAME) {
 		redrawVideo = true;
@@ -354,6 +355,7 @@ VideoplayerWindow::~VideoplayerWindow()
 
 void VideoplayerWindow::mouse_scroll(SDL_Event& ev) noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	if (settings.LockedPosition) return;
 
 	auto scroll = ev.wheel;

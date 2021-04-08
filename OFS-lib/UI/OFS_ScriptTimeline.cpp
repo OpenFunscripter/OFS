@@ -69,6 +69,7 @@ void ScriptTimeline::setup(UndoSystem* undoSystem)
 void ScriptTimeline::mouse_pressed(SDL_Event& ev) noexcept
 {
 	if (Scripts == nullptr || (*Scripts).size() <= activeScriptIdx) return;
+	OFS_PROFILE(__FUNCTION__);
 
 	auto& button = ev.button;
 	auto mousePos = ImGui::GetMousePos();
@@ -152,6 +153,7 @@ void ScriptTimeline::mouse_pressed(SDL_Event& ev) noexcept
 
 void ScriptTimeline::mouse_released(SDL_Event& ev) noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	auto& button = ev.button;
 	if (IsMoving && button.button == SDL_BUTTON_LEFT) {
 		IsMoving = false;
@@ -166,6 +168,7 @@ void ScriptTimeline::mouse_released(SDL_Event& ev) noexcept
 
 void ScriptTimeline::mouse_drag(SDL_Event& ev) noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	if (Scripts == nullptr || (*Scripts).size() <= activeScriptIdx) return;
 
 	auto& motion = ev.motion;
@@ -208,6 +211,7 @@ void ScriptTimeline::mouse_drag(SDL_Event& ev) noexcept
 
 void ScriptTimeline::mouse_scroll(SDL_Event& ev) noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	auto& wheel = ev.wheel;
 	constexpr float scrollPercent = 0.10f;
 	if (PositionsItemHovered) {

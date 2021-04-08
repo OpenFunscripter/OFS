@@ -79,6 +79,7 @@ FunctionRangeExtender::~FunctionRangeExtender() noexcept
 
 void FunctionRangeExtender::SelectionChanged(SDL_Event& ev) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     if (OpenFunscripter::script().SelectionSize() > 0) {
         rangeExtend = 0;
         createUndoState = true;
@@ -123,6 +124,7 @@ RamerDouglasPeucker::~RamerDouglasPeucker() noexcept
 
 void RamerDouglasPeucker::SelectionChanged(SDL_Event& ev) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     if (OpenFunscripter::script().SelectionSize() > 0) {
         epsilon = 0.f;
         createUndoState = true;
@@ -300,6 +302,7 @@ CustomLua::~CustomLua() noexcept
 
 void CustomLua::SelectionChanged(SDL_Event& ev) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     if (OpenFunscripter::script().SelectionSize() > 0) {
         createUndoState = true;
     }

@@ -1487,6 +1487,7 @@ void OpenFunscripter::ScriptTimelineActionClicked(SDL_Event& ev) noexcept
 
 void OpenFunscripter::DragNDrop(SDL_Event& ev) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     if (closeProject()) {
         openFile(ev.drop.file);
     }
@@ -2998,7 +2999,7 @@ void OpenFunscripter::ShowStatisticsWindow(bool* open) noexcept
 void OpenFunscripter::ControllerAxisPlaybackSpeed(SDL_Event& ev) noexcept
 {
     static Uint8 lastAxis = 0;
-
+    OFS_PROFILE(__FUNCTION__);
     auto& caxis = ev.caxis;
     if (SetPlaybackSpeedController && caxis.axis == lastAxis && caxis.value <= 0) {
         SetPlaybackSpeedController = false;
@@ -3022,18 +3023,21 @@ void OpenFunscripter::ControllerAxisPlaybackSpeed(SDL_Event& ev) noexcept
 
 void OpenFunscripter::ScriptTimelineDoubleClick(SDL_Event& ev) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     int32_t seekToMs = (intptr_t)ev.user.data1;
     player->setPositionExact(seekToMs);
 }
 
 void OpenFunscripter::ScriptTimelineSelectTime(SDL_Event& ev) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     auto& time =*(ScriptTimelineEvents::SelectTime*)ev.user.data1;
     ActiveFunscript()->SelectTime(time.start_ms, time.end_ms, time.clear);
 }
 
 void OpenFunscripter::ScriptTimelineActiveScriptChanged(SDL_Event& ev) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     UpdateNewActiveScript((intptr_t)ev.user.data1);
 }
 

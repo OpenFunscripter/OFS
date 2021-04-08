@@ -1,6 +1,7 @@
 #include "OFS_ControllerInput.h"
 #include "OFS_Util.h"
 #include "KeybindingSystem.h"
+#include "OFS_Profiling.h"
 
 #include "SDL.h"
 
@@ -59,6 +60,7 @@ int ControllerInput::GetControllerIndex(SDL_JoystickID instance)
 
 void ControllerInput::ControllerButtonDown(SDL_Event& ev) const noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	const int64_t RepeatDelayMs = 300;
 	auto& cbutton = ev.cbutton;
 	ButtonsHeldDown[cbutton.button] = (int64_t)SDL_GetTicks() + RepeatDelayMs;
@@ -66,12 +68,14 @@ void ControllerInput::ControllerButtonDown(SDL_Event& ev) const noexcept
 
 void ControllerInput::ControllerButtonUp(SDL_Event& ev) const noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	auto& cbutton = ev.cbutton;
 	ButtonsHeldDown[cbutton.button] = -1;
 }
 
 void ControllerInput::ControllerDeviceAdded(SDL_Event& ev) noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	if (ev.cdevice.which < Controllers.size()) {
 		ControllerInput& jc = Controllers[ev.cdevice.which];
 		jc.OpenController(ev.cdevice.which);
@@ -81,6 +85,7 @@ void ControllerInput::ControllerDeviceAdded(SDL_Event& ev) noexcept
 
 void ControllerInput::ControllerDeviceRemoved(SDL_Event& ev) noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	int cIndex = GetControllerIndex(ev.cdevice.which);
 	if (cIndex < 0) return; // unknown controller?
 	ControllerInput& jc = Controllers[cIndex];

@@ -143,6 +143,7 @@ void VideoPreview::setup(bool autoplay) noexcept
 void VideoPreview::MpvEvents(SDL_Event& ev) noexcept
 {
 	if (ev.user.data1 != this) return;
+	OFS_PROFILE(__FUNCTION__);
 	while (1) {
 		mpv_event* mp_event = mpv_wait_event(mpv, 0);
 		if (mp_event->event_id == MPV_EVENT_NONE) break;
@@ -221,6 +222,7 @@ void VideoPreview::MpvEvents(SDL_Event& ev) noexcept
 void VideoPreview::MpvRenderUpdate(SDL_Event& ev) noexcept
 {
 	if (ev.user.data1 != this) return;
+	OFS_PROFILE(__FUNCTION__);
 	uint64_t flags = mpv_render_context_update(mpv_gl);
 	if (flags & MPV_RENDER_UPDATE_FRAME) {
 		mpv_opengl_fbo fbo{ 0 };

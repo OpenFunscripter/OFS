@@ -320,6 +320,7 @@ void KeybindingSystem::ProcessControllerBindings(SDL_Event& ev, bool repeat) noe
 
 void KeybindingSystem::ControllerButtonRepeat(SDL_Event& ev) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     if (currentlyChanging != nullptr) return;
     if (ShowWindow) return;
     //auto& cbutton = ev.cbutton; // only cbutton.button is set

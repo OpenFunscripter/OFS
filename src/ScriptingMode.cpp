@@ -345,6 +345,7 @@ RecordingImpl::~RecordingImpl()
 
 void RecordingImpl::ControllerAxisMotion(SDL_Event& ev)
 {
+    OFS_PROFILE(__FUNCTION__);
     if (activeMode != RecordingMode::Controller) return;
     auto& axis = ev.caxis;
     const float range = (float)std::numeric_limits<int16_t>::max() - ControllerDeadzone;

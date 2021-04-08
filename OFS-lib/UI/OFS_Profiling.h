@@ -54,12 +54,12 @@ class OFS_Profiler
 public:
 	inline static void BeginProfiling() noexcept
 	{
-		FrameMark;
+		//FrameMark;
 	}
 	inline static void EndProfiling() noexcept
 	{
-		//FrameMark;
-		FrameMarkEnd(nullptr);
+		FrameMark;
+		//FrameMarkEnd(nullptr);
 	}
 };
 

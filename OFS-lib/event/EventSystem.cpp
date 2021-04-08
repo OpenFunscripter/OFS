@@ -7,6 +7,7 @@ int32_t EventSystem::WaitableSingleShotEvent = 0;
 
 void EventSystem::SingleShotHandler(SDL_Event& ev) noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	SingleShotEventData* data = (SingleShotEventData*)ev.user.data1;
 	data->handler(data->ctx);
 	delete data;
@@ -14,6 +15,7 @@ void EventSystem::SingleShotHandler(SDL_Event& ev) noexcept
 
 void EventSystem::WaitableSingleShotHandler(SDL_Event& ev) noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	WaitableSingleShotEventData* data = (WaitableSingleShotEventData*)ev.user.data1;
 	data->handler(data->ctx);
 	SDL_SemPost(data->waitSemaphore);
@@ -63,6 +65,7 @@ void EventSystem::UnsubscribeAll(void* listener) noexcept
 
 void EventSystem::SingleShot(SingleShotEventHandler&& handler, void* ctx) noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	// evData is freed after the event got processed
 	auto evData = new SingleShotEventData();
 	evData->ctx = ctx;
@@ -75,6 +78,7 @@ void EventSystem::SingleShot(SingleShotEventHandler&& handler, void* ctx) noexce
 
 std::unique_ptr<EventSystem::WaitableSingleShotEventData> EventSystem::WaitableSingleShot(SingleShotEventHandler&& handler, void* ctx) noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	auto data = std::make_unique<WaitableSingleShotEventData>(ctx,  std::move(handler));
 	SDL_Event ev;
 	ev.type = EventSystem::WaitableSingleShotEvent;
