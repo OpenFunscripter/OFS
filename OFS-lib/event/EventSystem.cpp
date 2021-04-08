@@ -1,6 +1,4 @@
 #include "EventSystem.h"
-#include "EventSystem.h"
-#include "EventSystem.h"
 
 EventSystem* EventSystem::instance = nullptr;
 
@@ -22,7 +20,7 @@ void EventSystem::WaitableSingleShotHandler(SDL_Event& ev) noexcept
 	// gets deleted by the waiting thread
 }
 
-void EventSystem::setup()
+void EventSystem::setup() noexcept
 {
 	FUN_ASSERT(instance == nullptr, "only one instance");
 	instance = this;
@@ -32,18 +30,10 @@ void EventSystem::setup()
 	Subscribe(WaitableSingleShotEvent, EVENT_SYSTEM_BIND(this, &EventSystem::WaitableSingleShotHandler));
 }
 
-void EventSystem::PushEvent(SDL_Event& event) noexcept
-{
-	for (auto& handler : handlers) {
-		if (handler.eventType == event.type)
-			handler.func(event);
-	}
-}
-
 void EventSystem::Subscribe(int32_t eventType, void* listener, EventHandlerFunc&& handler) noexcept
 {
 	// this excects the listener to never relocate
-	handlers.emplace_back(eventType, listener, handler);
+	handlers.emplace_back(eventType, listener, std::move(handler));
 }
 
 void EventSystem::Unsubscribe(int32_t eventType, void* listener) noexcept
@@ -91,5 +81,5 @@ std::unique_ptr<EventSystem::WaitableSingleShotEventData> EventSystem::WaitableS
 	ev.user.data1 = (void*)data.get();
 	SDL_SemWait(data->waitSemaphore);
 	SDL_PushEvent(&ev);
-	return data;
+	return std::move(data);
 }

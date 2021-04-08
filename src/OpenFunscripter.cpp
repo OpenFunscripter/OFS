@@ -1465,7 +1465,7 @@ void OpenFunscripter::process_events() noexcept
         }
 #endif
         }
-        events->PushEvent(event);
+        events->Propagate(event);
     }
     OFS_END_EVENT_PROFILING();
 }

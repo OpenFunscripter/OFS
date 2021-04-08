@@ -172,7 +172,7 @@ public:
 	std::string Title;
 	bool Enabled = true;
 
-	inline void UpdatePath(const std::string& path) noexcept	{
+	inline void UpdatePath(const std::string& path) noexcept {
 		CurrentPath = path;
 		Title = Util::PathFromString(CurrentPath)
 			.replace_extension("")
@@ -191,7 +191,7 @@ public:
 	void save() noexcept { save(CurrentPath, true); }
 	void save(const std::string& path, bool override_location = true);
 	
-	inline void reserveActionMemory(int32_t frameCount) { 
+	inline void reserveActionMemory(int32_t frameCount) noexcept { 
 		data.Actions.reserve(frameCount);
 	}
 

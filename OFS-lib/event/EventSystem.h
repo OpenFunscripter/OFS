@@ -17,8 +17,8 @@ public:
 	EventHandlerFunc func;
 	void* listener = nullptr;
 
-	EventHandler(int32_t type, void* listener, EventHandlerFunc func)
-		: eventType(type), func(func), listener(listener) { }
+	EventHandler(int32_t type, void* listener, EventHandlerFunc&& func) noexcept
+		: eventType(type), func(std::move(func)), listener(listener) { }
 };
 
 class EventSystem {
@@ -57,17 +57,23 @@ public:
 	};
 	static int32_t WaitableSingleShotEvent;
 
-	void setup();
+	void setup() noexcept;
 
 
-	void PushEvent(SDL_Event& event) noexcept;
+	inline void Propagate(SDL_Event& event) noexcept
+	{
+		for (auto& handler : handlers) {
+			if (handler.eventType == event.type)
+				handler.func(event);
+		}
+	}
+
 	void Subscribe(int32_t eventType, void* listener, EventHandlerFunc&& handler) noexcept;
 	void Unsubscribe(int32_t eventType, void* listener) noexcept;
 	void UnsubscribeAll(void* listener) noexcept;
 
 	// helper
-	inline static void PushEvent(int32_t type, void* user1 = nullptr) noexcept
-	{
+	inline static void PushEvent(int32_t type, void* user1 = nullptr) noexcept {
 		SDL_Event ev;
 		ev.type = type;
 		ev.user.data1 = user1;
