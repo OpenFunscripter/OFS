@@ -49,6 +49,7 @@ public:
 #define OFS_BENCHMARK(function)
 #endif
 
+#if OFS_PROFILE_ENABLED == 1
 class OFS_Profiler
 {
 public:
@@ -62,7 +63,7 @@ public:
 		//FrameMarkEnd(nullptr);
 	}
 };
-
+#endif
 
 #if OFS_PROFILE_ENABLED == 1
 #define OFS_PROFILE(name) ZoneScopedN(name)
