@@ -125,6 +125,9 @@ void Funscript::update() noexcept
 		selectionChanged = false;
 		EventSystem::PushEvent(FunscriptEvents::FunscriptSelectionChangedEvent);
 	}
+	if (ActionMapNeedsUpdate) {
+		updateActionMap(data.Actions);
+	}
 }
 
 float Funscript::GetPositionAtTime(int32_t time_ms) noexcept
@@ -134,9 +137,9 @@ float Funscript::GetPositionAtTime(int32_t time_ms) noexcept
 	else if (data.Actions.size() == 1) return data.Actions[0].pos;
 
 	int i = 0;
-	if (!SplineNeedsUpdate) {
-		auto indexIt = ScriptSpline.ActionMap.lower_bound(time_ms);
-		if (indexIt != ScriptSpline.ActionMap.end()) {
+	if (!ActionMapNeedsUpdate) {
+		auto indexIt = ActionMap.lower_bound(time_ms);
+		if (indexIt != ActionMap.end()) {
 			// index is valid
 			i = indexIt->second;
 			if (i > 0) --i;

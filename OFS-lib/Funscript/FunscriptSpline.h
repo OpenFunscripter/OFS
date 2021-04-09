@@ -30,37 +30,23 @@ class FunscriptSpline
 	}
 
 public:
-	std::map<int32_t, int32_t> ActionMap; // maps timeMs to Index in actions vector
-
-	inline void Update(const std::vector<FunscriptAction>& actions) noexcept
-	{
-		OFS_PROFILE(__FUNCTION__);
-		ActionMap.clear();
-		for (int i = 0; i < actions.size(); i++) {
-			ActionMap.emplace(actions[i].at, i);
-		}
-	}
-
-	inline float Sample(const std::vector<FunscriptAction>& actions, float timeMs) noexcept 
+	inline float Sample(const std::vector<FunscriptAction>& actions, float timeMs, const std::map<int32_t, int32_t>& ActionMap) noexcept 
 	{
 		OFS_PROFILE(__FUNCTION__);
 		if (actions.size() == 0) { return 0.f; }
 		else if (actions.size() == 1) { return actions.front().pos / 100.f; }
 		else if (cacheIdx + 1 >= actions.size()) { cacheIdx = 0; }
 
-		if (actions[cacheIdx].at <= timeMs && actions[cacheIdx + 1].at >= timeMs)
-		{
+		if (actions[cacheIdx].at <= timeMs && actions[cacheIdx + 1].at >= timeMs) {
 			// cache hit!
 			return catmull_rom_spline(actions, cacheIdx, timeMs);
 		}
-		else if (cacheIdx + 2 < actions.size() && actions[cacheIdx+1].at <= timeMs && actions[cacheIdx+2].at >= timeMs)
-		{
+		else if (cacheIdx + 2 < actions.size() && actions[cacheIdx+1].at <= timeMs && actions[cacheIdx+2].at >= timeMs) {
 			// sort of a cache hit
 			cacheIdx += 1;
 			return catmull_rom_spline(actions, cacheIdx, timeMs);
 		}
-		else
-		{
+		else {
 			// cache miss
 			// lookup index
 			auto it = ActionMap.upper_bound((int32_t)timeMs);
@@ -84,10 +70,8 @@ public:
 	{
 		OFS_PROFILE(__FUNCTION__);
 		if (actions.size() == 0) { return 0.f; }
-		if (index + 1 < actions.size())
-		{
-			if (actions[index].at <= timeMs && actions[index + 1].at >= timeMs)
-			{
+		if (index + 1 < actions.size())	{
+			if (actions[index].at <= timeMs && actions[index + 1].at >= timeMs) {
 				return catmull_rom_spline(actions, index, timeMs);
 			}
 		}

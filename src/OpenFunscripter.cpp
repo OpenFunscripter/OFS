@@ -2967,7 +2967,7 @@ void OpenFunscripter::ShowStatisticsWindow(bool* open) noexcept
     if (!*open) return;
     OFS_PROFILE(__FUNCTION__);
     ImGui::Begin(StatisticsId, open, ImGuiWindowFlags_None);
-    const int32_t currentMs = std::round(player->getCurrentPositionMs());
+    const int32_t currentMs = std::round(player->getCurrentPositionMsInterp());
     const FunscriptAction* front = ActiveFunscript()->GetActionAtTime(currentMs, 0);
     const FunscriptAction* behind = nullptr;
     if (front != nullptr) {

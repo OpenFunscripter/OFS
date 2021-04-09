@@ -120,13 +120,25 @@ private:
 	void checkForInvalidatedActions() noexcept;
 	
 	FunscriptData data;
+	bool ActionMapNeedsUpdate = true;
+	std::map<int32_t, int32_t> ActionMap; // maps timeMs to Index in actions vector
+
+	inline void updateActionMap(const std::vector<FunscriptAction>& actions) noexcept
+	{
+		OFS_PROFILE(__FUNCTION__);
+		ActionMapNeedsUpdate = false;
+		ActionMap.clear();
+		for (int i = 0; i < actions.size(); i++) {
+			ActionMap.emplace(actions[i].at, i);
+		}
+	}
 	
 	inline FunscriptAction* getAction(FunscriptAction action) noexcept
 	{
 		OFS_PROFILE(__FUNCTION__);
-		if (!SplineNeedsUpdate) {
-			auto indexIt = ScriptSpline.ActionMap.find(action.at);
-			if (indexIt != ScriptSpline.ActionMap.end()) {
+		if (!ActionMapNeedsUpdate) {
+			auto indexIt = ActionMap.find(action.at);
+			if (indexIt != ActionMap.end()) {
 				return &data.Actions[indexIt->second];
 			}
 		}
@@ -146,9 +158,9 @@ private:
 		FunscriptAction* smallestErrorAction = nullptr;
 
 		int i = 0;
-		if (!SplineNeedsUpdate) {
-			auto indexIt = ScriptSpline.ActionMap.lower_bound(time_ms - max_error_ms);
-			if (indexIt != ScriptSpline.ActionMap.end()) {
+		if (!ActionMapNeedsUpdate) {
+			auto indexIt = ActionMap.lower_bound(time_ms - max_error_ms);
+			if (indexIt != ActionMap.end()) {
 				// index is valid
 				i = indexIt->second;
 			}
@@ -177,9 +189,9 @@ private:
 	inline FunscriptAction* getNextActionAhead(int32_t time_ms) noexcept
 	{
 		OFS_PROFILE(__FUNCTION__);
-		if (!SplineNeedsUpdate) {
-			auto indexIt = ScriptSpline.ActionMap.upper_bound(time_ms);
-			if (indexIt != ScriptSpline.ActionMap.end()
+		if (!ActionMapNeedsUpdate) {
+			auto indexIt = ActionMap.upper_bound(time_ms);
+			if (indexIt != ActionMap.end()
 				&& indexIt->first > time_ms) {
 				int index = indexIt->second;
 				return &data.Actions[index];
@@ -201,9 +213,9 @@ private:
 	inline FunscriptAction* getPreviousActionBehind(int32_t time_ms) noexcept
 	{
 		OFS_PROFILE(__FUNCTION__);
-		if (!SplineNeedsUpdate) {
-			auto indexIt = ScriptSpline.ActionMap.upper_bound(time_ms);
-			if (indexIt != ScriptSpline.ActionMap.end()
+		if (!ActionMapNeedsUpdate) {
+			auto indexIt = ActionMap.lower_bound(time_ms);
+			if (indexIt != ActionMap.end()
 				&& indexIt->second > 0) {
 				// index is valid
 				int index = indexIt->second - 1;
@@ -247,10 +259,7 @@ private:
 	void loadMetadata() noexcept;
 	void saveMetadata() noexcept;
 
-	void startSaveThread(const std::string& path, std::vector<FunscriptAction>&& actions, nlohmann::json&& json) noexcept;
-	
-	bool SplineNeedsUpdate = true;
-	
+	void startSaveThread(const std::string& path, std::vector<FunscriptAction>&& actions, nlohmann::json&& json) noexcept;	
 	std::string CurrentPath;
 public:
 	Funscript();
@@ -262,10 +271,9 @@ public:
 			unsavedEdits = true;
 			editTime = std::chrono::system_clock::now();
 		}
-		SplineNeedsUpdate = true;
+		ActionMapNeedsUpdate = true;
 	}
 
-	FunscriptSpline ScriptSpline;
 	std::unique_ptr<FunscriptUndoSystem> undoSystem;
 
 	std::string Title;
@@ -350,15 +358,13 @@ public:
 	void EqualizeSelection() noexcept;
 	void InvertSelection() noexcept;
 
-
+	FunscriptSpline ScriptSpline;
 	inline const float Spline(float timeMs) noexcept {
-		auto& actions = Actions();
-		if (SplineNeedsUpdate) {
-			ScriptSpline.Update(actions);
-			SplineNeedsUpdate = false;
+		if (ActionMapNeedsUpdate) {
+			updateActionMap(data.Actions);
 		}
 
-		return ScriptSpline.Sample(actions, timeMs);
+		return ScriptSpline.Sample(data.Actions, timeMs, ActionMap);
 	}
 
 	inline const float SplineClamped(float timeMs) noexcept {
@@ -424,35 +430,11 @@ inline void Funscript::save(const std::string& path, bool override_location)
 	// make sure actions are sorted
 	sortActions(data.Actions);
 
-	std::vector<FunscriptAction> filteredActions;
-	if (data.Actions.size() >= 3) {
-		filteredActions.reserve(data.Actions.size());
-		filteredActions.emplace_back(data.Actions.front());
-		for (int i = 1; i < data.Actions.size() - 1; i++) {
-			auto previous = filteredActions.back();
-			auto current = data.Actions[i];
-			auto next = data.Actions[i + 1];
-
-			float speedPreviousToNext = std::abs(previous.pos - next.pos) / (float)(next.at - previous.at);
-
-			float speedPreviousToCurrent = std::abs(previous.pos - current.pos) / (float)(current.at - previous.at);
-			float speedCurrentToNext = std::abs(current.pos - next.pos) / (float)(next.at - current.at);
-
-			float avgSpeedSegments = (speedPreviousToCurrent + speedCurrentToNext) / 2.f;
-
-			if (std::abs(speedPreviousToNext - avgSpeedSegments) > (speedPreviousToNext * 0.005)) {
-				filteredActions.emplace_back(current);
-			}
-		}
-		filteredActions.emplace_back(data.Actions.back());
-	}
-	else { filteredActions = data.Actions; }
-
-
 	if (override_location) {
 		CurrentPath = path;
 		unsavedEdits = false;
 	}
 
-	startSaveThread(path, std::move(filteredActions), std::move(Json));
+	std::vector<FunscriptAction> copyActions = data.Actions;
+	startSaveThread(path, std::move(copyActions), std::move(Json));
 }
