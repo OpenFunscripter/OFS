@@ -58,7 +58,7 @@ void ScriptTimeline::setup(UndoSystem* undoSystem)
 	EventSystem::ev().Subscribe(ScriptTimelineEvents::FfmpegAudioProcessingFinished, EVENT_SYSTEM_BIND(this, &ScriptTimeline::FfmpegAudioProcessingFinished));
 	EventSystem::ev().Subscribe(VideoEvents::MpvVideoLoaded, EVENT_SYSTEM_BIND(this, &ScriptTimeline::videoLoaded));
 
-	glCreateTextures(GL_TEXTURE_1D, 1, &WaveformTex);
+	glGenTextures(1, &WaveformTex);
 	glBindTexture(GL_TEXTURE_1D, WaveformTex);
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
