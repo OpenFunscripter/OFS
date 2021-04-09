@@ -319,13 +319,13 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 		}
 
 		auto startIt = std::find_if(script.Actions().begin(), script.Actions().end(),
-		    [&](auto& act) { return act.at >= offsetMs; });
+		    [this](auto act) { return act.at >= offsetMs; });
 		if (startIt != script.Actions().begin()) {
 		    startIt -= 1;
 		}
 
 		auto endIt = std::find_if(startIt, script.Actions().end(),
-		    [&](auto& act) { return act.at >= offsetMs + visibleSizeMs; });
+		    [this](auto act) { return act.at >= offsetMs + visibleSizeMs; });
 		if (endIt != script.Actions().end()) {
 		    endIt += 1;
 		}

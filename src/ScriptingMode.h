@@ -123,11 +123,11 @@ class OpenFunscripter;
 class ScriptingMode {
 	std::array<std::unique_ptr<ScripingModeBaseImpl>, ScriptingModeEnum::COUNT> modes;
 	ScripingModeBaseImpl* impl = nullptr;
-	ScriptingModeEnum active_mode;
-	ScriptingOverlayModes active_overlay;
+	ScriptingModeEnum activeMode;
+	ScriptingOverlayModes activeOverlay;
 public:
-	ScriptingModeEnum mode() const { return active_mode; }
-	ScripingModeBaseImpl& Impl() { return *impl; }
+	inline ScriptingModeEnum mode() const { return activeMode; }
+	inline ScripingModeBaseImpl& Impl() { return *impl; }
 
 	static constexpr const char* ScriptingModeId = "Mode";
 	void setup();

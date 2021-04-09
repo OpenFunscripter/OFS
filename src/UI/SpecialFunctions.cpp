@@ -44,14 +44,15 @@ void SpecialFunctionsWindow::ShowFunctionsWindow(bool* open) noexcept
 {
 	if (open != nullptr && !(*open)) { return; }
     OFS_PROFILE(__FUNCTION__);
+    auto app = OpenFunscripter::ptr;
 	ImGui::Begin(SpecialFunctionsId, open, ImGuiWindowFlags_None);
 	ImGui::SetNextItemWidth(-1.f);
-    if (ImGui::Combo("##Functions", (int32_t*)&OpenFunscripter::ptr->settings->data().currentSpecialFunction,
+    if (ImGui::Combo("##Functions", (int32_t*)&app->settings->data().currentSpecialFunction,
         "Range extender\0"
         "Simplify (Ramer-Douglas-Peucker)\0"
         "Custom functions\0"
         "\0")) {
-        SetFunction((SpecialFunctions)OpenFunscripter::ptr->settings->data().currentSpecialFunction);
+        SetFunction((SpecialFunctions)app->settings->data().currentSpecialFunction);
     }
 	ImGui::Spacing();
 	function->DrawUI();
@@ -114,12 +115,12 @@ void FunctionRangeExtender::DrawUI() noexcept
 RamerDouglasPeucker::RamerDouglasPeucker() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    app->events->Subscribe(FunscriptEvents::FunscriptSelectionChangedEvent, EVENT_SYSTEM_BIND(this, &RamerDouglasPeucker::SelectionChanged));
+    EventSystem::ev().Subscribe(FunscriptEvents::FunscriptSelectionChangedEvent, EVENT_SYSTEM_BIND(this, &RamerDouglasPeucker::SelectionChanged));
 }
 
 RamerDouglasPeucker::~RamerDouglasPeucker() noexcept
 {
-    OpenFunscripter::ptr->events->UnsubscribeAll(this);
+    EventSystem::ev().UnsubscribeAll(this);
 }
 
 void RamerDouglasPeucker::SelectionChanged(SDL_Event& ev) noexcept

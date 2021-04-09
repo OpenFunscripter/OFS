@@ -34,16 +34,17 @@ void ScriptingMode::setup()
 void ScriptingMode::DrawScriptingMode(bool* open) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
+    auto app = OpenFunscripter::ptr;
 	ImGui::Begin(ScriptingModeId, open);
     ImGui::PushItemWidth(-1);
     // ATTENTION: order needs to be the same as the enum
-    if (ImGui::Combo("##Mode", (int*)&active_mode, 
+    if (ImGui::Combo("##Mode", (int*)&activeMode, 
         "Default\0"
         "Alternating\0"
         "Dynamic injection\0"
         "Recording\0"
         "\0")) {
-        setMode(active_mode);
+        setMode(activeMode);
     }
     Util::Tooltip("Scripting mode");
     impl->DrawModeSettings();
@@ -52,25 +53,24 @@ void ScriptingMode::DrawScriptingMode(bool* open) noexcept
     ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal);
     ImGui::Spacing();
 
-    if (ImGui::Combo("##OverlayMode", (int*)&active_overlay,
+    if (ImGui::Combo("##OverlayMode", (int*)&activeOverlay,
         "Frame\0"
         "Tempo\0"
         "None\0"
         "\0")) {
-        setOverlay(active_overlay);
+        setOverlay(activeOverlay);
     }
     Util::Tooltip("Scripting overlay");
-    OpenFunscripter::ptr->scriptPositions.overlay->DrawSettings();
+    app->scriptPositions.overlay->DrawSettings();
     ImGui::PopItemWidth();
 
     ImGui::Spacing();
     ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal);
     ImGui::Spacing();
-    auto app = OpenFunscripter::ptr;
     ImGui::DragInt("Offset (ms)", &app->settings->data().action_insert_delay_ms);
     Util::Tooltip("Applies an offset to actions inserted while the video is playing.\n- : inserts earlier\n+ : inserts later");
     if (app->LoadedFunscripts().size() > 1) {
-        ImGui::Checkbox("Mirror mode", &OpenFunscripter::ptr->settings->data().mirror_mode);
+        ImGui::Checkbox("Mirror mode", &app->settings->data().mirror_mode);
         Util::Tooltip("Mirrors add/edit/remove action across all loaded scripts.");
     }
     else {
@@ -83,28 +83,29 @@ void ScriptingMode::setMode(ScriptingModeEnum mode) noexcept
 {
     if (impl) { impl->finish(); }
     if (mode >= ScriptingModeEnum::DEFAULT_MODE && mode < ScriptingModeEnum::COUNT) {
-        active_mode = mode;
+        activeMode = mode;
     }
     else {
-        active_mode = ScriptingModeEnum::DEFAULT_MODE;
+        activeMode = ScriptingModeEnum::DEFAULT_MODE;
     }
-    impl = modes[active_mode].get();
+    impl = modes[activeMode].get();
 }
 
 void ScriptingMode::setOverlay(ScriptingOverlayModes mode) noexcept
 {
-    active_overlay = mode;
-    auto timeline = &OpenFunscripter::ptr->scriptPositions;
+    activeOverlay = mode;
+    auto app = OpenFunscripter::ptr;
+    auto timeline = &app->scriptPositions;
     switch (mode)
     {
     case ScriptingOverlayModes::FRAME:
-        OpenFunscripter::ptr->scriptPositions.overlay = std::make_unique<FrameOverlay>(timeline);
+        app->scriptPositions.overlay = std::make_unique<FrameOverlay>(timeline);
         break;
     case ScriptingOverlayModes::TEMPO:
-        OpenFunscripter::ptr->scriptPositions.overlay = std::make_unique<TempoOverlay>(timeline);
+        app->scriptPositions.overlay = std::make_unique<TempoOverlay>(timeline);
         break;
     case ScriptingOverlayModes::EMPTY:
-        OpenFunscripter::ptr->scriptPositions.overlay = std::make_unique<EmptyOverlay>(timeline);
+        app->scriptPositions.overlay = std::make_unique<EmptyOverlay>(timeline);
         break;
     default:
         break;

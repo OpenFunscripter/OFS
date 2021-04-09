@@ -210,12 +210,12 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
 
     if (script.HasSelection()) {
         auto startIt = std::find_if(script.Selection().begin(), script.Selection().end(),
-            [&](auto& act) { return act.at >= ctx.offset_ms; });
+            [&](auto act) { return act.at >= ctx.offset_ms; });
         if (startIt != script.Selection().begin())
             startIt -= 1;
 
         auto endIt = std::find_if(startIt, script.Selection().end(),
-            [&](auto& act) { return act.at >= ctx.offset_ms + ctx.visibleSizeMs; });
+            [&](auto act) { return act.at >= ctx.offset_ms + ctx.visibleSizeMs; });
         if (endIt != script.Selection().end())
             endIt += 1;
 

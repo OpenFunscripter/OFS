@@ -119,18 +119,11 @@ void Funscript::update() noexcept
 	OFS_PROFILE(__FUNCTION__);
 	if (funscriptChanged) {
 		funscriptChanged = false;
-		SDL_Event ev;
-		ev.type = FunscriptEvents::FunscriptActionsChangedEvent;
-		SDL_PushEvent(&ev);
-
-		// TODO: find out how expensive this is on an already sorted array
-		sortActions(data.Actions);
+		EventSystem::PushEvent(FunscriptEvents::FunscriptActionsChangedEvent);
 	}
 	if (selectionChanged) {
 		selectionChanged = false;
-		SDL_Event ev;
-		ev.type = FunscriptEvents::FunscriptSelectionChangedEvent;
-		SDL_PushEvent(&ev);
+		EventSystem::PushEvent(FunscriptEvents::FunscriptSelectionChangedEvent);
 	}
 }
 
@@ -175,12 +168,12 @@ float Funscript::GetPositionAtTime(int32_t time_ms) noexcept
 void Funscript::AddActionSafe(FunscriptAction newAction) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	auto it = std::find_if(data.Actions.begin(), data.Actions.end(), [&](auto&& action) {
+	auto it = std::find_if(data.Actions.begin(), data.Actions.end(), [newAction](auto action) {
 		return newAction.at < action.at;
 		});
 	// checks if there's already an action with the same timestamp
 	auto safety = std::find_if(it > data.Actions.begin() ? it - 1 : data.Actions.begin(), data.Actions.end(),
-		[&](auto&& action) {
+		[newAction](auto action) {
 			return newAction.at == action.at;
 		});
 	if (safety == data.Actions.end()) {
@@ -255,7 +248,7 @@ void Funscript::PasteAction(FunscriptAction paste, int32_t error_ms) noexcept
 void Funscript::checkForInvalidatedActions() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	auto it = std::remove_if(data.selection.begin(), data.selection.end(), [&](auto&& selected) {
+	auto it = std::remove_if(data.selection.begin(), data.selection.end(), [this](auto selected) {
 		auto found = getAction(selected);
 		if (found == nullptr)
 			return true;
@@ -295,7 +288,7 @@ std::vector<FunscriptAction> Funscript::GetLastStroke(int32_t time_ms) noexcept
 	// assuming "*it" is a peak bottom or peak top
 	// if you went up it would return a down stroke and if you went down it would return a up stroke
 	auto it = std::min_element(data.Actions.begin(), data.Actions.end(),
-		[&](auto&& a, auto&& b) {
+		[time_ms](auto a, auto b) {
 			return std::abs(a.at - time_ms) < std::abs(b.at - time_ms);
 		});
 	if (it == data.Actions.end() || it-1 == data.Actions.begin()) return std::vector<FunscriptAction>(0);
@@ -352,7 +345,7 @@ void Funscript::RemoveActionsInInterval(int32_t fromMs, int32_t toMs) noexcept
 	OFS_PROFILE(__FUNCTION__);
 	data.Actions.erase(
 		std::remove_if(data.Actions.begin(), data.Actions.end(),
-			[&](auto action) {
+			[fromMs, toMs](auto action) {
 				return action.at >= fromMs && action.at <= toMs;
 			}), data.Actions.end()
 	);
@@ -537,9 +530,9 @@ void Funscript::SelectMidActions()
 	auto bottomPoints = data.selection;
 
 	selectionCopy.erase(std::remove_if(selectionCopy.begin(), selectionCopy.end(),
-		[&](auto val) {
-			return std::any_of(topPoints.begin(), topPoints.end(), [&](auto a) { return a == val; })
-				|| std::any_of(bottomPoints.begin(), bottomPoints.end(), [&](auto a) { return a == val; });
+		[&topPoints, &bottomPoints](auto val) {
+			return std::any_of(topPoints.begin(), topPoints.end(), [val](auto a) { return a == val; })
+				|| std::any_of(bottomPoints.begin(), bottomPoints.end(), [val](auto a) { return a == val; });
 		}), selectionCopy.end());
 	data.selection = selectionCopy;
 	sortSelection();

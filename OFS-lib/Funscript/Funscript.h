@@ -188,7 +188,7 @@ private:
 		else {
 			// fallback to linear search
 			auto it = std::find_if(data.Actions.begin(), data.Actions.end(),
-				[&](auto& action) {
+				[time_ms](auto action) {
 					return action.at > time_ms;
 				});
 
@@ -213,7 +213,7 @@ private:
 		else {
 			// fall back to linear search
 			auto it = std::find_if(data.Actions.rbegin(), data.Actions.rend(),
-				[&](auto& action) {
+				[time_ms](auto action) {
 					return action.at < time_ms;
 				});
 
@@ -235,9 +235,9 @@ private:
 	}
 	inline void addAction(std::vector<FunscriptAction>& actions, FunscriptAction newAction) noexcept {
 		OFS_PROFILE(__FUNCTION__);
-		auto it = std::find_if(actions.begin(), actions.end(), [&](auto& action) {
+		auto it = std::find_if(actions.begin(), actions.end(), [newAction](auto action) {
 			return newAction.at < action.at;
-			});
+		});
 		actions.insert(it, newAction);
 		NotifyActionsChanged(true);
 	}

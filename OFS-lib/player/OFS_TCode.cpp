@@ -166,8 +166,8 @@ void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
 
     if (ImGui::CollapsingHeader("Limits##ChannelLimits"))
     {
-        char buf[32];
-        auto limitsGui = [&](TChannel chan) noexcept {
+        auto limitsGui = [this](TChannel chan) noexcept {
+            char buf[32];
             auto& c = tcode.Get(chan);
             float availWidth = ImGui::GetContentRegionAvail().x;
 

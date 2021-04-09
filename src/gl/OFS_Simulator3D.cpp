@@ -219,8 +219,8 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
                 ImGui::InputFloat("Twist deg", &twistRange);
             }
 
-            auto ScriptCombo = [&](auto Id, int32_t* index) {
-                //auto app = OpenFunscripter::ptr;
+            auto ScriptCombo = [](auto Id, int32_t* index, uint32_t loadedScriptsCount, const auto& scripts) noexcept
+            {
                 if (ImGui::BeginCombo(Id, *index >= 0 && *index < loadedScriptsCount ? scripts[*index]->Title.c_str() : "None", ImGuiComboFlags_PopupAlignLeft)) {
                     if (ImGui::Selectable("None", *index < 0) || ImGui::IsItemHovered()) {
                         *index = -1;
@@ -233,14 +233,14 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
                     ImGui::EndCombo();
                 }
             };
-            ScriptCombo("Position", &posIndex);
-            ScriptCombo("Roll", &rollIndex);
-            ScriptCombo("Pitch", &pitchIndex);
-            ScriptCombo("Twist", &twistIndex);
+            ScriptCombo("Position", &posIndex, loadedScriptsCount, scripts);
+            ScriptCombo("Roll", &rollIndex, loadedScriptsCount, scripts);
+            ScriptCombo("Pitch", &pitchIndex, loadedScriptsCount, scripts);
+            ScriptCombo("Twist", &twistIndex, loadedScriptsCount, scripts);
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Edit")) {
-            auto addEditAction = [](std::shared_ptr<Funscript>& script, float value, float min, float max) noexcept
+            auto addEditAction = [](const auto& script, float value, float min, float max) noexcept
             {
                 auto app = OpenFunscripter::ptr;
                 float range = std::abs(max - min);

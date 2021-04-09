@@ -42,7 +42,7 @@ void EventSystem::Unsubscribe(int32_t eventType, void* listener) noexcept
 {
 	// this excects the listener to never relocate
 	auto it = std::find_if(handlers.begin(), handlers.end(),
-		[&](auto& handler) {
+		[eventType, listener](auto& handler) {
 			return handler.listener == listener && handler.eventType == eventType;
 	});
 

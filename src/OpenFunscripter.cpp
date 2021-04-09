@@ -2377,16 +2377,16 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 pickDifferentMedia();
             }
             if (ImGui::BeginMenu("Add...", LoadedProject->Loaded)) {
-                auto fileAlreadyLoaded = [](const std::string& path) -> bool {
+                auto fileAlreadyLoaded = [](const std::string& path) noexcept -> bool {
                     auto app = OpenFunscripter::ptr;
                     auto it = std::find_if(app->LoadedFunscripts().begin(), app->LoadedFunscripts().end(),
-                        [file = std::filesystem::path(path)](auto& script) {
+                        [file = Util::PathFromString(path)](auto& script) {
                         return Util::PathFromString(script->Path()) == file;
                     }
                     );
                     return it != app->LoadedFunscripts().end();
                 };
-                auto addNewShortcut = [this, fileAlreadyLoaded](const char* axisExt)
+                auto addNewShortcut = [this, fileAlreadyLoaded](const char* axisExt) noexcept
                 {
                     if (ImGui::MenuItem(axisExt))
                     {
@@ -2413,7 +2413,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 }
                 if (ImGui::MenuItem("Add new")) {
                     Util::SaveFileDialog("Add new funscript", settings->data().last_path,
-                        [fileAlreadyLoaded](auto& result) {
+                        [fileAlreadyLoaded](auto& result) noexcept {
                             if (result.files.size() > 0) {
                                 auto app = OpenFunscripter::ptr;
                                 if (!fileAlreadyLoaded(result.files[0])) {
@@ -2424,7 +2424,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 }
                 if (ImGui::MenuItem("Add existing")) {
                     Util::OpenFileDialog("Add existing funscripts", settings->data().last_path,
-                        [fileAlreadyLoaded](auto& result) {
+                        [fileAlreadyLoaded](auto& result) noexcept {
                             if (result.files.size() > 0) {
                                 for (auto&& scriptPath : result.files) {
                                     auto app = OpenFunscripter::ptr;

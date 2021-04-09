@@ -198,7 +198,7 @@ void KeybindingSystem::setup(EventSystem& events)
 void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    auto key = ev.key;
+    const auto& key = ev.key;
     auto modstate = GetModifierState(key.keysym.mod);
     if (currentlyChanging != nullptr) {
         handleBindingModification(ev, modstate);
@@ -210,8 +210,9 @@ void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
     }
     if (ShowWindow) return;
 
+    auto& io = ImGui::GetIO();
     // this prevents keybindings from being processed when typing into a textbox etc.
-    if (ImGui::IsAnyItemActive()) return;
+    if (io.WantCaptureKeyboard) return;
 
     // process dynamic bindings
     for (auto& binding : ActiveBindings.DynamicBindings.bindings)
@@ -233,7 +234,9 @@ void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
         // execute binding
         OFS_BENCHMARK(binding.identifier.c_str());
         auto handler = dynamicHandlers.find(binding.dynamicHandlerId);
-        handler->second(&binding);
+        if (handler != dynamicHandlers.end()) {
+            handler->second(&binding);
+        }
         return;
     }
 
@@ -267,7 +270,7 @@ void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
 void KeybindingSystem::ProcessControllerBindings(SDL_Event& ev, bool repeat) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    auto& cbutton = ev.cbutton;
+    const auto& cbutton = ev.cbutton;
     bool navmodeActive = ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_NavEnableGamepad;
 
     // process dynamic bindings
@@ -283,21 +286,25 @@ void KeybindingSystem::ProcessControllerBindings(SDL_Event& ev, bool repeat) noe
                     // execute binding
                     OFS_BENCHMARK(binding.identifier.c_str());
                     auto handler = dynamicHandlers.find(binding.dynamicHandlerId);
-                    handler->second(&binding);
+                    if (handler != dynamicHandlers.end()) {
+                        handler->second(&binding);
+                    }
                 }
             }
             else {
                 // execute binding
                 OFS_BENCHMARK(binding.identifier.c_str());
                 auto handler = dynamicHandlers.find(binding.dynamicHandlerId);
-                handler->second(&binding);
+                if (handler != dynamicHandlers.end()) {
+                    handler->second(&binding);
+                }
             }
         }
         return;
     }
 
     // process bindings
-    for (auto&& group : ActiveBindings.groups) {
+    for (auto& group : ActiveBindings.groups) {
         for (auto& binding : group.bindings) {
             if ((binding.ignore_repeats && repeat) || binding.controller.button < 0) { continue; }
             if (binding.controller.button == cbutton.button) {
