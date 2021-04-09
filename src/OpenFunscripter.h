@@ -1,14 +1,10 @@
 #pragma once
-
 #include "SDL.h"
-
 
 #include "glad/glad.h"
 #include "OFS_Simulator3D.h"
 
 #include "imgui.h"
-#include "imgui_impl_sdl.h"
-#include "imgui_impl_opengl3.h"
 
 #include "ScriptingMode.h"
 #include "KeybindingSystem.h"
@@ -38,7 +34,7 @@
 class OpenFunscripter {
 private:
 	SDL_Window* window;
-	SDL_GLContext gl_context;
+	SDL_GLContext glContext;
 	bool ShouldExit = false;
 	
 	// TODO: move this into a bitset
@@ -54,22 +50,22 @@ private:
 	std::chrono::steady_clock::time_point lastBackup;
 
 	bool updateTimelineGradient = false;
-	char tmp_buf[2][32];
+	char tmpBuf[2][32];
 
 	int32_t ActiveFunscriptIdx = 0;
 
-	void register_bindings();
+	void registerBindings();
 
 	void update() noexcept;
-	void new_frame() noexcept;
+	void newFrame() noexcept;
 	void render() noexcept;
 	void autoBackup() noexcept;
 
 	void exitApp(bool force = false) noexcept;
 
-	bool load_fonts(const char* font_override = nullptr) noexcept;
-	bool imgui_setup() noexcept;
-	void process_events() noexcept;
+	bool loadFonts(const char* font_override = nullptr) noexcept;
+	bool imguiSetup() noexcept;
+	void processEvents() noexcept;
 
 	void FunscriptChanged(SDL_Event& ev) noexcept;
 
@@ -189,7 +185,7 @@ public:
 
 	inline const std::vector<FunscriptAction>& FunscriptClipboard() const { return CopiedSelection; }
 
-	inline bool LoadOverrideFont(const std::string& font) noexcept { return load_fonts(font.empty() ? nullptr : font.c_str()); }
+	inline bool LoadOverrideFont(const std::string& font) noexcept { return loadFonts(font.empty() ? nullptr : font.c_str()); }
 
 	void Undo() noexcept;
 	void Redo() noexcept;

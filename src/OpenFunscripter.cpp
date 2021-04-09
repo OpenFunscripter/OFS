@@ -11,6 +11,8 @@
 
 #include "imgui_stdlib.h"
 #include "imgui_internal.h"
+#include "imgui_impl_sdl.h"
+#include "imgui_impl_opengl3.h"
 
 #include "ImGuizmo.h"
 
@@ -60,7 +62,7 @@ constexpr const char* ActionEditorId = "Action editor";
 constexpr int DefaultWidth = 1920;
 constexpr int DefaultHeight= 1080;
 
-bool OpenFunscripter::load_fonts(const char* font_override) noexcept
+bool OpenFunscripter::loadFonts(const char* font_override) noexcept
 {
     auto& io = ImGui::GetIO();
 
@@ -142,7 +144,7 @@ bool OpenFunscripter::load_fonts(const char* font_override) noexcept
     return true;
 }
 
-bool OpenFunscripter::imgui_setup() noexcept
+bool OpenFunscripter::imguiSetup() noexcept
 {
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -174,11 +176,11 @@ bool OpenFunscripter::imgui_setup() noexcept
     }
 
     // Setup Platform/Renderer bindings
-    ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
+    ImGui_ImplSDL2_InitForOpenGL(window, glContext);
     LOGF_DEBUG("init imgui with glsl: %s", glsl_version);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    load_fonts(settings->data().font_override.empty() ? nullptr : settings->data().font_override.c_str());
+    loadFonts(settings->data().font_override.empty() ? nullptr : settings->data().font_override.c_str());
   
     return true;
 }
@@ -252,8 +254,8 @@ bool OpenFunscripter::setup()
         SDL_MaximizeWindow(window);
     }
     
-    gl_context = SDL_GL_CreateContext(window);
-    SDL_GL_MakeCurrent(window, gl_context);
+    glContext = SDL_GL_CreateContext(window);
+    SDL_GL_MakeCurrent(window, glContext);
     SDL_GL_SetSwapInterval(settings->data().vsync);
 
     if (gladLoadGL() == 0) {
@@ -261,7 +263,7 @@ bool OpenFunscripter::setup()
         return false;
     }
     
-    if (!imgui_setup()) {
+    if (!imguiSetup()) {
         LOG_ERROR("Failed to setup ImGui");
         return false;
     }
@@ -291,7 +293,7 @@ bool OpenFunscripter::setup()
     undoSystem = std::make_unique<UndoSystem>(&LoadedProject->Funscripts);
 
     keybinds.setup(*events);
-    register_bindings(); // needs to happen before setBindings
+    registerBindings(); // needs to happen before setBindings
     keybinds.load(Util::Prefpath("keybinds.json"));
 
     scriptPositions.setup(undoSystem.get());
@@ -382,7 +384,7 @@ void OpenFunscripter::setupDefaultLayout(bool force) noexcept
     }
 }
 
-void OpenFunscripter::register_bindings()
+void OpenFunscripter::registerBindings()
 {
     {
         KeybindingGroup group;
@@ -1392,7 +1394,7 @@ void OpenFunscripter::register_bindings()
 }
 
 
-void OpenFunscripter::new_frame() noexcept
+void OpenFunscripter::newFrame() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     ImGuiIO& io = ImGui::GetIO();
@@ -1426,7 +1428,7 @@ void OpenFunscripter::render() noexcept
     }
 }
 
-void OpenFunscripter::process_events() noexcept
+void OpenFunscripter::processEvents() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     SDL_Event event;
@@ -1630,9 +1632,9 @@ void OpenFunscripter::step() noexcept {
     OFS_BEGINPROFILING();
     {
         OFS_PROFILE(__FUNCTION__);
-        process_events();
+        processEvents();
         update();
-        new_frame();
+        newFrame();
         {
             OFS_PROFILE("ImGui");
             // IMGUI HERE
@@ -1753,8 +1755,8 @@ void OpenFunscripter::step() noexcept {
                     if (i % 3 == 0) {
                         ImGui::Columns(3, 0, false);
                     }
-                    sprintf(tmp_buf[0], "%d", i * 10);
-                    if (ImGui::Button(tmp_buf[0], ImVec2(-1, 0))) {
+                    sprintf(tmpBuf[0], "%d", i * 10);
+                    if (ImGui::Button(tmpBuf[0], ImVec2(-1, 0))) {
                         addEditAction(i * 10);
                     }
                     ImGui::NextColumn();
@@ -1800,7 +1802,7 @@ void OpenFunscripter::step() noexcept {
 
 int OpenFunscripter::run() noexcept
 {
-    new_frame();
+    newFrame();
     setupDefaultLayout(false);
     render();
     const uint64_t PerfFreq = SDL_GetPerformanceFrequency();
@@ -1831,7 +1833,7 @@ void OpenFunscripter::shutdown() noexcept
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
 
-    SDL_GL_DeleteContext(gl_context);   
+    SDL_GL_DeleteContext(glContext);   
     SDL_DestroyWindow(window);
     SDL_Quit();
 }
@@ -2760,8 +2762,8 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
     {
         ImGui::InputText("Title", &metadata.title);
         metadata.duration = (int64_t)player->getDuration();
-        Util::FormatTime(tmp_buf[0], sizeof(tmp_buf), (float)metadata.duration, false);
-        ImGui::LabelText("Duration", "%s", tmp_buf[0]);
+        Util::FormatTime(tmpBuf[0], sizeof(tmpBuf[0]), (float)metadata.duration, false);
+        ImGui::LabelText("Duration", "%s", tmpBuf[0]);
 
         ImGui::InputText("Creator", &metadata.creator);
         ImGui::InputText("Url", &metadata.script_url);

@@ -78,10 +78,10 @@ public:
 
 	UndoSystem* undoSystem = nullptr;
 private:
-	void mouse_pressed(SDL_Event& ev) noexcept;
-	void mouse_released(SDL_Event& ev) noexcept;
-	void mouse_drag(SDL_Event& ev) noexcept;
-	void mouse_scroll(SDL_Event& ev) noexcept;
+	void mousePressed(SDL_Event& ev) noexcept;
+	void mouseReleased(SDL_Event& ev) noexcept;
+	void mouseDrag(SDL_Event& ev) noexcept;
+	void mouseScroll(SDL_Event& ev) noexcept;
 
 	void videoLoaded(SDL_Event& ev) noexcept;
 

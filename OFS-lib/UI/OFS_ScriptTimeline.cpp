@@ -1,6 +1,7 @@
 #include "OFS_ScriptTimeline.h"
 #include "imgui_internal.h"
 #include "imgui_stdlib.h"
+#include "OFS_Profiling.h"
 
 #include "OFS_Videoplayer.h"
 
@@ -32,6 +33,7 @@ void ScriptTimelineEvents::RegisterEvents() noexcept
 
 void ScriptTimeline::updateSelection(bool clear) noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	float min = std::min(relX1, relX2);
 	float max = std::max(relX1, relX2);
 	
@@ -51,10 +53,10 @@ void ScriptTimeline::FfmpegAudioProcessingFinished(SDL_Event& ev) noexcept
 void ScriptTimeline::setup(UndoSystem* undoSystem)
 {
 	this->undoSystem = undoSystem;
-	EventSystem::ev().Subscribe(SDL_MOUSEBUTTONDOWN, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouse_pressed));
-	EventSystem::ev().Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouse_scroll));
-	EventSystem::ev().Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouse_drag));
-	EventSystem::ev().Subscribe(SDL_MOUSEBUTTONUP, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouse_released));
+	EventSystem::ev().Subscribe(SDL_MOUSEBUTTONDOWN, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mousePressed));
+	EventSystem::ev().Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouseScroll));
+	EventSystem::ev().Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouseDrag));
+	EventSystem::ev().Subscribe(SDL_MOUSEBUTTONUP, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouseReleased));
 	EventSystem::ev().Subscribe(ScriptTimelineEvents::FfmpegAudioProcessingFinished, EVENT_SYSTEM_BIND(this, &ScriptTimeline::FfmpegAudioProcessingFinished));
 	EventSystem::ev().Subscribe(VideoEvents::MpvVideoLoaded, EVENT_SYSTEM_BIND(this, &ScriptTimeline::videoLoaded));
 
@@ -66,7 +68,7 @@ void ScriptTimeline::setup(UndoSystem* undoSystem)
 	WaveShader = std::make_unique<WaveformShader>();
 }
 
-void ScriptTimeline::mouse_pressed(SDL_Event& ev) noexcept
+void ScriptTimeline::mousePressed(SDL_Event& ev) noexcept
 {
 	if (Scripts == nullptr || (*Scripts).size() <= activeScriptIdx) return;
 	OFS_PROFILE(__FUNCTION__);
@@ -151,7 +153,7 @@ void ScriptTimeline::mouse_pressed(SDL_Event& ev) noexcept
 	}
 }
 
-void ScriptTimeline::mouse_released(SDL_Event& ev) noexcept
+void ScriptTimeline::mouseReleased(SDL_Event& ev) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	auto& button = ev.button;
@@ -166,7 +168,7 @@ void ScriptTimeline::mouse_released(SDL_Event& ev) noexcept
 	}
 }
 
-void ScriptTimeline::mouse_drag(SDL_Event& ev) noexcept
+void ScriptTimeline::mouseDrag(SDL_Event& ev) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	if (Scripts == nullptr || (*Scripts).size() <= activeScriptIdx) return;
@@ -209,7 +211,7 @@ void ScriptTimeline::mouse_drag(SDL_Event& ev) noexcept
 	}
 }
 
-void ScriptTimeline::mouse_scroll(SDL_Event& ev) noexcept
+void ScriptTimeline::mouseScroll(SDL_Event& ev) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	auto& wheel = ev.wheel;
@@ -359,6 +361,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 		auto& recording = RecordingBuffer;
 
 		auto pathStroke = [](auto draw_list, uint32_t col) noexcept {
+			OFS_PROFILE(__FUNCTION__);
 			// sort of a hack ...
 			// PathStroke sets  _Path.Size = 0
 			// so we reset it in order to draw the same path twice
@@ -369,6 +372,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 		};
 		auto pathRawSection =
 			[pathStroke](const OverlayDrawingCtx& ctx, const auto& rawActions, int32_t fromIndex, int32_t toIndex) noexcept {
+			OFS_PROFILE(__FUNCTION__);
 			for (int i = fromIndex; i <= toIndex; i++) {
 				auto& action = rawActions[i].first;
 				if (action.at >= 0) {
@@ -538,7 +542,7 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 		WaveformViewport = ImGui::GetWindowViewport();
 		auto renderWaveform = [](const std::vector<float>& samples, ScriptTimeline* timeline, const OverlayDrawingCtx& ctx, int start_index, int end_index)
 		{
-			OFS_PROFILE("renderWaveform");
+			OFS_PROFILE(__FUNCTION__);
 			const int total_samples = end_index - start_index;
 
 			const int line_merge = 1 + (total_samples / ctx.canvas_size.x);
