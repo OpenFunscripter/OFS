@@ -59,6 +59,7 @@ class AlternatingImpl : public ScripingModeBaseImpl
 {
 	int32_t fixedBottom = 0;
 	int32_t fixedTop = 100;
+	bool contextSensitive = false;
 	bool fixedRangeEnabled = false;
 	bool nextPosition = false;
 public:

@@ -191,13 +191,27 @@ void DynamicInjectionImpl::addEditAction(FunscriptAction action) noexcept
 void AlternatingImpl::DrawModeSettings() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if (fixedRangeEnabled) {
-        ImGui::TextDisabled("Next point is at %d.", nextPosition ? fixedBottom : fixedTop);
+    auto app = OpenFunscripter::ptr;
+    if (contextSensitive) {
+        auto behind = ctx().GetPreviousActionBehind(std::round(app->player->getCurrentPositionMsInterp())-1);
+        if (behind) {
+            ImGui::TextDisabled("Next point: %s", behind->pos <= 50 ? "Top" : "Bottom");
+        }
+        else {
+            ImGui::TextDisabled("Next point: Bottom");
+        }
     }
     else {
-        ImGui::TextDisabled("Next point is %s.", nextPosition ? "inverted" : "not inverted");
+        if (fixedRangeEnabled) {
+            ImGui::TextDisabled("Next point is at %d.", nextPosition ? fixedBottom : fixedTop);
+        }
+        else {
+            ImGui::TextDisabled("Next point is %s.", nextPosition ? "inverted" : "not inverted");
+        }
     }
     ImGui::Checkbox("Fixed range", &fixedRangeEnabled);
+    ImGui::Checkbox("Context sensitive", &contextSensitive);
+    Util::Tooltip("Alternates based on the previous action.");
     if (fixedRangeEnabled) {
         bool inputActive = false;
         auto& style = ImGui::GetStyle();
@@ -227,14 +241,32 @@ void AlternatingImpl::DrawModeSettings() noexcept
 
 void AlternatingImpl::addEditAction(FunscriptAction action) noexcept
 {
-    if (fixedRangeEnabled) {
-        action.pos = nextPosition ? fixedBottom : fixedTop;
+    if (contextSensitive) {
+        auto behind = ctx().GetPreviousActionBehind(action.at - 1);
+        if (behind && behind->pos <= 50 && action.pos <= 50) {
+            //Top
+            action.pos = 100 - action.pos;
+        }
+        else if(behind && behind->pos > 50 && action.pos > 50) {
+            //Bottom
+            action.pos = 100 - action.pos;
+        }
+        else {
+            LOG_DEBUG("foo");
+        }
     }
     else {
-        action.pos = nextPosition ? 100 - action.pos : action.pos;
+        if (fixedRangeEnabled) {
+            action.pos = nextPosition ? fixedBottom : fixedTop;
+        }
+        else {
+            action.pos = nextPosition ? 100 - action.pos : action.pos;
+        }
     }
     ScripingModeBaseImpl::addEditAction(action);
-    nextPosition = !nextPosition;
+    if (!contextSensitive) {
+        nextPosition = !nextPosition;
+    }
 }
 
 void AlternatingImpl::undo() noexcept
