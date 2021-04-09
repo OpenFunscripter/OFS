@@ -1,4 +1,6 @@
 #pragma once
+#include "OFS_Profiling.h"
+
 #include <vector>
 #include "imgui.h"
 
@@ -27,20 +29,28 @@ struct ImGradientMark
     }
 };
 
-
-
 class ImGradient
 {
 public:
     ImGradient() noexcept {}
     ~ImGradient() noexcept {};
 
-    void getColorAt(float position, float* color) const noexcept;
+    inline void getColorAt(float position, float* color) const noexcept
+    {
+        OFS_PROFILE(__FUNCTION__);
+        position = Util::Clamp(position, 0.f, 1.f);
+        int cachePos = (position * 255);
+        cachePos *= 3;
+        color[0] = m_cachedValues[cachePos + 0];
+        color[1] = m_cachedValues[cachePos + 1];
+        color[2] = m_cachedValues[cachePos + 2];
+    }
+
     void addMark(float position, ImColor const color) noexcept;
     void removeMark(const ImGradientMark& mark) noexcept;
     void refreshCache() noexcept;
     void clear() noexcept { m_marks.clear(); }
-    std::vector<ImGradientMark>& getMarks() noexcept { return m_marks; }
+    const std::vector<ImGradientMark>& getMarks() noexcept { return m_marks; }
 
     static void DrawGradientBar(ImGradient* gradient,const ImVec2& bar_pos, float maxWidth, float height) noexcept;
 

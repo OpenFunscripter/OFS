@@ -108,8 +108,8 @@ public:
 	static bool LoadTextureFromBuffer(const char* buffer, size_t buffsize, unsigned int* out_texture, int* out_width, int* out_height) noexcept;
 
 	template<typename T>
-	inline static T Clamp(T val, T min, T max) noexcept {
-		return std::max(std::min(val, max), min);
+	inline static T Clamp(T v, T mn, T mx) noexcept {
+		return (v < mn) ? mn : (v > mx) ? mx : v;
 	}
 
 	template<typename T>

@@ -17,17 +17,6 @@ void ImGradient::removeMark(const ImGradientMark& mark) noexcept
 		m_marks.erase(it);
 }
 
-void ImGradient::getColorAt(float position, float* color) const noexcept
-{
-	OFS_PROFILE(__FUNCTION__);
-	position = ImClamp(position, 0.0f, 1.0f);
-	int cachePos = (position * 255);
-	cachePos *= 3;
-	color[0] = m_cachedValues[cachePos + 0];
-	color[1] = m_cachedValues[cachePos + 1];
-	color[2] = m_cachedValues[cachePos + 2];
-}
-
 void ImGradient::computeColorAt(float position, float* color) const noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
@@ -125,7 +114,7 @@ void ImGradient::DrawGradientBar(ImGradient* gradient, const ImVec2& bar_pos, fl
 	ImU32 colorAU32 = 0;
 	ImU32 colorBU32 = 0;
 
-	for(auto& markIt : gradient->getMarks())
+	for(auto& markIt : gradient->m_marks)
 	{
 		ImGradientMark* mark = &(markIt);
 
