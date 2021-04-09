@@ -35,12 +35,12 @@ static void on_mpv_render_update(void* ctx)
 
 void VideoPreview::updateRenderTexture() noexcept
 {
-	if (framebuffer_obj == 0) {
-		glGenFramebuffers(1, &framebuffer_obj);
-		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_obj);
+	if (framebufferObj == 0) {
+		glGenFramebuffers(1, &framebufferObj);
+		glBindFramebuffer(GL_FRAMEBUFFER, framebufferObj);
 
-		glGenTextures(1, &render_texture);
-		glBindTexture(GL_TEXTURE_2D, render_texture);
+		glGenTextures(1, &renderTexture);
+		glBindTexture(GL_TEXTURE_2D, renderTexture);
 		
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 360, 200, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 
@@ -48,7 +48,7 @@ void VideoPreview::updateRenderTexture() noexcept
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 		// Set "renderedTexture" as our colour attachement #0
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, render_texture, 0);
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderTexture, 0);
 
 		// Set the list of draw buffers.
 		GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
@@ -60,7 +60,7 @@ void VideoPreview::updateRenderTexture() noexcept
 	}
 	else {
 		// update size of render texture based on video resolution
-		glBindTexture(GL_TEXTURE_2D, render_texture);
+		glBindTexture(GL_TEXTURE_2D, renderTexture);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, videoWidth, videoHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 	}
 }
@@ -72,14 +72,38 @@ void VideoPreview::observeProperties() noexcept
 	mpv_observe_property(mpv, VideoPosProp, "percent-pos", MPV_FORMAT_DOUBLE);
 }
 
+void VideoPreview::redraw() noexcept
+{
+	OFS_PROFILE(__FUNCTION__);
+	needsRedraw = false;
+	mpv_opengl_fbo fbo{ 0 };
+	fbo.fbo = framebufferObj; fbo.w = videoWidth; fbo.h = videoHeight;
+	int enable = 1;
+	int disable = 0;
+	mpv_render_param params[] = {
+		{MPV_RENDER_PARAM_OPENGL_FBO, &fbo},
+		{MPV_RENDER_PARAM_FLIP_Y, &disable},
+		// without this the whole application slows down to the framerate of the video
+		{MPV_RENDER_PARAM_BLOCK_FOR_TARGET_TIME, &disable},
+		mpv_render_param{}
+	};
+	mpv_render_context_render(mpv_gl, params);
+	if (videoPos >= seek_to) {
+		if (renderComplete) {
+			ready = true;
+		}
+		renderComplete = true;
+	}
+}
+
 VideoPreview::~VideoPreview()
 {
 	mpv_render_context_free(mpv_gl);
 	mpv_detach_destroy(mpv);
 	EventSystem::ev().UnsubscribeAll(this);
 	
-	glDeleteFramebuffers(1, &framebuffer_obj);
-	glDeleteTextures(1, &render_texture);
+	glDeleteFramebuffers(1, &framebufferObj);
+	glDeleteTextures(1, &renderTexture);
 }
 
 void VideoPreview::setup(bool autoplay) noexcept
@@ -138,6 +162,11 @@ void VideoPreview::setup(bool autoplay) noexcept
 	const char* cmd[]{ "set", "volume", tmp_buf, NULL };
 	mpv_command_async(mpv, 0, cmd);
 
+}
+
+void VideoPreview::update() noexcept
+{
+	if (needsRedraw) redraw();
 }
 
 void VideoPreview::MpvEvents(SDL_Event& ev) noexcept
@@ -225,25 +254,7 @@ void VideoPreview::MpvRenderUpdate(SDL_Event& ev) noexcept
 	OFS_PROFILE(__FUNCTION__);
 	uint64_t flags = mpv_render_context_update(mpv_gl);
 	if (flags & MPV_RENDER_UPDATE_FRAME) {
-		mpv_opengl_fbo fbo{ 0 };
-		fbo.fbo = framebuffer_obj; fbo.w = videoWidth; fbo.h = videoHeight;
-		int enable = 1;
-		int disable = 0;
-		mpv_render_param params[] = {
-			{MPV_RENDER_PARAM_OPENGL_FBO, &fbo},
-			{MPV_RENDER_PARAM_FLIP_Y, &disable},
-			// without this the whole application slows down to the framerate of the video
-			{MPV_RENDER_PARAM_BLOCK_FOR_TARGET_TIME, &disable},
-			mpv_render_param{}
-		};
-		mpv_render_context_render(mpv_gl, params);
-		if (videoPos >= seek_to) {
-			if (render_complete) {
-				ready = true;
-			}
-			render_complete = true;
-		}
-		
+		needsRedraw = true;
 	}
 }
 
@@ -259,7 +270,7 @@ void VideoPreview::previewVideo(const std::string& path, float pos) noexcept
 {
 	loading = true;
 	ready = false;
-	render_complete = false;
+	renderComplete = false;
 	seek_to = pos;
 	videoPos = 0.f;
 	videoHeight = -1;
@@ -271,14 +282,16 @@ void VideoPreview::previewVideo(const std::string& path, float pos) noexcept
 
 void VideoPreview::play() noexcept
 {
-	bool pause = false;
-	mpv_set_property_async(mpv, 0, "pause", MPV_FORMAT_FLAG, &pause);
+	if (!paused) return;
+	paused = false;
+	mpv_set_property_async(mpv, 0, "pause", MPV_FORMAT_FLAG, &paused);
 }
 
 void VideoPreview::pause() noexcept
 {
-	bool pause = true;
-	mpv_set_property_async(mpv, 0, "pause", MPV_FORMAT_FLAG, &pause);
+	if (paused) return;
+	paused = true;
+	mpv_set_property_async(mpv, 0, "pause", MPV_FORMAT_FLAG, &paused);
 }
 
 void VideoPreview::closeVideo() noexcept

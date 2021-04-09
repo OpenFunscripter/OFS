@@ -81,13 +81,14 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
 
         ImGui::BeginTooltipEx(ImGuiWindowFlags_None, ImGuiTooltipFlags_None);
         {
+            videoPreview->update();
             if (SDL_GetTicks() - lastPreviewUpdate >= PreviewUpdateMs)
             {
                 videoPreview->setPosition(rel_timeline_pos);
                 lastPreviewUpdate = SDL_GetTicks();
             }
             const ImVec2 ImageDim = ImVec2(ImGui::GetFontSize()*7.f * (16.f / 9.f), ImGui::GetFontSize() * 7.f);
-            ImGui::Image((void*)(intptr_t)videoPreview->render_texture, ImageDim);
+            ImGui::Image((void*)(intptr_t)videoPreview->renderTexture, ImageDim);
             float time_seconds = player->getDuration() * rel_timeline_pos;
             float time_delta = time_seconds - player->getCurrentPositionSecondsInterp();
             Util::FormatTime(tmp_buf[0], sizeof(tmp_buf[0]), time_seconds, false);

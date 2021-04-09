@@ -35,13 +35,16 @@ private:
 	int videoHeight = -1;
 	float videoPos = 0.f;
 
-	bool render_complete = false;
+	bool paused = true;
+	bool renderComplete = false;
+	bool needsRedraw = false;
+	void redraw() noexcept;
 public:
 	mpv_handle* mpv;
 	mpv_render_context* mpv_gl;
 
-	uint32_t framebuffer_obj = 0;
-	uint32_t render_texture = 0;
+	uint32_t framebufferObj = 0;
+	uint32_t renderTexture = 0;
 
 	bool ready = false;
 	bool loading = false;
@@ -49,6 +52,8 @@ public:
 	~VideoPreview();
 
 	void setup(bool autoplay) noexcept;
+
+	void update() noexcept;
 
 	void setPosition(float pos) noexcept;
 	void previewVideo(const std::string& path, float pos) noexcept;

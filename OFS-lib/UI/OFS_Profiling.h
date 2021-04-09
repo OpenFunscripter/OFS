@@ -10,6 +10,7 @@
 #include "Tracy.hpp"
 #endif
 
+#if OFS_BENCHMARK_ENABLED == 1
 /*
 * This is not useful in hot code paths.
 */
@@ -43,7 +44,6 @@ public:
 #define OFS_CONCAT_(x,y) x##y
 #define OFS_CONCAT(x,y) OFS_CONCAT_(x,y)
 
-#if OFS_BENCHMARK_ENABLED == 1
 #define OFS_BENCHMARK(function) OFS_Benchmark OFS_CONCAT(xBenchmarkx_,__LINE__) ## (function, __FILENAME__, __LINE__)
 #else
 #define OFS_BENCHMARK(function)
