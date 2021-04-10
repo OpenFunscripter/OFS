@@ -18,12 +18,17 @@ jobs:
         with:
           submodules: 'true'
           fetch-depth: 0
-          
+         
       - name: Gets latest created release info
         id: latest_release_info
         uses: jossef/action-latest-release-info@v1.1.0
         env:
           GITHUB_TOKEN: ${{ github.token }}
+
+      - name: EASTL special treatment
+        run: |
+          cd lib/EASTL
+          git submodule update --init
 
       - name: Install Snapcraft
         uses: samuelmeuli/action-snapcraft@v1
