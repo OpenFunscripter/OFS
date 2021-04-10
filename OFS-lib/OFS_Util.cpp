@@ -132,7 +132,7 @@ void Util::Tooltip(const char* tip) noexcept
 
 void Util::ForceMinumumWindowSize(ImGuiWindow* window) noexcept
 {
-	auto expectedSize = window->ContentSizeIdeal;
+	auto& expectedSize = window->ContentSizeIdeal;
 	auto actualSize = ImGui::GetWindowSize();
 	if (expectedSize.x > actualSize.x) {
 		actualSize.x = expectedSize.x;
