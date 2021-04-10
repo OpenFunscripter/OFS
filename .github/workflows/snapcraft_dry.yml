@@ -16,7 +16,7 @@ jobs:
       - name: Check out Git repository
         uses: actions/checkout@v2
         with:
-          submodules: 'recursive'
+          submodules: 'true'
           fetch-depth: 0
           
 
