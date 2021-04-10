@@ -38,11 +38,6 @@ void Funscript::setBaseScript(nlohmann::json& base)
 	BaseLoaded.erase("metadata");
 }
 
-void Funscript::NotifySelectionChanged() noexcept
-{
-	selectionChanged = true;
-}
-
 void Funscript::loadMetadata() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
@@ -59,13 +54,13 @@ void Funscript::saveMetadata() noexcept
 	OFS::serializer::save(&LocalMetadata, &Json["metadata"]);
 }
 
-void Funscript::startSaveThread(const std::string& path, std::vector<FunscriptAction>&& actions, nlohmann::json&& json) noexcept
+void Funscript::startSaveThread(const std::string& path, FunscriptArray&& actions, nlohmann::json&& json) noexcept
 {
 	OFS_BENCHMARK(__FUNCTION__);
 	OFS_PROFILE(__FUNCTION__);
 	struct SaveThreadData {
 		nlohmann::json jsonObj;
-		std::vector<FunscriptAction> actions;
+		FunscriptArray actions;
 		std::string path;
 		nlohmann::json* base;
 		SDL_mutex* mutex;
@@ -89,7 +84,7 @@ void Funscript::startSaveThread(const std::string& path, std::vector<FunscriptAc
 
 		data->jsonObj.merge_patch(*data->base);
 		auto& actions = data->jsonObj["actions"];
-		for (auto&& action : data->actions) {
+		for (auto action : data->actions) {
 			// a little validation just in case
 			if (action.at < 0)
 				continue;
@@ -125,9 +120,6 @@ void Funscript::update() noexcept
 		selectionChanged = false;
 		EventSystem::PushEvent(FunscriptEvents::FunscriptSelectionChangedEvent);
 	}
-	if (ActionMapNeedsUpdate) {
-		updateActionMap(data.Actions);
-	}
 }
 
 float Funscript::GetPositionAtTime(int32_t time_ms) noexcept
@@ -137,13 +129,10 @@ float Funscript::GetPositionAtTime(int32_t time_ms) noexcept
 	else if (data.Actions.size() == 1) return data.Actions[0].pos;
 
 	int i = 0;
-	if (!ActionMapNeedsUpdate) {
-		auto indexIt = ActionMap.lower_bound(time_ms);
-		if (indexIt != ActionMap.end()) {
-			// index is valid
-			i = indexIt->second;
-			if (i > 0) --i;
-		}
+	auto it = data.Actions.lower_bound(FunscriptAction(time_ms, 0));
+	if (it != data.Actions.end()) {
+		i = std::distance(data.Actions.begin(), it);
+		if (i > 0) --i;
 	}
 
 	for (; i < data.Actions.size()-1; i++) {
@@ -168,40 +157,16 @@ float Funscript::GetPositionAtTime(int32_t time_ms) noexcept
 	return data.Actions.back().pos;
 }
 
-void Funscript::AddActionSafe(FunscriptAction newAction) noexcept
-{
-	OFS_PROFILE(__FUNCTION__);
-	auto it = std::find_if(data.Actions.begin(), data.Actions.end(), [newAction](auto action) {
-		return newAction.at < action.at;
-		});
-	// checks if there's already an action with the same timestamp
-	auto safety = std::find_if(it > data.Actions.begin() ? it - 1 : data.Actions.begin(), data.Actions.end(),
-		[newAction](auto action) {
-			return newAction.at == action.at;
-		});
-	if (safety == data.Actions.end()) {
-		data.Actions.insert(it, newAction);
-		NotifyActionsChanged(true);
-	}
-	else {
-		LOGF_WARN("Failed to add action because there's already an action at %d ms", newAction.at);
-	}
-}
-
-void Funscript::AddActionRange(const std::vector<FunscriptAction>& range, bool checkDuplicates) noexcept
+void Funscript::AddActionRange(const FunscriptArray& range, bool checkDuplicates) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	if (checkDuplicates) {
-		std::unordered_set<FunscriptAction, FunscriptActionHashfunction> set;
-		set.insert(data.Actions.begin(), data.Actions.end());
-		for (auto action : range) {
-			if (set.find(action) == set.end()) {
-				data.Actions.push_back(action);
-			}
-		}
+		data.Actions.insert(range.begin(), range.end());
 	}
 	else {
-		data.Actions.insert(data.Actions.end(), range.begin(), range.end());
+		for (auto action : range) {
+			data.Actions.emplace_back_unsorted(action);
+		}
 	}
 
 	sortActions(data.Actions);
@@ -218,6 +183,7 @@ bool Funscript::EditAction(FunscriptAction oldAction, FunscriptAction newAction)
 		act->pos = newAction.pos;
 		checkForInvalidatedActions();
 		NotifyActionsChanged(true);
+		sortActions(data.Actions);
 		return true;
 	}
 	return false;
@@ -237,25 +203,13 @@ void Funscript::AddEditAction(FunscriptAction action, float frameTimeMs) noexcep
 	}
 }
 
-void Funscript::PasteAction(FunscriptAction paste, int32_t error_ms) noexcept
-{
-	OFS_PROFILE(__FUNCTION__);
-	auto act = GetActionAtTime(paste.at, error_ms);
-	if (act != nullptr) {
-		RemoveAction(*act);
-	}
-	AddAction(paste);
-	NotifyActionsChanged(true);
-}
-
 void Funscript::checkForInvalidatedActions() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	auto it = std::remove_if(data.selection.begin(), data.selection.end(), [this](auto selected) {
 		auto found = getAction(selected);
-		if (found == nullptr)
-			return true;
-		return false;
+		if (found) return false;
+		return true;
 	});
 	if (it != data.selection.end()) {
 		data.selection.erase(it);
@@ -266,7 +220,7 @@ void Funscript::checkForInvalidatedActions() noexcept
 void Funscript::RemoveAction(FunscriptAction action, bool checkInvalidSelection) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	auto it = std::find(data.Actions.begin(), data.Actions.end(), action);
+	auto it = data.Actions.find(action);
 	if (it != data.Actions.end()) {
 		data.Actions.erase(it);
 		NotifyActionsChanged(true);
@@ -275,7 +229,7 @@ void Funscript::RemoveAction(FunscriptAction action, bool checkInvalidSelection)
 	}
 }
 
-void Funscript::RemoveActions(const std::vector<FunscriptAction>& removeActions) noexcept
+void Funscript::RemoveActions(const FunscriptArray& removeActions) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	for (auto&& action : removeActions)
@@ -334,12 +288,13 @@ std::vector<FunscriptAction> Funscript::GetLastStroke(int32_t time_ms) noexcept
 	return std::move(stroke);
 }
 
-void Funscript::SetActions(const std::vector<FunscriptAction>& override_with) noexcept
+void Funscript::SetActions(const FunscriptArray& override_with) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	data.Actions.clear();
-	data.Actions.assign(override_with.begin(), override_with.end());
-	sortActions(data.Actions);
+	//data.Actions.clear();
+	//data.Actions.assign(override_with.begin(), override_with.end());
+	//sortActions(data.Actions);
+	data.Actions = override_with;
 	NotifyActionsChanged(true);
 }
 
@@ -449,30 +404,28 @@ void Funscript::RangeExtendSelection(int32_t rangeExtend) noexcept
 bool Funscript::ToggleSelection(FunscriptAction action) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	auto it = std::find(data.selection.begin(), data.selection.end(), action);
+	auto it = data.selection.find(action);
 	bool is_selected = it != data.selection.end();
 	if (is_selected) {
 		data.selection.erase(it);
 	}
 	else {
-		data.selection.emplace_back(action);
+		data.selection.emplace(action);
 	}
 	NotifySelectionChanged();
 	return !is_selected;
 }
 
-void Funscript::SetSelection(FunscriptAction action, bool selected) noexcept
+void Funscript::SetSelected(FunscriptAction action, bool selected) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	auto it = std::find(data.selection.begin(), data.selection.end(), action);
+	auto it = data.selection.find(action); 
 	bool is_selected = it != data.selection.end();
-	if(is_selected && !selected)
-	{
+	if(is_selected && !selected) {
 		data.selection.erase(it);
 	}
 	else if(!is_selected && selected) {
-		data.selection.emplace_back(action);
-		sortSelection();
+		data.selection.emplace(action);
 	}
 	NotifySelectionChanged();
 }
@@ -495,7 +448,7 @@ void Funscript::SelectTopActions()
 
 	}
 	for (auto& act : deselect)
-		SetSelection(act, false);
+		SetSelected(act, false);
 	NotifySelectionChanged();
 }
 
@@ -517,7 +470,7 @@ void Funscript::SelectBottomActions()
 
 	}
 	for (auto& act : deselect)
-		SetSelection(act, false);
+		SetSelected(act, false);
 	NotifySelectionChanged();
 }
 
@@ -579,7 +532,7 @@ void Funscript::DeselectAction(FunscriptAction deselect) noexcept
 	OFS_PROFILE(__FUNCTION__);
 	auto action = GetAction(deselect);
 	if (action != nullptr)
-		SetSelection(*action, false);
+		SetSelected(*action, false);
 	NotifySelectionChanged();
 }
 
@@ -665,7 +618,7 @@ void Funscript::MoveSelectionTime(int32_t time_offset, float frameTimeMs) noexce
 	ClearSelection();
 	for (auto move : moving) {
 		move->at += time_offset;
-		data.selection.emplace_back(*move);
+		data.selection.emplace(*move);
 	}
 	NotifyActionsChanged(true);
 }
@@ -695,33 +648,33 @@ void Funscript::MoveSelectionPosition(int32_t pos_offset) noexcept
 	for (auto move : moving) {
 		move->pos += pos_offset;
 		move->pos = Util::Clamp<int16_t>(move->pos, 0, 100);
-		data.selection.emplace_back(*move);
+		data.selection.emplace_back_unsorted(*move);
 	}
+	sortSelection();
 	NotifyActionsChanged(true);
 }
 
-void Funscript::SetSelection(const std::vector<FunscriptAction>& action_to_select, bool unsafe) noexcept
+void Funscript::SetSelection(const FunscriptArray& actionsToSelect, bool unsafe) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	ClearSelection();
-	for (auto&& action : action_to_select) {
-		if (unsafe) {
-			data.selection.emplace_back(action);
-		}
-		else {
-			auto it = std::find(data.Actions.begin(), data.Actions.end(), action);
-			if (it != data.Actions.end()) {
-				data.selection.emplace_back(action);
+	if (!unsafe) {
+		data.selection.insert(actionsToSelect.begin(), actionsToSelect.end());
+	}
+	else {
+		for (auto action : actionsToSelect)	{
+			auto end = data.Actions.end();
+			if (data.Actions.find(action) != end) {
+				data.selection.insert(action);
 			}
 		}
 	}
-	sortSelection();
 }
 
 bool Funscript::IsSelected(FunscriptAction action) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	auto it = std::find(data.selection.begin(), data.selection.end(), action);
+	auto it = data.selection.find(action);
 	return it != data.selection.end();
 }
 

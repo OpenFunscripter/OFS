@@ -2,14 +2,15 @@
 #include "OFS_Profiling.h"
 #include "FunscriptAction.h"
 #include <vector>
-#include <map>
 #include "glm/gtx/spline.hpp"
+
+#include "EASTL/vector_set.h"
 
 class FunscriptSpline
 {
 	int32_t cacheIdx = 0;
 
-	inline float catmull_rom_spline(const std::vector<FunscriptAction>& actions, int32_t i, float ms) const noexcept
+	inline float catmull_rom_spline(const FunscriptArray& actions, int32_t i, float ms) const noexcept
 	{
 		OFS_PROFILE(__FUNCTION__);
 		int i0 = glm::clamp<int>(i - 1, 0, actions.size() - 1);
@@ -30,7 +31,7 @@ class FunscriptSpline
 	}
 
 public:
-	inline float Sample(const std::vector<FunscriptAction>& actions, float timeMs, const std::map<int32_t, int32_t>& ActionMap) noexcept 
+	inline float Sample(const FunscriptArray& actions, float timeMs) noexcept 
 	{
 		OFS_PROFILE(__FUNCTION__);
 		if (actions.size() == 0) { return 0.f; }
@@ -49,24 +50,24 @@ public:
 		else {
 			// cache miss
 			// lookup index
-			auto it = ActionMap.upper_bound((int32_t)timeMs);
-			if (it == ActionMap.end()) { 
+			auto it = actions.upper_bound(FunscriptAction((int32_t)timeMs, 0));
+			if (it == actions.end()) { 
 				return actions.back().pos / 100.f; 
 			}
-			else if (it == ActionMap.begin())			{
+			else if (it == actions.begin())			{
 				return actions.front().pos / 100.f;
 			}
 
 			it--;
 			// cache index
-			cacheIdx = it->second;
-			return catmull_rom_spline(actions, it->second, timeMs);
+			cacheIdx = std::distance(actions.begin(), it);
+			return catmull_rom_spline(actions, cacheIdx, timeMs);
 		}
 
 		return 0.f;
 	}
 
-	inline float SampleAtIndex(const std::vector<FunscriptAction>& actions, int32_t index, float timeMs) const noexcept
+	inline float SampleAtIndex(const FunscriptArray& actions, int32_t index, float timeMs) const noexcept
 	{
 		OFS_PROFILE(__FUNCTION__);
 		if (actions.size() == 0) { return 0.f; }

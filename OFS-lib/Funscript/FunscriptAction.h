@@ -1,13 +1,13 @@
 #pragma once
 
 #include "OFS_Reflection.h"
-//#include "OFS_Serialization.h"
 #include "OFS_BinarySerialization.h"
 
 #include <cstdint>
 #include <limits>
 
-#include<functional>
+#include "EASTL/vector_set.h"
+
 struct FunscriptAction
 {
 public:
@@ -76,3 +76,13 @@ struct FunscriptActionHashfunction
 		return *(int64_t*)&s;
 	}
 };
+
+struct ActionLess
+{
+	bool operator()(const FunscriptAction& a, const FunscriptAction& b) const noexcept
+	{
+		return a.at < b.at;
+	}
+};
+
+using FunscriptArray = eastl::vector_set<FunscriptAction, ActionLess>;

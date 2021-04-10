@@ -522,7 +522,6 @@ void OpenFunscripter::registerBindings()
             0
         );
 
-
         keybinds.registerBinding(std::move(group));
     }
     {
@@ -2134,7 +2133,7 @@ void OpenFunscripter::pasteSelection() noexcept
     }
 
     for (auto&& action : CopiedSelection) {
-        ActiveFunscript()->PasteAction(FunscriptAction(action.at + offset_ms, action.pos), 1);
+        ActiveFunscript()->AddAction(FunscriptAction(action.at + offset_ms, action.pos));
     }
     player->setPositionExact((CopiedSelection.end() - 1)->at + offset_ms);
 }
@@ -2152,7 +2151,7 @@ void OpenFunscripter::pasteSelectionExact() noexcept {
     // paste without altering timestamps
     undoSystem->Snapshot(StateType::PASTE_COPIED_ACTIONS, false, ActiveFunscript().get());
     for (auto&& action : CopiedSelection) {
-        ActiveFunscript()->PasteAction(action, 1);
+        ActiveFunscript()->AddAction(action);
     }
 }
 
@@ -2230,14 +2229,14 @@ void OpenFunscripter::repeatLastStroke() noexcept {
             for(int i=stroke.size()-2; i >= 0; i--) {
                 auto action = stroke[i];
                 action.at += offset_ms;
-                ActiveFunscript()->PasteAction(action, player->getFrameTimeMs());
+                ActiveFunscript()->AddAction(action);
             }
         }
         else {
             for (int i = stroke.size()-1; i >= 0; i--) {
                 auto action = stroke[i];
                 action.at += offset_ms;
-                ActiveFunscript()->PasteAction(action, player->getFrameTimeMs());
+                ActiveFunscript()->AddAction(action);
             }
         }
         player->setPositionExact(stroke.front().at + offset_ms);

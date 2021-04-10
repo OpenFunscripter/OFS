@@ -6,7 +6,6 @@
 #include "OFS_Serialization.h"
 #include "OFS_BinarySerialization.h"
 
-#include <vector>
 #include <string>
 #include <memory>
 #include <chrono>
@@ -17,6 +16,8 @@
 
 #include "FunscriptSpline.h"
 #include "OFS_Profiling.h"
+
+#include "EASTL/sort.h"
 
 class FunscriptUndoSystem;
 
@@ -33,8 +34,10 @@ class Funscript
 {
 public:
 	struct FunscriptData {
-		std::vector<FunscriptAction> Actions;
-		std::vector<FunscriptAction> selection;
+		FunscriptArray Actions;
+		FunscriptArray selection;
+		//std::vector<FunscriptAction> Actions;
+		//std::vector<FunscriptAction> selection;
 	};
 
 	struct Metadata {
@@ -99,7 +102,7 @@ public:
 	{
 		s.ext(*this, bitsery::ext::Growable{},
 			[](S& s, Funscript& o) {
-				s.container(o.data.Actions, o.data.Actions.max_size());
+				s.container(o.data.Actions, o.data.Actions.kMaxSize);
 				// Metadata is centralized in OFS_Project
 				s.text1b(o.CurrentPath, o.CurrentPath.max_size());
 				s.text1b(o.Title, o.Title.max_size());
@@ -120,37 +123,15 @@ private:
 	void checkForInvalidatedActions() noexcept;
 	
 	FunscriptData data;
-	bool ActionMapNeedsUpdate = true;
-	std::map<int32_t, int32_t> ActionMap; // maps timeMs to Index in actions vector
 
-	inline void updateActionMap(const std::vector<FunscriptAction>& actions) noexcept
-	{
-		OFS_PROFILE(__FUNCTION__);
-		ActionMapNeedsUpdate = false;
-		ActionMap.clear();
-		for (int i = 0; i < actions.size(); i++) {
-			ActionMap.emplace(actions[i].at, i);
-		}
-	}
-	
 	inline FunscriptAction* getAction(FunscriptAction action) noexcept
 	{
 		OFS_PROFILE(__FUNCTION__);
-		if (!ActionMapNeedsUpdate) {
-			auto indexIt = ActionMap.find(action.at);
-			if (indexIt != ActionMap.end()) {
-				return &data.Actions[indexIt->second];
-			}
-		}
-		else {
-			auto it = std::find(data.Actions.begin(), data.Actions.end(), action);
-			if (it != data.Actions.end())
-				return &(*it);
-		}
-		return nullptr;
+		auto it = data.Actions.find(action);
+		return it != data.Actions.end() ? it : nullptr;
 	}
 
-	inline FunscriptAction* getActionAtTime(std::vector<FunscriptAction>& actions, int32_t time_ms, uint32_t max_error_ms) noexcept
+	inline FunscriptAction* getActionAtTime(FunscriptArray& actions, int32_t time_ms, uint32_t max_error_ms) noexcept
 	{
 		OFS_PROFILE(__FUNCTION__);
 		// gets an action at a time with a margin of error
@@ -158,12 +139,10 @@ private:
 		FunscriptAction* smallestErrorAction = nullptr;
 
 		int i = 0;
-		if (!ActionMapNeedsUpdate) {
-			auto indexIt = ActionMap.lower_bound(time_ms - max_error_ms);
-			if (indexIt != ActionMap.end()) {
-				// index is valid
-				i = indexIt->second;
-			}
+		auto it = data.Actions.lower_bound(FunscriptAction(time_ms-max_error_ms, 0));
+		if (it != data.Actions.end()) {
+			i = std::distance(data.Actions.begin(), it);
+			if (i > 0) --i;
 		}
 
 		for (; i < actions.size(); i++) {
@@ -189,77 +168,39 @@ private:
 	inline FunscriptAction* getNextActionAhead(int32_t time_ms) noexcept
 	{
 		OFS_PROFILE(__FUNCTION__);
-		if (!ActionMapNeedsUpdate) {
-			auto indexIt = ActionMap.upper_bound(time_ms);
-			if (indexIt != ActionMap.end()
-				&& indexIt->first > time_ms) {
-				int index = indexIt->second;
-				return &data.Actions[index];
-			}
-		}
-		else {
-			// fallback to linear search
-			auto it = std::find_if(data.Actions.begin(), data.Actions.end(),
-				[time_ms](auto action) {
-					return action.at > time_ms;
-				});
-
-			if (it != data.Actions.end())
-				return &(*it);
-		}
-		return nullptr;
+		auto it = data.Actions.upper_bound(FunscriptAction(time_ms, 0));
+		return it != data.Actions.end() ? it : nullptr;
 	}
 
 	inline FunscriptAction* getPreviousActionBehind(int32_t time_ms) noexcept
 	{
 		OFS_PROFILE(__FUNCTION__);
-		if (!ActionMapNeedsUpdate) {
-			auto indexIt = ActionMap.lower_bound(time_ms);
-			if (indexIt != ActionMap.end()
-				&& indexIt->second > 0) {
-				// index is valid
-				int index = indexIt->second - 1;
-				return &data.Actions[index];
-			}
-		}
-		else {
-			// fall back to linear search
-			auto it = std::find_if(data.Actions.rbegin(), data.Actions.rend(),
-				[time_ms](auto action) {
-					return action.at < time_ms;
-				});
-
-			if (it != data.Actions.rend())
-				return &(*it);
-		}
-		return nullptr;
+		auto it = data.Actions.lower_bound(FunscriptAction(time_ms, 0));
+		return it-1 >= data.Actions.begin() ? it - 1 : nullptr;
 	}
 
 	void moveActionsTime(std::vector<FunscriptAction*> moving, int32_t time_offset);
 	void moveActionsPosition(std::vector<FunscriptAction*> moving, int32_t pos_offset);
 	inline void sortSelection() noexcept { sortActions(data.selection); }
-	inline void sortActions(std::vector<FunscriptAction>& actions) noexcept {
+	inline void sortActions(FunscriptArray& actions) noexcept {
 		OFS_BENCHMARK(__FUNCTION__);
 		OFS_PROFILE(__FUNCTION__);
-		std::sort(actions.begin(), actions.end(),
-			[](auto& a, auto& b) { return a.at < b.at; }
-		);
+		eastl::sort(actions.begin(), actions.end());
 	}
-	inline void addAction(std::vector<FunscriptAction>& actions, FunscriptAction newAction) noexcept {
+	inline void addAction(FunscriptArray& actions, FunscriptAction newAction) noexcept {
 		OFS_PROFILE(__FUNCTION__);
-		auto it = std::find_if(actions.begin(), actions.end(), [newAction](auto action) {
-			return newAction.at < action.at;
-		});
-		actions.insert(it, newAction);
+		actions.emplace(newAction);
 		NotifyActionsChanged(true);
 	}
 
-	void NotifySelectionChanged() noexcept;
+	inline void NotifySelectionChanged() noexcept {
+		selectionChanged = true;
+	}
 
 	void loadMetadata() noexcept;
 	void saveMetadata() noexcept;
 
-	void startSaveThread(const std::string& path, std::vector<FunscriptAction>&& actions, nlohmann::json&& json) noexcept;	
+	void startSaveThread(const std::string& path, FunscriptArray&& actions, nlohmann::json&& json) noexcept;	
 	std::string CurrentPath;
 public:
 	Funscript();
@@ -271,7 +212,6 @@ public:
 			unsavedEdits = true;
 			editTime = std::chrono::system_clock::now();
 		}
-		ActionMapNeedsUpdate = true;
 	}
 
 	std::unique_ptr<FunscriptUndoSystem> undoSystem;
@@ -303,8 +243,8 @@ public:
 	}
 
 	const FunscriptData& Data() const noexcept { return data; }
-	const std::vector<FunscriptAction>& Selection() const noexcept { return data.selection; }
-	const std::vector<FunscriptAction>& Actions() const noexcept { return data.Actions; }
+	const auto& Selection() const noexcept { return data.selection; }
+	const auto& Actions() const noexcept { return data.Actions; }
 
 	inline const FunscriptAction* GetAction(FunscriptAction action) noexcept { return getAction(action); }
 	inline const FunscriptAction* GetActionAtTime(int32_t time_ms, uint32_t error_ms) noexcept { return getActionAtTime(data.Actions, time_ms, error_ms); }
@@ -315,18 +255,16 @@ public:
 	float GetPositionAtTime(int32_t time_ms) noexcept;
 	
 	inline void AddAction(FunscriptAction newAction) noexcept { addAction(data.Actions, newAction); }
-	void AddActionSafe(FunscriptAction newAction) noexcept;
-	void AddActionRange(const std::vector<FunscriptAction>& range, bool checkDuplicates = true) noexcept;
+	void AddActionRange(const FunscriptArray& range, bool checkDuplicates = true) noexcept;
 
 	bool EditAction(FunscriptAction oldAction, FunscriptAction newAction) noexcept;
 	void AddEditAction(FunscriptAction action, float frameTimeMs) noexcept;
-	void PasteAction(FunscriptAction paste, int32_t error_ms) noexcept;
 	void RemoveAction(FunscriptAction action, bool checkInvalidSelection = true) noexcept;
-	void RemoveActions(const std::vector<FunscriptAction>& actions) noexcept;
+	void RemoveActions(const FunscriptArray& actions) noexcept;
 
 	std::vector<FunscriptAction> GetLastStroke(int32_t time_ms) noexcept;
 
-	void SetActions(const std::vector<FunscriptAction>& override_with) noexcept;
+	void SetActions(const FunscriptArray& override_with) noexcept;
 
 	inline bool HasUnsavedEdits() const { return unsavedEdits; }
 	inline const std::chrono::system_clock::time_point& EditTime() const { return editTime; }
@@ -336,7 +274,7 @@ public:
 	// selection api
 	void RangeExtendSelection(int32_t rangeExtend) noexcept;
 	bool ToggleSelection(FunscriptAction action) noexcept;
-	void SetSelection(FunscriptAction action, bool selected) noexcept;
+	void SetSelected(FunscriptAction action, bool selected) noexcept;
 	void SelectTopActions();
 	void SelectBottomActions();
 	void SelectMidActions();
@@ -352,7 +290,7 @@ public:
 	inline void ClearSelection() noexcept { data.selection.clear(); }
 	inline const FunscriptAction* GetClosestActionSelection(int32_t time_ms) noexcept { return getActionAtTime(data.selection, time_ms, std::numeric_limits<int32_t>::max()); }
 	
-	void SetSelection(const std::vector<FunscriptAction>& action_to_select, bool unsafe) noexcept;
+	void SetSelection(const FunscriptArray& action_to_select, bool unsafe) noexcept;
 	bool IsSelected(FunscriptAction action) noexcept;
 
 	void EqualizeSelection() noexcept;
@@ -360,11 +298,7 @@ public:
 
 	FunscriptSpline ScriptSpline;
 	inline const float Spline(float timeMs) noexcept {
-		if (ActionMapNeedsUpdate) {
-			updateActionMap(data.Actions);
-		}
-
-		return ScriptSpline.Sample(data.Actions, timeMs, ActionMap);
+		return ScriptSpline.Sample(data.Actions, timeMs);
 	}
 
 	inline const float SplineClamped(float timeMs) noexcept {
@@ -404,7 +338,11 @@ inline bool Funscript::open(const std::string& file)
 			}
 		}
 	}
-	data.Actions.assign(actionSet.begin(), actionSet.end());
+	//data.Actions.assign(actionSet.begin(), actionSet.end());
+	for (auto action : actionSet) {
+		data.Actions.emplace_back_unsorted(action);
+	}
+	sortActions(data.Actions);
 
 	loadMetadata();
 
@@ -435,6 +373,6 @@ inline void Funscript::save(const std::string& path, bool override_location)
 		unsavedEdits = false;
 	}
 
-	std::vector<FunscriptAction> copyActions = data.Actions;
+	auto copyActions = data.Actions;
 	startSaveThread(path, std::move(copyActions), std::move(Json));
 }

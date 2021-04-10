@@ -155,7 +155,7 @@ static float PointLineDistance(FunscriptAction pt, FunscriptAction lineStart, Fu
     return (float)std::sqrt(ax * ax + ay * ay);
 }
 
-static std::vector<bool> DouglasPeucker(const std::vector<FunscriptAction>& points, int startIndex, int lastIndex, float epsilon) {
+static std::vector<bool> DouglasPeucker(const FunscriptArray& points, int startIndex, int lastIndex, float epsilon) {
     std::stack<std::pair<int, int>> stk;
     stk.push(std::make_pair(startIndex, lastIndex));
 
@@ -196,13 +196,13 @@ static std::vector<bool> DouglasPeucker(const std::vector<FunscriptAction>& poin
     return std::move(bitArray);
 }
 
-static void DouglasPeucker(const std::vector<FunscriptAction>& points, float epsilon, std::vector<FunscriptAction>& newActions) {
+static void DouglasPeucker(const FunscriptArray& points, float epsilon, FunscriptArray& newActions) {
     auto bitArray = DouglasPeucker(points, 0, points.size() - 1, epsilon);
     newActions.reserve(points.size());
 
     for (int i = 0, n = points.size(); i < n; ++i) {
         if (bitArray[i]) {
-            newActions.push_back(points[i]);
+            newActions.emplace(points[i]);
         }
     }
 }
@@ -238,7 +238,7 @@ void RamerDouglasPeucker::DrawUI() noexcept
             createUndoState = false;
             auto selection = ctx().Selection();
             ctx().RemoveSelectedActions();
-            std::vector<FunscriptAction> newActions;
+            FunscriptArray newActions;
             newActions.reserve(selection.size());
             float scaledEpsilon = epsilon * averageDistance;
             DouglasPeucker(selection, scaledEpsilon, newActions);
@@ -847,7 +847,7 @@ void CustomLua::runScript(LuaScript* script, bool dry_run) noexcept
                     LuaThread& data = *(LuaThread*)ctx;
 
                     auto app = OpenFunscripter::ptr;
-                    std::vector<FunscriptAction> tmpBuffer;
+                    FunscriptArray tmpBuffer;
                     app->undoSystem->Snapshot(StateType::CUSTOM_LUA, true, app->ActiveFunscript().get());
 
                     for (int i = 0; i < app->LoadedFunscripts().size(); i++) {
@@ -856,11 +856,11 @@ void CustomLua::runScript(LuaScript* script, bool dry_run) noexcept
 
                         tmpBuffer.clear();
                         tmpBuffer.reserve(output.actions.size());
-                        tmpBuffer.insert(tmpBuffer.end(), output.actions.begin(), output.actions.end());
+                        tmpBuffer.insert(output.actions.begin(), output.actions.end());
                         script->SetActions(tmpBuffer);
 
                         tmpBuffer.clear();
-                        tmpBuffer.insert(tmpBuffer.end(), output.selection.begin(), output.selection.end());
+                        tmpBuffer.insert(output.selection.begin(), output.selection.end());
                         script->SetSelection(tmpBuffer, true);
                     }
 

@@ -35,6 +35,8 @@ set(OFS_LIB_SOURCES
 	"OFS_UndoSystem.cpp"
 	"OFS_ControllerInput.cpp"
 
+	"OFS_Allocator.cpp"
+
 	"OFS_Serialization.cpp"
 	"OFS_Util.cpp"
 )
@@ -70,6 +72,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	reproc++
 	bitsery
 	tracy
+	EASTL
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)

@@ -3,7 +3,7 @@
 #include "OFS_Profiling.h"
 #include <array>
 
-void OFS::UpdateHeatmapGradient(float totalDurationMs, ImGradient& grad, const std::vector<FunscriptAction>& actions) noexcept
+void OFS::UpdateHeatmapGradient(float totalDurationMs, ImGradient& grad, const FunscriptArray& actions) noexcept
 {
     OFS_BENCHMARK(__FUNCTION__);
     OFS_PROFILE(__FUNCTION__);
@@ -33,7 +33,7 @@ void OFS::UpdateHeatmapGradient(float totalDurationMs, ImGradient& grad, const s
     }
     HeatMap.refreshCache();
 
-    auto getSegments = [](const std::vector<FunscriptAction>& actions, int32_t gapDurationMs) -> std::vector<std::vector<FunscriptAction>> {
+    auto getSegments = [](const FunscriptArray& actions, int32_t gapDurationMs) -> std::vector<std::vector<FunscriptAction>> {
         int prev_direction = 0; // 0 neutral 0< up 0> down
         std::vector<std::vector<FunscriptAction>> segments;
         {

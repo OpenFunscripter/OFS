@@ -13,7 +13,8 @@ ScripingModeBaseImpl::ScripingModeBaseImpl()
 
 void ScripingModeBaseImpl::addEditAction(FunscriptAction action) noexcept
 {
-    ctx().AddEditAction(action, OpenFunscripter::ptr->player->getFrameTimeMs());
+    auto app = OpenFunscripter::ptr;
+    ctx().AddEditAction(action, app->player->getFrameTimeMs());
 }
 
 inline Funscript& ScripingModeBaseImpl::ctx() {
@@ -314,7 +315,7 @@ inline void RecordingImpl::finishSingleAxisRecording() noexcept
                 auto& action = actionP.first;
                 if (action.at >= 0) {
                     action.at += offsetMs;
-                    script->AddActionSafe(action);
+                    script->AddAction(action);
                 }
             }
         }
@@ -325,7 +326,7 @@ inline void RecordingImpl::finishSingleAxisRecording() noexcept
             auto& action = actionP.first;
             if (action.at >= 0) {
                 action.at += offsetMs;
-                ctx().AddActionSafe(action);
+                ctx().AddAction(action);
             }
         }
     }
@@ -346,7 +347,7 @@ inline void RecordingImpl::finishTwoAxisRecording() noexcept
             auto& actionX = actionP.first;
             if (actionX.at >= 0) {
                 actionX.at += offsetMs;
-                script->AddActionSafe(actionX);
+                script->AddAction(actionX);
             }
         }
     }
@@ -356,7 +357,7 @@ inline void RecordingImpl::finishTwoAxisRecording() noexcept
             auto& actionY = actionP.second;
             if (actionY.at >= 0) {
                 actionY.at += offsetMs;
-                script->AddActionSafe(actionY);
+                script->AddAction(actionY);
             }
         }
     }

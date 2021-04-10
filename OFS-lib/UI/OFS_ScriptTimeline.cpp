@@ -118,7 +118,7 @@ void ScriptTimeline::mousePressed(SDL_Event& ev) noexcept
 			if (clickedAction != nullptr) {
 				// start move
 				activeScript->ClearSelection();
-				activeScript->SetSelection(*clickedAction, true);
+				activeScript->SetSelected(*clickedAction, true);
 				IsMoving = true;
 				undoSystem->Snapshot(StateType::MOUSE_MOVE_ACTION, false, activeScript);
 				return;
@@ -206,7 +206,7 @@ void ScriptTimeline::mouseDrag(SDL_Event& ev) noexcept
 			activeScript->RemoveAction(toBeMoved);
 			activeScript->ClearSelection();
 			activeScript->AddAction(newAction);
-			activeScript->SetSelection(newAction, true);
+			activeScript->SetSelected(newAction, true);
 		}
 	}
 }
