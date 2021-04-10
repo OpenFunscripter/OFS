@@ -60,11 +60,8 @@ jobs:
 
     - name: EASTL special treatment
       run: |
-        cd lib/EASTL/test/packages
-        cd EAAssert;    git submodule update --init
-        cd ../EABase;   git submodule update --init
-        cd ../EAStdC;   git submodule update --init
-        cd ../EAThread; git submodule update --init
+        cd lib/EASTL
+        git submodule update --init
 
     - name: Install Dependencies
       run: |
