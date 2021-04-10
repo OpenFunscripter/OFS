@@ -20,7 +20,6 @@
 
 // FIX: Add type checking to the deserialization. 
 //      I assume it would crash if a field is specified but doesn't have the correct type.
-// TODO: use a ringbuffer in the undosystem
 // TODO: improve shift click add action with simulator
 //       it bugs out if the simulator is on the same height as the script timeline
 
@@ -1499,7 +1498,6 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     LoadedProject->Metadata.duration = player->getDuration();
-    ActiveFunscript()->reserveActionMemory(player->getTotalNumFrames());
     player->setPositionExact(LoadedProject->Settings.lastPlayerPositionMs);
     ActiveFunscript()->NotifyActionsChanged(false);
 

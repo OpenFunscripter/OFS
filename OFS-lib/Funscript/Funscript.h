@@ -36,8 +36,6 @@ public:
 	struct FunscriptData {
 		FunscriptArray Actions;
 		FunscriptArray selection;
-		//std::vector<FunscriptAction> Actions;
-		//std::vector<FunscriptAction> selection;
 	};
 
 	struct Metadata {
@@ -127,6 +125,7 @@ private:
 	inline FunscriptAction* getAction(FunscriptAction action) noexcept
 	{
 		OFS_PROFILE(__FUNCTION__);
+		if (data.Actions.empty()) return nullptr;
 		auto it = data.Actions.find(action);
 		return it != data.Actions.end() ? it : nullptr;
 	}
@@ -134,6 +133,7 @@ private:
 	inline FunscriptAction* getActionAtTime(FunscriptArray& actions, int32_t time_ms, uint32_t max_error_ms) noexcept
 	{
 		OFS_PROFILE(__FUNCTION__);
+		if (actions.empty()) return nullptr;
 		// gets an action at a time with a margin of error
 		int32_t smallestError = std::numeric_limits<int32_t>::max();
 		FunscriptAction* smallestErrorAction = nullptr;
@@ -168,6 +168,7 @@ private:
 	inline FunscriptAction* getNextActionAhead(int32_t time_ms) noexcept
 	{
 		OFS_PROFILE(__FUNCTION__);
+		if (data.Actions.empty()) return nullptr;
 		auto it = data.Actions.upper_bound(FunscriptAction(time_ms, 0));
 		return it != data.Actions.end() ? it : nullptr;
 	}
@@ -175,6 +176,7 @@ private:
 	inline FunscriptAction* getPreviousActionBehind(int32_t time_ms) noexcept
 	{
 		OFS_PROFILE(__FUNCTION__);
+		if (data.Actions.empty()) return nullptr;
 		auto it = data.Actions.lower_bound(FunscriptAction(time_ms, 0));
 		return it-1 >= data.Actions.begin() ? it - 1 : nullptr;
 	}
@@ -239,10 +241,6 @@ public:
 	void save() noexcept { save(CurrentPath, true); }
 	void save(const std::string& path, bool override_location = true);
 	
-	inline void reserveActionMemory(int32_t frameCount) noexcept { 
-		data.Actions.reserve(frameCount);
-	}
-
 	const FunscriptData& Data() const noexcept { return data; }
 	const auto& Selection() const noexcept { return data.selection; }
 	const auto& Actions() const noexcept { return data.Actions; }
@@ -329,21 +327,13 @@ inline bool Funscript::open(const std::string& file)
 	auto actions = Json["actions"];
 	data.Actions.clear();
 
-	std::set<FunscriptAction> actionSet;
-	if (actions.is_array()) {
-		for (auto& action : actions) {
-			int32_t time_ms = action["at"];
-			int32_t pos = action["pos"];
-			if (time_ms >= 0) {
-				actionSet.emplace(time_ms, pos);
-			}
+	for (auto& action : actions) {
+		int32_t time_ms = action["at"];
+		int32_t pos = action["pos"];
+		if (time_ms >= 0) {
+			data.Actions.emplace(time_ms, pos);
 		}
 	}
-	//data.Actions.assign(actionSet.begin(), actionSet.end());
-	for (auto action : actionSet) {
-		data.Actions.emplace_back_unsorted(action);
-	}
-	sortActions(data.Actions);
 
 	loadMetadata();
 
