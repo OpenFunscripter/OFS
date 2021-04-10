@@ -50,13 +50,11 @@ void Funscript::loadMetadata() noexcept
 void Funscript::saveMetadata() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	OFS_BENCHMARK(__FUNCTION__);
 	OFS::serializer::save(&LocalMetadata, &Json["metadata"]);
 }
 
 void Funscript::startSaveThread(const std::string& path, FunscriptArray&& actions, nlohmann::json&& json) noexcept
 {
-	OFS_BENCHMARK(__FUNCTION__);
 	OFS_PROFILE(__FUNCTION__);
 	struct SaveThreadData {
 		nlohmann::json jsonObj;
@@ -73,7 +71,6 @@ void Funscript::startSaveThread(const std::string& path, FunscriptArray&& action
 	threadData->base = &BaseLoaded;
 
 	auto thread = [](void* user) -> int {
-		OFS_BENCHMARK("SaveFunscriptThread");
 		SaveThreadData* data = static_cast<SaveThreadData*>(user);
 		SDL_LockMutex(data->mutex);
 

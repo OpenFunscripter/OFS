@@ -13,7 +13,6 @@
 bool OFS_Waveform::LoadMP3(const std::string& path) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	OFS_BENCHMARK(__FUNCTION__);
 	generating = true;
 
 	mp3dec_t mp3d;

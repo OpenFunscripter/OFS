@@ -62,8 +62,8 @@ class EmptyOverlay : public BaseOverlay {
 public:
 	EmptyOverlay(class ScriptTimeline* timeline) : BaseOverlay(timeline) {}
 	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept override;
-	virtual float steppingIntervalForward(float fromMs) noexcept;
-	virtual float steppingIntervalBackward(float fromMs) noexcept;
+	virtual float steppingIntervalForward(float fromMs) noexcept override;
+	virtual float steppingIntervalBackward(float fromMs) noexcept override;
 };
 
 

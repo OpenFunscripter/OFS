@@ -18,7 +18,6 @@ set(OFS_LIB_SOURCES
 	"UI/ScriptPositionsOverlayMode.cpp"
 
 	"UI/OFS_Waveform.cpp"
-	"UI/OFS_Profiler.cpp"
 
 	"imgui_impl/imgui_impl_opengl3.cpp"
 	"imgui_impl/imgui_impl_sdl.cpp" 

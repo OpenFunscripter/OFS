@@ -9,6 +9,7 @@
 
 bool OFS_Project::FindMedia(const std::string& funscriptPath) noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	FUN_ASSERT(MediaPath.empty(), "theres already is a video/audio file");
 
 	std::filesystem::path basePath = Util::PathFromString(funscriptPath);
@@ -40,8 +41,10 @@ bool OFS_Project::FindMedia(const std::string& funscriptPath) noexcept
 
 void OFS_Project::LoadScripts(const std::string& funscriptPath) noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	auto loadRelatedScripts = [](OFS_Project* project, const std::string& file) noexcept
 	{
+		OFS_PROFILE(__FUNCTION__);
 	    std::vector<std::filesystem::path> relatedFiles;
 	    {
 	        auto filename = Util::Filename(file) + '.';
@@ -115,6 +118,7 @@ OFS_Project::~OFS_Project() noexcept
 
 void OFS_Project::Clear() noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	Loaded = false;
 	LastPath.clear();
 	MediaPath.clear();
@@ -129,6 +133,7 @@ void OFS_Project::Clear() noexcept
 
 bool OFS_Project::Load(const std::string& path) noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	FUN_ASSERT(!path.empty(), "path empty");
 	Clear();
 	auto ProjectPath = Util::PathFromString(path);
@@ -141,7 +146,6 @@ bool OFS_Project::Load(const std::string& path) noexcept
 	ProjectBuffer.clear();
 	if (Util::ReadFile(ProjectPath.u8string().c_str(), ProjectBuffer) > 0) {
 		Funscripts.clear();
-		OFS_BENCHMARK(__FUNCTION__);
 		auto state = OFS_Binary::Deserialize(ProjectBuffer, *this);
 		if (state == bitsery::ReaderError::NoError && Valid) {
 			Loaded = true;
@@ -156,6 +160,7 @@ bool OFS_Project::Load(const std::string& path) noexcept
 
 void OFS_Project::Save(const std::string& path) noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	FUN_ASSERT(!path.empty(), "path empty");
 	Valid = true;
 
@@ -169,7 +174,6 @@ void OFS_Project::Save(const std::string& path) noexcept
 
 	size_t writtenSize = 0;
 	{
-		OFS_BENCHMARK(__FUNCTION__);
 		SDL_LockMutex(ProjectMut);
 
 		ProjectBuffer.clear();
@@ -196,6 +200,7 @@ void OFS_Project::Save(const std::string& path) noexcept
 
 void OFS_Project::AddFunscript(const std::string& path) noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	FUN_ASSERT(Loaded, "Project not loaded");
 	// this can either be a new one or an existing one
 	auto script = std::make_shared<Funscript>();
@@ -215,6 +220,7 @@ void OFS_Project::AddFunscript(const std::string& path) noexcept
 
 void OFS_Project::RemoveFunscript(int idx) noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	if (idx >= 0 && idx < Funscripts.size()) {
 		Funscripts.erase(Funscripts.begin() + idx);
 		Save();
@@ -223,6 +229,7 @@ void OFS_Project::RemoveFunscript(int idx) noexcept
 
 bool OFS_Project::ImportFunscript(const std::string& path) noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	if (MediaPath.empty()) {
 		bool foundMedia = FindMedia(path);
 		if (!foundMedia) {
@@ -250,8 +257,8 @@ bool OFS_Project::ImportFunscript(const std::string& path) noexcept
 
 bool OFS_Project::Import(const std::string& path) noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	Loaded = false;
-
 	auto basePath = Util::PathFromString(path);
 	LastPath = basePath.replace_extension("").u8string() + OFS_Project::Extension;
 	if (Util::FileExists(LastPath)) {
@@ -275,6 +282,7 @@ bool OFS_Project::Import(const std::string& path) noexcept
 
 void OFS_Project::ExportFunscript(const std::string& outputPath, int idx) noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	FUN_ASSERT(idx >= 0 && idx < Funscripts.size(), "out of bounds");
 	Funscripts[idx]->LocalMetadata = Metadata; // copy metadata
 	Funscripts[idx]->save(outputPath);
@@ -282,6 +290,7 @@ void OFS_Project::ExportFunscript(const std::string& outputPath, int idx) noexce
 
 void OFS_Project::ExportFunscripts(const std::string& outputPath) noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	auto outPath = Util::PathFromString(outputPath);
 	for (auto& script : Funscripts) {
 		auto savePath =  outPath / (script->Title + ".funscript");
@@ -292,6 +301,7 @@ void OFS_Project::ExportFunscripts(const std::string& outputPath) noexcept
 
 void OFS_Project::ExportFunscripts() noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	for (auto& script : Funscripts)
 	{
 		FUN_ASSERT(!script->Path().empty(), "path is empty");
@@ -304,6 +314,7 @@ void OFS_Project::ExportFunscripts() noexcept
 
 bool OFS_Project::HasUnsavedEdits() noexcept
 {
+	OFS_PROFILE(__FUNCTION__);
 	bool unsavedChanges = false;
 	for (auto&& script : Funscripts) {
 		unsavedChanges = unsavedChanges || script->HasUnsavedEdits();

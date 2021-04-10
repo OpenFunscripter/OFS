@@ -1,5 +1,6 @@
 #pragma once
 #include "OFS_Profiling.h"
+#include "OFS_Util.h"
 
 #include <vector>
 #include "imgui.h"

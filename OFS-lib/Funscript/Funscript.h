@@ -185,7 +185,6 @@ private:
 	void moveActionsPosition(std::vector<FunscriptAction*> moving, int32_t pos_offset);
 	inline void sortSelection() noexcept { sortActions(data.selection); }
 	inline void sortActions(FunscriptArray& actions) noexcept {
-		OFS_BENCHMARK(__FUNCTION__);
 		OFS_PROFILE(__FUNCTION__);
 		eastl::sort(actions.begin(), actions.end());
 	}
@@ -307,7 +306,6 @@ public:
 
 inline bool Funscript::open(const std::string& file)
 {
-	OFS_BENCHMARK(__FUNCTION__);
 	OFS_PROFILE(__FUNCTION__);
 	UpdatePath(file);
 	scriptOpened = true;
@@ -349,7 +347,6 @@ inline bool Funscript::open(const std::string& file)
 
 inline void Funscript::save(const std::string& path, bool override_location)
 {
-	OFS_BENCHMARK(__FUNCTION__);
 	OFS_PROFILE(__FUNCTION__);
 	saveMetadata();
 

@@ -1551,7 +1551,6 @@ void OpenFunscripter::autoBackup() noexcept
     std::chrono::duration<float> timeSinceBackup = std::chrono::steady_clock::now() - lastBackup;
     if (timeSinceBackup.count() < 61.f) { return; }
     OFS_PROFILE(__FUNCTION__);
-    OFS_BENCHMARK(__FUNCTION__);
     lastBackup = std::chrono::steady_clock::now();
 
     auto backupDir = std::filesystem::path(Util::Prefpath("backup"));
@@ -1941,7 +1940,6 @@ void OpenFunscripter::updateTitle() noexcept
 void OpenFunscripter::saveProject() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    OFS_BENCHMARK(__FUNCTION__);
     LoadedProject->Save();
 }
 
@@ -2917,7 +2915,7 @@ void OpenFunscripter::CreateDockspace() noexcept
 
     // When using ImGuiDockNodeFlags_PassthruCentralNode, DockSpace() will render our background
     // and handle the pass-thru hole, so we ask Begin() to not render a background.
-    if constexpr (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode) window_flags |= ImGuiWindowFlags_NoBackground;
+    if constexpr ((bool)(dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)) window_flags |= ImGuiWindowFlags_NoBackground;
 
     // Important: note that we proceed even if Begin() returns false (aka window is collapsed).
     // This is because we want to keep our DockSpace() active. If a DockSpace() is inactive,
