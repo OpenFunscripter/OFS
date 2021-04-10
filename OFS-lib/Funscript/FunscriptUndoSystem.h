@@ -1,6 +1,11 @@
 #pragma once
 
 #include "Funscript.h"
+#include "EASTL/bonus/ring_buffer.h"
+
+namespace OFS {
+	constexpr int32_t MaxScriptStateInMemory = 1000;
+}
 
 // in a previous iteration
 // this looked a lot more sophisticated
@@ -13,14 +18,12 @@ public:
 	int32_t type;
 	const std::string& Message() const;
 
-	ScriptState(int32_t type, const Funscript::FunscriptData& data)
+
+	ScriptState() noexcept 
+		: type(-1) {}
+	ScriptState(int32_t type, const Funscript::FunscriptData& data) noexcept
 		: type(type), data(data) {}
 };
-
-namespace OFS {
-	constexpr int32_t MaxScriptStateInMemory = 1000;
-}
-
 
 // this is part of the funscript class
 class FunscriptUndoSystem
@@ -29,19 +32,19 @@ class FunscriptUndoSystem
 
 	Funscript* script = nullptr;
 	void SnapshotRedo(int32_t type) noexcept;
-	// using vector as a stack...
-	// because std::stack can't be iterated
-	std::vector<ScriptState> UndoStack;
-	std::vector<ScriptState> RedoStack;
+	
+	eastl::ring_buffer<ScriptState> UndoStack;
+	eastl::ring_buffer<ScriptState> RedoStack;
 
 	void Snapshot(int32_t type, bool clearRedo = true) noexcept;
 	bool Undo() noexcept;
 	bool Redo() noexcept;
 	void ClearRedo() noexcept;
-
 public:
 	FunscriptUndoSystem(Funscript* script) : script(script) {
 		FUN_ASSERT(script != nullptr, "no script");
+		UndoStack.reserve(OFS::MaxScriptStateInMemory);
+		RedoStack.reserve(OFS::MaxScriptStateInMemory);
 	}
 	static constexpr const char* UndoHistoryId = "Undo/Redo history";
 	void ShowUndoRedoHistory(bool* open);

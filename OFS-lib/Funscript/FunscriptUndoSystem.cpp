@@ -1,8 +1,13 @@
 #include "FunscriptUndoSystem.h"
 
+void FunscriptUndoSystem::ClearRedo() noexcept
+{
+	RedoStack.clear();
+}
+
 void FunscriptUndoSystem::SnapshotRedo(int32_t type) noexcept
 {
-	RedoStack.emplace_back(type, script->Data());
+	RedoStack.push_back() = std::move(ScriptState(type, script->Data()));
 }
 
 void FunscriptUndoSystem::ShowUndoRedoHistory(bool* open)
@@ -12,11 +17,12 @@ void FunscriptUndoSystem::ShowUndoRedoHistory(bool* open)
 		ImGui::SetNextWindowSizeConstraints(ImVec2(200, 100), ImVec2(200, 200));
 		ImGui::Begin(UndoHistoryId, open, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
 		ImGui::TextDisabled("Redo stack");
-		for (auto it = RedoStack.begin(); it != RedoStack.end(); it++) {
+		
+		for (auto it = RedoStack.begin(), end = RedoStack.end(); it != end; ++it) {
 			int count = 1;
 			auto copy_it = it;
-			while (++copy_it != RedoStack.end() && copy_it->type == it->type) {
-				count++;
+			while (++copy_it != end && copy_it->type == it->type) {
+				++count;
 			}
 			it = copy_it - 1;
 
@@ -24,11 +30,11 @@ void FunscriptUndoSystem::ShowUndoRedoHistory(bool* open)
 		}
 		ImGui::Separator();
 		ImGui::TextDisabled("Undo stack");
-		for (auto it = UndoStack.rbegin(); it != UndoStack.rend(); it++) {
+		for (auto it = UndoStack.rbegin(), end = UndoStack.rend(); it != end; ++it) {
 			int count = 1;
 			auto copy_it = it;
-			while (++copy_it != UndoStack.rend() && copy_it->type == it->type) {
-				count++;
+			while (++copy_it != end && copy_it->type == it->type) {
+				++count;
 			}
 			it = copy_it - 1;
 
@@ -40,11 +46,8 @@ void FunscriptUndoSystem::ShowUndoRedoHistory(bool* open)
 
 void FunscriptUndoSystem::Snapshot(int32_t type, bool clearRedo) noexcept
 {
-	UndoStack.emplace_back(type, script->Data());
-
-	if (UndoStack.size() > OFS::MaxScriptStateInMemory) {
-		UndoStack.erase(UndoStack.begin()); // erase first action
-	}
+	OFS_PROFILE(__FUNCTION__);
+	UndoStack.push_back() = std::move(ScriptState(type, script->Data()));
 
 	// redo gets cleared after every snapshot
 	if (clearRedo && !RedoStack.empty())
@@ -54,8 +57,9 @@ void FunscriptUndoSystem::Snapshot(int32_t type, bool clearRedo) noexcept
 bool FunscriptUndoSystem::Undo() noexcept
 {
 	if (UndoStack.empty()) return false;
+	OFS_PROFILE(__FUNCTION__);
 	SnapshotRedo(UndoStack.back().type);
-	script->rollback(UndoStack.back().Data()); // copy data
+	script->rollback(std::move(UndoStack.back().Data())); // copy data
 	UndoStack.pop_back(); // pop of the stack
 	return true;
 }
@@ -63,13 +67,9 @@ bool FunscriptUndoSystem::Undo() noexcept
 bool FunscriptUndoSystem::Redo() noexcept
 {
 	if (RedoStack.empty()) return false;
+	OFS_PROFILE(__FUNCTION__);
 	Snapshot(RedoStack.back().type, false);
-	script->rollback(RedoStack.back().Data()); // copy data
+	script->rollback(std::move(RedoStack.back().Data())); // copy data
 	RedoStack.pop_back(); // pop of the stack
 	return true;
-}
-
-void FunscriptUndoSystem::ClearRedo() noexcept
-{
-	RedoStack.clear();
 }

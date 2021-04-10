@@ -231,6 +231,7 @@ public:
 
 	inline const std::string& Path() const noexcept { return CurrentPath; }
 
+	inline void rollback(FunscriptData&& data) noexcept { this->data = std::move(data); NotifyActionsChanged(true); }
 	inline void rollback(const FunscriptData& data) noexcept { this->data = data; NotifyActionsChanged(true); }
 	void update() noexcept;
 

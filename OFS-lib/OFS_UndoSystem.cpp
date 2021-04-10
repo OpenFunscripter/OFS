@@ -42,21 +42,16 @@ static std::array<const std::string, (int32_t)StateType::TOTAL_UNDOSTATE_TYPES> 
 
 const std::string& ScriptState::Message() const
 {
-	return stateStrings[(int32_t)type];
+	uint32_t typeIdx = (uint32_t)type;
+	FUN_ASSERT(typeIdx < stateStrings.size(), "out of bounds");
+	return stateStrings[typeIdx];
 }
 
 void UndoSystem::Snapshot(StateType type, bool multi_script, Funscript* active, bool clearRedo) noexcept
 {
-	UndoStack.emplace_back(multi_script); // tracking multi-script modifications
-
-	if (UndoStack.size() > OFS::MaxScriptStateInMemory) {
-		UndoStack.erase(UndoStack.begin()); // erase first UndoContext
-	}
-
-	// redo gets cleared after every snapshot
+	UndoStack.push_back() = UndoContext{ multi_script };
 	if (clearRedo && !RedoStack.empty())
 		ClearRedo();
-
 
 	if (multi_script) {
 		for (auto&& script : *LoadedScripts) {
@@ -75,13 +70,13 @@ bool UndoSystem::Undo(Funscript* active) noexcept
 
 	if (UndoStack.back().IsMultiscriptModification) {
 		for (auto&& script : *LoadedScripts) {
-			undidSomething = undidSomething || script->undoSystem->Undo();
+			undidSomething = script->undoSystem->Undo() || undidSomething;
 		}
 	}
 	else {
-		undidSomething = undidSomething || active->undoSystem->Undo();
+		undidSomething = active->undoSystem->Undo() || undidSomething;
 	}
-	RedoStack.emplace_back(std::move(UndoStack.back()));
+	RedoStack.push_back(std::move(UndoStack.back()));
 	UndoStack.pop_back();
 
 	return undidSomething;
@@ -94,13 +89,13 @@ bool UndoSystem::Redo(Funscript* active) noexcept
 
 	if (RedoStack.back().IsMultiscriptModification) {
 		for (auto&& script : *LoadedScripts) {
-			redidSomething = redidSomething || script->undoSystem->Redo();
+			redidSomething = script->undoSystem->Redo() || redidSomething;
 		}
 	}
 	else {
-		redidSomething = redidSomething || active->undoSystem->Redo();
+		redidSomething = active->undoSystem->Redo() || redidSomething;
 	}
-	UndoStack.emplace_back(std::move(RedoStack.back()));
+	UndoStack.push_back(std::move(RedoStack.back()));
 	RedoStack.pop_back();
 
 	return redidSomething;

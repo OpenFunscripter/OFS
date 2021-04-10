@@ -4,6 +4,8 @@
 #include <memory>
 #include <string>
 
+#include "FunscriptUndoSystem.h"
+
 enum StateType : int32_t {
 	ADD_EDIT_ACTIONS = 0,
 	ADD_EDIT_ACTION = 1,
@@ -50,22 +52,22 @@ private:
 	struct UndoContext {
 		bool IsMultiscriptModification = false;
 
-		UndoContext() {}
+		UndoContext() noexcept {}
 
-		UndoContext(bool multi)
+		UndoContext(bool multi) noexcept
 			: IsMultiscriptModification(multi)
-		{
-
-		}
+		{ }
 	};
-	std::vector<UndoContext> UndoStack;
-	std::vector<UndoContext> RedoStack;
+	eastl::ring_buffer<UndoContext> UndoStack;
+	eastl::ring_buffer<UndoContext> RedoStack;
 	void ClearRedo() noexcept;
 public:
 	std::vector<std::shared_ptr<class Funscript>>* LoadedScripts = nullptr;
 
-	UndoSystem(std::vector<std::shared_ptr<class Funscript>>* scripts) {
+	UndoSystem(std::vector<std::shared_ptr<class Funscript>>* scripts) noexcept {
 		LoadedScripts = scripts;
+		UndoStack.reserve(OFS::MaxScriptStateInMemory);
+		RedoStack.reserve(OFS::MaxScriptStateInMemory);
 	}
 
 	void Snapshot(StateType type, bool multi_script, class Funscript* active, bool clearRedo = true) noexcept;
