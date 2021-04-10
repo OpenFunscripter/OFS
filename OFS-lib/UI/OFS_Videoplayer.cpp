@@ -136,7 +136,6 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 			case MpvFramesPerSecond:
 				MpvData.fps = *(double*)prop->data;
 				MpvData.average_frame_time = (1.0 / MpvData.fps);
-				LOGF_DEBUG("frame time: %lf", MpvData.average_frame_time);
 				break;
 			case MpvDuration:
 				MpvData.duration = *(double*)prop->data;

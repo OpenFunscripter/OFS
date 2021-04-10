@@ -309,7 +309,7 @@ inline void RecordingImpl::finishSingleAxisRecording() noexcept
     auto app = OpenFunscripter::ptr;
     int32_t offsetMs = app->settings->data().action_insert_delay_ms;
     if (app->settings->data().mirror_mode) {
-        app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, true, app->ActiveFunscript().get());
+        app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS);
         for (auto&& script : app->LoadedFunscripts()) {
             for (auto&& actionP : app->scriptPositions.RecordingBuffer) {
                 auto& action = actionP.first;
@@ -321,7 +321,7 @@ inline void RecordingImpl::finishSingleAxisRecording() noexcept
         }
     }
     else {
-        app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, false, app->ActiveFunscript().get());
+        app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, app->ActiveFunscript());
         for (auto&& actionP : app->scriptPositions.RecordingBuffer) {
             auto& action = actionP.first;
             if (action.at >= 0) {
@@ -338,7 +338,7 @@ inline void RecordingImpl::finishTwoAxisRecording() noexcept
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
     int32_t offsetMs = app->settings->data().action_insert_delay_ms;
-    app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, true, nullptr);
+    app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS);
     int32_t rollIdx = app->sim3D->rollIndex;
     int32_t pitchIdx = app->sim3D->pitchIndex;
     if (rollIdx > 0 && rollIdx < app->LoadedFunscripts().size()) {

@@ -50,12 +50,11 @@ class UndoSystem
 {
 private:
 	struct UndoContext {
-		bool IsMultiscriptModification = false;
-
+		std::weak_ptr<const class Funscript> Changed;
 		UndoContext() noexcept {}
 
-		UndoContext(bool multi) noexcept
-			: IsMultiscriptModification(multi)
+		UndoContext(const std::weak_ptr<class Funscript>& ptr) noexcept
+			: Changed(ptr)
 		{ }
 	};
 	eastl::ring_buffer<UndoContext> UndoStack;
@@ -70,9 +69,11 @@ public:
 		RedoStack.reserve(OFS::MaxScriptStateInMemory);
 	}
 
-	void Snapshot(StateType type, bool multi_script, class Funscript* active, bool clearRedo = true) noexcept;
-	bool Undo(class Funscript* active) noexcept;
-	bool Redo(class Funscript* active) noexcept;
+	void Snapshot(StateType type, 
+		const std::weak_ptr<class Funscript> active = std::weak_ptr<class Funscript>(),
+		bool clearRedo = true) noexcept;
+	bool Undo() noexcept;
+	bool Redo() noexcept;
 
 	inline bool UndoEmpty() const noexcept { return UndoStack.empty(); }
 	inline bool RedoEmpty() const noexcept { return RedoStack.empty(); }

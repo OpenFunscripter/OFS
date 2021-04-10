@@ -296,9 +296,7 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
 
             if (ImGui::Button("Insert current position", ImVec2(-1.f, 0.f)) || editOccured) {
                 auto app = OpenFunscripter::ptr;
-                                                                    /* HACK: this would normally be false
-                                                                       but makes ofs more easy to use in this case. */
-                app->undoSystem->Snapshot(StateType::ADD_EDIT_ACTION, true, nullptr);
+                app->undoSystem->Snapshot(StateType::ADD_EDIT_ACTION);
                 if (rollIndex >= 0 && rollIndex < loadedScriptsCount) {
                     addEditAction(scripts[rollIndex], roll, -(rollRange / 2.f), (rollRange / 2.f));
                 }

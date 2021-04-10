@@ -1,3 +1,4 @@
+#include "OFS_Profiling.h"
 #include "OFS_UndoSystem.h"
 #include "FunscriptUndoSystem.h"
 
@@ -5,7 +6,7 @@
 
 // this array provides strings for the StateType enum
 // for this to work the order needs to be maintained
-static std::array<const std::string, (int32_t)StateType::TOTAL_UNDOSTATE_TYPES> stateStrings = {
+static std::array<const char*, (int32_t)StateType::TOTAL_UNDOSTATE_TYPES> stateStrings = {
 	"Add/Edit actions",
 	"Add/Edit action",
 	"Add action",
@@ -40,41 +41,48 @@ static std::array<const std::string, (int32_t)StateType::TOTAL_UNDOSTATE_TYPES> 
 	"Lua script",
 };
 
-const std::string& ScriptState::Message() const
+const char* ScriptState::Message() const noexcept
 {
 	uint32_t typeIdx = (uint32_t)type;
 	FUN_ASSERT(typeIdx < stateStrings.size(), "out of bounds");
 	return stateStrings[typeIdx];
 }
 
-void UndoSystem::Snapshot(StateType type, bool multi_script, Funscript* active, bool clearRedo) noexcept
+void UndoSystem::Snapshot(StateType type, const std::weak_ptr<Funscript> active, bool clearRedo) noexcept
 {
-	UndoStack.push_back() = UndoContext{ multi_script };
+	OFS_PROFILE(__FUNCTION__);
+	UndoStack.push_back() = UndoContext{ active };
 	if (clearRedo && !RedoStack.empty())
 		ClearRedo();
 
-	if (multi_script) {
+	if (active.expired()) {
+		LOG_DEBUG("multi snapshot");
 		for (auto&& script : *LoadedScripts) {
 			script->undoSystem->Snapshot(type, clearRedo);
 		}
 	}
 	else {
-		active->undoSystem->Snapshot(type, clearRedo);
+		LOG_DEBUG("single snapshot");
+		auto script = active.lock();
+		script->undoSystem->Snapshot(type, clearRedo);
 	}
 }
 
-bool UndoSystem::Undo(Funscript* active) noexcept
+bool UndoSystem::Undo() noexcept
 {
 	if (UndoStack.empty()) return false;
+	OFS_PROFILE(__FUNCTION__);
 	bool undidSomething = false;
-
-	if (UndoStack.back().IsMultiscriptModification) {
+	if (UndoStack.back().Changed.expired()) {
+		LOG_DEBUG("multi undo");
 		for (auto&& script : *LoadedScripts) {
 			undidSomething = script->undoSystem->Undo() || undidSomething;
 		}
 	}
 	else {
-		undidSomething = active->undoSystem->Undo() || undidSomething;
+		LOG_DEBUG("single undo");
+		auto script = UndoStack.back().Changed.lock();
+		undidSomething = script->undoSystem->Undo();
 	}
 	RedoStack.push_back(std::move(UndoStack.back()));
 	UndoStack.pop_back();
@@ -82,18 +90,21 @@ bool UndoSystem::Undo(Funscript* active) noexcept
 	return undidSomething;
 }
 
-bool UndoSystem::Redo(Funscript* active) noexcept
+bool UndoSystem::Redo() noexcept
 {
 	if (RedoStack.empty()) return false;
+	OFS_PROFILE(__FUNCTION__);
 	bool redidSomething = false;
-
-	if (RedoStack.back().IsMultiscriptModification) {
+	if (RedoStack.back().Changed.expired()) {
+		LOG_DEBUG("multi undo");
 		for (auto&& script : *LoadedScripts) {
 			redidSomething = script->undoSystem->Redo() || redidSomething;
 		}
 	}
 	else {
-		redidSomething = active->undoSystem->Redo() || redidSomething;
+		LOG_DEBUG("single undo");
+		auto script = RedoStack.back().Changed.lock();
+		redidSomething = script->undoSystem->Redo();
 	}
 	UndoStack.push_back(std::move(RedoStack.back()));
 	RedoStack.pop_back();

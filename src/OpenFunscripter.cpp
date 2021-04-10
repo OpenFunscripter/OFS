@@ -891,7 +891,7 @@ void OpenFunscripter::registerBindings()
                 ? app->scriptPositions.overlay->steppingIntervalForward(app->ActiveFunscript()->Selection().front().at)
                 : app->scriptPositions.overlay->steppingIntervalBackward(app->ActiveFunscript()->Selection().front().at);
 
-            app->undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, app->ActiveFunscript().get());
+            app->undoSystem->Snapshot(StateType::ACTIONS_MOVED, app->ActiveFunscript());
             app->ActiveFunscript()->MoveSelectionTime(time_ms, app->player->getFrameTimeMs());
         }
         else {
@@ -906,7 +906,7 @@ void OpenFunscripter::registerBindings()
                 if (closestInMoveRange == nullptr
                     || (forward && closestInMoveRange->at < moved.at)
                     || (!forward && closestInMoveRange->at > moved.at)) {
-                    app->undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, app->ActiveFunscript().get());
+                    app->undoSystem->Snapshot(StateType::ACTIONS_MOVED, app->ActiveFunscript());
                     app->ActiveFunscript()->EditAction(*closest, moved);
                 }
             }
@@ -919,7 +919,7 @@ void OpenFunscripter::registerBindings()
                 ? app->scriptPositions.overlay->steppingIntervalForward(app->ActiveFunscript()->Selection().front().at)
                 : app->scriptPositions.overlay->steppingIntervalBackward(app->ActiveFunscript()->Selection().front().at);
 
-            app->undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, app->ActiveFunscript().get());
+            app->undoSystem->Snapshot(StateType::ACTIONS_MOVED, app->ActiveFunscript());
             app->ActiveFunscript()->MoveSelectionTime(time_ms, app->player->getFrameTimeMs());
             auto closest = ptr->ActiveFunscript()->GetClosestActionSelection(app->player->getCurrentPositionMsInterp());
             if (closest != nullptr) { app->player->setPositionExact(closest->at); }
@@ -938,7 +938,7 @@ void OpenFunscripter::registerBindings()
                 if (closestInMoveRange == nullptr 
                     || (forward && closestInMoveRange->at < moved.at) 
                     || (!forward && closestInMoveRange->at > moved.at)) {
-                    app->undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, app->ActiveFunscript().get());
+                    app->undoSystem->Snapshot(StateType::ACTIONS_MOVED, app->ActiveFunscript());
                     app->ActiveFunscript()->EditAction(*closest, moved);
                     app->player->setPositionExact(moved.at);
                 }
@@ -955,14 +955,14 @@ void OpenFunscripter::registerBindings()
             [&](void*) {
                 if (ActiveFunscript()->HasSelection())
                 {
-                    undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, ActiveFunscript().get());
+                    undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
                     ActiveFunscript()->MoveSelectionPosition(10);
                 }
                 else
                 {
                     auto closest = ActiveFunscript()->GetClosestAction(player->getCurrentPositionMsInterp());
                     if (closest != nullptr) {
-                        undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, ActiveFunscript().get());
+                        undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
                         ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->at, Util::Clamp<int32_t>(closest->pos + 10, 0, 100)));
                     }
                 }
@@ -976,14 +976,14 @@ void OpenFunscripter::registerBindings()
             [&](void*) {
                 if (ActiveFunscript()->HasSelection())
                 {
-                    undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, ActiveFunscript().get());
+                    undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
                     ActiveFunscript()->MoveSelectionPosition(-10);
                 }
                 else
                 {
                     auto closest = ActiveFunscript()->GetClosestAction(player->getCurrentPositionMsInterp());
                     if (closest != nullptr) {
-                        undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, ActiveFunscript().get());
+                        undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
                         ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->at, Util::Clamp<int32_t>(closest->pos - 10, 0, 100)));
                     }
                 }
@@ -998,14 +998,14 @@ void OpenFunscripter::registerBindings()
             [&](void*) {
                 if (ActiveFunscript()->HasSelection())
                 {
-                    undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, ActiveFunscript().get());
+                    undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
                     ActiveFunscript()->MoveSelectionPosition(5);
                 }
                 else
                 {
                     auto closest = ActiveFunscript()->GetClosestAction(player->getCurrentPositionMsInterp());
                     if (closest != nullptr) {
-                        undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, ActiveFunscript().get());
+                        undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
                         ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->at, Util::Clamp<int32_t>(closest->pos + 5, 0, 100)));
                     }
                 }
@@ -1019,14 +1019,14 @@ void OpenFunscripter::registerBindings()
             [&](void*) {
                 if (ActiveFunscript()->HasSelection())
                 {
-                    undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, ActiveFunscript().get());
+                    undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
                     ActiveFunscript()->MoveSelectionPosition(-5);
                 }
                 else
                 {
                     auto closest = ActiveFunscript()->GetClosestAction(player->getCurrentPositionMsInterp());
                     if (closest != nullptr) {
-                        undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, ActiveFunscript().get());
+                        undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
                         ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->at, Util::Clamp<int32_t>(closest->pos - 5, 0, 100)));
                     }
                 }
@@ -1093,7 +1093,7 @@ void OpenFunscripter::registerBindings()
             false,
             [&](void*) {
                 if (ActiveFunscript()->HasSelection()) {
-                    undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, ActiveFunscript().get());
+                    undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
                     ActiveFunscript()->MoveSelectionPosition(1);
                 }
                 else {
@@ -1101,7 +1101,7 @@ void OpenFunscripter::registerBindings()
                     if (closest != nullptr) {
                         FunscriptAction moved(closest->at, closest->pos + 1);
                         if (moved.pos <= 100 && moved.pos >= 0) {
-                            undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, ActiveFunscript().get());
+                            undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
                             ActiveFunscript()->EditAction(*closest, moved);
                         }
                     }
@@ -1118,7 +1118,7 @@ void OpenFunscripter::registerBindings()
             false,
             [&](void*) {
                 if (ActiveFunscript()->HasSelection()) {
-                    undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, ActiveFunscript().get());
+                    undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
                     ActiveFunscript()->MoveSelectionPosition(-1);
                 }
                 else {
@@ -1126,7 +1126,7 @@ void OpenFunscripter::registerBindings()
                     if (closest != nullptr) {
                         FunscriptAction moved(closest->at, closest->pos - 1);
                         if (moved.pos <= 100 && moved.pos >= 0) {
-                            undoSystem->Snapshot(StateType::ACTIONS_MOVED, false, ActiveFunscript().get());
+                            undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
                             ActiveFunscript()->EditAction(*closest, moved);
                         }
                     }
@@ -1145,7 +1145,7 @@ void OpenFunscripter::registerBindings()
             [&](void*) {
                 auto closest = ActiveFunscript()->GetClosestAction(player->getCurrentPositionMsInterp());
                 if (closest != nullptr) {
-                    undoSystem->Snapshot(StateType::MOVE_ACTION_TO_CURRENT_POS, false, ActiveFunscript().get());
+                    undoSystem->Snapshot(StateType::MOVE_ACTION_TO_CURRENT_POS, ActiveFunscript());
                     ActiveFunscript()->EditAction(*closest, FunscriptAction(player->getCurrentPositionMsInterp(), closest->pos));
                 }
             }
@@ -1842,13 +1842,13 @@ void OpenFunscripter::SetCursorType(ImGuiMouseCursor id) noexcept
 void OpenFunscripter::Undo() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if(undoSystem->Undo(ActiveFunscript().get())) scripting->undo();
+    if(undoSystem->Undo()) scripting->undo();
 }
 
 void OpenFunscripter::Redo() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if(undoSystem->Redo(ActiveFunscript().get())) scripting->redo();
+    if(undoSystem->Redo()) scripting->redo();
 }
 
 bool OpenFunscripter::openFile(const std::string& file) noexcept
@@ -2043,7 +2043,7 @@ void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
 void OpenFunscripter::removeAction(FunscriptAction action) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    undoSystem->Snapshot(StateType::REMOVE_ACTION, false, ActiveFunscript().get());
+    undoSystem->Snapshot(StateType::REMOVE_ACTION, ActiveFunscript());
     ActiveFunscript()->RemoveAction(action);
 }
 
@@ -2051,7 +2051,7 @@ void OpenFunscripter::removeAction() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     if (settings->data().mirror_mode && !ActiveFunscript()->HasSelection()) {
-        undoSystem->Snapshot(StateType::REMOVE_ACTION, true, ActiveFunscript().get());
+        undoSystem->Snapshot(StateType::REMOVE_ACTION);
         for (auto&& script : LoadedFunscripts()) {
             auto action = script->GetClosestAction(player->getCurrentPositionMsInterp());
             if (action != nullptr) {
@@ -2061,7 +2061,7 @@ void OpenFunscripter::removeAction() noexcept
     }
     else {
         if (ActiveFunscript()->HasSelection()) {
-            undoSystem->Snapshot(StateType::REMOVE_SELECTION, false, ActiveFunscript().get());
+            undoSystem->Snapshot(StateType::REMOVE_SELECTION, ActiveFunscript());
             ActiveFunscript()->RemoveSelectedActions();
         }
         else {
@@ -2078,7 +2078,7 @@ void OpenFunscripter::addEditAction(int pos) noexcept
     OFS_PROFILE(__FUNCTION__);
     if (settings->data().mirror_mode) {
         int32_t currentActiveScriptIdx = ActiveFunscriptIndex();
-        undoSystem->Snapshot(StateType::ADD_EDIT_ACTIONS, true, ActiveFunscript().get());
+        undoSystem->Snapshot(StateType::ADD_EDIT_ACTIONS);
         for (int i = 0; i < LoadedFunscripts().size(); i++) {
             UpdateNewActiveScript(i);
             scripting->addEditAction(FunscriptAction(std::round(player->getCurrentPositionMsInterp()), pos));
@@ -2086,7 +2086,7 @@ void OpenFunscripter::addEditAction(int pos) noexcept
         UpdateNewActiveScript(currentActiveScriptIdx);
     }
     else {
-        undoSystem->Snapshot(StateType::ADD_EDIT_ACTIONS, false, ActiveFunscript().get());
+        undoSystem->Snapshot(StateType::ADD_EDIT_ACTIONS, ActiveFunscript());
         scripting->addEditAction(FunscriptAction(std::round(player->getCurrentPositionMsInterp()), pos));
     }
 }
@@ -2096,7 +2096,7 @@ void OpenFunscripter::cutSelection() noexcept
     OFS_PROFILE(__FUNCTION__);
     if (ActiveFunscript()->HasSelection()) {
         copySelection();
-        undoSystem->Snapshot(StateType::CUT_SELECTION, false, ActiveFunscript().get());
+        undoSystem->Snapshot(StateType::CUT_SELECTION, ActiveFunscript());
         ActiveFunscript()->RemoveSelectedActions();
     }
 }
@@ -2116,7 +2116,7 @@ void OpenFunscripter::pasteSelection() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     if (CopiedSelection.size() == 0) return;
-    undoSystem->Snapshot(StateType::PASTE_COPIED_ACTIONS, false, ActiveFunscript().get());
+    undoSystem->Snapshot(StateType::PASTE_COPIED_ACTIONS, ActiveFunscript());
     // paste CopiedSelection relatively to position
     // NOTE: assumes CopiedSelection is ordered by time
     int currentMs = std::round(player->getCurrentPositionMsInterp());
@@ -2145,7 +2145,7 @@ void OpenFunscripter::pasteSelectionExact() noexcept {
     }
 
     // paste without altering timestamps
-    undoSystem->Snapshot(StateType::PASTE_COPIED_ACTIONS, false, ActiveFunscript().get());
+    undoSystem->Snapshot(StateType::PASTE_COPIED_ACTIONS, ActiveFunscript());
     for (auto&& action : CopiedSelection) {
         ActiveFunscript()->AddAction(action);
     }
@@ -2154,7 +2154,7 @@ void OpenFunscripter::pasteSelectionExact() noexcept {
 void OpenFunscripter::equalizeSelection() noexcept {
     OFS_PROFILE(__FUNCTION__);
     if (!ActiveFunscript()->HasSelection()) {
-        undoSystem->Snapshot(StateType::EQUALIZE_ACTIONS, false, ActiveFunscript().get());
+        undoSystem->Snapshot(StateType::EQUALIZE_ACTIONS, ActiveFunscript());
         // this is a small hack
         auto closest = ActiveFunscript()->GetClosestAction(player->getCurrentPositionMsInterp());
         if (closest != nullptr) {
@@ -2172,7 +2172,7 @@ void OpenFunscripter::equalizeSelection() noexcept {
         }
     }
     else if(ActiveFunscript()->Selection().size() >= 3) {
-        undoSystem->Snapshot(StateType::EQUALIZE_ACTIONS, false, ActiveFunscript().get());
+        undoSystem->Snapshot(StateType::EQUALIZE_ACTIONS, ActiveFunscript());
         ActiveFunscript()->EqualizeSelection();
     }
 }
@@ -2183,14 +2183,14 @@ void OpenFunscripter::invertSelection() noexcept {
         // same hack as above 
         auto closest = ActiveFunscript()->GetClosestAction(player->getCurrentPositionMsInterp());
         if (closest != nullptr) {
-            undoSystem->Snapshot(StateType::INVERT_ACTIONS, false, ActiveFunscript().get());
+            undoSystem->Snapshot(StateType::INVERT_ACTIONS, ActiveFunscript());
             ActiveFunscript()->SelectAction(*closest);
             ActiveFunscript()->InvertSelection();
             ActiveFunscript()->ClearSelection();
         }
     }
     else if (ActiveFunscript()->Selection().size() >= 3) {
-        undoSystem->Snapshot(StateType::INVERT_ACTIONS, false, ActiveFunscript().get());
+        undoSystem->Snapshot(StateType::INVERT_ACTIONS, ActiveFunscript());
         ActiveFunscript()->InvertSelection();
     }
 }
@@ -2199,7 +2199,7 @@ void OpenFunscripter::isolateAction() noexcept {
     OFS_PROFILE(__FUNCTION__);
     auto closest = ActiveFunscript()->GetClosestAction(player->getCurrentPositionMsInterp());
     if (closest != nullptr) {
-        undoSystem->Snapshot(StateType::ISOLATE_ACTION, false, ActiveFunscript().get());
+        undoSystem->Snapshot(StateType::ISOLATE_ACTION, ActiveFunscript());
         auto prev = ActiveFunscript()->GetPreviousActionBehind(closest->at - 1);
         auto next = ActiveFunscript()->GetNextActionAhead(closest->at + 1);
         if (prev != nullptr && next != nullptr) {
@@ -2218,7 +2218,7 @@ void OpenFunscripter::repeatLastStroke() noexcept {
     auto stroke = ActiveFunscript()->GetLastStroke(player->getCurrentPositionMsInterp());
     if (stroke.size() > 1) {
         int32_t offset_ms = player->getCurrentPositionMsInterp() - stroke.back().at;
-        undoSystem->Snapshot(StateType::REPEAT_STROKE, false, ActiveFunscript().get());
+        undoSystem->Snapshot(StateType::REPEAT_STROKE, ActiveFunscript());
         auto action = ActiveFunscript()->GetActionAtTime(player->getCurrentPositionMsInterp(), player->getFrameTimeMs());
         // if we are on top of an action we ignore the first action of the last stroke
         if (action != nullptr) {
@@ -3040,18 +3040,18 @@ void OpenFunscripter::ScriptTimelineActiveScriptChanged(SDL_Event& ev) noexcept
 
 void OpenFunscripter::selectTopPoints() noexcept
 {
-    undoSystem->Snapshot(StateType::TOP_POINTS_ONLY, false, ActiveFunscript().get());
+    undoSystem->Snapshot(StateType::TOP_POINTS_ONLY, ActiveFunscript());
     ActiveFunscript()->SelectTopActions();
 }
 
 void OpenFunscripter::selectMiddlePoints() noexcept
 {
-    undoSystem->Snapshot(StateType::MID_POINTS_ONLY, false, ActiveFunscript().get());
+    undoSystem->Snapshot(StateType::MID_POINTS_ONLY, ActiveFunscript());
     ActiveFunscript()->SelectMidActions();
 }
 
 void OpenFunscripter::selectBottomPoints() noexcept
 {
-    undoSystem->Snapshot(StateType::BOTTOM_POINTS_ONLY, false, ActiveFunscript().get());
+    undoSystem->Snapshot(StateType::BOTTOM_POINTS_ONLY, ActiveFunscript());
     ActiveFunscript()->SelectBottomActions();
 }

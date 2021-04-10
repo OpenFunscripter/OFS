@@ -26,7 +26,7 @@ void FunscriptUndoSystem::ShowUndoRedoHistory(bool* open)
 			}
 			it = copy_it - 1;
 
-			ImGui::BulletText("%s (%d)", (*it).Message().c_str(), count);
+			ImGui::BulletText("%s (%d)", it->Message(), count);
 		}
 		ImGui::Separator();
 		ImGui::TextDisabled("Undo stack");
@@ -38,7 +38,7 @@ void FunscriptUndoSystem::ShowUndoRedoHistory(bool* open)
 			}
 			it = copy_it - 1;
 
-			ImGui::BulletText("%s (%d)", (*it).Message().c_str(), count);
+			ImGui::BulletText("%s (%d)", it->Message(), count);
 		}
 		ImGui::End();
 	}

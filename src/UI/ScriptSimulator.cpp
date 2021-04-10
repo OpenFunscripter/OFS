@@ -56,7 +56,7 @@ void ScriptSimulator::MouseDown(SDL_Event& ev)
     if (clickAddMofifer && button.button == SDL_BUTTON_LEFT) {
         if (MouseBetweenSimulator) {
             auto app = OpenFunscripter::ptr;
-            app->undoSystem->Snapshot(StateType::ADD_EDIT_ACTION, false, app->ActiveFunscript().get());
+            app->undoSystem->Snapshot(StateType::ADD_EDIT_ACTION, app->ActiveFunscript());
             app->scripting->addEditAction(FunscriptAction(app->player->getCurrentPositionMsInterp(), 50 + (50 * mouseValue)));
         }
     }

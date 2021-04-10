@@ -16,8 +16,7 @@ private:
 public:
 	inline Funscript::FunscriptData& Data() { return data; }
 	int32_t type;
-	const std::string& Message() const;
-
+	const char* Message() const noexcept;
 
 	ScriptState() noexcept 
 		: type(-1) {}

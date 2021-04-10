@@ -110,7 +110,7 @@ void ScriptTimeline::mousePressed(SDL_Event& ev) noexcept
 	}
 	
 	if (undoSystem == nullptr) return;
-	auto activeScript = (*Scripts)[activeScriptIdx].get();
+	auto& activeScript = (*Scripts)[activeScriptIdx];
 	bool moveOrAddPointModifer = KeybindingSystem::PassiveModifier("move_or_add_point_modifier");
 
 	if (button.button == SDL_BUTTON_LEFT) {
@@ -120,14 +120,14 @@ void ScriptTimeline::mousePressed(SDL_Event& ev) noexcept
 				activeScript->ClearSelection();
 				activeScript->SetSelected(*clickedAction, true);
 				IsMoving = true;
-				undoSystem->Snapshot(StateType::MOUSE_MOVE_ACTION, false, activeScript);
+				undoSystem->Snapshot(StateType::MOUSE_MOVE_ACTION, activeScript);
 				return;
 			}
 			else {
 				// click a point into existence
 				auto action = getActionForPoint(activeCanvasPos, activeCanvasSize, mousePos, frameTimeMs);
 				auto edit = activeScript->GetActionAtTime(action.at, frameTimeMs);
-				undoSystem->Snapshot(StateType::ADD_ACTION, false, activeScript);
+				undoSystem->Snapshot(StateType::ADD_ACTION, activeScript);
 				if (edit != nullptr) { activeScript->RemoveAction(*edit); }
 				activeScript->AddAction(action);
 			}
