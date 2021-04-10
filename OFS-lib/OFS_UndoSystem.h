@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 
+#include "EASTL/optional.h"
 #include "FunscriptUndoSystem.h"
 
 enum StateType : int32_t {
@@ -50,12 +51,13 @@ class UndoSystem
 {
 private:
 	struct UndoContext {
-		std::weak_ptr<const class Funscript> Changed;
+		eastl::optional<std::weak_ptr<const class Funscript>> Script;
 		UndoContext() noexcept {}
-
 		UndoContext(const std::weak_ptr<class Funscript>& ptr) noexcept
-			: Changed(ptr)
+			: Script(ptr)
 		{ }
+
+		inline bool IsMulti() const noexcept { return !Script.has_value(); }
 	};
 	eastl::ring_buffer<UndoContext> UndoStack;
 	eastl::ring_buffer<UndoContext> RedoStack;
