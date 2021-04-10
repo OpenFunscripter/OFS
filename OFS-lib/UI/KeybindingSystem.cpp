@@ -40,7 +40,6 @@ static constexpr std::array<uint16_t, 3> possibleModifiers{
 
 static const char* GetButtonString(int32_t button) noexcept {
     if (button >= 0 && button < SDL_CONTROLLER_BUTTON_MAX) {
-        //return SDL_GameControllerGetStringForButton((SDL_GameControllerButton)button);
         return gameButtonString[button];
     }
     else {
@@ -444,6 +443,7 @@ void KeybindingSystem::setBindings(const Keybindings& bindings) noexcept
                     it->key.key = keybind.key.key;
                     it->key.modifiers = keybind.key.modifiers;
                     it->key.key_str = loadKeyString(keybind.key.key, keybind.key.modifiers);
+                    it->active = keybind.active;
 
                     passiveBindingLUT[it->identifier] = *it;
                     bindingStringLUT[it->identifier] = it->key.key_str;
@@ -507,11 +507,11 @@ void KeybindingSystem::addPassiveBindingGroup(PassiveBindingGroup& group, bool& 
 {
     ImGui::Columns(1);
     if (ImGui::CollapsingHeader(group.name.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::Columns(2);
+        ImGui::Columns(3);
         ImGui::Separator();
         ImGui::Text("Description"); ImGui::NextColumn();
         ImGui::Text("Keyboard"); ImGui::NextColumn();
-
+        ImGui::Text("Active"); ImGui::NextColumn();
         for (auto& binding : group.bindings) {
             ImGui::PushID(binding.description.c_str());
             ImGui::TextUnformatted(binding.description.c_str()); ImGui::NextColumn();
@@ -521,6 +521,9 @@ void KeybindingSystem::addPassiveBindingGroup(PassiveBindingGroup& group, bool& 
                 currentlyHeldKeys.str("");
                 ImGui::OpenPopup("Change key");
             }
+            ImGui::NextColumn(); 
+            save = ImGui::Checkbox("##passiveActive", &binding.active) || save;
+            ImGui::NextColumn();
             if (ImGui::BeginPopupModal("Change key", 0, ImGuiWindowFlags_AlwaysAutoResize)) {
                 if (currentlyHeldKeys.tellp() == 0) { 
                     ImGui::TextUnformatted("Press any key...\nEscape to clear."); 
@@ -537,7 +540,6 @@ void KeybindingSystem::addPassiveBindingGroup(PassiveBindingGroup& group, bool& 
             ImGui::PopID();
         }
     }
-
 }
 
 void KeybindingSystem::passiveBindingTab(bool& save) noexcept
@@ -549,6 +551,16 @@ void KeybindingSystem::passiveBindingTab(bool& save) noexcept
         ImGui::PushID(i);
         addPassiveBindingGroup(group, save);
         ImGui::PopID();
+    }
+
+    if (save) {
+        // update LUT
+        passiveBindingLUT.clear();
+        for (auto& group : ActiveBindings.passiveGroups) {
+            for (auto& binding : group.bindings) {
+                passiveBindingLUT.emplace(binding.identifier, binding);
+            }
+        }
     }
 }
 
@@ -611,7 +623,7 @@ bool KeybindingSystem::ShowBindingWindow() noexcept
 bool KeybindingSystem::PassiveModifier(const char* name) noexcept
 {
     auto it = ptr->passiveBindingLUT.find(name);
-    if (it != ptr->passiveBindingLUT.end()) {
+    if (it != ptr->passiveBindingLUT.end() && it->second.active) {
         uint16_t modstate = GetModifierState(SDL_GetModState());
         if (modstate & it->second.key.modifiers || modstate == 0 && it->second.key.modifiers == 0) {
             return true;

@@ -109,18 +109,19 @@ struct PassiveBinding
 	std::string identifier;
 	std::string description;
 	Keybinding key;
+	bool active = true;
 
 	PassiveBinding() noexcept {}
 
-	PassiveBinding(const std::string& id, const std::string& description) noexcept
-		: identifier(id), description(description)
-	{}
+	PassiveBinding(const std::string& id, const std::string& description, bool active = true) noexcept
+		: identifier(id), description(description), active(active) {}
 
 	template<class Archive>
 	inline void reflect(Archive& ar) {
 		OFS_REFLECT(identifier, ar);
 		OFS_REFLECT(description, ar);
 		OFS_REFLECT(key, ar);
+		OFS_REFLECT(active, ar);
 	}
 };
 

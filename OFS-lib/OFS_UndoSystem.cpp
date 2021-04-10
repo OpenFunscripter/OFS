@@ -63,7 +63,6 @@ void UndoSystem::ShowUndoRedoHistory(bool* open) noexcept
 		ImGui::Begin(UndoHistoryId, open, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
 		ImGui::TextDisabled("Redo stack");
 
-		auto& style = ImGui::GetStyle();
 		for (auto it = RedoStack.begin(), end = RedoStack.end(); it != end; ++it) {
 			int count = 1;
 			auto copy_it = it;
@@ -139,9 +138,9 @@ bool UndoSystem::Undo() noexcept
 			return Undo();
 		}
 	}
-	RedoStack.push_back(std::move(UndoStack.back()));
-	UndoStack.pop_back();
 
+	RedoStack.push_back() = std::move(UndoStack.back());
+	UndoStack.pop_back();
 	return undidSomething;
 }
 
@@ -170,9 +169,9 @@ bool UndoSystem::Redo() noexcept
 			return Redo();
 		}
 	}
-	UndoStack.push_back(std::move(RedoStack.back()));
-	RedoStack.pop_back();
 
+	UndoStack.push_back() = std::move(RedoStack.back());
+	RedoStack.pop_back();
 	return redidSomething;
 }
 

@@ -28,9 +28,18 @@ public:
 	static int32_t ScriptpositionWindowDoubleClick;
 	static int32_t ActiveScriptChanged;
 
+	enum class Mode : int32_t
+	{
+		All,
+		Bottom,
+		Middle,
+		Top
+	};
+
 	struct SelectTime {
 		int32_t start_ms;
 		int32_t end_ms;
+		ScriptTimelineEvents::Mode mode = Mode::All;
 		bool clear;
 	};
 	static int32_t FunscriptSelectTime;
@@ -106,7 +115,7 @@ private:
 		return FunscriptAction(at_ms, pos);
 	}
 
-	void updateSelection(bool clear) noexcept;
+	void updateSelection(ScriptTimelineEvents::Mode mode, bool clear) noexcept;
 	void FfmpegAudioProcessingFinished(SDL_Event& ev) noexcept;
 
 	float WindowSizeSeconds = 5.f;

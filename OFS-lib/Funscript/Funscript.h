@@ -272,11 +272,14 @@ public:
 	// selection api
 	void RangeExtendSelection(int32_t rangeExtend) noexcept;
 	bool ToggleSelection(FunscriptAction action) noexcept;
+	
 	void SetSelected(FunscriptAction action, bool selected) noexcept;
-	void SelectTopActions();
-	void SelectBottomActions();
-	void SelectMidActions();
+	void SelectTopActions(int32_t from_ms, int32_t to_ms, bool clear = true) noexcept;
+	void SelectBottomActions(int32_t from_ms, int32_t to_ms, bool clear = true) noexcept;
+	void SelectMidActions(int32_t from_ms, int32_t to_ms, bool clear = true) noexcept;
 	void SelectTime(int32_t from_ms, int32_t to_ms, bool clear=true) noexcept;
+	FunscriptArray GetSelection(int32_t fromMs, int32_t toMs) noexcept;
+
 	void SelectAction(FunscriptAction select) noexcept;
 	void DeselectAction(FunscriptAction deselect) noexcept;
 	void SelectAll() noexcept;

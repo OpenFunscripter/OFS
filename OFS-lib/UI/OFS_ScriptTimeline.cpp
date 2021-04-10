@@ -31,7 +31,7 @@ void ScriptTimelineEvents::RegisterEvents() noexcept
 	ActiveScriptChanged = SDL_RegisterEvents(1);
 }
 
-void ScriptTimeline::updateSelection(bool clear) noexcept
+void ScriptTimeline::updateSelection(ScriptTimelineEvents::Mode mode, bool clear) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	float min = std::min(relX1, relX2);
@@ -40,6 +40,7 @@ void ScriptTimeline::updateSelection(bool clear) noexcept
 	SelectTimeEventData.start_ms = offsetMs + (visibleSizeMs * min);
 	SelectTimeEventData.end_ms = offsetMs + (visibleSizeMs * max);
 	SelectTimeEventData.clear = clear;
+	SelectTimeEventData.mode = mode;
 
 	EventSystem::PushEvent(ScriptTimelineEvents::FunscriptSelectTime, &SelectTimeEventData);
 }
@@ -76,7 +77,7 @@ void ScriptTimeline::mousePressed(SDL_Event& ev) noexcept
 	auto& button = ev.button;
 	auto mousePos = ImGui::GetMousePos();
 
-	FunscriptAction* clickedAction = nullptr;
+	const FunscriptAction* clickedAction = nullptr;
 
 	if (PositionsItemHovered) {
 		if (button.button == SDL_BUTTON_LEFT && button.clicks == 2) {
@@ -91,7 +92,7 @@ void ScriptTimeline::mousePressed(SDL_Event& ev) noexcept
 			// test if an action has been clicked
 			int index = 0;
 			for (auto& vert : overlay->ActionScreenCoordinates) {
-				const ImVec2 size(20, 20);
+				const ImVec2 size(15, 15);
 				ImRect rect(vert - size, vert + size);
 				if (rect.Contains(mousePos)) {
 					clickedAction = &overlay->ActionPositionWindow[index];
@@ -111,9 +112,9 @@ void ScriptTimeline::mousePressed(SDL_Event& ev) noexcept
 	
 	if (undoSystem == nullptr) return;
 	auto& activeScript = (*Scripts)[activeScriptIdx];
-	bool moveOrAddPointModifer = KeybindingSystem::PassiveModifier("move_or_add_point_modifier");
 
 	if (button.button == SDL_BUTTON_LEFT) {
+		bool moveOrAddPointModifer = KeybindingSystem::PassiveModifier("move_or_add_point_modifier");
 		if (moveOrAddPointModifer && PositionsItemHovered) {
 			if (clickedAction != nullptr) {
 				// start move
@@ -162,9 +163,18 @@ void ScriptTimeline::mouseReleased(SDL_Event& ev) noexcept
 	}
 	else if (IsSelecting && button.button == SDL_BUTTON_LEFT) {
 		IsSelecting = false;
-		auto modstate = SDL_GetModState();
-		// regular select
-		updateSelection(!(modstate & KMOD_CTRL));
+		bool clearSelection = !(SDL_GetModState() & KMOD_CTRL);
+		auto mode = ScriptTimelineEvents::Mode::All;
+		if (KeybindingSystem::PassiveModifier("select_top_points_modifier")) {
+			mode = ScriptTimelineEvents::Mode::Top;
+		}
+		else if (KeybindingSystem::PassiveModifier("select_bottom_points_modifier")) {
+			mode = ScriptTimelineEvents::Mode::Bottom;
+		}
+		else if (KeybindingSystem::PassiveModifier("select_middle_points_modifier")) {
+			mode = ScriptTimelineEvents::Mode::Middle;
+		}
+		updateSelection(mode, clearSelection);
 	}
 }
 
