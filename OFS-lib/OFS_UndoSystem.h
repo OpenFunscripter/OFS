@@ -51,12 +51,15 @@ class UndoSystem
 {
 private:
 	struct UndoContext {
+		int32_t Type;
 		eastl::optional<std::weak_ptr<const class Funscript>> Script;
-		UndoContext() noexcept {}
-		UndoContext(const std::weak_ptr<class Funscript>& ptr) noexcept
-			: Script(ptr)
+		UndoContext() noexcept : Type(-1) {}
+		UndoContext(StateType type) noexcept : Type((int32_t)type) {}
+		UndoContext(const std::weak_ptr<class Funscript>& ptr, StateType type) noexcept
+			: Script(ptr), Type((int32_t)type)
 		{ }
 
+		const char* Description() const noexcept;
 		inline bool IsMulti() const noexcept { return !Script.has_value(); }
 	};
 	eastl::ring_buffer<UndoContext> UndoStack;
@@ -70,6 +73,9 @@ public:
 		UndoStack.reserve(OFS::MaxScriptStateInMemory);
 		RedoStack.reserve(OFS::MaxScriptStateInMemory);
 	}
+
+	static constexpr const char* UndoHistoryId = "Undo/Redo history";
+	void ShowUndoRedoHistory(bool* open) noexcept;
 
 	void Snapshot(StateType type, 
 		const std::weak_ptr<class Funscript> active = std::weak_ptr<class Funscript>(),

@@ -377,7 +377,7 @@ void OpenFunscripter::setupDefaultLayout(bool force) noexcept
         ImGui::DockBuilderDockWindow(ScriptSimulator::SimulatorId, dock_simulator_right_id);
         ImGui::DockBuilderDockWindow(ActionEditorId, dock_action_right_id);
         ImGui::DockBuilderDockWindow(StatisticsId, dock_stats_right_id);
-        ImGui::DockBuilderDockWindow(FunscriptUndoSystem::UndoHistoryId, dock_undo_right_id);
+        ImGui::DockBuilderDockWindow(UndoSystem::UndoHistoryId, dock_undo_right_id);
         simulator.CenterSimulator();
         ImGui::DockBuilderFinish(MainDockspaceID);
     }
@@ -1639,7 +1639,7 @@ void OpenFunscripter::step() noexcept {
 
             ShowAboutWindow(&ShowAbout);
             specialFunctions->ShowFunctionsWindow(&settings->data().show_special_functions);
-            ActiveFunscript()->undoSystem->ShowUndoRedoHistory(&settings->data().show_history);
+            undoSystem->ShowUndoRedoHistory(&settings->data().show_history);
             simulator.ShowSimulator(&settings->data().show_simulator);
             ShowStatisticsWindow(&settings->data().show_statistics);
             if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { 
@@ -2663,7 +2663,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::Separator();
 #endif
             if (ImGui::MenuItem(StatisticsId, NULL, &settings->data().show_statistics)) {}
-            if (ImGui::MenuItem(FunscriptUndoSystem::UndoHistoryId, NULL, &settings->data().show_history)) {}
+            if (ImGui::MenuItem(UndoSystem::UndoHistoryId, NULL, &settings->data().show_history)) {}
             if (ImGui::MenuItem(ScriptSimulator::SimulatorId, NULL, &settings->data().show_simulator)) { settings->saveSettings(); }
             if (ImGui::MenuItem("Simulator 3D", NULL, &settings->data().show_simulator_3d)) { settings->saveSettings(); }
             if (ImGui::MenuItem("Metadata", NULL, &ShowMetadataEditor)) {}

@@ -41,17 +41,63 @@ static std::array<const char*, (int32_t)StateType::TOTAL_UNDOSTATE_TYPES> stateS
 	"Lua script",
 };
 
-const char* ScriptState::Message() const noexcept
+const char* ScriptState::Description() const noexcept
 {
 	uint32_t typeIdx = (uint32_t)type;
 	FUN_ASSERT(typeIdx < stateStrings.size(), "out of bounds");
 	return stateStrings[typeIdx];
 }
 
+const char* UndoSystem::UndoContext::Description() const noexcept
+{
+	uint32_t typeIdx = (uint32_t)Type;
+	FUN_ASSERT(typeIdx < stateStrings.size(), "out of bounds");
+	return stateStrings[typeIdx];
+}
+
+void UndoSystem::ShowUndoRedoHistory(bool* open) noexcept
+{
+	if (*open) {
+		OFS_PROFILE(__FUNCTION__);
+		ImGui::SetNextWindowSizeConstraints(ImVec2(200, 100), ImVec2(200, 200));
+		ImGui::Begin(UndoHistoryId, open, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
+		ImGui::TextDisabled("Redo stack");
+
+		auto& style = ImGui::GetStyle();
+		for (auto it = RedoStack.begin(), end = RedoStack.end(); it != end; ++it) {
+			int count = 1;
+			auto copy_it = it;
+			while (++copy_it != end 
+				&& copy_it->Type == it->Type 
+				&& copy_it->IsMulti() == it->IsMulti()) {
+				++count;
+			}
+			it = copy_it - 1;
+
+			ImGui::BulletText("%s (%d)", it->Description(), count);
+		}
+		ImGui::Separator();
+		ImGui::TextDisabled("Undo stack");
+		for (auto it = UndoStack.rbegin(), end = UndoStack.rend(); it != end; ++it) {
+			int count = 1;
+			auto copy_it = it;
+			while (++copy_it != end 
+				&& copy_it->Type == it->Type 
+				&& copy_it->IsMulti() == it->IsMulti()) {
+				++count;
+			}
+			it = copy_it - 1;
+			
+			ImGui::BulletText("%s (%d)", it->Description(), count);
+		}
+		ImGui::End();
+	}
+}
+
 void UndoSystem::Snapshot(StateType type, const std::weak_ptr<Funscript> active, bool clearRedo) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	UndoStack.push_back() = active.expired() ? UndoContext() : UndoContext(active) ;
+	UndoStack.push_back() = active.expired() ? UndoContext(type) : UndoContext(active, type);
 	if (clearRedo && !RedoStack.empty())
 		ClearRedo();
 

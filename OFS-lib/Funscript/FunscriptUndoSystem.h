@@ -16,7 +16,7 @@ private:
 public:
 	inline Funscript::FunscriptData& Data() { return data; }
 	int32_t type;
-	const char* Message() const noexcept;
+	const char* Description() const noexcept;
 
 	ScriptState() noexcept 
 		: type(-1) {}
@@ -45,8 +45,6 @@ public:
 		UndoStack.reserve(OFS::MaxScriptStateInMemory);
 		RedoStack.reserve(OFS::MaxScriptStateInMemory);
 	}
-	static constexpr const char* UndoHistoryId = "Undo/Redo history";
-	void ShowUndoRedoHistory(bool* open);
 
 	inline bool MatchUndoTop(int32_t type) const noexcept { return !UndoEmpty() && UndoStack.back().type == type; }
 	inline bool UndoEmpty() const noexcept { return UndoStack.empty(); }
