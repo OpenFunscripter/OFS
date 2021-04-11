@@ -283,7 +283,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 		
 		drawingCtx.scriptIdx = i;
 		drawingCtx.canvas_pos = ImGui::GetCursorScreenPos();
-		drawingCtx.canvas_size = ImVec2(availSize.x, (availSize.y - 1.f) / (float)drawingCtx.drawnScriptCount);
+		drawingCtx.canvas_size = ImVec2(availSize.x, availSize.y / (float)drawingCtx.drawnScriptCount);
 		const ImGuiID itemID = ImGui::GetID(script.Title.c_str());
 		ImRect itemBB(drawingCtx.canvas_pos, drawingCtx.canvas_pos + drawingCtx.canvas_size);
 		ImGui::ItemSize(itemBB);
@@ -308,13 +308,16 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 		}
 
 		if (IsActivated) {
-			draw_list->AddRectFilledMultiColor(drawingCtx.canvas_pos, ImVec2(drawingCtx.canvas_pos.x + drawingCtx.canvas_size.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y),
+			draw_list->AddRectFilledMultiColor(
+				drawingCtx.canvas_pos, 
+				ImVec2(drawingCtx.canvas_pos.x + drawingCtx.canvas_size.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y),
 				IM_COL32(1.2f*50, 0, 1.2f*50, 255), IM_COL32(1.2f*50, 0, 1.2f*50, 255),
 				IM_COL32(1.2f*20, 0, 1.2f*20, 255), IM_COL32(1.2f*20, 0, 1.2f*20, 255)
 			);
 		}
 		else {
-			draw_list->AddRectFilledMultiColor(drawingCtx.canvas_pos, ImVec2(drawingCtx.canvas_pos.x + drawingCtx.canvas_size.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y),
+			draw_list->AddRectFilledMultiColor(drawingCtx.canvas_pos, 
+				ImVec2(drawingCtx.canvas_pos.x + drawingCtx.canvas_size.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y),
 				IM_COL32(0, 0, 50, 255), IM_COL32(0, 0, 50, 255),
 				IM_COL32(0, 0, 20, 255), IM_COL32(0, 0, 20, 255)
 			);
@@ -411,10 +414,17 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 
 
 		// current position indicator -> |
+		draw_list->AddTriangleFilled(
+			drawingCtx.canvas_pos + ImVec2((drawingCtx.canvas_size.x/2.f) - ImGui::GetFontSize(), 0.f),
+			drawingCtx.canvas_pos + ImVec2((drawingCtx.canvas_size.x/2.f) + ImGui::GetFontSize(), 0.f),
+			drawingCtx.canvas_pos + ImVec2((drawingCtx.canvas_size.x/2.f), ImGui::GetFontSize()/1.5f),
+			IM_COL32(255, 255, 255, 255)
+		);
 		draw_list->AddLine(
-			drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x / 2.f, 0),
-			drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x / 2.f, drawingCtx.canvas_size.y),
-			IM_COL32(255, 255, 255, 255), 3.0f);
+			drawingCtx.canvas_pos + ImVec2((drawingCtx.canvas_size.x/2.f)-0.5f, 0),
+			drawingCtx.canvas_pos + ImVec2((drawingCtx.canvas_size.x/2.f)-0.5f, drawingCtx.canvas_size.y-1.f),
+			IM_COL32(255, 255, 255, 255),
+		4.0f);
 
 		// selection box
 		constexpr auto selectColor = IM_COL32(3, 252, 207, 255);
@@ -509,15 +519,20 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 	}
 
 	// draw points on top of lines
-	for (auto&& p : overlay->ActionScreenCoordinates) {
-		draw_list->AddCircleFilled(p, 7.0, IM_COL32(0, 0, 0, 255), 8); // border
-		draw_list->AddCircleFilled(p, 5.0, IM_COL32(255, 0, 0, 255), 8);
-	}
+	float opacity = 30000.f / visibleSizeMs;
+	opacity = opacity > 1.f ? 1.f : opacity;
+	int opcacityInt = 255 * opacity;
+	if (opacity >= 0.25f) {
+		for (auto&& p : overlay->ActionScreenCoordinates) {
+			draw_list->AddCircleFilled(p, 7.0f, IM_COL32(0, 0, 0, opcacityInt), 8); // border
+			draw_list->AddCircleFilled(p, 5.0f, IM_COL32(255, 0, 0, opcacityInt), 8);
+		}
 
-	// draw selected points
-	for (auto&& p : overlay->SelectedActionScreenCoordinates) {
-		constexpr auto selectedDots = IM_COL32(11, 252, 3, 255);
-		draw_list->AddCircleFilled(p, 5.0, selectedDots, 8);
+		// draw selected points
+		for (auto&& p : overlay->SelectedActionScreenCoordinates) {
+			const auto selectedDots = IM_COL32(11, 252, 3, opcacityInt);
+			draw_list->AddCircleFilled(p, 5.0f, selectedDots, 8);
+		}
 	}
 
 	ImGui::End();

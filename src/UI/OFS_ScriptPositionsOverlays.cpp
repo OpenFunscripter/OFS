@@ -145,8 +145,8 @@ void TempoOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
         ctx.draw_list->AddLine(
             ctx.canvas_pos + ImVec2(((offset + (i * beatTimeMs)) / ctx.visibleSizeMs) * ctx.canvas_size.x, 0.f),
             ctx.canvas_pos + ImVec2(((offset + (i * beatTimeMs)) / ctx.visibleSizeMs) * ctx.canvas_size.x, ctx.canvas_size.y),
-            isWholeMeasure ? beatMultipleColor[tempo.measureIndex] : IM_COL32(255, 255, 255, 180),
-            isWholeMeasure ? 7.f : 3.f
+            isWholeMeasure ? beatMultipleColor[tempo.measureIndex] : IM_COL32(255, 255, 255, 153),
+            isWholeMeasure ? 5.f : 3.f
         );
 
         if (isWholeMeasure) {
