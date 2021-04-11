@@ -520,9 +520,9 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 
 	// draw points on top of lines
 	float opacity = 30000.f / visibleSizeMs;
-	opacity = opacity > 1.f ? 1.f : opacity;
-	int opcacityInt = 255 * opacity;
+	opacity = opacity > 1.f ? 1.f : opacity * opacity;
 	if (opacity >= 0.25f) {
+		int opcacityInt = 255 * opacity;
 		for (auto&& p : overlay->ActionScreenCoordinates) {
 			draw_list->AddCircleFilled(p, 7.0f, IM_COL32(0, 0, 0, opcacityInt), 8); // border
 			draw_list->AddCircleFilled(p, 5.0f, IM_COL32(255, 0, 0, opcacityInt), 8);
