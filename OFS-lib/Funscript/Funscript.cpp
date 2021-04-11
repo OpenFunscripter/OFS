@@ -596,8 +596,6 @@ void Funscript::SelectBottomActions(int32_t from_ms, int32_t to_ms, bool clear) 
 void Funscript::SelectMidActions(int32_t from_ms, int32_t to_ms, bool clear) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-
-	OFS_PROFILE(__FUNCTION__);
 	auto newSelection = GetSelection(from_ms, to_ms);
 	if (newSelection.size() < 3) {
 		NotifySelectionChanged();
