@@ -125,7 +125,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
             simulator.P2 = tmp; 
         }
         ImGui::Columns(1);
-        ImGui::Checkbox("Lock", &simulator.LockedPosition);
+        ImGui::Checkbox(simulator.LockedPosition ? "Lock " ICON_LINK : "Lock " ICON_UNLINK, &simulator.LockedPosition);
 
         if (ImGui::CollapsingHeader("Configuration", ImGuiTreeNodeFlags_SpanAvailWidth)) {
             ImGui::ColorEdit4("Text", &simulator.Text.Value.x);

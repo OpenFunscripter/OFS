@@ -44,6 +44,8 @@
 #define ICON_TRASH "\xef\x87\xb8"
 #define ICON_RANDOM "\xef\x81\xb4"
 #define ICON_WARNING_SIGN "\xef\x81\xb1"
+#define ICON_LINK "\xef\x83\x81"
+#define ICON_UNLINK "\xef\x84\xa7"
 
 #ifndef NDEBUG
 #define LOG_INFO(msg)  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, msg)
