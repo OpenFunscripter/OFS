@@ -4,15 +4,15 @@
 #include "OFS_ImGui.h"
 #include "imgui.h"
 #include "imgui_stdlib.h"
-#include "imgui_internal.h"
-
 #include "OFS_Lua.h"
 
-#include <filesystem>
+#include "EASTL/stack.h"
 #include <sstream>
 
 #include "SDL_thread.h"
 #include "SDL_atomic.h"
+
+#include <cmath>
 
 SpecialFunctionsWindow::SpecialFunctionsWindow() noexcept
 {
@@ -132,12 +132,13 @@ void RamerDouglasPeucker::SelectionChanged(SDL_Event& ev) noexcept
     }
 }
 
-static float PointLineDistance(FunscriptAction pt, FunscriptAction lineStart, FunscriptAction lineEnd) {
+static float PointLineDistance(FunscriptAction pt, FunscriptAction lineStart, FunscriptAction lineEnd) noexcept {
+    OFS_PROFILE(__FUNCTION__);
     float dx = lineEnd.at - lineStart.at;
     float dy = lineEnd.pos - lineStart.pos;
 
     // Normalize
-    float mag = (float)std::sqrt(dx * dx + dy * dy);
+    float mag = sqrtf(dx * dx + dy * dy);
     if (mag > 0.0f) {
         dx /= mag;
         dy /= mag;
@@ -152,15 +153,16 @@ static float PointLineDistance(FunscriptAction pt, FunscriptAction lineStart, Fu
     float ax = pvx - pvdot * dx;
     float ay = pvy - pvdot * dy;
 
-    return (float)std::sqrt(ax * ax + ay * ay);
+    return sqrtf(ax * ax + ay * ay);
 }
 
-static std::vector<bool> DouglasPeucker(const FunscriptArray& points, int startIndex, int lastIndex, float epsilon) {
-    std::stack<std::pair<int, int>> stk;
+static auto DouglasPeucker(const FunscriptArray& points, int startIndex, int lastIndex, float epsilon) noexcept {
+    OFS_PROFILE(__FUNCTION__);
+    eastl::stack<std::pair<int, int>> stk;
     stk.push(std::make_pair(startIndex, lastIndex));
-
+    
     int globalStartIndex = startIndex;
-    auto bitArray = std::vector<bool>();
+    auto bitArray = eastl::vector<bool>();
     bitArray.resize(lastIndex - startIndex + 1, true);
 
     while (stk.size() > 0) {
@@ -196,19 +198,22 @@ static std::vector<bool> DouglasPeucker(const FunscriptArray& points, int startI
     return std::move(bitArray);
 }
 
-static void DouglasPeucker(const FunscriptArray& points, float epsilon, FunscriptArray& newActions) {
+static void DouglasPeucker(const FunscriptArray& points, float epsilon, FunscriptArray& newActions) noexcept {
+    OFS_PROFILE(__FUNCTION__);
     auto bitArray = DouglasPeucker(points, 0, points.size() - 1, epsilon);
     newActions.reserve(points.size());
 
     for (int i = 0, n = points.size(); i < n; ++i) {
         if (bitArray[i]) {
-            newActions.emplace(points[i]);
+            // we can safely assume points to be sorted
+            newActions.emplace_back_unsorted(points[i]);
         }
     }
 }
 
 void RamerDouglasPeucker::DrawUI() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
     if (app->script().SelectionSize() > 4 || (app->script().undoSystem->MatchUndoTop(StateType::SIMPLIFY))) {
         if (ImGui::DragFloat("Epsilon", &epsilon, 0.001f, 0.f, 0.f, "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
@@ -217,14 +222,13 @@ void RamerDouglasPeucker::DrawUI() noexcept
                 !app->script().undoSystem->MatchUndoTop(StateType::SIMPLIFY)) {
                 // calculate average distance in selection
                 int count = 0;
-                for (int i = 0; i < ctx().Selection().size() - 1; ++i)
-                {
+                for (int i = 0, size = ctx().Selection().size(); i < size - 1; ++i) {
                     auto action1 = ctx().Selection()[i];
                     auto action2 = ctx().Selection()[i + 1];
                     
-                    int x = action1.at - action2.at;
-                    int y = action1.pos - action2.pos;
-                    float distance = std::sqrt((x * x) + (y * y));
+                    int dx = action1.at - action2.at;
+                    int dy = action1.pos - action2.pos;
+                    float distance = sqrtf((dx * dx) + (dy * dy));
                     averageDistance += distance;
                     ++count;
                 }

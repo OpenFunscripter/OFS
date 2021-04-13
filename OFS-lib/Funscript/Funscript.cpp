@@ -10,7 +10,6 @@
 
 #include <algorithm>
 #include <limits>
-#include <unordered_set>
 
 Funscript::Funscript() 
 {
@@ -229,8 +228,15 @@ void Funscript::RemoveAction(FunscriptAction action, bool checkInvalidSelection)
 void Funscript::RemoveActions(const FunscriptArray& removeActions) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	for (auto&& action : removeActions)
-		RemoveAction(action, false);
+	auto it = std::remove_if(data.Actions.begin(), data.Actions.end(),
+		[&removeActions, end = removeActions.end()](auto action) {
+			if (removeActions.find(action) != end) {
+				return true;
+			}
+			return false;
+		});
+	data.Actions.erase(it, data.Actions.end());
+
 	NotifyActionsChanged(true);
 	checkForInvalidatedActions();
 }
@@ -712,9 +718,17 @@ void Funscript::SelectAll() noexcept
 void Funscript::RemoveSelectedActions() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	RemoveActions(data.selection);
+	if (data.selection.size() == data.Actions.size()) {
+		// assume data.selection == data.Actions
+		// aslong as we don't fuck up the selection this is safe 
+		data.Actions.clear();
+	}
+	else {
+		RemoveActions(data.selection);
+	}
+
 	ClearSelection();
-	//NotifyActionsChanged(); // already called in RemoveActions
+	NotifyActionsChanged(true);
 	NotifySelectionChanged();
 }
 
