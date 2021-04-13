@@ -379,6 +379,7 @@ static int32_t TCodeThread(void* threadData) noexcept {
 
 void TCodePlayer::setScripts(std::vector<std::weak_ptr<const Funscript>>&& scripts) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     prod.LoadedScripts = std::move(scripts);
         
     // assume first is always stroke
@@ -411,6 +412,7 @@ void TCodePlayer::setScripts(std::vector<std::weak_ptr<const Funscript>>&& scrip
 
 void TCodePlayer::play(float currentTimeMs, std::vector<std::weak_ptr<const Funscript>>&& scripts) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     if (!Thread.running) {
         Thread.running = true;
         Thread.player = this;
@@ -428,6 +430,7 @@ void TCodePlayer::play(float currentTimeMs, std::vector<std::weak_ptr<const Funs
 
 void TCodePlayer::stop() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     if (Thread.running) {
         Thread.requestStop = true;
         while (!Thread.running) { SDL_Delay(1); }
@@ -436,12 +439,14 @@ void TCodePlayer::stop() noexcept
 
 void TCodePlayer::sync(float currentTimeMs, float speed) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     Thread.speed = speed;
     SDL_AtomicSet(&Thread.scriptTimeMs, std::round(currentTimeMs));
 }
 
 void TCodePlayer::reset() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     if (Thread.running) {
         Thread.requestStop = true;
         while (!Thread.running) { SDL_Delay(1); }

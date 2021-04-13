@@ -20,7 +20,6 @@
 
 #define OFS_PAUSE_INTRIN _mm_pause
 
-
 // helper for FontAwesome. Version 4.7.0 2016 ttf
 #define ICON_FOLDER_OPEN "\xef\x81\xbc"
 #define ICON_VOLUME_UP "\xef\x80\xa8"
@@ -130,15 +129,15 @@ public:
 		nlohmann::json j;
 		if (handle != nullptr) {
 			size_t size = handle->size(handle);
-			char* buffer = new char[size+1];
-			SDL_RWread(handle, buffer, sizeof(char), size);
+			std::string buffer;
+			buffer.resize(size + 1);
+			SDL_RWread(handle, buffer.data(), sizeof(char), size);
 			buffer[size] = '\0';
 			if (size > 0) {
-				j = nlohmann::json::parse(std::string(buffer, size), nullptr, false, true);
+				j = nlohmann::json::parse(buffer, nullptr, false, true);
 				*success = !j.is_discarded();
 			}
 			SDL_RWclose(handle);
-			delete[] buffer;
 		}
 		else {
 			LOGF_ERROR("Failed to load json: \"%s\"", file);

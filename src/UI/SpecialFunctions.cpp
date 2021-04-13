@@ -9,7 +9,6 @@
 
 #include <filesystem>
 #include <sstream>
-#include <unordered_set>
 
 #include "SDL_thread.h"
 #include "SDL_atomic.h"
@@ -268,8 +267,8 @@ struct LuaThread {
     int32_t NewPositionMs = -1;
 
     struct ScriptOutput {
-        std::unordered_set<FunscriptAction, FunscriptActionHashfunction> actions;
-        std::unordered_set<FunscriptAction, FunscriptActionHashfunction> selection;
+        FunscriptArray actions;
+        FunscriptArray selection;
     };
     std::vector<ScriptOutput> outputs;
 };
@@ -635,7 +634,7 @@ void CustomLua::resetVM() noexcept
         stbsp_snprintf(tmp, sizeof(tmp), "CurrentScriptIdx=%d\n", scriptIndex+1); // !!! lua indexing starts at 1 !!!
         builder << tmp;
 
-        std::unordered_set<FunscriptAction, FunscriptActionHashfunction> SelectedActions;
+        FunscriptArray SelectedActions;
         for (int i = 0; i < app->LoadedFunscripts().size(); i++) {
             auto& loadedScript = app->LoadedFunscripts()[i];
             SelectedActions.clear(); SelectedActions.insert(loadedScript->Selection().begin(), loadedScript->Selection().end());
@@ -768,8 +767,8 @@ bool CollectScriptOutputs(LuaThread& thread, lua_State* L) noexcept
             at = std::max(at, 0);
             tag = (uint8_t)tag;
 
-            currentScript.actions.insert(FunscriptAction(at, pos, tag));
-            if (selected) { currentScript.selection.insert(FunscriptAction(at, pos, tag)); }
+            currentScript.actions.emplace(at, pos, tag);
+            if (selected) { currentScript.selection.emplace(at, pos, tag); }
 
             lua_pop(L, 1); // pop single action
         }

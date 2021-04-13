@@ -133,14 +133,13 @@ void Util::Tooltip(const char* tip) noexcept
 void Util::ForceMinumumWindowSize(ImGuiWindow* window) noexcept
 {
 	auto& expectedSize = window->ContentSizeIdeal;
-	auto actualSize = ImGui::GetWindowSize();
-	if (expectedSize.x > actualSize.x) {
-		actualSize.x = expectedSize.x;
+	auto& actualSize = window->Size;
+	if (actualSize.x < expectedSize.x || actualSize.y < expectedSize.y) {
+		ImGui::SetWindowSize(window, expectedSize, ImGuiCond_Once);
 	}
-	if (expectedSize.y > actualSize.y || expectedSize.y < actualSize.y) {
-		actualSize.y = expectedSize.y;
+	else {
+		ImGui::SetWindowSize(window, expectedSize, ImGuiCond_Appearing);
 	}
-	ImGui::SetWindowSize(actualSize, ImGuiCond_Always);
 }
 
 void Util::OpenFileDialog(const std::string& title, const std::string& path, FileDialogResultHandler&& handler, bool multiple, const std::vector<const char*>& filters, const std::string& filterText) noexcept
