@@ -155,14 +155,7 @@ void KeybindingSystem::handlePassiveBindingModification(SDL_Event& ev, uint16_t 
         addKeyString("Shift");
     }
 
-    currentlyChangingPassive->key.key = 0;
-    currentlyChangingPassive->key.key_str = currentlyHeldKeys.str();
-    bindingStringLUT[currentlyChangingPassive->identifier] = currentlyChangingPassive->key.key_str;
-    currentlyChangingPassive->key.modifiers = modstate;
-
-    passiveBindingLUT[currentlyChangingPassive->identifier] = *currentlyChangingPassive;
-
-    currentlyChangingPassive = nullptr;
+    passiveChangingTempModifiers = modstate;
 }
 
 bool KeybindingSystem::load(const std::string& path) noexcept
@@ -518,6 +511,8 @@ void KeybindingSystem::addPassiveBindingGroup(PassiveBindingGroup& group, bool& 
             if (ImGui::Button(!binding.key.key_str.empty() ? binding.key.key_str.c_str() : "-- Not set --", ImVec2(-1.f, 0.f))) {
                 changingController = false;
                 currentlyChangingPassive = &binding;
+                passiveChangingTempModifiers = binding.key.modifiers;
+                passiveChangingStartTimer = SDL_GetTicks();
                 currentlyHeldKeys.str("");
                 ImGui::OpenPopup("Change key");
             }
@@ -531,6 +526,22 @@ void KeybindingSystem::addPassiveBindingGroup(PassiveBindingGroup& group, bool& 
                 else {
                     ImGui::Text(currentlyHeldKeys.str().c_str());
                 }
+
+                uint32_t currentTime = SDL_GetTicks() - passiveChangingStartTimer;        
+                ImGui::ProgressBar((currentTime / (float)PassiveChangingTimeMs), ImVec2(150.f, 0.f), Util::Format("%d ms", PassiveChangingTimeMs - currentTime));
+
+                if (currentTime >= PassiveChangingTimeMs) {
+                    if (passiveChangingTempModifiers != currentlyChangingPassive->key.modifiers) {
+                        currentlyChangingPassive->key.key = 0;
+                        currentlyChangingPassive->key.key_str = currentlyHeldKeys.str();
+                        bindingStringLUT[currentlyChangingPassive->identifier] = currentlyChangingPassive->key.key_str;
+                        currentlyChangingPassive->key.modifiers = GetModifierState(passiveChangingTempModifiers);
+                        passiveBindingLUT[currentlyChangingPassive->identifier] = *currentlyChangingPassive;
+                    }
+
+                    currentlyChangingPassive = nullptr;
+                }
+
                 if (!currentlyChangingPassive) {
                     save = true; // autosave
                     ImGui::CloseCurrentPopup();
@@ -625,7 +636,7 @@ bool KeybindingSystem::PassiveModifier(const char* name) noexcept
     auto it = ptr->passiveBindingLUT.find(name);
     if (it != ptr->passiveBindingLUT.end() && it->second.active) {
         uint16_t modstate = GetModifierState(SDL_GetModState());
-        if (modstate & it->second.key.modifiers || modstate == 0 && it->second.key.modifiers == 0) {
+        if (modstate == it->second.key.modifiers) {
             return true;
         }
     }

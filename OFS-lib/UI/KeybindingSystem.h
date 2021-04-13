@@ -165,7 +165,9 @@ private:
 	std::stringstream currentlyHeldKeys;
 	Binding* currentlyChanging = nullptr;
 	PassiveBinding* currentlyChangingPassive = nullptr;
-	uint32_t passiveChangingStateTicks = 0;
+	uint32_t passiveChangingStartTimer = 0;
+	uint16_t passiveChangingTempModifiers = 0;
+	static constexpr uint32_t PassiveChangingTimeMs = 3000;
 
 	bool changingController = false;
 	bool ControllerOnly = false;
