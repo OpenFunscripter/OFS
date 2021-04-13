@@ -5,7 +5,8 @@
 #include <cstdint>
 
 #include <array>
-#include <sstream>
+
+#include "EASTL/string.h"
 
 class TCodeChannel {
 public:
@@ -118,8 +119,7 @@ public:
 
 	std::array<TCodeChannel, static_cast<size_t>(TChannel::TotalCount)> channels;
 
-	std::stringstream ss;
-	std::string lastCommand;
+	eastl::string commandBuffer;
 
 	TCodeChannels() noexcept
 	{
@@ -147,19 +147,18 @@ public:
 
 	inline const char* GetCommand() noexcept {
 		bool gotCmd = false;
-
-		ss.str("");
+		commandBuffer.clear();
 		for (auto& c : channels) {
 			auto cmd = c.getCommand();
 			if (cmd != nullptr) {
 				gotCmd = true;
-				ss << cmd << ' ';
+				commandBuffer.append(cmd);
+				commandBuffer.append(1, ' ');
 			}
 		}
 		if (gotCmd) { 
-			ss << '\n';
-			lastCommand = std::move(ss.str());
-			return lastCommand.c_str();
+			commandBuffer.append(1, '\n');
+			return commandBuffer.c_str();
 		}
 		
 		return nullptr;
@@ -168,18 +167,18 @@ public:
 	inline const char* GetCommandSpeed(int32_t speed) noexcept
 	{
 		bool gotCmd = false;
-		ss.str("");
+		commandBuffer.clear();
 		for (auto& c : channels) {
 			auto cmd = c.getCommandSpeed(speed);
 			if (cmd != nullptr) {
 				gotCmd = true;
-				ss << cmd << ' ';
+				commandBuffer.append(cmd);
+				commandBuffer.append(1, ' ');
 			}
 		}
 		if (gotCmd) {
-			ss << '\n';
-			lastCommand = ss.str();
-			return lastCommand.c_str();
+			commandBuffer.append(1, '\n');
+			return commandBuffer.c_str();
 		}
 
 		return nullptr;

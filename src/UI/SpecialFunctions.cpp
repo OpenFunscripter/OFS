@@ -132,8 +132,7 @@ void RamerDouglasPeucker::SelectionChanged(SDL_Event& ev) noexcept
     }
 }
 
-static float PointLineDistance(FunscriptAction pt, FunscriptAction lineStart, FunscriptAction lineEnd) noexcept {
-    OFS_PROFILE(__FUNCTION__);
+inline static float PointLineDistance(FunscriptAction pt, FunscriptAction lineStart, FunscriptAction lineEnd) noexcept {
     float dx = lineEnd.at - lineStart.at;
     float dy = lineEnd.pos - lineStart.pos;
 
@@ -165,7 +164,7 @@ static auto DouglasPeucker(const FunscriptArray& points, int startIndex, int las
     auto bitArray = eastl::vector<bool>();
     bitArray.resize(lastIndex - startIndex + 1, true);
 
-    while (stk.size() > 0) {
+    while (!stk.empty()) {
         startIndex = stk.top().first;
         lastIndex = stk.top().second;
         stk.pop();
@@ -315,6 +314,7 @@ void CustomLua::SelectionChanged(SDL_Event& ev) noexcept
 
 void CustomLua::updateScripts() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     auto luaCorePathString = Util::Resource("lua");
     auto luaUserPathString = Util::Prefpath("lua");
     auto luaUserLibPathString = Util::Prefpath("lua/lib");
@@ -354,6 +354,7 @@ void CustomLua::updateScripts() noexcept
 
 static void WriteToConsole(const std::string& str) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     SDL_AtomicLock(&SpinLock);
     LuaConsoleBuffer += str;
     LuaConsoleBuffer += "\n";
@@ -362,6 +363,7 @@ static void WriteToConsole(const std::string& str) noexcept
 
 static int LuaPrint(lua_State* L) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     int nargs = lua_gettop(L);
     
     std::stringstream ss;
@@ -392,6 +394,7 @@ static constexpr struct luaL_Reg printlib[] = {
 };
 
 static int LuaDoFile(lua_State* L, const char* path) {
+    OFS_PROFILE(__FUNCTION__);
     std::vector<uint8_t> file;
     if (Util::ReadFile(path, file) > 0) {
         file.emplace_back('\0');
@@ -403,6 +406,7 @@ static int LuaDoFile(lua_State* L, const char* path) {
 
 static int addToLuaPath(lua_State* L, const char* path)
 {
+    OFS_PROFILE(__FUNCTION__);
     lua_getglobal(L, "package");
     lua_getfield(L, -1, "path"); // get field "path" from table at top of stack (-1)
     std::string cur_path = lua_tostring(L, -1); // grab path string from top of stack
@@ -417,6 +421,7 @@ static int addToLuaPath(lua_State* L, const char* path)
 
 void CustomLua::resetVM() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     SDL_AtomicLock(&SpinLock);
     LuaConsoleBuffer.clear();
     SDL_AtomicUnlock(&SpinLock);
@@ -703,6 +708,7 @@ void CustomLua::resetVM() noexcept
 
 bool CollectScriptOutputs(LuaThread& thread, lua_State* L) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
     int32_t scriptCount = app->LoadedFunscripts().size();
     char tmp[1024];
@@ -794,6 +800,7 @@ bool CollectScriptOutputs(LuaThread& thread, lua_State* L) noexcept
 
 void CustomLua::runScript(LuaScript* script, bool dry_run) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     if (Thread.running) return;
     Thread.running = true; 
     Thread.dry_run = dry_run;

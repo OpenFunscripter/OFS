@@ -96,8 +96,8 @@ void TCodePlayer::loadSettings(const std::string& path) noexcept
     auto json = Util::LoadJson(path, &succ);
     if (succ) {
         OFS::serializer::load(this, &json["tcode_player"]);
-        loadPath = path;
     }
+    loadPath = path;
 }
 
 void TCodePlayer::save() noexcept

@@ -3,10 +3,8 @@
 #include "OFS_TCodeChannel.h"
 #include "Funscript.h"
 
-#include <array>
 #include <vector>
 #include <memory>
-#include <algorithm>
 
 #include "SDL_timer.h"
 
@@ -48,16 +46,13 @@ private:
 
 		float progress = Util::Clamp((float)(currentTimeMs - startAction.at) / (nextAction.at - startAction.at), 0.f, 1.f);
 		
-
 		float pos;
 		std::shared_ptr<const Funscript> ptr;
-		if (TCodeChannel::SplineMode && GetScript(ptr))
-		{
+		if (TCodeChannel::SplineMode && GetScript(ptr))	{
 			pos = ptr->ScriptSpline.SampleAtIndex(ptr->Actions(), currentIndex, currentTimeMs);
 			if (TCodeChannel::RemapToFullRange) { pos = Util::MapRange<float>(pos, ScriptMinPos / 100.f, ScriptMaxPos / 100.f, 0.f, 1.f); }
 		}
-		else
-		{
+		else {
 			pos = Util::Lerp<float>(startAction.pos / 100.f, nextAction.pos / 100.f, progress);
 		}
 
@@ -107,9 +102,9 @@ public:
 	std::vector<std::weak_ptr<const Funscript>>* scripts = nullptr;
 	TCodeChannel* channel = nullptr;
 
-	TCodeChannelProducer() : startAction(0, 50), nextAction(1, 50) {}
+	TCodeChannelProducer() noexcept : startAction(0, 50), nextAction(1, 50) {}
 
-	inline void Reset() { SetScript(-1); }
+	inline void Reset() noexcept { SetScript(-1); }
 	inline void SetScript(int32_t index) noexcept
 	{
 		this->scriptIndex = index;
