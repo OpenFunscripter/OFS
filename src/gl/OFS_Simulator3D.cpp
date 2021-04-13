@@ -9,7 +9,7 @@
 #include "glm/gtx/rotate_vector.hpp"
 
 #include "OFS_Serialization.h"
-
+#include "OFS_ImGui.h"
 #include "OpenFunscripter.h"
 
 // cube pos + normals
@@ -313,7 +313,7 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
             if (ImGui::InputFloat("Scroll (%)", &EditingScrollMultiplier, 1.f, 1.f, "%.3f", ImGuiInputTextFlags_None)) {
                 EditingScrollMultiplier = Util::Clamp(EditingScrollMultiplier, 1.f, 20.f);
             }
-            Util::Tooltip("You can use the mousewheel on the sliders above.");
+            OFS::Tooltip("You can use the mousewheel on the sliders above.");
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();

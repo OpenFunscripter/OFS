@@ -1,5 +1,5 @@
 #include "ScriptSimulator.h"
-
+#include "OFS_ImGui.h"
 #include "OpenFunscripter.h"
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -162,7 +162,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
         if (ImGui::Button("Vanilla")) {
             EnableVanilla = true;
         }
-        Util::Tooltip("Switch to vanilla simulator.");
+        OFS::Tooltip("Switch to vanilla simulator.");
 
         // Because the simulator is always drawn on top
         // we don't draw if there is a popup modal

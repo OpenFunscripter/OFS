@@ -208,18 +208,18 @@ void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
     }
     if (ImGui::CollapsingHeader("Global settings"))
     {
-        ImGui::InputInt("Delay", &delay, 10, 10); Util::Tooltip("Negative: Backward in time.\nPositive: Forward in time.");
+        ImGui::InputInt("Delay", &delay, 10, 10); OFS::Tooltip("Negative: Backward in time.\nPositive: Forward in time.");
         ImGui::SliderInt("Tickrate (Hz)", &tickrate, 60, 300, "%d", ImGuiSliderFlags_AlwaysClamp); 
         ImGui::Checkbox("Spline", &TCodeChannel::SplineMode);
-        Util::Tooltip("Smooth motion instead of linear.");
+        OFS::Tooltip("Smooth motion instead of linear.");
         ImGui::SameLine(); ImGui::Checkbox("Remap", &TCodeChannel::RemapToFullRange);
-        Util::Tooltip("Remap script to use the full range.\ni.e. scripts using the range 10 to 90 become 0 to 100");
+        OFS::Tooltip("Remap script to use the full range.\ni.e. scripts using the range 10 to 90 become 0 to 100");
     }
 
     ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
     ImGui::TextUnformatted("Outputs");
     ImGui::SameLine(); ImGui::TextDisabled("(?)");
-    Util::Tooltip("You can right click sliders.");
+    OFS::Tooltip("You can right click sliders.");
 
     for (int i = 0; i < tcode.channels.size(); i++) {
         if(i == 4 || i == 7) ImGui::Spacing();
@@ -231,7 +231,7 @@ void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
         if (ImGui::BeginPopupContextItem())
         {
             ImGui::MenuItem("Invert", NULL, &c.Invert);
-            ImGui::MenuItem("Rebalance", NULL, &c.Rebalance); Util::Tooltip("Balance around 500 even with unevenly spread limits.");
+            ImGui::MenuItem("Rebalance", NULL, &c.Rebalance); OFS::Tooltip("Balance around 500 even with unevenly spread limits.");
             ImGui::Separator();
             auto activeIdx = prod.GetProd(static_cast<TChannel>(i)).ScriptIdx();
             

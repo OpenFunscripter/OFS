@@ -1,7 +1,7 @@
 #include "OFS_VideoplayerControls.h"
 #include "OFS_Util.h"
 #include "OFS_Profiling.h"
-
+#include "OFS_ImGui.h"
 #include "SDL_timer.h"
 static char tmp_buf[2][32];
 
@@ -190,7 +190,7 @@ void OFS_VideoplayerControls::DrawTimeline(bool* open, TimelineCustomDrawFunc&& 
     if (ImGui::SliderFloat("##Speed", &player->settings.playback_speed, VideoplayerWindow::MinPlaybackSpeed, VideoplayerWindow::MaxPlaybackSpeed)) {
         player->setSpeed(player->settings.playback_speed);
     }
-    Util::Tooltip("Speed");
+    OFS::Tooltip("Speed");
 
     ImGui::Columns(1, 0, false);
 

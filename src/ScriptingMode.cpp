@@ -7,6 +7,8 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
+#include "OFS_ImGui.h"
+
 ScripingModeBaseImpl::ScripingModeBaseImpl()
 {
 }
@@ -47,7 +49,7 @@ void ScriptingMode::DrawScriptingMode(bool* open) noexcept
         "\0")) {
         setMode(activeMode);
     }
-    Util::Tooltip("Scripting mode");
+    OFS::Tooltip("Scripting mode");
     impl->DrawModeSettings();
 
     ImGui::Spacing();
@@ -61,7 +63,7 @@ void ScriptingMode::DrawScriptingMode(bool* open) noexcept
         "\0")) {
         setOverlay(activeOverlay);
     }
-    Util::Tooltip("Scripting overlay");
+    OFS::Tooltip("Scripting overlay");
     app->scriptPositions.overlay->DrawSettings();
     ImGui::PopItemWidth();
 
@@ -69,10 +71,10 @@ void ScriptingMode::DrawScriptingMode(bool* open) noexcept
     ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal);
     ImGui::Spacing();
     ImGui::DragInt("Offset (ms)", &app->settings->data().action_insert_delay_ms);
-    Util::Tooltip("Applies an offset to actions inserted while the video is playing.\n- : inserts earlier\n+ : inserts later");
+    OFS::Tooltip("Applies an offset to actions inserted while the video is playing.\n- : inserts earlier\n+ : inserts later");
     if (app->LoadedFunscripts().size() > 1) {
         ImGui::Checkbox("Mirror mode", &app->settings->data().mirror_mode);
-        Util::Tooltip("Mirrors add/edit/remove action across all loaded scripts.");
+        OFS::Tooltip("Mirrors add/edit/remove action across all loaded scripts.");
     }
     else {
         app->settings->data().mirror_mode = false;
@@ -157,11 +159,11 @@ void DynamicInjectionImpl::DrawModeSettings() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     ImGui::SliderFloat("##Target speed (units/s)", &target_speed, min_speed, max_speed);
-    Util::Tooltip("Target speed (units/s)");
+    OFS::Tooltip("Target speed (units/s)");
     target_speed = std::round(Util::Clamp(target_speed, min_speed, max_speed));
 
     ImGui::SliderFloat("##Up/Down speed bias", &direction_bias, -0.50f, 0.50f);
-    Util::Tooltip("Up/Down speed bias");
+    OFS::Tooltip("Up/Down speed bias");
 
     ImGui::Columns(2, 0, false);
     if (ImGui::RadioButton("Top", top_bottom_direction == 1)) {
@@ -213,7 +215,7 @@ void AlternatingImpl::DrawModeSettings() noexcept
     }
     ImGui::Checkbox("Fixed range", &fixedRangeEnabled);
     ImGui::Checkbox("Context sensitive", &contextSensitive);
-    Util::Tooltip("Alternates based on the previous action.");
+    OFS::Tooltip("Alternates based on the previous action.");
     if (fixedRangeEnabled) {
         bool inputActive = false;
         auto& style = ImGui::GetStyle();
@@ -458,7 +460,7 @@ void RecordingImpl::DrawModeSettings() noexcept
         if (!recordingActive) {
             ImGui::SameLine();
             ImGui::Checkbox("Two axes", &twoAxesMode);
-            Util::Tooltip("Recording pitch & roll at once.\nUsing Simulator 3D settings.\nOnly works with a controller.");
+            OFS::Tooltip("Recording pitch & roll at once.\nUsing Simulator 3D settings.\nOnly works with a controller.");
         }
         break;
     }

@@ -1,6 +1,7 @@
 ﻿#include "OpenFunscripter.h"
 #include "OFS_Util.h"
 #include "OFS_Profiling.h"
+#include "OFS_ImGui.h"
 
 #include "GradientBar.h"
 #include "FunscriptHeatmap.h"
@@ -2336,7 +2337,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         }
                     }, false);
             }
-            Util::Tooltip(LoadedProject->Loaded ? "Close current project first." : "Videos & scripts get imported into a new project.");
+            OFS::Tooltip(LoadedProject->Loaded ? "Close current project first." : "Videos & scripts get imported into a new project.");
             if (ImGui::BeginMenu("Recent files")) {
                 if (settings->data().recentFiles.size() == 0) {
                     ImGui::TextDisabled("%s", "No recent files");
@@ -2361,7 +2362,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 if (ImGui::MenuItem(ICON_SHARE " Quick export", BINDING_STRING("quick_export"))) {
                     quickExport();
                 }
-                Util::Tooltip("Exports all scripts as .funscript in their default paths.");
+                OFS::Tooltip("Exports all scripts as .funscript in their default paths.");
                 if (ImGui::MenuItem(ICON_SHARE " Export active script")) {
                     saveActiveScriptAs();
                 }
@@ -2752,7 +2753,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     //}
                 }
                 ImGui::Combo("##ActiveControllers", &selectedController, padStrings.data(), (int32_t)padStrings.size());
-                Util::Tooltip("Selecting doesn't do anything right now.");
+                OFS::Tooltip("Selecting doesn't do anything right now.");
 
                 ImGui::EndMenu();
             }

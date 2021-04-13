@@ -3,6 +3,7 @@
 #include "OpenFunscripter.h"
 
 #include "OFS_Serialization.h"
+#include "OFS_ImGui.h"
 
 #include "imgui.h"
 #include "imgui_stdlib.h"
@@ -65,13 +66,13 @@ bool OpenFunscripterSettings::ShowPreferenceWindow()
 					SDL_GL_SetSwapInterval(scripterSettings.vsync);
 					save = true;
 				}
-				Util::Tooltip("Limits frame rate to the refresh rate of the monitor.\nFrame limit is ignored.");
+				OFS::Tooltip("Limits frame rate to the refresh rate of the monitor.\nFrame limit is ignored.");
 				ImGui::SameLine();
 				if (ImGui::InputInt("Frame limit", &scripterSettings.framerateLimit, 1, 10)) {
 					scripterSettings.framerateLimit = Util::Clamp(scripterSettings.framerateLimit, 30, 300);
 					save = true;
 				}
-				Util::Tooltip("This limits the frame rate OFS is running at.");
+				OFS::Tooltip("This limits the frame rate OFS is running at.");
 				ImGui::Separator();
 				ImGui::InputText("Font", scripterSettings.font_override.empty() ? (char*)"Default font" : (char*)scripterSettings.font_override.c_str(),
 					scripterSettings.font_override.size(), ImGuiInputTextFlags_ReadOnly);
@@ -119,7 +120,7 @@ bool OpenFunscripterSettings::ShowPreferenceWindow()
 				if (ImGui::Checkbox("Force hardware decoding (Requires program restart)", &scripterSettings.force_hw_decoding)) {
 					save = true;
 				}
-				Util::Tooltip("Use this for really high resolution video 4K+ VR videos for example.");
+				OFS::Tooltip("Use this for really high resolution video 4K+ VR videos for example.");
 				ImGui::EndTabItem();
 			}
 			if (ImGui::BeginTabItem("Scripting"))
@@ -128,7 +129,7 @@ bool OpenFunscripterSettings::ShowPreferenceWindow()
 					save = true;
 					scripterSettings.fast_step_amount = Util::Clamp<int32_t>(scripterSettings.fast_step_amount, 2, 30);
 				}
-				Util::Tooltip("Amount of frames to skip with fast step.");
+				OFS::Tooltip("Amount of frames to skip with fast step.");
 				ImGui::EndTabItem();
 			}
 			ImGui::EndTabBar();

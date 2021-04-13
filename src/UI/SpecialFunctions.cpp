@@ -1,6 +1,7 @@
 #include "SpecialFunctions.h"
 #include "OpenFunscripter.h"
 #include "FunscriptUndoSystem.h"
+#include "OFS_ImGui.h"
 #include "imgui.h"
 #include "imgui_stdlib.h"
 #include "imgui_internal.h"
@@ -885,7 +886,7 @@ void CustomLua::runScript(LuaScript* script, bool dry_run) noexcept
 void CustomLua::DrawUI() noexcept
 {
     if (ImGui::Button("Reload scripts", ImVec2(-1.f, 0.f))) { updateScripts(); }
-    Util::Tooltip("Reload scripts in the script directory.\nOnly has to be pressed when deleting or adding files.");
+    OFS::Tooltip("Reload scripts in the script directory.\nOnly has to be pressed when deleting or adding files.");
 
     if (ImGui::Button("Script directory", ImVec2(-1.f, 0.f))) { Util::OpenFileExplorer(Util::Prefpath("lua").c_str()); }
     ImGui::Spacing(); ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal); ImGui::Spacing();
@@ -940,7 +941,7 @@ void CustomLua::DrawUI() noexcept
                     app->keybinds.addDynamicBinding(std::move(binding));
                 }
                 ImGui::Button("Script", ImVec2(-1.f, 0.f));
-                Util::Tooltip("Left click to run.\nMiddle click to load settings.\nRight click to edit.");
+                OFS::Tooltip("Left click to run.\nMiddle click to load settings.\nRight click to edit.");
                 if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
                     // run the script
                     runScript(&script);

@@ -273,7 +273,6 @@ public:
 		return path1.filename() == path2.filename();
 	}
 
-	static void Tooltip(const char* tip) noexcept;
 	static void ForceMinumumWindowSize(class ImGuiWindow* window) noexcept;
 
 	// http://www.martinbroadhurst.com/how-to-trim-a-stdstring.html

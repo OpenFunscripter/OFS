@@ -121,15 +121,6 @@ int Util::OpenUrl(const std::string& url)
 	return 1;
 }
 
-void Util::Tooltip(const char* tip) noexcept
-{
-	if (ImGui::IsItemHovered()) {
-		ImGui::BeginTooltip();
-		ImGui::TextUnformatted(tip);
-		ImGui::EndTooltip();
-	}
-}
-
 void Util::ForceMinumumWindowSize(ImGuiWindow* window) noexcept
 {
 	auto& expectedSize = window->ContentSizeIdeal;

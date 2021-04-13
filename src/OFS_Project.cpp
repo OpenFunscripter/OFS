@@ -1,7 +1,7 @@
 #include "OFS_Project.h"
 #include "OFS_Util.h"
 #include "OFS_Profiling.h"
-
+#include "OFS_ImGui.h"
 #include "SDL_thread.h"
 
 #include "EventSystem.h"
@@ -329,19 +329,20 @@ void OFS_Project::ShowProjectWindow(bool* open) noexcept
 		ImGui::OpenPopup("Project");
 	}
 
-	if (ImGui::BeginPopupModal("Project", open, ImGuiWindowFlags_NoDocking))
+	if (ImGui::BeginPopupModal("Project", open, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		OFS_PROFILE(__FUNCTION__);
 		auto app = OpenFunscripter::ptr;
 		ImGui::PushID(Metadata.title.c_str());
 		
 		ImGui::Text("Media: %s", MediaPath.c_str()); 
+		OFS::Tooltip(MediaPath.c_str());
 		ImGui::Separator();
 		ImGui::Spacing();
 		ImGui::TextDisabled("Scripts");
 		for (auto& script : Funscripts) {
 			if (ImGui::Button(script->Title.c_str(), ImVec2(-1.f, 0.f))) {
-				Util::SaveFileDialog("Change defaul location",
+				Util::SaveFileDialog("Change default location",
 					script->Path(),
 					[&](auto result) {
 						if (!result.files.empty()) {
@@ -352,10 +353,9 @@ void OFS_Project::ShowProjectWindow(bool* open) noexcept
 						}
 					});
 			}
-			Util::Tooltip(script->Path().c_str());
+			OFS::Tooltip(Util::Format("Change location\nCurrent: %s", script->Path().c_str()));
 		}
 		ImGui::PopID();
-		Util::ForceMinumumWindowSize(ImGui::GetCurrentWindow());
 		ImGui::EndPopup();
 	}
 }

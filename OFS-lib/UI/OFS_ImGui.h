@@ -9,4 +9,13 @@ namespace OFS {
     bool Spinner(const char* label, float radius, int thickness, const ImU32& color) noexcept;
 
 	bool BoundedSliderInt(const char* label, int* v, int v_min, int v_max, int local_min, int local_max, const char* format = "%d", ImGuiSliderFlags flags = 0) noexcept;
+
+	inline void Tooltip(const char* tip) noexcept
+	{
+		if (ImGui::IsItemHovered()) {
+			ImGui::BeginTooltip();
+			ImGui::TextUnformatted(tip);
+			ImGui::EndTooltip();
+		}
+	}
 }
