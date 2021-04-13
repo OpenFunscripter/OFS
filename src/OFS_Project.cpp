@@ -353,7 +353,7 @@ void OFS_Project::ShowProjectWindow(bool* open) noexcept
 						}
 					});
 			}
-			OFS::Tooltip(Util::Format("Change location\nCurrent: %s", script->Path().c_str()));
+			OFS::Tooltip("Change location");
 		}
 		ImGui::PopID();
 		ImGui::EndPopup();
