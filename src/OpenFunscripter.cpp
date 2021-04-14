@@ -1823,7 +1823,6 @@ void OpenFunscripter::step() noexcept {
             player->DrawVideoPlayer(NULL, &settings->data().draw_video);
         }
 
-        sim3D->renderSim();
         render();
     }
     OFS_ENDPROFILING();

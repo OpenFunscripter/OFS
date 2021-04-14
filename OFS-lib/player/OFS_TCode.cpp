@@ -4,7 +4,8 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
-#include "SDL.h"
+#include "SDL_thread.h"
+
 #include "OFS_ImGui.h"
 #include "OFS_Profiling.h"
 
