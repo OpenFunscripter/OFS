@@ -6,7 +6,6 @@
 #include "OFS_Reflection.h"
 #include "OFS_BinarySerialization.h"
 #include "OFS_Util.h"
-#include "OFS_Shader.h"
 
 #include <string>
 #include <chrono>

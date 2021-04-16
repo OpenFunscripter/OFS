@@ -8,6 +8,7 @@
 #include "imgui_internal.h"
 
 #include "OFS_ImGui.h"
+#include "OFS_Simulator3D.h"
 
 ScripingModeBaseImpl::ScripingModeBaseImpl()
 {
@@ -444,33 +445,33 @@ void RecordingImpl::DrawModeSettings() noexcept
         "\0");
 
     switch (activeMode) {
-    case RecordingMode::Controller:
-    {
-        ImGui::TextUnformatted("Controller deadzone");
-        ImGui::SliderInt("Deadzone", &ControllerDeadzone, 0, std::numeric_limits<int16_t>::max());
-        ImGui::Checkbox("Center", &controllerCenter);
-        if (controllerCenter) {
-            currentPosX = Util::Clamp<int32_t>(50.f + (50.f * valueX), 0, 100);
+        case RecordingMode::Controller:
+        {
+            ImGui::TextUnformatted("Controller deadzone");
+            ImGui::SliderInt("Deadzone", &ControllerDeadzone, 0, std::numeric_limits<int16_t>::max());
+            ImGui::Checkbox("Center", &controllerCenter);
+            if (controllerCenter) {
+                currentPosX = Util::Clamp<int32_t>(50.f + (50.f * valueX), 0, 100);
+                currentPosY = Util::Clamp<int32_t>(50.f + (50.f * valueY), 0, 100);
+            }
+            else {
+                currentPosX = Util::Clamp<int32_t>(100.f * std::abs(valueX), 0, 100);
+                currentPosY = Util::Clamp<int32_t>(100.f * std::abs(valueY), 0, 100);
+            }
+            if (!recordingActive) {
+                ImGui::SameLine();
+                ImGui::Checkbox("Two axes", &twoAxesMode);
+                OFS::Tooltip("Recording pitch & roll at once.\nUsing Simulator 3D settings.\nOnly works with a controller.");
+            }
+            break;
+        }
+        case RecordingMode::Mouse:
+        {
+            twoAxesMode = false;
+            valueY = app->simulator.getMouseValue();
             currentPosY = Util::Clamp<int32_t>(50.f + (50.f * valueY), 0, 100);
+            break;
         }
-        else {
-            currentPosX = Util::Clamp<int32_t>(100.f * std::abs(valueX), 0, 100);
-            currentPosY = Util::Clamp<int32_t>(100.f * std::abs(valueY), 0, 100);
-        }
-        if (!recordingActive) {
-            ImGui::SameLine();
-            ImGui::Checkbox("Two axes", &twoAxesMode);
-            OFS::Tooltip("Recording pitch & roll at once.\nUsing Simulator 3D settings.\nOnly works with a controller.");
-        }
-        break;
-    }
-    case RecordingMode::Mouse:
-    {
-        twoAxesMode = false;
-        valueY = app->simulator.getMouseValue();
-        currentPosY = Util::Clamp<int32_t>(50.f + (50.f * valueY), 0, 100);
-        break;
-    }
     }
 
     ImGui::Checkbox("Invert", &inverted); ImGui::SameLine(); ImGui::Checkbox("Record on play", &automaticRecording);
@@ -497,13 +498,16 @@ void RecordingImpl::DrawModeSettings() noexcept
     ImGui::Spacing();
     bool playing = !app->player->isPaused();
     if (automaticRecording && playing && recordingActive != playing) {
-        autoBackupTmp = app->AutoBackup;
-        app->AutoBackup = false;
+        autoBackupTmp = app->Status & OFS_Status::OFS_AutoBackup;
+        app->Status &= ~(OFS_Status::OFS_AutoBackup);
         recordingJustStarted = true;
     }
     else if (!playing && recordingActive) {
         recordingActive = false;
-        app->AutoBackup = autoBackupTmp;
+        
+        if (autoBackupTmp) {
+            app->Status |= OFS_Status::OFS_AutoBackup;
+        }
         recordingJustStopped = true;
     }
 

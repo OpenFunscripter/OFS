@@ -2,7 +2,6 @@
 
 #include "EventSystem.h"
 
-#include <sstream>
 #include <filesystem>
 #include  "SDL_rwops.h"
 

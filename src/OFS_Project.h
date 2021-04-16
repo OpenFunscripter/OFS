@@ -2,7 +2,7 @@
 
 #include "OFS_BinarySerialization.h"
 #include "OFS_ScriptSettings.h"
-#include "Funscript/Funscript.h"
+#include "Funscript.h"
 
 #include <vector>
 
@@ -13,7 +13,6 @@ enum OFS_Project_Version : int32_t
 {
 	One = 1
 };
-
 
 class OFS_Project
 {

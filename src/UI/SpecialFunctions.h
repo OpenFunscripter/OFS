@@ -3,8 +3,6 @@
 #include <memory>
 #include "Funscript.h"
 
-#include "SDL_events.h"
-
 // ATTENTION: no reordering
 enum SpecialFunctions : int32_t
 {
@@ -29,7 +27,7 @@ class FunctionRangeExtender : public FunctionBase
 public:
 	FunctionRangeExtender() noexcept;
 	virtual ~FunctionRangeExtender() noexcept;
-	void SelectionChanged(SDL_Event& ev) noexcept;
+	void SelectionChanged(union SDL_Event& ev) noexcept;
 	virtual void DrawUI() noexcept override;
 };
 
@@ -41,7 +39,7 @@ class RamerDouglasPeucker : public FunctionBase
 public:
 	RamerDouglasPeucker() noexcept;
 	virtual ~RamerDouglasPeucker() noexcept;
-	void SelectionChanged(SDL_Event& ev) noexcept;
+	void SelectionChanged(union SDL_Event& ev) noexcept;
 	virtual void DrawUI() noexcept override;
 };
 
@@ -99,7 +97,7 @@ private:
 public:
 	CustomLua() noexcept;
 	virtual ~CustomLua() noexcept;
-	void SelectionChanged(SDL_Event& ev) noexcept;
+	void SelectionChanged(union SDL_Event& ev) noexcept;
 	virtual void DrawUI() noexcept override;
 
 	void HandleBinding(class Binding* binding) noexcept;

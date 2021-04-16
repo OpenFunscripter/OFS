@@ -1,57 +1,50 @@
 #pragma once
-#include "SDL.h"
-
-#include "glad/glad.h"
-#include "OFS_Simulator3D.h"
-
-#include "imgui.h"
-
 #include "ScriptingMode.h"
 #include "KeybindingSystem.h"
 #include "OpenFunscripterSettings.h"
 #include "OFS_ScriptTimeline.h"
 #include "OFS_Videoplayer.h"
 #include "OFS_UndoSystem.h"
-#include "FunscriptUndoSystem.h"
 #include "EventSystem.h"
-#include "GradientBar.h"
 #include "ScriptSimulator.h"
-#include "Funscript.h"
 #include "OFS_ControllerInput.h"
 #include "GradientBar.h"
 #include "SpecialFunctions.h"
-#include "OFS_ScriptSettings.h"
 #include "OFS_Events.h"
 #include "OFS_VideoplayerControls.h"
 #include "OFS_TCode.h"
 #include "OFS_Project.h"
 #include "OFS_AsyncIO.h"
+#include "OFS_Simulator3D.h"
 
 #include <memory>
-#include <array>
 #include <chrono>
+
+enum OFS_Status : uint8_t
+{
+	OFS_None = 0x0,
+	OFS_ShouldExit = 0x1,
+	OFS_Fullscreen = 0x1 << 1,
+	OFS_GradientNeedsUpdate = 0x1 << 2,
+	OFS_GamepadSetPlaybackSpeed = 0x1 << 3,
+	OFS_AutoBackup = 0x1 << 4
+};
 
 class OpenFunscripter {
 private:
 	SDL_Window* window;
 	SDL_GLContext glContext;
-	bool ShouldExit = false;
-	
-	// TODO: move this into a bitset
+
 	bool ShowMetadataEditor = false;
 	bool ShowProjectEditor = false;
-	bool Fullscreen = false;
 	bool DebugMetrics = false;
 	bool DebugDemo = false;
 	bool ShowAbout = false;
 	
 	std::vector<FunscriptAction> CopiedSelection;
-
 	std::chrono::steady_clock::time_point lastBackup;
 
-	bool updateTimelineGradient = false;
 	char tmpBuf[2][32];
-
 	int32_t ActiveFunscriptIdx = 0;
 
 	void registerBindings();
@@ -74,14 +67,12 @@ private:
 	void MpvVideoLoaded(SDL_Event& ev) noexcept;
 	void MpvPlayPauseChange(SDL_Event& ev) noexcept;
 
-	bool SetPlaybackSpeedController = false;
 	void ControllerAxisPlaybackSpeed(SDL_Event& ev) noexcept;
 
 	void ScriptTimelineActionClicked(SDL_Event& ev) noexcept;
 	void ScriptTimelineDoubleClick(SDL_Event& ev) noexcept;
 	void ScriptTimelineSelectTime(SDL_Event& ev) noexcept;
 	void ScriptTimelineActiveScriptChanged(SDL_Event& ev) noexcept;
-
 
 	void selectTopPoints() noexcept;
 	void selectMiddlePoints() noexcept;
@@ -131,6 +122,7 @@ public:
 	static ImFont* DefaultFont2; // x2 size of default
 	static std::array<const char*, 6> SupportedVideoExtensions;
 	static std::array<const char*, 4> SupportedAudioExtensions;
+	uint8_t Status = OFS_Status::OFS_AutoBackup;
 
 	~OpenFunscripter();
 
@@ -139,8 +131,6 @@ public:
 	OFS_VideoplayerControls playerControls;
 	ScriptSimulator simulator;
 	TCodePlayer tcode;
-
-	bool AutoBackup = true;
 
 	std::unique_ptr<VideoplayerWindow> player;
 	std::unique_ptr<SpecialFunctionsWindow> specialFunctions;

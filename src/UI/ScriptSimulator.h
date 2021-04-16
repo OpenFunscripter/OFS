@@ -1,8 +1,6 @@
 #pragma once
 
-#include "SDL_events.h"
 #include "imgui.h"
-#include "imgui_internal.h"
 #include "OFS_Reflection.h"
 
 class ScriptSimulator {
@@ -71,8 +69,8 @@ public:
 
 	float positionOverride = -1.f;
 
-	void MouseMovement(SDL_Event& ev);
-	void MouseDown(SDL_Event& ev);
+	void MouseMovement(union SDL_Event& ev);
+	void MouseDown(union SDL_Event& ev);
 
 	inline float getMouseValue() const { return mouseValue; }
 

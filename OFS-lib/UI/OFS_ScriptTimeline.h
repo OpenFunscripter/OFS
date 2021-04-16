@@ -1,22 +1,14 @@
 #pragma once
-
-#include "Funscript.h"
-#include "GradientBar.h"
-#include "ScriptPositionsOverlayMode.h"
-
 #include "imgui.h"
-#include "imgui_internal.h"
-
 #include <vector>
 #include <memory>
 #include <tuple>
 
-#include "OFS_UndoSystem.h"
-#include "EventSystem.h"
-#include "SDL_events.h"
-
 #include "OFS_Waveform.h"
+#include "OFS_Shader.h"
+#include "ScriptPositionsOverlayMode.h"
 
+#include "SDL_events.h"
 
 class ScriptTimelineEvents {
 public:
@@ -85,7 +77,7 @@ public:
 	ImVec2 hoveredCanvasPos;
 	ImVec2 hoveredCanvasSize;
 
-	UndoSystem* undoSystem = nullptr;
+	class UndoSystem* undoSystem = nullptr;
 private:
 	void mousePressed(SDL_Event& ev) noexcept;
 	void mouseReleased(SDL_Event& ev) noexcept;

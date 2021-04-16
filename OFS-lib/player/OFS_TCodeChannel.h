@@ -2,7 +2,7 @@
 
 #include "OFS_Util.h"
 #include "FunscriptAction.h"
-#include <cstdint>
+#include "OFS_Reflection.h"
 
 #include <array>
 
@@ -55,7 +55,7 @@ public:
 	inline void SetNextPos(float relativePos) noexcept
 	{
 		if (std::isnan(relativePos)) return;
-		if (Invert) { relativePos = glm::abs(relativePos - 1.f); }
+		if (Invert) { relativePos = std::abs(relativePos - 1.f); }
 		NextTCodeValue = GetPos(relativePos);
 	}
 

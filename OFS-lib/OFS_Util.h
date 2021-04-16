@@ -147,14 +147,24 @@ public:
 		return j;
 	}
 
+#ifdef WIN32
+	inline static std::string WindowsMaxPath(const char* path, int32_t pathLen) noexcept
+	{
+		std::string buffer; 
+		buffer.reserve(strlen("\\\\?\\") + pathLen);
+		buffer.append("\\\\?\\");
+		buffer.append(path, pathLen);
+		return std::move(buffer);
+	}
+#endif
+
 	inline static SDL_RWops* OpenFile(const char* path, const char* mode, int32_t path_len) noexcept
 	{
 #ifdef WIN32
 		SDL_RWops* handle = nullptr;
 		if (path_len >= _MAX_PATH) {
-			std::stringstream ss;
-			ss << "\\\\?\\" << path;
-			handle = SDL_RWFromFile(ss.str().c_str(), mode);
+			auto max = WindowsMaxPath(path, path_len);
+			handle = SDL_RWFromFile(max.c_str(), mode);
 		}
 		else {
 			handle = SDL_RWFromFile(path, mode);
@@ -375,6 +385,18 @@ public:
 
 	static bool CreateDirectories(const std::filesystem::path& dirs) noexcept {
 		std::error_code ec;
+#ifdef WIN32
+		if (dirs.u8string().size() >= _MAX_PATH) {
+			auto pString = dirs.u8string();
+			auto max = WindowsMaxPath(pString.c_str(), pString.size());
+			std::filesystem::create_directories(max, ec);
+			if (ec) {
+				LOGF_ERROR("Failed to create directory: %s", ec.message().c_str());
+				return false;
+			}
+			return true;
+		}
+#endif  
 		std::filesystem::create_directories(dirs, ec);
 		if (ec) {
 			LOGF_ERROR("Failed to create directory: %s", ec.message().c_str());

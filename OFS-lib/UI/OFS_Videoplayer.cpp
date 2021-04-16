@@ -1,38 +1,27 @@
 #include "OFS_Videoplayer.h"
 
-#include "EventSystem.h"
-#include "OFS_ImGui.h"
-
-#include "imgui_internal.h"
-
 #include <mpv/client.h>
 #include <mpv/render_gl.h>
-
-#include <cstdlib>
-#include <filesystem>
-#include <sstream>
-
-#include "SDL.h"
-
 #include "stb_sprintf.h"
 #include "stb_image_write.h"
-
 #include "glad/glad.h"
 
+#include "EventSystem.h"
+#include "OFS_ImGui.h"
 #include "OFS_Profiling.h"
+#include "OFS_Shader.h"
 
-
-static void* get_proc_address_mpv(void* fn_ctx, const char* name)
+static void* get_proc_address_mpv(void* fn_ctx, const char* name) noexcept
 {
 	return SDL_GL_GetProcAddress(name);
 }
 
-static void on_mpv_events(void* ctx)
+static void on_mpv_events(void* ctx) noexcept
 {
 	EventSystem::PushEvent(VideoEvents::WakeupOnMpvEvents, ctx);
 }
 
-static void on_mpv_render_update(void* ctx)
+static void on_mpv_render_update(void* ctx) noexcept
 {
 	EventSystem::PushEvent(VideoEvents::WakeupOnMpvRenderUpdate, ctx);
 }

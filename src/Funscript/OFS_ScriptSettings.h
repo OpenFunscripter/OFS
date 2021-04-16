@@ -25,6 +25,11 @@ struct OFS_ScriptSettings {
 		static constexpr char endMarker[] = "_end";
 		
 		Bookmark() noexcept {}
+		Bookmark(std::string&& name, int32_t at) noexcept
+			: name(std::move(name)), at(at)
+		{
+			UpdateType();
+		}
 		Bookmark(const std::string& name, int32_t at) noexcept
 			: name(name), at(at)
 		{

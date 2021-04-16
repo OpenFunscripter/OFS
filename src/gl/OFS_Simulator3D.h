@@ -1,20 +1,14 @@
 #pragma once
-
-#include <memory>
-#include <functional>
-
-#include "OFS_Shader.h"
+#include "glm/mat4x4.hpp"
+#include "glm/vec3.hpp"
+#include "OFS_Reflection.h"
 
 #include "imgui.h"
 
-#include "glm/glm.hpp"
-#include "glm/gtc/matrix_transform.hpp"
-#include "glm/gtc/type_ptr.hpp"
-
-
-#include "Funscript.h"
-
-#include "OFS_Reflection.h"
+#include <string>
+#include <memory>
+#include <vector>
+#include <cstdint>
 
 class Simulator3D
 {
@@ -29,7 +23,7 @@ private:
 	int EditingIdx = -1;
 	float EditingScrollMultiplier = 5.f;
 
-	std::unique_ptr<LightingShader> lightShader;
+	std::unique_ptr<class LightingShader> lightShader;
 
 	unsigned int VBO = 0;
 	unsigned int cubeVAO = 0;
@@ -85,7 +79,7 @@ public:
 	~Simulator3D();
 	void setup() noexcept;
 
-	void ShowWindow(bool* open, int32_t currentMs, bool easing, std::vector<std::shared_ptr<Funscript>>& scripts) noexcept;
+	void ShowWindow(bool* open, int32_t currentMs, bool easing, std::vector<std::shared_ptr<class Funscript>>& scripts) noexcept;
 	void renderSim() noexcept;
 
 

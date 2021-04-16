@@ -1,8 +1,6 @@
 #pragma once
-
 #include <vector>
 #include <memory>
-#include <string>
 
 #include "EASTL/optional.h"
 #include "FunscriptUndoSystem.h"

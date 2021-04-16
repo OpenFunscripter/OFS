@@ -5,12 +5,15 @@
 #include "imgui_internal.h"
 #include "ImGuizmo.h"
 
+#include "glm/gtc/type_ptr.hpp"
+#include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtx/matrix_decompose.hpp"
-#include "glm/gtx/rotate_vector.hpp"
 
+#include "Funscript.h"
 #include "OFS_Serialization.h"
 #include "OFS_ImGui.h"
 #include "OpenFunscripter.h"
+#include "OFS_Shader.h"
 
 // cube pos + normals
 constexpr float vertices[] = {

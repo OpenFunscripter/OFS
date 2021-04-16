@@ -2,7 +2,7 @@
 #include "imgui_internal.h"
 #include "imgui_stdlib.h"
 #include "OFS_Profiling.h"
-
+#include "OFS_UndoSystem.h"
 #include "OFS_Videoplayer.h"
 
 #include "SDL.h"
@@ -15,6 +15,7 @@
 #include "glad/glad.h"
 
 #include "KeybindingSystem.h"
+#include "SDL_events.h"
 
 int32_t ScriptTimelineEvents::FfmpegAudioProcessingFinished = 0;
 int32_t ScriptTimelineEvents::ScriptpositionWindowDoubleClick = 0;

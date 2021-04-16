@@ -1,6 +1,5 @@
 #pragma once
 
-#include "OFS_Reflection.h"
 #include "OFS_BinarySerialization.h"
 
 #include <cstdint>
@@ -59,12 +58,6 @@ public:
 
 	inline bool operator<(FunscriptAction b) const noexcept {
 		return this->at < b.at;
-	}
-
-	template <class Archive>
-	inline void reflect(Archive& ar) {
-		OFS_REFLECT(at, ar);
-		OFS_REFLECT(pos, ar);
 	}
 };
 

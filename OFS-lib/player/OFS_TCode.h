@@ -1,6 +1,4 @@
 #pragma once
-#include <cstdint>
-
 #include "OFS_TCodeProducer.h"
 #include "OFS_Util.h"
 #include "FunscriptAction.h"

@@ -2,9 +2,10 @@
 #include "OFS_Util.h"
 #include "OFS_Profiling.h"
 #include "OFS_ImGui.h"
-
+#include "OFS_Simulator3D.h"
 #include "GradientBar.h"
 #include "FunscriptHeatmap.h"
+#include "OFS_Shader.h"
 
 #include <filesystem>
 
@@ -18,6 +19,8 @@
 #include "ImGuizmo.h"
 
 #include "asap.h"
+
+#include "glad/glad.h"
 
 // FIX: Add type checking to the deserialization. 
 //      I assume it would crash if a field is specified but doesn't have the correct type.
@@ -34,6 +37,8 @@
 
 // TODO: Different selection modes via held modifier keys ( select top points, bottom, etc. )
 // TODO: OFS_ScriptTimeline selections cause alot of unnecessary overdraw. find a way to not have any overdraw
+
+// TODO: default metadata
 
 // the video player supports a lot more than these
 // these are the ones looked for when importing funscripts
@@ -64,6 +69,8 @@ constexpr const char* ActionEditorId = "Action editor";
 
 constexpr int DefaultWidth = 1920;
 constexpr int DefaultHeight= 1080;
+
+constexpr int AutoBackupIntervalSeconds = 60;
 
 bool OpenFunscripter::loadFonts(const char* font_override) noexcept
 {
@@ -333,8 +340,8 @@ bool OpenFunscripter::setup()
             app->sim3D->renderSim();
         }
     };
-    tcode.loadSettings(Util::Prefpath("tcode.json"));
 
+    tcode.loadSettings(Util::Prefpath("tcode.json"));
     SDL_ShowWindow(window);
     return true;
 }
@@ -420,17 +427,13 @@ void OpenFunscripter::registerBindings()
             0
         );
 
-        std::stringstream ss;
         for (int i = 1; i < 10; i++) {
-            ss.str("");
-            ss << "action " << i * 10;
-            std::string id = ss.str();
-            ss.str("");
-            ss << "Action at " << i * 10;
+            std::string id = Util::Format("action %d", i * 10);
+            std::string desc = Util::Format("Action at %d", i*10);
 
             auto& action = group.bindings.emplace_back(
                 id,
-                ss.str(),
+                desc,
                 true,
                 [&, i](void*) { addEditAction(i * 10); }
             );
@@ -877,7 +880,7 @@ void OpenFunscripter::registerBindings()
             "fullscreen_toggle",
             "Toggle fullscreen",
             true,
-            [&](void*) { Fullscreen = !Fullscreen; SetFullscreen(Fullscreen); }
+            [&](void*) { Status ^= OFS_Status::OFS_Fullscreen; SetFullscreen(Status & OFS_Status::OFS_Fullscreen); }
         );
         fullscreen_toggle.key = Keybinding(
             SDLK_F10,
@@ -1352,7 +1355,7 @@ void OpenFunscripter::registerBindings()
             "Set current playback speed",
             true,
             [&](void*) {
-                SetPlaybackSpeedController = true;
+                Status |= OFS_Status::OFS_GamepadSetPlaybackSpeed;
             }
         );
         set_playbackspeed_controller.controller = ControllerBinding(
@@ -1503,7 +1506,7 @@ void OpenFunscripter::processEvents() noexcept
 
 void OpenFunscripter::FunscriptChanged(SDL_Event& ev) noexcept
 {
-    updateTimelineGradient = true;
+    Status = Status | OFS_Status::OFS_GradientNeedsUpdate;
 }
 
 void OpenFunscripter::ScriptTimelineActionClicked(SDL_Event& ev) noexcept
@@ -1572,7 +1575,7 @@ void OpenFunscripter::update() noexcept {
     ControllerInput::UpdateControllers(settings->data().buttonRepeatIntervalMs);
     scripting->update();
 
-    if (AutoBackup && player->isPaused()) {
+    if (Status & OFS_Status::OFS_AutoBackup) {
         autoBackup();
     }
 
@@ -1581,9 +1584,9 @@ void OpenFunscripter::update() noexcept {
 
 void OpenFunscripter::autoBackup() noexcept
 {
-    if (ActiveFunscript()->Path().empty()) { return; }
+    if (!LoadedProject->Loaded) { return; }
     std::chrono::duration<float> timeSinceBackup = std::chrono::steady_clock::now() - lastBackup;
-    if (timeSinceBackup.count() < 61.f) { return; }
+    if (timeSinceBackup.count() < AutoBackupIntervalSeconds) { return; }
     OFS_PROFILE(__FUNCTION__);
     lastBackup = std::chrono::steady_clock::now();
 
@@ -1631,7 +1634,7 @@ void OpenFunscripter::autoBackup() noexcept
 void OpenFunscripter::exitApp(bool force) noexcept
 {
     if(force) {
-        ShouldExit = true;
+        Status |= OFS_Status::OFS_ShouldExit;
         return;
     }
 
@@ -1642,19 +1645,19 @@ void OpenFunscripter::exitApp(bool force) noexcept
             [&](Util::YesNoCancel result) {
                 if (result == Util::YesNoCancel::Yes) {
                     saveProject();
-                    ShouldExit = true;
+                    Status |= OFS_Status::OFS_ShouldExit;
                 }
                 else if (result == Util::YesNoCancel::No) {
-                    ShouldExit = true;
+                    Status |= OFS_Status::OFS_ShouldExit;
                 }
                 else {
                     // cancel does nothing
-                    ShouldExit = false;
+                    Status &= ~(OFS_Status::OFS_ShouldExit);
                 }
             });
     }
     else {
-        ShouldExit = true;  
+        Status |= OFS_Status::OFS_ShouldExit;
     }
 }
 
@@ -1682,6 +1685,7 @@ void OpenFunscripter::step() noexcept {
             scripting->DrawScriptingMode(NULL);
             LoadedProject->ShowProjectWindow(&ShowProjectEditor);
 
+
             tcode.DrawWindow(&settings->data().show_tcode, player->getCurrentPositionMsInterp());
 
             if (keybinds.ShowBindingWindow()) {
@@ -1694,8 +1698,8 @@ void OpenFunscripter::step() noexcept {
 
             playerControls.DrawControls(NULL);
 
-            if (updateTimelineGradient) {
-                updateTimelineGradient = false;
+            if (Status & OFS_GradientNeedsUpdate) {
+                Status &= ~(OFS_GradientNeedsUpdate);
                 OFS::UpdateHeatmapGradient(player->getDuration() * 1000.f, playerControls.TimelineGradient, ActiveFunscript()->Actions());
             }
 
@@ -1835,7 +1839,7 @@ int OpenFunscripter::run() noexcept
     setupDefaultLayout(false);
     render();
     const uint64_t PerfFreq = SDL_GetPerformanceFrequency();
-    while (!ShouldExit) {
+    while (!(Status & OFS_Status::OFS_ShouldExit)) {
         const uint64_t minFrameTime = (float)PerfFreq / (float)settings->data().framerateLimit;
         uint64_t FrameStart = SDL_GetPerformanceCounter();
         step();
@@ -1900,8 +1904,7 @@ bool OpenFunscripter::openFile(const std::string& file) noexcept
 bool OpenFunscripter::importFile(const std::string& file) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    closeProject();
-    if (!LoadedProject->Import(file))
+    if (!closeProject() || !LoadedProject->Import(file))
     {
         auto msg = "OpenFunscripter failed to import.\n"
             "Does a project with the same name already exist?\n"
@@ -1917,9 +1920,8 @@ bool OpenFunscripter::importFile(const std::string& file) noexcept
 bool OpenFunscripter::openProject(const std::string& file) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    closeProject();
-    if (!LoadedProject->Load(file)) {
-        Util::MessageBoxAlert("Failed to load", "The project failed to load.\nfuck.");
+    if (!closeProject() || !LoadedProject->Load(file)) {
+        Util::MessageBoxAlert("Failed to load", "The project failed to load.\n");
         closeProject();
         return false;
     }
@@ -1964,10 +1966,19 @@ void OpenFunscripter::UpdateNewActiveScript(int32_t activeIndex) noexcept
 
 void OpenFunscripter::updateTitle() noexcept
 {
-    std::stringstream ss;   
-    ss << "OpenFunscripter " OFS_LATEST_GIT_TAG "@" OFS_LATEST_GIT_HASH;
-    if(LoadedProject->Loaded) ss << " - \"" << LoadedProject->LastPath << "\"";
-    SDL_SetWindowTitle(window, ss.str().c_str());
+    const char* title = "OFS";
+    if (LoadedProject->Loaded) {
+        title = Util::Format("OpenFunscripter %s@%s - \"%s\"", 
+            OFS_LATEST_GIT_TAG, 
+            OFS_LATEST_GIT_HASH, 
+            LoadedProject->LastPath.c_str());
+    }
+    else {
+        title = Util::Format("OpenFunscripter %s@%s", 
+            OFS_LATEST_GIT_TAG, 
+            OFS_LATEST_GIT_HASH);
+    }
+    SDL_SetWindowTitle(window, title);
 }
 
 void OpenFunscripter::saveProject() noexcept
@@ -1986,13 +1997,11 @@ void OpenFunscripter::quickExport() noexcept
 bool OpenFunscripter::closeProject() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if (LoadedProject->HasUnsavedEdits())
-    {
-        FUN_ASSERT(false, "not implemented");
+    if (LoadedProject->HasUnsavedEdits()) {
+        FUN_ASSERT(false, "this branch should ideally never be taken");
         return false;
     }
-    else
-    {
+    else {
         ActiveFunscriptIdx = 0;
         LoadedProject->Clear();
         player->closeVideo();
@@ -2391,7 +2400,14 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 ImGui::EndMenu();
             }
             ImGui::Separator();
-            if (ImGui::MenuItem("Enable auto backup", NULL, &AutoBackup)) {}
+            bool autoBackupTmp = Status & OFS_Status::OFS_AutoBackup;
+            if (ImGui::MenuItem(autoBackupTmp ?
+                Util::Format("Auto Backup in %ld seconds", AutoBackupIntervalSeconds - std::chrono::duration_cast<std::chrono::seconds>((std::chrono::steady_clock::now() - lastBackup)).count())
+                : "Auto Backup", NULL, &autoBackupTmp)) {
+                Status = autoBackupTmp 
+                    ? Status | OFS_Status::OFS_AutoBackup 
+                    : Status ^ OFS_Status::OFS_AutoBackup;
+            }
             if (ImGui::MenuItem("Open backup directory")) {
                 Util::OpenFileExplorer(Util::Prefpath("backup").c_str());
             }
@@ -2421,9 +2437,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         std::string newScriptPath;
                         {
                             auto root = Util::PathFromString(RootFunscript()->Path());
-                            std::stringstream ss;
-                            ss << '.' << axisExt << ".funscript";
-                            root.replace_extension(ss.str());
+                            root.replace_extension(Util::Format(".%s.funscript", axisExt));
                             newScriptPath = root.u8string();
                         }
 
@@ -2636,17 +2650,13 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 }
             }
             else {
-                if (ImGui::InputText("Name", &bookmarkName, ImGuiInputTextFlags_EnterReturnsTrue) || ImGui::MenuItem("Add Bookmark")) {
-                    if (bookmarkName.empty())
-                    {
-                        std::stringstream ss;
-                        ss << scriptSettings.Bookmarks.size() + 1 << '#';
-                        bookmarkName = ss.str();
+                if (ImGui::InputText("Name", &bookmarkName, ImGuiInputTextFlags_EnterReturnsTrue) 
+                    || ImGui::MenuItem("Add Bookmark")) {
+                    if (bookmarkName.empty()) {
+                        bookmarkName = Util::Format("%d#", scriptSettings.Bookmarks.size()+1);
                     }
 
-                    OFS_ScriptSettings::Bookmark bookmark(bookmarkName, player->getCurrentPositionMsInterp());
-                    bookmarkName = "";
-                    
+                    OFS_ScriptSettings::Bookmark bookmark(std::move(bookmarkName), player->getCurrentPositionMsInterp());
                     scriptSettings.AddBookmark(std::move(bookmark));
                 }
 
@@ -2728,8 +2738,12 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem("Keys")) {
                 keybinds.ShowWindow = true;
             }
-            if (ImGui::MenuItem("Fullscreen", BINDING_STRING("fullscreen_toggle"), &Fullscreen)) {
-                SetFullscreen(Fullscreen);
+            bool fullscreenTmp = Status & OFS_Status::OFS_Fullscreen;
+            if (ImGui::MenuItem("Fullscreen", BINDING_STRING("fullscreen_toggle"), &fullscreenTmp)) {
+                SetFullscreen(fullscreenTmp);
+                Status = fullscreenTmp 
+                    ? Status | OFS_Status::OFS_Fullscreen 
+                    : Status ^ OFS_Status::OFS_Fullscreen;
             }
             if (ImGui::MenuItem("Preferences")) {
                 settings->ShowWindow = true;
@@ -3031,13 +3045,13 @@ void OpenFunscripter::ControllerAxisPlaybackSpeed(SDL_Event& ev) noexcept
     static Uint8 lastAxis = 0;
     OFS_PROFILE(__FUNCTION__);
     auto& caxis = ev.caxis;
-    if (SetPlaybackSpeedController && caxis.axis == lastAxis && caxis.value <= 0) {
-        SetPlaybackSpeedController = false;
+    if ((Status & OFS_Status::OFS_GamepadSetPlaybackSpeed) && caxis.axis == lastAxis && caxis.value <= 0) {
+        Status &= ~(OFS_Status::OFS_GamepadSetPlaybackSpeed);
         return;
     }
 
     if (caxis.value < 0) { return; }
-    if (SetPlaybackSpeedController) { return; }
+    if (Status & OFS_Status::OFS_GamepadSetPlaybackSpeed) { return; }
     auto app = OpenFunscripter::ptr;
     if (caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT) {
         float speed = 1.f - (caxis.value / (float)std::numeric_limits<int16_t>::max());
