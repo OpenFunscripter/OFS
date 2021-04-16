@@ -77,7 +77,7 @@ bool TCodePlayer::openPort(struct sp_port* openthis) noexcept
     return true;
 }
 
-TCodePlayer::TCodePlayer()
+TCodePlayer::TCodePlayer() noexcept
 {
 #ifndef NDEBUG
     if(ImPlot::GetCurrentContext() == nullptr)
@@ -85,7 +85,7 @@ TCodePlayer::TCodePlayer()
 #endif
 }
 
-TCodePlayer::~TCodePlayer()
+TCodePlayer::~TCodePlayer() noexcept
 {
     stop();
     save();
@@ -237,7 +237,7 @@ void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
             auto activeIdx = prod.GetProd(static_cast<TChannel>(i)).ScriptIdx();
             
             for (int32_t scriptIdx = 0; scriptIdx < prod.LoadedScripts.size(); scriptIdx++) {
-                if (auto script = prod.LoadedScripts[scriptIdx].lock()) {
+                if (auto& script = prod.LoadedScripts[scriptIdx]) {
                     if (ImGui::MenuItem(script->Title.c_str(), NULL, scriptIdx == activeIdx))
                     {
                         if (scriptIdx != activeIdx) { p.SetScript(scriptIdx); }
@@ -378,7 +378,7 @@ static int32_t TCodeThread(void* threadData) noexcept {
     return 0;
 }
 
-void TCodePlayer::setScripts(std::vector<std::weak_ptr<const Funscript>>&& scripts) noexcept
+void TCodePlayer::setScripts(std::vector<std::shared_ptr<const Funscript>>&& scripts) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     prod.LoadedScripts = std::move(scripts);
@@ -388,22 +388,17 @@ void TCodePlayer::setScripts(std::vector<std::weak_ptr<const Funscript>>&& scrip
         prod.GetProd(TChannel::L0).SetScript(0);
     }
 
-    for(int scriptIndex = 0; scriptIndex < prod.LoadedScripts.size(); scriptIndex++)
-    {
+    for(int scriptIndex = 0; scriptIndex < prod.LoadedScripts.size(); scriptIndex++) {
         auto& script = prod.LoadedScripts[scriptIndex];
-        if (auto locked = script.lock())
-        {
-            for (int i=0; i < static_cast<int>(TChannel::TotalCount); i++)
+        for (int i=0; i < static_cast<int>(TChannel::TotalCount); i++) {
+            if (prod.GetProd(static_cast<TChannel>(i)).ScriptIdx() >= 0 // skip all which are already set
+                || prod.GetProd(static_cast<TChannel>(i)).ScriptIdx() == -2) { continue; }  // -2 is deliberatly unset
+            auto& aliases = TCodeChannels::Aliases[i];
+            for (auto& alias : aliases)
             {
-                if (prod.GetProd(static_cast<TChannel>(i)).ScriptIdx() >= 0 // skip all which are already set
-                    || prod.GetProd(static_cast<TChannel>(i)).ScriptIdx() == -2) { continue; }  // -2 is deliberatly unset
-                auto& aliases = TCodeChannels::Aliases[i];
-                for (auto& alias : aliases)
-                {
-                    if (Util::StringEndsWith(locked->Title, alias)) {
-                        prod.GetProd(static_cast<TChannel>(i)).SetScript(scriptIndex);
-                        break;
-                    }
+                if (Util::StringEndsWith(script->Title, alias)) {
+                    prod.GetProd(static_cast<TChannel>(i)).SetScript(scriptIndex);
+                    break;
                 }
             }
         }
@@ -411,10 +406,14 @@ void TCodePlayer::setScripts(std::vector<std::weak_ptr<const Funscript>>&& scrip
     prod.SetChannels(&tcode);
 }
 
-void TCodePlayer::play(float currentTimeMs, std::vector<std::weak_ptr<const Funscript>>&& scripts) noexcept
+void TCodePlayer::play(float currentTimeMs, std::vector<std::shared_ptr<const Funscript>>&& scripts) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     if (!Thread.running) {
+#ifdef NDEBUG
+        // in release we only start the thread if a serial port is connected
+        //if (!this->port) return;    
+#endif
         Thread.running = true;
         Thread.player = this;
         Thread.channel = &this->tcode;
@@ -423,7 +422,6 @@ void TCodePlayer::play(float currentTimeMs, std::vector<std::weak_ptr<const Funs
         tcode.reset();
         
         setScripts(std::move(scripts));
-
         auto t = SDL_CreateThread(TCodeThread, "TCodePlayer", &Thread);
         SDL_DetachThread(t);
     }
@@ -447,10 +445,6 @@ void TCodePlayer::sync(float currentTimeMs, float speed) noexcept
 
 void TCodePlayer::reset() noexcept
 {
-    OFS_PROFILE(__FUNCTION__);
-    if (Thread.running) {
-        Thread.requestStop = true;
-        while (!Thread.running) { SDL_Delay(1); }
-    }
+    stop();
     prod.ClearChannels();
 }

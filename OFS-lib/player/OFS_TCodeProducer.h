@@ -43,13 +43,13 @@ private:
 
 	inline float getPos(int32_t currentTimeMs, float freq) noexcept {
 		if (currentTimeMs > nextAction.at) { return LastValue; }
+		OFS_PROFILE(__FUNCTION__);
 
 		float progress = Util::Clamp((float)(currentTimeMs - startAction.at) / (nextAction.at - startAction.at), 0.f, 1.f);
 		
 		float pos;
-		std::shared_ptr<const Funscript> ptr;
-		if (TCodeChannel::SplineMode && GetScript(ptr))	{
-			pos = ptr->ScriptSpline.SampleAtIndex(ptr->Actions(), currentIndex, currentTimeMs);
+		if (TCodeChannel::SplineMode)	{
+			pos = FunscriptSpline::SampleAtIndex(Script->Actions(), currentIndex, currentTimeMs);
 			if (TCodeChannel::RemapToFullRange) { pos = Util::MapRange<float>(pos, ScriptMinPos / 100.f, ScriptMaxPos / 100.f, 0.f, 1.f); }
 		}
 		else {
@@ -90,29 +90,30 @@ private:
 	
 	inline bool GetScript(std::shared_ptr<const Funscript>& ptr) noexcept
 	{
-		if (scripts != nullptr && scriptIndex < scripts->size())
-		{
-			ptr = scripts->operator[](scriptIndex).lock();
+		OFS_PROFILE(__FUNCTION__);
+		if (scripts != nullptr && scriptIndex < scripts->size()) {
+			ptr = scripts->operator[](scriptIndex);
 			if (ptr != nullptr) { return true; }
 		}
 		ptr = nullptr;
 		return false;
 	}
+	std::shared_ptr<const Funscript> Script;
 public:
-	std::vector<std::weak_ptr<const Funscript>>* scripts = nullptr;
+	std::vector<std::shared_ptr<const Funscript>>* scripts = nullptr;
 	TCodeChannel* channel = nullptr;
 
-	TCodeChannelProducer() noexcept : startAction(0, 50), nextAction(1, 50) {}
+	TCodeChannelProducer() noexcept;
 
 	inline void Reset() noexcept { SetScript(-1); }
 	inline void SetScript(int32_t index) noexcept
 	{
+		OFS_PROFILE(__FUNCTION__);
 		this->scriptIndex = index;
 		this->currentIndex = 0;
-		std::shared_ptr<const Funscript> locked;
-		if (GetScript(locked)) {
-			if (locked->Actions().size() <= 1) { this->scriptIndex = -1; return; }
-			auto [min, max] = std::minmax_element(locked->Actions().begin(), locked->Actions().end(),
+		if (GetScript(Script)) {
+			if (Script->Actions().size() <= 1) { this->scriptIndex = -1; return; }
+			auto [min, max] = std::minmax_element(Script->Actions().begin(), Script->Actions().end(),
 				[](auto act1, auto act2) {
 					return act1.pos < act2.pos;
 			});
@@ -124,32 +125,31 @@ public:
 		}
 	}
 
-	inline std::weak_ptr<const Funscript> GetScript() noexcept
+	void FunscriptChanged(union SDL_Event& ev) noexcept
 	{
-		if (scriptIndex < scripts->size())
-		{
-			return (*scripts)[scriptIndex];
-		}
-		return std::weak_ptr<const Funscript>();
+		NeedsResync = true;
 	}
 
 	inline void sync(int32_t CurrentTimeMs, float freq) noexcept {
-		std::shared_ptr<const Funscript> scriptPtr;
 		if (channel == nullptr || scripts == nullptr) return;
-		if (!GetScript(scriptPtr)) return;
-		// TODO: check if out of sync first
+		if (!NeedsResync && CurrentTimeMs >= startAction.at && CurrentTimeMs <= nextAction.at) return;
+		if (!Script) return;
+		OFS_PROFILE(__FUNCTION__);
 
-		auto& actions = scriptPtr->Actions();
-
-		for (int i = 0; i < actions.size(); i++) {
-			auto action = actions[i];
-			if (action.at >= CurrentTimeMs) 
-			{
-				currentIndex = std::max(0, i - 1);
-				startAction = actions[currentIndex];
-				nextAction = actions[currentIndex+1];
+		auto& actions = Script->Actions();
+		if (!actions.empty()) {
+			auto startIt = actions.upper_bound(FunscriptAction(CurrentTimeMs, 0));
+			if (startIt-1 >= actions.begin()) {
+				currentIndex = std::distance(actions.begin(), startIt-1);
+				startAction = *(startIt-1);
+				nextAction = *(startIt);
 				if (TCodeChannel::RemapToFullRange) { MapNewActions(); }
-				break;
+			}
+			else {
+				currentIndex = 0;
+				startAction = *actions.begin();
+				nextAction = *(actions.begin()+1);
+				if (TCodeChannel::RemapToFullRange) { MapNewActions(); }
 			}
 		}
 
@@ -163,12 +163,12 @@ public:
 #endif
 
 	inline void tick(int32_t CurrentTimeMs, float freq) noexcept {
-		std::shared_ptr<const Funscript> scriptPtr;
 		if (scripts == nullptr || channel == nullptr) return;
-		if (!GetScript(scriptPtr)) return;
+		if (!Script) return;
 
+		OFS_PROFILE(__FUNCTION__);
 		if (NeedsResync) { sync(CurrentTimeMs, freq); }
-		auto& actions = scriptPtr->Actions();
+		auto& actions = Script->Actions();
 
 		int newIndex = currentIndex;
 		if (CurrentTimeMs > nextAction.at) {
@@ -209,25 +209,24 @@ public:
 class TCodeProducer {
 public:
 	std::array<TCodeChannelProducer, static_cast<size_t>(TChannel::TotalCount)> producers;
-	std::vector<std::weak_ptr<const Funscript>> LoadedScripts;
+	std::vector<std::shared_ptr<const Funscript>> LoadedScripts;
 
 	TCodeChannelProducer& GetProd(TChannel ch) { return producers[static_cast<size_t>(ch)]; }
 	
 	TCodeProducer() noexcept
 	{
-		for (auto& p : producers)
-		{
+		for (auto& p : producers) {
 			p.scripts = &LoadedScripts;
 		}
 	}
 
-	void SetChannels(TCodeChannels* tcode) noexcept {
+	inline void SetChannels(TCodeChannels* tcode) noexcept {
 		for (int i = 0; i < producers.size(); i++) {
 			producers[i].channel = &tcode->channels[i];
 		}
 	}
 
-	void ClearChannels() noexcept {
+	inline void ClearChannels() noexcept {
 		for (auto& prod : producers) {
 			prod.Reset();
 		}

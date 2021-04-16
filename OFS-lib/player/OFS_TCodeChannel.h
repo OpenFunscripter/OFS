@@ -146,6 +146,7 @@ public:
 	}
 
 	inline const char* GetCommand() noexcept {
+		OFS_PROFILE(__FUNCTION__);
 		bool gotCmd = false;
 		commandBuffer.clear();
 		for (auto& c : channels) {
@@ -166,6 +167,7 @@ public:
 
 	inline const char* GetCommandSpeed(int32_t speed) noexcept
 	{
+		OFS_PROFILE(__FUNCTION__);
 		bool gotCmd = false;
 		commandBuffer.clear();
 		for (auto& c : channels) {
@@ -185,6 +187,7 @@ public:
 	}
 
 	inline void reset() noexcept {
+		OFS_PROFILE(__FUNCTION__);
 		for (auto& c : channels) c.reset();
 	}
 

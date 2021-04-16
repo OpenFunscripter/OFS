@@ -130,8 +130,8 @@ public:
 	ScriptTimeline scriptPositions;
 	OFS_VideoplayerControls playerControls;
 	ScriptSimulator simulator;
-	TCodePlayer tcode;
-
+	
+	std::unique_ptr<TCodePlayer> tcode;
 	std::unique_ptr<VideoplayerWindow> player;
 	std::unique_ptr<SpecialFunctionsWindow> specialFunctions;
 	std::unique_ptr<ScriptingMode> scripting;

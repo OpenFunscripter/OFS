@@ -9,8 +9,8 @@
 class FunscriptSpline
 {
 	int32_t cacheIdx = 0;
-
-	inline float catmull_rom_spline(const FunscriptArray& actions, int32_t i, float ms) const noexcept
+public:
+	static inline float catmull_rom_spline(const FunscriptArray& actions, int32_t i, float ms) noexcept
 	{
 		OFS_PROFILE(__FUNCTION__);
 		int i0 = glm::clamp<int>(i - 1, 0, actions.size() - 1);
@@ -30,7 +30,6 @@ class FunscriptSpline
 		return glm::catmullRom(v0, v1, v2, v3, t).y;
 	}
 
-public:
 	inline float Sample(const FunscriptArray& actions, float timeMs) noexcept 
 	{
 		OFS_PROFILE(__FUNCTION__);
@@ -67,7 +66,7 @@ public:
 		return 0.f;
 	}
 
-	inline float SampleAtIndex(const FunscriptArray& actions, int32_t index, float timeMs) const noexcept
+	inline static float SampleAtIndex(const FunscriptArray& actions, int32_t index, float timeMs) noexcept
 	{
 		OFS_PROFILE(__FUNCTION__);
 		if (actions.size() == 0) { return 0.f; }

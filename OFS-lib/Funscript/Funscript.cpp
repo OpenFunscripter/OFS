@@ -110,11 +110,11 @@ void Funscript::update() noexcept
 	OFS_PROFILE(__FUNCTION__);
 	if (funscriptChanged) {
 		funscriptChanged = false;
-		EventSystem::PushEvent(FunscriptEvents::FunscriptActionsChangedEvent);
+		EventSystem::PushEvent(FunscriptEvents::FunscriptActionsChangedEvent, this);
 	}
 	if (selectionChanged) {
 		selectionChanged = false;
-		EventSystem::PushEvent(FunscriptEvents::FunscriptSelectionChangedEvent);
+		EventSystem::PushEvent(FunscriptEvents::FunscriptSelectionChangedEvent, this);
 	}
 }
 

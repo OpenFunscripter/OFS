@@ -19,8 +19,8 @@ public:
 	TCodeProducer prod;
 	float lastPausedTimeMs = 0.f;
 
-	TCodePlayer();
-	~TCodePlayer();
+	TCodePlayer() noexcept;
+	~TCodePlayer() noexcept;
 	
 	bool openPort(struct sp_port* port) noexcept;
 	void loadSettings(const std::string& path) noexcept;
@@ -28,8 +28,8 @@ public:
 
 	void DrawWindow(bool* open, float currentTimeMs) noexcept;
 
-	void setScripts(std::vector<std::weak_ptr<const Funscript>>&& scripts) noexcept;
-	void play(float currentTimeMs, std::vector<std::weak_ptr<const Funscript>>&& scripts) noexcept;
+	void setScripts(std::vector<std::shared_ptr<const Funscript>>&& scripts) noexcept;
+	void play(float currentTimeMs, std::vector<std::shared_ptr<const Funscript>>&& scripts) noexcept;
 	void stop() noexcept;
 	void sync(float currentTimeMs, float speed) noexcept;
 	void reset() noexcept;

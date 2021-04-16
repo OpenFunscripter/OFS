@@ -84,7 +84,7 @@ private:
 	};
 
 	struct MpvDataCache {
-		double duration = 0.0;
+		double duration = 1.0;
 		double percent_pos = 0.0;
 		double real_percent_pos = 0.0;
 		double current_speed = 1.0;
@@ -219,7 +219,9 @@ public:
 	}
 
 	inline double getCurrentPositionMs() const noexcept { return getCurrentPositionSeconds() * 1000.0; }
-	inline double getCurrentPositionSeconds() const noexcept { return MpvData.percent_pos * MpvData.duration; }
+	inline double getCurrentPositionSeconds() const noexcept { 
+		return MpvData.percent_pos * MpvData.duration; 
+	}
 
 	inline double getRealCurrentPositionMs() const noexcept { return MpvData.real_percent_pos * MpvData.duration * 1000.0; }
 	inline void syncWithRealTime() noexcept { MpvData.percent_pos = MpvData.real_percent_pos; }

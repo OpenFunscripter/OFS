@@ -197,7 +197,7 @@ bool OpenFunscripter::imguiSetup() noexcept
 
 OpenFunscripter::~OpenFunscripter()
 {
-    tcode.save();
+    tcode->save();
 
     // needs a certain destruction order
     playerControls.Destroy();
@@ -341,7 +341,8 @@ bool OpenFunscripter::setup()
         }
     };
 
-    tcode.loadSettings(Util::Prefpath("tcode.json"));
+    tcode = std::make_unique<TCodePlayer>();
+    tcode->loadSettings(Util::Prefpath("tcode.json"));
     SDL_ShowWindow(window);
     return true;
 }
@@ -1546,11 +1547,11 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
         scriptPositions.ClearAudioWaveform();
     }
 
-    tcode.reset();
+    tcode->reset();
     {
-        std::vector<std::weak_ptr<const Funscript>> scripts;
+        std::vector<std::shared_ptr<const Funscript>> scripts;
         scripts.assign(LoadedFunscripts().begin(), LoadedFunscripts().end());
-        tcode.setScripts(std::move(scripts));
+        tcode->setScripts(std::move(scripts));
     }
 }
 
@@ -1559,13 +1560,13 @@ void OpenFunscripter::MpvPlayPauseChange(SDL_Event& ev) noexcept
     OFS_PROFILE(__FUNCTION__);
     if ((intptr_t)ev.user.data1) // true == paused
     {
-        tcode.stop();
+        tcode->stop();
     }
     else
     {
-        std::vector<std::weak_ptr<const Funscript>> scripts;
+        std::vector<std::shared_ptr<const Funscript>> scripts;
         scripts.assign(LoadedFunscripts().begin(), LoadedFunscripts().end());
-        tcode.play(player->getCurrentPositionMsInterp(), std::move(scripts));
+        tcode->play(player->getCurrentPositionMsInterp(), std::move(scripts));
     }
 }
 
@@ -1579,7 +1580,7 @@ void OpenFunscripter::update() noexcept {
         autoBackup();
     }
 
-    tcode.sync(player->getCurrentPositionMsInterp(), player->getSpeed());
+    tcode->sync(player->getCurrentPositionMsInterp(), player->getSpeed());
 }
 
 void OpenFunscripter::autoBackup() noexcept
@@ -1686,7 +1687,7 @@ void OpenFunscripter::step() noexcept {
             LoadedProject->ShowProjectWindow(&ShowProjectEditor);
 
 
-            tcode.DrawWindow(&settings->data().show_tcode, player->getCurrentPositionMsInterp());
+            tcode->DrawWindow(&settings->data().show_tcode, player->getCurrentPositionMsInterp());
 
             if (keybinds.ShowBindingWindow()) {
                 keybinds.save();
