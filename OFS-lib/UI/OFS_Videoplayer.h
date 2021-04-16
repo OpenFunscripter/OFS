@@ -6,6 +6,7 @@
 #include "OFS_Reflection.h"
 #include "OFS_BinarySerialization.h"
 #include "OFS_Util.h"
+#include "OFS_Shader.h"
 
 #include <string>
 #include <chrono>
@@ -49,7 +50,7 @@ private:
 	uint32_t renderTexture = 0;
 	char tmpBuf[32];
 
-	std::unique_ptr<class VrShader> vrShader;
+	std::unique_ptr<VrShader> vrShader;
 	ImGuiViewport* playerViewport;
 	
 	ImVec2 videoDrawSize;
@@ -150,20 +151,20 @@ public:
 		float playback_speed = 1.f;
 		bool LockedPosition = false;
 
-		//template <class Archive>
-		//inline void reflect(Archive& ar) {
-		//	OFS_REFLECT(activeMode, ar);
-		//	activeMode = (VideoMode)Util::Clamp<int32_t>(activeMode, VideoMode::FULL, VideoMode::TOTAL_NUM_MODES - 1);
-		//	OFS_REFLECT(volume, ar);
-		//	OFS_REFLECT(playback_speed, ar);
-		//	OFS_REFLECT(vr_zoom, ar);
-		//	OFS_REFLECT(current_vr_rotation, ar);
-		//	OFS_REFLECT(prev_vr_rotation, ar);
-		//	OFS_REFLECT(current_translation, ar);
-		//	OFS_REFLECT(prev_translation, ar);
-		//	OFS_REFLECT(video_pos, ar);
-		//	OFS_REFLECT(LockedPosition, ar);
-		//}
+		template <class Archive>
+		inline void reflect(Archive& ar) {
+			OFS_REFLECT(activeMode, ar);
+			activeMode = (VideoMode)Util::Clamp<int32_t>(activeMode, VideoMode::FULL, VideoMode::TOTAL_NUM_MODES - 1);
+			OFS_REFLECT(volume, ar);
+			OFS_REFLECT(playback_speed, ar);
+			OFS_REFLECT(vr_zoom, ar);
+			OFS_REFLECT(current_vr_rotation, ar);
+			OFS_REFLECT(prev_vr_rotation, ar);
+			OFS_REFLECT(current_translation, ar);
+			OFS_REFLECT(prev_translation, ar);
+			OFS_REFLECT(video_pos, ar);
+			OFS_REFLECT(LockedPosition, ar);
+		}
 
 		template<typename S>
 		void serialize(S& s)
