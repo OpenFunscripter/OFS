@@ -409,11 +409,11 @@ void TCodePlayer::setScripts(std::vector<std::shared_ptr<const Funscript>>&& scr
 void TCodePlayer::play(float currentTimeMs, std::vector<std::shared_ptr<const Funscript>>&& scripts) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if (!Thread.running) {
 #ifdef NDEBUG
-        // in release we only start the thread if a serial port is connected
-        //if (!this->port) return;    
+    // in release we only start the thread if a serial port is connected
+    if (!this->port) return;    
 #endif
+    if (!Thread.running) {
         Thread.running = true;
         Thread.player = this;
         Thread.channel = &this->tcode;

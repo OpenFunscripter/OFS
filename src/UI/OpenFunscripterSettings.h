@@ -68,6 +68,8 @@ private:
 			}
 		} heatmapSettings;
 
+		Funscript::Metadata defaultMetadata;
+
 		std::vector<RecentFile> recentFiles;
 		ScriptSimulator::SimulatorSettings* simulator;
 		template <class Archive>
@@ -102,6 +104,7 @@ private:
 			OFS_REFLECT(buttonRepeatIntervalMs, ar);
 			OFS_REFLECT(font_override, ar);
 			OFS_REFLECT(show_tcode, ar);
+			OFS_REFLECT(defaultMetadata, ar);
 			OFS_REFLECT_PTR(simulator, ar);
 			OFS_REFLECT_NAMED("SplineMode", BaseOverlay::SplineMode, ar);
 		}

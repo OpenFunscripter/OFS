@@ -45,6 +45,7 @@
 #define ICON_WARNING_SIGN "\xef\x81\xb1"
 #define ICON_LINK "\xef\x83\x81"
 #define ICON_UNLINK "\xef\x84\xa7"
+#define ICON_COPY "\xef\x83\x85"
 
 #ifndef NDEBUG
 #define LOG_INFO(msg)  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, msg)

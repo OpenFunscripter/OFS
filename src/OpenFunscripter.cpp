@@ -2907,8 +2907,16 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
 
         renderTagButtons(metadata.performers);
         ImGui::NewLine();
-    
-        if (ImGui::Button("Save", ImVec2(-1.f, 0.f))) { save = true; }
+        ImGui::Separator();
+        float availWidth = ImGui::GetContentRegionAvail().x - style.ItemSpacing.x;
+        availWidth /= 2.f;
+        if (ImGui::Button("Save", ImVec2(availWidth, 0.f))) { save = true; }
+        ImGui::SameLine();
+        if (ImGui::Button("Save template " ICON_COPY, ImVec2(availWidth, 0.f))) {
+            settings->data().defaultMetadata = LoadedProject->Metadata;
+        }
+        OFS::Tooltip("Saves all current values as defaults for later.\n"
+        "Don't worry about title and duration.");
         Util::ForceMinumumWindowSize(ImGui::GetCurrentWindow());
         ImGui::EndPopup();
     }
