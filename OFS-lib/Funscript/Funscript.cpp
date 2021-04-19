@@ -433,220 +433,68 @@ void Funscript::SetSelected(FunscriptAction action, bool selected) noexcept
 	NotifySelectionChanged();
 }
 
-void Funscript::SelectTopActions(int32_t from_ms, int32_t to_ms, bool clear) noexcept
+void Funscript::SelectTopActions() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	auto newSelection = GetSelection(from_ms, to_ms);
-	if (newSelection.size() < 3) {
-		NotifySelectionChanged();
-		return;
-	}
-
-	// add first action before selection & first after
-	auto firstBefore = data.Actions.find(newSelection.front());
-	if (firstBefore != data.Actions.begin()) {
-		--firstBefore;
-		newSelection.insert(newSelection.begin(), *firstBefore);
-	}
-	auto lastAfter = data.Actions.find(newSelection.back());
-	if (lastAfter+1 < data.Actions.end()) {
-		++lastAfter;
-		newSelection.emplace(*lastAfter);
-	}
-
-	// filter in between points
-	int direction = newSelection[0].pos - newSelection[1].pos; // negative = up; positive = down
-	
+	if (data.selection.size() < 3) return;
 	std::vector<FunscriptAction> deselect;
-	for (int i = 0, size = newSelection.size(); i < size - 1; ++i) {
-		int newDirection = newSelection[i].pos - newSelection[i + 1].pos;
+	for (int i = 1; i < data.selection.size() - 1; i++) {
+		auto& prev = data.selection[i - 1];
+		auto& current = data.selection[i];
+		auto& next = data.selection[i + 1];
 
-		if (newDirection == 0) { 
-			direction = 0;
-			continue; 
-		}
+		auto& min1 = prev.pos < current.pos ? prev : current;
+		auto& min2 = min1.pos < next.pos ? min1 : next;
+		deselect.emplace_back(min1);
+		if (min1.at != min2.at)
+			deselect.emplace_back(min2);
 
-		if (newDirection < 0 && (direction > 0 || direction == 0)) {
-			// going up from down
-		}
-		else if (newDirection > 0 && (direction < 0 || direction == 0)) {
-			// going down from up
-		}
-		else {
-			deselect.emplace_back(newSelection[i]);
-		}
-		direction = newDirection;
 	}
-
-	for (auto action : deselect) {
-		auto it = newSelection.find(action);
-		if (it != newSelection.end()) newSelection.erase(it);
-	}
-
-	// filter everything which isn't a maximum
-	deselect.clear();
-	if (newSelection.size() < 3) return;
-	
-	for (int i = 0, size=newSelection.size(); i < size - 2; ++i) {
-		auto prev = newSelection[i];
-		auto current = newSelection[i+1];
-		auto next = newSelection[i+2];
-		if (current.pos < prev.pos && current.pos < next.pos) {
-			deselect.emplace_back(current);
-		}
-	}
-	
-	for (auto action : deselect) {
-		auto it = newSelection.find(action);
-		if (it != newSelection.end()) newSelection.erase(it);
-	}
-
-
-	// remove firstBefore & lastAfter
-	if (firstBefore != data.Actions.end() && newSelection.front() == *firstBefore) {
-		newSelection.erase_first(*firstBefore);
-	}
-	if (lastAfter != data.Actions.end() && newSelection.back() == *lastAfter) {
-		newSelection.erase_first(*lastAfter);
-	}
-
-	if (clear) data.selection = newSelection;
-	else data.selection.insert(newSelection.begin(), newSelection.end());
-
+	for (auto& act : deselect)
+		SetSelected(act, false);
 	NotifySelectionChanged();
 }
 
-void Funscript::SelectBottomActions(int32_t from_ms, int32_t to_ms, bool clear) noexcept
+void Funscript::SelectBottomActions() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	auto newSelection = GetSelection(from_ms, to_ms);
-	if (newSelection.size() < 3) {
-		NotifySelectionChanged();
-		return;
-	}
-
-	// add first action before selection & first after
-	auto firstBefore = data.Actions.find(newSelection.front());
-	if (firstBefore != data.Actions.begin()) {
-		--firstBefore;
-		newSelection.insert(newSelection.begin(), *firstBefore);
-	}
-	auto lastAfter = data.Actions.find(newSelection.back());
-	if (lastAfter + 1 < data.Actions.end()) {
-		++lastAfter;
-		newSelection.emplace(*lastAfter);
-	}
-
-	// filter in between points
-	int direction = newSelection[0].pos - newSelection[1].pos; // negative = up; positive = down
-
+	if (data.selection.size() < 3) return;
 	std::vector<FunscriptAction> deselect;
-	for (int i = 0, size = newSelection.size(); i < size - 1; ++i) {
-		int newDirection = newSelection[i].pos - newSelection[i + 1].pos;
+	for (int i = 1; i < data.selection.size() - 1; i++) {
+		auto& prev = data.selection[i - 1];
+		auto& current = data.selection[i];
+		auto& next = data.selection[i + 1];
 
-		if (newDirection == 0) {
-			direction = 0;
-			continue;
-		}
+		auto& max1 = prev.pos > current.pos ? prev : current;
+		auto& max2 = max1.pos > next.pos ? max1 : next;
+		deselect.emplace_back(max1);
+		if (max1.at != max2.at)
+			deselect.emplace_back(max2);
 
-		if (newDirection < 0 && (direction > 0 || direction == 0)) {
-			// going up from down
-		}
-		else if (newDirection > 0 && (direction < 0 || direction == 0)) {
-			// going down from up
-		}
-		else {
-			deselect.emplace_back(newSelection[i]);
-		}
-		direction = newDirection;
 	}
-
-	for (auto action : deselect) {
-		auto it = newSelection.find(action);
-		if (it != newSelection.end()) newSelection.erase(it);
-	}
-
-	// filter everything which is a maximum
-	deselect.clear();
-	if (newSelection.size() < 3) return;
-
-	for (int i = 0, size = newSelection.size(); i < size - 2; ++i) {
-		auto prev = newSelection[i];
-		auto current = newSelection[i + 1];
-		auto next = newSelection[i + 2];
-		if (current.pos >= prev.pos && current.pos >= next.pos) {
-			deselect.emplace_back(current);
-		}
-	}
-
-	for (auto action : deselect) {
-		auto it = newSelection.find(action);
-		if (it != newSelection.end()) newSelection.erase(it);
-	}
-
-
-	// remove firstBefore & lastAfter
-	if (firstBefore != data.Actions.end() && newSelection.front() == *firstBefore) {
-		newSelection.erase_first(*firstBefore);
-	}
-	if (lastAfter != data.Actions.end() && newSelection.back() == *lastAfter) {
-		newSelection.erase_first(*lastAfter);
-	}
-
-	if (clear) data.selection = newSelection;
-	else data.selection.insert(newSelection.begin(), newSelection.end());
-
+	for (auto& act : deselect)
+		SetSelected(act, false);
 	NotifySelectionChanged();
 }
 
-void Funscript::SelectMidActions(int32_t from_ms, int32_t to_ms, bool clear) noexcept
+void Funscript::SelectMidActions() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	auto newSelection = GetSelection(from_ms, to_ms);
-	if (newSelection.size() < 3) {
-		NotifySelectionChanged();
-		return;
-	}
+	if (data.selection.size() < 3) return;
+	auto selectionCopy = data.selection;
+	SelectTopActions();
+	auto topPoints = data.selection;
+	data.selection = selectionCopy;
+	SelectBottomActions();
+	auto bottomPoints = data.selection;
 
-	// add first action before selection & first after
-	auto firstBefore = data.Actions.find(newSelection.front());
-	if (firstBefore != data.Actions.begin()) {
-		--firstBefore;
-		newSelection.insert(newSelection.begin(), *firstBefore);
-	}
-	auto lastAfter = data.Actions.find(newSelection.back());
-	if (lastAfter + 1 < data.Actions.end()) {
-		++lastAfter;
-		newSelection.emplace(*lastAfter);
-	}
-
-	// filter in between points
-	int direction = newSelection[0].pos - newSelection[1].pos; // negative = up; positive = down
-
-	FunscriptArray deselect;
-	for (int i = 0, size = newSelection.size(); i < size - 1; ++i) {
-		int newDirection = newSelection[i].pos - newSelection[i + 1].pos;
-
-		if (newDirection == 0) {
-			direction = 0;
-			continue;
-		}
-
-		if (newDirection < 0 && (direction > 0 || direction == 0)) {
-			// going up from down
-		}
-		else if (newDirection > 0 && (direction < 0 || direction == 0)) {
-			// going down from up
-		}
-		else {
-			deselect.emplace(newSelection[i]);
-		}
-		direction = newDirection;
-	}
-
-	if (clear) data.selection = deselect;
-	else data.selection.insert(deselect.begin(), deselect.end());
-
+	selectionCopy.erase(std::remove_if(selectionCopy.begin(), selectionCopy.end(),
+		[&topPoints, &bottomPoints](auto val) {
+			return std::any_of(topPoints.begin(), topPoints.end(), [val](auto a) { return a == val; })
+				|| std::any_of(bottomPoints.begin(), bottomPoints.end(), [val](auto a) { return a == val; });
+		}), selectionCopy.end());
+	data.selection = selectionCopy;
+	sortSelection();
 	NotifySelectionChanged();
 }
 

@@ -12,7 +12,6 @@
 #include "stb_sprintf.h"
 
 #include "imgui_stdlib.h"
-#include "imgui_internal.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
 
@@ -36,9 +35,12 @@
 // TODO: make speed coloring configurable
 
 // TODO: Different selection modes via held modifier keys ( select top points, bottom, etc. )
+
+// TODO: higher level selection (array of intervals)
+//       use that to add the ability to cycle between selection modes
 // TODO: OFS_ScriptTimeline selections cause alot of unnecessary overdraw. find a way to not have any overdraw
 
-// TODO: default metadata
+// BUG: 2d video zoom broke
 
 // the video player supports a lot more than these
 // these are the ones looked for when importing funscripts
@@ -817,26 +819,26 @@ void OpenFunscripter::registerBindings()
             KMOD_CTRL | KMOD_ALT
         );
 
-        //auto& select_top_points = group.bindings.emplace_back(
-        //    "select_top_points",
-        //    "Select top points",
-        //    true,
-        //    [&](void*) { selectTopPoints(); }
-        //);
-        //
-        //auto& select_middle_points = group.bindings.emplace_back(
-        //    "select_middle_points",
-        //    "Select middle points",
-        //    true,
-        //    [&](void*) { selectMiddlePoints(); }
-        //);
-        //
-        //auto& select_bottom_points = group.bindings.emplace_back(
-        //    "select_bottom_points",
-        //    "Select bottom points",
-        //    true,
-        //    [&](void*) { selectBottomPoints(); }
-        //);
+        auto& select_top_points = group.bindings.emplace_back(
+            "select_top_points",
+            "Select top points",
+            true,
+            [&](void*) { selectTopPoints(); }
+        );
+        
+        auto& select_middle_points = group.bindings.emplace_back(
+            "select_middle_points",
+            "Select middle points",
+            true,
+            [&](void*) { selectMiddlePoints(); }
+        );
+        
+        auto& select_bottom_points = group.bindings.emplace_back(
+            "select_bottom_points",
+            "Select bottom points",
+            true,
+            [&](void*) { selectBottomPoints(); }
+        );
 
         auto& toggle_mirror_mode = group.bindings.emplace_back(
             "toggle_mirror_mode",
@@ -1380,35 +1382,35 @@ void OpenFunscripter::registerBindings()
             KMOD_SHIFT
         );
 
-        auto& select_top_points_modifier = group.bindings.emplace_back(
-            "select_top_points_modifier",
-            "Select top points",
-            false
-        );
-        select_top_points_modifier.key = Keybinding(
-            0,
-            KMOD_ALT
-        );
-
-        auto& select_bottom_points_modifier = group.bindings.emplace_back(
-            "select_bottom_points_modifier",
-            "Select bottom points",
-            false
-        );
-        select_bottom_points_modifier.key = Keybinding(
-            0,
-            KMOD_ALT
-        );
-
-        auto& select_middle_points_modifier = group.bindings.emplace_back(
-            "select_middle_points_modifier",
-            "Select middle points",
-            false
-        );
-        select_middle_points_modifier.key = Keybinding(
-            0,
-            KMOD_ALT
-        );
+        //auto& select_top_points_modifier = group.bindings.emplace_back(
+        //    "select_top_points_modifier",
+        //    "Select top points",
+        //    false
+        //);
+        //select_top_points_modifier.key = Keybinding(
+        //    0,
+        //    KMOD_ALT
+        //);
+        //
+        //auto& select_bottom_points_modifier = group.bindings.emplace_back(
+        //    "select_bottom_points_modifier",
+        //    "Select bottom points",
+        //    false
+        //);
+        //select_bottom_points_modifier.key = Keybinding(
+        //    0,
+        //    KMOD_ALT
+        //);
+        //
+        //auto& select_middle_points_modifier = group.bindings.emplace_back(
+        //    "select_middle_points_modifier",
+        //    "Select middle points",
+        //    false
+        //);
+        //select_middle_points_modifier.key = Keybinding(
+        //    0,
+        //    KMOD_ALT
+        //);
            
         keybinds.registerPassiveBindingGroup(std::move(group));
     }
@@ -2605,22 +2607,22 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 }
                 ImGui::EndMenu();
             }
-            //ImGui::Separator();
-            //if (ImGui::MenuItem("Top points only", BINDING_STRING("select_top_points"), false)) {
-            //    if (ActiveFunscript()->HasSelection()) {
-            //        selectTopPoints();
-            //    }
-            //}
-            //if (ImGui::MenuItem("Mid points only", BINDING_STRING("select_middle_points"), false)) {
-            //    if (ActiveFunscript()->HasSelection()) {
-            //        selectMiddlePoints();
-            //    }
-            //}
-            //if (ImGui::MenuItem("Bottom points only", BINDING_STRING("select_bottom_points"), false)) {
-            //    if (ActiveFunscript()->HasSelection()) {
-            //        selectBottomPoints();
-            //    }
-            //}
+            ImGui::Separator();
+            if (ImGui::MenuItem("Top points only", BINDING_STRING("select_top_points"), false)) {
+                if (ActiveFunscript()->HasSelection()) {
+                    selectTopPoints();
+                }
+            }
+            if (ImGui::MenuItem("Mid points only", BINDING_STRING("select_middle_points"), false)) {
+                if (ActiveFunscript()->HasSelection()) {
+                    selectMiddlePoints();
+                }
+            }
+            if (ImGui::MenuItem("Bottom points only", BINDING_STRING("select_bottom_points"), false)) {
+                if (ActiveFunscript()->HasSelection()) {
+                    selectBottomPoints();
+                }
+            }
             ImGui::Separator();
             if (ImGui::MenuItem("Equalize", BINDING_STRING("equalize_actions"), false)) {
                 equalizeSelection();
@@ -3087,21 +3089,22 @@ void OpenFunscripter::ScriptTimelineSelectTime(SDL_Event& ev) noexcept
     auto& time =*(ScriptTimelineEvents::SelectTime*)ev.user.data1;
     switch (time.mode)
     {
+    default:        
     case ScriptTimelineEvents::Mode::All:
         ActiveFunscript()->SelectTime(time.start_ms, time.end_ms, time.clear);
         break;
-    case ScriptTimelineEvents::Mode::Top:
-        undoSystem->Snapshot(StateType::TOP_POINTS_ONLY, ActiveFunscript());
-        ActiveFunscript()->SelectTopActions(time.start_ms, time.end_ms, time.clear);
-        break;
-    case ScriptTimelineEvents::Mode::Bottom:
-        undoSystem->Snapshot(StateType::BOTTOM_POINTS_ONLY, ActiveFunscript());
-        ActiveFunscript()->SelectBottomActions(time.start_ms, time.end_ms, time.clear);
-        break;
-    case ScriptTimelineEvents::Mode::Middle:
-        undoSystem->Snapshot(StateType::MID_POINTS_ONLY, ActiveFunscript());
-        ActiveFunscript()->SelectMidActions(time.start_ms, time.end_ms, time.clear);
-        break;
+    //case ScriptTimelineEvents::Mode::Top:
+    //    undoSystem->Snapshot(StateType::TOP_POINTS_ONLY, ActiveFunscript());
+    //    ActiveFunscript()->SelectTopActions(time.start_ms, time.end_ms, time.clear);
+    //    break;
+    //case ScriptTimelineEvents::Mode::Bottom:
+    //    undoSystem->Snapshot(StateType::BOTTOM_POINTS_ONLY, ActiveFunscript());
+    //    ActiveFunscript()->SelectBottomActions(time.start_ms, time.end_ms, time.clear);
+    //    break;
+    //case ScriptTimelineEvents::Mode::Middle:
+    //    undoSystem->Snapshot(StateType::MID_POINTS_ONLY, ActiveFunscript());
+    //    ActiveFunscript()->SelectMidActions(time.start_ms, time.end_ms, time.clear);
+    //    break;
     }
 }
 
@@ -3111,20 +3114,20 @@ void OpenFunscripter::ScriptTimelineActiveScriptChanged(SDL_Event& ev) noexcept
     UpdateNewActiveScript((intptr_t)ev.user.data1);
 }
 
-//void OpenFunscripter::selectTopPoints() noexcept
-//{
-//    undoSystem->Snapshot(StateType::TOP_POINTS_ONLY, ActiveFunscript());
-//    ActiveFunscript()->SelectTopActions();
-//}
-//
-//void OpenFunscripter::selectMiddlePoints() noexcept
-//{
-//    undoSystem->Snapshot(StateType::MID_POINTS_ONLY, ActiveFunscript());
-//    ActiveFunscript()->SelectMidActions();
-//}
-//
-//void OpenFunscripter::selectBottomPoints() noexcept
-//{
-//    undoSystem->Snapshot(StateType::BOTTOM_POINTS_ONLY, ActiveFunscript());
-//    ActiveFunscript()->SelectBottomActions();
-//}
+void OpenFunscripter::selectTopPoints() noexcept
+{
+    undoSystem->Snapshot(StateType::TOP_POINTS_ONLY, ActiveFunscript());
+    ActiveFunscript()->SelectTopActions();
+}
+
+void OpenFunscripter::selectMiddlePoints() noexcept
+{
+    undoSystem->Snapshot(StateType::MID_POINTS_ONLY, ActiveFunscript());
+    ActiveFunscript()->SelectMidActions();
+}
+
+void OpenFunscripter::selectBottomPoints() noexcept
+{
+    undoSystem->Snapshot(StateType::BOTTOM_POINTS_ONLY, ActiveFunscript());
+    ActiveFunscript()->SelectBottomActions();
+}
