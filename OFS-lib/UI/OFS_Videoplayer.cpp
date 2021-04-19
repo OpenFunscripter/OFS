@@ -135,21 +135,32 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 				MpvData.totalNumFrames = *(int64_t*)prop->data;
 				break;
 			case MpvPosition:
-				MpvData.realPercentPos = (*(double*)prop->data) / 100.0;
+			{
+				auto newPercentPos = (*(double*)prop->data) / 100.0;
+				MpvData.realPercentPos = newPercentPos;
 				if (!MpvData.paused) {
+					// NOTE: this is wrong if we are playing backwards
+					// but I don't think that's possible
+					smoothTime -= MpvData.averageFrameTime;
 					MpvData.percentPos = MpvData.realPercentPos;
 				}
-				timer.startTime = SDL_GetPerformanceCounter();
 				break;
+			}
 			case MpvSpeed:
 				MpvData.currentSpeed = *(double*)prop->data;
-				timer.startTime = SDL_GetPerformanceCounter();
 				break;
 			case MpvPauseState:
-				MpvData.paused = *(int64_t*)prop->data;
-				timer.startTime = SDL_GetPerformanceCounter();
+			{
+				bool paused = *(int64_t*)prop->data;
+				if (paused) {
+					float actualTime = getRealCurrentPositionSeconds();
+					float estimateTime = getCurrentPositionSecondsInterp();
+					smoothTime += actualTime - estimateTime;
+				}
+				MpvData.paused = paused;
 				EventSystem::PushEvent(VideoEvents::PlayPauseChanged, (void*)(intptr_t)MpvData.paused);
 				break;
+			}
 			case MpvFilePath:
 				// I'm not sure if I own this memory :/
 				// But I can't free it so I will assume I don't
@@ -261,7 +272,6 @@ bool VideoplayerWindow::setup(bool force_hw_decoding)
 	EventSystem::ev().Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::mouseScroll));
 
 	updateRenderTexture();
-
 	mpv = mpv_create();
 	if (mpv_initialize(mpv) < 0) {
 		LOG_ERROR("mpv context init failed");
@@ -330,8 +340,6 @@ bool VideoplayerWindow::setup(bool force_hw_decoding)
 	setupVrMode();
 	setPaused(true);
 	
-	timer.performanceFreq = SDL_GetPerformanceFrequency();
-
 	// this may be bad :/
 	// normally ids get generated with ImGui::GetID which seeds using previous ids
 	videoImageId = ImGui::GetIDWithSeed("videoImage", 0, rand());

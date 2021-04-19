@@ -1574,7 +1574,8 @@ void OpenFunscripter::MpvPlayPauseChange(SDL_Event& ev) noexcept
 
 void OpenFunscripter::update() noexcept {
     OFS_PROFILE(__FUNCTION__);
-    player->update();
+    float& delta = ImGui::GetIO().DeltaTime;
+    player->update(delta);
     ActiveFunscript()->update();
     ControllerInput::UpdateControllers(settings->data().buttonRepeatIntervalMs);
     scripting->update();
@@ -1670,8 +1671,8 @@ void OpenFunscripter::step() noexcept {
     {
         OFS_PROFILE(__FUNCTION__);
         processEvents();
-        update();
         newFrame();
+        update();
         {
             OFS_PROFILE("ImGui");
             // IMGUI HERE
@@ -1849,15 +1850,15 @@ int OpenFunscripter::run() noexcept
         step();
         uint64_t FrameEnd = SDL_GetPerformanceCounter();
         
-        {
+        if (!settings->data().vsync) {
             int32_t sleepMs = ((float)(minFrameTime - (FrameEnd - FrameStart)) / (float)minFrameTime) * (1000.f / (float)settings->data().framerateLimit);
             sleepMs -= 1;
             if (sleepMs > 0 && sleepMs < 32) { SDL_Delay(sleepMs); }
             FrameEnd = SDL_GetPerformanceCounter();
-        }
-        while (!settings->data().vsync && (FrameEnd - FrameStart) < minFrameTime) {
-            OFS_PAUSE_INTRIN();
-            FrameEnd = SDL_GetPerformanceCounter();
+            while ((FrameEnd - FrameStart) < minFrameTime) {
+                OFS_PAUSE_INTRIN();
+                FrameEnd = SDL_GetPerformanceCounter();
+            }
         }
     }
 	return 0;

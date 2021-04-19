@@ -10,11 +10,9 @@
 
 #include <string>
 #include "SDL_events.h"
-#include "SDL_timer.h"
 
 struct mpv_handle;
 struct mpv_render_context;
-
 
 enum VideoMode : int32_t {
 	FULL,
@@ -57,16 +55,10 @@ private:
 	ImVec2 viewportPos;
 	ImVec2 windowPos;
 
-	struct SmoothTimer
-	{
-		uint64_t startTime = 0;
-		uint64_t currentTime = 0;
-		uint64_t performanceFreq = 0;
-	} timer;
-	//std::chrono::high_resolution_clock::time_point smoothTime;
+	float smoothTime = 0.f;
+	float baseScaleFactor = 1.f;
 	bool videoHovered = false;
 	bool dragStarted = false;
-	float baseScaleFactor = 1.f;
 
 	enum class LoopEnum : int8_t
 	{
@@ -209,15 +201,21 @@ public:
 	void openVideo(const std::string& file);
 	void saveFrameToImage(const std::string& file);
 
-	inline float getCurrentPositionMsInterp() const noexcept { return getCurrentPositionSecondsInterp() * 1000.f; }
+	float fooLastPositionSeconds = 0.f;
+	inline float getCurrentPositionMsInterp() noexcept {
+		auto time = getCurrentPositionSecondsInterp();
+#if 1
+		fooLastPositionSeconds = time;
+#endif
+		return time * 1000.f; 
+	}
 	inline float getCurrentPositionSecondsInterp() const noexcept {
 		OFS_PROFILE(__FUNCTION__);
 		if (MpvData.paused) {
 			return getCurrentPositionSeconds();
 		}
 		else {
-			float duration = (timer.currentTime - timer.startTime) / (float)timer.performanceFreq;
-			return getCurrentPositionSeconds() + (duration * MpvData.currentSpeed);
+			return getCurrentPositionSeconds() + smoothTime;
 		}
 	}
 
@@ -226,7 +224,8 @@ public:
 		return MpvData.percentPos * MpvData.duration; 
 	}
 
-	inline float getRealCurrentPositionMs() const noexcept { return MpvData.realPercentPos * MpvData.duration * 1000.f; }
+	inline float getRealCurrentPositionSeconds() const noexcept { return MpvData.realPercentPos * MpvData.duration;  }
+	inline float getRealCurrentPositionMs() const noexcept { return getRealCurrentPositionSeconds() * 1000.f; }
 	inline void syncWithRealTime() noexcept { MpvData.percentPos = MpvData.realPercentPos; }
 
 
@@ -270,9 +269,27 @@ public:
 
 	inline const char* getVideoPath() const noexcept { return (MpvData.filePath == nullptr) ? "" : MpvData.filePath; }
 
-	inline void update() noexcept
+	inline void update(float delta) noexcept
 	{
-		OFS_PROFILE(__FUNCTION__);
-		timer.currentTime = SDL_GetPerformanceCounter();
+		if (!isPaused()) {
+			OFS_PROFILE(__FUNCTION__);
+			smoothTime += delta * MpvData.currentSpeed;
+			float realTime = getRealCurrentPositionSeconds();
+			float estimateTime = getCurrentPositionSecondsInterp();
+			float error = realTime - estimateTime;
+			const float minError = MpvData.averageFrameTime*1.15f; 
+			float absError = std::abs(error);
+#ifndef NDEBUG
+			static float displayVal = error;
+			static int frameCount = 0;
+			++frameCount;
+			if (frameCount % 100 == 0) displayVal = error;
+			ImGui::Text("video error: %1.3f", displayVal);
+#endif
+			if (absError >= minError) {
+				float bias = MpvData.currentSpeed > 1.f ? MpvData.currentSpeed * 0.1f : 0.1f;
+				smoothTime += error * bias;
+			}
+		}
 	}
 };

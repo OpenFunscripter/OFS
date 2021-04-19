@@ -11,6 +11,7 @@ std::vector<ImVec2> BaseOverlay::ActionScreenCoordinates;
 std::vector<FunscriptAction> BaseOverlay::ActionPositionWindow;
 bool BaseOverlay::SplineMode = true;
 bool BaseOverlay::ShowActions = true;
+bool BaseOverlay::SyncLineEnable = false;
 
 BaseOverlay::BaseOverlay(ScriptTimeline* timeline) noexcept
 {

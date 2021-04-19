@@ -39,6 +39,7 @@ public:
 	static constexpr float max_speed_per_seconds = 530.f; // arbitrarily choosen maximum tuned for coloring
 	static bool SplineMode;
 	static bool ShowActions;
+	static bool SyncLineEnable;
 
 	BaseOverlay(class ScriptTimeline* timeline) noexcept;
 	virtual ~BaseOverlay() noexcept {}

@@ -11,6 +11,7 @@
 #include <memory>
 #include <array>
 
+#include "OFS_ImGui.h"
 #include "OFS_Shader.h"
 #include "glad/glad.h"
 
@@ -474,6 +475,8 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 			if (ImGui::BeginMenu("Rendering")) {
 				ImGui::MenuItem("Show actions", 0, &BaseOverlay::ShowActions);
 				ImGui::MenuItem("Spline mode", 0, &BaseOverlay::SplineMode);
+				ImGui::MenuItem("Show video position", 0, &BaseOverlay::SyncLineEnable);
+				OFS::Tooltip("(Frame overlay only)\nShows a red line where the current frame is.\nMore of a debugging feature.");
 				ImGui::EndMenu();
 			}
 

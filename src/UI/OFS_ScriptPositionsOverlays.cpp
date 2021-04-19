@@ -8,6 +8,7 @@ void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
 
     float visibleFrames = ctx.visibleSizeMs / frameTime;
     constexpr float maxVisibleFrames = 400.f;
+   
     if (visibleFrames <= (maxVisibleFrames * 0.75f)) {
         //render frame dividers
         float offset = -std::fmod(ctx.offset_ms, frameTime);
@@ -18,17 +19,6 @@ void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
                 ctx.canvas_pos + ImVec2(((offset + (i * frameTime)) / ctx.visibleSizeMs) * ctx.canvas_size.x, 0.f),
                 ctx.canvas_pos + ImVec2(((offset + (i * frameTime)) / ctx.visibleSizeMs) * ctx.canvas_size.x, ctx.canvas_size.y),
                 IM_COL32(80, 80, 80, alpha),
-                1.f
-            );
-        }
-
-        // out of sync line
-        if (app->player->isPaused() || app->player->getSpeed() <= 0.1) {
-            float realFrameTime = app->player->getRealCurrentPositionMs() - ctx.offset_ms;
-            ctx.draw_list->AddLine(
-                ctx.canvas_pos + ImVec2((realFrameTime / ctx.visibleSizeMs) * ctx.canvas_size.x, 0.f),
-                ctx.canvas_pos + ImVec2((realFrameTime / ctx.visibleSizeMs) * ctx.canvas_size.x, ctx.canvas_size.y),
-                IM_COL32(255, 0, 0, alpha),
                 1.f
             );
         }
@@ -56,6 +46,17 @@ void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
     BaseOverlay::DrawActionLines(ctx);
     BaseOverlay::DrawSecondsLabel(ctx);
     BaseOverlay::DrawScriptLabel(ctx);
+ 
+    // out of sync line
+    if (BaseOverlay::SyncLineEnable) {
+        float realFrameTime = app->player->getRealCurrentPositionMs() - ctx.offset_ms;
+        ctx.draw_list->AddLine(
+            ctx.canvas_pos + ImVec2((realFrameTime / ctx.visibleSizeMs) * ctx.canvas_size.x, 0.f),
+            ctx.canvas_pos + ImVec2((realFrameTime / ctx.visibleSizeMs) * ctx.canvas_size.x, ctx.canvas_size.y),
+            IM_COL32(255, 0, 0, 255),
+            1.f
+        );
+    }
 }
 
 void FrameOverlay::nextFrame() noexcept

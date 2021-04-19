@@ -107,6 +107,7 @@ private:
 			OFS_REFLECT(defaultMetadata, ar);
 			OFS_REFLECT_PTR(simulator, ar);
 			OFS_REFLECT_NAMED("SplineMode", BaseOverlay::SplineMode, ar);
+			OFS_REFLECT_NAMED("SyncLineEnable", BaseOverlay::SyncLineEnable, ar);
 		}
 	} scripterSettings;
 
