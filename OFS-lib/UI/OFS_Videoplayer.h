@@ -55,6 +55,7 @@ private:
 	
 	ImVec2 videoDrawSize;
 	ImVec2 viewportPos;
+	ImVec2 windowPos;
 
 	enum class LoopEnum : int32_t
 	{
@@ -138,17 +139,17 @@ public:
 	ImDrawCallback OnRenderCallback = nullptr;
 
 	struct OFS_VideoPlayerSettings {
-		ImVec2 current_vr_rotation = ImVec2(0.5f, -0.5f);
-		ImVec2 current_translation = ImVec2(0.0f, 0.0f);
-		ImVec2 video_pos = ImVec2(0.0f, 0.0f);
-		ImVec2 prev_vr_rotation = current_vr_rotation;
-		ImVec2 prev_translation = current_translation;
+		ImVec2 currentVrRotation = ImVec2(0.5f, -0.5f);
+		ImVec2 currentTranslation = ImVec2(0.0f, 0.0f);
+		ImVec2 videoPos = ImVec2(0.0f, 0.0f);
+		ImVec2 prevVrRotation = currentVrRotation;
+		ImVec2 prevTranslation = currentTranslation;
 
 		VideoMode activeMode = VideoMode::FULL;
-		float vr_zoom = 0.2f;
-		float zoom_factor = 1.f;
+		float vrZoom = 0.2f;
+		float zoomFactor = 1.f;
 		float volume = 0.5f;
-		float playback_speed = 1.f;
+		float playbackSpeed = 1.f;
 		bool LockedPosition = false;
 
 		template <class Archive>
@@ -156,13 +157,13 @@ public:
 			OFS_REFLECT(activeMode, ar);
 			activeMode = (VideoMode)Util::Clamp<int32_t>(activeMode, VideoMode::FULL, VideoMode::TOTAL_NUM_MODES - 1);
 			OFS_REFLECT(volume, ar);
-			OFS_REFLECT(playback_speed, ar);
-			OFS_REFLECT(vr_zoom, ar);
-			OFS_REFLECT(current_vr_rotation, ar);
-			OFS_REFLECT(prev_vr_rotation, ar);
-			OFS_REFLECT(current_translation, ar);
-			OFS_REFLECT(prev_translation, ar);
-			OFS_REFLECT(video_pos, ar);
+			OFS_REFLECT(playbackSpeed, ar);
+			OFS_REFLECT(vrZoom, ar);
+			OFS_REFLECT(currentVrRotation, ar);
+			OFS_REFLECT(prevVrRotation, ar);
+			OFS_REFLECT(currentTranslation, ar);
+			OFS_REFLECT(prevTranslation, ar);
+			OFS_REFLECT(videoPos, ar);
 			OFS_REFLECT(LockedPosition, ar);
 		}
 
@@ -171,17 +172,17 @@ public:
 		{
 			s.ext(*this, bitsery::ext::Growable{},
 				[](S& s, OFS_VideoPlayerSettings& o) {
-					s.object(o.current_vr_rotation);
-					s.object(o.prev_vr_rotation);
-					s.object(o.current_translation);
-					s.object(o.prev_translation);
-					s.object(o.video_pos);
+					s.object(o.currentVrRotation);
+					s.object(o.prevVrRotation);
+					s.object(o.currentTranslation);
+					s.object(o.prevTranslation);
+					s.object(o.videoPos);
 					s.value4b(o.activeMode);
 					o.activeMode = (VideoMode)Util::Clamp<int32_t>(o.activeMode, VideoMode::FULL, VideoMode::TOTAL_NUM_MODES - 1);
-					s.value4b(o.vr_zoom);
-					s.value4b(o.zoom_factor);
+					s.value4b(o.vrZoom);
+					s.value4b(o.zoomFactor);
 					s.value4b(o.volume);
-					s.value4b(o.playback_speed);
+					s.value4b(o.playbackSpeed);
 					s.value1b(o.LockedPosition);
 				});
 		}
@@ -197,9 +198,9 @@ public:
 
 	inline void resetTranslationAndZoom() noexcept {
 		if (settings.LockedPosition) return;
-		settings.zoom_factor = 1.f;
-		settings.prev_translation = ImVec2(0.f, 0.f);
-		settings.current_translation = ImVec2(0.f, 0.f); 
+		settings.zoomFactor = 1.f;
+		settings.prevTranslation = ImVec2(0.f, 0.f);
+		settings.currentTranslation = ImVec2(0.f, 0.f); 
 	}
 
 	void setSpeed(float speed) noexcept;
