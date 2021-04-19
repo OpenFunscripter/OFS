@@ -20,7 +20,7 @@ class OFS_Project
 	void LoadScripts(const std::string& funscriptPath) noexcept;
 	bool ImportFunscript(const std::string& path) noexcept;
 public:
-	static constexpr const char* Extension = ".OFS";
+	static constexpr const char* Extension = ".ofsp";
 
 	bool Valid = false;
 	bool Loaded = false;

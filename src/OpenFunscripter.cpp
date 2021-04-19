@@ -2332,7 +2332,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                                 openProject(file);
                             }
                         }
-                    }, false, {"*.OFS"}, "Project (.OFS)");
+                    }, false, {"*.ofsp"}, "Project (.ofsp)");
             }
             if (ImGui::MenuItem("Import video/script", 0, false, !LoadedProject->Loaded))
             {
