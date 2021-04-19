@@ -1627,7 +1627,7 @@ void OpenFunscripter::autoBackup() noexcept
     
     auto time = asap::now();
     auto savePath = backupDir
-        / Util::Format("%s_%02d-%02d-%02d.OFS.backup", name.c_str(), time.hour(), time.minute(), time.second());
+        / Util::Format("%s_%02d-%02d-%02d" OFS_PROJECT_EXT ".backup", name.c_str(), time.hour(), time.minute(), time.second());
     LOGF_INFO("Backup at \"%s\"", savePath.u8string().c_str());
     LoadedProject->Save(savePath.u8string());
 }
@@ -2332,7 +2332,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                                 openProject(file);
                             }
                         }
-                    }, false, {"*.ofsp"}, "Project (.ofsp)");
+                    }, false, {"*" OFS_PROJECT_EXT}, "Project (" OFS_PROJECT_EXT ")");
             }
             if (ImGui::MenuItem("Import video/script", 0, false, !LoadedProject->Loaded))
             {

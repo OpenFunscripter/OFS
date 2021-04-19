@@ -8,6 +8,7 @@
 
 #include "SDL_mutex.h"
 
+#define OFS_PROJECT_EXT ".ofsp"
 
 enum OFS_Project_Version : int32_t
 {
@@ -20,7 +21,7 @@ class OFS_Project
 	void LoadScripts(const std::string& funscriptPath) noexcept;
 	bool ImportFunscript(const std::string& path) noexcept;
 public:
-	static constexpr const char* Extension = ".ofsp";
+	static constexpr const char* Extension = OFS_PROJECT_EXT;
 
 	bool Valid = false;
 	bool Loaded = false;
