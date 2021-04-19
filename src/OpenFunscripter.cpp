@@ -1574,6 +1574,7 @@ void OpenFunscripter::MpvPlayPauseChange(SDL_Event& ev) noexcept
 
 void OpenFunscripter::update() noexcept {
     OFS_PROFILE(__FUNCTION__);
+    player->update();
     ActiveFunscript()->update();
     ControllerInput::UpdateControllers(settings->data().buttonRepeatIntervalMs);
     scripting->update();
@@ -2866,17 +2867,18 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
             }
         };
 
+        constexpr const char* tagIdString = "##Tag";
         ImGui::TextUnformatted("Tags");
         static std::string newTag;
-        auto addTag = [&metadata](std::string& newTag) {
+        auto addTag = [&metadata, tagIdString](std::string& newTag) {
             Util::trim(newTag);
             if (!newTag.empty()) {
                 metadata.tags.emplace_back(newTag); newTag.clear();
             }
-            ImGui::ActivateItem(ImGui::GetID("##Tag"));
+            ImGui::ActivateItem(ImGui::GetID(tagIdString));
         };
 
-        if (ImGui::InputText("##Tag", &newTag, ImGuiInputTextFlags_EnterReturnsTrue)) {
+        if (ImGui::InputText(tagIdString, &newTag, ImGuiInputTextFlags_EnterReturnsTrue)) {
             addTag(newTag);
         };
         ImGui::SameLine();
@@ -2889,16 +2891,18 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
         renderTagButtons(metadata.tags);
         ImGui::NewLine();
 
+        constexpr const char* performerIdString = "##Performer";
         ImGui::TextUnformatted("Performers");
         static std::string newPerformer;
-        auto addPerformer = [&metadata](std::string& newPerformer) {
+        auto addPerformer = [&metadata, performerIdString](std::string& newPerformer) {
             Util::trim(newPerformer);
             if (!newPerformer.empty()) {
                 metadata.performers.emplace_back(newPerformer); newPerformer.clear(); 
             }
-            ImGui::ActivateItem(ImGui::GetID("##Performer"));
+            auto performerID = ImGui::GetID(performerIdString);
+            ImGui::ActivateItem(performerID);
         };
-        if (ImGui::InputText("##Performer", &newPerformer, ImGuiInputTextFlags_EnterReturnsTrue)) {
+        if (ImGui::InputText(performerIdString, &newPerformer, ImGuiInputTextFlags_EnterReturnsTrue)) {
             addPerformer(newPerformer);
         }
         ImGui::SameLine();

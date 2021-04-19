@@ -71,7 +71,7 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 		}
 		case MPV_EVENT_FILE_LOADED:
 		{
-			MpvData.video_loaded = true; 	
+			MpvData.videoLoaded = true; 	
 			continue;
 		}
 		case MPV_EVENT_PROPERTY_CHANGE:
@@ -106,25 +106,25 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 			}
 			case MpvVideoWidth:
 			{
-				MpvData.video_width = *(int64_t*)prop->data;
-				if (MpvData.video_height > 0) {
+				MpvData.videoWidth = *(int64_t*)prop->data;
+				if (MpvData.videoHeight > 0.f) {
 					updateRenderTexture();
-					MpvData.video_loaded = true;
+					MpvData.videoLoaded = true;
 				}
 				break;
 			}
 			case MpvVideoHeight:
 			{
-				MpvData.video_height = *(int64_t*)prop->data;
-				if (MpvData.video_width > 0) {
+				MpvData.videoHeight = *(int64_t*)prop->data;
+				if (MpvData.videoWidth > 0.f) {
 					updateRenderTexture();
-					MpvData.video_loaded = true;
+					MpvData.videoLoaded = true;
 				}
 				break;
 			}
 			case MpvFramesPerSecond:
 				MpvData.fps = *(double*)prop->data;
-				MpvData.average_frame_time = (1.0 / MpvData.fps);
+				MpvData.averageFrameTime = (1.0 / MpvData.fps);
 				break;
 			case MpvDuration:
 				MpvData.duration = *(double*)prop->data;
@@ -132,39 +132,40 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 				clearLoop();
 				break;
 			case MpvTotalFrames:
-				MpvData.total_num_frames = *(int64_t*)prop->data;
+				MpvData.totalNumFrames = *(int64_t*)prop->data;
 				break;
 			case MpvPosition:
-				MpvData.real_percent_pos = (*(double*)prop->data) / 100.0;
+				MpvData.realPercentPos = (*(double*)prop->data) / 100.0;
 				if (!MpvData.paused) {
-					MpvData.percent_pos = MpvData.real_percent_pos;
+					MpvData.percentPos = MpvData.realPercentPos;
 				}
-				smoothTime = std::chrono::high_resolution_clock::now();
+				timer.startTime = SDL_GetPerformanceCounter();
 				break;
 			case MpvSpeed:
-				MpvData.current_speed = *(double*)prop->data;
+				MpvData.currentSpeed = *(double*)prop->data;
+				timer.startTime = SDL_GetPerformanceCounter();
 				break;
 			case MpvPauseState:
 				MpvData.paused = *(int64_t*)prop->data;
-				smoothTime = std::chrono::high_resolution_clock::now();
+				timer.startTime = SDL_GetPerformanceCounter();
 				EventSystem::PushEvent(VideoEvents::PlayPauseChanged, (void*)(intptr_t)MpvData.paused);
 				break;
 			case MpvFilePath:
 				// I'm not sure if I own this memory :/
 				// But I can't free it so I will assume I don't
-				MpvData.file_path = *((const char**)(prop->data));
+				MpvData.filePath = *((const char**)(prop->data));
 				notifyVideoLoaded();
 				break;
 			case MpvAbLoopA:
 			{
-				MpvData.ab_loop_a = *(double*)prop->data;
+				MpvData.abLoopA = *(double*)prop->data;
 				showText("Loop A set.");
 				LoopState = LoopEnum::A_set;
 				break;
 			}
 			case MpvAbLoopB:
 			{
-				MpvData.ab_loop_b = *(double*)prop->data;
+				MpvData.abLoopB = *(double*)prop->data;
 				showText("Loop B set.");
 				LoopState = LoopEnum::B_set;
 				break;
@@ -207,7 +208,7 @@ void VideoplayerWindow::renderToTexture() noexcept
 	OFS_PROFILE(__FUNCTION__);
 	redrawVideo = false;
 	mpv_opengl_fbo fbo{ 0 };
-	fbo.fbo = framebufferObj; fbo.w = MpvData.video_width; fbo.h = MpvData.video_height;
+	fbo.fbo = framebufferObj; fbo.w = MpvData.videoWidth; fbo.h = MpvData.videoHeight;
 	int enable = 1;
 	int disable = 0;
 	mpv_render_param params[] = {
@@ -249,7 +250,7 @@ void VideoplayerWindow::updateRenderTexture() noexcept
 	else {
 		// update size of render texture based on video resolution
 		glBindTexture(GL_TEXTURE_2D, renderTexture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, MpvData.video_width, MpvData.video_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, MpvData.videoWidth, MpvData.videoHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 	}
 }
 
@@ -257,7 +258,7 @@ bool VideoplayerWindow::setup(bool force_hw_decoding)
 {
 	EventSystem::ev().Subscribe(VideoEvents::WakeupOnMpvEvents, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvEvents));
 	EventSystem::ev().Subscribe(VideoEvents::WakeupOnMpvRenderUpdate, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvRenderUpdate));
-	EventSystem::ev().Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::mouse_scroll));
+	EventSystem::ev().Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::mouseScroll));
 
 	updateRenderTexture();
 
@@ -326,9 +327,14 @@ bool VideoplayerWindow::setup(bool force_hw_decoding)
 
 	observeProperties();
 
-	setup_vr_mode();
+	setupVrMode();
 	setPaused(true);
+	
+	timer.performanceFreq = SDL_GetPerformanceFrequency();
 
+	// this may be bad :/
+	// normally ids get generated with ImGui::GetID which seeds using previous ids
+	videoImageId = ImGui::GetIDWithSeed("videoImage", 0, rand());
 	return true;
 }
 
@@ -341,19 +347,19 @@ VideoplayerWindow::~VideoplayerWindow()
 	EventSystem::ev().UnsubscribeAll(this);
 }
 
-void VideoplayerWindow::mouse_scroll(SDL_Event& ev) noexcept
+void VideoplayerWindow::mouseScroll(SDL_Event& ev) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	if (settings.LockedPosition) return;
 
-	auto scroll = ev.wheel;
+	auto& scroll = ev.wheel;
 	if (videoHovered) {
 		auto mousePosInVid = ImGui::GetMousePos() - viewportPos - windowPos - settings.videoPos;
 		float zoomPointX = (mousePosInVid.x - (videoDrawSize.x/2.f)) / videoDrawSize.x;
 		float zoomPointY = (mousePosInVid.y - (videoDrawSize.y/2.f)) / videoDrawSize.y;
 
-		float vidWidth = MpvData.video_width;
-		float vidHeight = MpvData.video_height;
+		float vidWidth = MpvData.videoWidth;
+		float vidHeight = MpvData.videoHeight;
 
 		switch (settings.activeMode) {
 		case VideoMode::LEFT_PANE:
@@ -392,7 +398,7 @@ void VideoplayerWindow::mouse_scroll(SDL_Event& ev) noexcept
 	}
 }
 
-void VideoplayerWindow::setup_vr_mode() noexcept
+void VideoplayerWindow::setupVrMode() noexcept
 {
 	// VR MODE
 	// setup shader
@@ -401,10 +407,7 @@ void VideoplayerWindow::setup_vr_mode() noexcept
 
 void VideoplayerWindow::notifyVideoLoaded() noexcept
 {
-	SDL_Event ev;
-	ev.type = VideoEvents::MpvVideoLoaded;
-	ev.user.data1 = (void*)MpvData.file_path;
-	SDL_PushEvent(&ev);
+	EventSystem::PushEvent(VideoEvents::MpvVideoLoaded, (void*)MpvData.filePath);
 }
 
 void VideoplayerWindow::drawVrVideo(ImDrawList* draw_list) noexcept
@@ -446,12 +449,12 @@ void VideoplayerWindow::drawVrVideo(ImDrawList* draw_list) noexcept
 			ctx.vrShader->Zoom(ctx.settings.vrZoom);
 			ctx.vrShader->AspectRatio(ctx.videoDrawSize.x / ctx.videoDrawSize.y);
 			// TODO: set this somewhere else get rid of the branch
-			if (ctx.MpvData.video_height > 0) {
-				ctx.vrShader->VideoAspectRatio(ctx.MpvData.video_width /(float)ctx.MpvData.video_height);
+			if (ctx.MpvData.videoHeight > 0.f) {
+				ctx.vrShader->VideoAspectRatio(ctx.MpvData.videoWidth /(float)ctx.MpvData.videoHeight);
 			}
 		}, this);
 	//ImGui::Image((void*)(intptr_t)render_texture, ImGui::GetContentRegionAvail(), ImVec2(0.f, 1.f),	ImVec2(1.f, 0.f));
-	OFS::ImageWithId(ImGui::GetID("videoImage"), (void*)(intptr_t)renderTexture, ImGui::GetContentRegionAvail(), ImVec2(0.f, 1.f), ImVec2(1.f, 0.f));
+	OFS::ImageWithId(videoImageId, (void*)(intptr_t)renderTexture, ImGui::GetContentRegionAvail(), ImVec2(0.f, 1.f), ImVec2(1.f, 0.f));
 	videoRightClickMenu();
 	videoDrawSize = ImGui::GetItemRectSize();
 }
@@ -459,7 +462,7 @@ void VideoplayerWindow::drawVrVideo(ImDrawList* draw_list) noexcept
 void VideoplayerWindow::draw2dVideo(ImDrawList* draw_list) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	ImVec2 videoSize(MpvData.video_width, MpvData.video_height);
+	ImVec2 videoSize(MpvData.videoWidth, MpvData.videoHeight);
 	ImVec2 dst = ImGui::GetContentRegionAvail();
 	baseScaleFactor = std::min(dst.x / videoSize.x, dst.y / videoSize.y);
 	videoSize.x *= baseScaleFactor;
@@ -507,7 +510,7 @@ void VideoplayerWindow::draw2dVideo(ImDrawList* draw_list) noexcept
 	}
 
 	playerViewport = ImGui::GetCurrentWindowRead()->Viewport;
-	OFS::ImageWithId(ImGui::GetID("videoImage"), (void*)(intptr_t)renderTexture, videoSize, uv0, uv1);
+	OFS::ImageWithId(videoImageId, (void*)(intptr_t)renderTexture, videoSize, uv0, uv1);
 	videoRightClickMenu();
 }
 
@@ -557,7 +560,7 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open, bool* draw_video) noexcept
 	
 	ImGui::Begin(PlayerId, open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
 
-	if (!MpvData.video_loaded) {
+	if (!MpvData.videoLoaded) {
 		ImGui::End();
 		return;
 	}
@@ -616,9 +619,6 @@ void VideoplayerWindow::addSpeed(float speed) noexcept
 	settings.playbackSpeed += speed;
 	settings.playbackSpeed = Util::Clamp<float>(settings.playbackSpeed, MinPlaybackSpeed, MaxPlaybackSpeed);
 	setSpeed(settings.playbackSpeed);
-	//stbsp_snprintf(tmp_buf, sizeof(tmp_buf), "%.3f", speed);
-	//const char* cmd[]{ "add", "speed", tmp_buf, NULL };
-	//mpv_command_async(mpv, 0, cmd);
 }
 
 void VideoplayerWindow::openVideo(const std::string& file)
@@ -631,7 +631,7 @@ void VideoplayerWindow::openVideo(const std::string& file)
 	
 	MpvDataCache newCache;
 	// some variables shouldn't get reset
-	newCache.current_speed = MpvData.current_speed;
+	newCache.currentSpeed = MpvData.currentSpeed;
 	newCache.paused = MpvData.paused;
 	MpvData = newCache;
 
@@ -671,7 +671,7 @@ void VideoplayerWindow::setVolume(float volume) noexcept
 
 void VideoplayerWindow::setPositionPercent(float pos, bool pausesVideo) noexcept
 {
-	MpvData.percent_pos = pos;
+	MpvData.percentPos = pos;
 	stbsp_snprintf(tmpBuf, sizeof(tmpBuf), "%.08f", (float)(pos * 100.0f));
 	const char* cmd[]{ "seek", tmpBuf, "absolute-percent+exact", NULL };
 	if (pausesVideo) {
@@ -699,9 +699,9 @@ void VideoplayerWindow::nextFrame() noexcept
 	if (isPaused()) {
 		// use same method as previousFrame for consistency
 		double relSeek = ((getFrameTimeMs() * 1.000001) / 1000.);
-		MpvData.percent_pos += (relSeek / MpvData.duration);
-		MpvData.percent_pos = Util::Clamp(MpvData.percent_pos, 0.0, 1.0);
-		setPositionPercent(MpvData.percent_pos, false);
+		MpvData.percentPos += (relSeek / MpvData.duration);
+		MpvData.percentPos = Util::Clamp(MpvData.percentPos, 0.0, 1.0);
+		setPositionPercent(MpvData.percentPos, false);
 	}
 }
 
@@ -711,9 +711,9 @@ void VideoplayerWindow::previousFrame() noexcept
 		// this seeks much faster
 		// https://github.com/mpv-player/mpv/issues/4019#issuecomment-358641908
 		double relSeek = ((getFrameTimeMs() * 1.000001) / 1000.);
-		MpvData.percent_pos -= (relSeek / MpvData.duration);
-		MpvData.percent_pos = Util::Clamp(MpvData.percent_pos, 0.0, 1.0);
-		setPositionPercent(MpvData.percent_pos, false);
+		MpvData.percentPos -= (relSeek / MpvData.duration);
+		MpvData.percentPos = Util::Clamp(MpvData.percentPos, 0.0, 1.0);
+		setPositionPercent(MpvData.percentPos, false);
 	}
 }
 
@@ -721,9 +721,9 @@ void VideoplayerWindow::relativeFrameSeek(int32_t seek) noexcept
 {
 	if (isPaused()) {
 		float relSeek = ((getFrameTimeMs() * 1.000001f) / 1000.f) * seek;
-		MpvData.percent_pos += (relSeek / MpvData.duration);
-		MpvData.percent_pos = Util::Clamp(MpvData.percent_pos, 0.0, 1.0);
-		setPositionPercent(MpvData.percent_pos, false);
+		MpvData.percentPos += (relSeek / MpvData.duration);
+		MpvData.percentPos = Util::Clamp(MpvData.percentPos, 0.0, 1.0);
+		setPositionPercent(MpvData.percentPos, false);
 	}
 }
 
@@ -745,8 +745,8 @@ void VideoplayerWindow::cycleLoopAB() noexcept
 	const char* cmd[]{ "ab-loop", NULL };
 	mpv_command_async(mpv, 0, cmd);
 	if (LoopState == LoopEnum::B_set) {
-		MpvData.ab_loop_a = 0.f;
-		MpvData.ab_loop_b = 0.f;
+		MpvData.abLoopA = 0.f;
+		MpvData.abLoopB = 0.f;
 		showText("Loop cleared.");
 		LoopState = LoopEnum::Clear;
 	}
@@ -756,7 +756,7 @@ void VideoplayerWindow::closeVideo() noexcept
 {
 	const char* cmd[] = { "stop", NULL };
 	mpv_command_async(mpv, 0, cmd);
-	MpvData.video_loaded = false;
+	MpvData.videoLoaded = false;
 	setPaused(true);
 }
 

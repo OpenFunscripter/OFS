@@ -9,9 +9,8 @@
 #include "OFS_Shader.h"
 
 #include <string>
-#include <chrono>
-
 #include "SDL_events.h"
+#include "SDL_timer.h"
 
 struct mpv_handle;
 struct mpv_render_context;
@@ -53,17 +52,28 @@ private:
 	std::unique_ptr<VrShader> vrShader;
 	ImGuiViewport* playerViewport;
 	
+	ImGuiID videoImageId;
 	ImVec2 videoDrawSize;
 	ImVec2 viewportPos;
 	ImVec2 windowPos;
 
-	enum class LoopEnum : int32_t
+	struct SmoothTimer
+	{
+		uint64_t startTime = 0;
+		uint64_t currentTime = 0;
+		uint64_t performanceFreq = 0;
+	} timer;
+	//std::chrono::high_resolution_clock::time_point smoothTime;
+	bool videoHovered = false;
+	bool dragStarted = false;
+	float baseScaleFactor = 1.f;
+
+	enum class LoopEnum : int8_t
 	{
 		A_set,
 		B_set,
 		Clear,
 	};
-
 	LoopEnum LoopState = LoopEnum::Clear;
 
 	enum MpvPropertyGet : uint64_t {
@@ -80,51 +90,41 @@ private:
 		MpvAbLoopA,
 		MpvAbLoopB,
 	};
-
 	enum MpvCommandIdentifier : uint64_t {
 		//MpvSeekPlayingCommand = 1
 	};
-
 	struct MpvDataCache {
 		double duration = 1.0;
-		double percent_pos = 0.0;
-		double real_percent_pos = 0.0;
-		double current_speed = 1.0;
-		double average_frame_time = 0.0167;
+		double percentPos = 0.0;
+		double realPercentPos = 0.0;
+		double currentSpeed = 1.0;
+		double averageFrameTime = 0.0167;
 		double fps = 30.f;
 		
-		double ab_loop_a = 0;
-		double ab_loop_b = 0;
+		double abLoopA = 0;
+		double abLoopB = 0;
 
-		int64_t total_num_frames = 0;
+		int64_t totalNumFrames = 0;
 		int64_t paused = true;
-		int64_t video_width = 0;
-		int64_t video_height = 0;
+		int64_t videoWidth = 0;
+		int64_t videoHeight = 0;
 
 
-		bool video_loaded = false;
-		const char* file_path = nullptr;
+		bool videoLoaded = false;
+		const char* filePath = nullptr;
 	} MpvData;
 
-	float baseScaleFactor = 1.f;
 
 	static constexpr float ZoomMulti = 0.05f;
-	
-	std::chrono::high_resolution_clock::time_point smoothTime;
-
-	bool videoHovered = false;
-	bool dragStarted = false;
-
-
 	void MpvEvents(SDL_Event& ev) noexcept;
 	void MpvRenderUpdate(SDL_Event& ev) noexcept;
 
 	void observeProperties() noexcept;
 	void renderToTexture() noexcept;
 	void updateRenderTexture() noexcept;
-	void mouse_scroll(SDL_Event& ev) noexcept;
+	void mouseScroll(SDL_Event& ev) noexcept;
 
-	void setup_vr_mode() noexcept;
+	void setupVrMode() noexcept;
 
 	void notifyVideoLoaded() noexcept;
 
@@ -209,24 +209,25 @@ public:
 	void openVideo(const std::string& file);
 	void saveFrameToImage(const std::string& file);
 
-	inline double getCurrentPositionMsInterp() const noexcept { return getCurrentPositionSecondsInterp() * 1000.0; }
-	inline double getCurrentPositionSecondsInterp() const noexcept {
+	inline float getCurrentPositionMsInterp() const noexcept { return getCurrentPositionSecondsInterp() * 1000.f; }
+	inline float getCurrentPositionSecondsInterp() const noexcept {
+		OFS_PROFILE(__FUNCTION__);
 		if (MpvData.paused) {
 			return getCurrentPositionSeconds();
 		}
 		else {
-			std::chrono::duration<double> duration = std::chrono::high_resolution_clock::now() - smoothTime;
-			return getCurrentPositionSeconds() + (duration.count() * MpvData.current_speed);
+			float duration = (timer.currentTime - timer.startTime) / (float)timer.performanceFreq;
+			return getCurrentPositionSeconds() + (duration * MpvData.currentSpeed);
 		}
 	}
 
-	inline double getCurrentPositionMs() const noexcept { return getCurrentPositionSeconds() * 1000.0; }
-	inline double getCurrentPositionSeconds() const noexcept { 
-		return MpvData.percent_pos * MpvData.duration; 
+	inline float getCurrentPositionMs() const noexcept { return getCurrentPositionSeconds() * 1000.f; }
+	inline float getCurrentPositionSeconds() const noexcept { 
+		return MpvData.percentPos * MpvData.duration; 
 	}
 
-	inline double getRealCurrentPositionMs() const noexcept { return MpvData.real_percent_pos * MpvData.duration * 1000.0; }
-	inline void syncWithRealTime() noexcept { MpvData.percent_pos = MpvData.real_percent_pos; }
+	inline float getRealCurrentPositionMs() const noexcept { return MpvData.realPercentPos * MpvData.duration * 1000.f; }
+	inline void syncWithRealTime() noexcept { MpvData.percentPos = MpvData.realPercentPos; }
 
 
 	void setVolume(float volume) noexcept;
@@ -249,23 +250,29 @@ public:
 
 	void cycleLoopAB() noexcept;
 
-	inline double getFrameTimeMs() const noexcept { return MpvData.average_frame_time * 1000.0; }
-	inline double getSpeed() const noexcept { return MpvData.current_speed; }
-	inline double getDuration() const noexcept { return MpvData.duration; }
-	inline int64_t getTotalNumFrames() const  noexcept { return MpvData.total_num_frames; }
+	inline float getFrameTimeMs() const noexcept { return MpvData.averageFrameTime * 1000.0; }
+	inline float getSpeed() const noexcept { return MpvData.currentSpeed; }
+	inline float getDuration() const noexcept { return MpvData.duration; }
+	inline int64_t getTotalNumFrames() const  noexcept { return MpvData.totalNumFrames; }
 	inline bool isPaused() const noexcept { return MpvData.paused; };
-	inline double getPosition() const noexcept { return MpvData.percent_pos; }
-	inline int64_t getCurrentFrameEstimate() const noexcept { return MpvData.percent_pos * MpvData.total_num_frames; }
-	inline double getFps() const noexcept { return MpvData.fps; }
-	inline bool isLoaded() const noexcept { return MpvData.video_loaded; }
+	inline float getPosition() const noexcept { return MpvData.percentPos; }
+	inline int64_t getCurrentFrameEstimate() const noexcept { return MpvData.percentPos * MpvData.totalNumFrames; }
+	inline float getFps() const noexcept { return MpvData.fps; }
+	inline bool isLoaded() const noexcept { return MpvData.videoLoaded; }
 	
-	inline double getCurrentPositionRel() const noexcept { return MpvData.percent_pos; }
+	inline float getCurrentPositionRel() const noexcept { return MpvData.percentPos; }
 
 	inline bool LoopActive() const noexcept { return LoopState == LoopEnum::B_set; }
-	inline double LoopASeconds() const noexcept { return MpvData.ab_loop_a; }
-	inline double LoopBSeconds() const noexcept { return MpvData.ab_loop_b; }
+	inline float LoopASeconds() const noexcept { return MpvData.abLoopA; }
+	inline float LoopBSeconds() const noexcept { return MpvData.abLoopB; }
 
 	void closeVideo() noexcept;
 
-	inline const char* getVideoPath() const noexcept { return (MpvData.file_path == nullptr) ? "" : MpvData.file_path; }
+	inline const char* getVideoPath() const noexcept { return (MpvData.filePath == nullptr) ? "" : MpvData.filePath; }
+
+	inline void update() noexcept
+	{
+		OFS_PROFILE(__FUNCTION__);
+		timer.currentTime = SDL_GetPerformanceCounter();
+	}
 };
