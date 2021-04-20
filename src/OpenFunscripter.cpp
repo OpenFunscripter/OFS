@@ -2933,7 +2933,6 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
 void OpenFunscripter::SetFullscreen(bool fullscreen) {
     static SDL_Rect restoreRect{ 0,0, 1280,720 };
     if (fullscreen) {
-        //SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
         SDL_GetWindowPosition(window, &restoreRect.x, &restoreRect.y);
         SDL_GetWindowSize(window, &restoreRect.w, &restoreRect.h);
 
@@ -2943,10 +2942,17 @@ void OpenFunscripter::SetFullscreen(bool fullscreen) {
         int display = SDL_GetWindowDisplayIndex(window);
         SDL_Rect bounds;
         SDL_GetDisplayBounds(display, &bounds);
-        SDL_SetWindowSize(window,  bounds.w, bounds.h);
+        
+#ifdef WIN32
+        // +1 pixel to the height because windows is dumb
+        // when the window has the exact size as the screen windows will do some
+        // bs that causes the screen to flash black when focusing a different window,file picker, etc.
+        SDL_SetWindowSize(window,  bounds.w, bounds.h+1);
+#else
+        SDL_SetWindowSize(window, bounds.w, bounds.h);
+#endif
     }
     else {
-        //SDL_SetWindowFullscreen(window, 0);
         SDL_SetWindowResizable(window, SDL_TRUE);
         SDL_SetWindowBordered(window, SDL_TRUE);
         SDL_SetWindowPosition(window, restoreRect.x, restoreRect.y);
