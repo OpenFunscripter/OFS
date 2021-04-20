@@ -49,6 +49,8 @@ static int WorkThread(void* data)
 		tdata.User = work.user;
 		work.func(&tdata);
 
+		// work.func lock the semaphore
+		// but also has to unlock it
 		SDL_SemWait(tdata.Lock);
 		SDL_SemPost(tdata.Lock);
 	}

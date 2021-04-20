@@ -1,5 +1,6 @@
 #pragma once
 #include "SDL_thread.h"
+
 #include <vector>
 #include <queue>
 
@@ -26,7 +27,6 @@ public:
 	SDL_cond* NewWorkCond = 0;
 	SDL_SpinLock WorkLock = 0;
 	volatile void* SharedMemory = nullptr;
-
 	std::vector<SDL_Thread*> Threads;
 	std::queue<OFS_ThreadpoolWork> WorkQueue;
 	volatile bool ShouldExit = false;

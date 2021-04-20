@@ -14,8 +14,8 @@ static int AsyncIO_Thread(void* data) noexcept
 			if (io->Writes.empty()) break;
 		}
 		SDL_AtomicLock(&io->QueueLock);
-		auto write = std::move(io->Writes.back());
-		io->Writes.pop_back();
+		auto write = std::move(io->Writes.front());
+		io->Writes.pop();
 		SDL_AtomicUnlock(&io->QueueLock);
 
 		size_t written = Util::WriteFile(write.Path.c_str(), write.Buffer, write.Size);

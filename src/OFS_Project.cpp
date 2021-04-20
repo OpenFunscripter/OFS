@@ -160,6 +160,7 @@ bool OFS_Project::Load(const std::string& path) noexcept
 
 void OFS_Project::Save(const std::string& path) noexcept
 {
+	if (!Loaded) return;
 	OFS_PROFILE(__FUNCTION__);
 	FUN_ASSERT(!path.empty(), "path empty");
 	Valid = true;

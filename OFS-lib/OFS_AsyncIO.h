@@ -1,7 +1,7 @@
 #pragma once
 
 #include <functional>
-#include <vector>
+#include <queue>
 #include <string>
 
 #include "SDL_thread.h"
@@ -27,7 +27,7 @@ public:
 	SDL_cond* WakeThreadCondition = nullptr;
 	SDL_mutex* ThreadMutex = nullptr;
 
-	std::vector<Write> Writes;
+	std::queue<Write> Writes;
 
 	SDL_Thread* IO_Thread = nullptr;
 	bool ShouldExit = false;
@@ -35,7 +35,7 @@ public:
 	inline void PushWrite(Write&& write) noexcept
 	{
 		SDL_AtomicLock(&QueueLock);
-		Writes.emplace_back(std::move(write));
+		Writes.emplace(std::move(write));
 		SDL_AtomicUnlock(&QueueLock);
 
 		SDL_CondSignal(WakeThreadCondition);
