@@ -7,9 +7,8 @@ find_package(OpenGL REQUIRED)
 # ========
 # = GLAD =
 # ========
-add_library(glad STATIC "glad/src/glad.c")
-target_include_directories(glad PUBLIC "glad/include/")
-# set_property(TARGET glad PROPERTY POSITION_INDEPENDENT_CODE ON)
+add_library(glad2 STATIC "glad2/src/gl.c")
+target_include_directories(glad2 PUBLIC "glad2/include/")
 
 # ==========
 # == GLM ===

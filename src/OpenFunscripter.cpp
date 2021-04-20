@@ -19,7 +19,7 @@
 
 #include "asap.h"
 
-#include "glad/glad.h"
+#include "glad/gl.h"
 
 // FIX: Add type checking to the deserialization. 
 //      I assume it would crash if a field is specified but doesn't have the correct type.
@@ -263,7 +263,7 @@ bool OpenFunscripter::setup(int argc, char* argv[])
     SDL_GL_MakeCurrent(window, glContext);
     SDL_GL_SetSwapInterval(settings->data().vsync);
 
-    if (gladLoadGL() == 0) {
+    if (!gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress)) {
         LOG_ERROR("Failed to load glad.");
         return false;
     }

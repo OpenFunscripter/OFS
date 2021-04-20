@@ -59,7 +59,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	SDL2-static
 	SDL2main
 	nlohmann_json
-	glad
+	glad2
 	imgui
 	imgui_stdlib
 	tinyfiledialogs
@@ -99,7 +99,7 @@ message("Compiling with git hash: ${LATEST_GIT_HASH}")
 target_compile_definitions(${PROJECT_NAME} PUBLIC 
 	"OFS_LATEST_GIT_TAG=${LATEST_GIT_TAG}"
 	"OFS_LATEST_GIT_HASH=${LATEST_GIT_HASH}"
-	"IMGUI_IMPL_OPENGL_LOADER_GLAD"
+	"IMGUI_IMPL_OPENGL_LOADER_GLAD2"
 )
 
 if(OFS_BENCHMARKS)

@@ -1,7 +1,7 @@
 #include "OFS_Shader.h"
 #include "OFS_Util.h"
 
-#include "glad/glad.h"
+#include "glad/gl.h"
 
 ShaderBase::ShaderBase(const char* vtx_shader, const char* frag_shader)
 {

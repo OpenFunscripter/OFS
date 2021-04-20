@@ -13,7 +13,7 @@
 
 #include "OFS_ImGui.h"
 #include "OFS_Shader.h"
-#include "glad/glad.h"
+#include "glad/gl.h"
 
 #include "KeybindingSystem.h"
 #include "SDL_events.h"

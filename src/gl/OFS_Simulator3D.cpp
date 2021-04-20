@@ -1,6 +1,6 @@
 #include "OFS_Simulator3D.h"
 
-#include "glad/glad.h"
+#include "glad/gl.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "ImGuizmo.h"

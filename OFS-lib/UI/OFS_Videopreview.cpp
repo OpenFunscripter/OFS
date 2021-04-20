@@ -4,7 +4,7 @@
 #include "mpv/render_gl.h"
 
 #include "SDL.h"
-#include "glad/glad.h"
+#include "glad/gl.h"
 #include "EventSystem.h"
 
 int32_t VideoPreviewEvents::PreviewWakeUpMpvEvents = 0;

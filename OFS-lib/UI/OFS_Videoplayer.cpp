@@ -4,7 +4,7 @@
 #include <mpv/render_gl.h>
 #include "stb_sprintf.h"
 #include "stb_image_write.h"
-#include "glad/glad.h"
+#include "glad/gl.h"
 
 #include "EventSystem.h"
 #include "OFS_ImGui.h"

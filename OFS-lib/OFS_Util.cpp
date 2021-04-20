@@ -13,7 +13,7 @@
 #endif
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
-#include "glad/glad.h"
+#include "glad/gl.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"
