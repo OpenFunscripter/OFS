@@ -182,7 +182,7 @@ public:
 	};
 
 	static constexpr float MinPlaybackSpeed = 0.05f;
-	static constexpr float MaxPlaybackSpeed = 5.0f;
+	static constexpr float MaxPlaybackSpeed = 3.0f;
 
 	OFS_VideoPlayerSettings settings;
 

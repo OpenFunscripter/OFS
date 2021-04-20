@@ -187,7 +187,9 @@ void OFS_VideoplayerControls::DrawTimeline(bool* open, TimelineCustomDrawFunc&& 
     ImGui::NextColumn();
 
     ImGui::SetNextItemWidth(-1.f);
-    if (ImGui::SliderFloat("##Speed", &player->settings.playbackSpeed, VideoplayerWindow::MinPlaybackSpeed, VideoplayerWindow::MaxPlaybackSpeed)) {
+    if (ImGui::SliderFloat("##Speed", &player->settings.playbackSpeed, 
+        VideoplayerWindow::MinPlaybackSpeed, VideoplayerWindow::MaxPlaybackSpeed,
+        "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
         player->setSpeed(player->settings.playbackSpeed);
     }
     OFS::Tooltip("Speed");
