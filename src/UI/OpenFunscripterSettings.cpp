@@ -46,7 +46,7 @@ void OpenFunscripterSettings::saveSettings()
 	save_config();
 }
 
-bool OpenFunscripterSettings::ShowPreferenceWindow()
+bool OpenFunscripterSettings::ShowPreferenceWindow() noexcept
 {
 	bool save = false;
 	if (ShowWindow)
@@ -60,6 +60,18 @@ bool OpenFunscripterSettings::ShowPreferenceWindow()
 			{
 				if (ImGui::BeginTabItem("Application"))
 				{
+					if (ImGui::RadioButton("Dark mode", (int*)&scripterSettings.current_theme,
+						(uint8_t)OFS_Theme::dark)) {
+						ImGui::StyleColorsDark();
+					}
+					ImGui::SameLine();
+					if (ImGui::RadioButton("Light mode", (int*)&scripterSettings.current_theme,
+						(uint8_t)OFS_Theme::light)) {
+						ImGui::StyleColorsLight();
+					}
+					
+					ImGui::Separator();
+
 					ImGui::TextWrapped("Higher frame rate makes OFS feel \"snappier\" because input gets processed more frequently.");
 					if (ImGui::Checkbox("Vsync", (bool*)&scripterSettings.vsync)) {
 						scripterSettings.vsync = Util::Clamp(scripterSettings.vsync, 0, 1); // just in case...

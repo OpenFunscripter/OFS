@@ -14,6 +14,11 @@
 
 #include "OFS_ScriptPositionsOverlays.h"
 
+enum class OFS_Theme : uint8_t
+{
+	dark,
+	light
+};
 constexpr const char* CurrentSettingsVersion = "1";
 class OpenFunscripterSettings
 {
@@ -35,6 +40,7 @@ private:
 
 		int32_t default_font_size = 18;
 		int32_t fast_step_amount = 6;
+		OFS_Theme current_theme = OFS_Theme::dark;
 		bool always_show_bookmark_labels = false;
 		bool draw_video= true;
 		bool show_simulator = true;
@@ -84,6 +90,7 @@ private:
 			}
 			OFS_REFLECT(last_path, ar);
 			OFS_REFLECT(always_show_bookmark_labels, ar);
+			OFS_REFLECT_PTR_NAMED("theme", (uint8_t*)&current_theme, ar);
 			OFS_REFLECT(draw_video, ar);
 			OFS_REFLECT(show_simulator, ar);
 			OFS_REFLECT(show_simulator_3d, ar);
@@ -139,5 +146,5 @@ public:
 	}
 
 	bool ShowWindow = false;
-	bool ShowPreferenceWindow();
+	bool ShowPreferenceWindow() noexcept;
 };
