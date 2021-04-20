@@ -62,11 +62,13 @@ bool OpenFunscripterSettings::ShowPreferenceWindow() noexcept
 					if (ImGui::RadioButton("Dark mode", (int*)&scripterSettings.current_theme,
 						(uint8_t)OFS_Theme::dark)) {
 						SetTheme(scripterSettings.current_theme);
+						save = true;
 					}
 					ImGui::SameLine();
 					if (ImGui::RadioButton("Light mode", (int*)&scripterSettings.current_theme,
 						(uint8_t)OFS_Theme::light)) {
 						SetTheme(scripterSettings.current_theme);
+						save = true;
 					}
 					
 					ImGui::Separator();
