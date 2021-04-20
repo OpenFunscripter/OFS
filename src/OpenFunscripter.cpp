@@ -178,21 +178,7 @@ bool OpenFunscripter::imguiSetup() noexcept
     static auto imguiIniPath = Util::Prefpath("imgui.ini");
     io.IniFilename = imguiIniPath.c_str();
     
-    if (settings->data().current_theme == OFS_Theme::dark) {
-        ImGui::StyleColorsDark();
-    }
-    else {
-        ImGui::StyleColorsLight();
-    }
-
-    // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
-    ImGuiStyle& style = ImGui::GetStyle();
-    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-    {
-        //style.WindowRounding = 0.0f;
-        style.WindowRounding = 6.f;
-        style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-    }
+    settings->SetTheme(settings->data().current_theme);
 
     // Setup Platform/Renderer bindings
     ImGui_ImplSDL2_InitForOpenGL(window, glContext);

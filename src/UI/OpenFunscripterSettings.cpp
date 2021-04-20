@@ -51,7 +51,6 @@ bool OpenFunscripterSettings::ShowPreferenceWindow() noexcept
 	bool save = false;
 	if (ShowWindow)
 		ImGui::OpenPopup("Preferences");
-
 	if (ImGui::BeginPopupModal("Preferences", &ShowWindow, ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		OFS_PROFILE(__FUNCTION__);
@@ -62,12 +61,12 @@ bool OpenFunscripterSettings::ShowPreferenceWindow() noexcept
 				{
 					if (ImGui::RadioButton("Dark mode", (int*)&scripterSettings.current_theme,
 						(uint8_t)OFS_Theme::dark)) {
-						ImGui::StyleColorsDark();
+						SetTheme(scripterSettings.current_theme);
 					}
 					ImGui::SameLine();
 					if (ImGui::RadioButton("Light mode", (int*)&scripterSettings.current_theme,
 						(uint8_t)OFS_Theme::light)) {
-						ImGui::StyleColorsLight();
+						SetTheme(scripterSettings.current_theme);
 					}
 					
 					ImGui::Separator();
@@ -151,4 +150,31 @@ bool OpenFunscripterSettings::ShowPreferenceWindow() noexcept
 		ImGui::EndPopup();
 	}
 	return save;
+}
+
+void OpenFunscripterSettings::SetTheme(OFS_Theme theme) noexcept
+{
+	auto& style = ImGui::GetStyle();
+	auto& io = ImGui::GetIO();
+
+	switch (theme) {
+		case OFS_Theme::dark:
+		{
+			ImGui::StyleColorsDark(&style);
+			break;
+		}
+		case OFS_Theme::light:
+		{
+			ImGui::StyleColorsLight(&style);
+			break;
+		}
+	}
+
+	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	{
+		//style.WindowRounding = 0.0f;
+		style.WindowRounding = 6.f;
+		style.Colors[ImGuiCol_WindowBg].w = 1.f;
+		style.Colors[ImGuiCol_PopupBg].w = 1.f;
+	}
 }

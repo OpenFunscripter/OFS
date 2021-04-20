@@ -147,4 +147,5 @@ public:
 
 	bool ShowWindow = false;
 	bool ShowPreferenceWindow() noexcept;
+	void SetTheme(OFS_Theme theme) noexcept;
 };
