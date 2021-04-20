@@ -55,8 +55,9 @@ private:
 	ImVec2 viewportPos;
 	ImVec2 windowPos;
 
-	float smoothTime = 0.f;
 	float baseScaleFactor = 1.f;
+	float smoothTime = 0.f;
+	bool correctPlaybackErrorActive = false;
 	bool videoHovered = false;
 	bool dragStarted = false;
 
@@ -274,21 +275,34 @@ public:
 		if (!isPaused()) {
 			OFS_PROFILE(__FUNCTION__);
 			smoothTime += delta * MpvData.currentSpeed;
-			float realTime = getRealCurrentPositionSeconds();
-			float estimateTime = getCurrentPositionSecondsInterp();
-			float error = realTime - estimateTime;
+			const float realTime = getRealCurrentPositionSeconds() - MpvData.averageFrameTime;
+			const float estimateTime = getCurrentPositionSecondsInterp();
+			const float error = realTime-estimateTime;
 			const float minError = MpvData.averageFrameTime*1.15f; 
-			float absError = std::abs(error);
+			const float absError = std::abs(error);
+			if (absError >= minError) {
+				correctPlaybackErrorActive = true;
+			}
+
 #ifndef NDEBUG
 			static float displayVal = error;
 			static int frameCount = 0;
 			++frameCount;
-			if (frameCount % 100 == 0) displayVal = error;
-			ImGui::Text("video error: %1.3f", displayVal);
+			if (frameCount % 30 == 0) displayVal = error;
+			ImGui::Text("Video sync error: %.3f s", displayVal);
+			ImGui::Checkbox("Correcting", &correctPlaybackErrorActive);
 #endif
-			if (absError >= minError) {
-				float bias = MpvData.currentSpeed > 1.f ? MpvData.currentSpeed * 0.1f : 0.1f;
-				smoothTime += error * bias;
+
+			if (correctPlaybackErrorActive) {
+				if (absError >= 0.001f) {
+					float bias = MpvData.currentSpeed > 1.f ? MpvData.currentSpeed * 3.f * delta : 3.f * delta;
+					bias = Util::Clamp(bias, 0.f, 1.f);
+					smoothTime += error * bias;
+				}
+				else {
+					LOG_DEBUG("Done correcting.");
+					correctPlaybackErrorActive = false;
+				}
 			}
 		}
 	}
