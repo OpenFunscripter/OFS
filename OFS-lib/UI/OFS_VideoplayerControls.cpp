@@ -175,13 +175,13 @@ void OFS_VideoplayerControls::DrawTimeline(bool* open, TimelineCustomDrawFunc&& 
     ImGui::NextColumn();
 
     if (ImGui::Button("-10%", ImVec2(0, 0))) {
-        player->addSpeed(-0.10);
+        player->addSpeed(-0.10f);
     }
     ImGui::SetColumnWidth(2, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
     ImGui::NextColumn();
 
     if (ImGui::Button("+10%", ImVec2(0, 0))) {
-        player->addSpeed(0.10);
+        player->addSpeed(0.10f);
     }
     ImGui::SetColumnWidth(3, ImGui::GetItemRectSize().x + style.ItemSpacing.x);
     ImGui::NextColumn();

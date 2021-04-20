@@ -3,7 +3,7 @@
 int main(int argc, char* argv[])
 {
 	OpenFunscripter app;
-	app.setup();
+	app.setup(argc, argv);
 	int code = app.run();
 	app.shutdown();
 	return code;

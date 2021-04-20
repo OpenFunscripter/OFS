@@ -145,7 +145,7 @@ public:
 	std::unique_ptr<OFS_Project> LoadedProject;
 	std::unique_ptr<OFS_AsyncIO> IO;
 
-	bool setup();
+	bool setup(int argc, char* argv[]);
 	int run() noexcept;
 	void step() noexcept;
 	void shutdown() noexcept;

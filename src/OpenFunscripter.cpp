@@ -213,7 +213,7 @@ OpenFunscripter::~OpenFunscripter()
     events.reset();
 }
 
-bool OpenFunscripter::setup()
+bool OpenFunscripter::setup(int argc, char* argv[])
 {
 #ifndef NDEBUG
     SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
@@ -322,7 +322,11 @@ bool OpenFunscripter::setup()
     events->Subscribe(VideoEvents::PlayPauseChanged, EVENT_SYSTEM_BIND(this, &OpenFunscripter::MpvPlayPauseChange));
     events->Subscribe(ScriptTimelineEvents::ActiveScriptChanged, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActiveScriptChanged));
 
-    if (!settings->data().recentFiles.empty()) {
+    if (argc > 1) {
+        const char* path = argv[1];
+        openFile(path);
+    }
+    else if (!settings->data().recentFiles.empty()) {
         auto& project = settings->data().recentFiles.back().projectPath;
         if(!project.empty()) openProject(project);
     }
@@ -1898,7 +1902,7 @@ bool OpenFunscripter::openFile(const std::string& file) noexcept
     OFS_PROFILE(__FUNCTION__);
     if (!Util::FileExists(file)) return false;
     std::filesystem::path filePath = Util::PathFromString(file);
-        if (filePath.extension().u8string() == OFS_Project::Extension) {
+    if (filePath.extension().u8string() == OFS_Project::Extension) {
         return openProject(filePath.u8string());
     }
     else {
