@@ -1917,7 +1917,7 @@ bool OpenFunscripter::importFile(const std::string& file) noexcept
     {
         auto msg = "OpenFunscripter failed to import.\n"
             "Does a project with the same name already exist?\n"
-            "If yes open that instead of reimporting a script/video.";
+            "Try opening that instead.";
         Util::MessageBoxAlert("Failed to import", msg);
         closeProject();
         return false;
