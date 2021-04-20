@@ -202,12 +202,8 @@ public:
 	void openVideo(const std::string& file);
 	void saveFrameToImage(const std::string& file);
 
-	float fooLastPositionSeconds = 0.f;
-	inline float getCurrentPositionMsInterp() noexcept {
+	inline float getCurrentPositionMsInterp() const noexcept {
 		auto time = getCurrentPositionSecondsInterp();
-#if 1
-		fooLastPositionSeconds = time;
-#endif
 		return time * 1000.f; 
 	}
 	inline float getCurrentPositionSecondsInterp() const noexcept {
