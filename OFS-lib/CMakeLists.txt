@@ -38,6 +38,7 @@ set(OFS_LIB_SOURCES
 
 	"OFS_Serialization.cpp"
 	"OFS_Util.cpp"
+	"OFS_Threadpool.cpp"
 )
 
 add_library(${PROJECT_NAME} STATIC ${OFS_LIB_SOURCES})
