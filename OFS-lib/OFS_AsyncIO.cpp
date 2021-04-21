@@ -32,7 +32,6 @@ void OFS_AsyncIO::Init() noexcept
 {
 	FUN_ASSERT(IO_Thread == nullptr, "thread already running");
 	WakeThreadCondition = SDL_CreateCond();
-	ThreadMutex = SDL_CreateMutex();
 	IO_Thread = SDL_CreateThread(AsyncIO_Thread, "OFS_AsyncIO", this);
 }
 
@@ -44,5 +43,4 @@ void OFS_AsyncIO::Shutdown() noexcept
 	SDL_WaitThread(IO_Thread, &result);
 	FUN_ASSERT(Writes.empty(), "Writes not empty!!!");
 	SDL_DestroyCond(WakeThreadCondition);
-	SDL_DestroyMutex(ThreadMutex);
 }

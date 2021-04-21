@@ -32,6 +32,7 @@ static int WorkThread(void* data)
 	
 	while(!pool->ShouldExit) {
 		if (pool->WorkQueue.empty() && !pool->ShouldExit) {
+			SDL_LockMutex(mutex);
 			SDL_CondWait(pool->NewWorkCond, mutex);
 		}
 		
