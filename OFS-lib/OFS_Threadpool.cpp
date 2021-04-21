@@ -31,7 +31,10 @@ static int WorkThread(void* data)
 	tdata.Lock = SDL_CreateSemaphore(1);
 	delete init; init = 0;
 	
-	while(!pool->ShouldExit) {
+	for(;;) {
+		if (pool->WorkQueue.empty() && pool->ShouldExit) {
+			break;
+		}
 		if (pool->WorkQueue.empty() && !pool->ShouldExit) {
 			SDL_CondWait(pool->NewWorkCond, mutex);
 		}
