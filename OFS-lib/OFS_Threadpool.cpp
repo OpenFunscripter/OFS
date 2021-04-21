@@ -26,13 +26,13 @@ static int WorkThread(void* data)
 	WorkThreadInitData* init = (WorkThreadInitData*)data;
 	OFS_Threadpool* pool = init->pool;
 	SDL_mutex* mutex = SDL_CreateMutex();
+	SDL_LockMutex(mutex);
 	tdata.ThreadId = init->Id;
 	tdata.Lock = SDL_CreateSemaphore(1);
 	delete init; init = 0;
 	
 	while(!pool->ShouldExit) {
 		if (pool->WorkQueue.empty() && !pool->ShouldExit) {
-			SDL_LockMutex(mutex);
 			SDL_CondWait(pool->NewWorkCond, mutex);
 		}
 		

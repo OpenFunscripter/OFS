@@ -5,13 +5,13 @@ static int AsyncIO_Thread(void* data) noexcept
 {
 	OFS_AsyncIO* io = (OFS_AsyncIO*)data;
 	SDL_mutex* mutex = SDL_CreateMutex();
+	SDL_LockMutex(mutex);
 	for (;;)
 	{
 		if (io->ShouldExit && io->Writes.empty()) {
 			break;
 		}
 		else if(io->Writes.empty()) {
-			SDL_LockMutex(mutex);
 			SDL_CondWait(io->WakeThreadCondition, mutex);
 			if (io->Writes.empty()) break;
 		}
