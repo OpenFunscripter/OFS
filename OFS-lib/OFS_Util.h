@@ -258,7 +258,7 @@ public:
 		return std::filesystem::path(path)
 			.replace_extension("")
 			.filename()
-			.string();
+			.u8string();
 	}
 
 	inline static bool FileExists(const std::string& file) noexcept {
@@ -373,7 +373,7 @@ public:
 		static std::filesystem::path prefPath(cachedPref);
 		std::filesystem::path rel(path);
 		rel.make_preferred();
-		return (prefPath / rel).string();
+		return (prefPath / rel).u8string();
 	}
 
 	static std::string PrefpathOFP(const std::string& path) noexcept {
@@ -381,7 +381,7 @@ public:
 		static std::filesystem::path prefPath(cachedPref);
 		std::filesystem::path rel(path);
 		rel.make_preferred();
-		return (prefPath / rel).string();
+		return (prefPath / rel).u8string();
 	}
 
 	static bool CreateDirectories(const std::filesystem::path& dirs) noexcept {
