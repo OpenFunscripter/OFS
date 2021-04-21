@@ -313,6 +313,54 @@ void OFS_Project::ExportFunscripts() noexcept
 	}
 }
 
+void OFS_Project::ExportClips(const std::string& outputPath) noexcept
+{
+	OFS_PROFILE(__FUNCTION__);
+	FUN_ASSERT(!Settings.Bookmarks.empty(), "No bookmarks created")
+
+	auto& script = Funscripts[0];
+	auto& bookmarks = Settings.Bookmarks;
+
+	auto basePath = Util::Basepath();
+	#if WIN32
+		auto ffmpegPath = basePath / "ffmpeg.exe";
+	#else
+		auto ffmpegPath = Util::PathFromString("ffmpeg");
+	#endif
+
+
+	//LOGF_DEBUG("ffmpeg Path: %s; InputFile: %s", Util::FfmpegPath().u8string().c_str(), MediaPath.c_str());
+
+	for (int i = 0; i < bookmarks.size() - 1; i++)
+	{
+
+		auto& output = "\"" + outputPath + "\\" + bookmarks[i].name + ".mp4" + "\"";
+		char startTime[10];
+		char endTime[10];
+		snprintf(startTime, 10, "%f", (float) bookmarks[i].at / 1000);
+		snprintf(endTime, 10, "%f", (float) bookmarks[i + 1].at / 1000);
+	
+		// Example
+		// ffmpeg.exe -ss 21.066 -to 40.261 -i '.\SFM April 2018 Compilation 1.mp4' -c:v libx264 -c:a aac out.mp4
+		
+		std::array<const char*, 13> args =
+		{
+			ffmpegPath.u8string().c_str(),
+			"-ss", startTime, // add Start Time here
+			"-to", endTime, // add Start Time here
+			"-i", ("\"" + MediaPath + "\"").c_str(),
+			"-c:v", "libx264",
+			"-c:a", "aac",
+			output.c_str(),
+			nullptr
+		};
+		auto [status, ec] = reproc::run(args.data());
+
+		LOGF_DEBUG("OFS_Project::ExportClips: %s", ec.message().c_str());
+		
+	}
+}
+
 bool OFS_Project::HasUnsavedEdits() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);

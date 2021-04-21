@@ -69,6 +69,8 @@ public:
 	void ExportFunscripts(const std::string& outputPath) noexcept;
 	void ExportFunscripts() noexcept;
 
+	void ExportClips(const std::string& outputPath) noexcept;
+
 	bool HasUnsavedEdits() noexcept;
 
 	void ShowProjectWindow(bool* open) noexcept;
