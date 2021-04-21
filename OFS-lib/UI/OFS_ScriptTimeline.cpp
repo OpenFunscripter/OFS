@@ -483,12 +483,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 			auto updateAudioWaveformThread = [](void* userData) -> int {
 				auto& ctx = *((ScriptTimeline*)userData);
 				std::error_code ec;
-				auto basePath = Util::Basepath();
-#if WIN32
-				auto ffmpegPath = basePath / "ffmpeg.exe";
-#else
-				auto ffmpegPath = Util::PathFromString("ffmpeg");
-#endif
+				auto ffmpegPath = Util::FfmpegPath();
 				auto outputPath = Util::Prefpath("tmp");
 				if (!Util::CreateDirectories(outputPath)) {
 					return 0;

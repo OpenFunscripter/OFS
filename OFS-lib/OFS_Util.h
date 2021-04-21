@@ -249,13 +249,13 @@ public:
 
 	inline static std::filesystem::path Basepath() noexcept {
 		char* base = SDL_GetBasePath();
-		std::filesystem::path path(base);
+		auto path = Util::PathFromString(base);
 		SDL_free(base);
 		return path;
 	}
 
 	inline static std::string Filename(const std::string& path) noexcept {
-		return std::filesystem::path(path)
+		return Util::PathFromString(path)
 			.replace_extension("")
 			.filename()
 			.u8string();
@@ -278,10 +278,6 @@ public:
 		}
 #endif
 		return exists;
-	}
-	inline static bool FileNamesMatch(std::filesystem::path path1, std::filesystem::path path2) noexcept {
-		path1.replace_extension(""); path2.replace_extension();
-		return path1.filename() == path2.filename();
 	}
 
 	static void ForceMinumumWindowSize(class ImGuiWindow* window) noexcept;
@@ -337,18 +333,22 @@ public:
 	struct FileDialogResult {
 		std::vector<std::string> files;
 	};
+
 	using FileDialogResultHandler = std::function<void(FileDialogResult&)>;
+
 	static void OpenFileDialog(const std::string& title,
 		const std::string& path,
 		FileDialogResultHandler&& handler,
 		bool multiple = false,
 		const std::vector<const char*>& filters = {},
 		const std::string& filterText = "") noexcept;
+
 	static void SaveFileDialog(const std::string& title, 
 		const std::string& path, 
 		FileDialogResultHandler&& handler, 
 		const std::vector<const char*>& filters = { },
 		const std::string& filterText = "") noexcept;
+
 	static void OpenDirectoryDialog(const std::string& title,
 		const std::string& path,
 		FileDialogResultHandler&& handler) noexcept;
@@ -370,16 +370,16 @@ public:
 
 	static std::string Prefpath(const std::string& path) noexcept {
 		static const char* cachedPref = SDL_GetPrefPath("OFS", "OFS_data");
-		static std::filesystem::path prefPath(cachedPref);
-		std::filesystem::path rel(path);
+		static std::filesystem::path prefPath = Util::PathFromString(cachedPref);
+		std::filesystem::path rel = Util::PathFromString(path);
 		rel.make_preferred();
 		return (prefPath / rel).u8string();
 	}
 
 	static std::string PrefpathOFP(const std::string& path) noexcept {
 		static const char* cachedPref = SDL_GetPrefPath("OFS", "OFP_data");
-		static std::filesystem::path prefPath(cachedPref);
-		std::filesystem::path rel(path);
+		static std::filesystem::path prefPath = Util::PathFromString(cachedPref);
+		std::filesystem::path rel = Util::PathFromString(path);
 		rel.make_preferred();
 		return (prefPath / rel).u8string();
 	}
@@ -407,8 +407,7 @@ public:
 	}
 
 	static std::wstring Utf8ToUtf16(const std::string& str) noexcept;
-	static std::string Utf16ToUtf8(const std::wstring& str) noexcept;
-	static int32_t Utf8Length(const std::string& str) noexcept;
+	static uint32_t Utf8Length(const std::string& str) noexcept;
 
 	static std::filesystem::path PathFromString(const std::string& str) noexcept;
 	static void ConcatPathSafe(std::filesystem::path& path, const std::string& element) noexcept;

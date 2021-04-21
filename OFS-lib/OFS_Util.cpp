@@ -410,16 +410,7 @@ std::wstring Util::Utf8ToUtf16(const std::string& str) noexcept
 	return result;
 }
 
-std::string Util::Utf16ToUtf8(const std::wstring& str) noexcept
-{
-	FUN_ASSERT(false, "this is untested but also unused");
-	std::string result;
-	result.reserve(utf8::unchecked::distance(str.begin(), str.end()));
-	utf8::unchecked::utf16to8(str.begin(), str.end(), std::back_inserter(result));
-	return result;
-}
-
-int32_t Util::Utf8Length(const std::string& str) noexcept
+uint32_t Util::Utf8Length(const std::string& str) noexcept
 {
 	if (!utf8::is_valid(str.begin(), str.end())) {
 		LOGF_ERROR("%s is not valid utf8", str.c_str());
@@ -431,6 +422,7 @@ int32_t Util::Utf8Length(const std::string& str) noexcept
 
 std::filesystem::path Util::PathFromString(const std::string& str) noexcept
 {
+	// this is not very efficient but avoids encoding issues...
 	std::filesystem::path result;
 #if WIN32
 	auto wideString = Util::Utf8ToUtf16(str);
