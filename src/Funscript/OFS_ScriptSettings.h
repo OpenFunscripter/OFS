@@ -64,7 +64,7 @@ struct OFS_ScriptSettings {
 				[](S& s, Bookmark& o) {
 					s.text1b(o.name, o.name.max_size());
 					s.value4b(o.at);
-					o.UpdateType();
+					s.value1b(o.type);
 				});
 		}
 	};
