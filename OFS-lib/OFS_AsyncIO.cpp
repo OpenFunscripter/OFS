@@ -4,13 +4,15 @@
 static int AsyncIO_Thread(void* data) noexcept
 {
 	OFS_AsyncIO* io = (OFS_AsyncIO*)data;
+	SDL_mutex* mutex = SDL_CreateMutex();
 	for (;;)
 	{
 		if (io->ShouldExit && io->Writes.empty()) {
 			break;
 		}
 		else if(io->Writes.empty()) {
-			SDL_CondWait(io->WakeThreadCondition, io->ThreadMutex);
+			SDL_LockMutex(mutex);
+			SDL_CondWait(io->WakeThreadCondition, mutex);
 			if (io->Writes.empty()) break;
 		}
 		SDL_AtomicLock(&io->QueueLock);
@@ -22,6 +24,7 @@ static int AsyncIO_Thread(void* data) noexcept
 		FUN_ASSERT(written == write.Size, "fuck");
 		write.Callback(write);
 	}
+	SDL_DestroyMutex(mutex);
 	return 0;
 }
 
