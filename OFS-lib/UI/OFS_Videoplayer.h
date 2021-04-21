@@ -272,9 +272,9 @@ public:
 			OFS_PROFILE(__FUNCTION__);
 			smoothTime += delta * MpvData.currentSpeed;
 			const float realTime = getRealCurrentPositionSeconds() - MpvData.averageFrameTime;
+			const float minError = MpvData.averageFrameTime*1.15f; 
 			const float estimateTime = getCurrentPositionSecondsInterp();
 			const float error = realTime-estimateTime;
-			const float minError = MpvData.averageFrameTime*1.15f; 
 			const float absError = std::abs(error);
 			if (absError >= minError) {
 				correctPlaybackErrorActive = true;
@@ -290,8 +290,8 @@ public:
 #endif
 
 			if (correctPlaybackErrorActive) {
-				if (absError >= 0.001f) {
-					float bias = MpvData.currentSpeed > 1.f ? MpvData.currentSpeed * 3.f * delta : 3.f * delta;
+				if (absError >= 0.0005f) {
+					float bias = MpvData.currentSpeed > 1.f ? MpvData.currentSpeed * 4.f * delta : 4.f * delta;
 					bias = Util::Clamp(bias, 0.f, 1.f);
 					smoothTime += error * bias;
 				}

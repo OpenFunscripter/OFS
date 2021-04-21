@@ -21,26 +21,21 @@
 
 #include "glad/gl.h"
 
-// FIX: Add type checking to the deserialization. 
-//      I assume it would crash if a field is specified but doesn't have the correct type.
+// FIX: Add type checking to the deserialization. It does crash if a field type doesn't match.
+
 // TODO: improve shift click add action with simulator
 //       it bugs out if the simulator is on the same height as the script timeline
 
 // TODO: Use ImGui tables API in keybinding UI
-
 
 // TODO: extend "range extender" functionality ( only extend bottom/top, range reducer )
 // TODO: render simulator relative to video position & zoom
 
 // TODO: make speed coloring configurable
 
-// TODO: Different selection modes via held modifier keys ( select top points, bottom, etc. )
-
-// TODO: higher level selection (array of intervals)
+// TODO: higher level representation for selections (array of intervals)
 //       use that to add the ability to cycle between selection modes
 // TODO: OFS_ScriptTimeline selections cause alot of unnecessary overdraw. find a way to not have any overdraw
-
-// BUG: 2d video zoom broke
 
 // the video player supports a lot more than these
 // these are the ones looked for when importing funscripts
