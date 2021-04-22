@@ -141,7 +141,6 @@ public:
 			SDL_RWclose(handle);
 		}
 		else {
-			LOGF_ERROR("Failed to load json: \"%s\"", file);
 			*success = false;
 		}
 		

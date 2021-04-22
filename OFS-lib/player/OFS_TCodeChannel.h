@@ -17,8 +17,8 @@ public:
 
 	char LastCommand[16] = "?????\0";
 
-	static constexpr int32_t MaxChannelValue = 900;
-	static constexpr int32_t MinChannelValue = 100;
+	static constexpr int32_t MaxChannelValue = 999;
+	static constexpr int32_t MinChannelValue = 0;
 	std::array<int32_t, 2> limits = { MinChannelValue, MaxChannelValue };
 	
 	static bool SplineMode;
