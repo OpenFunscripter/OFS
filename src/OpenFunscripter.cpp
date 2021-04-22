@@ -319,7 +319,9 @@ bool OpenFunscripter::setup(int argc, char* argv[])
     }
     else if (!settings->data().recentFiles.empty()) {
         auto& project = settings->data().recentFiles.back().projectPath;
-        if(!project.empty()) openProject(project);
+        if (!project.empty()) {
+            openProject(project);           
+        }
     }
 
     specialFunctions = std::make_unique<SpecialFunctionsWindow>();
@@ -1920,6 +1922,11 @@ bool OpenFunscripter::importFile(const std::string& file) noexcept
 bool OpenFunscripter::openProject(const std::string& file) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
+    if (!Util::FileExists(file)) {
+        Util::MessageBoxAlert("File not found", "Couldn't find file:\n" + file);
+        return false;
+    }
+
     if (!closeProject() || !LoadedProject->Load(file)) {
         Util::MessageBoxAlert("Failed to load", "The project failed to load.\n");
         closeProject();
