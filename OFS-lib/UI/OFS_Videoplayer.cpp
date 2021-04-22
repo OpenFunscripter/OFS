@@ -11,17 +11,17 @@
 #include "OFS_Profiling.h"
 #include "OFS_Shader.h"
 
-static void* get_proc_address_mpv(void* fn_ctx, const char* name) noexcept
+static void* getProcAddressMpv(void* fn_ctx, const char* name) noexcept
 {
 	return SDL_GL_GetProcAddress(name);
 }
 
-static void on_mpv_events(void* ctx) noexcept
+static void onMpvEvents(void* ctx) noexcept
 {
 	EventSystem::PushEvent(VideoEvents::WakeupOnMpvEvents, ctx);
 }
 
-static void on_mpv_render_update(void* ctx) noexcept
+static void onMpvRenderUpdate(void* ctx) noexcept
 {
 	EventSystem::PushEvent(VideoEvents::WakeupOnMpvRenderUpdate, ctx);
 }
@@ -271,14 +271,24 @@ bool VideoplayerWindow::setup(bool force_hw_decoding)
 
 	updateRenderTexture();
 	mpv = mpv_create();
+	auto confPath = Util::Prefpath();
+	bool suc;
+	
+	suc = mpv_set_option_string(mpv, "config", "yes") == 0;
+	if(!suc) LOG_WARN("failed to set mpv: config=yes");
+	suc = mpv_set_option_string(mpv, "config-dir", confPath.c_str()) == 0;
+	if (!suc) LOGF_WARN("failed to set mpv: config-dir=%s", confPath.c_str());
+
 	if (mpv_initialize(mpv) < 0) {
 		LOG_ERROR("mpv context init failed");
 		return false;
 	}
 
-	bool suc;
 	// hardware decoding. only important when running 5k vr footage
 	if (force_hw_decoding) {
+		suc = mpv_set_property_string(mpv, "profile", "gpu-hq") == 0;
+		if (!suc)
+			LOG_WARN("failed to set mpv: profile=gpu-hq");
 		suc = mpv_set_property_string(mpv, "hwdec", "auto-safe") == 0;
 		if (!suc)
 			LOG_WARN("failed to set mpv hardware decoding to \"auto-safe\"");
@@ -294,10 +304,17 @@ bool VideoplayerWindow::setup(bool force_hw_decoding)
 	if (!suc)
 		LOG_WARN("failed to set mpv: loop-file=inf");
 
+	if (!suc)
+		LOG_WARN("failed to set mpv: config-dir");
+
+#ifndef NDEBUG
 	mpv_request_log_messages(mpv, "debug");
+#else 
+	mpv_request_log_messages(mpv, "info");
+#endif
 
 	mpv_opengl_init_params init_params{ 0 };
-	init_params.get_proc_address = get_proc_address_mpv;
+	init_params.get_proc_address = getProcAddressMpv;
 
 	const int64_t enable = 1;
 	mpv_render_param params[] = {
@@ -325,13 +342,13 @@ bool VideoplayerWindow::setup(bool force_hw_decoding)
 	}
 
 	// When normal mpv events are available.
-	mpv_set_wakeup_callback(mpv, on_mpv_events, this);
+	mpv_set_wakeup_callback(mpv, onMpvEvents, this);
 
 	// When there is a need to call mpv_render_context_update(), which can
 	// request a new frame to be rendered.
 	// (Separate from the normal event handling mechanism for the sake of
 	//  users which run OpenGL on a different thread.)
-	mpv_render_context_set_update_callback(mpv_gl, on_mpv_render_update, this);
+	mpv_render_context_set_update_callback(mpv_gl, onMpvRenderUpdate, this);
 
 	observeProperties();
 
