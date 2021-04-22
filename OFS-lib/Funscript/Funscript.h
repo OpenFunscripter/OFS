@@ -9,7 +9,6 @@
 #include <string>
 #include <memory>
 #include <chrono>
-#include <set>
 
 #include "OFS_Util.h"
 #include "SDL_mutex.h"
@@ -109,18 +108,15 @@ public:
 
 private:
 	nlohmann::json Json;
-	nlohmann::json BaseLoaded = nlohmann::json::object();
 	std::chrono::system_clock::time_point editTime;
 	bool scriptOpened = false;
 	bool funscriptChanged = false; // used to fire only one event every frame a change occurs
 	bool unsavedEdits = false; // used to track if the script has unsaved changes
 	bool selectionChanged = false;
 	SDL_mutex* saveMutex = nullptr;
-
-	void setBaseScript(nlohmann::json& base);
-	void checkForInvalidatedActions() noexcept;
-	
 	FunscriptData data;
+
+	void checkForInvalidatedActions() noexcept;
 
 	inline FunscriptAction* getAction(FunscriptAction action) noexcept
 	{
@@ -322,7 +318,6 @@ inline bool Funscript::open(const std::string& file)
 			return false;
 		}
 
-		setBaseScript(json);
 		Json = std::move(json);
 	}
 	auto actions = Json["actions"];
