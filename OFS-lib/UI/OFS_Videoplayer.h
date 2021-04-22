@@ -91,8 +91,8 @@ private:
 		double percentPos = 0.0;
 		double realPercentPos = 0.0;
 		double currentSpeed = 1.0;
-		double averageFrameTime = 0.0167;
-		double fps = 30.f;
+		double fps = 30.0;
+		double averageFrameTime = 1.0/fps;
 		
 		double abLoopA = 0;
 		double abLoopB = 0;

@@ -139,9 +139,7 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 				auto newPercentPos = (*(double*)prop->data) / 100.0;
 				MpvData.realPercentPos = newPercentPos;
 				if (!MpvData.paused) {
-					// NOTE: this is wrong if we are playing backwards
-					// but I don't think that's possible
-					smoothTime -= MpvData.averageFrameTime;
+					smoothTime -= ((MpvData.realPercentPos - MpvData.percentPos) * MpvData.duration);
 					MpvData.percentPos = MpvData.realPercentPos;
 				}
 				break;
