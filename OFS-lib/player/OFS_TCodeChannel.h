@@ -49,6 +49,7 @@ public:
 		{
 			tcodeVal = (int32_t)(limits[0] + (relative * (limits[1] - limits[0])));
 		}
+		FUN_ASSERT(tcodeVal >= TCodeChannel::MinChannelValue && tcodeVal <= TCodeChannel::MaxChannelValue, "f");
 		return tcodeVal;
 	}
 
@@ -61,7 +62,7 @@ public:
 
 	inline const char* getCommand() noexcept {
 		if (Enabled && NextTCodeValue != LastTCodeValue) {
-			stbsp_snprintf(LastCommand, sizeof(LastCommand), "%s%d", Id, NextTCodeValue);
+			stbsp_snprintf(LastCommand, sizeof(LastCommand), "%s%03d", Id, NextTCodeValue);
 			LastTCodeValue = NextTCodeValue;
 			return LastCommand;
 		}
@@ -71,7 +72,7 @@ public:
 	inline const char* getCommandSpeed(int32_t speed) noexcept
 	{
 		if (Enabled && NextTCodeValue != LastTCodeValue) {
-			stbsp_snprintf(LastCommand, sizeof(LastCommand), "%s%dS%d", Id, NextTCodeValue, speed);
+			stbsp_snprintf(LastCommand, sizeof(LastCommand), "%s%03dS%d", Id, NextTCodeValue, speed);
 			LastTCodeValue = NextTCodeValue;
 			return LastCommand;
 		}
