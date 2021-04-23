@@ -626,7 +626,7 @@ void CustomLua::resetVM() noexcept
         // clipboard
         for (auto&& action : app->FunscriptClipboard()) {
             stbsp_snprintf(tmp, sizeof(tmp), "Clipboard:AddActionUnordered(%d, %d, false, %d)\n",
-                action.at,
+                (int32_t)action.at,
                 action.pos,
                 action.tag
             );
@@ -660,7 +660,7 @@ void CustomLua::resetVM() noexcept
             for (auto&& action : loadedScript->Actions()) {
                 stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d]:AddActionUnordered(%d,%d,%s,%d)\n",
                     i + 1, // !!! lua indexing starts at 1 !!!
-                    action.at,
+                    (int32_t)action.at,
                     action.pos,
                     SelectedActions.find(action) != SelectedActions.end() ? "true" : "false",
                     action.tag

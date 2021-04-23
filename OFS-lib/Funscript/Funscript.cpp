@@ -65,11 +65,11 @@ void Funscript::startSaveThread(const std::string& path, FunscriptArray&& action
 		auto& actions = data->jsonObj["actions"];
 		for (auto action : data->actions) {
 			// a little validation just in case
-			if (action.at < 0)
+			if (action.at < 0.f)
 				continue;
 
 			nlohmann::json actionObj = {
-				{ "at", action.at },
+				{ "at", (int32_t)action.at },
 				{ "pos", Util::Clamp<int32_t>(action.pos, 0, 100) }
 			};
 			actions.emplace_back(std::move(actionObj));
@@ -101,7 +101,7 @@ void Funscript::update() noexcept
 	}
 }
 
-float Funscript::GetPositionAtTime(int32_t time_ms) noexcept
+float Funscript::GetPositionAtTime(float time_ms) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	if (data.Actions.size() == 0) {	return 0; } 
@@ -481,7 +481,7 @@ void Funscript::SelectMidActions() noexcept
 	NotifySelectionChanged();
 }
 
-void Funscript::SelectTime(int32_t from_ms, int32_t to_ms, bool clear) noexcept
+void Funscript::SelectTime(float from_ms, float to_ms, bool clear) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	if(clear)
@@ -500,7 +500,7 @@ void Funscript::SelectTime(int32_t from_ms, int32_t to_ms, bool clear) noexcept
 	NotifySelectionChanged();
 }
 
-FunscriptArray Funscript::GetSelection(int32_t fromMs, int32_t toMs) noexcept
+FunscriptArray Funscript::GetSelection(float fromMs, float toMs) noexcept
 {
 	FunscriptArray selection;
 	if (!data.Actions.empty()) {
@@ -563,7 +563,7 @@ void Funscript::RemoveSelectedActions() noexcept
 	NotifySelectionChanged();
 }
 
-void Funscript::moveActionsTime(std::vector<FunscriptAction*> moving, int32_t time_offset)
+void Funscript::moveActionsTime(std::vector<FunscriptAction*> moving, float time_offset)
 {
 	OFS_PROFILE(__FUNCTION__);
 	ClearSelection();
@@ -584,7 +584,7 @@ void Funscript::moveActionsPosition(std::vector<FunscriptAction*> moving, int32_
 	NotifyActionsChanged(true);
 }
 
-void Funscript::MoveSelectionTime(int32_t time_offset, float frameTimeMs) noexcept
+void Funscript::MoveSelectionTime(float time_offset, float frameTimeMs) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	if (!HasSelection()) return;
@@ -602,8 +602,8 @@ void Funscript::MoveSelectionTime(int32_t time_offset, float frameTimeMs) noexce
 	auto prev = GetPreviousActionBehind(data.selection.front().at);
 	auto next = GetNextActionAhead(data.selection.back().at);
 
-	int32_t min_bound = 0;
-	int32_t max_bound = std::numeric_limits<int32_t>::max();
+	auto min_bound = 0.f;
+	auto max_bound = std::numeric_limits<float>::max();
 
 	if (time_offset > 0) {
 		if (next != nullptr) {

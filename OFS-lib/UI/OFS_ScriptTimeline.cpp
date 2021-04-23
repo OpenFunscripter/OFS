@@ -390,7 +390,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 			OFS_PROFILE(__FUNCTION__);
 			for (int i = fromIndex; i <= toIndex; i++) {
 				auto& action = rawActions[i].first;
-				if (action.at >= 0) {
+				if (action.at >= 0.f) {
 					auto point = getPointForAction(ctx, action);
 					ctx.draw_list->PathLineTo(point);
 				}
@@ -399,7 +399,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 
 			for (int i = fromIndex; i <= toIndex; i++) {
 				auto& action = rawActions[i].second;
-				if (action.at >= 0) {
+				if (action.at >= 0.f) {
 					auto point = getPointForAction(ctx, action);
 					ctx.draw_list->PathLineTo(point);
 				}

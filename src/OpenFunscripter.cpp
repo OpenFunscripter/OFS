@@ -892,7 +892,7 @@ void OpenFunscripter::registerBindings()
         auto app = OpenFunscripter::ptr;
         
         if (app->ActiveFunscript()->HasSelection()) {
-            int32_t time_ms = forward
+            auto time_ms = forward
                 ? app->scriptPositions.overlay->steppingIntervalForward(app->ActiveFunscript()->Selection().front().at)
                 : app->scriptPositions.overlay->steppingIntervalBackward(app->ActiveFunscript()->Selection().front().at);
 
@@ -902,7 +902,7 @@ void OpenFunscripter::registerBindings()
         else {
             auto closest = ptr->ActiveFunscript()->GetClosestAction(app->player->getCurrentPositionMsInterp());
             if (closest != nullptr) {
-                int32_t time_ms = forward
+                auto time_ms = forward
                     ? app->scriptPositions.overlay->steppingIntervalForward(closest->at)
                     : app->scriptPositions.overlay->steppingIntervalBackward(closest->at);
 
@@ -920,7 +920,7 @@ void OpenFunscripter::registerBindings()
     auto move_actions_horizontal_with_video = [](bool forward) {
         auto app = OpenFunscripter::ptr;
         if (app->ActiveFunscript()->HasSelection()) {
-            int32_t time_ms = forward
+            auto time_ms = forward
                 ? app->scriptPositions.overlay->steppingIntervalForward(app->ActiveFunscript()->Selection().front().at)
                 : app->scriptPositions.overlay->steppingIntervalBackward(app->ActiveFunscript()->Selection().front().at);
 
@@ -933,7 +933,7 @@ void OpenFunscripter::registerBindings()
         else {
             auto closest = app->ActiveFunscript()->GetClosestAction(ptr->player->getCurrentPositionMsInterp());
             if (closest != nullptr) {
-                int32_t time_ms = forward
+                auto time_ms = forward
                     ? app->scriptPositions.overlay->steppingIntervalForward(closest->at)
                     : app->scriptPositions.overlay->steppingIntervalBackward(closest->at);
 
@@ -2166,8 +2166,8 @@ void OpenFunscripter::pasteSelection() noexcept
     undoSystem->Snapshot(StateType::PASTE_COPIED_ACTIONS, ActiveFunscript());
     // paste CopiedSelection relatively to position
     // NOTE: assumes CopiedSelection is ordered by time
-    int currentMs = std::round(player->getCurrentPositionMsInterp());
-    int offset_ms = currentMs - CopiedSelection.begin()->at;
+    float currentMs = player->getCurrentPositionMsInterp();
+    float offset_ms = currentMs - CopiedSelection.begin()->at;
 
     if (CopiedSelection.size() >= 2)
     {
@@ -2264,7 +2264,7 @@ void OpenFunscripter::repeatLastStroke() noexcept {
     OFS_PROFILE(__FUNCTION__);
     auto stroke = ActiveFunscript()->GetLastStroke(player->getCurrentPositionMsInterp());
     if (stroke.size() > 1) {
-        int32_t offset_ms = player->getCurrentPositionMsInterp() - stroke.back().at;
+        auto offset_ms = player->getCurrentPositionMsInterp() - stroke.back().at;
         undoSystem->Snapshot(StateType::REPEAT_STROKE, ActiveFunscript());
         auto action = ActiveFunscript()->GetActionAtTime(player->getCurrentPositionMsInterp(), player->getFrameTimeMs());
         // if we are on top of an action we ignore the first action of the last stroke

@@ -183,9 +183,9 @@ void DynamicInjectionImpl::addEditAction(FunscriptAction action) noexcept
 {
     auto previous = ctx().GetPreviousActionBehind(action.at);
     if (previous != nullptr) {
-        int32_t inject_at = previous->at + ((action.at - previous->at) / 2) + (((action.at - previous->at) / 2) * direction_bias);
+        auto inject_at = previous->at + ((action.at - previous->at) / 2) + (((action.at - previous->at) / 2) * direction_bias);
 
-        int32_t inject_duration = inject_at - previous->at;
+        auto inject_duration = inject_at - previous->at;
         int32_t inject_pos = Util::Clamp<int32_t>(previous->pos + (top_bottom_direction * (inject_duration / 1000.0) * target_speed), 0.0, 100.0);
         ScripingModeBaseImpl::addEditAction(FunscriptAction(inject_at, inject_pos));
     }

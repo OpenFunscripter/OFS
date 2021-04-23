@@ -10,7 +10,7 @@
 struct FunscriptAction
 {
 public:
-	int32_t at;
+	float at;
 	int16_t pos;
 	uint8_t flags; // unused
 	uint8_t tag;

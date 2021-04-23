@@ -32,7 +32,7 @@ void OFS::UpdateHeatmapGradient(float totalDurationMs, ImGradient& grad, const F
     }
     HeatMap.refreshCache();
 
-    auto getSegments = [](const FunscriptArray& actions, int32_t gapDurationMs) -> std::vector<std::vector<FunscriptAction>> {
+    auto getSegments = [](const FunscriptArray& actions, float gapDurationMs) -> std::vector<std::vector<FunscriptAction>> {
         int prev_direction = 0; // 0 neutral 0< up 0> down
         std::vector<std::vector<FunscriptAction>> segments;
         {
