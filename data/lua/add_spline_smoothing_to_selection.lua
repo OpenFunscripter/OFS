@@ -16,10 +16,6 @@
     return (f1 * v1 + f2 * v2 + f3 * v3 + f4 * v4) / 2.0;
  end
 
- -- frequency every n frames
- -- round(100/FrameTimeMs) makes it roughly so that one point every 100 ms gets placed
- local point_frequency = Settings.PointEveryMs / FrameTimeMs
- 
  -- create a container to hold added actions temporarily
  -- since we can't add actions as we are iterating the script
  local TmpScript = Funscript:new()
@@ -27,11 +23,6 @@
  local actionCount = #CurrentScript.actions
  
  for idx, action in ipairs(CurrentScript.actions) do
-     -- skip all actions which aren't selected
-     -- since lua doesn't have a continue,
-     -- we use a goto + a label at the bottom of the loop
-    if not action.selected then goto continue end
-
     local i0 = clamp(idx - 1, 1, actionCount);
     local i1 = clamp(idx, 1, actionCount);
     local i2 = clamp(idx + 1, 1, actionCount);
@@ -41,6 +32,11 @@
     local action2 = CurrentScript.actions[i1]
     local action3 = CurrentScript.actions[i2]
     local action4 = CurrentScript.actions[i3]
+
+    -- skip all actions which aren't selected
+    -- since lua doesn't have a continue,
+    -- we use a goto + a label at the bottom of the loop
+    if not action2.selected or not action3.selected then goto continue end
 
     local startTime = action2.at
     local endTime = action3.at
