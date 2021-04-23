@@ -13,7 +13,7 @@ public:
 	struct sp_port* port = nullptr;
 
 	int32_t tickrate = 250;
-	int32_t delay = 0;
+	float delay = 0;
 
 	TCodeChannels tcode;
 	TCodeProducer prod;

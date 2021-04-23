@@ -232,15 +232,15 @@ public:
 		}
 	}
 
-	inline void tick(int32_t CurrentTimeMs, float freq) noexcept {
+	inline void tick(float currentTime, float freq) noexcept {
 		for (auto& prod : producers) {
-			prod.tick(CurrentTimeMs, freq);
+			prod.tick(currentTime, freq);
 		}
 	}
 
-	inline void sync(int32_t CurrentTimeMs, float freq) noexcept {
+	inline void sync(float currentTime, float freq) noexcept {
 		for (auto& prod : producers) {
-			prod.sync(CurrentTimeMs, freq);
+			prod.sync(currentTime, freq);
 		}
 	}
 };

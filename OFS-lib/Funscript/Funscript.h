@@ -324,10 +324,10 @@ inline bool Funscript::open(const std::string& file)
 	data.Actions.clear();
 
 	for (auto& action : actions) {
-		int32_t time_ms = action["at"];
+		float time = action["at"].get<float>() / 1000.f;
 		int32_t pos = action["pos"];
-		if (time_ms >= 0) {
-			data.Actions.emplace(time_ms, pos);
+		if (time >= 0.f) {
+			data.Actions.emplace(time, pos);
 		}
 	}
 

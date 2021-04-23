@@ -625,8 +625,8 @@ void CustomLua::resetVM() noexcept
 
         // clipboard
         for (auto&& action : app->FunscriptClipboard()) {
-            stbsp_snprintf(tmp, sizeof(tmp), "Clipboard:AddActionUnordered(%d, %d, false, %d)\n",
-                (int32_t)(action.atS*1000.f),
+            stbsp_snprintf(tmp, sizeof(tmp), "Clipboard:AddActionUnordered(%f, %d, false, %d)\n",
+                action.atS*1000.f,
                 action.pos,
                 action.tag
             );
@@ -658,9 +658,9 @@ void CustomLua::resetVM() noexcept
             builder << tmp;
 
             for (auto&& action : loadedScript->Actions()) {
-                stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d]:AddActionUnordered(%d,%d,%s,%d)\n",
+                stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d]:AddActionUnordered(%f,%d,%s,%d)\n",
                     i + 1, // !!! lua indexing starts at 1 !!!
-                    (int32_t)(action.atS * 1000.f),
+                    action.atS * 1000.f,
                     action.pos,
                     SelectedActions.find(action) != SelectedActions.end() ? "true" : "false",
                     action.tag
@@ -714,7 +714,7 @@ bool CollectScriptOutputs(LuaThread& thread, lua_State* L) noexcept
     char tmp[1024];
 
     int32_t size;
-    int32_t at;
+    float at;
     int32_t pos;
     int32_t tag;
     int32_t newPosMs;
@@ -757,6 +757,7 @@ bool CollectScriptOutputs(LuaThread& thread, lua_State* L) noexcept
             lua_getfield(L, -1, "at"); // push action
             CHECK_OR_FAIL(lua_isnumber(L, -1));
             at = lua_tonumber(L, -1);
+            at /= 1000.f;
             lua_pop(L, 1); // pop at
 
             lua_getfield(L, -1, "pos"); // push pos
@@ -775,7 +776,7 @@ bool CollectScriptOutputs(LuaThread& thread, lua_State* L) noexcept
             lua_pop(L, 1); // pop tag
 
             pos = Util::Clamp(pos, 0, 100);
-            at = std::max(at, 0);
+            at = std::max(at, 0.f);
             tag = (uint8_t)tag;
 
             currentScript.actions.emplace(at, pos, tag);

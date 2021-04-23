@@ -1700,7 +1700,7 @@ void OpenFunscripter::step() noexcept {
 
             if (Status & OFS_GradientNeedsUpdate) {
                 Status &= ~(OFS_GradientNeedsUpdate);
-                OFS::UpdateHeatmapGradient(player->getDuration() * 1000.f, playerControls.TimelineGradient, ActiveFunscript()->Actions());
+                OFS::UpdateHeatmapGradient(player->getDuration(), playerControls.TimelineGradient, ActiveFunscript()->Actions());
             }
 
             auto drawBookmarks = [&](ImDrawList* draw_list, const ImRect& frame_bb, bool item_hovered) noexcept
