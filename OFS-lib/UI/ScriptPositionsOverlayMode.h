@@ -14,9 +14,9 @@ struct OverlayDrawingCtx {
 	int32_t actionFromIdx;
 	int32_t actionToIdx;
 	ImDrawList* draw_list;
-	float visibleSizeMs;
-	float offset_ms;
-	float totalDurationMs;
+	float visibleTime;
+	float offsetTime;
+	float totalDuration;
 	ImVec2 canvas_pos;
 	ImVec2 canvas_size;
 };

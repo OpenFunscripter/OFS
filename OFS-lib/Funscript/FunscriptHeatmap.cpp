@@ -3,7 +3,7 @@
 #include "OFS_Profiling.h"
 #include <array>
 
-void OFS::UpdateHeatmapGradient(float totalDurationMs, ImGradient& grad, const FunscriptArray& actions) noexcept
+void OFS::UpdateHeatmapGradient(float totalDuration, ImGradient& grad, const FunscriptArray& actions) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     grad.clear();
@@ -32,7 +32,7 @@ void OFS::UpdateHeatmapGradient(float totalDurationMs, ImGradient& grad, const F
     }
     HeatMap.refreshCache();
 
-    auto getSegments = [](const FunscriptArray& actions, float gapDurationMs) -> std::vector<std::vector<FunscriptAction>> {
+    auto getSegments = [](const FunscriptArray& actions, float gapDuration) -> std::vector<std::vector<FunscriptAction>> {
         int prev_direction = 0; // 0 neutral 0< up 0> down
         std::vector<std::vector<FunscriptAction>> segments;
         {
@@ -57,7 +57,7 @@ void OFS::UpdateHeatmapGradient(float totalDurationMs, ImGradient& grad, const F
 
                 prev_direction = direction;
 
-                if (action.at - previous.at >= gapDurationMs) {
+                if (action.atS - previous.atS >= gapDuration) {
                     segments.emplace_back();
                 }
                 if (segments.size() == 0) { segments.emplace_back(); }
@@ -72,8 +72,8 @@ void OFS::UpdateHeatmapGradient(float totalDurationMs, ImGradient& grad, const F
 
 
     // this comes fairly close to what ScriptPlayer's heatmap looks like
-    constexpr float kernel_size_ms = 2500.f;
-    constexpr float max_actions_in_kernel = 24.5f / (5.f / (kernel_size_ms / 1000.f));
+    constexpr float kernelSizeTime = 2.5f;
+    constexpr float maxActionsInKernel = 24.5f / (5.f / kernelSizeTime);
 
     ImColor color(0.f, 0.f, 0.f, 1.f);
 
@@ -81,29 +81,29 @@ void OFS::UpdateHeatmapGradient(float totalDurationMs, ImGradient& grad, const F
     std::vector<float> samples;
     samples.reserve(max_samples);
 
-    auto segments = getSegments(actions, 10000);
+    auto segments = getSegments(actions, 10);
     for (auto& segment : segments) {
-        const float durationMs = segment.back().at - segment.front().at;
-        float kernel_offset = segment.front().at;
-        grad.addMark(kernel_offset / totalDurationMs, IM_COL32(0, 0, 0, 255));
+        const float duration = segment.back().atS - segment.front().atS;
+        float kernelOffset = segment.front().atS;
+        grad.addMark(kernelOffset / totalDuration, IM_COL32(0, 0, 0, 255));
         do {
-            int actions_in_kernel = 0;
-            float kernel_start = kernel_offset;
-            float kernel_end = kernel_offset + kernel_size_ms;
+            int actionsInKernel = 0;
+            float kernelStart = kernelOffset;
+            float kernelEnd = kernelOffset + kernelSizeTime;
 
-            if (kernel_offset < segment.back().at)
+            if (kernelOffset < segment.back().atS)
             {
                 for (int i = 0; i < segment.size(); i++) {
                     auto& action = segment[i];
-                    if (action.at >= kernel_start && action.at <= kernel_end)
-                        actions_in_kernel++;
-                    else if (action.at > kernel_end)
+                    if (action.atS >= kernelStart && action.atS <= kernelEnd)
+                        actionsInKernel++;
+                    else if (action.atS > kernelEnd)
                         break;
                 }
             }
-            kernel_offset += kernel_size_ms;
+            kernelOffset += kernelSizeTime;
 
-            float actionsRelToMax = Util::Clamp((float)actions_in_kernel / max_actions_in_kernel, 0.0f, 1.0f);
+            float actionsRelToMax = Util::Clamp((float)actionsInKernel / maxActionsInKernel, 0.0f, 1.0f);
             if (samples.size() == max_samples + 1) {
                 samples.erase(samples.begin());
             }
@@ -123,11 +123,11 @@ void OFS::UpdateHeatmapGradient(float totalDurationMs, ImGradient& grad, const F
             }
 
             HeatMap.getColorAt(actionsRelToMax, (float*)&color.Value);
-            float markPos = kernel_offset / totalDurationMs;
+            float markPos = kernelOffset / totalDuration;
             grad.addMark(markPos, color);
 
-        } while (kernel_offset < (segment.front().at + durationMs));
-        grad.addMark((kernel_offset + 1.f) / totalDurationMs, IM_COL32(0, 0, 0, 255));
+        } while (kernelOffset < (segment.front().atS + duration));
+        grad.addMark((kernelOffset + 1.f) / totalDuration, IM_COL32(0, 0, 0, 255));
     }
     grad.refreshCache();
 }

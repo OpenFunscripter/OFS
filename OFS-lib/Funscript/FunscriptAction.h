@@ -10,7 +10,9 @@
 struct FunscriptAction
 {
 public:
-	float at;
+	// timestamp as floating point seconds
+	// instead of integer milliseconds
+	float atS;
 	int16_t pos;
 	uint8_t flags; // unused
 	uint8_t tag;
@@ -20,7 +22,7 @@ public:
 	{
 		s.ext(*this, bitsery::ext::Growable{},
 			[](S& s, FunscriptAction& o) {
-				s.value4b(o.at);
+				s.value4b(o.atS);
 				s.value2b(o.pos);
 				s.value1b(o.flags);
 				s.value1b(o.tag);
@@ -28,20 +30,20 @@ public:
 	}
 
 	FunscriptAction() noexcept
-		: at(std::numeric_limits<int32_t>::min()), pos(std::numeric_limits<int16_t>::min()), flags(0), tag(0) {
+		: atS(std::numeric_limits<float>::min()), pos(std::numeric_limits<int16_t>::min()), flags(0), tag(0) {
 		static_assert(sizeof(FunscriptAction) == 8);
 	}
 
-	FunscriptAction(int32_t at, int32_t pos) noexcept
+	FunscriptAction(float at, int32_t pos) noexcept
 	{
 		static_assert(sizeof(FunscriptAction) == 8);
-		this->at = at;
+		this->atS = at;
 		this->pos = pos;
 		this->flags = 0;
 		this->tag = 0;
 	}
 
-	FunscriptAction(int32_t at, int32_t pos, uint8_t tag) noexcept
+	FunscriptAction(float at, int32_t pos, uint8_t tag) noexcept
 		: FunscriptAction(at, pos)
 	{
 		static_assert(sizeof(FunscriptAction) == 8);
@@ -49,7 +51,7 @@ public:
 	}
 
 	inline bool operator==(FunscriptAction b) const noexcept {
-		return this->at == b.at && this->pos == b.pos; 
+		return this->atS == b.atS && this->pos == b.pos;
 	}
 
 	inline bool operator!=(FunscriptAction b) const noexcept {
@@ -57,7 +59,7 @@ public:
 	}
 
 	inline bool operator<(FunscriptAction b) const noexcept {
-		return this->at < b.at;
+		return this->atS < b.atS;
 	}
 };
 
@@ -74,7 +76,7 @@ struct ActionLess
 {
 	bool operator()(const FunscriptAction& a, const FunscriptAction& b) const noexcept
 	{
-		return a.at < b.at;
+		return a.atS < b.atS;
 	}
 };
 

@@ -65,11 +65,11 @@ void Funscript::startSaveThread(const std::string& path, FunscriptArray&& action
 		auto& actions = data->jsonObj["actions"];
 		for (auto action : data->actions) {
 			// a little validation just in case
-			if (action.at < 0.f)
+			if (action.atS < 0.f)
 				continue;
 
 			nlohmann::json actionObj = {
-				{ "at", (int32_t)action.at },
+				{ "at", (int32_t)std::round(action.atS*1000.f) },
 				{ "pos", Util::Clamp<int32_t>(action.pos, 0, 100) }
 			};
 			actions.emplace_back(std::move(actionObj));
@@ -101,14 +101,14 @@ void Funscript::update() noexcept
 	}
 }
 
-float Funscript::GetPositionAtTime(float time_ms) noexcept
+float Funscript::GetPositionAtTime(float time) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	if (data.Actions.size() == 0) {	return 0; } 
 	else if (data.Actions.size() == 1) return data.Actions[0].pos;
 
 	int i = 0;
-	auto it = data.Actions.lower_bound(FunscriptAction(time_ms, 0));
+	auto it = data.Actions.lower_bound(FunscriptAction(time, 0));
 	if (it != data.Actions.end()) {
 		i = std::distance(data.Actions.begin(), it);
 		if (i > 0) --i;
@@ -118,19 +118,18 @@ float Funscript::GetPositionAtTime(float time_ms) noexcept
 		auto& action = data.Actions[i];
 		auto& next = data.Actions[i + 1];
 
-		if (time_ms > action.at && time_ms < next.at) {
+		if (time > action.atS && time < next.atS) {
 			// interpolate position
-			int32_t last_pos = action.pos;
+			int32_t lastPos = action.pos;
 			float diff = next.pos - action.pos;
-			float progress = (float)(time_ms - action.at) / (next.at - action.at);
+			float progress = (float)(time - action.atS) / (next.atS - action.atS);
 			
-			float interp = last_pos +(progress * (float)diff);
+			float interp = lastPos + (progress * (float)diff);
 			return interp;
 		}
-		else if (action.at == time_ms) {
+		else if (action.atS == time) {
 			return action.pos;
 		}
-
 	}
 
 	return data.Actions.back().pos;
@@ -158,7 +157,7 @@ bool Funscript::EditAction(FunscriptAction oldAction, FunscriptAction newAction)
 	// update action
 	auto act = getAction(oldAction);
 	if (act != nullptr) {
-		act->at = newAction.at;
+		act->atS = newAction.atS;
 		act->pos = newAction.pos;
 		checkForInvalidatedActions();
 		NotifyActionsChanged(true);
@@ -171,7 +170,7 @@ bool Funscript::EditAction(FunscriptAction oldAction, FunscriptAction newAction)
 void Funscript::AddEditAction(FunscriptAction action, float frameTimeMs) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	auto close = getActionAtTime(data.Actions, action.at, frameTimeMs);
+	auto close = getActionAtTime(data.Actions, action.atS, frameTimeMs);
 	if (close != nullptr) {
 		*close = action;
 		NotifyActionsChanged(true);
@@ -224,15 +223,15 @@ void Funscript::RemoveActions(const FunscriptArray& removeActions) noexcept
 	checkForInvalidatedActions();
 }
 
-std::vector<FunscriptAction> Funscript::GetLastStroke(int32_t time_ms) noexcept
+std::vector<FunscriptAction> Funscript::GetLastStroke(float time) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	// TODO: refactor...
 	// assuming "*it" is a peak bottom or peak top
 	// if you went up it would return a down stroke and if you went down it would return a up stroke
 	auto it = std::min_element(data.Actions.begin(), data.Actions.end(),
-		[time_ms](auto a, auto b) {
-			return std::abs(a.at - time_ms) < std::abs(b.at - time_ms);
+		[time](auto a, auto b) {
+			return std::abs(a.atS - time) < std::abs(b.atS - time);
 		});
 	if (it == data.Actions.end() || it-1 == data.Actions.begin()) return std::vector<FunscriptAction>(0);
 
@@ -284,13 +283,13 @@ void Funscript::SetActions(const FunscriptArray& override_with) noexcept
 	NotifyActionsChanged(true);
 }
 
-void Funscript::RemoveActionsInInterval(int32_t fromMs, int32_t toMs) noexcept
+void Funscript::RemoveActionsInInterval(float fromTime, float toTime) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	data.Actions.erase(
 		std::remove_if(data.Actions.begin(), data.Actions.end(),
-			[fromMs, toMs](auto action) {
-				return action.at >= fromMs && action.at <= toMs;
+			[fromTime, toTime](auto action) {
+				return action.atS >= fromTime && action.atS <= toTime;
 			}), data.Actions.end()
 	);
 	checkForInvalidatedActions();
@@ -429,12 +428,9 @@ void Funscript::SelectTopActions() noexcept
 		auto& min1 = prev.pos < current.pos ? prev : current;
 		auto& min2 = min1.pos < next.pos ? min1 : next;
 		deselect.emplace_back(min1);
-		if (min1.at != min2.at)
-			deselect.emplace_back(min2);
-
+		if (min1.atS != min2.atS) deselect.emplace_back(min2);
 	}
-	for (auto& act : deselect)
-		SetSelected(act, false);
+	for (auto& act : deselect) SetSelected(act, false);
 	NotifySelectionChanged();
 }
 
@@ -451,12 +447,9 @@ void Funscript::SelectBottomActions() noexcept
 		auto& max1 = prev.pos > current.pos ? prev : current;
 		auto& max2 = max1.pos > next.pos ? max1 : next;
 		deselect.emplace_back(max1);
-		if (max1.at != max2.at)
-			deselect.emplace_back(max2);
-
+		if (max1.atS != max2.atS) deselect.emplace_back(max2);
 	}
-	for (auto& act : deselect)
-		SetSelected(act, false);
+	for (auto& act : deselect) SetSelected(act, false);
 	NotifySelectionChanged();
 }
 
@@ -481,17 +474,17 @@ void Funscript::SelectMidActions() noexcept
 	NotifySelectionChanged();
 }
 
-void Funscript::SelectTime(float from_ms, float to_ms, bool clear) noexcept
+void Funscript::SelectTime(float fromTime, float toTime, bool clear) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	if(clear)
 		ClearSelection();
 
 	for (auto& action : data.Actions) {
-		if (action.at >= from_ms && action.at <= to_ms) {
+		if (action.atS >= fromTime && action.atS <= toTime) {
 			ToggleSelection(action);
 		}
-		else if (action.at > to_ms)
+		else if (action.atS > toTime)
 			break;
 	}
 
@@ -500,20 +493,20 @@ void Funscript::SelectTime(float from_ms, float to_ms, bool clear) noexcept
 	NotifySelectionChanged();
 }
 
-FunscriptArray Funscript::GetSelection(float fromMs, float toMs) noexcept
+FunscriptArray Funscript::GetSelection(float fromTime, float toTime) noexcept
 {
 	FunscriptArray selection;
 	if (!data.Actions.empty()) {
-		auto start = data.Actions.lower_bound(FunscriptAction(fromMs, 0));
-		auto end = data.Actions.upper_bound(FunscriptAction(toMs, 0)) + 1;
+		auto start = data.Actions.lower_bound(FunscriptAction(fromTime, 0));
+		auto end = data.Actions.upper_bound(FunscriptAction(toTime, 0)) + 1;
 		for (; start != end; ++start) {
 			auto action = *start;
-			if (action.at >= fromMs && action.at <= toMs) {
+			if (action.atS >= fromTime && action.atS <= toTime) {
 				selection.emplace(action);
 			}
 		}
 	}
-	return std::move(selection);
+	return selection;
 }
 
 void Funscript::SelectAction(FunscriptAction select) noexcept
@@ -563,28 +556,28 @@ void Funscript::RemoveSelectedActions() noexcept
 	NotifySelectionChanged();
 }
 
-void Funscript::moveActionsTime(std::vector<FunscriptAction*> moving, float time_offset)
+void Funscript::moveActionsTime(std::vector<FunscriptAction*> moving, float timeOffset)
 {
 	OFS_PROFILE(__FUNCTION__);
 	ClearSelection();
 	for (auto move : moving) {
-		move->at += time_offset;
+		move->atS += timeOffset;
 	}
 	NotifyActionsChanged(true);
 }
 
-void Funscript::moveActionsPosition(std::vector<FunscriptAction*> moving, int32_t pos_offset)
+void Funscript::moveActionsPosition(std::vector<FunscriptAction*> moving, int32_t posOffset)
 {
 	OFS_PROFILE(__FUNCTION__);
 	ClearSelection();
 	for (auto move : moving) {
-		move->pos += pos_offset;
+		move->pos += posOffset;
 		move->pos = Util::Clamp<int16_t>(move->pos, 0, 100);
 	}
 	NotifyActionsChanged(true);
 }
 
-void Funscript::MoveSelectionTime(float time_offset, float frameTimeMs) noexcept
+void Funscript::MoveSelectionTime(float timeOffset, float frameTime) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	if (!HasSelection()) return;
@@ -594,28 +587,28 @@ void Funscript::MoveSelectionTime(float time_offset, float frameTimeMs) noexcept
 	if (data.selection.size() == data.Actions.size()) {
 		for (auto& action : data.Actions)
 			moving.push_back(&action);
-		moveActionsTime(moving, time_offset);
+		moveActionsTime(moving, timeOffset);
 		SelectAll();
 		return;
 	}
 
-	auto prev = GetPreviousActionBehind(data.selection.front().at);
-	auto next = GetNextActionAhead(data.selection.back().at);
+	auto prev = GetPreviousActionBehind(data.selection.front().atS);
+	auto next = GetNextActionAhead(data.selection.back().atS);
 
 	auto min_bound = 0.f;
 	auto max_bound = std::numeric_limits<float>::max();
 
-	if (time_offset > 0) {
+	if (timeOffset > 0) {
 		if (next != nullptr) {
-			max_bound = next->at - frameTimeMs;
-			time_offset = std::min(time_offset, max_bound - data.selection.back().at);
+			max_bound = next->atS - frameTime;
+			timeOffset = std::min(timeOffset, max_bound - data.selection.back().atS);
 		}
 	}
 	else
 	{
 		if (prev != nullptr) {
-			min_bound = prev->at + frameTimeMs;
-			time_offset = std::max(time_offset, min_bound - data.selection.front().at);
+			min_bound = prev->atS + frameTime;
+			timeOffset = std::max(timeOffset, min_bound - data.selection.front().atS);
 		}
 	}
 
@@ -627,7 +620,7 @@ void Funscript::MoveSelectionTime(float time_offset, float frameTimeMs) noexcept
 
 	ClearSelection();
 	for (auto move : moving) {
-		move->at += time_offset;
+		move->atS += timeOffset;
 		data.selection.emplace(*move);
 	}
 	NotifyActionsChanged(true);
@@ -695,15 +688,15 @@ void Funscript::EqualizeSelection() noexcept
 	sortSelection(); // might be unnecessary
 	auto first = data.selection.front();
 	auto last = data.selection.back();
-	float duration = last.at - first.at;
-	float stepMs = duration / (float)(data.selection.size()-1);
+	float duration = last.atS - first.atS;
+	float stepTime = duration / (float)(data.selection.size()-1);
 		
 	auto copySelection = data.selection;
 	RemoveSelectedActions(); // clears selection
 
 	for (int i = 1; i < copySelection.size()-1; i++) {
 		auto& newAction = copySelection[i];
-		newAction.at = first.at + std::round(i * stepMs);
+		newAction.atS = first.atS + i * stepTime;
 	}
 
 	for (auto& action : copySelection)

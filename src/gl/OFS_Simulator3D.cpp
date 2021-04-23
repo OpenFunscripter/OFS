@@ -248,8 +248,8 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
                 auto app = OpenFunscripter::ptr;
                 float range = std::abs(max - min);
                 float pos = ((value + std::abs(min)) / range) * 100.f;
-                FunscriptAction action(app->player->getCurrentPositionMsInterp(), pos);
-                script->AddEditAction(action, app->player->getFrameTimeMs());
+                FunscriptAction action(app->player->getCurrentPositionSecondsInterp(), pos);
+                script->AddEditAction(action, app->player->getFrameTime());
             };
 
             auto editAxisSlider = [](const char* name, float* value, float min, float max, IsEditing* IsEditing, int* IsEditingIdx, int idx, float scrollStep) 

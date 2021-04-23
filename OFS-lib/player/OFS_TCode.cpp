@@ -406,7 +406,7 @@ void TCodePlayer::setScripts(std::vector<std::shared_ptr<const Funscript>>&& scr
     prod.SetChannels(&tcode);
 }
 
-void TCodePlayer::play(float currentTimeMs, std::vector<std::shared_ptr<const Funscript>>&& scripts) noexcept
+void TCodePlayer::play(float currentTime, std::vector<std::shared_ptr<const Funscript>>&& scripts) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
 #ifdef NDEBUG
@@ -417,7 +417,7 @@ void TCodePlayer::play(float currentTimeMs, std::vector<std::shared_ptr<const Fu
         Thread.running = true;
         Thread.player = this;
         Thread.channel = &this->tcode;
-        SDL_AtomicSet(&Thread.scriptTimeMs, std::round(currentTimeMs));
+        SDL_AtomicSet(&Thread.scriptTimeMs, std::round(currentTime));
         Thread.producer = &this->prod;
         tcode.reset();
         
@@ -436,11 +436,11 @@ void TCodePlayer::stop() noexcept
     }
 }
 
-void TCodePlayer::sync(float currentTimeMs, float speed) noexcept
+void TCodePlayer::sync(float currentTime, float speed) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     Thread.speed = speed;
-    SDL_AtomicSet(&Thread.scriptTimeMs, std::round(currentTimeMs));
+    SDL_AtomicSet(&Thread.scriptTimeMs, std::round(currentTime));
 }
 
 void TCodePlayer::reset() noexcept

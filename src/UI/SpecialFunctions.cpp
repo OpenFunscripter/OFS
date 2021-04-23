@@ -133,7 +133,7 @@ void RamerDouglasPeucker::SelectionChanged(SDL_Event& ev) noexcept
 }
 
 inline static float PointLineDistance(FunscriptAction pt, FunscriptAction lineStart, FunscriptAction lineEnd) noexcept {
-    float dx = lineEnd.at - lineStart.at;
+    float dx = lineEnd.atS - lineStart.atS;
     float dy = lineEnd.pos - lineStart.pos;
 
     // Normalize
@@ -142,7 +142,7 @@ inline static float PointLineDistance(FunscriptAction pt, FunscriptAction lineSt
         dx /= mag;
         dy /= mag;
     }
-    float pvx = pt.at - lineStart.at;
+    float pvx = pt.atS - lineStart.atS;
     float pvy = pt.pos - lineStart.pos;
 
     // Get dot product (project pv onto normalized direction)
@@ -225,8 +225,8 @@ void RamerDouglasPeucker::DrawUI() noexcept
                     auto action1 = ctx().Selection()[i];
                     auto action2 = ctx().Selection()[i + 1];
                     
-                    int dx = action1.at - action2.at;
-                    int dy = action1.pos - action2.pos;
+                    float dx = action1.atS - action2.atS;
+                    float dy = action1.pos - action2.pos;
                     float distance = sqrtf((dx * dx) + (dy * dy));
                     averageDistance += distance;
                     ++count;
@@ -626,7 +626,7 @@ void CustomLua::resetVM() noexcept
         // clipboard
         for (auto&& action : app->FunscriptClipboard()) {
             stbsp_snprintf(tmp, sizeof(tmp), "Clipboard:AddActionUnordered(%d, %d, false, %d)\n",
-                (int32_t)action.at,
+                (int32_t)(action.atS*1000.f),
                 action.pos,
                 action.tag
             );
@@ -660,7 +660,7 @@ void CustomLua::resetVM() noexcept
             for (auto&& action : loadedScript->Actions()) {
                 stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d]:AddActionUnordered(%d,%d,%s,%d)\n",
                     i + 1, // !!! lua indexing starts at 1 !!!
-                    (int32_t)action.at,
+                    (int32_t)(action.atS * 1000.f),
                     action.pos,
                     SelectedActions.find(action) != SelectedActions.end() ? "true" : "false",
                     action.tag
@@ -689,10 +689,10 @@ void CustomLua::resetVM() noexcept
             }
         }
 
-        Thread.NewPositionMs = app->player->getCurrentPositionMsInterp();
+        Thread.NewPositionMs = app->player->getCurrentPositionSecondsInterp() * 1000.f;
         stbsp_snprintf(tmp, sizeof(tmp), "CurrentTimeMs=%d\n", Thread.NewPositionMs);
         builder << tmp;
-        stbsp_snprintf(tmp, sizeof(tmp), "FrameTimeMs=%lf\n", app->player->getFrameTimeMs());
+        stbsp_snprintf(tmp, sizeof(tmp), "FrameTimeMs=%lf\n", app->player->getFrameTime() * 1000.f);
         builder << tmp;
         stbsp_snprintf(tmp, sizeof(tmp), "TotalTimeMs=%f\n", static_cast<float>(app->player->getDuration() * 1000.f));
         builder << tmp;

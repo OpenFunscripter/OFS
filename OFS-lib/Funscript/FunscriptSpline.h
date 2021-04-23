@@ -10,7 +10,7 @@ class FunscriptSpline
 {
 	int32_t cacheIdx = 0;
 public:
-	static inline float catmull_rom_spline(const FunscriptArray& actions, int32_t i, float ms) noexcept
+	static inline float catmull_rom_spline(const FunscriptArray& actions, int32_t i, float time) noexcept
 	{
 		OFS_PROFILE(__FUNCTION__);
 		int i0 = glm::clamp<int>(i - 1, 0, actions.size() - 1);
@@ -18,38 +18,38 @@ public:
 		int i2 = glm::clamp<int>(i + 1, 0, actions.size() - 1);
 		int i3 = glm::clamp<int>(i + 2, 0, actions.size() - 1);
 
-		glm::vec2 v0(actions[i0].at / (float)actions.back().at, actions[i0].pos / 100.f);
-		glm::vec2 v1(actions[i1].at / (float)actions.back().at, actions[i1].pos / 100.f);
-		glm::vec2 v2(actions[i2].at / (float)actions.back().at, actions[i2].pos / 100.f);
-		glm::vec2 v3(actions[i3].at / (float)actions.back().at, actions[i3].pos / 100.f);
+		glm::vec2 v0(actions[i0].atS / (float)actions.back().atS, actions[i0].pos / 100.f);
+		glm::vec2 v1(actions[i1].atS / (float)actions.back().atS, actions[i1].pos / 100.f);
+		glm::vec2 v2(actions[i2].atS / (float)actions.back().atS, actions[i2].pos / 100.f);
+		glm::vec2 v3(actions[i3].atS / (float)actions.back().atS, actions[i3].pos / 100.f);
 
-		float t = ms;
-		t -= actions[i1].at;
-		t /= actions[i2].at - actions[i1].at;
+		
+		time -= actions[i1].atS;
+		time /= actions[i2].atS - actions[i1].atS;
 
-		return glm::catmullRom(v0, v1, v2, v3, t).y;
+		return glm::catmullRom(v0, v1, v2, v3, time).y;
 	}
 
-	inline float Sample(const FunscriptArray& actions, float timeMs) noexcept 
+	inline float Sample(const FunscriptArray& actions, float time) noexcept 
 	{
 		OFS_PROFILE(__FUNCTION__);
 		if (actions.size() == 0) { return 0.f; }
 		else if (actions.size() == 1) { return actions.front().pos / 100.f; }
 		else if (cacheIdx + 1 >= actions.size()) { cacheIdx = 0; }
 
-		if (actions[cacheIdx].at <= timeMs && actions[cacheIdx + 1].at >= timeMs) {
+		if (actions[cacheIdx].atS <= time && actions[cacheIdx + 1].atS >= time) {
 			// cache hit!
-			return catmull_rom_spline(actions, cacheIdx, timeMs);
+			return catmull_rom_spline(actions, cacheIdx, time);
 		}
-		else if (cacheIdx + 2 < actions.size() && actions[cacheIdx+1].at <= timeMs && actions[cacheIdx+2].at >= timeMs) {
+		else if (cacheIdx + 2 < actions.size() && actions[cacheIdx+1].atS <= time && actions[cacheIdx+2].atS >= time) {
 			// sort of a cache hit
 			cacheIdx += 1;
-			return catmull_rom_spline(actions, cacheIdx, timeMs);
+			return catmull_rom_spline(actions, cacheIdx, time);
 		}
 		else {
 			// cache miss
 			// lookup index
-			auto it = actions.upper_bound(FunscriptAction((int32_t)timeMs, 0));
+			auto it = actions.upper_bound(FunscriptAction(time, 0));
 			if (it == actions.end()) { 
 				return actions.back().pos / 100.f; 
 			}
@@ -60,19 +60,19 @@ public:
 			it--;
 			// cache index
 			cacheIdx = std::distance(actions.begin(), it);
-			return catmull_rom_spline(actions, cacheIdx, timeMs);
+			return catmull_rom_spline(actions, cacheIdx, time);
 		}
 
 		return 0.f;
 	}
 
-	inline static float SampleAtIndex(const FunscriptArray& actions, int32_t index, float timeMs) noexcept
+	inline static float SampleAtIndex(const FunscriptArray& actions, int32_t index, float time) noexcept
 	{
 		OFS_PROFILE(__FUNCTION__);
 		if (actions.size() == 0) { return 0.f; }
 		if (index + 1 < actions.size())	{
-			if (actions[index].at <= timeMs && actions[index + 1].at >= timeMs) {
-				return catmull_rom_spline(actions, index, timeMs);
+			if (actions[index].atS <= time && actions[index + 1].atS >= time) {
+				return catmull_rom_spline(actions, index, time);
 			}
 		}
 

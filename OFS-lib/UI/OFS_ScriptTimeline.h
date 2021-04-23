@@ -29,8 +29,8 @@ public:
 	};
 
 	struct SelectTime {
-		int32_t start_ms;
-		int32_t end_ms;
+		float startTime;
+		float endTime;
 		ScriptTimelineEvents::Mode mode = Mode::All;
 		bool clear;
 	};
@@ -43,8 +43,7 @@ public:
 class ScriptTimeline
 {
 public:
-	float offsetMs;
-	float visibleSizeMs;
+	float offsetTime;
 	bool IsSelecting = false;
 	bool IsMoving = false;
 	bool PositionsItemHovered = false;
@@ -65,7 +64,7 @@ public:
 	ImGuiViewport* WaveformViewport = nullptr;
 		
 	const char* videoPath = nullptr;
-	float frameTimeMs = 16.66667;
+	float frameTime = 16.66667;
 	
 	const std::vector<std::shared_ptr<Funscript>>* Scripts = nullptr;
 	
@@ -87,7 +86,7 @@ private:
 	void videoLoaded(SDL_Event& ev) noexcept;
 
 	inline static ImVec2 getPointForAction(const OverlayDrawingCtx& ctx, FunscriptAction action) noexcept {
-		float relative_x = (float)(action.at - ctx.offset_ms) / ctx.visibleSizeMs;
+		float relative_x = (float)(action.atS - ctx.offsetTime) / ctx.visibleTime;
 		float x = (ctx.canvas_size.x) * relative_x;
 		float y = (ctx.canvas_size.y) * (1 - (action.pos / 100.0));
 		x += ctx.canvas_pos.x;
@@ -100,18 +99,18 @@ private:
 		localCoord = point - canvas_pos;
 		float relative_x = localCoord.x / canvas_size.x;
 		float relative_y = localCoord.y / canvas_size.y;
-		float at_ms = offsetMs + (relative_x * visibleSizeMs);
+		float atTime = offsetTime + (relative_x * visibleTime);
 		// fix frame alignment
-		at_ms =  std::max<float>(std::round(at_ms / frameTime) * frameTime, 0.f);
+		//atTime =  std::max<float>(std::round(atTime / frameTime) * frameTime, 0.f);
 		float pos = Util::Clamp<float>(100.f - (relative_y * 100.f), 0.f, 100.f);
-		return FunscriptAction(at_ms, pos);
+		return FunscriptAction(atTime, pos);
 	}
 
 	void updateSelection(ScriptTimelineEvents::Mode mode, bool clear) noexcept;
 	void FfmpegAudioProcessingFinished(SDL_Event& ev) noexcept;
 
-	float WindowSizeSeconds = 5.f;
-	int32_t startSelectionMs = -1;
+	float visibleTime = 5.f;
+	float startSelectionTime = -1.f;
 	
 	bool ShowAudioWaveform = false;
 	float ScaleAudio = 1.f;
@@ -119,14 +118,14 @@ private:
 public:
 	static constexpr const char* PositionsId = "Positions";
 
-	static constexpr float MAX_WINDOW_SIZE = 300.f; // this limit is arbitrary and not enforced
-	static constexpr float MIN_WINDOW_SIZE = 1.f; // this limit is also arbitrary and not enforced
+	static constexpr float MAX_WINDOW_SIZE = 300.f;
+	static constexpr float MIN_WINDOW_SIZE = 1.f;
 	void setup(UndoSystem* undo);
 
 	inline void ClearAudioWaveform() noexcept { ShowAudioWaveform = false; waveform.Clear(); }
-	inline void setStartSelection(int32_t ms) noexcept { startSelectionMs = ms; }
-	inline int32_t selectionStart() const noexcept { return startSelectionMs; }
-	void ShowScriptPositions(bool* open, float currentPositionMs, float durationMs, float frameTimeMs, const std::vector<std::shared_ptr<Funscript>>* scripts, int activeScriptIdx) noexcept;
+	inline void setStartSelection(float time) noexcept { startSelectionTime = time; }
+	inline float selectionStart() const noexcept { return startSelectionTime; }
+	void ShowScriptPositions(bool* open, float currentTime, float duration, float frameTime, const std::vector<std::shared_ptr<Funscript>>* scripts, int activeScriptIdx) noexcept;
 
 	void DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept;
 };

@@ -3,5 +3,5 @@
 #include "FunscriptAction.h"
 
 namespace OFS {
-	void UpdateHeatmapGradient(float totalDurationMs , ImGradient& grad, const FunscriptArray& actions) noexcept;
+	void UpdateHeatmapGradient(float totalDuration , ImGradient& grad, const FunscriptArray& actions) noexcept;
 }

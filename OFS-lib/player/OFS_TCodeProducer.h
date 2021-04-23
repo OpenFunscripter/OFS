@@ -41,15 +41,15 @@ private:
 		nextAction.pos = Util::MapRange<float>(nextAction.pos, ScriptMinPos, ScriptMaxPos, 0.f, 100.f);
 	}
 
-	inline float getPos(int32_t currentTimeMs, float freq) noexcept {
-		if (currentTimeMs > nextAction.at) { return LastValue; }
+	inline float getPos(float currentTime, float freq) noexcept {
+		if (currentTime > nextAction.atS) { return LastValue; }
 		OFS_PROFILE(__FUNCTION__);
 
-		float progress = Util::Clamp((float)(currentTimeMs - startAction.at) / (nextAction.at - startAction.at), 0.f, 1.f);
+		float progress = Util::Clamp((float)(currentTime - startAction.atS) / (nextAction.atS - startAction.atS), 0.f, 1.f);
 		
 		float pos;
 		if (TCodeChannel::SplineMode)	{
-			pos = FunscriptSpline::SampleAtIndex(Script->Actions(), currentIndex, currentTimeMs);
+			pos = FunscriptSpline::SampleAtIndex(Script->Actions(), currentIndex, currentTime);
 			if (TCodeChannel::RemapToFullRange) { pos = Util::MapRange<float>(pos, ScriptMinPos / 100.f, ScriptMaxPos / 100.f, 0.f, 1.f); }
 		}
 		else {
@@ -130,15 +130,15 @@ public:
 		NeedsResync = true;
 	}
 
-	inline void sync(int32_t CurrentTimeMs, float freq) noexcept {
+	inline void sync(float currentTime, float freq) noexcept {
 		if (channel == nullptr || scripts == nullptr) return;
-		if (!NeedsResync && CurrentTimeMs >= startAction.at && CurrentTimeMs <= nextAction.at) return;
+		if (!NeedsResync && currentTime >= startAction.atS && currentTime <= nextAction.atS) return;
 		if (!Script) return;
 		OFS_PROFILE(__FUNCTION__);
 
 		auto& actions = Script->Actions();
 		if (!actions.empty()) {
-			auto startIt = actions.upper_bound(FunscriptAction(CurrentTimeMs, 0));
+			auto startIt = actions.upper_bound(FunscriptAction(currentTime, 0));
 			if (startIt-1 >= actions.begin()) {
 				currentIndex = std::distance(actions.begin(), startIt-1);
 				startAction = *(startIt-1);
@@ -153,7 +153,7 @@ public:
 			}
 		}
 
-		float interp = getPos(CurrentTimeMs, freq);
+		float interp = getPos(currentTime, freq);
 		channel->SetNextPos(interp);
 		NeedsResync = false;
 	}
@@ -162,16 +162,16 @@ public:
 	bool foo = false;
 #endif
 
-	inline void tick(int32_t CurrentTimeMs, float freq) noexcept {
+	inline void tick(float currentTime, float freq) noexcept {
 		if (scripts == nullptr || channel == nullptr) return;
 		if (!Script) return;
 
 		OFS_PROFILE(__FUNCTION__);
-		if (NeedsResync) { sync(CurrentTimeMs, freq); }
+		if (NeedsResync) { sync(currentTime, freq); }
 		auto& actions = Script->Actions();
 
 		int newIndex = currentIndex;
-		if (CurrentTimeMs > nextAction.at) {
+		if (currentTime > nextAction.atS) {
 			newIndex++;
 		}
 
@@ -189,7 +189,7 @@ public:
 			}
 			else {
 				nextAction = startAction;
-				nextAction.at++;
+				nextAction.atS += 0.1f;
 			}
 			MapNewActions();
 			LOGF_DEBUG("%s: New stroke! %d -> %d", channel->Id, startAction.pos, nextAction.pos);
@@ -199,7 +199,7 @@ public:
 			foo = false;
 		}
 #endif
-		float interp = getPos(CurrentTimeMs, freq);
+		float interp = getPos(currentTime, freq);
 		channel->SetNextPos(interp);
 	}
 

@@ -39,8 +39,8 @@ void ScriptTimeline::updateSelection(ScriptTimelineEvents::Mode mode, bool clear
 	float min = std::min(relX1, relX2);
 	float max = std::max(relX1, relX2);
 	
-	SelectTimeEventData.start_ms = offsetMs + (visibleSizeMs * min);
-	SelectTimeEventData.end_ms = offsetMs + (visibleSizeMs * max);
+	SelectTimeEventData.startTime = offsetTime + (visibleTime * min);
+	SelectTimeEventData.endTime = offsetTime + (visibleTime * max);
 	SelectTimeEventData.clear = clear;
 	SelectTimeEventData.mode = mode;
 
@@ -85,8 +85,8 @@ void ScriptTimeline::mousePressed(SDL_Event& ev) noexcept
 		if (button.button == SDL_BUTTON_LEFT && button.clicks == 2) {
 			// seek to position double click
 			float relX = (mousePos.x - activeCanvasPos.x) / activeCanvasSize.x;
-			int32_t seekToMs = offsetMs + (visibleSizeMs * relX);
-			EventSystem::PushEvent(ScriptTimelineEvents::ScriptpositionWindowDoubleClick, (void*)(intptr_t)seekToMs);
+			float seekToTime = offsetTime + (visibleTime * relX);
+			EventSystem::PushEvent(ScriptTimelineEvents::ScriptpositionWindowDoubleClick, (void*)(intptr_t)seekToTime);
 			return;
 		}
 		else if (button.button == SDL_BUTTON_LEFT && button.clicks == 1)
@@ -128,8 +128,8 @@ void ScriptTimeline::mousePressed(SDL_Event& ev) noexcept
 			}
 			else {
 				// click a point into existence
-				auto action = getActionForPoint(activeCanvasPos, activeCanvasSize, mousePos, frameTimeMs);
-				auto edit = activeScript->GetActionAtTime(action.at, frameTimeMs);
+				auto action = getActionForPoint(activeCanvasPos, activeCanvasSize, mousePos, frameTime);
+				auto edit = activeScript->GetActionAtTime(action.atS, frameTime);
 				undoSystem->Snapshot(StateType::ADD_ACTION, activeScript);
 				if (edit != nullptr) { activeScript->RemoveAction(*edit); }
 				activeScript->AddAction(action);
@@ -195,21 +195,21 @@ void ScriptTimeline::mouseDrag(SDL_Event& ev) noexcept
 		if (!activeScript->HasSelection()) { IsMoving = false; return; }
 		auto mousePos = ImGui::GetMousePos();
 		auto& toBeMoved = activeScript->Selection()[0];
-		auto newAction = getActionForPoint(activeCanvasPos, activeCanvasSize, mousePos, frameTimeMs);
-		if (newAction.at != toBeMoved.at || newAction.pos != toBeMoved.pos) {
+		auto newAction = getActionForPoint(activeCanvasPos, activeCanvasSize, mousePos, frameTime);
+		if (newAction.atS != toBeMoved.atS || newAction.pos != toBeMoved.pos) {
 			const FunscriptAction* nearbyAction = nullptr;
-			if ((newAction.at - toBeMoved.at) > 0) {
-				nearbyAction = activeScript->GetNextActionAhead(toBeMoved.at);
+			if ((newAction.atS - toBeMoved.atS) > 0.f) {
+				nearbyAction = activeScript->GetNextActionAhead(toBeMoved.atS);
 				if (nearbyAction != nullptr) {
-					if (std::abs(nearbyAction->at - newAction.at) < std::round(frameTimeMs)) {
+					if (std::abs(nearbyAction->atS - newAction.atS) < frameTime) {
 						return;
 					}
 				}
 			}
-			else if((newAction.at - toBeMoved.at) < 0) {
-				nearbyAction = activeScript->GetPreviousActionBehind(toBeMoved.at);
+			else if((newAction.atS - toBeMoved.atS) < 0.f) {
+				nearbyAction = activeScript->GetPreviousActionBehind(toBeMoved.atS);
 				if (nearbyAction != nullptr) {
-					if (std::abs(nearbyAction->at - newAction.at) < std::round(frameTimeMs)) {
+					if (std::abs(nearbyAction->atS - newAction.atS) < frameTime) {
 						return;
 					}
  				}
@@ -229,8 +229,8 @@ void ScriptTimeline::mouseScroll(SDL_Event& ev) noexcept
 	auto& wheel = ev.wheel;
 	constexpr float scrollPercent = 0.10f;
 	if (PositionsItemHovered) {
-		WindowSizeSeconds *= 1 + (scrollPercent * -wheel.y);
-		WindowSizeSeconds = Util::Clamp(WindowSizeSeconds, MIN_WINDOW_SIZE, MAX_WINDOW_SIZE);
+		visibleTime *= 1 + (scrollPercent * -wheel.y);
+		visibleTime = Util::Clamp(visibleTime, MIN_WINDOW_SIZE, MAX_WINDOW_SIZE);
 	}
 }
 
@@ -239,7 +239,7 @@ void ScriptTimeline::videoLoaded(SDL_Event& ev) noexcept
 	videoPath = (const char*)ev.user.data1;
 }
 
-void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, float durationMs, float frameTimeMs, const std::vector<std::shared_ptr<Funscript>>* scripts, int activeScriptIdx) noexcept
+void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float duration, float frameTime, const std::vector<std::shared_ptr<Funscript>>* scripts, int activeScriptIdx) noexcept
 {
 	if (open != nullptr && !*open) return;
 	OFS_PROFILE(__FUNCTION__);
@@ -248,19 +248,18 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 
 	this->Scripts = scripts;
 	this->activeScriptIdx = activeScriptIdx;
-	this->frameTimeMs = frameTimeMs;
+	this->frameTime = frameTime;
 
 	const auto activeScript = (*Scripts)[activeScriptIdx].get();
 
 	auto& style = ImGui::GetStyle();
-	visibleSizeMs = WindowSizeSeconds * 1000.0;
-	offsetMs = currentPositionMs - (visibleSizeMs / 2.0);
+	offsetTime = currentTime - (visibleTime / 2.0);
 	
 	OverlayDrawingCtx drawingCtx;
-	drawingCtx.offset_ms = offsetMs;
-	drawingCtx.visibleSizeMs = visibleSizeMs;
-	drawingCtx.totalDurationMs = durationMs;
-	if (drawingCtx.totalDurationMs == 0.f) return;
+	drawingCtx.offsetTime = offsetTime;
+	drawingCtx.visibleTime = visibleTime;
+	drawingCtx.totalDuration = duration;
+	if (drawingCtx.totalDuration == 0.f) return;
 	
 	ImGui::Begin(PositionsId, open, ImGuiWindowFlags_None /*ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse*/);
 	auto draw_list = ImGui::GetWindowDrawList();
@@ -334,13 +333,13 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 		}
 
 		auto startIt = std::find_if(script.Actions().begin(), script.Actions().end(),
-		    [this](auto act) { return act.at >= offsetMs; });
+		    [this](auto act) { return act.atS >= offsetTime; });
 		if (startIt != script.Actions().begin()) {
 		    startIt -= 1;
 		}
 
 		auto endIt = std::find_if(startIt, script.Actions().end(),
-		    [this](auto act) { return act.at >= offsetMs + visibleSizeMs; });
+		    [this](auto act) { return act.atS >= offsetTime + visibleTime; });
 		if (endIt != script.Actions().end()) {
 		    endIt += 1;
 		}
@@ -390,7 +389,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 			OFS_PROFILE(__FUNCTION__);
 			for (int i = fromIndex; i <= toIndex; i++) {
 				auto& action = rawActions[i].first;
-				if (action.at >= 0.f) {
+				if (action.atS >= 0.f) {
 					auto point = getPointForAction(ctx, action);
 					ctx.draw_list->PathLineTo(point);
 				}
@@ -399,7 +398,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 
 			for (int i = fromIndex; i <= toIndex; i++) {
 				auto& action = rawActions[i].second;
-				if (action.at >= 0.f) {
+				if (action.atS >= 0.f) {
 					auto point = getPointForAction(ctx, action);
 					ctx.draw_list->PathLineTo(point);
 				}
@@ -409,8 +408,8 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 		};
 
 		if (scriptPtr.get() == activeScript && recording.size() > 0) {
-			int32_t startIndex = Util::Clamp<int32_t>((offsetMs / frameTimeMs), 0, recording.size() - 1);
-			int32_t endIndex = Util::Clamp<int32_t>((offsetMs + visibleSizeMs) / frameTimeMs, startIndex, recording.size() - 1);
+			int32_t startIndex = Util::Clamp<int32_t>((offsetTime / frameTime), 0, recording.size() - 1);
+			int32_t endIndex = Util::Clamp<int32_t>((offsetTime + visibleTime) / frameTime, startIndex, recording.size() - 1);
 			pathRawSection(drawingCtx, recording, startIndex, endIndex);
 		}
 
@@ -439,8 +438,8 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 
 		// TODO: refactor this
 		// selectionStart currently used for controller select
-		if (startSelectionMs >= 0) {
-			float startSelectRel = (startSelectionMs - offsetMs) / visibleSizeMs;
+		if (startSelectionTime >= 0.f) {
+			float startSelectRel = (startSelectionTime - offsetTime) / visibleTime;
 			draw_list->AddLine(
 				drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * startSelectRel, 0),
 				drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * startSelectRel, drawingCtx.canvas_size.y),
@@ -518,7 +517,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentPositionMs, fl
 	}
 
 	// draw points on top of lines
-	float opacity = 30000.f / visibleSizeMs;
+	float opacity = 30.f / visibleTime;
 	opacity = opacity > 1.f ? 1.f : opacity * opacity;
 	if (opacity >= 0.25f) {
 		int opcacityInt = 255 * opacity;
@@ -556,12 +555,12 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 	auto& canvas_size = ctx.canvas_size;
 	const auto draw_list = ctx.draw_list;
 	if (ShowAudioWaveform && waveform.SampleCount() > 0) {
-		const float durationMs = ctx.totalDurationMs;
-		const float rel_start = offsetMs / durationMs;
-		const float rel_end = (offsetMs + visibleSizeMs) / durationMs;
-		int32_t start_index = rel_start * (float)waveform.SampleCount();
-		int32_t end_index = rel_end * (float)waveform.SampleCount();
-		const int total_samples = end_index - start_index;
+		const float& duration = ctx.totalDuration;
+		const float relStart = offsetTime / duration;
+		const float relEnd = (offsetTime + visibleTime) / duration;
+		int32_t startIndex = relStart * (float)waveform.SampleCount();
+		int32_t endIndex = relEnd * (float)waveform.SampleCount();
+		const int totalSamples = endIndex - startIndex;
 
 		WaveformViewport = ImGui::GetWindowViewport();
 		auto renderWaveform = [](const std::vector<float>& samples, ScriptTimeline* timeline, const OverlayDrawingCtx& ctx, int start_index, int end_index)
@@ -623,7 +622,7 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 		renderWaveform(waveform.SamplesMid, MidRangeCol, waveform.LowMax);
 		renderWaveform(waveform.SamplesLow, LowRangeCol, 0.f);
 #else
-		renderWaveform(waveform.SamplesHigh, this, ctx, start_index, end_index);
+		renderWaveform(waveform.SamplesHigh, this, ctx, startIndex, endIndex);
 #endif
 	}
 }
