@@ -230,7 +230,7 @@ public:
 
 	static inline size_t FormatTime(char* buffer, size_t buf_size, float time_seconds, bool with_ms) noexcept {
 		if (std::isinf(time_seconds) || std::isnan(time_seconds)) time_seconds = 0.f;
-		auto duration = std::chrono::duration<double>(time_seconds);
+		auto duration = std::chrono::duration<float>(time_seconds);
 		std::time_t t = duration.count();
 		std::tm& timestamp = *std::gmtime(&t);
 

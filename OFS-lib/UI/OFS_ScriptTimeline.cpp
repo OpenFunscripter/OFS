@@ -86,7 +86,7 @@ void ScriptTimeline::mousePressed(SDL_Event& ev) noexcept
 			// seek to position double click
 			float relX = (mousePos.x - activeCanvasPos.x) / activeCanvasSize.x;
 			float seekToTime = offsetTime + (visibleTime * relX);
-			EventSystem::PushEvent(ScriptTimelineEvents::ScriptpositionWindowDoubleClick, (void*)(intptr_t)seekToTime);
+			EventSystem::PushEvent(ScriptTimelineEvents::ScriptpositionWindowDoubleClick, (void*)(*(intptr_t*)&seekToTime));
 			return;
 		}
 		else if (button.button == SDL_BUTTON_LEFT && button.clicks == 1)
@@ -261,7 +261,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 	drawingCtx.totalDuration = duration;
 	if (drawingCtx.totalDuration == 0.f) return;
 	
-	ImGui::Begin(PositionsId, open, ImGuiWindowFlags_None /*ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse*/);
+	ImGui::Begin(PositionsId, open, ImGuiWindowFlags_None);
 	auto draw_list = ImGui::GetWindowDrawList();
 	drawingCtx.draw_list = draw_list;
 	PositionsItemHovered = ImGui::IsWindowHovered();

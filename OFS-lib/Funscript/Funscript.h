@@ -131,7 +131,7 @@ private:
 		OFS_PROFILE(__FUNCTION__);
 		if (actions.empty()) return nullptr;
 		// gets an action at a time with a margin of error
-		int32_t smallestError = std::numeric_limits<float>::max();
+		float smallestError = std::numeric_limits<float>::max();
 		FunscriptAction* smallestErrorAction = nullptr;
 
 		int i = 0;

@@ -3092,7 +3092,7 @@ void OpenFunscripter::ControllerAxisPlaybackSpeed(SDL_Event& ev) noexcept
 void OpenFunscripter::ScriptTimelineDoubleClick(SDL_Event& ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    float seekToTime = (float)(intptr_t)ev.user.data1;
+    float seekToTime = *((float*)&ev.user.data1);
     player->setPositionExact(seekToTime);
 }
 

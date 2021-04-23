@@ -18,16 +18,15 @@ public:
 		int i2 = glm::clamp<int>(i + 1, 0, actions.size() - 1);
 		int i3 = glm::clamp<int>(i + 2, 0, actions.size() - 1);
 
-		glm::vec2 v0(actions[i0].atS / (float)actions.back().atS, actions[i0].pos / 100.f);
-		glm::vec2 v1(actions[i1].atS / (float)actions.back().atS, actions[i1].pos / 100.f);
-		glm::vec2 v2(actions[i2].atS / (float)actions.back().atS, actions[i2].pos / 100.f);
-		glm::vec2 v3(actions[i3].atS / (float)actions.back().atS, actions[i3].pos / 100.f);
-
+		glm::vec1 v0(actions[i0].pos / 100.f);
+		glm::vec1 v1(actions[i1].pos / 100.f);
+		glm::vec1 v2(actions[i2].pos / 100.f);
+		glm::vec1 v3(actions[i3].pos / 100.f);
 		
 		time -= actions[i1].atS;
 		time /= actions[i2].atS - actions[i1].atS;
 
-		return glm::catmullRom(v0, v1, v2, v3, time).y;
+		return glm::catmullRom(v0, v1, v2, v3, time).x;
 	}
 
 	inline float Sample(const FunscriptArray& actions, float time) noexcept 
