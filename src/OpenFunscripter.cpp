@@ -38,6 +38,8 @@
 // TODO: OFS_ScriptTimeline selections cause alot of unnecessary overdraw. find a way to not have any overdraw
 // TODO: binding to toggle video player fullscreen
 
+// BUG: audio files don't have a frame count which will cause recording mode to fail horribly
+
 // the video player supports a lot more than these
 // these are the ones looked for when importing funscripts
 std::array<const char*, 6> OpenFunscripter::SupportedVideoExtensions {
