@@ -38,6 +38,8 @@
 // TODO: OFS_ScriptTimeline selections cause alot of unnecessary overdraw. find a way to not have any overdraw
 // TODO: binding to toggle video player fullscreen
 
+// TODO: make heatmap generation relative length based
+
 // the video player supports a lot more than these
 // these are the ones looked for when importing funscripts
 std::array<const char*, 6> OpenFunscripter::SupportedVideoExtensions {
@@ -1775,7 +1777,7 @@ void OpenFunscripter::step() noexcept {
                 scriptPositions.WaveShader->use();
                 scriptPositions.WaveShader->ScriptPos(ActiveFunscript()->SplineClamped(player->getCurrentPositionSecondsInterp()));
             }
-            scriptPositions.ShowScriptPositions(NULL, player->getCurrentPositionSecondsInterp(), player->getDuration() * 1000.f, player->getFrameTime(), &LoadedFunscripts(), ActiveFunscriptIdx);
+            scriptPositions.ShowScriptPositions(NULL, player->getCurrentPositionSecondsInterp(), player->getDuration(), player->getFrameTime(), &LoadedFunscripts(), ActiveFunscriptIdx);
 
             if (settings->data().show_action_editor) {
                 ImGui::Begin(ActionEditorId, &settings->data().show_action_editor);
