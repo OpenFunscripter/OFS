@@ -58,8 +58,8 @@ public:
 	void Clear() noexcept;
 	bool Load(const std::string& path) noexcept;
 
-	void Save() noexcept { Save(LastPath); }
-	void Save(const std::string& path) noexcept;
+	void Save(bool setSaved) noexcept { Save(LastPath, setSaved); }
+	void Save(const std::string& path, bool setSaved) noexcept;
 
 	void AddFunscript(const std::string& path) noexcept;
 	void RemoveFunscript(int idx) noexcept;

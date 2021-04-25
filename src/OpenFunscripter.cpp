@@ -38,8 +38,6 @@
 // TODO: OFS_ScriptTimeline selections cause alot of unnecessary overdraw. find a way to not have any overdraw
 // TODO: binding to toggle video player fullscreen
 
-// TODO: make heatmap generation relative length based
-
 // the video player supports a lot more than these
 // these are the ones looked for when importing funscripts
 std::array<const char*, 6> OpenFunscripter::SupportedVideoExtensions {
@@ -339,6 +337,8 @@ bool OpenFunscripter::setup(int argc, char* argv[])
             app->sim3D->renderSim();
         }
     };
+
+    HeatmapGradient::Init();
 
     tcode = std::make_unique<TCodePlayer>();
     tcode->loadSettings(Util::Prefpath("tcode.json"));
@@ -1538,6 +1538,7 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
     player->setPositionExact(LoadedProject->Settings.lastPlayerPosition);
     ActiveFunscript()->NotifyActionsChanged(false);
 
+    Status |= OFS_Status::OFS_GradientNeedsUpdate;
     const char* VideoName = (const char*)ev.user.data1;
     if (VideoName)
     {
@@ -1630,7 +1631,7 @@ void OpenFunscripter::autoBackup() noexcept
     auto savePath = backupDir
         / Util::Format("%s_%02d-%02d-%02d" OFS_PROJECT_EXT ".backup", name.c_str(), time.hour(), time.minute(), time.second());
     LOGF_INFO("Backup at \"%s\"", savePath.u8string().c_str());
-    LoadedProject->Save(savePath.u8string());
+    LoadedProject->Save(savePath.u8string(), false);
 }
 
 void OpenFunscripter::exitApp(bool force) noexcept
@@ -1682,7 +1683,7 @@ void OpenFunscripter::step() noexcept {
             simulator.ShowSimulator(&settings->data().show_simulator);
             ShowStatisticsWindow(&settings->data().show_statistics);
             if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { 
-                LoadedProject->Save();
+                LoadedProject->Save(true);
             }
             scripting->DrawScriptingMode(NULL);
             LoadedProject->ShowProjectWindow(&ShowProjectEditor);
@@ -1702,7 +1703,7 @@ void OpenFunscripter::step() noexcept {
 
             if (Status & OFS_GradientNeedsUpdate) {
                 Status &= ~(OFS_GradientNeedsUpdate);
-                OFS::UpdateHeatmapGradient(player->getDuration(), playerControls.TimelineGradient, ActiveFunscript()->Actions());
+                playerControls.UpdateHeatmap(player->getDuration(), ActiveFunscript()->Actions());
             }
 
             auto drawBookmarks = [&](ImDrawList* draw_list, const ImRect& frame_bb, bool item_hovered) noexcept
@@ -1943,7 +1944,7 @@ void OpenFunscripter::initProject() noexcept
         if (LoadedProject->ProjectSettings.NudgeMetadata) {
             ShowMetadataEditor = true;
             LoadedProject->ProjectSettings.NudgeMetadata = false;
-            LoadedProject->Save();
+            LoadedProject->Save(true);
         }
 
         if (Util::FileExists(LoadedProject->MediaPath)) {
@@ -1991,13 +1992,13 @@ void OpenFunscripter::updateTitle() noexcept
 void OpenFunscripter::saveProject() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    LoadedProject->Save();
+    LoadedProject->Save(true);
 }
 
 void OpenFunscripter::quickExport() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    LoadedProject->Save();
+    LoadedProject->Save(true);
     LoadedProject->ExportFunscripts();
 }
 
@@ -2025,7 +2026,7 @@ void OpenFunscripter::pickDifferentMedia() noexcept
         {
             if (!result.files.empty() && Util::FileExists(result.files[0])) {
                 LoadedProject->MediaPath = result.files[0];
-                LoadedProject->Save();
+                LoadedProject->Save(true);
                 player->openVideo(LoadedProject->MediaPath);
             }
         }, false);
@@ -2067,7 +2068,7 @@ void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
 
     for (int x = 0; x < width; x++) {
         rect.x = std::round(relPos * width);
-        playerControls.TimelineGradient.computeColorAt(relPos, &color.Value.x);
+        playerControls.Heatmap.Gradient.computeColorAt(relPos, &color.Value.x);
         black.Value.w = 0.f;
         for (int y = 0; y < height; y++) {
 
@@ -2512,7 +2513,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             }
             ImGui::Separator();
             if (LoadedProject->Loaded && ImGui::MenuItem("Save and close project", NULL, false, LoadedProject->Loaded)) {
-                LoadedProject->Save();
+                LoadedProject->Save(true);
                 closeProject();
             }
             ImGui::EndMenu();

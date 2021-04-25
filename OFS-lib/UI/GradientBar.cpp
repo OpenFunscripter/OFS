@@ -4,7 +4,7 @@
 
 #include <algorithm>
 
-void ImGradient::addMark(float position, ImColor const color) noexcept
+void ImGradient::addMark(float position, const ImColor& color) noexcept
 {
 	position = ImClamp(position, 0.0f, 1.0f);
 	m_marks.emplace_back(color.Value.x, color.Value.y, color.Value.z, color.Value.w, position);
