@@ -79,7 +79,7 @@ public:
 	~Simulator3D();
 	void setup() noexcept;
 
-	void ShowWindow(bool* open, int32_t currentMs, bool easing, std::vector<std::shared_ptr<class Funscript>>& scripts) noexcept;
+	void ShowWindow(bool* open, float currentTime, bool easing, std::vector<std::shared_ptr<class Funscript>>& scripts) noexcept;
 	void renderSim() noexcept;
 
 

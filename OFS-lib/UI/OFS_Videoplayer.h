@@ -202,11 +202,7 @@ public:
 	void openVideo(const std::string& file);
 	void saveFrameToImage(const std::string& file);
 
-	inline float getCurrentPositionMsInterp() const noexcept {
-		auto time = getCurrentPositionSecondsInterp();
-		return time * 1000.f; 
-	}
-	inline float getCurrentPositionSecondsInterp() const noexcept {
+	inline double getCurrentPositionSecondsInterp() const noexcept {
 		OFS_PROFILE(__FUNCTION__);
 		if (MpvData.paused) {
 			return getCurrentPositionSeconds();
@@ -216,26 +212,23 @@ public:
 		}
 	}
 
-	inline float getCurrentPositionMs() const noexcept { return getCurrentPositionSeconds() * 1000.f; }
-	inline float getCurrentPositionSeconds() const noexcept { 
+	inline double getCurrentPositionSeconds() const noexcept { 
 		return MpvData.percentPos * MpvData.duration; 
 	}
 
-	inline float getRealCurrentPositionSeconds() const noexcept { return MpvData.realPercentPos * MpvData.duration;  }
-	inline float getRealCurrentPositionMs() const noexcept { return getRealCurrentPositionSeconds() * 1000.f; }
+	inline double getRealCurrentPositionSeconds() const noexcept { return MpvData.realPercentPos * MpvData.duration;  }
 	inline void syncWithRealTime() noexcept { MpvData.percentPos = MpvData.realPercentPos; }
 
 
 	void setVolume(float volume) noexcept;
 	
-	inline void setPositionExact(int32_t time_ms, bool pausesVideo = false) noexcept {
-		time_ms = Util::Clamp<int32_t>(time_ms, 0, getDuration() * 1000.f);
-		float rel_pos = ((float)time_ms) / (getDuration() * 1000.f);
-		setPositionPercent(rel_pos, pausesVideo);
+	inline void setPositionExact(float timeSeconds, bool pausesVideo = false) noexcept {
+		timeSeconds = Util::Clamp<float>(timeSeconds, 0.f, getDuration());
+		float relPos = ((float)timeSeconds) / getDuration();
+		setPositionPercent(relPos, pausesVideo);
 	}
-	void setPositionPercent(float rel_pos, bool pausesVideo) noexcept;
-	
-	void seekRelative(int32_t ms) noexcept;
+	void setPositionPercent(float relPos, bool pausesVideo) noexcept;
+	void seekRelative(float ms) noexcept;
 	
 	void setPaused(bool paused) noexcept;
 	void nextFrame() noexcept;
@@ -246,9 +239,10 @@ public:
 
 	void cycleLoopAB() noexcept;
 
-	inline float getFrameTimeMs() const noexcept { return MpvData.averageFrameTime * 1000.0; }
+	inline float getFrameTime() const noexcept { return MpvData.averageFrameTime; }
+
 	inline float getSpeed() const noexcept { return MpvData.currentSpeed; }
-	inline float getDuration() const noexcept { return MpvData.duration; }
+	inline double getDuration() const noexcept { return MpvData.duration; }
 	inline int64_t getTotalNumFrames() const  noexcept { return MpvData.totalNumFrames; }
 	inline bool isPaused() const noexcept { return MpvData.paused; };
 	inline float getPosition() const noexcept { return MpvData.percentPos; }
@@ -256,11 +250,11 @@ public:
 	inline float getFps() const noexcept { return MpvData.fps; }
 	inline bool isLoaded() const noexcept { return MpvData.videoLoaded; }
 	
-	inline float getCurrentPositionRel() const noexcept { return MpvData.percentPos; }
+	inline double getCurrentPositionRel() const noexcept { return MpvData.percentPos; }
 
 	inline bool LoopActive() const noexcept { return LoopState == LoopEnum::B_set; }
-	inline float LoopASeconds() const noexcept { return MpvData.abLoopA; }
-	inline float LoopBSeconds() const noexcept { return MpvData.abLoopB; }
+	inline double LoopASeconds() const noexcept { return MpvData.abLoopA; }
+	inline double LoopBSeconds() const noexcept { return MpvData.abLoopB; }
 
 	void closeVideo() noexcept;
 

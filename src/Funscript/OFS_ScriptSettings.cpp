@@ -11,7 +11,7 @@ void OFS_ScriptSettings::AddBookmark(Bookmark&& bookmark) noexcept
 	if (!Bookmarks.empty()) {
 		auto it = std::find_if(Bookmarks.begin(), Bookmarks.end(),
 			[&](auto& mark) {
-				return mark.at > bookmark.at;
+				return mark.atS > bookmark.atS;
 			});
 		if (it != Bookmarks.begin()) it--;
 
@@ -38,6 +38,6 @@ void OFS_ScriptSettings::AddBookmark(Bookmark&& bookmark) noexcept
 
 	Bookmarks.emplace_back(bookmark);
 	std::sort(Bookmarks.begin(), Bookmarks.end(),
-		[](auto& a, auto& b) { return a.at < b.at; }
+		[](auto& a, auto& b) { return a.atS < b.atS; }
 	);
 }

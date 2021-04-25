@@ -2,6 +2,15 @@
 #include "GradientBar.h"
 #include "FunscriptAction.h"
 
-namespace OFS {
-	void UpdateHeatmapGradient(float totalDurationMs , ImGradient& grad, const FunscriptArray& actions) noexcept;
-}
+class HeatmapGradient
+{
+public:
+	static ImGradient Colors;
+	static void Init() noexcept;
+
+	std::vector<float> Speeds;
+	ImGradient Gradient;
+
+	HeatmapGradient() noexcept;
+	void Update(float totalDuration , const FunscriptArray& actions) noexcept;
+};

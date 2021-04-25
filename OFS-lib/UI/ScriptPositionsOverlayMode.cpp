@@ -55,14 +55,14 @@ void EmptyOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
     BaseOverlay::DrawActionLines(ctx);
 }
 
-float EmptyOverlay::steppingIntervalForward(float fromMs) noexcept
+float EmptyOverlay::steppingIntervalForward(float fromTime) noexcept
 {
-    return timeline->frameTimeMs;
+    return timeline->frameTime;
 }
 
-float EmptyOverlay::steppingIntervalBackward(float fromMs) noexcept
+float EmptyOverlay::steppingIntervalBackward(float fromTime) noexcept
 {
-    return -timeline->frameTimeMs;
+    return -timeline->frameTime;
 }
 
 void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
@@ -76,7 +76,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
     ColoredLines.clear();
 
     auto getPointForAction = [](const OverlayDrawingCtx& ctx, FunscriptAction action) {
-        float relative_x = (float)(action.at - ctx.offset_ms) / ctx.visibleSizeMs;
+        float relative_x = (float)(action.atS - ctx.offsetTime) / ctx.visibleTime;
         float x = (ctx.canvas_size.x) * relative_x;
         float y = (ctx.canvas_size.y) * (1 - (action.pos / 100.f));
         x += ctx.canvas_pos.x;
@@ -89,50 +89,50 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
         constexpr float SamplesPerTwothousandPixels = 150.f;
         const float MaximumSamples = SamplesPerTwothousandPixels * (ctx.canvas_size.x / 2000.f);
 
-        auto getPointForTimePos = [](const OverlayDrawingCtx& ctx, float timeMs, float pos) noexcept {
-            float relative_x = (float)(timeMs - ctx.offset_ms) / ctx.visibleSizeMs;
+        auto getPointForTimePos = [](const OverlayDrawingCtx& ctx, float time, float pos) noexcept {
+            float relative_x = (float)(time - ctx.offsetTime) / ctx.visibleTime;
             float x = (ctx.canvas_size.x) * relative_x;
             float y = (ctx.canvas_size.y) * (1 - (pos / 100.f));
             x += ctx.canvas_pos.x;
             y += ctx.canvas_pos.y;
             return ImVec2(x, y);
         };
-        auto putPoint = [getPointForTimePos](auto& ctx, float timeMs) noexcept {
-            float pos = Util::Clamp<float>(ctx.script->Spline(timeMs) * 100.f, 0.f, 100.f);
-            ctx.draw_list->PathLineTo(getPointForTimePos(ctx, timeMs, pos));
+        auto putPoint = [getPointForTimePos](auto& ctx, float time) noexcept {
+            float pos = Util::Clamp<float>(ctx.script->Spline(time) * 100.f, 0.f, 100.f);
+            ctx.draw_list->PathLineTo(getPointForTimePos(ctx, time, pos));
         };
 
         ctx.draw_list->PathClear();
         float visibleDuration;
         float currentTime;
         float endTime;
-        if (startAction.at >= ctx.offset_ms && endAction.at <= (ctx.offset_ms + ctx.visibleSizeMs)) {
-            currentTime = startAction.at;
-            endTime = endAction.at;
+        if (startAction.atS >= ctx.offsetTime && endAction.atS <= (ctx.offsetTime + ctx.visibleTime)) {
+            currentTime = startAction.atS;
+            endTime = endAction.atS;
             visibleDuration = endTime - currentTime;
         }
-        else if (startAction.at < ctx.offset_ms && endAction.at > (ctx.offset_ms + ctx.visibleSizeMs)) {
+        else if (startAction.atS < ctx.offsetTime && endAction.atS > (ctx.offsetTime + ctx.visibleTime)) {
             // clip at the invisible area in both direction
-            currentTime = ctx.offset_ms;
-            endTime = (ctx.offset_ms + ctx.visibleSizeMs) + 1.f;
-            visibleDuration = ctx.visibleSizeMs;
+            currentTime = ctx.offsetTime;
+            endTime = (ctx.offsetTime + ctx.visibleTime);
+            visibleDuration = ctx.visibleTime;
         }
-        else if (startAction.at < ctx.offset_ms) {
+        else if (startAction.atS < ctx.offsetTime) {
             // clip invisible area on the left
-            currentTime = ctx.offset_ms;
-            endTime = endAction.at;
-            visibleDuration = endAction.at - ctx.offset_ms;
+            currentTime = ctx.offsetTime;
+            endTime = endAction.atS;
+            visibleDuration = endAction.atS - ctx.offsetTime;
         }
-        else if (endAction.at > (ctx.offset_ms + ctx.visibleSizeMs)) {
+        else if (endAction.atS > (ctx.offsetTime + ctx.visibleTime)) {
             // clip invisble area on the right
-            currentTime = startAction.at;
-            endTime = (ctx.offset_ms + ctx.visibleSizeMs) + 1.f;
-            visibleDuration = endTime - startAction.at;
+            currentTime = startAction.atS;
+            endTime = (ctx.offsetTime + ctx.visibleTime) + 0.001f;
+            visibleDuration = endTime - startAction.atS;
         }
 
         // detail gets dynamically reduced by increasing the timeStep,
         // at which is being sampled from the spline
-        const float ratio = visibleDuration / ctx.visibleSizeMs;
+        const float ratio = visibleDuration / ctx.visibleTime;
         const float SampleCount = MaximumSamples * ratio;
 
         const float timeStep = visibleDuration / SampleCount;
@@ -154,7 +154,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
                 putPoint(ctx, currentTime);
                 currentTime += timeStep;
             }
-            putPoint(ctx, endAction.at);
+            putPoint(ctx, endAction.atS);
             auto tmpSize = ctx.draw_list->_Path.Size;
             ctx.draw_list->PathStroke(IM_COL32_BLACK, false, 7.f);
             ctx.draw_list->_Path.Size = tmpSize;
@@ -172,7 +172,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
 
             if (prevAction != nullptr) {
                 // calculate speed relative to maximum speed
-                float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.at - prevAction->at) / 1000.0f)) / max_speed_per_seconds, 0.f, 1.f);
+                float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.atS - prevAction->atS))) / max_speed_per_seconds, 0.f, 1.f);
                 ImColor speed_color;
                 speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
                 speed_color.Value.w = 1.f;
@@ -195,7 +195,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
                 // draw line
                 auto p2 = getPointForAction(ctx, *prevAction);
                 // calculate speed relative to maximum speed
-                float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.at - prevAction->at) / 1000.0f)) / max_speed_per_seconds, 0.f, 1.f);
+                float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.atS - prevAction->atS))) / max_speed_per_seconds, 0.f, 1.f);
                 ImColor speed_color;
                 speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
                 speed_color.Value.w = 1.f;
@@ -211,12 +211,12 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
 
     if (script.HasSelection()) {
         auto startIt = std::find_if(script.Selection().begin(), script.Selection().end(),
-            [&](auto act) { return act.at >= ctx.offset_ms; });
+            [&](auto act) { return act.atS >= ctx.offsetTime; });
         if (startIt != script.Selection().begin())
             startIt -= 1;
 
         auto endIt = std::find_if(startIt, script.Selection().end(),
-            [&](auto act) { return act.at >= ctx.offset_ms + ctx.visibleSizeMs; });
+            [&](auto act) { return act.atS >= ctx.offsetTime + ctx.visibleTime; });
         if (endIt != script.Selection().end())
             endIt += 1;
 
@@ -266,7 +266,7 @@ void BaseOverlay::DrawSecondsLabel(const OverlayDrawingCtx& ctx) noexcept
     if (ctx.scriptIdx == ctx.drawnScriptCount - 1) {
         OFS_PROFILE(__FUNCTION__);
         char tmp[16];
-        stbsp_snprintf(tmp, sizeof(tmp), "%.2f seconds", ctx.visibleSizeMs / 1000.f);
+        stbsp_snprintf(tmp, sizeof(tmp), "%.2f seconds", ctx.visibleTime);
         auto textSize = ImGui::CalcTextSize(tmp);
         ctx.draw_list->AddText(
             ctx.canvas_pos + ImVec2(style.FramePadding.x, ctx.canvas_size.y - textSize.y - style.FramePadding.y),

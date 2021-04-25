@@ -17,7 +17,7 @@ struct OFS_ScriptSettings {
 			START_MARKER,
 			END_MARKER
 		};
-		int32_t at;
+		float atS; // floating point seconds
 		std::string name;
 		BookmarkType type = BookmarkType::REGULAR;
 
@@ -25,13 +25,13 @@ struct OFS_ScriptSettings {
 		static constexpr char endMarker[] = "_end";
 		
 		Bookmark() noexcept {}
-		Bookmark(std::string&& name, int32_t at) noexcept
-			: name(std::move(name)), at(at)
+		Bookmark(std::string&& name, float atSeconds) noexcept
+			: name(std::move(name)), atS(atSeconds)
 		{
 			UpdateType();
 		}
-		Bookmark(const std::string& name, int32_t at) noexcept
-			: name(name), at(at)
+		Bookmark(const std::string& name, float atSeconds) noexcept
+			: name(name), atS(atSeconds)
 		{
 			UpdateType();
 		}
@@ -63,7 +63,7 @@ struct OFS_ScriptSettings {
 			s.ext(*this, bitsery::ext::Growable{},
 				[](S& s, Bookmark& o) {
 					s.text1b(o.name, o.name.max_size());
-					s.value4b(o.at);
+					s.value4b(o.atS);
 					s.value1b(o.type);
 				});
 		}
@@ -71,7 +71,7 @@ struct OFS_ScriptSettings {
 
 	std::string version = "OFS " OFS_LATEST_GIT_TAG "@" OFS_LATEST_GIT_HASH;
 	std::vector<Bookmark> Bookmarks;
-	int32_t lastPlayerPositionMs = 0;
+	float lastPlayerPosition = 0.f;
 	static VideoplayerWindow::OFS_VideoPlayerSettings* player;
 
 	struct TempoModeSettings {
@@ -99,7 +99,7 @@ struct OFS_ScriptSettings {
 			[](S& s, OFS_ScriptSettings& o) {
 				s.text1b(o.version, o.version.max_size());
 				s.container(o.Bookmarks, o.Bookmarks.max_size());
-				s.value4b(o.lastPlayerPositionMs);
+				s.value4b(o.lastPlayerPosition);
 				s.object(o.tempoSettings);
 				FUN_ASSERT(o.player != nullptr, "player not set");
 				s.object(*o.player);

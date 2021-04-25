@@ -125,7 +125,7 @@ void Simulator3D::setup() noexcept
     load(path);
 }
 
-void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::vector<std::shared_ptr<Funscript>>& scripts) noexcept
+void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::vector<std::shared_ptr<Funscript>>& scripts) noexcept
 {
     if (open != nullptr && !*open) { return; }
     OFS_PROFILE(__FUNCTION__);
@@ -140,8 +140,8 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
     if (Editing == IsEditing::No) {
         if (posIndex >= 0 && posIndex < loadedScriptsCount) {
             scriptPos = easing 
-                ? scripts[posIndex]->SplineClamped(currentMs)
-                : scriptPos = scripts[posIndex]->GetPositionAtTime(currentMs);
+                ? scripts[posIndex]->SplineClamped(currentTime)
+                : scriptPos = scripts[posIndex]->GetPositionAtTime(currentTime);
         }
         else { scriptPos = 0.f; }
         
@@ -152,8 +152,8 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
         }
         else if (rollIndex >= 0 && rollIndex < loadedScriptsCount) {
             roll = easing 
-                ? scripts[rollIndex]->SplineClamped(currentMs) - 50.f
-                : roll = scripts[rollIndex]->GetPositionAtTime(currentMs) - 50.f;
+                ? scripts[rollIndex]->SplineClamped(currentTime) - 50.f
+                : roll = scripts[rollIndex]->GetPositionAtTime(currentTime) - 50.f;
             roll = (rollRange/2.f) * (roll / 50.f);
         }
         else { roll = 0.f; }
@@ -165,16 +165,16 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
         }
         else if (pitchIndex >= 0 && pitchIndex < loadedScriptsCount) {
             pitch =  easing 
-                ? scripts[pitchIndex]->SplineClamped(currentMs) - 50.f
-                : scripts[pitchIndex]->GetPositionAtTime(currentMs) - 50.f;
+                ? scripts[pitchIndex]->SplineClamped(currentTime) - 50.f
+                : scripts[pitchIndex]->GetPositionAtTime(currentTime) - 50.f;
             pitch = (pitchRange/2.f) * (pitch / 50.f);
         }
         else { pitch = 0.f; }
 
         if (twistIndex >= 0 && twistIndex < loadedScriptsCount) {
             float spin = easing 
-                ? scripts[twistIndex]->SplineClamped(currentMs) - 50.f
-                : scripts[twistIndex]->GetPositionAtTime(currentMs) - 50.f;
+                ? scripts[twistIndex]->SplineClamped(currentTime) - 50.f
+                : scripts[twistIndex]->GetPositionAtTime(currentTime) - 50.f;
             yaw = (twistRange/2.f) * (spin / 50.f);
         }
         else { yaw = 0.f; }
@@ -193,7 +193,7 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
 
 
             if (TranslateEnabled) {
-                auto draw_list = ImGui::GetForegroundDrawList(ImGui::GetMainViewport());
+                auto draw_list = ImGui::GetForegroundDrawList(viewport);
                 ImGuizmo::SetDrawlist(draw_list);
                 ImGuizmo::SetRect(viewport->Pos.x, viewport->Pos.y, viewport->Size.x, viewport->Size.y);
                 if (ImGuizmo::Manipulate(glm::value_ptr(view),
@@ -248,8 +248,8 @@ void Simulator3D::ShowWindow(bool* open, int32_t currentMs, bool easing, std::ve
                 auto app = OpenFunscripter::ptr;
                 float range = std::abs(max - min);
                 float pos = ((value + std::abs(min)) / range) * 100.f;
-                FunscriptAction action(app->player->getCurrentPositionMsInterp(), pos);
-                script->AddEditAction(action, app->player->getFrameTimeMs());
+                FunscriptAction action(app->player->getCurrentPositionSecondsInterp(), pos);
+                script->AddEditAction(action, app->player->getFrameTime());
             };
 
             auto editAxisSlider = [](const char* name, float* value, float min, float max, IsEditing* IsEditing, int* IsEditingIdx, int idx, float scrollStep) 

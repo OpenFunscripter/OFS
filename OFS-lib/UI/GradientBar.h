@@ -6,7 +6,7 @@
 #include "imgui.h"
 
 // lifted from: https://gist.github.com/galloscript/8a5d179e432e062550972afcd1ecf112
-// rewritten for my usecase
+// rewritten for my use case
 
 struct ImGradientMark
 {
@@ -47,7 +47,7 @@ public:
         color[2] = m_cachedValues[cachePos + 2];
     }
 
-    void addMark(float position, ImColor const color) noexcept;
+    void addMark(float position, const ImColor& color) noexcept;
     void removeMark(const ImGradientMark& mark) noexcept;
     void refreshCache() noexcept;
     void clear() noexcept { m_marks.clear(); }

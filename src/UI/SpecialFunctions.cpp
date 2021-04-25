@@ -133,7 +133,7 @@ void RamerDouglasPeucker::SelectionChanged(SDL_Event& ev) noexcept
 }
 
 inline static float PointLineDistance(FunscriptAction pt, FunscriptAction lineStart, FunscriptAction lineEnd) noexcept {
-    float dx = lineEnd.at - lineStart.at;
+    float dx = lineEnd.atS - lineStart.atS;
     float dy = lineEnd.pos - lineStart.pos;
 
     // Normalize
@@ -142,7 +142,7 @@ inline static float PointLineDistance(FunscriptAction pt, FunscriptAction lineSt
         dx /= mag;
         dy /= mag;
     }
-    float pvx = pt.at - lineStart.at;
+    float pvx = pt.atS - lineStart.atS;
     float pvy = pt.pos - lineStart.pos;
 
     // Get dot product (project pv onto normalized direction)
@@ -225,8 +225,8 @@ void RamerDouglasPeucker::DrawUI() noexcept
                     auto action1 = ctx().Selection()[i];
                     auto action2 = ctx().Selection()[i + 1];
                     
-                    int dx = action1.at - action2.at;
-                    int dy = action1.pos - action2.pos;
+                    float dx = action1.atS - action2.atS;
+                    float dy = action1.pos - action2.pos;
                     float distance = sqrtf((dx * dx) + (dy * dy));
                     averageDistance += distance;
                     ++count;
@@ -625,8 +625,8 @@ void CustomLua::resetVM() noexcept
 
         // clipboard
         for (auto&& action : app->FunscriptClipboard()) {
-            stbsp_snprintf(tmp, sizeof(tmp), "Clipboard:AddActionUnordered(%d, %d, false, %d)\n",
-                action.at,
+            stbsp_snprintf(tmp, sizeof(tmp), "Clipboard:AddActionUnordered(%lf, %d, false, %d)\n",
+                (double)action.atS * 1000.0,
                 action.pos,
                 action.tag
             );
@@ -658,9 +658,9 @@ void CustomLua::resetVM() noexcept
             builder << tmp;
 
             for (auto&& action : loadedScript->Actions()) {
-                stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d]:AddActionUnordered(%d,%d,%s,%d)\n",
+                stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d]:AddActionUnordered(%lf,%d,%s,%d)\n",
                     i + 1, // !!! lua indexing starts at 1 !!!
-                    action.at,
+                    (double)action.atS * 1000.0,
                     action.pos,
                     SelectedActions.find(action) != SelectedActions.end() ? "true" : "false",
                     action.tag
@@ -689,12 +689,12 @@ void CustomLua::resetVM() noexcept
             }
         }
 
-        Thread.NewPositionMs = app->player->getCurrentPositionMsInterp();
+        Thread.NewPositionMs = (double)app->player->getCurrentPositionSecondsInterp() * 1000.f;
         stbsp_snprintf(tmp, sizeof(tmp), "CurrentTimeMs=%d\n", Thread.NewPositionMs);
         builder << tmp;
-        stbsp_snprintf(tmp, sizeof(tmp), "FrameTimeMs=%lf\n", app->player->getFrameTimeMs());
+        stbsp_snprintf(tmp, sizeof(tmp), "FrameTimeMs=%lf\n", (double)app->player->getFrameTime() * 1000.0);
         builder << tmp;
-        stbsp_snprintf(tmp, sizeof(tmp), "TotalTimeMs=%f\n", static_cast<float>(app->player->getDuration() * 1000.f));
+        stbsp_snprintf(tmp, sizeof(tmp), "TotalTimeMs=%lf\n", (double)app->player->getDuration() * 1000.0);
         builder << tmp;
 
 
@@ -714,7 +714,7 @@ bool CollectScriptOutputs(LuaThread& thread, lua_State* L) noexcept
     char tmp[1024];
 
     int32_t size;
-    int32_t at;
+    double at;
     int32_t pos;
     int32_t tag;
     int32_t newPosMs;
@@ -757,6 +757,7 @@ bool CollectScriptOutputs(LuaThread& thread, lua_State* L) noexcept
             lua_getfield(L, -1, "at"); // push action
             CHECK_OR_FAIL(lua_isnumber(L, -1));
             at = lua_tonumber(L, -1);
+            at /= 1000.0;
             lua_pop(L, 1); // pop at
 
             lua_getfield(L, -1, "pos"); // push pos
@@ -775,7 +776,7 @@ bool CollectScriptOutputs(LuaThread& thread, lua_State* L) noexcept
             lua_pop(L, 1); // pop tag
 
             pos = Util::Clamp(pos, 0, 100);
-            at = std::max(at, 0);
+            at = std::max(at, 0.0);
             tag = (uint8_t)tag;
 
             currentScript.actions.emplace(at, pos, tag);
