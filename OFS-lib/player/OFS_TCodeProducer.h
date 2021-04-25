@@ -192,7 +192,7 @@ public:
 				nextAction.atS += 0.1f;
 			}
 			MapNewActions();
-			LOGF_DEBUG("%s: New stroke! %d -> %d", channel->Id, startAction.pos, nextAction.pos);
+			//LOGF_DEBUG("%s: New stroke! %d -> %d", channel->Id, startAction.pos, nextAction.pos);
 		}
 #ifndef NDEBUG
 		else {

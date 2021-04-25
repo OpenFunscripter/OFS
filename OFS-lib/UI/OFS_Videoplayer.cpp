@@ -144,6 +144,7 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 						smoothTime -= lastVideoStep;
 					}
 					else {
+						// fix for looping correctly
 						smoothTime = 0.f;
 						lastVideoStep = 0.f;
 					}

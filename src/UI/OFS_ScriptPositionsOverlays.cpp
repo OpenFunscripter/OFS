@@ -127,11 +127,7 @@ void TempoOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
     prevInvisiblePreviousBeats = invisiblePreviousBeats;
 #endif
 
-    float offset = -std::fmod(ctx.offsetTime, beatTime) + (tempo.beatOffsetSeconds * 1000.f);
-    if (std::abs(std::abs(offset) - beatTime) <= 0.1f) {
-        // this prevents a bug where the measures get offset by one "unit"
-        offset = 0.f;
-    }
+    float offset = -std::fmod(ctx.offsetTime, beatTime) + tempo.beatOffsetSeconds;
 
     const int lineCount = visibleBeats + 2;
     auto& style = ImGui::GetStyle();
@@ -162,34 +158,34 @@ void TempoOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
     }
 }
 
-static int32_t GetNextPosition(float beatTimeMs, float currentTimeMs, float beatOffset) noexcept
+static int32_t GetNextPosition(float beatTime, float currentTime, float beatOffset) noexcept
 {
-    float beatIdx = ((currentTimeMs - (beatOffset * 1000.f)) / beatTimeMs);
+    float beatIdx = ((currentTime - beatOffset) / beatTime);
     beatIdx = std::floor(beatIdx);
 
     beatIdx += 1.f;
 
-    int32_t newPositionMs = (beatIdx * beatTimeMs) + (beatOffset * 1000.f);
+    int32_t newPositionMs = (beatIdx * beatTime) + (beatOffset * 1000.f);
 
-    if (newPositionMs == std::round(currentTimeMs)) {
+    if (newPositionMs == std::round(currentTime)) {
         // ugh
-        newPositionMs += beatTimeMs;
+        newPositionMs += beatTime;
     }
 
     return newPositionMs;
 }
 
-static int32_t GetPreviousPosition(float beatTimeMs, float currentTimeMs, float beatOffset) noexcept
+static int32_t GetPreviousPosition(float beatTime, float currentTime, float beatOffset) noexcept
 {
-    float beatIdx = ((currentTimeMs - (beatOffset*1000.f)) / beatTimeMs);
+    float beatIdx = ((currentTime - beatOffset) / beatTime);
     beatIdx = std::ceil(beatIdx);
 
     beatIdx -= 1.f;
-    int32_t newPositionMs = (beatIdx * beatTimeMs) + (beatOffset * 1000.f);
+    int32_t newPositionMs = (beatIdx * beatTime) + (beatOffset * 1000.f);
 
-    if(newPositionMs == std::round(currentTimeMs)) {
+    if(newPositionMs == std::round(currentTime)) {
         // ugh
-        newPositionMs -= beatTimeMs;
+        newPositionMs -= beatTime;
     }
 
     return newPositionMs;
