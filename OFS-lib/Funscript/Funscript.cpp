@@ -69,7 +69,7 @@ void Funscript::startSaveThread(const std::string& path, FunscriptArray&& action
 				continue;
 
 			nlohmann::json actionObj = {
-				{ "at", (int32_t)std::round(action.atS*1000.f) },
+				{ "at", (int32_t)std::round(action.atS*1000.0) },
 				{ "pos", Util::Clamp<int32_t>(action.pos, 0, 100) }
 			};
 			actions.emplace_back(std::move(actionObj));
