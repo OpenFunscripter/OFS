@@ -55,6 +55,7 @@ private:
 	ImVec2 viewportPos;
 	ImVec2 windowPos;
 
+	float lastVideoStep = 0.f;
 	float baseScaleFactor = 1.f;
 	float smoothTime = 0.f;
 	bool correctPlaybackErrorActive = false;
@@ -265,8 +266,8 @@ public:
 		if (!isPaused()) {
 			OFS_PROFILE(__FUNCTION__);
 			smoothTime += delta * MpvData.currentSpeed;
-			const float realTime = getRealCurrentPositionSeconds() - MpvData.averageFrameTime;
-			const float minError = MpvData.averageFrameTime*1.15f; 
+			const float realTime = getRealCurrentPositionSeconds() - lastVideoStep;
+			const float minError = lastVideoStep*2.f; 
 			const float estimateTime = getCurrentPositionSecondsInterp();
 			const float error = realTime-estimateTime;
 			const float absError = std::abs(error);
