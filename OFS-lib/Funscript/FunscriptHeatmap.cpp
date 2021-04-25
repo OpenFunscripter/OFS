@@ -16,12 +16,18 @@ void HeatmapGradient::Init() noexcept
         IM_COL32(0xFF, 0xFF, 0x00, 0xFF),
         IM_COL32(0xFF, 0x00, 0x00, 0xFF),
     };
+    Colors.addMark(0.f, heatColor[0]);
+    Colors.addMark(std::nextafterf(0.f, 1.f), heatColor[1]);
+    Colors.addMark(2.f/(heatColor.size()-1), heatColor[2]);
+    Colors.addMark(3.f/(heatColor.size()-1), heatColor[3]);
+    Colors.addMark(4.f/(heatColor.size()-1), heatColor[4]);
+    Colors.addMark(5.f/(heatColor.size()-1), heatColor[5]);
 
-    float pos = 0.0f;
-    for (auto& col : heatColor) {
-        Colors.addMark(pos, col);
-        pos += (1.f / (heatColor.size() - 1));
-    }
+    //float pos = 0.0f;
+    //for (auto& col : heatColor) {
+    //    Colors.addMark(pos, col);
+    //    pos += (1.f / (heatColor.size() - 1));
+    //}
     Colors.refreshCache();
 }
 
@@ -74,10 +80,6 @@ void HeatmapGradient::Update(float totalDuration, const FunscriptArray& actions)
     ImColor color(0.f, 0.f, 0.f, 1.f);
     for (int i = 0; i < Speeds.size(); ++i) {
         float speed = Speeds[i];
-        //if (i > 0) {
-        //    speed += Speeds[i - 1];
-        //    speed /= 2.f;
-        //}
         Colors.getColorAt(speed, &color.Value.x);
         float pos = (float)i/Speeds.size();
         Gradient.addMark(pos, color);
