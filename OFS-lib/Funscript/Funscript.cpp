@@ -167,10 +167,10 @@ bool Funscript::EditAction(FunscriptAction oldAction, FunscriptAction newAction)
 	return false;
 }
 
-void Funscript::AddEditAction(FunscriptAction action, float frameTimeMs) noexcept
+void Funscript::AddEditAction(FunscriptAction action, float frameTime) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	auto close = getActionAtTime(data.Actions, action.atS, frameTimeMs);
+	auto close = getActionAtTime(data.Actions, action.atS, frameTime);
 	if (close != nullptr) {
 		*close = action;
 		NotifyActionsChanged(true);

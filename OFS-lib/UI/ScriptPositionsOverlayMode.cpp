@@ -97,9 +97,9 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
             y += ctx.canvas_pos.y;
             return ImVec2(x, y);
         };
-        auto putPoint = [getPointForTimePos](auto& ctx, float timeMs) noexcept {
-            float pos = Util::Clamp<float>(ctx.script->Spline(timeMs) * 100.f, 0.f, 100.f);
-            ctx.draw_list->PathLineTo(getPointForTimePos(ctx, timeMs, pos));
+        auto putPoint = [getPointForTimePos](auto& ctx, float time) noexcept {
+            float pos = Util::Clamp<float>(ctx.script->Spline(time) * 100.f, 0.f, 100.f);
+            ctx.draw_list->PathLineTo(getPointForTimePos(ctx, time, pos));
         };
 
         ctx.draw_list->PathClear();

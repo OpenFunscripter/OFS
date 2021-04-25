@@ -17,7 +17,6 @@ public:
 
 	TCodeChannels tcode;
 	TCodeProducer prod;
-	float lastPausedTimeMs = 0.f;
 
 	TCodePlayer() noexcept;
 	~TCodePlayer() noexcept;
@@ -29,9 +28,9 @@ public:
 	void DrawWindow(bool* open, float currentTimeMs) noexcept;
 
 	void setScripts(std::vector<std::shared_ptr<const Funscript>>&& scripts) noexcept;
-	void play(float currentTimeMs, std::vector<std::shared_ptr<const Funscript>>&& scripts) noexcept;
+	void play(float currentTime, std::vector<std::shared_ptr<const Funscript>>&& scripts) noexcept;
 	void stop() noexcept;
-	void sync(float currentTimeMs, float speed) noexcept;
+	void sync(float currentTime, float speed) noexcept;
 	void reset() noexcept;
 
 	template <class Archive>

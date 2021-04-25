@@ -61,7 +61,7 @@ int ControllerInput::GetControllerIndex(SDL_JoystickID instance)
 void ControllerInput::ControllerButtonDown(SDL_Event& ev) const noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	const int64_t RepeatDelayMs = 300;
+	constexpr int64_t RepeatDelayMs = 300;
 	auto& cbutton = ev.cbutton;
 	ButtonsHeldDown[cbutton.button] = (int64_t)SDL_GetTicks() + RepeatDelayMs;
 }

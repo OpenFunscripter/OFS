@@ -50,8 +50,8 @@ public:
 	virtual void nextFrame() noexcept {}
 	virtual void previousFrame() noexcept {}
 
-	virtual float steppingIntervalForward(float fromMs) noexcept = 0;
-	virtual float steppingIntervalBackward(float fromMs) noexcept = 0;
+	virtual float steppingIntervalForward(float fromTime) noexcept = 0;
+	virtual float steppingIntervalBackward(float fromTime) noexcept = 0;
 
 	static void DrawActionLines(const OverlayDrawingCtx& ctx) noexcept;
 	static void DrawSecondsLabel(const OverlayDrawingCtx& ctx) noexcept;
@@ -63,8 +63,8 @@ class EmptyOverlay : public BaseOverlay {
 public:
 	EmptyOverlay(class ScriptTimeline* timeline) : BaseOverlay(timeline) {}
 	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept override;
-	virtual float steppingIntervalForward(float fromMs) noexcept override;
-	virtual float steppingIntervalBackward(float fromMs) noexcept override;
+	virtual float steppingIntervalForward(float fromTime) noexcept override;
+	virtual float steppingIntervalBackward(float fromTime) noexcept override;
 };
 
 

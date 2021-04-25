@@ -246,13 +246,13 @@ public:
 	inline const FunscriptAction* GetPreviousActionBehind(float time) noexcept { return getPreviousActionBehind(time); }
 	inline const FunscriptAction* GetClosestAction(float time) noexcept { return getActionAtTime(data.Actions, time, std::numeric_limits<float>::max()); }
 
-	float GetPositionAtTime(float time_ms) noexcept;
+	float GetPositionAtTime(float time) noexcept;
 	
 	inline void AddAction(FunscriptAction newAction) noexcept { addAction(data.Actions, newAction); }
 	void AddActionRange(const FunscriptArray& range, bool checkDuplicates = true) noexcept;
 
 	bool EditAction(FunscriptAction oldAction, FunscriptAction newAction) noexcept;
-	void AddEditAction(FunscriptAction action, float frameTimeMs) noexcept;
+	void AddEditAction(FunscriptAction action, float frameTime) noexcept;
 	void RemoveAction(FunscriptAction action, bool checkInvalidSelection = true) noexcept;
 	void RemoveActions(const FunscriptArray& actions) noexcept;
 
@@ -280,12 +280,12 @@ public:
 	void DeselectAction(FunscriptAction deselect) noexcept;
 	void SelectAll() noexcept;
 	void RemoveSelectedActions() noexcept;
-	void MoveSelectionTime(float time_offset, float frameTimeMs) noexcept;
+	void MoveSelectionTime(float time_offset, float frameTime) noexcept;
 	void MoveSelectionPosition(int32_t pos_offset) noexcept;
 	inline bool HasSelection() const noexcept { return data.selection.size() > 0; }
 	inline int32_t SelectionSize() const noexcept { return data.selection.size(); }
 	inline void ClearSelection() noexcept { data.selection.clear(); }
-	inline const FunscriptAction* GetClosestActionSelection(float time_ms) noexcept { return getActionAtTime(data.selection, time_ms, std::numeric_limits<int32_t>::max()); }
+	inline const FunscriptAction* GetClosestActionSelection(float time) noexcept { return getActionAtTime(data.selection, time, std::numeric_limits<int32_t>::max()); }
 	
 	void SetSelection(const FunscriptArray& action_to_select, bool unsafe) noexcept;
 	bool IsSelected(FunscriptAction action) noexcept;

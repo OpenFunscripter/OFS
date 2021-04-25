@@ -706,7 +706,7 @@ void VideoplayerWindow::setPositionPercent(float pos, bool pausesVideo) noexcept
 void VideoplayerWindow::seekRelative(float time) noexcept
 {
 	auto seekTo = getCurrentPositionSecondsInterp() + time;
-	seekTo = std::max(seekTo, 0.f);
+	seekTo = std::max(seekTo, 0.0);
 	setPositionExact(seekTo);
 }
 

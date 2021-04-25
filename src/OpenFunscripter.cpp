@@ -1337,7 +1337,7 @@ void OpenFunscripter::registerBindings()
                 }
                 else {
                     auto tmp = player->getCurrentPositionSecondsInterp();
-                    auto [min, max] = std::minmax(scriptPositions.selectionStart(), tmp);
+                    auto [min, max] = std::minmax<float>(scriptPositions.selectionStart(), tmp);
                     ActiveFunscript()->SelectTime(min, max);
                     scriptPositions.setStartSelection(-1);
                 }
@@ -2162,7 +2162,7 @@ void OpenFunscripter::copySelection() noexcept
 void OpenFunscripter::pasteSelection() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if (CopiedSelection.size() == 0) return;
+    if (CopiedSelection.empty()) return;
     undoSystem->Snapshot(StateType::PASTE_COPIED_ACTIONS, ActiveFunscript());
     // paste CopiedSelection relatively to position
     // NOTE: assumes CopiedSelection is ordered by time
@@ -2178,9 +2178,8 @@ void OpenFunscripter::pasteSelection() noexcept
     for (auto&& action : CopiedSelection) {
         ActiveFunscript()->AddAction(FunscriptAction(action.atS + offsetTime, action.pos));
     }
-    float newPosMs = (CopiedSelection.end() - 1)->atS + offsetTime;
-    player->setPositionExact(newPosMs);
-    LOGF_DEBUG("%f", currentTime - newPosMs);
+    float newPosTime = (CopiedSelection.end() - 1)->atS + offsetTime;
+    player->setPositionExact(newPosTime);
 }
 
 void OpenFunscripter::pasteSelectionExact() noexcept {
@@ -3045,12 +3044,12 @@ void OpenFunscripter::ShowStatisticsWindow(bool* open) noexcept
     }
 
     if (behind != nullptr) {
-        ImGui::Text("Interval: %.2f ms", (currentTime - behind->atS)*1000.f);
+        ImGui::Text("Interval: %.2lf ms", ((double)currentTime - behind->atS)*1000.0);
         if (front != nullptr) {
             auto duration = front->atS - behind->atS;
             int32_t length = front->pos - behind->pos;
             ImGui::Text("Speed: %.02lf units/s", std::abs(length) / duration);
-            ImGui::Text("Duration: %.2f ms", duration * 1000.f);
+            ImGui::Text("Duration: %.2lf ms", (double)duration * 1000.0);
             if (length > 0) {
                 ImGui::Text("%3d " ICON_LONG_ARROW_RIGHT " %3d" " = %3d " ICON_LONG_ARROW_UP, behind->pos, front->pos, length);
             }                                          
