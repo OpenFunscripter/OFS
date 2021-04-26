@@ -26,6 +26,7 @@ public:
 
 	bool Valid = false;
 	bool Loaded = false;
+	std::string LoadingError;
 
 	struct ProjSettings
 	{
@@ -58,8 +59,8 @@ public:
 	void Clear() noexcept;
 	bool Load(const std::string& path) noexcept;
 
-	void Save(bool setSaved) noexcept { Save(LastPath, setSaved); }
-	void Save(const std::string& path, bool setSaved) noexcept;
+	void Save(bool clearUnsavedChanges) noexcept { Save(LastPath, clearUnsavedChanges); }
+	void Save(const std::string& path, bool clearUnsavedChanges) noexcept;
 
 	void AddFunscript(const std::string& path) noexcept;
 	void RemoveFunscript(int idx) noexcept;
@@ -82,6 +83,8 @@ public:
 				auto CurrentVersion = OFS_Project_Version::FloatingPointTimestamps;
 				s.value4b(CurrentVersion);
 				if (CurrentVersion != OFS_Project_Version::FloatingPointTimestamps) {
+					o.LoadingError = "Project not compatible.\n"
+						"Last compatible version was 1.2.0.";
 					o.Valid = false;
 					return;
 				}

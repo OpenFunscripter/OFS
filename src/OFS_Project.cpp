@@ -158,7 +158,7 @@ bool OFS_Project::Load(const std::string& path) noexcept
 	return false;
 }
 
-void OFS_Project::Save(const std::string& path, bool setSaved) noexcept
+void OFS_Project::Save(const std::string& path, bool clearUnsavedChanges) noexcept
 {
 	if (!Loaded) return;
 	OFS_PROFILE(__FUNCTION__);
@@ -196,7 +196,7 @@ void OFS_Project::Save(const std::string& path, bool setSaved) noexcept
 	app->IO->PushWrite(std::move(write));
 
 	// this resets HasUnsavedEdits()
-	if (setSaved) {
+	if (clearUnsavedChanges) {
 		for (auto& script : Funscripts) script->SetSavedFromOutside();
 	}
 }

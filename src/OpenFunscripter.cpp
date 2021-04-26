@@ -1931,7 +1931,8 @@ bool OpenFunscripter::openProject(const std::string& file) noexcept
     }
 
     if (!closeProject() || !LoadedProject->Load(file)) {
-        Util::MessageBoxAlert("Failed to load", "The project failed to load.\n");
+        Util::MessageBoxAlert("Failed to load", 
+            Util::Format("The project failed to load.\n%s", LoadedProject->LoadingError.c_str()));
         closeProject();
         return false;
     }

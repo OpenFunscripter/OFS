@@ -30,8 +30,8 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 {
 	if (ev.user.data1 != this) return;
 	OFS_PROFILE(__FUNCTION__);
-	while (1) {
-		mpv_event* mp_event = mpv_wait_event(mpv, 0);
+	for(;;) {
+		mpv_event* mp_event = mpv_wait_event(mpv, 0.);
 		if (mp_event->event_id == MPV_EVENT_NONE)
 			break;
 		switch (mp_event->event_id) {
