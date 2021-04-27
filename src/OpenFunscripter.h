@@ -16,6 +16,7 @@
 #include "OFS_Project.h"
 #include "OFS_AsyncIO.h"
 #include "OFS_Simulator3D.h"
+#include "OFS_BlockingTask.h"
 
 #include <memory>
 #include <chrono>
@@ -131,6 +132,7 @@ public:
 	ScriptTimeline scriptPositions;
 	OFS_VideoplayerControls playerControls;
 	ScriptSimulator simulator;
+	OFS_BlockingTask blockingTask;
 	
 	std::unique_ptr<TCodePlayer> tcode;
 	std::unique_ptr<VideoplayerWindow> player;

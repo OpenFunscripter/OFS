@@ -315,99 +315,123 @@ void OFS_Project::ExportFunscripts() noexcept
 	}
 }
 
-void OFS_Project::ExportClips(const std::filesystem::path& outputPath) noexcept
+void OFS_Project::ExportClips(const std::string& outputDirectory) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	FUN_ASSERT(!Settings.Bookmarks.empty(), "No bookmarks created");
-	if (Settings.Bookmarks.empty())
-	{
+	if (Settings.Bookmarks.empty()) {
 		return;
 	}
 
-	auto app = OpenFunscripter::ptr;
-
-	bool split;
-	auto numScripts = Funscripts.size();
-	auto script = Funscripts[0].get(); 
-	auto& bookmarks = Settings.Bookmarks;
-
-	auto ffmpegPath = Util::FfmpegPath().u8string();
-
-	int i = 0;
-
-	while (i < bookmarks.size())
+	struct ExportTaskData
 	{
-		split = true;
-		auto bookmarkName = bookmarks[i].name;
-		auto startTime = bookmarks[i].atS;
-		float endTime;
+		std::filesystem::path outputPath;
+	};
 
-		if (bookmarks[i].type == OFS_ScriptSettings::Bookmark::BookmarkType::END_MARKER)
+	auto blockingTask = [](void* data) -> int
+	{
+		auto bTaskData = (BlockingTaskData*)data;
+		auto exportData = (ExportTaskData*)bTaskData->User;
+
+		auto app = OpenFunscripter::ptr;
+
+		bool split;
+		auto& bookmarks = app->LoadedProject->Settings.Bookmarks;
+		auto& outputPath = exportData->outputPath;
+		auto ffmpegPath = Util::FfmpegPath().u8string();
+
+		std::string statusText;
+
+		int i = 0;
+		while (i < bookmarks.size())
 		{
-			i++;
-			split = false;
-		}
-		else if (bookmarks[i].type == OFS_ScriptSettings::Bookmark::BookmarkType::START_MARKER) {
-			endTime = bookmarks[i + 1].atS;
-			i += 2;
-		}
-		else if (bookmarks[i].type == OFS_ScriptSettings::Bookmark::BookmarkType::REGULAR)
-		{
-			if (i == bookmarks.size() - 1)
+			split = true;
+			auto& bookmarkName = bookmarks[i].name;
+			auto startTime = bookmarks[i].atS;
+			float endTime;
+			
+			statusText = "Exporting: " + bookmarkName;
+			bTaskData->TaskDescription = statusText.c_str();
+
+			if (bookmarks[i].type == OFS_ScriptSettings::Bookmark::BookmarkType::END_MARKER)
 			{
-				endTime = app->player->getDuration() * 1000;
+				split = false;
 			}
-			else
+			else if (bookmarks[i].type == OFS_ScriptSettings::Bookmark::BookmarkType::START_MARKER) {
+				endTime = bookmarks[i + 1].atS;
+				i++;
+			}
+			else if (bookmarks[i].type == OFS_ScriptSettings::Bookmark::BookmarkType::REGULAR)
 			{
-				endTime = bookmarks[i + 1].atS - app->player->getFrameTime();
+				if (i == bookmarks.size() - 1)
+				{
+					endTime = app->player->getDuration() * 1000;
+				}
+				else
+				{
+					endTime = bookmarks[i + 1].atS - app->player->getFrameTime();
+				}
 			}
 
+			if (split)
+			{
+				char startTimeChar[16];
+				char endTimeChar[16];
+
+				stbsp_snprintf(startTimeChar, 10, "%f", startTime);
+				stbsp_snprintf(endTimeChar, 10, "%f", endTime);
+
+				auto videoOutputPath = outputPath / (app->LoadedFunscripts()[0]->Title + "_" + bookmarkName + ".mp4");
+				auto videoOutputString = videoOutputPath.u8string();
+
+				// Slice Funscripts
+				auto newScript = Funscript();
+				for (auto& script : app->LoadedFunscripts()) {
+					std::filesystem::path scriptOutputPath = outputPath / (script->Title + "_" + bookmarkName + ".funscript");
+					auto scriptOutputString = scriptOutputPath.u8string();
+
+					auto scriptSlice = script->GetSelection(startTime, endTime);
+					newScript.SetActions(FunscriptArray());
+					newScript.UpdatePath(scriptOutputString);
+					newScript.AddActionRange(scriptSlice, false);
+					newScript.AddAction(FunscriptAction(startTime, script->GetPositionAtTime(startTime)));
+					newScript.AddAction(FunscriptAction(endTime, script->GetPositionAtTime(endTime)));
+					newScript.SelectAll();
+					newScript.MoveSelectionTime(-startTime, 0);
+					newScript.save(scriptOutputString, false);
+				}
+
+				// Slice Video
+				std::array<const char*, 14> args =
+				{
+					ffmpegPath.c_str(),
+					"-y",
+					"-ss", startTimeChar,
+					"-to", endTimeChar,
+					"-i",  app->LoadedProject->MediaPath.c_str(),
+					"-c:v", "libx264",
+					"-c:a", "aac",
+					videoOutputString.c_str(),
+					nullptr
+				};
+				auto [status, ec] = reproc::run(args.data());
+
+				LOGF_DEBUG("OFS_Project::ExportClips: %s", ec.message().c_str());
+			}
 			i++;
 		}
+		delete exportData;
+		return 0;
+	};
 
-		if (split)
-		{
-			char startTimeChar[16];
-			char endTimeChar[16];
+	auto taskData = new ExportTaskData;
+	taskData->outputPath = Util::PathFromString(outputDirectory);
 
-			stbsp_snprintf(startTimeChar, 10, "%f", startTime);
-			stbsp_snprintf(endTimeChar, 10, "%f", endTime);
-
-			std::filesystem::path videoOutputPath = outputPath / (bookmarkName + ".mp4");
-			std::filesystem::path scriptOutputPath = outputPath / (bookmarkName + ".funscript");
-			auto videoOutputString = videoOutputPath.u8string();
-			auto scriptOutputString = scriptOutputPath.u8string();
-
-			// Slice Funscript
-			auto scriptSlice = script->GetSelection(startTime, endTime);
-			AddFunscript(scriptOutputString);
-			auto newScript = Funscripts[numScripts];
-			newScript->AddActionRange(scriptSlice);
-			newScript->AddAction(FunscriptAction(startTime, script->GetPositionAtTime(startTime)));
-			newScript->AddAction(FunscriptAction(endTime, script->GetPositionAtTime(endTime)));
-			newScript->SelectAll();
-			newScript->MoveSelectionTime(-startTime, 0);
-			ExportFunscript(scriptOutputString, numScripts);
-			RemoveFunscript(numScripts);
-
-			// Slice Video
-			std::array<const char*, 14> args =
-			{
-				ffmpegPath.c_str(),
-				"-y",
-				"-ss", startTimeChar,
-				"-to", endTimeChar,
-				"-i", MediaPath.c_str(),
-				"-c:v", "libx264",
-				"-c:a", "aac",
-				videoOutputString.c_str(),
-				nullptr
-			};
-			auto [status, ec] = reproc::run(args.data());
-
-			LOGF_DEBUG("OFS_Project::ExportClips: %s", ec.message().c_str());
-		}
-	}
+	auto task = std::make_unique<BlockingTaskData>();
+	task->TaskThreadFunc = blockingTask;
+	task->TaskDescription = "Exporting clips";
+	task->User = taskData;
+	OpenFunscripter::ptr->blockingTask.DoTask(std::move(task));
 }
 
 bool OFS_Project::HasUnsavedEdits() noexcept

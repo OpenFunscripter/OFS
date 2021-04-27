@@ -71,7 +71,7 @@ public:
 	void ExportFunscripts(const std::string& outputPath) noexcept;
 	void ExportFunscripts() noexcept;
 
-	void ExportClips(const std::filesystem::path& outputPath) noexcept;
+	void ExportClips(const std::string& outputDirectory) noexcept;
 
 	bool HasUnsavedEdits() noexcept;
 

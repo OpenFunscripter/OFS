@@ -13,6 +13,7 @@ set(OFS_LIB_SOURCES
 	"UI/KeybindingSystem.cpp"
 	"UI/OFS_VideoplayerControls.cpp"
 	"UI/OFS_Videopreview.cpp"
+	"UI/OFS_BlockingTask.cpp"
 
 	"UI/OFS_ScriptTimeline.cpp"
 	"UI/ScriptPositionsOverlayMode.cpp"

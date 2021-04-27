@@ -1677,8 +1677,8 @@ void OpenFunscripter::step() noexcept {
             OFS_PROFILE("ImGui");
             // IMGUI HERE
             CreateDockspace();
+            blockingTask.ShowBlockingTask();
             sim3D->ShowWindow(&settings->data().show_simulator_3d, player->getCurrentPositionSecondsInterp(), BaseOverlay::SplineMode, LoadedProject->Funscripts);
-
             ShowAboutWindow(&ShowAbout);
             specialFunctions->ShowFunctionsWindow(&settings->data().show_special_functions);
             undoSystem->ShowUndoRedoHistory(&settings->data().show_history);
@@ -2421,9 +2421,6 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                             });
                     }
                 }
-                if (ImGui::MenuItem("Export Clips")) {
-                    exportClips();
-                }
                 ImGui::EndMenu();
             }
             ImGui::Separator();
@@ -2660,8 +2657,12 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Bookmarks")) {
-            static std::string bookmarkName;
             auto& scriptSettings = LoadedProject->Settings;
+            if (ImGui::MenuItem("Export Clips", NULL, false, !scriptSettings.Bookmarks.empty())) {
+                exportClips();
+            }
+            ImGui::Separator();
+            static std::string bookmarkName;
             float currentTime = player->getCurrentPositionSecondsInterp();
             auto editBookmark = std::find_if(scriptSettings.Bookmarks.begin(), scriptSettings.Bookmarks.end(),
                 [=](auto& mark) {
