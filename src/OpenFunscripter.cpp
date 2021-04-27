@@ -2661,6 +2661,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem("Export Clips", NULL, false, !scriptSettings.Bookmarks.empty())) {
                 exportClips();
             }
+            OFS::Tooltip("Export smaller clips based on bookmarks.");
             ImGui::Separator();
             static std::string bookmarkName;
             float currentTime = player->getCurrentPositionSecondsInterp();
@@ -2684,7 +2685,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         bookmarkName = Util::Format("%d#", scriptSettings.Bookmarks.size()+1);
                     }
 
-                    OFS_ScriptSettings::Bookmark bookmark(std::move(bookmarkName), player->getCurrentPositionSecondsInterp());
+                    OFS_ScriptSettings::Bookmark bookmark(std::move(bookmarkName),currentTime);
                     scriptSettings.AddBookmark(std::move(bookmark));
                 }
 
@@ -2693,15 +2694,15 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         return mark.atS < player->getCurrentPositionSecondsInterp();
                     });
                 if (it != scriptSettings.Bookmarks.rend() && it->type != OFS_ScriptSettings::Bookmark::BookmarkType::END_MARKER) {
-                    char tmp[512];
-                    stbsp_snprintf(tmp, sizeof(tmp), "Create interval for \"%s\"", it->name.c_str());
-                    if (ImGui::MenuItem(tmp)) {
-                        OFS_ScriptSettings::Bookmark bookmark(it->name + "_end", player->getCurrentPositionSecondsInterp());
+                    const char* item = Util::Format("Create interval for \"%s\"", it->name.c_str());
+                    if (ImGui::MenuItem(item)) {
+                        OFS_ScriptSettings::Bookmark bookmark(it->name + "_end", currentTime);
                         scriptSettings.AddBookmark(std::move(bookmark));
                     }
                 }
             }
 
+            static float LastPositionTime = -1.f;
             if (ImGui::BeginMenu("Go to...")) {
                 if (scriptSettings.Bookmarks.size() == 0) {
                     ImGui::TextDisabled("No bookmarks");
@@ -2710,10 +2711,19 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     for (auto& mark : scriptSettings.Bookmarks) {
                         if (ImGui::MenuItem(mark.name.c_str())) {
                             player->setPositionExact(mark.atS);
+                            LastPositionTime = -1.f;
+                        }
+                        if (ImGui::IsItemHovered()) {
+                            if (LastPositionTime < 0.f) LastPositionTime = currentTime;
+                            player->setPositionExact(mark.atS);
                         }
                     }
                 }
                 ImGui::EndMenu();
+            }
+            else if (LastPositionTime > 0.f) {
+                player->setPositionExact(LastPositionTime);
+                LastPositionTime = -1.f;
             }
 
             if (ImGui::Checkbox("Always show labels", &settings->data().always_show_bookmark_labels)) {
