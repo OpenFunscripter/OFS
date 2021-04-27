@@ -689,7 +689,7 @@ void CustomLua::resetVM() noexcept
             }
         }
 
-        Thread.NewPositionMs = (double)app->player->getCurrentPositionSecondsInterp() * 1000.f;
+        Thread.NewPositionMs = (double)app->player->getCurrentPositionSecondsInterp() * 1000.0;
         stbsp_snprintf(tmp, sizeof(tmp), "CurrentTimeMs=%d\n", Thread.NewPositionMs);
         builder << tmp;
         stbsp_snprintf(tmp, sizeof(tmp), "FrameTimeMs=%lf\n", (double)app->player->getFrameTime() * 1000.0);

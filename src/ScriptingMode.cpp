@@ -133,7 +133,7 @@ void ScriptingMode::addEditAction(FunscriptAction action) noexcept
     auto app = OpenFunscripter::ptr;
     if (!app->player->isPaused()) {
         // apply offset
-        action.atS += app->settings->data().action_insert_delay_ms * 1000.f;
+        action.atS += app->settings->data().action_insert_delay_ms / 1000.f;
     }
 	impl->addEditAction(action);
 }
@@ -307,7 +307,7 @@ inline void RecordingImpl::finishSingleAxisRecording() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
-    float offsetTime = app->settings->data().action_insert_delay_ms * 1000.f;
+    float offsetTime = app->settings->data().action_insert_delay_ms / 1000.f;
     if (app->settings->data().mirror_mode) {
         app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS);
         for (auto&& script : app->LoadedFunscripts()) {
@@ -337,7 +337,7 @@ inline void RecordingImpl::finishTwoAxisRecording() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
-    float offsetTime = app->settings->data().action_insert_delay_ms * 1000.f;
+    float offsetTime = app->settings->data().action_insert_delay_ms / 1000.f;
     app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS);
     int32_t rollIdx = app->sim3D->rollIndex;
     int32_t pitchIdx = app->sim3D->pitchIndex;
