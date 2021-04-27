@@ -23,11 +23,6 @@ void HeatmapGradient::Init() noexcept
     Colors.addMark(4.f/(heatColor.size()-1), heatColor[4]);
     Colors.addMark(5.f/(heatColor.size()-1), heatColor[5]);
 
-    //float pos = 0.0f;
-    //for (auto& col : heatColor) {
-    //    Colors.addMark(pos, col);
-    //    pos += (1.f / (heatColor.size() - 1));
-    //}
     Colors.refreshCache();
 }
 
@@ -51,7 +46,7 @@ void HeatmapGradient::Update(float totalDuration, const FunscriptArray& actions)
 
     constexpr float GapDuration = 10.f;
     constexpr float MinSegmentTime = 2.f;
-    constexpr int32_t MaxSegments = 150;
+    constexpr int32_t MaxSegments = 200;
     int SegmentCount = Util::Clamp((int32_t)std::round(totalDuration / MinSegmentTime), 1, MaxSegments);
     Speeds.clear(); Speeds.resize(SegmentCount, 0.f);
     
@@ -63,7 +58,7 @@ void HeatmapGradient::Update(float totalDuration, const FunscriptArray& actions)
         float duration = action.atS - lastAction.atS;
         float length = std::abs(action.pos - lastAction.pos);
         float speed = length / duration; // speed
-        speed = Util::Clamp(speed / 530.f, 0.f, 1.f);
+        speed = Util::Clamp(speed / MaxSpeedPerSecond, 0.f, 1.f);
 
         int segmentIdx = Util::Clamp((action.atS + (duration / 2.f)) / totalDuration, 0.f, 1.f) * (Speeds.size()-1);
         auto& segment = Speeds[segmentIdx];
@@ -77,11 +72,12 @@ void HeatmapGradient::Update(float totalDuration, const FunscriptArray& actions)
         lastAction = action;
     }
 
+    float offset = (1.f/Speeds.size())/2.f;
     ImColor color(0.f, 0.f, 0.f, 1.f);
     for (int i = 0; i < Speeds.size(); ++i) {
         float speed = Speeds[i];
         Colors.getColorAt(speed, &color.Value.x);
-        float pos = (float)i/Speeds.size();
+        float pos = ((float)(i+1)/Speeds.size()) - offset;
         Gradient.addMark(pos, color);
     }
     Gradient.refreshCache();

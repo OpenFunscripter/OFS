@@ -5,6 +5,8 @@
 class HeatmapGradient
 {
 public:
+	static constexpr float MaxSpeedPerSecond = 530.f; // arbitrarily choosen maximum tuned for coloring
+
 	static ImGradient Colors;
 	static void Init() noexcept;
 

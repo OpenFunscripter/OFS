@@ -1,6 +1,7 @@
 #include "ScriptPositionsOverlayMode.h"
 #include "OFS_ScriptTimeline.h"
 #include "OFS_Profiling.h"
+#include "FunscriptHeatmap.h"
 
 #include <cmath>
 
@@ -172,7 +173,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
 
             if (prevAction != nullptr) {
                 // calculate speed relative to maximum speed
-                float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.atS - prevAction->atS))) / max_speed_per_seconds, 0.f, 1.f);
+                float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.atS - prevAction->atS))) / HeatmapGradient::MaxSpeedPerSecond, 0.f, 1.f);
                 ImColor speed_color;
                 speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
                 speed_color.Value.w = 1.f;
@@ -195,7 +196,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
                 // draw line
                 auto p2 = getPointForAction(ctx, *prevAction);
                 // calculate speed relative to maximum speed
-                float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.atS - prevAction->atS))) / max_speed_per_seconds, 0.f, 1.f);
+                float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.atS - prevAction->atS))) / HeatmapGradient::MaxSpeedPerSecond, 0.f, 1.f);
                 ImColor speed_color;
                 speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
                 speed_color.Value.w = 1.f;
