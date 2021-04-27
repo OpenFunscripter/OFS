@@ -159,20 +159,20 @@ void ScriptingMode::update() noexcept
 void DynamicInjectionImpl::DrawModeSettings() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    ImGui::SliderFloat("##Target speed (units/s)", &target_speed, min_speed, max_speed);
+    ImGui::SliderFloat("##Target speed (units/s)", &targetSpeed, MinSpeed, MaxSpeed, "%.3f", ImGuiSliderFlags_AlwaysClamp);
     OFS::Tooltip("Target speed (units/s)");
-    target_speed = std::round(Util::Clamp(target_speed, min_speed, max_speed));
+    targetSpeed = std::round(Util::Clamp(targetSpeed, MinSpeed, MaxSpeed));
 
-    ImGui::SliderFloat("##Up/Down speed bias", &direction_bias, -0.50f, 0.50f);
+    ImGui::SliderFloat("##Up/Down speed bias", &directionBias, -0.9f, 0.9f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
     OFS::Tooltip("Up/Down speed bias");
 
     ImGui::Columns(2, 0, false);
-    if (ImGui::RadioButton("Top", top_bottom_direction == 1)) {
-        top_bottom_direction = 1;
+    if (ImGui::RadioButton("Top", topBottomDirection == 1)) {
+        topBottomDirection = 1;
     }
     ImGui::NextColumn();
-    if (ImGui::RadioButton("Bottom", top_bottom_direction == -1)) {
-        top_bottom_direction = -1;
+    if (ImGui::RadioButton("Bottom", topBottomDirection == -1)) {
+        topBottomDirection = -1;
     }
     ImGui::NextColumn();
     ImGui::Columns(1);
@@ -183,10 +183,10 @@ void DynamicInjectionImpl::addEditAction(FunscriptAction action) noexcept
 {
     auto previous = ctx().GetPreviousActionBehind(action.atS);
     if (previous != nullptr) {
-        auto injectAt = previous->atS + ((action.atS - previous->atS) / 2) + (((action.atS - previous->atS) / 2) * direction_bias);
+        auto injectAt = previous->atS + ((action.atS - previous->atS) / 2) + (((action.atS - previous->atS) / 2) * directionBias);
         auto inject_duration = injectAt - previous->atS;
 
-        int32_t injectPos = Util::Clamp<int32_t>(previous->pos + (top_bottom_direction * (inject_duration / 1000.0) * target_speed), 0.0, 100.0);
+        int32_t injectPos = Util::Clamp<int32_t>(previous->pos + (topBottomDirection * inject_duration * targetSpeed), 0, 100);
         ScripingModeBaseImpl::addEditAction(FunscriptAction(injectAt, injectPos));
     }
     ScripingModeBaseImpl::addEditAction(action);

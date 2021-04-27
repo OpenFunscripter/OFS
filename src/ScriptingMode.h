@@ -45,11 +45,11 @@ public:
 class DynamicInjectionImpl : public ScripingModeBaseImpl
 {
 protected:
-	const float max_speed = 500;
-	const float min_speed = 50;
-	float target_speed = 300;
-	float direction_bias = 0.f;
-	int top_bottom_direction = 1; // 1 for top and -1 for bottom injection
+	static constexpr float MaxSpeed = 500.f;
+	static constexpr float MinSpeed = 50.f;
+	float targetSpeed = 300;
+	float directionBias = 0.f;
+	int topBottomDirection = 1; // 1 for top and -1 for bottom injection
 public:
 	virtual void DrawModeSettings() noexcept override;
 	virtual void addEditAction(FunscriptAction action) noexcept override;
