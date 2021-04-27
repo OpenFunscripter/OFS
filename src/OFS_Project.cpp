@@ -349,7 +349,15 @@ void OFS_Project::ExportClips(const std::filesystem::path& outputPath) noexcept
 			}
 			else
 			{
-				endTimeInt = (int32_t) (bookmarks[i + 1].at - app->player->getFrameTimeMs());
+				if (bookmarks[i + 1].type == OFS_ScriptSettings::Bookmark::BookmarkType::REGULAR || bookmarks[i + 1].type == OFS_ScriptSettings::Bookmark::BookmarkType::START_MARKER)
+				{
+					endTimeInt = (int32_t)(bookmarks[i + 1].at - app->player->getFrameTimeMs());
+				}
+				else
+				{
+					endTimeInt = (int32_t)(bookmarks[i + 1].at);
+				}
+				
 			}
 
 			i++;
