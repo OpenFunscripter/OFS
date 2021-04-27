@@ -2004,6 +2004,18 @@ void OpenFunscripter::quickExport() noexcept
     LoadedProject->ExportFunscripts();
 }
 
+void OpenFunscripter::exportClips() noexcept
+{
+    OFS_PROFILE(__FUNCTION__);
+    LoadedProject->Save(true);
+    Util::OpenDirectoryDialog("Choose output directory.", settings->data().last_path,
+        [&](auto& result) {
+            if (result.files.size() > 0) {
+                LoadedProject->ExportClips(result.files[0]);
+            }
+        });
+}
+
 bool OpenFunscripter::closeProject() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
@@ -2407,6 +2419,9 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                                 }
                             });
                     }
+                }
+                if (ImGui::MenuItem("Export Clips")) {
+                    exportClips();
                 }
                 ImGui::EndMenu();
             }
