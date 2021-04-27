@@ -158,7 +158,7 @@ bool OFS_Project::Load(const std::string& path) noexcept
 	return false;
 }
 
-void OFS_Project::Save(const std::string& path) noexcept
+void OFS_Project::Save(const std::string& path, bool setSaved) noexcept
 {
 	if (!Loaded) return;
 	OFS_PROFILE(__FUNCTION__);
@@ -171,7 +171,7 @@ void OFS_Project::Save(const std::string& path) noexcept
 		.filename()
 		.u8string();
 	Metadata.duration = app->player->getDuration();
-	Settings.lastPlayerPositionMs = app->player->getCurrentPositionMs();
+	Settings.lastPlayerPosition = app->player->getCurrentPositionSeconds();
 
 	size_t writtenSize = 0;
 	{
@@ -196,7 +196,9 @@ void OFS_Project::Save(const std::string& path) noexcept
 	app->IO->PushWrite(std::move(write));
 
 	// this resets HasUnsavedEdits()
-	for (auto& script : Funscripts) script->SetSavedFromOutside();
+	if (setSaved) {
+		for (auto& script : Funscripts) script->SetSavedFromOutside();
+	}
 }
 
 void OFS_Project::AddFunscript(const std::string& path) noexcept
@@ -208,14 +210,14 @@ void OFS_Project::AddFunscript(const std::string& path) noexcept
 	if (script->open(path)) {
 		// add existing script to project
 		Funscripts.emplace_back(std::move(script));
-		Save();
+		Save(true);
 	}
 	else {
 		// add empty script to project
 		script = std::make_shared<Funscript>();
 		script->UpdatePath(path);
 		Funscripts.emplace_back(std::move(script));
-		Save();
+		Save(true);
 	}
 }
 
@@ -224,7 +226,7 @@ void OFS_Project::RemoveFunscript(int idx) noexcept
 	OFS_PROFILE(__FUNCTION__);
 	if (idx >= 0 && idx < Funscripts.size()) {
 		Funscripts.erase(Funscripts.begin() + idx);
-		Save();
+		Save(true);
 	}
 }
 
@@ -247,7 +249,7 @@ bool OFS_Project::ImportFunscript(const std::string& path) noexcept
 		Funscripts.emplace_back(std::move(script));
 		Loaded = true;
 		FUN_ASSERT(!LastPath.empty(), "path empty");
-		Save();
+		Save(true);
 		return true;
 	}
 	else {

@@ -18,8 +18,6 @@ public:
 	float MidMax = 0.f;
 	float LowMax = 0.f;
 
-	reproc::process GenerateProcess;
-
 	inline bool BusyGenerating() noexcept { return generating; }
 
 	bool LoadMP3(const std::string& path) noexcept;

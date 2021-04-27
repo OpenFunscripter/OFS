@@ -177,7 +177,6 @@ public:
 	inline const std::vector<FunscriptAction>& FunscriptClipboard() const { return CopiedSelection; }
 
 	inline bool LoadOverrideFont(const std::string& font) noexcept { return loadFonts(font.empty() ? nullptr : font.c_str()); }
-
 	void Undo() noexcept;
 	void Redo() noexcept;
 };

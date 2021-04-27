@@ -3,18 +3,12 @@
 #include "OFS_Profiling.h"
 #include <array>
 
-void OFS::UpdateHeatmapGradient(float totalDurationMs, ImGradient& grad, const FunscriptArray& actions) noexcept
+ImGradient HeatmapGradient::Colors;
+
+void HeatmapGradient::Init() noexcept
 {
-    OFS_PROFILE(__FUNCTION__);
-    grad.clear();
-    grad.addMark(0.f, IM_COL32(0, 0, 0, 255));
-    grad.addMark(1.f, IM_COL32(0, 0, 0, 255));
-
-    if (actions.size() == 0) {
-        return;
-    }
-
-    std::array<ImColor, 6> heatColor {
+    if (!Colors.getMarks().empty()) return;
+    std::array<ImColor, 6> heatColor{
         IM_COL32(0x00, 0x00, 0x00, 0xFF),
         IM_COL32(0x1E, 0x90, 0xFF, 0xFF),
         IM_COL32(0x00, 0xFF, 0xFF, 0xFF),
@@ -22,112 +16,73 @@ void OFS::UpdateHeatmapGradient(float totalDurationMs, ImGradient& grad, const F
         IM_COL32(0xFF, 0xFF, 0x00, 0xFF),
         IM_COL32(0xFF, 0x00, 0x00, 0xFF),
     };
+    Colors.addMark(0.f, heatColor[0]);
+    Colors.addMark(std::nextafterf(0.f, 1.f), heatColor[1]);
+    Colors.addMark(2.f/(heatColor.size()-1), heatColor[2]);
+    Colors.addMark(3.f/(heatColor.size()-1), heatColor[3]);
+    Colors.addMark(4.f/(heatColor.size()-1), heatColor[4]);
+    Colors.addMark(5.f/(heatColor.size()-1), heatColor[5]);
 
+    //float pos = 0.0f;
+    //for (auto& col : heatColor) {
+    //    Colors.addMark(pos, col);
+    //    pos += (1.f / (heatColor.size() - 1));
+    //}
+    Colors.refreshCache();
+}
 
-    ImGradient HeatMap;
-    float pos = 0.0f;
-    for (auto& col : heatColor) {
-        HeatMap.addMark(pos, col);
-        pos += (1.f / (heatColor.size() - 1));
-    }
-    HeatMap.refreshCache();
+HeatmapGradient::HeatmapGradient() noexcept
+{
+    Gradient.clear();
+    Gradient.addMark(0.f, IM_COL32(0, 0, 0, 255));
+    Gradient.addMark(1.f, IM_COL32(0, 0, 0, 255));
+    Gradient.refreshCache();
+}
 
-    auto getSegments = [](const FunscriptArray& actions, int32_t gapDurationMs) -> std::vector<std::vector<FunscriptAction>> {
-        int prev_direction = 0; // 0 neutral 0< up 0> down
-        std::vector<std::vector<FunscriptAction>> segments;
-        {
-            FunscriptAction previous(0, 0);
+void HeatmapGradient::Update(float totalDuration, const FunscriptArray& actions) noexcept
+{
+    OFS_PROFILE(__FUNCTION__);
+    ImColor BackgroundColor(0.f, 0.f, 0.f, 1.f);
 
-            for (auto& action : actions)
-            {
-                if (previous.pos == action.pos) {
-                    continue;
-                }
+    Gradient.clear();
+    Gradient.addMark(0.f, BackgroundColor);
+    Gradient.addMark(1.f, BackgroundColor);
+    if (actions.empty()) { Gradient.refreshCache(); return; }
 
-                // filter out actions which don't change direction
-                int direction = action.pos - previous.pos;
-                if (direction > 0 && prev_direction > 0) {
-                    previous = action;
-                    continue;
-                }
-                else if (direction < 0 && prev_direction < 0) {
-                    previous = action;
-                    continue;
-                }
+    constexpr float GapDuration = 10.f;
+    constexpr float MinSegmentTime = 2.f;
+    constexpr int32_t MaxSegments = 150;
+    int SegmentCount = Util::Clamp((int32_t)std::round(totalDuration / MinSegmentTime), 1, MaxSegments);
+    Speeds.clear(); Speeds.resize(SegmentCount, 0.f);
+    
+    float SegmentDuration = totalDuration / MaxSegments;
 
-                prev_direction = direction;
+    auto lastAction = actions.front();
+    for (int i = 1; i < actions.size(); ++i) {
+        auto& action = actions[i];
+        float duration = action.atS - lastAction.atS;
+        float length = std::abs(action.pos - lastAction.pos);
+        float speed = length / duration; // speed
+        speed = Util::Clamp(speed / 530.f, 0.f, 1.f);
 
-                if (action.at - previous.at >= gapDurationMs) {
-                    segments.emplace_back();
-                }
-                if (segments.size() == 0) { segments.emplace_back(); }
-                segments.back().emplace_back(action);
-
-                previous = action;
-            }
-
-            return segments;
+        int segmentIdx = Util::Clamp((action.atS + (duration / 2.f)) / totalDuration, 0.f, 1.f) * (Speeds.size()-1);
+        auto& segment = Speeds[segmentIdx];
+        if (segment > 0.f) {
+            segment += speed;
+            segment /= 2.f;
+        } 
+        else {
+            segment = speed;
         }
-    };
-
-
-    // this comes fairly close to what ScriptPlayer's heatmap looks like
-    constexpr float kernel_size_ms = 2500.f;
-    constexpr float max_actions_in_kernel = 24.5f / (5.f / (kernel_size_ms / 1000.f));
+        lastAction = action;
+    }
 
     ImColor color(0.f, 0.f, 0.f, 1.f);
-
-    constexpr int32_t max_samples = 3;
-    std::vector<float> samples;
-    samples.reserve(max_samples);
-
-    auto segments = getSegments(actions, 10000);
-    for (auto& segment : segments) {
-        const float durationMs = segment.back().at - segment.front().at;
-        float kernel_offset = segment.front().at;
-        grad.addMark(kernel_offset / totalDurationMs, IM_COL32(0, 0, 0, 255));
-        do {
-            int actions_in_kernel = 0;
-            float kernel_start = kernel_offset;
-            float kernel_end = kernel_offset + kernel_size_ms;
-
-            if (kernel_offset < segment.back().at)
-            {
-                for (int i = 0; i < segment.size(); i++) {
-                    auto& action = segment[i];
-                    if (action.at >= kernel_start && action.at <= kernel_end)
-                        actions_in_kernel++;
-                    else if (action.at > kernel_end)
-                        break;
-                }
-            }
-            kernel_offset += kernel_size_ms;
-
-            float actionsRelToMax = Util::Clamp((float)actions_in_kernel / max_actions_in_kernel, 0.0f, 1.0f);
-            if (samples.size() == max_samples + 1) {
-                samples.erase(samples.begin());
-            }
-            samples.emplace_back(actionsRelToMax);
-
-            auto getAverage = [](std::vector<float>& samples) {
-                float result = 0.f;
-                for (auto&& sample : samples) {
-                    result += sample;
-                }
-                result /= (float)samples.size();
-                return result;
-            };
-
-            if (samples.size() > 1) {
-                actionsRelToMax = getAverage(samples);
-            }
-
-            HeatMap.getColorAt(actionsRelToMax, (float*)&color.Value);
-            float markPos = kernel_offset / totalDurationMs;
-            grad.addMark(markPos, color);
-
-        } while (kernel_offset < (segment.front().at + durationMs));
-        grad.addMark((kernel_offset + 1.f) / totalDurationMs, IM_COL32(0, 0, 0, 255));
+    for (int i = 0; i < Speeds.size(); ++i) {
+        float speed = Speeds[i];
+        Colors.getColorAt(speed, &color.Value.x);
+        float pos = (float)i/Speeds.size();
+        Gradient.addMark(pos, color);
     }
-    grad.refreshCache();
+    Gradient.refreshCache();
 }

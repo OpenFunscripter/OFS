@@ -13,13 +13,6 @@ void OFS_VideoplayerControls::VideoLoaded(SDL_Event& ev) noexcept
     }
 }
 
-OFS_VideoplayerControls::OFS_VideoplayerControls() noexcept
-{
-    TimelineGradient.addMark(0.f, IM_COL32_BLACK);
-    TimelineGradient.addMark(1.f, IM_COL32_BLACK);
-    TimelineGradient.refreshCache();
-}
-
 void OFS_VideoplayerControls::setup() noexcept
 {
     videoPreview = std::make_unique<VideoPreview>();
@@ -56,19 +49,29 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
     const float current_pos_x = frame_bb.Min.x + frame_bb.GetWidth() * (*position);
     const float offset_progress_h = h / 5.f;
     const float offset_progress_w = current_pos_x - frame_bb.Min.x;
-    draw_list->AddRectFilled(frame_bb.Min + ImVec2(-1.f, offset_progress_h), frame_bb.Min + ImVec2(offset_progress_w, frame_bb.GetHeight()) + ImVec2(0.f, offset_progress_h), ImColor(style.Colors[ImGuiCol_PlotLinesHovered]));
-    draw_list->AddRectFilled(frame_bb.Min + ImVec2(offset_progress_w, offset_progress_h), frame_bb.Max + ImVec2(1.f, offset_progress_h), IM_COL32(150, 150, 150, 255));
+    draw_list->AddRectFilled(
+        frame_bb.Min + ImVec2(-1.f, offset_progress_h),
+        frame_bb.Min + ImVec2(offset_progress_w, frame_bb.GetHeight()) + ImVec2(0.f, offset_progress_h),
+        ImColor(style.Colors[ImGuiCol_PlotLinesHovered]));
+    draw_list->AddRectFilled(frame_bb.Min + ImVec2(offset_progress_w, offset_progress_h),
+        frame_bb.Max + ImVec2(1.f, offset_progress_h),
+        IM_COL32(150, 150, 150, 255));
 
     customDraw(draw_list, frame_bb, item_hovered);
 
     // position highlight
     ImVec2 p1(current_pos_x, frame_bb.Min.y);
     ImVec2 p2(current_pos_x, frame_bb.Max.y);
-    constexpr float timeline_pos_cursor_w = 5.f;
+    constexpr float timeline_pos_cursor_w = 4.f;
     draw_list->AddLine(p1 + ImVec2(0.f, h / 3.f), p2 + ImVec2(0.f, h / 3.f), IM_COL32(255, 0, 0, 255), timeline_pos_cursor_w / 2.f);
 
-    ImGradient::DrawGradientBar(&TimelineGradient, frame_bb.Min, frame_bb.GetWidth(), frame_bb.GetHeight());
-    draw_list->AddRectFilledMultiColor(frame_bb.Min, frame_bb.Max, IM_COL32(0, 0, 0, 255), IM_COL32(0, 0, 0, 255), IM_COL32(0, 0, 0, 0), IM_COL32(0, 0, 0, 0));
+    // gradient + shadow
+    ImGradient::DrawGradientBar(&Heatmap.Gradient, frame_bb.Min, frame_bb.GetWidth(), frame_bb.GetHeight());
+    draw_list->AddRectFilledMultiColor(frame_bb.Min, frame_bb.Max, 
+        IM_COL32(0, 0, 0, 255),
+        IM_COL32(0, 0, 0, 255),
+        IM_COL32(0, 0, 0, 0),
+        IM_COL32(0, 0, 0, 0));
 
     const ImColor timeline_cursor_back = IM_COL32(255, 255, 255, 255);
     const ImColor timeline_cursor_front = IM_COL32(0, 0, 0, 255);
@@ -76,8 +79,12 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
     float rel_timeline_pos = ((mouse.x - frame_bb.Min.x) / frame_bb.GetWidth());
 
     if (item_hovered) {
-        draw_list->AddLine(ImVec2(mouse.x, frame_bb.Min.y), ImVec2(mouse.x, frame_bb.Max.y), timeline_cursor_back, timeline_pos_cursor_w);
-        draw_list->AddLine(ImVec2(mouse.x, frame_bb.Min.y), ImVec2(mouse.x, frame_bb.Max.y), timeline_cursor_front, timeline_pos_cursor_w / 2.f);
+        draw_list->AddLine(ImVec2(mouse.x, frame_bb.Min.y),
+            ImVec2(mouse.x, frame_bb.Max.y),
+            timeline_cursor_back, timeline_pos_cursor_w);
+        draw_list->AddLine(ImVec2(mouse.x, frame_bb.Min.y),
+            ImVec2(mouse.x, frame_bb.Max.y),
+            timeline_cursor_front, timeline_pos_cursor_w / 2.f);
 
         ImGui::BeginTooltipEx(ImGuiWindowFlags_None, ImGuiTooltipFlags_None);
         {
@@ -117,7 +124,6 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
 
     draw_list->AddLine(p1, p2, timeline_cursor_back, timeline_pos_cursor_w);
     draw_list->AddLine(p1, p2, timeline_cursor_front, timeline_pos_cursor_w / 2.f);
-
 
     constexpr float min_val = 0.f;
     constexpr float max_val = 1.f;

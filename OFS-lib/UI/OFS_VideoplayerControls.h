@@ -3,6 +3,7 @@
 #include "OFS_Videoplayer.h"
 #include "GradientBar.h"
 #include "OFS_Videopreview.h"
+#include "FunscriptHeatmap.h"
 
 #include <functional>
 
@@ -28,12 +29,17 @@ public:
 	static constexpr const char* PlayerControlId = "Controls";
 	static constexpr const char* PlayerTimeId = "Time";
 	VideoplayerWindow* player = nullptr;
-	ImGradient TimelineGradient;
+	HeatmapGradient Heatmap;
 	std::unique_ptr<VideoPreview> videoPreview;
 
-	OFS_VideoplayerControls() noexcept;
+	OFS_VideoplayerControls() noexcept {}
 	void setup() noexcept;
 	inline void Destroy() noexcept { videoPreview.reset(); }
+
+	inline void UpdateHeatmap(float totalDuration, const FunscriptArray& actions) noexcept
+	{
+		Heatmap.Update(totalDuration, actions);
+	}
 
 	bool DrawTimelineWidget(const char* label, float* position, TimelineCustomDrawFunc&& customDraw) noexcept;
 

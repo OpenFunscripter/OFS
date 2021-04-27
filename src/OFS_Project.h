@@ -12,7 +12,8 @@
 
 enum OFS_Project_Version : int32_t
 {
-	One = 1
+	One = 1,
+	FloatingPointTimestamps = 2
 };
 
 class OFS_Project
@@ -57,8 +58,8 @@ public:
 	void Clear() noexcept;
 	bool Load(const std::string& path) noexcept;
 
-	void Save() noexcept { Save(LastPath); }
-	void Save(const std::string& path) noexcept;
+	void Save(bool setSaved) noexcept { Save(LastPath, setSaved); }
+	void Save(const std::string& path, bool setSaved) noexcept;
 
 	void AddFunscript(const std::string& path) noexcept;
 	void RemoveFunscript(int idx) noexcept;
@@ -80,9 +81,9 @@ public:
 	{
 		s.ext(*this, bitsery::ext::Growable{},
 			[](S& s, OFS_Project& o) {
-				auto CurrentVersion = OFS_Project_Version::One;
+				auto CurrentVersion = OFS_Project_Version::FloatingPointTimestamps;
 				s.value4b(CurrentVersion);
-				if (CurrentVersion != OFS_Project_Version::One) {
+				if (CurrentVersion != OFS_Project_Version::FloatingPointTimestamps) {
 					o.Valid = false;
 					return;
 				}

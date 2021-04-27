@@ -17,7 +17,7 @@ ScripingModeBaseImpl::ScripingModeBaseImpl()
 void ScripingModeBaseImpl::addEditAction(FunscriptAction action) noexcept
 {
     auto app = OpenFunscripter::ptr;
-    ctx().AddEditAction(action, app->player->getFrameTimeMs());
+    ctx().AddEditAction(action, app->player->getFrameTime());
 }
 
 inline Funscript& ScripingModeBaseImpl::ctx() {
@@ -133,7 +133,7 @@ void ScriptingMode::addEditAction(FunscriptAction action) noexcept
     auto app = OpenFunscripter::ptr;
     if (!app->player->isPaused()) {
         // apply offset
-        action.at += app->settings->data().action_insert_delay_ms;
+        action.atS += app->settings->data().action_insert_delay_ms * 1000.f;
     }
 	impl->addEditAction(action);
 }
@@ -181,13 +181,13 @@ void DynamicInjectionImpl::DrawModeSettings() noexcept
 // dynamic injection
 void DynamicInjectionImpl::addEditAction(FunscriptAction action) noexcept
 {
-    auto previous = ctx().GetPreviousActionBehind(action.at);
+    auto previous = ctx().GetPreviousActionBehind(action.atS);
     if (previous != nullptr) {
-        int32_t inject_at = previous->at + ((action.at - previous->at) / 2) + (((action.at - previous->at) / 2) * direction_bias);
+        auto injectAt = previous->atS + ((action.atS - previous->atS) / 2) + (((action.atS - previous->atS) / 2) * direction_bias);
+        auto inject_duration = injectAt - previous->atS;
 
-        int32_t inject_duration = inject_at - previous->at;
-        int32_t inject_pos = Util::Clamp<int32_t>(previous->pos + (top_bottom_direction * (inject_duration / 1000.0) * target_speed), 0.0, 100.0);
-        ScripingModeBaseImpl::addEditAction(FunscriptAction(inject_at, inject_pos));
+        int32_t injectPos = Util::Clamp<int32_t>(previous->pos + (top_bottom_direction * (inject_duration / 1000.0) * target_speed), 0.0, 100.0);
+        ScripingModeBaseImpl::addEditAction(FunscriptAction(injectAt, injectPos));
     }
     ScripingModeBaseImpl::addEditAction(action);
 }
@@ -198,7 +198,7 @@ void AlternatingImpl::DrawModeSettings() noexcept
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
     if (contextSensitive) {
-        auto behind = ctx().GetPreviousActionBehind(std::round(app->player->getCurrentPositionMsInterp())-1);
+        auto behind = ctx().GetPreviousActionBehind(std::round(app->player->getCurrentPositionSecondsInterp()) - 0.001f);
         if (behind) {
             ImGui::TextDisabled("Next point: %s", behind->pos <= 50 ? "Top" : "Bottom");
         }
@@ -247,7 +247,7 @@ void AlternatingImpl::DrawModeSettings() noexcept
 void AlternatingImpl::addEditAction(FunscriptAction action) noexcept
 {
     if (contextSensitive) {
-        auto behind = ctx().GetPreviousActionBehind(action.at - 1);
+        auto behind = ctx().GetPreviousActionBehind(action.atS - 0.001f);
         if (behind && behind->pos <= 50 && action.pos <= 50) {
             //Top
             action.pos = 100 - action.pos;
@@ -255,9 +255,6 @@ void AlternatingImpl::addEditAction(FunscriptAction action) noexcept
         else if(behind && behind->pos > 50 && action.pos > 50) {
             //Bottom
             action.pos = 100 - action.pos;
-        }
-        else {
-            LOG_DEBUG("foo");
         }
     }
     else {
@@ -290,7 +287,7 @@ inline void RecordingImpl::singleAxisRecording() noexcept
     auto app = OpenFunscripter::ptr;
     uint32_t frameEstimate = app->player->getCurrentFrameEstimate();
     app->scriptPositions.RecordingBuffer[frameEstimate]
-        = std::move(std::make_pair(FunscriptAction(app->player->getCurrentPositionMs(), currentPosY), FunscriptAction()));
+        = std::make_pair(FunscriptAction(app->player->getCurrentPositionSecondsInterp(), currentPosY), FunscriptAction());
     app->simulator.positionOverride = currentPosY;
 }
 
@@ -299,9 +296,9 @@ inline void RecordingImpl::twoAxisRecording() noexcept
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
     uint32_t frameEstimate = app->player->getCurrentFrameEstimate();
-    int32_t at = app->player->getCurrentPositionMs();
+    float atS = app->player->getCurrentPositionSecondsInterp();
     app->scriptPositions.RecordingBuffer[frameEstimate]
-        = std::move(std::make_pair(FunscriptAction(at, currentPosX), FunscriptAction(at, 100 - currentPosY)));
+        = std::make_pair(FunscriptAction(atS, currentPosX), FunscriptAction(atS, 100 - currentPosY));
     app->sim3D->RollOverride = currentPosX;
     app->sim3D->PitchOverride = 100 - currentPosY;
 }
@@ -310,14 +307,14 @@ inline void RecordingImpl::finishSingleAxisRecording() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
-    int32_t offsetMs = app->settings->data().action_insert_delay_ms;
+    float offsetTime = app->settings->data().action_insert_delay_ms * 1000.f;
     if (app->settings->data().mirror_mode) {
         app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS);
         for (auto&& script : app->LoadedFunscripts()) {
             for (auto&& actionP : app->scriptPositions.RecordingBuffer) {
                 auto& action = actionP.first;
-                if (action.at >= 0) {
-                    action.at += offsetMs;
+                if (action.atS >= 0) {
+                    action.atS += offsetTime;
                     script->AddAction(action);
                 }
             }
@@ -327,8 +324,8 @@ inline void RecordingImpl::finishSingleAxisRecording() noexcept
         app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, app->ActiveFunscript());
         for (auto&& actionP : app->scriptPositions.RecordingBuffer) {
             auto& action = actionP.first;
-            if (action.at >= 0) {
-                action.at += offsetMs;
+            if (action.atS >= 0) {
+                action.atS += offsetTime;
                 ctx().AddAction(action);
             }
         }
@@ -340,7 +337,7 @@ inline void RecordingImpl::finishTwoAxisRecording() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
-    int32_t offsetMs = app->settings->data().action_insert_delay_ms;
+    float offsetTime = app->settings->data().action_insert_delay_ms * 1000.f;
     app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS);
     int32_t rollIdx = app->sim3D->rollIndex;
     int32_t pitchIdx = app->sim3D->pitchIndex;
@@ -348,8 +345,8 @@ inline void RecordingImpl::finishTwoAxisRecording() noexcept
         auto& script = app->LoadedFunscripts()[rollIdx];
         for (auto&& actionP : app->scriptPositions.RecordingBuffer) {
             auto& actionX = actionP.first;
-            if (actionX.at >= 0) {
-                actionX.at += offsetMs;
+            if (actionX.atS >= 0.f) {
+                actionX.atS += offsetTime;
                 script->AddAction(actionX);
             }
         }
@@ -358,8 +355,8 @@ inline void RecordingImpl::finishTwoAxisRecording() noexcept
         auto& script = app->LoadedFunscripts()[pitchIdx];
         for (auto&& actionP : app->scriptPositions.RecordingBuffer) {
             auto& actionY = actionP.second;
-            if (actionY.at >= 0) {
-                actionY.at += offsetMs;
+            if (actionY.atS >= 0.f) {
+                actionY.atS += offsetTime;
                 script->AddAction(actionY);
             }
         }

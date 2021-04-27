@@ -112,7 +112,7 @@ static struct TCodeThreadData {
     volatile bool requestStop = false;
     bool running = false;
     
-    SDL_atomic_t scriptTimeMs = { 0 };
+    SDL_atomic_t scriptTime = { 0 };
     
     volatile float speed = 1.f;
 
@@ -121,7 +121,7 @@ static struct TCodeThreadData {
     TCodeProducer* producer = nullptr;
 } Thread;
 
-void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
+void TCodePlayer::DrawWindow(bool* open, float currentTime) noexcept
 {
     if (!*open) return;
     OFS_PROFILE(__FUNCTION__);
@@ -209,7 +209,7 @@ void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
     }
     if (ImGui::CollapsingHeader("Global settings"))
     {
-        ImGui::InputInt("Delay", &delay, 10, 10); OFS::Tooltip("Negative: Backward in time.\nPositive: Forward in time.");
+        ImGui::InputFloat("Delay", &delay, 0.01f, 0.01f); OFS::Tooltip("Negative: Backward in time.\nPositive: Forward in time.");
         ImGui::SliderInt("Tickrate (Hz)", &tickrate, 60, 300, "%d", ImGuiSliderFlags_AlwaysClamp); 
         ImGui::Checkbox("Spline", &TCodeChannel::SplineMode);
         OFS::Tooltip("Smooth motion instead of linear.");
@@ -261,9 +261,8 @@ void TCodePlayer::DrawWindow(bool* open, float currentTimeMs) noexcept
     
     if (!Thread.running) {
         // move to the current position
-        int32_t ms = std::round(currentTimeMs);
-        prod.sync(ms, 1.f);
-        prod.tick(ms, 1.f);
+        prod.sync(currentTime, 1.f);
+        prod.tick(currentTime, 1.f);
         const char* cmd = tcode.GetCommandSpeed(500);
         if (cmd != nullptr && port != nullptr) {
             int len = strlen(cmd);
@@ -321,37 +320,39 @@ static int32_t TCodeThread(void* threadData) noexcept {
     TCodeThreadData* data = (TCodeThreadData*)threadData;
 
     LOG_INFO("T-Code thread started...");
-    auto startTime = std::chrono::high_resolution_clock::now();
+    auto startTimePoint = std::chrono::high_resolution_clock::now();
     
-    int scriptTimeMs = 0;
+    int32_t tmp = SDL_AtomicGet(&data->scriptTime);
+    float scriptTime = *((float*)&tmp);
 
-    data->producer->sync(SDL_AtomicGet(&data->scriptTimeMs), data->player->tickrate);
+    data->producer->sync(scriptTime, data->player->tickrate);
 
     while (!data->requestStop) {
         float tickrate = data->player->tickrate;
         float tickDurationSeconds = 1.f / tickrate;
-        auto currentTime = std::chrono::high_resolution_clock::now();
+        auto currentTimePoint = std::chrono::high_resolution_clock::now();
 
-        int32_t delay = data->player->delay;
-        int32_t data_scriptTimeMs = SDL_AtomicGet(&data->scriptTimeMs);
+        float delay = data->player->delay;
+        int32_t data_tmp = SDL_AtomicGet(&data->scriptTime);
+        float data_scriptTime = (*(float*)&data_tmp);
         
-        std::chrono::duration<float> duration = currentTime - startTime;
+        std::chrono::duration<float> duration = currentTimePoint - startTimePoint;
 
-        int32_t currentTimeMs = (((duration.count()*1000.f) * data->speed) + scriptTimeMs) - delay;
-        int32_t syncTimeMs =  data_scriptTimeMs - delay;
-        if (std::abs(currentTimeMs - syncTimeMs) >= 60) {
-            LOGF_INFO("Resync -> %d", currentTimeMs - syncTimeMs);
-            LOGF_INFO("prev: %d new: %d", currentTimeMs, syncTimeMs);
+        float currentTime = ((duration.count() * data->speed) + scriptTime) - delay;
+        float syncTime =  data_scriptTime - delay;
+        if (std::abs(currentTime - syncTime) >= 0.060f) {
+            LOGF_INFO("Resync -> %f", currentTime - syncTime);
+            LOGF_INFO("prev: %f new: %f", currentTime, syncTime);
 
-            scriptTimeMs = data_scriptTimeMs;
-            startTime = std::move(currentTime);
-            currentTimeMs = syncTimeMs;
+            scriptTime = data_scriptTime;
+            startTimePoint = std::move(currentTimePoint);
+            currentTime = syncTime;
 
-            data->producer->sync(currentTimeMs, tickrate);
+            data->producer->sync(currentTime, tickrate);
         }
         else {
             // tick producers
-            data->producer->tick(currentTimeMs, tickrate);
+            data->producer->tick(currentTime, tickrate);
         }
         
         // update channels
@@ -364,7 +365,7 @@ static int32_t TCodeThread(void* threadData) noexcept {
             }
         }
 
-        while((duration = std::chrono::high_resolution_clock::now() - currentTime).count() < tickDurationSeconds) {
+        while((duration = std::chrono::high_resolution_clock::now() - currentTimePoint).count() < tickDurationSeconds) {
             /* Spin wait */
             OFS_PAUSE_INTRIN();
             int ms = (duration.count() / 0.001f) - 1;
@@ -406,7 +407,7 @@ void TCodePlayer::setScripts(std::vector<std::shared_ptr<const Funscript>>&& scr
     prod.SetChannels(&tcode);
 }
 
-void TCodePlayer::play(float currentTimeMs, std::vector<std::shared_ptr<const Funscript>>&& scripts) noexcept
+void TCodePlayer::play(float currentTime, std::vector<std::shared_ptr<const Funscript>>&& scripts) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
 #ifdef NDEBUG
@@ -417,7 +418,7 @@ void TCodePlayer::play(float currentTimeMs, std::vector<std::shared_ptr<const Fu
         Thread.running = true;
         Thread.player = this;
         Thread.channel = &this->tcode;
-        SDL_AtomicSet(&Thread.scriptTimeMs, std::round(currentTimeMs));
+        SDL_AtomicSet(&Thread.scriptTime, *((int*)&currentTime));
         Thread.producer = &this->prod;
         tcode.reset();
         
@@ -436,11 +437,11 @@ void TCodePlayer::stop() noexcept
     }
 }
 
-void TCodePlayer::sync(float currentTimeMs, float speed) noexcept
+void TCodePlayer::sync(float currentTime, float speed) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     Thread.speed = speed;
-    SDL_AtomicSet(&Thread.scriptTimeMs, std::round(currentTimeMs));
+    SDL_AtomicSet(&Thread.scriptTime, *((int*)&currentTime));
 }
 
 void TCodePlayer::reset() noexcept

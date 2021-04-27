@@ -57,7 +57,7 @@ void ScriptSimulator::MouseDown(SDL_Event& ev)
         if (MouseBetweenSimulator) {
             auto app = OpenFunscripter::ptr;
             app->undoSystem->Snapshot(StateType::ADD_EDIT_ACTION, app->ActiveFunscript());
-            app->scripting->addEditAction(FunscriptAction(app->player->getCurrentPositionMsInterp(), 50 + (50 * mouseValue)));
+            app->scripting->addEditAction(FunscriptAction(app->player->getCurrentPositionSecondsInterp(), 50 + (50 * mouseValue)));
         }
     }
 }
@@ -85,8 +85,8 @@ void ScriptSimulator::ShowSimulator(bool* open)
         }
         else {
             currentPos = BaseOverlay::SplineMode 
-                ? app->ActiveFunscript()->SplineClamped(app->player->getCurrentPositionMsInterp()) 
-                : app->ActiveFunscript()->GetPositionAtTime(app->player->getCurrentPositionMsInterp());
+                ? app->ActiveFunscript()->SplineClamped(app->player->getCurrentPositionSecondsInterp()) 
+                : app->ActiveFunscript()->GetPositionAtTime(app->player->getCurrentPositionSecondsInterp());
         }
 
         if (EnableVanilla) {
@@ -278,14 +278,13 @@ void ScriptSimulator::ShowSimulator(bool* open)
 
         // INDICATORS
         if (simulator.EnableIndicators) {
-            auto previousAction = app->ActiveFunscript()->GetActionAtTime(app->player->getCurrentPositionMs(), app->player->getFrameTimeMs());
+            auto previousAction = app->ActiveFunscript()->GetActionAtTime(app->player->getCurrentPositionSeconds(), app->player->getFrameTime());
             if (previousAction == nullptr) {
-                previousAction = app->ActiveFunscript()->GetPreviousActionBehind(app->player->getCurrentPositionMs());
+                previousAction = app->ActiveFunscript()->GetPreviousActionBehind(app->player->getCurrentPositionSeconds());
             }
-            auto nextAction = app->ActiveFunscript()->GetNextActionAhead(app->player->getCurrentPositionMs());
-            if (previousAction != nullptr && nextAction == previousAction)
-            {
-                nextAction = app->ActiveFunscript()->GetNextActionAhead(previousAction->at);
+            auto nextAction = app->ActiveFunscript()->GetNextActionAhead(app->player->getCurrentPositionSeconds());
+            if (previousAction != nullptr && nextAction == previousAction) {
+                nextAction = app->ActiveFunscript()->GetNextActionAhead(previousAction->atS);
             }
 
             if (previousAction != nullptr) {

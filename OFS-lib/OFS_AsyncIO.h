@@ -25,7 +25,6 @@ public:
 	SDL_SpinLock QueueLock;
 
 	SDL_cond* WakeThreadCondition = nullptr;
-	SDL_mutex* ThreadMutex = nullptr;
 
 	std::queue<Write> Writes;
 
