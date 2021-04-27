@@ -389,7 +389,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 			OFS_PROFILE(__FUNCTION__);
 			for (int i = fromIndex; i <= toIndex; i++) {
 				auto& action = rawActions[i].first;
-				if (action.atS >= 0.f) {
+				if (action.pos >= 0) {
 					auto point = getPointForAction(ctx, action);
 					ctx.draw_list->PathLineTo(point);
 				}
@@ -398,7 +398,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 
 			for (int i = fromIndex; i <= toIndex; i++) {
 				auto& action = rawActions[i].second;
-				if (action.atS >= 0.f) {
+				if (action.pos >= 0) {
 					auto point = getPointForAction(ctx, action);
 					ctx.draw_list->PathLineTo(point);
 				}
@@ -407,7 +407,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 			pathStroke(ctx.draw_list, IM_COL32(255, 255, 0, 180));
 		};
 
-		if (scriptPtr.get() == activeScript && recording.size() > 0) {
+		if (scriptPtr.get() == activeScript && !recording.empty()) {
 			int32_t startIndex = Util::Clamp<int32_t>((offsetTime / frameTime), 0, recording.size() - 1);
 			int32_t endIndex = Util::Clamp<int32_t>((offsetTime + visibleTime) / frameTime, startIndex, recording.size() - 1);
 			pathRawSection(drawingCtx, recording, startIndex, endIndex);

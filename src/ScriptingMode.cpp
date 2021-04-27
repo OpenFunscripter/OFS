@@ -313,7 +313,7 @@ inline void RecordingImpl::finishSingleAxisRecording() noexcept
         for (auto&& script : app->LoadedFunscripts()) {
             for (auto&& actionP : app->scriptPositions.RecordingBuffer) {
                 auto& action = actionP.first;
-                if (action.atS >= 0) {
+                if (action.pos >= 0) {
                     action.atS += offsetTime;
                     script->AddAction(action);
                 }
@@ -324,7 +324,7 @@ inline void RecordingImpl::finishSingleAxisRecording() noexcept
         app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, app->ActiveFunscript());
         for (auto&& actionP : app->scriptPositions.RecordingBuffer) {
             auto& action = actionP.first;
-            if (action.atS >= 0) {
+            if (action.pos >= 0) {
                 action.atS += offsetTime;
                 ctx().AddAction(action);
             }
@@ -345,7 +345,7 @@ inline void RecordingImpl::finishTwoAxisRecording() noexcept
         auto& script = app->LoadedFunscripts()[rollIdx];
         for (auto&& actionP : app->scriptPositions.RecordingBuffer) {
             auto& actionX = actionP.first;
-            if (actionX.atS >= 0.f) {
+            if (actionX.pos >= 0) {
                 actionX.atS += offsetTime;
                 script->AddAction(actionX);
             }
@@ -355,7 +355,7 @@ inline void RecordingImpl::finishTwoAxisRecording() noexcept
         auto& script = app->LoadedFunscripts()[pitchIdx];
         for (auto&& actionP : app->scriptPositions.RecordingBuffer) {
             auto& actionY = actionP.second;
-            if (actionY.atS >= 0.f) {
+            if (actionY.pos >= 0) {
                 actionY.atS += offsetTime;
                 script->AddAction(actionY);
             }
@@ -532,7 +532,8 @@ void RecordingImpl::update() noexcept
         recordingJustStarted = false;
         recordingActive = true;
         app->scriptPositions.RecordingBuffer.clear();
-        app->scriptPositions.RecordingBuffer.resize(app->player->getTotalNumFrames());
+        app->scriptPositions.RecordingBuffer.resize(app->player->getTotalNumFrames(),
+            std::make_pair(FunscriptAction(), FunscriptAction()));
     }
     else if (recordingJustStopped) {
         recordingJustStopped = false;
