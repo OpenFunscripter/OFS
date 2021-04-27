@@ -318,25 +318,38 @@ void OFS_Project::ExportClips(const std::filesystem::path& outputPath) noexcept
 	OFS_PROFILE(__FUNCTION__);
 	FUN_ASSERT(!Settings.Bookmarks.empty(), "No bookmarks created")
 
-	auto& script = Funscripts[0];
+	auto numScripts = Funscripts.size();
+	auto script = Funscripts[0].get(); 
 	auto& bookmarks = Settings.Bookmarks;
 
 	auto ffmpegPath = Util::FfmpegPath().u8string();
 
 	for (int i = 0; i < bookmarks.size() - 1; i++)
 	{
-
-		std::filesystem::path output = outputPath / (bookmarks[i].name + ".mp4");
-		auto outputString = output.u8string();
+		std::filesystem::path videoOutputPath = outputPath / (bookmarks[i].name + ".mp4");
+		std::filesystem::path scriptOutputPath = outputPath / (bookmarks[i].name + ".funscript");
+		auto videoOutputString = videoOutputPath.u8string();
+		auto scriptOutputString = scriptOutputPath.u8string();
 		char startTime[16];
 		char endTime[16];
 		stbsp_snprintf(startTime, 10, "%f", (float) bookmarks[i].at / 1000);
-		stbsp_snprintf(endTime, 10, "%f", (float) (bookmarks[i + 1].at - 333) / 1000);
+		stbsp_snprintf(endTime, 10, "%f", (float) (bookmarks[i + 1].at - 33) / 1000);
 	
+		auto scriptSlice = script->GetSelection(bookmarks[i].at, bookmarks[i + 1].at - 33);
+		AddFunscript(scriptOutputString);
+		auto newScript = Funscripts[numScripts];
+		newScript->AddActionRange(scriptSlice);
+		newScript->AddAction(FunscriptAction(bookmarks[i].at, script->GetPositionAtTime(bookmarks[i].at)));
+		newScript->AddAction(FunscriptAction(bookmarks[i + 1].at, script->GetPositionAtTime(bookmarks[i + 1].at)));
+		newScript->SelectAll();
+		newScript->MoveSelectionTime(-bookmarks[i].at, 0);
+		ExportFunscript(scriptOutputString, numScripts);
+		RemoveFunscript(numScripts);
+
 		// Example
 		// ffmpeg.exe -ss 21.066 -to 40.261 -i '.\SFM April 2018 Compilation 1.mp4' -c:v libx264 -c:a aac out.mp4
 		
-		LOGF_DEBUG("Output Path: %s", outputString.c_str());
+		LOGF_DEBUG("Output Path: %s", videoOutputString.c_str());
 		
 		std::array<const char*, 14> args =
 		{
@@ -347,10 +360,12 @@ void OFS_Project::ExportClips(const std::filesystem::path& outputPath) noexcept
 			"-i", MediaPath.c_str(),
 			"-c:v", "libx264",
 			"-c:a", "aac",
-			outputString.c_str(),
+			videoOutputString.c_str(),
 			nullptr
 		};
 		auto [status, ec] = reproc::run(args.data());
+
+		
 
 		LOGF_DEBUG("OFS_Project::ExportClips: %s", ec.message().c_str());
 		
