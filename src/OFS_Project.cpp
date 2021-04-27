@@ -326,6 +326,7 @@ void OFS_Project::ExportClips(const std::filesystem::path& outputPath) noexcept
 
 	auto app = OpenFunscripter::ptr;
 
+	bool split;
 	auto numScripts = Funscripts.size();
 	auto script = Funscripts[0].get(); 
 	auto& bookmarks = Settings.Bookmarks;
@@ -336,39 +337,41 @@ void OFS_Project::ExportClips(const std::filesystem::path& outputPath) noexcept
 
 	while (i < bookmarks.size())
 	{
+		split = true;
 		auto bookmarkName = bookmarks[i].name;
-		auto startTimeInt = bookmarks[i].at;
-		int32_t endTimeInt;
+		auto startTime = bookmarks[i].atS;
+		float endTime;
 
 		if (bookmarks[i].type == OFS_ScriptSettings::Bookmark::BookmarkType::END_MARKER)
 		{
 			i++;
+			split = false;
 		}
-		else if (bookmarks[i].type == OFS_ScriptSettings::Bookmark::BookmarkType::REGULAR || bookmarks[i].type == OFS_ScriptSettings::Bookmark::BookmarkType::START_MARKER) {
+		else if (bookmarks[i].type == OFS_ScriptSettings::Bookmark::BookmarkType::START_MARKER) {
+			endTime = bookmarks[i + 1].atS;
+			i += 2;
+		}
+		else if (bookmarks[i].type == OFS_ScriptSettings::Bookmark::BookmarkType::REGULAR)
+		{
 			if (i == bookmarks.size() - 1)
 			{
-				endTimeInt = (int32_t) (app->player->getDuration() * 1000);
+				endTime = app->player->getDuration() * 1000;
 			}
 			else
 			{
-				if (bookmarks[i + 1].type == OFS_ScriptSettings::Bookmark::BookmarkType::REGULAR || bookmarks[i + 1].type == OFS_ScriptSettings::Bookmark::BookmarkType::START_MARKER)
-				{
-					endTimeInt = (int32_t)(bookmarks[i + 1].at - app->player->getFrameTimeMs());
-				}
-				else
-				{
-					endTimeInt = (int32_t)(bookmarks[i + 1].at);
-				}
-				
+				endTime = bookmarks[i + 1].atS - app->player->getFrameTime();
 			}
 
 			i++;
+		}
 
-			char startTime[16];
-			char endTime[16];
+		if (split)
+		{
+			char startTimeChar[16];
+			char endTimeChar[16];
 
-			stbsp_snprintf(startTime, 10, "%f", (float)startTimeInt / 1000);
-			stbsp_snprintf(endTime, 10, "%f", (float)endTimeInt / 1000);
+			stbsp_snprintf(startTimeChar, 10, "%f", startTime);
+			stbsp_snprintf(endTimeChar, 10, "%f", endTime);
 
 			std::filesystem::path videoOutputPath = outputPath / (bookmarkName + ".mp4");
 			std::filesystem::path scriptOutputPath = outputPath / (bookmarkName + ".funscript");
@@ -376,14 +379,14 @@ void OFS_Project::ExportClips(const std::filesystem::path& outputPath) noexcept
 			auto scriptOutputString = scriptOutputPath.u8string();
 
 			// Slice Funscript
-			auto scriptSlice = script->GetSelection(startTimeInt, endTimeInt);
+			auto scriptSlice = script->GetSelection(startTime, endTime);
 			AddFunscript(scriptOutputString);
 			auto newScript = Funscripts[numScripts];
 			newScript->AddActionRange(scriptSlice);
-			newScript->AddAction(FunscriptAction(startTimeInt, script->GetPositionAtTime(startTimeInt)));
-			newScript->AddAction(FunscriptAction(endTimeInt, script->GetPositionAtTime(endTimeInt)));
+			newScript->AddAction(FunscriptAction(startTime, script->GetPositionAtTime(startTime)));
+			newScript->AddAction(FunscriptAction(endTime, script->GetPositionAtTime(endTime)));
 			newScript->SelectAll();
-			newScript->MoveSelectionTime(-startTimeInt, 0);
+			newScript->MoveSelectionTime(-startTime, 0);
 			ExportFunscript(scriptOutputString, numScripts);
 			RemoveFunscript(numScripts);
 
@@ -392,8 +395,8 @@ void OFS_Project::ExportClips(const std::filesystem::path& outputPath) noexcept
 			{
 				ffmpegPath.c_str(),
 				"-y",
-				"-ss", startTime,
-				"-to", endTime,
+				"-ss", startTimeChar,
+				"-to", endTimeChar,
 				"-i", MediaPath.c_str(),
 				"-c:v", "libx264",
 				"-c:a", "aac",
@@ -403,7 +406,6 @@ void OFS_Project::ExportClips(const std::filesystem::path& outputPath) noexcept
 			auto [status, ec] = reproc::run(args.data());
 
 			LOGF_DEBUG("OFS_Project::ExportClips: %s", ec.message().c_str());
-
 		}
 	}
 }

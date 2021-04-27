@@ -2007,7 +2007,7 @@ void OpenFunscripter::quickExport() noexcept
 void OpenFunscripter::exportClips() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    LoadedProject->Save();
+    LoadedProject->Save(true);
     Util::OpenDirectoryDialog("Choose output directory.", settings->data().last_path,
         [&](auto& result) {
             if (result.files.size() > 0) {
