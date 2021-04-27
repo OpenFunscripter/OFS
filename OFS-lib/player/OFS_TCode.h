@@ -12,8 +12,8 @@ public:
 	struct sp_port** port_list = nullptr;
 	struct sp_port* port = nullptr;
 
-	int32_t tickrate = 250;
-	float delay = 0;
+	volatile int32_t tickrate = 250;
+	volatile float delay = 0;
 
 	TCodeChannels tcode;
 	TCodeProducer prod;

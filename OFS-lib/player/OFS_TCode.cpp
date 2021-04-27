@@ -1,24 +1,14 @@
 #include "OFS_TCode.h"
 #include "OFS_Util.h"
-
-#include "imgui.h"
-#include "imgui_internal.h"
-
 #include "SDL_thread.h"
-
 #include "OFS_ImGui.h"
 #include "OFS_Profiling.h"
 
+#include "imgui.h"
 #include "implot.h"
-
-#include "glm/glm.hpp"
-#include "glm/gtc/matrix_transform.hpp"
-#include "glm/gtc/type_ptr.hpp"
 
 #include "libserialport.h"
 #include "libserialport_internal.h"
-
-#include <chrono>
 
 // utility structure for realtime plot
 struct ScrollingBuffer {
@@ -209,8 +199,8 @@ void TCodePlayer::DrawWindow(bool* open, float currentTime) noexcept
     }
     if (ImGui::CollapsingHeader("Global settings"))
     {
-        ImGui::InputFloat("Delay", &delay, 0.01f, 0.01f); OFS::Tooltip("Negative: Backward in time.\nPositive: Forward in time.");
-        ImGui::SliderInt("Tickrate (Hz)", &tickrate, 60, 300, "%d", ImGuiSliderFlags_AlwaysClamp); 
+        ImGui::InputFloat("Delay", (float*)&delay, 0.01f, 0.01f); OFS::Tooltip("Negative: Backward in time.\nPositive: Forward in time.");
+        ImGui::SliderInt("Tickrate (Hz)", (int32_t*)&tickrate, 60, 300, "%d", ImGuiSliderFlags_AlwaysClamp); 
         ImGui::Checkbox("Spline", &TCodeChannel::SplineMode);
         OFS::Tooltip("Smooth motion instead of linear.");
         ImGui::SameLine(); ImGui::Checkbox("Remap", &TCodeChannel::RemapToFullRange);
@@ -315,49 +305,63 @@ void TCodePlayer::DrawWindow(bool* open, float currentTime) noexcept
 }
 
 
-
 static int32_t TCodeThread(void* threadData) noexcept {
     TCodeThreadData* data = (TCodeThreadData*)threadData;
 
     LOG_INFO("T-Code thread started...");
-    auto startTimePoint = std::chrono::high_resolution_clock::now();
-    
-    int32_t tmp = SDL_AtomicGet(&data->scriptTime);
-    float scriptTime = *((float*)&tmp);
 
-    data->producer->sync(scriptTime, data->player->tickrate);
+    float currentTime;
+    {
+        int32_t tmp = SDL_AtomicGet(&data->scriptTime);
+        float scriptTime = *((float*)&tmp) - data->player->delay;
+        data->producer->sync(scriptTime, data->player->tickrate);
+        currentTime = scriptTime;
+    }
+
+    constexpr float maxError = 0.03f;
+    bool correctError = false;
+
+    auto startTimePoint = std::chrono::high_resolution_clock::now();
+    auto currentTimePoint = startTimePoint;
 
     while (!data->requestStop) {
         float tickrate = data->player->tickrate;
         float tickDurationSeconds = 1.f / tickrate;
-        auto currentTimePoint = std::chrono::high_resolution_clock::now();
+        
 
         float delay = data->player->delay;
         int32_t data_tmp = SDL_AtomicGet(&data->scriptTime);
-        float data_scriptTime = (*(float*)&data_tmp);
+        float actualScriptTime = (*(float*)&data_tmp) - delay;
         
-        std::chrono::duration<float> duration = currentTimePoint - startTimePoint;
+        std::chrono::duration<float> duration = startTimePoint - currentTimePoint;
+        currentTimePoint = std::chrono::high_resolution_clock::now();
+        currentTime += (duration.count() * data->speed);
+        
+        float playbackError = currentTime - actualScriptTime;
+        if (std::abs(playbackError) >= maxError && !correctError) {
+            // correct error
+            correctError = true;
+            LOGF_DEBUG("T-Code: correcting playback error...");
+        }
 
-        float currentTime = ((duration.count() * data->speed) + scriptTime) - delay;
-        float syncTime =  data_scriptTime - delay;
-        if (std::abs(currentTime - syncTime) >= 0.060f) {
-            LOGF_INFO("Resync -> %f", currentTime - syncTime);
-            LOGF_INFO("prev: %f new: %f", currentTime, syncTime);
-
-            scriptTime = data_scriptTime;
-            startTimePoint = std::move(currentTimePoint);
-            currentTime = syncTime;
-
+        if (playbackError >= maxError * 2) {
+            currentTime -= playbackError;
             data->producer->sync(currentTime, tickrate);
+            LOGF_DEBUG("T-Code: resync");
         }
-        else {
-            // tick producers
-            data->producer->tick(currentTime, tickrate);
+
+        if (correctError) {
+            currentTime -= playbackError * ((1.f / tickrate) * 2.f);
+            if (std::abs(currentTime - actualScriptTime) < 0.01f) {
+                correctError = false;
+                LOGF_DEBUG("T-Code: playback error corrected!");
+            }
         }
+
+        data->producer->tick(currentTime, tickrate);
         
         // update channels
         const char* cmd = data->channel->GetCommand();
-
         if (cmd != nullptr && data->player->port != nullptr) {
             int len = strlen(cmd);
             if (sp_blocking_write(data->player->port, cmd, len, 0) < SP_OK) {
@@ -371,6 +375,7 @@ static int32_t TCodeThread(void* threadData) noexcept {
             int ms = (duration.count() / 0.001f) - 1;
             if (ms > 0) { SDL_Delay(ms); }
         }
+        startTimePoint = std::chrono::high_resolution_clock::now();
     } 
     data->running = false;
     data->requestStop = false;

@@ -68,13 +68,13 @@ public:
 	inline static float SampleAtIndex(const FunscriptArray& actions, int32_t index, float time) noexcept
 	{
 		OFS_PROFILE(__FUNCTION__);
-		if (actions.size() == 0) { return 0.f; }
+		if (actions.empty()) { return 0.f; }
 		if (index + 1 < actions.size())	{
 			if (actions[index].atS <= time && actions[index + 1].atS >= time) {
 				return catmull_rom_spline(actions, index, time);
 			}
 		}
 
-		return 0.f;
+		return actions.back().pos / 100.f;
 	}
 };

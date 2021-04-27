@@ -57,28 +57,8 @@ private:
 		}
 
 		RawSpeed = std::abs(pos - LastValue) / (1.f/freq);
-
-		// detect discontinuity
-		if (RawSpeed >= 50.f && !InterpTowards) {
-			InterpTowards = true;
-			InterpStart = LastValue;
-			InterpEnd = pos;
-			InterpStartTime = SDL_GetTicks();
-			LOGF_INFO("InterpTowards: %f", RawSpeed);
-		}
-
-		if (InterpTowards) {
-			float t = Util::Clamp((SDL_GetTicks() - InterpStartTime) / (float)MaxInterpTimeMs, 0.f, 1.f);
-			float diff = std::abs(LastValue - pos);
-			
-			LastValue = Util::Lerp(InterpStart, InterpEnd, t);
-			if (t >= 1.f || std::abs(LastValue - pos) > diff) {
-				InterpTowards = false;
-			}
-		}
-		else {
-			LastValue = pos;
-		}
+		LastValue = pos;
+		
 #ifndef NDEBUG
 		LastValueRaw = pos;
 #endif
@@ -153,8 +133,6 @@ public:
 			}
 		}
 
-		float interp = getPos(currentTime, freq);
-		channel->SetNextPos(interp);
 		NeedsResync = false;
 	}
 
