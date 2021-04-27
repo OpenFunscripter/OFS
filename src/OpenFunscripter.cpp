@@ -2666,7 +2666,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             float currentTime = player->getCurrentPositionSecondsInterp();
             auto editBookmark = std::find_if(scriptSettings.Bookmarks.begin(), scriptSettings.Bookmarks.end(),
                 [=](auto& mark) {
-                    constexpr float thresholdTime = 3.f;
+                    constexpr float thresholdTime = 1.f;
                     return std::abs(mark.atS - currentTime) <= thresholdTime;
                 });
             if (editBookmark != scriptSettings.Bookmarks.end()) {

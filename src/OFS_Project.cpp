@@ -391,6 +391,7 @@ void OFS_Project::ExportClips(const std::string& outputDirectory) noexcept
 
 				// Slice Funscripts
 				auto newScript = Funscript();
+				newScript.LocalMetadata = app->LoadedProject->Metadata;
 				for (auto& script : app->LoadedFunscripts()) {
 					std::filesystem::path scriptOutputPath = outputPath / formatBuffer.sprintf("%s_%s.funscript", bookmarkName.c_str(), script->Title.c_str()).c_str();
 					auto scriptOutputString = scriptOutputPath.u8string();

@@ -28,6 +28,6 @@ void OFS_BlockingTask::ShowBlockingTask() noexcept
 	auto& style = ImGui::GetStyle();
 	ImGui::BeginPopupModal(ID, NULL, ImGuiWindowFlags_AlwaysAutoResize);
 	ImGui::TextUnformatted(currentTask->TaskDescription); ImGui::SameLine();
-	OFS::Spinner("BlockingTaskSpinner", ImGui::GetFontSize()/2.f, ImGui::GetFontSize() / 4.f, IM_COL32(255, 0, 0, 255));
+	OFS::Spinner("BlockingTaskSpinner", ImGui::GetFontSize()/2.f, ImGui::GetFontSize() / 4.f, ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_ButtonActive]));
 	ImGui::EndPopup();
 }
