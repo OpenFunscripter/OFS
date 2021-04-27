@@ -35,7 +35,6 @@ public:
 	static std::vector<ImVec2> SelectedActionScreenCoordinates;
 	static std::vector<ImVec2> ActionScreenCoordinates;
 	static ImGradient speedGradient;
-	// used for calculating stroke color with speedGradient
 	static bool SplineMode;
 	static bool ShowActions;
 	static bool SyncLineEnable;
