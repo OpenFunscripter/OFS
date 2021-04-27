@@ -73,7 +73,11 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	reproc++
 	bitsery
 	tracy
+
 	EASTL
+	EAStdC
+	EAAssert
+	EAThread
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)

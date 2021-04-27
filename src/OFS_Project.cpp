@@ -7,6 +7,8 @@
 #include "EventSystem.h"
 #include "OpenFunscripter.h"
 
+#include "EASTL/string.h"
+
 bool OFS_Project::FindMedia(const std::string& funscriptPath) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
@@ -340,7 +342,9 @@ void OFS_Project::ExportClips(const std::string& outputDirectory) noexcept
 		auto& outputPath = exportData->outputPath;
 		auto ffmpegPath = Util::FfmpegPath().u8string();
 
-		std::string statusText;
+		
+		eastl::string statusText;
+		eastl::string formatBuffer;
 
 		int i = 0;
 		while (i < bookmarks.size())
@@ -350,8 +354,6 @@ void OFS_Project::ExportClips(const std::string& outputDirectory) noexcept
 			auto startTime = bookmarks[i].atS;
 			float endTime;
 			
-			statusText = "Exporting: " + bookmarkName;
-			bTaskData->TaskDescription = statusText.c_str();
 
 			if (bookmarks[i].type == OFS_ScriptSettings::Bookmark::BookmarkType::END_MARKER)
 			{
@@ -365,7 +367,7 @@ void OFS_Project::ExportClips(const std::string& outputDirectory) noexcept
 			{
 				if (i == bookmarks.size() - 1)
 				{
-					endTime = app->player->getDuration() * 1000;
+					endTime = app->player->getDuration();
 				}
 				else
 				{
@@ -373,21 +375,24 @@ void OFS_Project::ExportClips(const std::string& outputDirectory) noexcept
 				}
 			}
 
+			statusText.sprintf("Exporting: %s (%d/%d)", bookmarkName.c_str(), i, bookmarks.size());
+			bTaskData->TaskDescription = statusText.c_str();
+
 			if (split)
 			{
 				char startTimeChar[16];
 				char endTimeChar[16];
 
-				stbsp_snprintf(startTimeChar, 10, "%f", startTime);
-				stbsp_snprintf(endTimeChar, 10, "%f", endTime);
+				stbsp_snprintf(startTimeChar, sizeof(startTimeChar), "%f", startTime);
+				stbsp_snprintf(endTimeChar, sizeof(endTimeChar), "%f", endTime);
 
-				auto videoOutputPath = outputPath / (app->LoadedFunscripts()[0]->Title + "_" + bookmarkName + ".mp4");
+				auto videoOutputPath = outputPath / formatBuffer.sprintf("%s_%s.mp4", bookmarkName.c_str(), app->LoadedFunscripts()[0]->Title.c_str()).c_str();
 				auto videoOutputString = videoOutputPath.u8string();
 
 				// Slice Funscripts
 				auto newScript = Funscript();
 				for (auto& script : app->LoadedFunscripts()) {
-					std::filesystem::path scriptOutputPath = outputPath / (script->Title + "_" + bookmarkName + ".funscript");
+					std::filesystem::path scriptOutputPath = outputPath / formatBuffer.sprintf("%s_%s.funscript", bookmarkName.c_str(), script->Title.c_str()).c_str();
 					auto scriptOutputString = scriptOutputPath.u8string();
 
 					auto scriptSlice = script->GetSelection(startTime, endTime);

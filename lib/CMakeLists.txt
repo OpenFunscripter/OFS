@@ -29,6 +29,9 @@ set(EASTL_BUILD_BENCHMARK OFF CACHE BOOL "" FORCE)
 set(EASTL_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/EASTL/scripts/CMake/")
 add_subdirectory("EASTL/")
+add_subdirectory("EASTL/test/packages/EAStdC")
+add_subdirectory("EASTL/test/packages/EAAssert")
+add_subdirectory("EASTL/test/packages/EAThread")
 
 
 # ====================
