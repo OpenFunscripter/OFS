@@ -77,7 +77,7 @@ void HeatmapGradient::Update(float totalDuration, const FunscriptArray& actions)
     for (int i = 0; i < Speeds.size(); ++i) {
         float speed = Speeds[i];
         Colors.getColorAt(speed, &color.Value.x);
-        float pos = ((float)(i+1)/Speeds.size()) - offset;
+        float pos = ((float)(i+1)/Speeds.size()) + offset;
         Gradient.addMark(pos, color);
     }
     Gradient.refreshCache();

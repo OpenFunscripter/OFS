@@ -8,6 +8,7 @@ struct BlockingTaskData
 {
 	const char* TaskDescription = "";
 	void* User = 0;
+	int Progress = 0; int MaxProgress = 0;
 	SDL_ThreadFunction TaskThreadFunc = nullptr;
 };
 

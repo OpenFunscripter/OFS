@@ -342,8 +342,8 @@ void OFS_Project::ExportClips(const std::string& outputDirectory) noexcept
 		auto& outputPath = exportData->outputPath;
 		auto ffmpegPath = Util::FfmpegPath().u8string();
 
-		
-		eastl::string statusText;
+		bTaskData->Progress = 0;
+		bTaskData->MaxProgress = bookmarks.size();
 		eastl::string formatBuffer;
 
 		int i = 0;
@@ -375,8 +375,7 @@ void OFS_Project::ExportClips(const std::string& outputDirectory) noexcept
 				}
 			}
 
-			statusText.sprintf("Exporting: %s (%d/%d)", bookmarkName.c_str(), i, bookmarks.size());
-			bTaskData->TaskDescription = statusText.c_str();
+			bTaskData->Progress = i;
 
 			if (split)
 			{
