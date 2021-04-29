@@ -167,7 +167,7 @@ public:
 			}
 			else {
 				nextAction = startAction;
-				nextAction.atS += 0.1f;
+				nextAction.atS += 0.001f;
 			}
 			MapNewActions();
 			//LOGF_DEBUG("%s: New stroke! %d -> %d", channel->Id, startAction.pos, nextAction.pos);

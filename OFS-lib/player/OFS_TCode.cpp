@@ -344,14 +344,14 @@ static int32_t TCodeThread(void* threadData) noexcept {
             LOGF_DEBUG("T-Code: correcting playback error...");
         }
 
-        if (playbackError >= maxError * 2) {
+        if (playbackError >= maxError * 100) {
             currentTime -= playbackError;
             data->producer->sync(currentTime, tickrate);
             LOGF_DEBUG("T-Code: resync");
         }
 
         if (correctError) {
-            currentTime -= playbackError * ((1.f / tickrate) * 2.f);
+            currentTime -= playbackError * (1.f / tickrate);
             if (std::abs(currentTime - actualScriptTime) < 0.01f) {
                 correctError = false;
                 LOGF_DEBUG("T-Code: playback error corrected!");
