@@ -102,7 +102,7 @@ void TempoOverlay::DrawSettings() noexcept
         ImGui::EndCombo();
     }
 
-    ImGui::Text("Interval: %dms", static_cast<int32_t>(((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.measureIndex]));
+    ImGui::Text("Interval: %.2fms", static_cast<float>(((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.measureIndex]));
 }
 
 void TempoOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept
