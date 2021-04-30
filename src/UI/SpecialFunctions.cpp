@@ -892,19 +892,23 @@ void CustomLua::DrawUI() noexcept
     OFS::Tooltip("Reload scripts in the script directory.\nOnly has to be pressed when deleting or adding files.");
 
     if (ImGui::Button("Script directory", ImVec2(-1.f, 0.f))) { Util::OpenFileExplorer(Util::Prefpath("lua").c_str()); }
-    ImGui::Spacing(); ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal); ImGui::Spacing();
+    ImGui::Spacing(); 
     if (Thread.running && !Thread.dry_run) {
         ImGui::TextUnformatted("Running script...");
         ImGui::ProgressBar(Thread.progress);
     }
     else {
+        ImGui::BeginChild("ScriptsChildWindow", ImVec2(-1, 300.f), true, ImGuiWindowFlags_None);
         for(int i=0; i < scripts.size(); i++) {
             auto& script = scripts[i];
             ImGui::PushID(i);
 
             if (ImGui::CollapsingHeader(script.name.c_str())) {
-                ImGui::Spacing();
-                ImGui::Indent();
+                if (!script.settingsLoaded) {
+                    runScript(&script, true);
+                    script.settingsLoaded = true;
+                }
+                
                 if (script.settings.values.size() > 0) {
                     for (auto& value : script.settings.values) {
                         switch (value.type) {
@@ -932,7 +936,9 @@ void CustomLua::DrawUI() noexcept
                 else {
                     ImGui::TextDisabled("Script has no settings or they aren't loaded.");
                 }
-                if (ImGui::Button("Bind script", ImVec2(-1.f, 0.f))) {
+                auto& style = ImGui::GetStyle();
+                float width = ImGui::GetContentRegionAvail().x - style.ItemSpacing.x;
+                if (ImGui::Button("Bind script", ImVec2(width/2.f, 0.f))) {
                     auto app = OpenFunscripter::ptr;
                     Binding binding(
                         script.absolutePath,
@@ -943,7 +949,9 @@ void CustomLua::DrawUI() noexcept
                     binding.dynamicHandlerId = "CustomLua";
                     app->keybinds.addDynamicBinding(std::move(binding));
                 }
-                ImGui::Button("Script", ImVec2(-1.f, 0.f));
+                OFS::Tooltip("Creates a key binding under \"Keys\"->\"Dynamic\".");
+                ImGui::SameLine();
+                ImGui::Button("Script", ImVec2(width/2.f, 0.f));
                 OFS::Tooltip("Left click to run.\nMiddle click to load settings.\nRight click to edit.");
                 if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
                     // run the script
@@ -957,12 +965,11 @@ void CustomLua::DrawUI() noexcept
                     // reload settings
                     runScript(&script, true);
                 }
-                ImGui::Unindent();
-                ImGui::Spacing();
-                ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal);
+                ImGui::Separator();
             }
             ImGui::PopID();
         }
+        ImGui::EndChild();
     }
     ImGui::Spacing();
     
@@ -975,6 +982,7 @@ void CustomLua::DrawUI() noexcept
 
     if (ShowDebugLog) {
         ImGui::Begin("Lua output", &ShowDebugLog, ImGuiWindowFlags_None);
+        ImGui::SetWindowSize(ImVec2(300.f, 200.f), ImGuiCond_FirstUseEver);
         ImGui::BeginChildFrame(ImGui::GetID("testFrame"), ImVec2(-1, 0.f));
         SDL_AtomicLock(&SpinLock);
         ImGui::TextWrapped("%s", LuaConsoleBuffer.c_str());

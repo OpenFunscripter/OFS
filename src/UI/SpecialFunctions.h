@@ -49,7 +49,7 @@ public:
 	struct LuaScript {
 		std::string name;
 		std::string absolutePath;
-
+		bool settingsLoaded = false;
 		struct Settings {
 			~Settings() noexcept;
 
