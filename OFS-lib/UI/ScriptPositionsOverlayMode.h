@@ -34,6 +34,8 @@ public:
 	static std::vector<FunscriptAction> ActionPositionWindow;
 	static std::vector<ImVec2> SelectedActionScreenCoordinates;
 	static std::vector<ImVec2> ActionScreenCoordinates;
+	static float PointSize;
+
 	static ImGradient speedGradient;
 	static bool SplineMode;
 	static bool ShowActions;

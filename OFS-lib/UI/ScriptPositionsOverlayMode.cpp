@@ -10,6 +10,7 @@ std::vector<BaseOverlay::ColoredLine> BaseOverlay::ColoredLines;
 std::vector<ImVec2> BaseOverlay::SelectedActionScreenCoordinates;
 std::vector<ImVec2> BaseOverlay::ActionScreenCoordinates;
 std::vector<FunscriptAction> BaseOverlay::ActionPositionWindow;
+float BaseOverlay::PointSize = 7.f;
 bool BaseOverlay::SplineMode = true;
 bool BaseOverlay::ShowActions = true;
 bool BaseOverlay::SyncLineEnable = false;

@@ -92,15 +92,17 @@ void ScriptTimeline::mousePressed(SDL_Event& ev) noexcept
 		else if (button.button == SDL_BUTTON_LEFT && button.clicks == 1)
 		{
 			// test if an action has been clicked
-			int index = 0;
-			for (auto& vert : overlay->ActionScreenCoordinates) {
-				const ImVec2 size(15, 15);
-				ImRect rect(vert - size, vert + size);
-				if (rect.Contains(mousePos)) {
-					clickedAction = &overlay->ActionPositionWindow[index];
-					break;
+			if (overlay->PointSize > 0.f) {
+				int index = 0;
+				for (auto& vert : overlay->ActionScreenCoordinates) {
+					const ImVec2 size(overlay->PointSize, overlay->PointSize);
+					ImRect rect(vert - size, vert + size);
+					if (rect.Contains(mousePos)) {
+						clickedAction = &overlay->ActionPositionWindow[index];
+						break;
+					}
+					index++;
 				}
-				index++;
 			}
 
 			if (hovereScriptIdx != activeScriptIdx) {
@@ -517,20 +519,24 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 	}
 
 	// draw points on top of lines
-	float opacity = 30.f / visibleTime;
+	float opacity = 20.f / visibleTime;
 	opacity = opacity > 1.f ? 1.f : opacity * opacity;
+	overlay->PointSize = 7.f * opacity;
 	if (opacity >= 0.25f) {
 		int opcacityInt = 255 * opacity;
 		for (auto&& p : overlay->ActionScreenCoordinates) {
-			draw_list->AddCircleFilled(p, 7.0f, IM_COL32(0, 0, 0, opcacityInt), 8); // border
-			draw_list->AddCircleFilled(p, 5.0f, IM_COL32(255, 0, 0, opcacityInt), 8);
+			draw_list->AddCircleFilled(p, overlay->PointSize, IM_COL32(0, 0, 0, opcacityInt), 8); // border
+			draw_list->AddCircleFilled(p, overlay->PointSize*0.7f, IM_COL32(255, 0, 0, opcacityInt), 8);
 		}
 
 		// draw selected points
 		for (auto&& p : overlay->SelectedActionScreenCoordinates) {
 			const auto selectedDots = IM_COL32(11, 252, 3, opcacityInt);
-			draw_list->AddCircleFilled(p, 5.0f, selectedDots, 8);
+			draw_list->AddCircleFilled(p, overlay->PointSize * 0.7f, selectedDots, 8);
 		}
+	}
+	else {
+		overlay->PointSize = 0.f;
 	}
 
 	ImGui::End();
