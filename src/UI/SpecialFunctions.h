@@ -51,7 +51,7 @@ public:
 		std::string absolutePath;
 
 		struct Settings {
-			~Settings();
+			~Settings() noexcept;
 
 			struct Value {
 				enum class Type : int32_t {
@@ -88,8 +88,7 @@ public:
 	};
 private:
 	std::vector<LuaScript> scripts;
-	bool createUndoState = true;
-	bool showSettings = false;
+	bool ShowDebugLog = false;
 
 	void updateScripts() noexcept;
 	void resetVM() noexcept;
@@ -97,7 +96,6 @@ private:
 public:
 	CustomLua() noexcept;
 	virtual ~CustomLua() noexcept;
-	void SelectionChanged(union SDL_Event& ev) noexcept;
 	virtual void DrawUI() noexcept override;
 
 	void HandleBinding(class Binding* binding) noexcept;

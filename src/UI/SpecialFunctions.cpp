@@ -81,7 +81,7 @@ FunctionRangeExtender::~FunctionRangeExtender() noexcept
 void FunctionRangeExtender::SelectionChanged(SDL_Event& ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if (OpenFunscripter::script().SelectionSize() > 0) {
+    if (!OpenFunscripter::script().Selection().empty()) {
         rangeExtend = 0;
         createUndoState = true;
     }
@@ -126,7 +126,7 @@ RamerDouglasPeucker::~RamerDouglasPeucker() noexcept
 void RamerDouglasPeucker::SelectionChanged(SDL_Event& ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if (OpenFunscripter::script().SelectionSize() > 0) {
+    if (!OpenFunscripter::script().Selection().empty()) {
         epsilon = 0.f;
         createUndoState = true;
     }
@@ -284,7 +284,6 @@ static SDL_SpinLock SpinLock = 0;
 CustomLua::CustomLua() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    app->events->Subscribe(FunscriptEvents::FunscriptSelectionChangedEvent, EVENT_SYSTEM_BIND(this, &CustomLua::SelectionChanged));
     resetVM();
     if (Thread.L != nullptr) {
         updateScripts();
@@ -302,14 +301,6 @@ CustomLua::~CustomLua() noexcept
         Thread.L = nullptr;
     }
     OpenFunscripter::ptr->events->UnsubscribeAll(this);
-}
-
-void CustomLua::SelectionChanged(SDL_Event& ev) noexcept
-{
-    OFS_PROFILE(__FUNCTION__);
-    if (OpenFunscripter::script().SelectionSize() > 0) {
-        createUndoState = true;
-    }
 }
 
 void CustomLua::updateScripts() noexcept
@@ -979,14 +970,21 @@ void CustomLua::DrawUI() noexcept
         Util::OpenUrl("https://www.lua.org/manual/5.4/");
     }
 
-    ImGui::BeginChild("ConsoleBuffer", ImVec2(-1.f, 200.f));
-    SDL_AtomicLock(&SpinLock);
-    ImGui::TextWrapped("%s", LuaConsoleBuffer.c_str());
-    SDL_AtomicUnlock(&SpinLock);
-    if (Thread.running) {
-        ImGui::SetScrollHereY(1.0f);
+    
+    ImGui::Checkbox("Show Lua output", &ShowDebugLog);
+
+    if (ShowDebugLog) {
+        ImGui::Begin("Lua output", &ShowDebugLog, ImGuiWindowFlags_None);
+        ImGui::BeginChildFrame(ImGui::GetID("testFrame"), ImVec2(-1, 0.f));
+        SDL_AtomicLock(&SpinLock);
+        ImGui::TextWrapped("%s", LuaConsoleBuffer.c_str());
+        SDL_AtomicUnlock(&SpinLock);
+        if (Thread.running) {
+            ImGui::SetScrollHereY(1.0f);
+        }
+        ImGui::EndChildFrame();
+        ImGui::End();
     }
-    ImGui::EndChild();
 }
 
 void CustomLua::HandleBinding(Binding* binding) noexcept
@@ -1008,7 +1006,7 @@ void CustomLua::RunScript(const std::string& name) noexcept
     }
 }
 
-CustomLua::LuaScript::Settings::~Settings()
+CustomLua::LuaScript::Settings::~Settings() noexcept
 {
     Free();
 }
