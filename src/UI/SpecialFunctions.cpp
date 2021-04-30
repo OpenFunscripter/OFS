@@ -804,6 +804,7 @@ void CustomLua::runScript(LuaScript* script, bool dry_run) noexcept
         char tmp[1024];
 
         WriteToConsole("============= SETUP =============");
+        if (Thread.dry_run) { WriteToConsole("This is a dry run to load the settings."); }
         stbsp_snprintf(tmp, sizeof(tmp), "Loading %d actions\nand %d clipboard actions into lua...", Thread.TotalActionCount, Thread.ClipboardCount);
         WriteToConsole(tmp);
 
@@ -888,10 +889,14 @@ void CustomLua::runScript(LuaScript* script, bool dry_run) noexcept
 
 void CustomLua::DrawUI() noexcept
 {
-    if (ImGui::Button("Reload scripts", ImVec2(-1.f, 0.f))) { updateScripts(); }
+    auto& style = ImGui::GetStyle();
+    float width = ImGui::GetContentRegionAvail().x - style.ItemSpacing.x;
+
+    if (ImGui::Button("Script directory", ImVec2(width/2.f, 0.f))) { Util::OpenFileExplorer(Util::Prefpath("lua").c_str()); }
+    ImGui::SameLine();
+    if (ImGui::Button("Reload scripts", ImVec2(width/2.f, 0.f))) { updateScripts(); }
     OFS::Tooltip("Reload scripts in the script directory.\nOnly has to be pressed when deleting or adding files.");
 
-    if (ImGui::Button("Script directory", ImVec2(-1.f, 0.f))) { Util::OpenFileExplorer(Util::Prefpath("lua").c_str()); }
     ImGui::Spacing(); 
     if (Thread.running && !Thread.dry_run) {
         ImGui::TextUnformatted("Running script...");
@@ -936,8 +941,7 @@ void CustomLua::DrawUI() noexcept
                 else {
                     ImGui::TextDisabled("Script has no settings or they aren't loaded.");
                 }
-                auto& style = ImGui::GetStyle();
-                float width = ImGui::GetContentRegionAvail().x - style.ItemSpacing.x;
+                width = ImGui::GetContentRegionAvail().x - style.ItemSpacing.x;
                 ImGui::Button("Script", ImVec2(width/2.f, 0.f));
                 OFS::Tooltip("Left click to run.\nMiddle click to load settings.\nRight click to edit.");
                 if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
