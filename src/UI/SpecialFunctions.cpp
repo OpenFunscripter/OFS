@@ -912,24 +912,24 @@ void CustomLua::DrawUI() noexcept
                 if (script.settings.values.size() > 0) {
                     for (auto& value : script.settings.values) {
                         switch (value.type) {
-                        case LuaScript::Settings::Value::Type::Bool:
-                        {
-                            bool* b = (bool*)&script.settings.buffer[value.offset];
-                            ImGui::Checkbox(value.name.c_str(), b);
-                            break;
-                        }
-                        case LuaScript::Settings::Value::Type::Float:
-                        {
-                            float* f = (float*)&script.settings.buffer[value.offset];
-                            ImGui::InputFloat(value.name.c_str(), f);
-                            break;
-                        }
-                        case LuaScript::Settings::Value::Type::String:
-                        {
-                            std::string* s = (std::string*)&script.settings.buffer[value.offset];
-                            ImGui::InputText(value.name.c_str(), s);
-                            break;
-                        }
+                            case LuaScript::Settings::Value::Type::Bool:
+                            {
+                                bool* b = (bool*)&script.settings.buffer[value.offset];
+                                ImGui::Checkbox(value.name.c_str(), b);
+                                break;
+                            }
+                            case LuaScript::Settings::Value::Type::Float:
+                            {
+                                float* f = (float*)&script.settings.buffer[value.offset];
+                                ImGui::InputFloat(value.name.c_str(), f);
+                                break;
+                            }
+                            case LuaScript::Settings::Value::Type::String:
+                            {
+                                std::string* s = (std::string*)&script.settings.buffer[value.offset];
+                                ImGui::InputText(value.name.c_str(), s);
+                                break;
+                            }
                         }
                     }
                 }
@@ -938,19 +938,6 @@ void CustomLua::DrawUI() noexcept
                 }
                 auto& style = ImGui::GetStyle();
                 float width = ImGui::GetContentRegionAvail().x - style.ItemSpacing.x;
-                if (ImGui::Button("Bind script", ImVec2(width/2.f, 0.f))) {
-                    auto app = OpenFunscripter::ptr;
-                    Binding binding(
-                        script.absolutePath,
-                        script.name,
-                        false,
-                        [](void* user) {} // this gets handled by CustomLua::HandleBinding
-                    );
-                    binding.dynamicHandlerId = "CustomLua";
-                    app->keybinds.addDynamicBinding(std::move(binding));
-                }
-                OFS::Tooltip("Creates a key binding under \"Keys\"->\"Dynamic\".");
-                ImGui::SameLine();
                 ImGui::Button("Script", ImVec2(width/2.f, 0.f));
                 OFS::Tooltip("Left click to run.\nMiddle click to load settings.\nRight click to edit.");
                 if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
@@ -965,6 +952,19 @@ void CustomLua::DrawUI() noexcept
                     // reload settings
                     runScript(&script, true);
                 }
+                ImGui::SameLine();
+                if (ImGui::Button("Bind script", ImVec2(width/2.f, 0.f))) {
+                    auto app = OpenFunscripter::ptr;
+                    Binding binding(
+                        script.absolutePath,
+                        script.name,
+                        false,
+                        [](void* user) {} // this gets handled by CustomLua::HandleBinding
+                    );
+                    binding.dynamicHandlerId = "CustomLua";
+                    app->keybinds.addDynamicBinding(std::move(binding));
+                }
+                OFS::Tooltip("Creates a key binding under \"Keys\"->\"Dynamic\".");
                 ImGui::Separator();
             }
             ImGui::PopID();
