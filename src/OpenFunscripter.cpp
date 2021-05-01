@@ -341,9 +341,10 @@ bool OpenFunscripter::setup(int argc, char* argv[])
     };
 
     HeatmapGradient::Init();
-
     tcode = std::make_unique<TCodePlayer>();
     tcode->loadSettings(Util::Prefpath("tcode.json"));
+
+    extensions = std::make_unique<OFS_LuaExtensions>();
     SDL_ShowWindow(window);
     return true;
 }
@@ -1690,7 +1691,7 @@ void OpenFunscripter::step() noexcept {
             scripting->DrawScriptingMode(NULL);
             LoadedProject->ShowProjectWindow(&ShowProjectEditor);
 
-
+            extensions->ShowExtensions(&settings->data().show_extensions);
             tcode->DrawWindow(&settings->data().show_tcode, player->getCurrentPositionSecondsInterp());
 
             if (keybinds.ShowBindingWindow()) {
@@ -2786,30 +2787,34 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem("Preferences")) {
                 settings->ShowWindow = true;
             }
+            if (ControllerInput::AnythingConnected()) {
+                if (ImGui::BeginMenu("Controller")) {
+                    ImGui::TextColored(ImColor(IM_COL32(0, 255, 0, 255)), "%s", "Controller connected!");
+                    ImGui::DragInt("Repeat rate", &settings->data().buttonRepeatIntervalMs, 1, 25, 500, "%d", ImGuiSliderFlags_AlwaysClamp);
+                    static int32_t selectedController = 0;
+                    std::vector<const char*> padStrings;
+                    for (int i = 0; i < ControllerInput::Controllers.size(); i++) {
+                        auto& controller = ControllerInput::Controllers[i];
+                        if (controller.connected()) {
+                            padStrings.push_back(controller.GetName());
+                        }
+                        //else {
+                        //    padStrings.push_back("--");
+                        //}
+                    }
+                    ImGui::Combo("##ActiveControllers", &selectedController, padStrings.data(), (int32_t)padStrings.size());
+                    OFS::Tooltip("Selecting doesn't do anything right now.");
+
+                    ImGui::EndMenu();
+                }
+            }
             ImGui::EndMenu();
         }
-        if (ControllerInput::AnythingConnected()) {
-            if (ImGui::BeginMenu("Controller")) {
-                ImGui::TextColored(ImColor(IM_COL32(0, 255, 0, 255)), "%s", "Controller connected!");
-                ImGui::DragInt("Repeat rate", &settings->data().buttonRepeatIntervalMs, 1, 25, 500, "%d", ImGuiSliderFlags_AlwaysClamp);
-                static int32_t selectedController = 0;
-                std::vector<const char*> padStrings;
-                for (int i = 0; i < ControllerInput::Controllers.size(); i++) {
-                    auto& controller = ControllerInput::Controllers[i];
-                    if (controller.connected()) {
-                        padStrings.push_back(controller.GetName());
-                    }
-                    //else {
-                    //    padStrings.push_back("--");
-                    //}
-                }
-                ImGui::Combo("##ActiveControllers", &selectedController, padStrings.data(), (int32_t)padStrings.size());
-                OFS::Tooltip("Selecting doesn't do anything right now.");
-
-                ImGui::EndMenu();
-            }
+        if (ImGui::BeginMenu("Extensions")) {
+            if(ImGui::MenuItem("Show", NULL, &settings->data().show_extensions)) {}
+            ImGui::EndMenu();
         }
-        if(ImGui::MenuItem("About", NULL, &ShowAbout)) {}
+        if(ImGui::MenuItem("?##About", NULL, &ShowAbout)) {}
         ImGui::Separator();
         ImGui::Spacing();
         if (ControllerInput::AnythingConnected()) {

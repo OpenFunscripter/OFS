@@ -8,6 +8,7 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "Funscript/OFS_ScriptSettings.cpp"
   
   "UI/OpenFunscripterSettings.cpp"
+  "lua/OFS_LuaExtensions.cpp"
 
   "ScriptingMode.cpp"
   "OFS_Project.cpp"
@@ -42,6 +43,7 @@ add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
   lua
+  #LuaJIT
   OFS_lib
 )
 

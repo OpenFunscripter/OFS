@@ -128,6 +128,12 @@ set_target_properties(lua PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(lua PROPERTIES LANGUAGE CXX)
 target_include_directories(lua PUBLIC "lua/")
 
+add_library(LuaJIT INTERFACE)
+target_include_directories(LuaJIT INTERFACE "LuaJIT/src")
+target_link_libraries(LuaJIT INTERFACE 
+	"${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT/src/lua51.lib"
+)
+
 # =========
 # = IMGUI =
 # =========
