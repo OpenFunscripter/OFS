@@ -261,6 +261,9 @@ public:
 
 	inline const char* getVideoPath() const noexcept { return (MpvData.filePath == nullptr) ? "" : MpvData.filePath; }
 
+	inline uint32_t VideoWidth() const noexcept { return MpvData.videoWidth; }
+	inline uint32_t VideoHeight() const noexcept { return MpvData.videoHeight; }
+
 	inline void update(float delta) noexcept
 	{
 		if (!isPaused()) {
