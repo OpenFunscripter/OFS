@@ -2425,7 +2425,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             }
             ImGui::Separator();
             bool autoBackupTmp = Status & OFS_Status::OFS_AutoBackup;
-            if (ImGui::MenuItem(autoBackupTmp ?
+            if (ImGui::MenuItem(autoBackupTmp && LoadedProject->Loaded ?
                 Util::Format("Auto Backup in %ld seconds", AutoBackupIntervalSeconds - std::chrono::duration_cast<std::chrono::seconds>((std::chrono::steady_clock::now() - lastBackup)).count())
                 : "Auto Backup", NULL, &autoBackupTmp)) {
                 Status = autoBackupTmp 
