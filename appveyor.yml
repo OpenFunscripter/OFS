@@ -19,13 +19,15 @@ matrix:
   fast_finish: true
 
 before_build:
+- ps: $env:GIT_HASH = $env:APPVEYOR_REPO_COMMIT.Substring(0, 10)
 - ps: choco install -y -r --no-progress InnoSetup
 - ps: set PATH=%PATH%;"C:\\ProgramData\\chocolatey\\bin";"C:\\Program Files (x86)\\Inno Setup 6"
 - cmd: |-
     cd lib/EASTL
     git submodule update --init
     cd ../..
-    mkdir build
+- sh: mkdir -p build
+- cmd: |-
     cd build
     cmake --version
     cmake .. -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 16 2019" -A x64
@@ -35,7 +37,7 @@ build:
   parallel: true
 
 cache:
-# - lib\
+ - build\
 
 after_build:
 - cmd: |-
@@ -46,12 +48,12 @@ after_build:
     7z e ffmpeg-release-essentials.7z
     cp ffmpeg.exe "../bin/%configuration%/"
     cd "../bin/%configuration%/"
-    7z a "OFS-%platform%_Windows_%APPVEYOR_REPO_BRANCH%-%APPVEYOR_REPO_COMMIT%.7z" ffmpeg.exe mpv-1.dll OpenFunscripter.exe
-    7z a "OFS-%platform%_Windows_%APPVEYOR_REPO_BRANCH%-%APPVEYOR_REPO_COMMIT%.7z" data
+    7z a "OFS-%platform%_Windows_%APPVEYOR_REPO_BRANCH%-%GIT_HASH%.7z" ffmpeg.exe mpv-1.dll OpenFunscripter.exe
+    7z a "OFS-%platform%_Windows_%APPVEYOR_REPO_BRANCH%-%GIT_HASH%.7z" data
   
 - ps: cd ../../
 - ps: iscc ofs-installer.iss   
-- ps: Push-AppveyorArtifact installer\ofs-installer.exe -FileName OFS-x64_Windows_$env:APPVEYOR_REPO_BRANCH-$env:APPVEYOR_REPO_COMMIT.exe
+- ps: Push-AppveyorArtifact installer\ofs-installer.exe -FileName OFS-x64_Windows_$env:APPVEYOR_REPO_BRANCH-$env:GIT_HASH.exe
 
 artifacts:
-- path: /bin/$(configuration)/OFS-$(platform)_Windows_$(APPVEYOR_REPO_BRANCH)-$(APPVEYOR_REPO_COMMIT).7z
+- path: /bin/$(configuration)/OFS-$(platform)_Windows_$(APPVEYOR_REPO_BRANCH)-$(GIT_HASH).7z

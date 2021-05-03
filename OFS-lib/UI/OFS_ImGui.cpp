@@ -119,8 +119,9 @@ static bool BoundedSliderScalar(const char* label, ImGuiDataType data_type, Numb
     const ImRect frame_bb(window->DC.CursorPos, window->DC.CursorPos + ImVec2(w, label_size.y + style.FramePadding.y * 2.0f));
     const ImRect total_bb(frame_bb.Min, frame_bb.Max + ImVec2(label_size.x > 0.0f ? style.ItemInnerSpacing.x + label_size.x : 0.0f, 0.0f));
 
+    const bool temp_input_allowed = (flags & ImGuiSliderFlags_NoInput) == 0;
     ItemSize(total_bb, style.FramePadding.y);
-    if (!ItemAdd(total_bb, id, &frame_bb))
+    if (!ItemAdd(total_bb, id, &frame_bb, temp_input_allowed ? ImGuiItemAddFlags_Focusable : 0))
         return false;
 
     // Default format string when passing NULL
@@ -131,11 +132,10 @@ static bool BoundedSliderScalar(const char* label, ImGuiDataType data_type, Numb
 
     // Tabbing or CTRL-clicking on Slider turns it into an input box
     const bool hovered = ItemHoverable(frame_bb, id);
-    const bool temp_input_allowed = (flags & ImGuiSliderFlags_NoInput) == 0;
     bool temp_input_is_active = temp_input_allowed && TempInputIsActive(id);
     if (!temp_input_is_active)
     {
-        const bool focus_requested = temp_input_allowed && FocusableItemRegister(window, id);
+        const bool focus_requested = temp_input_allowed && (window->DC.LastItemStatusFlags & ImGuiItemStatusFlags_Focused) != 0;
         const bool clicked = (hovered && g.IO.MouseClicked[0]);
         if (focus_requested || clicked || g.NavActivateId == id || g.NavInputId == id)
         {
@@ -144,10 +144,7 @@ static bool BoundedSliderScalar(const char* label, ImGuiDataType data_type, Numb
             FocusWindow(window);
             g.ActiveIdUsingNavDirMask |= (1 << ImGuiDir_Left) | (1 << ImGuiDir_Right);
             if (temp_input_allowed && (focus_requested || (clicked && g.IO.KeyCtrl) || g.NavInputId == id))
-            {
                 temp_input_is_active = true;
-                FocusableItemUnregister(window);
-            }
         }
     }
 
@@ -155,7 +152,7 @@ static bool BoundedSliderScalar(const char* label, ImGuiDataType data_type, Numb
     {
         // Only clamp CTRL+Click input when ImGuiSliderFlags_AlwaysClamp is set
         const bool is_clamp_input = (flags & ImGuiSliderFlags_AlwaysClamp) != 0;
-        return TempInputScalar(frame_bb, id, label, data_type, p_data, format, is_clamp_input ? l_min /*p_min*/ : NULL, is_clamp_input ? l_max /*p_max*/ : NULL);
+        return TempInputScalar(frame_bb, id, label, data_type, p_data, format, is_clamp_input ? p_min : NULL, is_clamp_input ? p_max : NULL);
     }
 
     // Draw frame
@@ -167,39 +164,39 @@ static bool BoundedSliderScalar(const char* label, ImGuiDataType data_type, Numb
     float range = *p_max - *p_min;
     float bottomRelative = (*l_min - *p_min) / range;
     float topRelative = (*l_max - *p_min) / range;
-
     ImRect LocalBounded;
     LocalBounded.Min = frame_bb.Min + ImVec2(frame_bb.GetWidth() * bottomRelative, 0.f);
     LocalBounded.Max = frame_bb.Min + ImVec2(frame_bb.GetWidth() * topRelative, frame_bb.GetHeight());
 
     // Slider behavior
     ImRect grab_bb;
-    const bool value_changed = SliderBehavior(LocalBounded /*frame_bb*/, id, data_type, p_data, l_min, l_max,/*p_min, p_max,*/ format, flags, &grab_bb);
+    const bool value_changed = SliderBehavior(frame_bb, id, data_type, p_data, p_min, p_max, format, flags, &grab_bb);
     if (value_changed)
         MarkItemEdited(id);
-
+   
     // Render local bounds
-    window->DrawList->AddRectFilled(
-        LocalBounded.Min,
-        LocalBounded.Max,
-        GetColorU32(g.ActiveId == id ? ImGuiCol_FrameBgActive : g.HoveredId == id ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg),
-        g.Style.FrameRounding
-    );
+   window->DrawList->AddRectFilled(
+       LocalBounded.Min,
+       LocalBounded.Max,
+       GetColorU32(g.ActiveId == id ? ImGuiCol_FrameBgActive : g.HoveredId == id ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg),
+       g.Style.FrameRounding
+   );
 
     // Render grab
     if (grab_bb.Max.x > grab_bb.Min.x)
         window->DrawList->AddRectFilled(grab_bb.Min, grab_bb.Max, GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab), style.GrabRounding);
 
-
     // Display value using user-provided display format so user can add prefix/suffix/decorations to the value.
     char value_buf[64];
     const char* value_buf_end = value_buf + DataTypeFormatString(value_buf, IM_ARRAYSIZE(value_buf), data_type, p_data, format);
+    if (g.LogEnabled)
+        LogSetNextTextDecoration("{", "}");
     RenderTextClipped(frame_bb.Min, frame_bb.Max, value_buf, value_buf_end, NULL, ImVec2(0.5f, 0.5f));
 
     if (label_size.x > 0.0f)
         RenderText(ImVec2(frame_bb.Max.x + style.ItemInnerSpacing.x, frame_bb.Min.y + style.FramePadding.y), label);
 
-    IMGUI_TEST_ENGINE_ITEM_INFO(id, label, window->DC.ItemFlags);
+    IMGUI_TEST_ENGINE_ITEM_INFO(id, label, window->DC.LastItemStatusFlags);
     return value_changed;
 }
 

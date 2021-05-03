@@ -905,7 +905,10 @@ void CustomLua::DrawUI() noexcept
         ImGui::ProgressBar(Thread.progress);
     }
     else {
-        ImGui::BeginChild("ScriptsChildWindow", ImVec2(-1, 300.f), true, ImGuiWindowFlags_None);
+        auto availableSpace = ImGui::GetContentRegionAvail();
+        availableSpace.y -= ImGui::GetFontSize()*2.f + style.ItemSpacing.y * 4.f + style.WindowPadding.y;
+
+        ImGui::BeginChild("ScriptsChildWindow", ImVec2(-1, availableSpace.y), true, ImGuiWindowFlags_None);
         for(int i=0; i < scripts.size(); i++) {
             auto& script = scripts[i];
             ImGui::PushID(i);

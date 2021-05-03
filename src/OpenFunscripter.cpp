@@ -61,7 +61,7 @@ std::array<const char*, 4> OpenFunscripter::SupportedAudioExtensions{
 OpenFunscripter* OpenFunscripter::ptr = nullptr;
 ImFont* OpenFunscripter::DefaultFont2 = nullptr;
 
-constexpr const char* glsl_version = "#version 150";
+constexpr const char* glsl_version = "#version 330";
 
 static ImGuiID MainDockspaceID;
 constexpr const char* StatisticsId = "Statistics";
@@ -1282,7 +1282,7 @@ void OpenFunscripter::registerBindings()
             "seek_forward_second",
             "Forward 1 second",
             false,
-            [&](void*) { player->seekRelative(1000); }
+            [&](void*) { player->seekRelative(1); }
         );
         seek_forward_second.controller = ControllerBinding(
             SDL_CONTROLLER_BUTTON_RIGHTSHOULDER,
@@ -1293,7 +1293,7 @@ void OpenFunscripter::registerBindings()
             "seek_backward_second",
             "Backward 1 second",
             false,
-            [&](void*) { player->seekRelative(-1000); }
+            [&](void*) { player->seekRelative(-1); }
         );
         seek_backward_second.controller = ControllerBinding(
             SDL_CONTROLLER_BUTTON_LEFTSHOULDER,
@@ -2426,7 +2426,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             }
             ImGui::Separator();
             bool autoBackupTmp = Status & OFS_Status::OFS_AutoBackup;
-            if (ImGui::MenuItem(autoBackupTmp ?
+            if (ImGui::MenuItem(autoBackupTmp && LoadedProject->Loaded ?
                 Util::Format("Auto Backup in %ld seconds", AutoBackupIntervalSeconds - std::chrono::duration_cast<std::chrono::seconds>((std::chrono::steady_clock::now() - lastBackup)).count())
                 : "Auto Backup", NULL, &autoBackupTmp)) {
                 Status = autoBackupTmp 
