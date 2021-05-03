@@ -25,7 +25,7 @@ before_build:
     cd lib/EASTL
     git submodule update --init
     cd ../..
-    mkdir build
+    mkdir -p build
     cd build
     cmake --version
     cmake .. -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 16 2019" -A x64
@@ -34,8 +34,8 @@ build:
   verbosity: minimal
   parallel: true
 
-#cache:
-# - lib\
+cache:
+ - build\
 
 after_build:
 - cmd: |-
