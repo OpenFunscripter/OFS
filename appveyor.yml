@@ -19,6 +19,7 @@ matrix:
   fast_finish: true
 
 before_build:
+- ps: $env:GIT_HASH = $env:APPVEYOR_REPO_COMMIT.Substring(0, 10)
 - ps: choco install -y -r --no-progress InnoSetup
 - ps: set PATH=%PATH%;"C:\\ProgramData\\chocolatey\\bin";"C:\\Program Files (x86)\\Inno Setup 6"
 - cmd: |-
