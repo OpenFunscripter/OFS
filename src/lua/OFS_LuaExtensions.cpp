@@ -14,6 +14,9 @@ constexpr const char* ScriptName = "fancy_extension.lua";
 #include "windows.h"
 #endif
 
+
+bool OFS_LuaExtensions::InMainThread = false;
+
 std::u16string CurrentPath;
 
 static uint64_t GetWriteTime(const wchar_t* path) {
@@ -77,7 +80,7 @@ int LuaShowText(lua_State* L) noexcept;
 int LuaButton(lua_State* L) noexcept;
 int LuaInputDouble(lua_State* L) noexcept;
 static constexpr struct luaL_Reg imguiLib[] = {
-	{"ShowText", LuaShowText},
+	{"Text", LuaShowText},
 	{"Button", LuaButton},
 	{"InputDouble", LuaInputDouble},
 	{NULL, NULL}
@@ -128,13 +131,61 @@ int LuaGetActiveIdx(lua_State* L) noexcept;
 int LuaGetScript(lua_State* L) noexcept;
 int LuaAddAction(lua_State* L) noexcept;
 int LuaRemoveAction(lua_State* L) noexcept;
+int LuaScheduleTask(lua_State* L) noexcept;
+int LuaSnapshot(lua_State* L) noexcept;
 static constexpr struct luaL_Reg ofsLib[] = {
 	{"Script", LuaGetScript},
 	{"AddAction", LuaAddAction},
 	{"RemoveAction", LuaRemoveAction},
 	{"ActiveIdx", LuaGetActiveIdx},
+	{"Task", LuaScheduleTask},
+	{"Snapshot", LuaSnapshot},
 	{NULL, NULL}
 };
+
+static int LuaSnapshot(lua_State* L) noexcept
+{
+	auto app = OpenFunscripter::ptr;
+	int nargs = lua_gettop(L);
+
+	if (nargs == 0) {
+		// snapshot all scripts
+		if (OFS_LuaExtensions::InMainThread) {
+			app->undoSystem->Snapshot(StateType::CUSTOM_LUA);
+		}
+		else {
+			// for thread safety reasons we do this
+			auto handle = EventSystem::ev().WaitableSingleShot([](void*) {
+				auto app = OpenFunscripter::ptr;
+				app->undoSystem->Snapshot(StateType::CUSTOM_LUA);
+			}, 0);
+			handle->wait();
+		}
+	}
+	else if (nargs == 1) {
+		// snapshot a single script
+		assert(lua_istable(L, 1));
+		lua_getfield(L, 1, OFS_LuaExtensions::ScriptIdxUserdata);
+		assert(lua_isuserdata(L, -1));
+		auto index = (intptr_t)lua_touserdata(L, -1);
+		if (index >= 0 && index < app->LoadedFunscripts().size()) {
+			if (OFS_LuaExtensions::InMainThread) {
+				app->undoSystem->Snapshot(StateType::CUSTOM_LUA, app->LoadedFunscripts()[index]);
+			}
+			else {
+				// for thread safety reasons we do this
+				auto handle = EventSystem::ev().WaitableSingleShot([](void* index) {
+					auto i = (intptr_t)index;
+					auto app = OpenFunscripter::ptr;
+					app->undoSystem->Snapshot(StateType::CUSTOM_LUA, app->LoadedFunscripts()[i]);
+					}, (void*)(intptr_t)index);
+				handle->wait();
+			}
+		}
+	}
+
+	return 0;
+}
 
 static int LuaGetActiveIdx(lua_State* L) noexcept
 {
@@ -162,7 +213,9 @@ static int LuaAddAction(lua_State* L) noexcept
 		auto& script = app->LoadedFunscripts()[index];
 
 		double atTime = lua_tonumber(L, 2) / 1000.0;
+		assert(atTime >= 0.f);
 		int pos = lua_tointeger(L, 3);
+		assert(pos >= 0 && pos <= 100);
 		FunscriptAction newAction(atTime, pos);
 		
 		script->AddAction(newAction);
@@ -255,6 +308,25 @@ static int LuaGetScript(lua_State* L) noexcept
 	return 0;
 }
 
+static int LuaScheduleTask(lua_State* L) noexcept
+{
+	auto app = OpenFunscripter::ptr;
+	auto& ext = app->extensions;
+
+	int nargs = lua_gettop(L);
+	if (nargs >= 1) {
+		luaL_argcheck(L, lua_isstring(L, 1), 1, "Expected string.");
+		const char* functionName = lua_tostring(L, 1);
+
+		OFS_LuaTask task;
+		task.Function = functionName;
+		ext->Tasks.emplace(std::move(task));
+	}
+
+	return 0;
+}
+
+
 static void InitLuaGlobalMetatables(lua_State* L) noexcept
 {
 	auto setter = [](lua_State* L) -> int {
@@ -302,6 +374,10 @@ static void InitLuaGlobalMetatables(lua_State* L) noexcept
 	lua_setglobal(L, OFS_LuaExtensions::GlobalActionMetaTable);
 }
 
+void OFS_LuaExtensions::RunTask(OFS_LuaTask& taks) noexcept
+{
+}
+
 OFS_LuaExtensions::OFS_LuaExtensions() noexcept
 {
 	auto extensionDir = Util::Prefpath(ExtensionDir);
@@ -331,11 +407,12 @@ bool OFS_LuaExtensions::LoadExtension(const char* extensionPath) noexcept
 	luaL_openlibs(L);
 	lua_getglobal(L, "_G");
 	luaL_setfuncs(L, printlib, 0);
-	luaL_setfuncs(L, imguiLib, 0);
+	
 	
 	// put all ofs functions into a ofs table
-	lua_createtable(L, 0, sizeof(ofsLib)/sizeof(luaL_Reg));
+	lua_createtable(L, 0, sizeof(ofsLib)/sizeof(luaL_Reg) + sizeof(imguiLib)/sizeof(luaL_Reg));
 	luaL_setfuncs(L, ofsLib, 0);
+	luaL_setfuncs(L, imguiLib, 0);
 	lua_setglobal(L, "ofs");
 
 	InitLuaGlobalMetatables(L);
@@ -356,38 +433,66 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 	if (!*open) return;
 	OFS_PROFILE(__FUNCTION__);
 	
-	static bool AutoReload = false;
+	auto app = OpenFunscripter::ptr;
+
+	static bool AutoReload = true;
 	static uint64_t FileAge = GetWriteTime((const wchar_t*)CurrentPath.c_str());
 
 	ImGui::Begin("Extension", open, ImGuiWindowFlags_None);
-	ImGui::Checkbox("Auto reload", &AutoReload);
-	ImGui::SameLine(); ImGui::Text("age: %lld", FileAge);
-	if (AutoReload) {
-		auto age = GetWriteTime((const wchar_t*)CurrentPath.c_str());
-		if (age != FileAge) {
-			FileAge = age;
-			auto extensionDir = Util::Prefpath(ExtensionDir);
-			auto extensionPath = (Util::PathFromString(extensionDir) / ScriptName).u8string();
-			LoadExtension(extensionPath.c_str());
+	if (!app->blockingTask.Running) {
+		ImGui::Checkbox("Auto reload", &AutoReload);
+		ImGui::SameLine(); ImGui::Text("age: %lld", FileAge);
+		if (AutoReload) {
+			auto age = GetWriteTime((const wchar_t*)CurrentPath.c_str());
+			if (age != FileAge) {
+				FileAge = age;
+				auto extensionDir = Util::Prefpath(ExtensionDir);
+				auto extensionPath = (Util::PathFromString(extensionDir) / ScriptName).u8string();
+				LoadExtension(extensionPath.c_str());
+			}
+		}
+	
+		ImGui::SetWindowSize(ImVec2(300.f, 200.f), ImGuiCond_FirstUseEver);
+		auto startTime = std::chrono::high_resolution_clock::now();
+		lua_getglobal(L, RenderGui);
+		lua_pushnumber(L, ImGui::GetIO().DeltaTime);
+		OFS_LuaExtensions::InMainThread = true; // HACK
+		int result = lua_pcall(L, 1, 1, 0); // 1 arguments 1 result
+		if (result) {
+			const char* error = lua_tostring(L, -1);
+			FUN_ASSERT(false, error);
+		}
+		std::chrono::duration<double> duration = std::chrono::high_resolution_clock::now() - startTime;
+		static double time = duration.count();
+		static double maxTime = time;
+		if (duration.count() > maxTime) maxTime = duration.count();
+		time += duration.count(); time /= 2.0;
+		ImGui::Text("Lua time: %lf ms", time * 1000.0);
+		ImGui::Text("Lua max time: %lf ms", maxTime * 1000.0);
+
+		if (!Tasks.empty()) {
+			auto taskData = std::make_unique<BlockingTaskData>();
+			taskData->TaskDescription = "Lua extension";
+			taskData->TaskThreadFunc = [](void* data)->int
+			{
+				BlockingTaskData* task = (BlockingTaskData*)data;
+				OFS_LuaExtensions* ext = (OFS_LuaExtensions*)task->User;
+				task->MaxProgress = ext->Tasks.size();
+				while (!ext->Tasks.empty()) {
+					OFS_LuaTask& lua = ext->Tasks.front();
+					lua_getglobal(ext->L, lua.Function.c_str());
+					if (lua_isfunction(ext->L, -1)) {
+						OFS_LuaExtensions::InMainThread = false; // HACK
+						int result = lua_pcall(ext->L, 0, 1, 0); // 0 arguments 1 result
+					}
+					ext->Tasks.pop();
+					++task->Progress;
+				}
+				return 0;
+			};
+			taskData->User = this;
+			app->blockingTask.DoTask(std::move(taskData));
 		}
 	}
-	
-	ImGui::SetWindowSize(ImVec2(300.f, 200.f), ImGuiCond_FirstUseEver);
-	auto startTime = std::chrono::high_resolution_clock::now();
-	lua_getglobal(L, RenderGui);
-	lua_pushnumber(L, ImGui::GetIO().DeltaTime);
-	int result = lua_pcall(L, 1, 1, 0); // 0 arguments 1 results
-
-	if (result) {
-		const char* error = lua_tostring(L, -1);
-		FUN_ASSERT(false, error);
-	}
-	std::chrono::duration<double> duration = std::chrono::high_resolution_clock::now() - startTime;
-	static double time = duration.count();
-	static double maxTime = time;
-	if (duration.count() > maxTime) maxTime = duration.count();
-	time += duration.count(); time /= 2.0;
-	ImGui::Text("Lua time: %lf ms", time * 1000.0);
-	ImGui::Text("Lua max time: %lf ms", maxTime * 1000.0);
 	ImGui::End();
 }

@@ -1704,7 +1704,7 @@ void OpenFunscripter::step() noexcept {
 
             playerControls.DrawControls(NULL);
 
-            if (Status & OFS_GradientNeedsUpdate) {
+            if (Status & OFS_GradientNeedsUpdate && !blockingTask.Running) {
                 Status &= ~(OFS_GradientNeedsUpdate);
                 playerControls.UpdateHeatmap(player->getDuration(), ActiveFunscript()->Actions());
             }

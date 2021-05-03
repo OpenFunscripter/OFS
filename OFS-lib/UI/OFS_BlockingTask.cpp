@@ -27,8 +27,20 @@ void OFS_BlockingTask::ShowBlockingTask() noexcept
 
 	auto& style = ImGui::GetStyle();
 	ImGui::BeginPopupModal(ID, NULL, ImGuiWindowFlags_AlwaysAutoResize);
-	ImGui::Text("This may take a while... (%d/%d)", currentTask->Progress, currentTask->MaxProgress);	ImGui::SameLine();
+	const bool ShowProgress = currentTask->MaxProgress > 0;
+	if (ShowProgress) {
+		ImGui::Text("This may take a while... (%d/%d)", currentTask->Progress, currentTask->MaxProgress);
+	}
+	else {
+		ImGui::Text("This may take a while...");
+	}
+	ImGui::SameLine();
 	OFS::Spinner("BlockingTaskSpinner", ImGui::GetFontSize()/2.f, ImGui::GetFontSize() / 4.f, ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_ButtonActive]));
-	ImGui::ProgressBar(currentTask->Progress / (float)currentTask->MaxProgress, ImVec2(-1.f, 0.f), currentTask->TaskDescription); ImGui::SameLine();
+	if (ShowProgress) {
+		ImGui::ProgressBar(currentTask->Progress / (float)currentTask->MaxProgress,
+			ImVec2(-1.f, 0.f),
+			currentTask->TaskDescription); 
+		ImGui::SameLine();
+	}
 	ImGui::EndPopup();
 }

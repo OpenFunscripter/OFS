@@ -56,6 +56,7 @@ void HeatmapGradient::Update(float totalDuration, const FunscriptArray& actions)
     for (int i = 1; i < actions.size(); ++i) {
         auto& action = actions[i];
         float duration = action.atS - lastAction.atS;
+        assert(duration > 0.f);
         float length = std::abs(action.pos - lastAction.pos);
         float speed = length / duration; // speed
         speed = Util::Clamp(speed / MaxSpeedPerSecond, 0.f, 1.f);
