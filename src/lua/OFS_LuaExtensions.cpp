@@ -31,7 +31,6 @@ static uint64_t GetWriteTime(const wchar_t* path) {
 	return timestamp;
 }
 
-
 int LuaPrint(lua_State* L) noexcept;
 
 static constexpr struct luaL_Reg printlib[] = {
@@ -125,36 +124,146 @@ static int LuaInputDouble(lua_State* L) noexcept
 	return 2;
 }
 
-int LuaIterateScript(lua_State* L) noexcept;
+int LuaGetScript(lua_State* L) noexcept;
+int LuaAddAction(lua_State* L) noexcept;
+int LuaRemoveAction(lua_State* L) noexcept;
 static constexpr struct luaL_Reg ofsLib[] = {
-	{"Iterate", LuaIterateScript},
+	{"GetScript", LuaGetScript},
+	{"AddAction", LuaAddAction},
+	{"RemoveAction", LuaRemoveAction},
 	{NULL, NULL}
 };
 
-static int LuaIterateScript(lua_State* L) noexcept
+static int LuaAddAction(lua_State* L) noexcept
+{
+	assert(false);
+	return 0;
+}
+
+static int LuaRemoveAction(lua_State* L) noexcept
 {
 	auto app = OpenFunscripter::ptr;
 
 	int nargs = lua_gettop(L);
+	if (nargs == 2) {
+		assert(lua_istable(L, 1));
+		assert(lua_isuserdata(L, 2));
+		
+		lua_getfield(L, 1, OFS_LuaExtensions::ScriptIdxUserdata); // 3
+		assert(lua_isuserdata(L, -1));
+		auto index = (intptr_t)lua_touserdata(L, -1);
+		assert(index >= 0 && index < app->LoadedFunscripts().size());
+
+		auto& script = app->LoadedFunscripts()[index];
+		FunscriptAction* action = (FunscriptAction*)lua_touserdata(L, 2);
+		assert(action);
+
+		int actionIndex = action - script->Actions().begin(); ++actionIndex;
+		int actionCount = script->Actions().size();
+		script->RemoveAction(*action, true);
+		
+		// update all FunscriptAction pointers
+		lua_getfield(L, 1, OFS_LuaExtensions::ScriptActionsField); // 4
+		assert(lua_istable(L, -1));
+		
+		// remove element
+		//lua_geti(L, -1, actionIndex); 
+		for (; actionIndex < actionCount; actionIndex++) {
+			lua_geti(L, -1, actionIndex + 1);
+			lua_seti(L, -1, actionIndex);
+		}
+		lua_pushnil(L);
+		assert(lua_istable(L, -2));
+		lua_seti(L, -2, actionIndex);
+
+		for (int i = 0, size = script->Actions().size(); i < size; ++i) {
+			auto& action = script->Actions()[i];
+			lua_pushlightuserdata(L, (void*)&action);
+			assert(lua_istable(L, -2));
+			lua_rawseti(L, -2, i + 1);
+		}
+	}
+	return 0;
+}
+
+static int LuaGetScript(lua_State* L) noexcept
+{
+	auto app = OpenFunscripter::ptr;
+	int nargs = lua_gettop(L);
 	if (nargs == 1) {
+		assert(lua_isnumber(L, 1));
 		lua_Integer index = lua_tointeger(L, 1);
-		if (index >= 1 && index <= app->ActiveFunscript()->Actions().size()) {
-			auto& action = app->ActiveFunscript()->Actions()[index-1];
-			lua_createtable(L, 0, 3);
+
+		if (index >= 1 && index <= app->LoadedFunscripts().size()) {
+			auto& script = app->LoadedFunscripts()[index - 1];
+			lua_createtable(L, 0, 2); // 2
 			
-			lua_pushnumber(L, (double)action.atS * 1000.0);
-			lua_setfield(L, -2, "at");
+			lua_pushlightuserdata(L, (void*)(intptr_t)(index - 1));
+			lua_setfield(L, -2, OFS_LuaExtensions::ScriptIdxUserdata); // pops off
 
-			lua_pushinteger(L, action.pos);
-			lua_setfield(L, -2, "pos");
-
-			lua_pushboolean(L, app->ActiveFunscript()->IsSelected(action));
-			lua_setfield(L, -2, "selected");
+			lua_createtable(L, script->Actions().size(), 2); // 3
+			for(int i=0, size=script->Actions().size(); i < size; ++i) {
+				auto& action = script->Actions()[i];
+				lua_pushlightuserdata(L, (void*)&action);
+				lua_getglobal(L, OFS_LuaExtensions::GlobalActionMetaTable);
+				assert(lua_isuserdata(L, -2));
+				lua_setmetatable(L, -2);
+				assert(lua_istable(L, -2));
+				lua_rawseti(L, -2, i + 1);
+			}
+			assert(lua_istable(L, -1));
+			lua_setfield(L, 2, OFS_LuaExtensions::ScriptActionsField);
 			return 1;
 		}
 	}
-
 	return 0;
+}
+
+static void InitLuaGlobalMetatables(lua_State* L) noexcept
+{
+	auto setter = [](lua_State* L) -> int {
+		int nargs = lua_gettop(L);
+		if (nargs == 3) {
+			FunscriptAction* action = (FunscriptAction*)lua_touserdata(L, 1);
+			assert(action);
+			const char* key = lua_tostring(L, 2);
+			lua_Number value = lua_tonumber(L, 3);
+					
+			if (strcmp(key, "pos") == 0) {
+				action->pos = Util::Clamp(value, 0.0, 100.0);
+			}
+			else if (strcmp(key, "at") == 0) {
+				action->atS = value / 1000.0;
+			}
+		}
+		return 0;
+	};
+
+	auto getter = [](lua_State* L) -> int {
+		int nargs = lua_gettop(L);
+		if (nargs == 2) {
+			FunscriptAction* action = (FunscriptAction*)lua_touserdata(L, 1);
+			assert(action);
+			const char* key = lua_tostring(L, 2);
+			if (strcmp(key, "pos") == 0) {
+				lua_pushinteger(L, action->pos);
+			}
+			else if (strcmp(key, "at") == 0) {
+				lua_pushnumber(L, (double)action->atS * 1000.0);
+			}
+			return 1;
+		}
+		return 0;
+	};
+	
+	lua_createtable(L, 0, 2);
+	lua_pushcfunction(L, getter);
+	lua_setfield(L, -2, "__index");
+
+	lua_pushcfunction(L, setter);
+	lua_setfield(L, -2, "__newindex");
+
+	lua_setglobal(L, OFS_LuaExtensions::GlobalActionMetaTable);
 }
 
 OFS_LuaExtensions::OFS_LuaExtensions() noexcept
@@ -189,6 +298,8 @@ bool OFS_LuaExtensions::LoadExtension(const char* extensionPath) noexcept
 	luaL_setfuncs(L, imguiLib, 0);
 	luaL_setfuncs(L, ofsLib, 0);
 
+	InitLuaGlobalMetatables(L);
+
 	int status = luaL_dostring(L, (const char*)extensionText.data());
 	if (status != 0) {
 		const char* error = lua_tostring(L, -1);
@@ -208,7 +319,7 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 	static bool AutoReload = false;
 	static uint64_t FileAge = GetWriteTime((const wchar_t*)CurrentPath.c_str());
 
-	ImGui::Begin("Extensions", open, ImGuiWindowFlags_None);
+	ImGui::Begin("Extension", open, ImGuiWindowFlags_None);
 	ImGui::Checkbox("Auto reload", &AutoReload);
 	ImGui::SameLine(); ImGui::Text("age: %lld", FileAge);
 	if (AutoReload) {
@@ -223,13 +334,20 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 	
 	ImGui::SetWindowSize(ImVec2(300.f, 200.f), ImGuiCond_FirstUseEver);
 	auto startTime = std::chrono::high_resolution_clock::now();
-	if (!LuaCall(L, RenderGui)) {
+	lua_getglobal(L, RenderGui);
+	lua_pushnumber(L, ImGui::GetIO().DeltaTime);
+	int result = lua_pcall(L, 1, 1, 0); // 0 arguments 1 results
+
+	if (result) {
 		const char* error = lua_tostring(L, -1);
 		FUN_ASSERT(false, error);
 	}
 	std::chrono::duration<double> duration = std::chrono::high_resolution_clock::now() - startTime;
 	static double time = duration.count();
+	static double maxTime = time;
+	if (duration.count() > maxTime) maxTime = duration.count();
 	time += duration.count(); time /= 2.0;
 	ImGui::Text("Lua time: %lf ms", time * 1000.0);
+	ImGui::Text("Lua max time: %lf ms", maxTime * 1000.0);
 	ImGui::End();
 }
