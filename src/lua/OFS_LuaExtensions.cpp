@@ -124,19 +124,59 @@ static int LuaInputDouble(lua_State* L) noexcept
 	return 2;
 }
 
+int LuaGetActiveIdx(lua_State* L) noexcept;
 int LuaGetScript(lua_State* L) noexcept;
 int LuaAddAction(lua_State* L) noexcept;
 int LuaRemoveAction(lua_State* L) noexcept;
 static constexpr struct luaL_Reg ofsLib[] = {
-	{"GetScript", LuaGetScript},
+	{"Script", LuaGetScript},
 	{"AddAction", LuaAddAction},
 	{"RemoveAction", LuaRemoveAction},
+	{"ActiveIdx", LuaGetActiveIdx},
 	{NULL, NULL}
 };
 
+static int LuaGetActiveIdx(lua_State* L) noexcept
+{
+	int nargs = lua_gettop(L);
+	luaL_argcheck(L, nargs == 0, 1, "Expected no arguments.");
+	auto app = OpenFunscripter::ptr;
+	lua_pushinteger(L, app->ActiveFunscriptIndex() + 1);
+	return 1;
+}
+
 static int LuaAddAction(lua_State* L) noexcept
 {
-	assert(false);
+	auto app = OpenFunscripter::ptr;
+	int nargs = lua_gettop(L);
+	if (nargs == 3) {
+		assert(lua_istable(L, 1)); // script
+		assert(lua_isnumber(L, 2)); // timestamp
+		assert(lua_isnumber(L, 3)); // pos
+
+		lua_getfield(L, 1, OFS_LuaExtensions::ScriptIdxUserdata);
+		assert(lua_isuserdata(L, -1));
+		auto index = (intptr_t)lua_touserdata(L, -1);
+		assert(index >= 0 && index < app->LoadedFunscripts().size());
+
+		auto& script = app->LoadedFunscripts()[index];
+
+		double atTime = lua_tonumber(L, 2) / 1000.0;
+		int pos = lua_tointeger(L, 3);
+		FunscriptAction newAction(atTime, pos);
+		
+		script->AddAction(newAction);
+
+		auto actionCount = script->Actions().size();
+		lua_getfield(L, 1, OFS_LuaExtensions::ScriptActionsField); 
+		
+		const FunscriptAction* begin = &script->Actions()[0];
+		for (int i = 0, size = actionCount; i < size; ++i) {
+			lua_pushlightuserdata(L, (void*)(begin+i));
+			assert(lua_istable(L, -2));
+			lua_rawseti(L, -2, i + 1);
+		}
+	}
 	return 0;
 }
 
@@ -145,6 +185,7 @@ static int LuaRemoveAction(lua_State* L) noexcept
 	auto app = OpenFunscripter::ptr;
 
 	int nargs = lua_gettop(L);
+
 	if (nargs == 2) {
 		assert(lua_istable(L, 1));
 		assert(lua_isuserdata(L, 2));
@@ -158,27 +199,22 @@ static int LuaRemoveAction(lua_State* L) noexcept
 		FunscriptAction* action = (FunscriptAction*)lua_touserdata(L, 2);
 		assert(action);
 
-		int actionIndex = action - script->Actions().begin(); ++actionIndex;
-		int actionCount = script->Actions().size();
 		script->RemoveAction(*action, true);
+		int actionCount = script->Actions().size();
 		
 		// update all FunscriptAction pointers
 		lua_getfield(L, 1, OFS_LuaExtensions::ScriptActionsField); // 4
 		assert(lua_istable(L, -1));
 		
 		// remove element
-		//lua_geti(L, -1, actionIndex); 
-		for (; actionIndex < actionCount; actionIndex++) {
-			lua_geti(L, -1, actionIndex + 1);
-			lua_seti(L, -1, actionIndex);
-		}
 		lua_pushnil(L);
-		assert(lua_istable(L, -2));
-		lua_seti(L, -2, actionIndex);
+		lua_seti(L, -2, actionCount+1);
 
+		if (actionCount == 0) return 0;
+
+		const FunscriptAction* begin = &script->Actions()[0];
 		for (int i = 0, size = script->Actions().size(); i < size; ++i) {
-			auto& action = script->Actions()[i];
-			lua_pushlightuserdata(L, (void*)&action);
+			lua_pushlightuserdata(L, (void*)(begin+i));
 			assert(lua_istable(L, -2));
 			lua_rawseti(L, -2, i + 1);
 		}
@@ -296,7 +332,11 @@ bool OFS_LuaExtensions::LoadExtension(const char* extensionPath) noexcept
 	lua_getglobal(L, "_G");
 	luaL_setfuncs(L, printlib, 0);
 	luaL_setfuncs(L, imguiLib, 0);
+	
+	// put all ofs functions into a ofs table
+	lua_createtable(L, 0, sizeof(ofsLib)/sizeof(luaL_Reg));
 	luaL_setfuncs(L, ofsLib, 0);
+	lua_setglobal(L, "ofs");
 
 	InitLuaGlobalMetatables(L);
 
