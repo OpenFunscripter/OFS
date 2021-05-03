@@ -61,7 +61,7 @@ std::array<const char*, 4> OpenFunscripter::SupportedAudioExtensions{
 OpenFunscripter* OpenFunscripter::ptr = nullptr;
 ImFont* OpenFunscripter::DefaultFont2 = nullptr;
 
-constexpr const char* glsl_version = "#version 150";
+constexpr const char* glsl_version = "#version 330";
 
 static ImGuiID MainDockspaceID;
 constexpr const char* StatisticsId = "Statistics";
