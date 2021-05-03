@@ -225,7 +225,7 @@ void OFS_VideoplayerControls::DrawControls(bool* open) noexcept
 
     ImGui::Begin(PlayerControlId, open);
 
-    constexpr int seek_ms = 3000;
+    constexpr float seekTime = 3.f;
     // Playback controls
     ImGui::Columns(5, 0, false);
     if (ImGui::Button(ICON_STEP_BACKWARD /*"<"*/, ImVec2(-1, 0))) {
@@ -235,7 +235,7 @@ void OFS_VideoplayerControls::DrawControls(bool* open) noexcept
     }
     ImGui::NextColumn();
     if (ImGui::Button(ICON_BACKWARD /*"<<"*/, ImVec2(-1, 0))) {
-        player->seekRelative(-seek_ms);
+        player->seekRelative(-seekTime);
     }
     ImGui::NextColumn();
 
@@ -245,7 +245,7 @@ void OFS_VideoplayerControls::DrawControls(bool* open) noexcept
     ImGui::NextColumn();
 
     if (ImGui::Button(ICON_FORWARD /*">>"*/, ImVec2(-1, 0))) {
-        player->seekRelative(seek_ms);
+        player->seekRelative(seekTime);
     }
     ImGui::NextColumn();
 

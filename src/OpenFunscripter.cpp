@@ -1281,7 +1281,7 @@ void OpenFunscripter::registerBindings()
             "seek_forward_second",
             "Forward 1 second",
             false,
-            [&](void*) { player->seekRelative(1000); }
+            [&](void*) { player->seekRelative(1); }
         );
         seek_forward_second.controller = ControllerBinding(
             SDL_CONTROLLER_BUTTON_RIGHTSHOULDER,
@@ -1292,7 +1292,7 @@ void OpenFunscripter::registerBindings()
             "seek_backward_second",
             "Backward 1 second",
             false,
-            [&](void*) { player->seekRelative(-1000); }
+            [&](void*) { player->seekRelative(-1); }
         );
         seek_backward_second.controller = ControllerBinding(
             SDL_CONTROLLER_BUTTON_LEFTSHOULDER,
