@@ -152,7 +152,7 @@ static bool BoundedSliderScalar(const char* label, ImGuiDataType data_type, Numb
     {
         // Only clamp CTRL+Click input when ImGuiSliderFlags_AlwaysClamp is set
         const bool is_clamp_input = (flags & ImGuiSliderFlags_AlwaysClamp) != 0;
-        return TempInputScalar(frame_bb, id, label, data_type, p_data, format, is_clamp_input ? p_min : NULL, is_clamp_input ? p_max : NULL);
+        return TempInputScalar(frame_bb, id, label, data_type, p_data, format, is_clamp_input ? l_min : NULL, is_clamp_input ? l_max : NULL);
     }
 
     // Draw frame
@@ -170,7 +170,7 @@ static bool BoundedSliderScalar(const char* label, ImGuiDataType data_type, Numb
 
     // Slider behavior
     ImRect grab_bb;
-    const bool value_changed = SliderBehavior(frame_bb, id, data_type, p_data, p_min, p_max, format, flags, &grab_bb);
+    const bool value_changed = SliderBehavior(LocalBounded /*frame_bb*/, id, data_type, p_data, l_min, l_max,/*p_min, p_max,*/ format, flags, &grab_bb);
     if (value_changed)
         MarkItemEdited(id);
    
