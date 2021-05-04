@@ -53,9 +53,9 @@ std::array<const char*, 6> OpenFunscripter::SupportedVideoExtensions {
 
 std::array<const char*, 4> OpenFunscripter::SupportedAudioExtensions{
     ".mp3",
+    ".ogg",
     ".flac",
-    ".wmv",
-    ".ogg"
+    ".wav",
 };
 
 OpenFunscripter* OpenFunscripter::ptr = nullptr;
