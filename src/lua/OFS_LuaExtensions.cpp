@@ -4,6 +4,7 @@
 #include "OpenFunscripter.h"
 
 #include "imgui.h"
+#include "imgui_stdlib.h"
 #include <filesystem>
 
 constexpr const char* ScriptName = "fancy_extension.lua";
@@ -76,15 +77,41 @@ static bool LuaCall(lua_State* L, const char* function) noexcept
 	return false;
 }
 
+int LuaDrag(lua_State* L) noexcept;
 int LuaShowText(lua_State* L) noexcept;
 int LuaButton(lua_State* L) noexcept;
-int LuaInputDouble(lua_State* L) noexcept;
+int LuaInput(lua_State* L) noexcept;
 static constexpr struct luaL_Reg imguiLib[] = {
 	{"Text", LuaShowText},
 	{"Button", LuaButton},
-	{"InputDouble", LuaInputDouble},
+	{"Input", LuaInput},
+	{"Drag", LuaDrag},
 	{NULL, NULL}
 };
+
+static int LuaDrag(lua_State* L) noexcept 
+{
+	int nargs = lua_gettop(L);
+	bool valueChanged = false;
+	luaL_argcheck(L, lua_isstring(L, 1), 1, "Expected string.");
+	const char* str = lua_tostring(L, 1);
+	if (lua_isinteger(L, 2)) {
+		int result = lua_tointeger(L, 2); // trucates to 32 bit
+		valueChanged = ImGui::DragInt(str, &result);
+		lua_pushinteger(L, result);
+	}
+	else if (lua_isnumber(L, 2)) {
+		float result = lua_tonumber(L, 2); // precision loss
+		valueChanged = ImGui::DragFloat(str, &result);
+		lua_pushnumber(L, result);
+	}
+	else {
+		return 0;
+	}
+
+	lua_pushboolean(L, valueChanged);
+	return 2;
+}
 
 static int LuaShowText(lua_State* L) noexcept
 {
@@ -102,27 +129,38 @@ static int LuaButton(lua_State* L) noexcept
 	bool result = false;
 	if (nargs == 1) {
 		const char* str = lua_tostring(L, 1);
-		if (str) {
-			result = ImGui::Button(str);
-		}
+		result = ImGui::Button(str);
 	}
 	lua_pushboolean(L, result);
 	return 1;
 }
 
-static int LuaInputDouble(lua_State* L) noexcept
+static int LuaInput(lua_State* L) noexcept
 {
 	int nargs = lua_gettop(L);
 	bool valueChanged = false;
-	lua_Number result = 0.0;
-	if (nargs == 2) {
-		const char* str = lua_tostring(L, 1);
-		result = lua_tonumber(L, 2);
-		if (str) {
-			valueChanged = ImGui::InputDouble(str, &result);
-		}
+	luaL_argcheck(L, lua_isstring(L, 1), 1, "Expected string.");
+	const char* str = lua_tostring(L, 1);
+	if (lua_isinteger(L, 2)) {
+		int result = lua_tointeger(L, 2); // this will truncate to 32 bit
+		valueChanged = ImGui::InputInt(str, &result);
+		lua_pushinteger(L, result);
 	}
-	lua_pushnumber(L, result);
+	else if (lua_isnumber(L, 2)) {	
+		lua_Number result = result = lua_tonumber(L, 2);
+		valueChanged = ImGui::InputDouble(str, &result);
+		lua_pushnumber(L, result);
+	}
+	else if (lua_isstring(L, 2)) {
+		char buffer[512];
+		const char* result = lua_tostring(L, 2);
+		strcpy(buffer, result);
+		valueChanged = ImGui::InputText(str, buffer, sizeof(buffer));
+		lua_pushstring(L, buffer);
+	}
+	else {
+		return 0;
+	}
 	lua_pushboolean(L, valueChanged);
 	return 2;
 }
