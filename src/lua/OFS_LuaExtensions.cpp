@@ -509,7 +509,7 @@ void OFS_LuaExtensions::UpdateExtensionList() noexcept
 			if (!skip) {
 				auto& ext = Extensions.emplace_back();
 				ext.Name = std::move(Name);
-				ext.NameId = Util::Format("%s##%s%c", ext.Name.c_str(), ext.Name.c_str(), 'X');
+				ext.NameId = Util::Format("%s##_%s_", ext.Name.c_str(), ext.Name.c_str());
 				ext.Directory = std::move(Directory);
 				ext.Hash = Hash;
 			}
@@ -673,7 +673,7 @@ bool OFS_LuaExtension::Load(const std::filesystem::path& directory) noexcept
 	Directory = directory.u8string(); 
 	Hash = Util::Hash(Directory.c_str(), Directory.size());
 	NameId = directory.filename().u8string();
-	NameId = Util::Format("%s##%s%c", Name.c_str(), Name.c_str(), 'X');
+	NameId = Util::Format("%s##_%s_", Name.c_str(), Name.c_str());
 
 	std::vector<uint8_t> extensionText;
 	if (!Util::ReadFile(mainFile.u8string().c_str(), extensionText)) {
