@@ -17,6 +17,7 @@ struct OFS_LuaTask
 struct OFS_LuaExtension
 {
 	static constexpr const char* MainFile = "main.lua";
+	uint32_t Hash;
 
 	std::string Name;
 	std::string Directory;
@@ -24,8 +25,6 @@ struct OFS_LuaExtension
 	lua_State* L = nullptr;
 
 	bool Active = false;
-	bool WindowShown = true;
-
 	double MaxTime = 0.0;
 
 	bool Load(const std::filesystem::path& directory) noexcept;
@@ -34,13 +33,13 @@ struct OFS_LuaExtension
 			lua_close(L); L = 0;
 		}
 	}
-
 	template<class Archive>
 	void reflect(Archive& ar)
 	{
 		OFS_REFLECT(Name, ar);
 		OFS_REFLECT(Directory, ar);
 		OFS_REFLECT(Active, ar);
+		Hash = Util::Hash(Directory.c_str(), Directory.size());
 	}
 };
 
@@ -48,7 +47,7 @@ class OFS_LuaExtensions
 {
 private:
 	std::string LastConfigPath;
-	void RunTask(OFS_LuaTask& task) noexcept;
+	void RemoveNonExisting() noexcept;
 public:
 	std::vector<OFS_LuaExtension> Extensions;
 	void UpdateExtensionList() noexcept;

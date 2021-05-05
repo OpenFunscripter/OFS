@@ -151,6 +151,14 @@ void Funscript::AddActionRange(const FunscriptArray& range, bool checkDuplicates
 	NotifyActionsChanged(true);
 }
 
+void Funscript::EditActionUnsafe(FunscriptAction* edit, FunscriptAction action) noexcept
+{
+	if (edit >= data.Actions.begin() && edit < data.Actions.end()) {
+		*edit = action;
+		NotifyActionsChanged(true);
+	}
+}
+
 bool Funscript::EditAction(FunscriptAction oldAction, FunscriptAction newAction) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);

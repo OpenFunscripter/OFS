@@ -279,6 +279,13 @@ public:
 		return exists;
 	}
 
+	inline static bool DirectoryExists(const std::string& dir) noexcept
+	{
+		std::error_code ec;
+		bool exists = std::filesystem::exists(dir, ec);
+		return exists && !ec;
+	}
+
 	static void ForceMinumumWindowSize(class ImGuiWindow* window) noexcept;
 
 	// http://www.martinbroadhurst.com/how-to-trim-a-stdstring.html
@@ -427,4 +434,6 @@ public:
 		stbsp_vsnprintf(FormatBuffer, sizeof(FormatBuffer), fmt, argp);
 		return FormatBuffer;
 	}
+
+	static uint32_t Hash(const char* data, size_t size = 0, int32_t seed = 0x42069) noexcept;
 };

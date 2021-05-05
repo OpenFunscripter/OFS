@@ -32,6 +32,15 @@
 //}
 
 
+constexpr const char* LuaDefaultFunctions = R"(
+
+function clamp(val, min, max)
+	return math.min(max, math.max(val, min))
+end
+
+)";
+
+
 bool OFS_LuaExtensions::InMainThread = false;
 
 int LuaPrint(lua_State* L) noexcept;
@@ -151,6 +160,92 @@ static int LuaInput(lua_State* L) noexcept
 	}
 	lua_pushboolean(L, valueChanged);
 	return 2;
+}
+
+
+static void ActionGetterSetter(lua_State* L, int scriptIndex) noexcept
+{
+	auto setter = [](lua_State* L) -> int {
+		auto app = OpenFunscripter::ptr;
+		int nargs = lua_gettop(L);
+		assert(lua_isuserdata(L, lua_upvalueindex(1)));
+		int scriptIndex = (intptr_t)lua_touserdata(L, lua_upvalueindex(1));
+		if (nargs == 3 && scriptIndex >= 0 && scriptIndex < app->LoadedFunscripts().size()) {
+			auto& script = app->LoadedFunscripts()[scriptIndex];
+			FunscriptAction* action = (FunscriptAction*)lua_touserdata(L, 1);
+			FunscriptAction newAction = *action;
+			assert(action);
+			const char* key = lua_tostring(L, 2);
+			lua_Number value = lua_tonumber(L, 3);
+
+			if (strcmp(key, "pos") == 0) {
+				bool isSelected = script->IsSelected(*action); // TODO: awful perf
+				newAction.pos = Util::Clamp(value, 0.0, 100.0);
+				if (isSelected) {
+					script->SetSelected(*action, false);
+				}
+				script->EditActionUnsafe(action, newAction);
+				if (isSelected) {
+					script->SetSelected(*action, true);
+				}
+			}
+			else if (strcmp(key, "at") == 0) {
+				bool isSelected = script->IsSelected(*action); // TODO: awful perf
+				newAction.atS = value / 1000.0;
+				if (isSelected) {
+					script->SetSelected(*action, false);
+				}
+				script->EditActionUnsafe(action, newAction);
+				if (isSelected) {
+					script->SetSelected(*action, true);
+				}
+			}
+			else if (strcmp(key, "selected") == 0) {
+				script->SetSelected(*action, value);
+			}
+		}
+		return 0;
+	};
+
+	auto getter = [](lua_State* L) -> int {
+		auto app = OpenFunscripter::ptr;
+		int nargs = lua_gettop(L);
+		assert(lua_isuserdata(L, lua_upvalueindex(1)));
+		int scriptIndex = (intptr_t)lua_touserdata(L, lua_upvalueindex(1));
+
+		if (nargs == 2 && scriptIndex >= 0 && scriptIndex < app->LoadedFunscripts().size()) {
+			auto& script = app->LoadedFunscripts()[scriptIndex];
+			FunscriptAction* action = (FunscriptAction*)lua_touserdata(L, 1);
+			assert(action);
+			const char* key = lua_tostring(L, 2);
+			if (strcmp(key, "pos") == 0) {
+				lua_pushinteger(L, action->pos);
+				return 1;
+			}
+			else if (strcmp(key, "at") == 0) {
+				lua_pushnumber(L, (double)action->atS * 1000.0);
+				return 1;
+			}
+			else if (strcmp(key, "selected") == 0) {
+				lua_pushboolean(L, script->IsSelected(*action));
+				return 1;
+			}
+		}
+		return 0;
+	};
+
+	lua_createtable(L, 0, 2);
+	lua_pushlightuserdata(L, (void*)(intptr_t)scriptIndex);
+	lua_pushcclosure(L, getter, 1);
+	//lua_pushcfunction(L, getter);
+	lua_setfield(L, -2, "__index");
+
+	lua_pushlightuserdata(L, (void*)(intptr_t)scriptIndex);
+	lua_pushcclosure(L, setter, 1);
+	//lua_pushcfunction(L, setter);
+	lua_setfield(L, -2, "__newindex");
+
+	//lua_setglobal(L, OFS_LuaExtensions::GlobalActionMetaTable);
 }
 
 int LuaGetActiveIdx(lua_State* L) noexcept;
@@ -316,6 +411,9 @@ static int LuaGetScript(lua_State* L) noexcept
 			lua_pushlightuserdata(L, (void*)(intptr_t)(index - 1));
 			lua_setfield(L, -2, OFS_LuaExtensions::ScriptIdxUserdata); // pops off
 
+			ActionGetterSetter(L, index - 1);
+			lua_setglobal(L, OFS_LuaExtensions::GlobalActionMetaTable); // this gets reused for every action
+
 			lua_createtable(L, script->Actions().size(), 2); // 3
 			for(int i=0, size=script->Actions().size(); i < size; ++i) {
 				auto& action = script->Actions()[i];
@@ -353,76 +451,36 @@ static int LuaScheduleTask(lua_State* L) noexcept
 	return 0;
 }
 
-
-static void InitLuaGlobalMetatables(lua_State* L) noexcept
+void OFS_LuaExtensions::RemoveNonExisting() noexcept
 {
-	auto setter = [](lua_State* L) -> int {
-		int nargs = lua_gettop(L);
-		if (nargs == 3) {
-			FunscriptAction* action = (FunscriptAction*)lua_touserdata(L, 1);
-			assert(action);
-			const char* key = lua_tostring(L, 2);
-			lua_Number value = lua_tonumber(L, 3);
-					
-			if (strcmp(key, "pos") == 0) {
-				action->pos = Util::Clamp(value, 0.0, 100.0);
-			}
-			else if (strcmp(key, "at") == 0) {
-				action->atS = value / 1000.0;
-			}
-		}
-		return 0;
-	};
-
-	auto getter = [](lua_State* L) -> int {
-		int nargs = lua_gettop(L);
-		if (nargs == 2) {
-			FunscriptAction* action = (FunscriptAction*)lua_touserdata(L, 1);
-			assert(action);
-			const char* key = lua_tostring(L, 2);
-			if (strcmp(key, "pos") == 0) {
-				lua_pushinteger(L, action->pos);
-			}
-			else if (strcmp(key, "at") == 0) {
-				lua_pushnumber(L, (double)action->atS * 1000.0);
-			}
-			return 1;
-		}
-		return 0;
-	};
-	
-	lua_createtable(L, 0, 2);
-	lua_pushcfunction(L, getter);
-	lua_setfield(L, -2, "__index");
-
-	lua_pushcfunction(L, setter);
-	lua_setfield(L, -2, "__newindex");
-
-	lua_setglobal(L, OFS_LuaExtensions::GlobalActionMetaTable);
-}
-
-void OFS_LuaExtensions::RunTask(OFS_LuaTask& taks) noexcept
-{
+	Extensions.erase(std::remove_if(Extensions.begin(), Extensions.end(), [](auto& ext) {
+		return !Util::DirectoryExists(ext.Directory);
+		}), Extensions.end());
 }
 
 void OFS_LuaExtensions::UpdateExtensionList() noexcept
 {
 	auto extensionDir = Util::Prefpath(ExtensionDir);
-
 	std::error_code ec;
+	std::filesystem::create_directories(extensionDir, ec);
 	std::filesystem::directory_iterator dirIt(extensionDir, ec);
-
 	
+	RemoveNonExisting();
+
 	for (auto it : dirIt) {
 		if (it.is_directory()) {
 			auto Name = it.path().filename().u8string();
-			bool skip = std::any_of(Extensions.begin(), Extensions.end(), [&](auto& a) {
-				return a.Name == Name;
+			auto Directory = it.path().u8string();
+			auto Hash = Util::Hash(Directory.c_str(), Directory.size());
+			bool skip = std::any_of(Extensions.begin(), Extensions.end(), 
+				[&](auto& a) {
+				return a.Hash == Hash;
 			});
 			if (!skip) {
 				auto& ext = Extensions.emplace_back();
-				ext.Name = Name;
-				ext.Directory = it.path().u8string();
+				ext.Name = std::move(Name);
+				ext.Directory = std::move(Directory);
+				ext.Hash = Hash;
 			}
 		}
 	}
@@ -432,10 +490,6 @@ OFS_LuaExtensions::OFS_LuaExtensions() noexcept
 {
 	load(Util::Prefpath("extension.json"));
 	UpdateExtensionList();
-
-	std::error_code ec;
-	auto extensionDir = Util::Prefpath(ExtensionDir);
-	std::filesystem::create_directories(extensionDir, ec);
 	
 	for (auto& ext : Extensions) {
 		if (ext.Active) ext.Load(ext.Directory);
@@ -455,6 +509,7 @@ void OFS_LuaExtensions::load(const std::string& path) noexcept
 	auto json = Util::LoadJson(path, &suc);
 	if (suc) {
 		OFS::serializer::load(this, &json);
+		RemoveNonExisting();		
 	}
 }
 
@@ -474,7 +529,7 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 	if (!app->blockingTask.Running) {
 		for (auto& ext : this->Extensions) {
 			if (!ext.Active || !ext.L) continue;
-			ImGui::Begin(ext.Name.c_str(), &ext.WindowShown, ImGuiWindowFlags_None);
+			ImGui::Begin(ext.Name.c_str(), open, ImGuiWindowFlags_None);
 			if (ImGui::Button("Reload", ImVec2(-1.f, 0.f))) { ext.Load(Util::PathFromString(ext.Directory)); }
 			ImGui::SetWindowSize(ImVec2(300.f, 200.f), ImGuiCond_FirstUseEver);
 			auto startTime = std::chrono::high_resolution_clock::now();
@@ -485,6 +540,7 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 			int result = lua_pcall(ext.L, 1, 1, 0); // 1 arguments 1 result
 			if (result) {
 				const char* error = lua_tostring(ext.L, -1);
+				LOG_ERROR(error);
 				FUN_ASSERT(false, error);
 			}
 
@@ -519,6 +575,7 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 				return 0;
 			};
 			taskData->User = this;
+			taskData->DimBackground = false;
 			app->blockingTask.DoTask(std::move(taskData));
 		}
 	}
@@ -529,8 +586,10 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 bool OFS_LuaExtension::Load(const std::filesystem::path& directory) noexcept
 {
 	auto mainFile = directory / OFS_LuaExtension::MainFile;
-	Directory = directory.u8string();
+	Directory = directory.u8string(); 
+	Hash = Util::Hash(Directory.c_str(), Directory.size());
 	Name = directory.filename().u8string();
+	Name = Util::Format("%s##%s%c", Name.c_str(), Name.c_str(), 'X');
 
 	std::vector<uint8_t> extensionText;
 	if (!Util::ReadFile(mainFile.u8string().c_str(), extensionText)) {
@@ -552,9 +611,11 @@ bool OFS_LuaExtension::Load(const std::filesystem::path& directory) noexcept
 	luaL_setfuncs(L, imguiLib, 0);
 	lua_setglobal(L, "ofs");
 
-	InitLuaGlobalMetatables(L);
+	//InitLuaGlobalMetatables(L);
 
-	int status = luaL_dostring(L, (const char*)extensionText.data());
+	int status = luaL_dostring(L, LuaDefaultFunctions);
+	FUN_ASSERT(status == 0, "defaults failed");
+	status = luaL_dostring(L, (const char*)extensionText.data());
 	if (status != 0) {
 		const char* error = lua_tostring(L, -1);
 		LOG_ERROR(error);

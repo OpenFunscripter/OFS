@@ -1,4 +1,5 @@
 #include "OFS_Util.h"
+#include "OFS_Util.h"
 
 #include "EventSystem.h"
 
@@ -463,4 +464,10 @@ std::filesystem::path Util::FfmpegPath() noexcept
 	auto ffmpeg_path = std::filesystem::path("ffmpeg");
 #endif
 	return ffmpeg_path;
+}
+
+uint32_t Util::Hash(const char* data, size_t size, int32_t seed) noexcept
+{
+	static_assert(sizeof(uint32_t) == sizeof(ImGuiID));
+	return ImHashStr(data, size, seed);
 }

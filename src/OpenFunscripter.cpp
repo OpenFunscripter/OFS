@@ -2811,14 +2811,20 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Extensions")) {
-            if(ImGui::MenuItem("Show", NULL, &settings->data().show_extensions)) {}
-            if (ImGui::MenuItem("Reload extensions")) { extensions->UpdateExtensionList(); }
+            if (ImGui::IsWindowAppearing()) {
+                extensions->UpdateExtensionList();
+            }
+            if(ImGui::MenuItem("Show windows", NULL, &settings->data().show_extensions)) {}
+            if (ImGui::MenuItem("Extension directory")) { 
+                Util::OpenFileExplorer(Util::Prefpath(OFS_LuaExtensions::ExtensionDir)); 
+            }
             ImGui::Separator();
             for (auto& ext : extensions->Extensions) {
                 if (ImGui::MenuItem(ext.Name.c_str(), NULL, &ext.Active)) {
                     if (ext.Active && !ext.L) {
-                        ext.Load(ext.Directory);
+                        ext.Active = ext.Load(ext.Directory);
                     }
+                    else if (!ext.Active) { ext.Shutdown(); }
                 }
             }
             ImGui::EndMenu();
