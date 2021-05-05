@@ -154,7 +154,16 @@ void Funscript::AddActionRange(const FunscriptArray& range, bool checkDuplicates
 void Funscript::EditActionUnsafe(FunscriptAction* edit, FunscriptAction action) noexcept
 {
 	if (edit >= data.Actions.begin() && edit < data.Actions.end()) {
-		*edit = action;
+		FunscriptAction* before = edit > data.Actions.begin() ? edit - 1 : edit;
+		FunscriptAction* after = edit + 1 != data.Actions.end() ? edit + 1 : edit;
+
+		if (before->atS < action.atS && after->atS > action.atS) {
+			*edit = action;
+		}
+		else {
+			data.Actions.erase(edit);
+			data.Actions.emplace(action);
+		}
 		NotifyActionsChanged(true);
 	}
 }

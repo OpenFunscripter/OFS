@@ -478,7 +478,10 @@ void KeybindingSystem::addDynamicBinding(Binding&& binding) noexcept
         ActiveBindings.DynamicBindings.bindings.emplace_back(std::move(binding));
     }
     else {
-        *it = std::move(binding);
+        it->dynamicHandlerId = std::move(binding.dynamicHandlerId);
+        it->identifier = std::move(binding.identifier);
+        it->description = std::move(binding.description);
+        it->ignore_repeats = binding.ignore_repeats;
     }
 }
 

@@ -2815,12 +2815,14 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 extensions->UpdateExtensionList();
             }
             if(ImGui::MenuItem("Show windows", NULL, &settings->data().show_extensions)) {}
+            if(ImGui::MenuItem("Developer mode", NULL, &OFS_LuaExtensions::DevMode)) {}
+            OFS::Tooltip("Enable extra functionality for extension developement.");
             if (ImGui::MenuItem("Extension directory")) { 
                 Util::OpenFileExplorer(Util::Prefpath(OFS_LuaExtensions::ExtensionDir)); 
             }
             ImGui::Separator();
             for (auto& ext : extensions->Extensions) {
-                if (ImGui::MenuItem(ext.Name.c_str(), NULL, &ext.Active)) {
+                if (ImGui::MenuItem(ext.NameId.c_str(), NULL, &ext.Active)) {
                     if (ext.Active && !ext.L) {
                         ext.Active = ext.Load(ext.Directory);
                     }

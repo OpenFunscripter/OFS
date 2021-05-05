@@ -8,10 +8,26 @@
 
 #include "OFS_Reflection.h"
 
+#include "EASTL/vector_set.h"
+
 struct OFS_LuaTask
 {
 	lua_State* L = nullptr;
 	std::string Function;
+};
+
+struct OFS_BindableLuaFunction
+{
+	std::string GlobalName;
+	std::string Name;
+};
+
+struct OFS_BindableLuaFunctionLessOperator
+{
+	bool operator()(const OFS_BindableLuaFunction& a, const OFS_BindableLuaFunction& b) const noexcept
+	{
+		return a.GlobalName < b.GlobalName;
+	}
 };
 
 struct OFS_LuaExtension
@@ -20,6 +36,7 @@ struct OFS_LuaExtension
 	uint32_t Hash;
 
 	std::string Name;
+	std::string NameId;
 	std::string Directory;
 
 	lua_State* L = nullptr;
@@ -27,8 +44,12 @@ struct OFS_LuaExtension
 	bool Active = false;
 	double MaxTime = 0.0;
 
+	eastl::vector_set<OFS_BindableLuaFunction, OFS_BindableLuaFunctionLessOperator> Bindables;
+
 	bool Load(const std::filesystem::path& directory) noexcept;
 	void Shutdown() noexcept {
+		MaxTime = 0.0;
+		Bindables.clear();
 		if (L) {
 			lua_close(L); L = 0;
 		}
@@ -37,6 +58,7 @@ struct OFS_LuaExtension
 	void reflect(Archive& ar)
 	{
 		OFS_REFLECT(Name, ar);
+		OFS_REFLECT(NameId, ar);
 		OFS_REFLECT(Directory, ar);
 		OFS_REFLECT(Active, ar);
 		Hash = Util::Hash(Directory.c_str(), Directory.size());
@@ -49,14 +71,17 @@ private:
 	std::string LastConfigPath;
 	void RemoveNonExisting() noexcept;
 public:
+	static constexpr const char* DynamicBindingHandler = "OFS_LuaExtensions";
+	static bool DevMode;
 	std::vector<OFS_LuaExtension> Extensions;
 	void UpdateExtensionList() noexcept;
 
 	static constexpr const char* ExtensionDir = "extensions";
 
 	// tables/fields
-	static constexpr const char* GlobalActionMetaTable = "ActionMetaTable";
-	static constexpr const char* ScriptIdxUserdata = "ScriptIdx";
+	static constexpr const char* GlobalExtensionPtr = "OFS_ExtensionPtr";
+	static constexpr const char* GlobalActionMetaTable = "OFS_TmpActionMetaTable";
+	static constexpr const char* ScriptIdxUserdata = "OFS_ScriptIdx";
 	static constexpr const char* ScriptActionsField = "actions";
 
 	// functions
@@ -74,10 +99,12 @@ public:
 	void save() noexcept;
 
 	void ShowExtensions(bool* open) noexcept;
+	void HandleBinding(class Binding* binding) noexcept;
 
 	template<typename Archive>
 	void reflect(Archive& ar)
 	{
 		OFS_REFLECT(Extensions, ar);
+		OFS_REFLECT(DevMode, ar);
 	}
 };

@@ -41,6 +41,11 @@ end
 )";
 
 
+#ifndef NDEBUG
+bool OFS_LuaExtensions::DevMode = true;
+#else
+bool OFS_LuaExtensions::DevMode = false;
+#endif
 bool OFS_LuaExtensions::InMainThread = false;
 
 int LuaPrint(lua_State* L) noexcept;
@@ -252,6 +257,7 @@ int LuaGetActiveIdx(lua_State* L) noexcept;
 int LuaGetScript(lua_State* L) noexcept;
 int LuaAddAction(lua_State* L) noexcept;
 int LuaRemoveAction(lua_State* L) noexcept;
+int LuaBindFunction(lua_State* L) noexcept;
 int LuaScheduleTask(lua_State* L) noexcept;
 int LuaSnapshot(lua_State* L) noexcept;
 static constexpr struct luaL_Reg ofsLib[] = {
@@ -261,6 +267,7 @@ static constexpr struct luaL_Reg ofsLib[] = {
 	{"ActiveIdx", LuaGetActiveIdx},
 	{"Task", LuaScheduleTask},
 	{"Snapshot", LuaSnapshot},
+	{"Bind", LuaBindFunction},
 	{NULL, NULL}
 };
 
@@ -451,6 +458,29 @@ static int LuaScheduleTask(lua_State* L) noexcept
 	return 0;
 }
 
+static int LuaBindFunction(lua_State* L) noexcept
+{
+	auto app = OpenFunscripter::ptr;
+	luaL_argcheck(L, lua_isstring(L, 1), 1, "Expected function name.");
+	const char* str = lua_tostring(L, 1);
+	lua_getglobal(L, str);
+	if (!lua_isfunction(L, -1)) {
+		LOGF_ERROR("LUA: ofs.Bind: function: \"%s\" not found.", str);
+		return 0;
+	}
+	lua_pop(L, 1);
+
+	lua_getglobal(L, OFS_LuaExtensions::GlobalExtensionPtr);
+	assert(lua_isuserdata(L, -1));
+	OFS_LuaExtension* ext = (OFS_LuaExtension*)lua_touserdata(L, -1);
+	OFS_BindableLuaFunction func;
+	func.Name = str;
+	func.GlobalName = Util::Format("%s::%s", ext->Name.c_str(), func.Name.c_str());
+	ext->Bindables.emplace(std::move(func));
+
+	return 0;
+}
+
 void OFS_LuaExtensions::RemoveNonExisting() noexcept
 {
 	Extensions.erase(std::remove_if(Extensions.begin(), Extensions.end(), [](auto& ext) {
@@ -479,6 +509,7 @@ void OFS_LuaExtensions::UpdateExtensionList() noexcept
 			if (!skip) {
 				auto& ext = Extensions.emplace_back();
 				ext.Name = std::move(Name);
+				ext.NameId = Util::Format("%s##%s%c", ext.Name.c_str(), ext.Name.c_str(), 'X');
 				ext.Directory = std::move(Directory);
 				ext.Hash = Hash;
 			}
@@ -491,6 +522,9 @@ OFS_LuaExtensions::OFS_LuaExtensions() noexcept
 	load(Util::Prefpath("extension.json"));
 	UpdateExtensionList();
 	
+	auto app = OpenFunscripter::ptr;
+	app->keybinds.registerDynamicHandler(OFS_LuaExtensions::DynamicBindingHandler, [this](Binding* b) { HandleBinding(b); });
+
 	for (auto& ext : Extensions) {
 		if (ext.Active) ext.Load(ext.Directory);
 	}
@@ -529,9 +563,21 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 	if (!app->blockingTask.Running) {
 		for (auto& ext : this->Extensions) {
 			if (!ext.Active || !ext.L) continue;
-			ImGui::Begin(ext.Name.c_str(), open, ImGuiWindowFlags_None);
-			if (ImGui::Button("Reload", ImVec2(-1.f, 0.f))) { ext.Load(Util::PathFromString(ext.Directory)); }
+			ImGui::Begin(ext.NameId.c_str(), open, ImGuiWindowFlags_None);
+
+			if (DevMode && !ext.Bindables.empty()) {
+				ImGui::TextUnformatted("Bindable functions");
+				for (auto& bind : ext.Bindables) {
+					ImGui::TextDisabled("%s", bind.GlobalName.c_str());
+				}
+				ImGui::Separator();
+			}
+
+			if (DevMode && ImGui::Button("Reload", ImVec2(-1.f, 0.f))) { 
+				ext.Load(Util::PathFromString(ext.Directory)); 
+			}
 			ImGui::SetWindowSize(ImVec2(300.f, 200.f), ImGuiCond_FirstUseEver);
+			
 			auto startTime = std::chrono::high_resolution_clock::now();
 		
 			lua_getglobal(ext.L, RenderGui);
@@ -541,14 +587,16 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 			if (result) {
 				const char* error = lua_tostring(ext.L, -1);
 				LOG_ERROR(error);
+				lua_pop(ext.L, 1);
 				FUN_ASSERT(false, error);
 			}
 
+			if(DevMode)
 			{   // benchmark
 				std::chrono::duration<double> duration = std::chrono::high_resolution_clock::now() - startTime;
 				if (duration.count() > ext.MaxTime) ext.MaxTime = duration.count();
 				ImGui::Text("Lua time: %lf ms", duration.count() * 1000.0);
-				ImGui::Text("Lua max time: %lf ms", ext.MaxTime * 1000.0);
+				ImGui::Text("Lua slowest time: %lf ms", ext.MaxTime * 1000.0);
 			}
 
 			ImGui::End();
@@ -568,6 +616,11 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 					if (lua_isfunction(lua.L, -1)) {
 						OFS_LuaExtensions::InMainThread = false; // HACK
 						int result = lua_pcall(lua.L, 0, 1, 0); // 0 arguments 1 result
+						if (result) {
+							const char* error = lua_tostring(lua.L, -1);
+							LOG_ERROR(error);
+							lua_pop(lua.L, 1);
+						}
 					}
 					ext->Tasks.pop();
 					++task->Progress;
@@ -581,6 +634,37 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 	}
 }
 
+void OFS_LuaExtensions::HandleBinding(Binding* binding) noexcept
+{
+	OFS_BindableLuaFunction tmp;
+	tmp.GlobalName = binding->identifier;
+
+	for (auto& ext : Extensions) {
+		if (!ext.Active || !ext.L) continue;
+		auto it = ext.Bindables.find(tmp);
+		if (it != ext.Bindables.end()) {
+			auto& t = Tasks.emplace();
+			t.L = ext.L;
+			t.Function = it->Name;
+			//lua_getglobal(ext.L, it->Name.c_str());
+			//if (lua_isfunction(ext.L, -1)) {
+			//	int status = lua_pcall(ext.L, 0, 1, 0); // 0 arguments 1 results
+			//	if (status) {
+			//		const char* error = lua_tostring(ext.L, -1);
+			//		LOG_ERROR(error);
+			//		lua_pop(ext.L, 1);
+			//	}
+			//}
+			return;
+		}
+		// no idea how to use this...
+		//auto it = ext.Bindables.find_as(binding->identifier,
+		//	[](const auto& a,  const std::string& id) {
+		//		return a.GlobalName < id;
+		//	});
+	}
+}
+
 // ============================================================ Extension
 
 bool OFS_LuaExtension::Load(const std::filesystem::path& directory) noexcept
@@ -588,8 +672,8 @@ bool OFS_LuaExtension::Load(const std::filesystem::path& directory) noexcept
 	auto mainFile = directory / OFS_LuaExtension::MainFile;
 	Directory = directory.u8string(); 
 	Hash = Util::Hash(Directory.c_str(), Directory.size());
-	Name = directory.filename().u8string();
-	Name = Util::Format("%s##%s%c", Name.c_str(), Name.c_str(), 'X');
+	NameId = directory.filename().u8string();
+	NameId = Util::Format("%s##%s%c", Name.c_str(), Name.c_str(), 'X');
 
 	std::vector<uint8_t> extensionText;
 	if (!Util::ReadFile(mainFile.u8string().c_str(), extensionText)) {
@@ -611,7 +695,8 @@ bool OFS_LuaExtension::Load(const std::filesystem::path& directory) noexcept
 	luaL_setfuncs(L, imguiLib, 0);
 	lua_setglobal(L, "ofs");
 
-	//InitLuaGlobalMetatables(L);
+	lua_pushlightuserdata(L, this);
+	lua_setglobal(L, OFS_LuaExtensions::GlobalExtensionPtr);
 
 	int status = luaL_dostring(L, LuaDefaultFunctions);
 	FUN_ASSERT(status == 0, "defaults failed");
@@ -619,6 +704,7 @@ bool OFS_LuaExtension::Load(const std::filesystem::path& directory) noexcept
 	if (status != 0) {
 		const char* error = lua_tostring(L, -1);
 		LOG_ERROR(error);
+		lua_pop(L, 1);
 		return false;
 	}
 
@@ -627,7 +713,21 @@ bool OFS_LuaExtension::Load(const std::filesystem::path& directory) noexcept
 	if (status != 0) {
 		const char* error = lua_tostring(L, -1);
 		LOG_ERROR(error);
+		lua_pop(L, 1);
 		return false;
 	}
+
+	auto app = OpenFunscripter::ptr;
+	for (auto& bind : Bindables) {
+		Binding binding(
+			bind.GlobalName,
+			bind.GlobalName,
+			false,
+			[](void* user) {} // this gets handled by OFS_LuaExtensions::HandleBinding
+		);
+		binding.dynamicHandlerId = OFS_LuaExtensions::DynamicBindingHandler;
+		app->keybinds.addDynamicBinding(std::move(binding));
+	}
+
 	return true;
 }
