@@ -2812,6 +2812,15 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
         }
         if (ImGui::BeginMenu("Extensions")) {
             if(ImGui::MenuItem("Show", NULL, &settings->data().show_extensions)) {}
+            if (ImGui::MenuItem("Reload extensions")) { extensions->UpdateExtensionList(); }
+            ImGui::Separator();
+            for (auto& ext : extensions->Extensions) {
+                if (ImGui::MenuItem(ext.Name.c_str(), NULL, &ext.Active)) {
+                    if (ext.Active && !ext.L) {
+                        ext.Load(ext.Directory);
+                    }
+                }
+            }
             ImGui::EndMenu();
         }
         if(ImGui::MenuItem("?##About", NULL, &ShowAbout)) {}
