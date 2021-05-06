@@ -1684,7 +1684,6 @@ void OpenFunscripter::step() noexcept {
             specialFunctions->ShowFunctionsWindow(&settings->data().show_special_functions);
             undoSystem->ShowUndoRedoHistory(&settings->data().show_history);
             simulator.ShowSimulator(&settings->data().show_simulator);
-            ShowStatisticsWindow(&settings->data().show_statistics);
             if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { 
                 LoadedProject->Save(true);
             }
@@ -1782,6 +1781,7 @@ void OpenFunscripter::step() noexcept {
                 scriptPositions.WaveShader->ScriptPos(ActiveFunscript()->SplineClamped(player->getCurrentPositionSecondsInterp()));
             }
             scriptPositions.ShowScriptPositions(NULL, player->getCurrentPositionSecondsInterp(), player->getDuration(), player->getFrameTime(), &LoadedFunscripts(), ActiveFunscriptIdx);
+            ShowStatisticsWindow(&settings->data().show_statistics);
 
             if (settings->data().show_action_editor) {
                 ImGui::Begin(ActionEditorId, &settings->data().show_action_editor);
@@ -2827,6 +2827,9 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         ext.Active = ext.Load(ext.Directory);
                     }
                     else if (!ext.Active) { ext.Shutdown(); }
+                }
+                if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Middle)) {
+                    Util::OpenFileExplorer(ext.Directory);
                 }
             }
             ImGui::EndMenu();
