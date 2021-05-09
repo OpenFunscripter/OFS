@@ -209,6 +209,10 @@ public:
 			unsavedEdits = true;
 			editTime = std::chrono::system_clock::now();
 		}
+
+#ifndef NDEBUG
+		data.Actions.set_capacity(data.Actions.size()); // force threading issues
+#endif
 	}
 
 	std::unique_ptr<FunscriptUndoSystem> undoSystem;
