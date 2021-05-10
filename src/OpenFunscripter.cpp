@@ -2671,7 +2671,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     return std::abs(mark.atS - currentTime) <= thresholdTime;
                 });
             if (editBookmark != scriptSettings.Bookmarks.end()) {
-                if (ImGui::InputText("Name", &(*editBookmark).name)) {
+                if (ImGui::InputText(Util::Format("Name##%s", editBookmark->name.c_str()), &(*editBookmark).name)) {
                     editBookmark->UpdateType();
                 }
                 if (ImGui::MenuItem("Delete")) {
