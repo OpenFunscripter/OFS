@@ -45,7 +45,7 @@ end
 bool OFS_LuaExtensions::DevMode = false;
 bool OFS_LuaExtensions::InMainThread = false;
 
-int LuaPrint(lua_State* L) noexcept;
+static int LuaPrint(lua_State* L) noexcept;
 static constexpr struct luaL_Reg printlib[] = {
   {"print", LuaPrint},
   {NULL, NULL} /* end of array */
@@ -75,15 +75,15 @@ static int LuaPrint(lua_State* L) noexcept
 	return 0;
 }
 
-int LuaDrag(lua_State* L) noexcept;
-int LuaShowText(lua_State* L) noexcept;
-int LuaButton(lua_State* L) noexcept;
-int LuaInput(lua_State* L) noexcept;
-int LuaSameLine(lua_State* L) noexcept;
-int LuaCheckbox(lua_State* L) noexcept;
-int LuaSeparator(lua_State* L) noexcept;
-int LuaSpacing(lua_State* L) noexcept;
-int LuaNewLine(lua_State* L) noexcept;
+static int LuaDrag(lua_State* L) noexcept;
+static int LuaShowText(lua_State* L) noexcept;
+static int LuaButton(lua_State* L) noexcept;
+static int LuaInput(lua_State* L) noexcept;
+static int LuaSameLine(lua_State* L) noexcept;
+static int LuaCheckbox(lua_State* L) noexcept;
+static int LuaSeparator(lua_State* L) noexcept;
+static int LuaSpacing(lua_State* L) noexcept;
+static int LuaNewLine(lua_State* L) noexcept;
 static constexpr struct luaL_Reg imguiLib[] = {
 	{"Text", LuaShowText},
 	{"Button", LuaButton},
@@ -304,17 +304,26 @@ static void ActionGetterSetter(lua_State* L, int scriptIndex) noexcept
 	lua_setfield(L, -2, "__newindex");
 }
 
-int LuaPlayerSeek(lua_State* L) noexcept;
-int LuaPlayerPlay(lua_State* L) noexcept;
-int LuaPlayerCurrentTime(lua_State* L) noexcept;
-int LuaPlayerDuration(lua_State* L) noexcept;
+static int LuaPlayerIsPlaying(lua_State* L) noexcept;
+static int LuaPlayerSeek(lua_State* L) noexcept;
+static int LuaPlayerPlay(lua_State* L) noexcept;
+static int LuaPlayerCurrentTime(lua_State* L) noexcept;
+static int LuaPlayerDuration(lua_State* L) noexcept;
 static constexpr struct luaL_Reg playerLib[] = {
 	{"Play", LuaPlayerPlay},
 	{"Seek", LuaPlayerSeek},
 	{"CurrentTime", LuaPlayerCurrentTime},
 	{"Duration", LuaPlayerDuration},
+	{"IsPlaying", LuaPlayerIsPlaying},
 	{NULL, NULL}
 };
+
+static int LuaPlayerIsPlaying(lua_State* L) noexcept
+{
+	auto app = OpenFunscripter::ptr;
+	lua_pushboolean(L, !app->player->isPaused());
+	return 1;
+}
 
 static int LuaPlayerPlay(lua_State* L) noexcept
 {
@@ -359,13 +368,13 @@ static int LuaPlayerCurrentTime(lua_State* L) noexcept
 	return 1;
 }
 
-int LuaGetActiveIdx(lua_State* L) noexcept;
-int LuaGetScript(lua_State* L) noexcept;
-int LuaAddAction(lua_State* L) noexcept;
-int LuaRemoveAction(lua_State* L) noexcept;
-int LuaBindFunction(lua_State* L) noexcept;
-int LuaScheduleTask(lua_State* L) noexcept;
-int LuaSnapshot(lua_State* L) noexcept;
+static int LuaGetActiveIdx(lua_State* L) noexcept;
+static int LuaGetScript(lua_State* L) noexcept;
+static int LuaAddAction(lua_State* L) noexcept;
+static int LuaRemoveAction(lua_State* L) noexcept;
+static int LuaBindFunction(lua_State* L) noexcept;
+static int LuaScheduleTask(lua_State* L) noexcept;
+static int LuaSnapshot(lua_State* L) noexcept;
 static constexpr struct luaL_Reg ofsLib[] = {
 	{"Script", LuaGetScript},
 	{"AddAction", LuaAddAction},
