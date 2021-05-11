@@ -688,6 +688,22 @@ void OFS_LuaExtensions::save() noexcept
 	Util::WriteJson(json, LastConfigPath, true);
 }
 
+void OFS_LuaExtensions::Update(float delta) noexcept
+{
+	for (auto& ext : this->Extensions) {
+		if (!ext.Active || !ext.ExtensionError.empty()) continue;
+		OFS_LuaExtensions::InMainThread = true; // HACK
+		lua_getglobal(ext.L, OFS_LuaExtensions::UpdateFunction);
+		lua_pushnumber(ext.L, delta);
+		int result = lua_pcall(ext.L, 1, 1, 0); // 1 arguments 1 result
+		if (result) {
+			auto error = lua_tostring(ext.L, -1);
+			LOG_ERROR(error);
+			ext.Fail(error);
+		}
+	}
+}
+
 void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 {
 	if (!*open) return;
@@ -696,10 +712,9 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 	auto app = OpenFunscripter::ptr;
 	if (!app->blockingTask.Running) {
 		for (auto& ext : this->Extensions) {
-			if (!ext.Active) continue;
-			
-			ImGui::Begin(ext.NameId.c_str(), open, ImGuiWindowFlags_None);
+			if (!ext.Active) continue;	
 
+			ImGui::Begin(ext.NameId.c_str(), open, ImGuiWindowFlags_None);
 			if (!ext.Bindables.empty()) {
 				if (ImGui::CollapsingHeader("Bindable functions")) {
 					for (auto& bind : ext.Bindables) {
@@ -719,8 +734,7 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 				if (ImGui::Button("Try reloading")) {
 					ext.Load(Util::PathFromString(ext.Directory));
 				}
-				ImGui::End();
-				continue;
+				ImGui::End(); continue;
 			}
 
 			if (DevMode && ImGui::Button("Reload", ImVec2(-1.f, 0.f))) { 
@@ -730,15 +744,15 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 			
 			auto startTime = std::chrono::high_resolution_clock::now();
 		
+
 			lua_getglobal(ext.L, RenderGui);
-			lua_pushnumber(ext.L, ImGui::GetIO().DeltaTime);
-			OFS_LuaExtensions::InMainThread = true; // HACK
-			int result = lua_pcall(ext.L, 1, 1, 0); // 1 arguments 1 result
+			int result = lua_pcall(ext.L, 0, 1, 0); // 0 arguments 1 result
 			if (result) {
 				const char* error = lua_tostring(ext.L, -1);
 				LOG_ERROR(error);
 				ext.Fail(error);
 			}
+
 			if(DevMode)
 			{   // benchmark
 				ImGui::Separator();

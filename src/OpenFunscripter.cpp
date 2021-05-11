@@ -1576,6 +1576,7 @@ void OpenFunscripter::MpvPlayPauseChange(SDL_Event& ev) noexcept
 void OpenFunscripter::update() noexcept {
     OFS_PROFILE(__FUNCTION__);
     float& delta = ImGui::GetIO().DeltaTime;
+    extensions->Update(delta);
     player->update(delta);
     ActiveFunscript()->update();
     ControllerInput::UpdateControllers(settings->data().buttonRepeatIntervalMs);

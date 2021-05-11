@@ -99,6 +99,7 @@ public:
 
 	// functions
 	static constexpr const char* InitFunction = "init";
+	static constexpr const char* UpdateFunction = "update";
 	static constexpr const char* RenderGui = "gui";
 
 
@@ -111,6 +112,7 @@ public:
 	void load(const std::string& path) noexcept;
 	void save() noexcept;
 
+	void Update(float delta) noexcept;
 	void ShowExtensions(bool* open) noexcept;
 	void HandleBinding(class Binding* binding) noexcept;
 
