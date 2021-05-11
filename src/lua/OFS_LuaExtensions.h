@@ -79,6 +79,9 @@ public:
 	static constexpr const char* ExtensionDir = "extensions";
 
 	// tables/fields
+	static constexpr const char* DefaultNamespace = "ofs";
+	static constexpr const char* PlayerNamespace = "player";
+
 	static constexpr const char* GlobalExtensionPtr = "OFS_ExtensionPtr";
 	static constexpr const char* GlobalActionMetaTable = "OFS_TmpActionMetaTable";
 	static constexpr const char* ScriptIdxUserdata = "OFS_ScriptIdx";

@@ -42,16 +42,10 @@ end
 
 )";
 
-
-#ifndef NDEBUG
-bool OFS_LuaExtensions::DevMode = true;
-#else
 bool OFS_LuaExtensions::DevMode = false;
-#endif
 bool OFS_LuaExtensions::InMainThread = false;
 
 int LuaPrint(lua_State* L) noexcept;
-
 static constexpr struct luaL_Reg printlib[] = {
   {"print", LuaPrint},
   {NULL, NULL} /* end of array */
@@ -85,13 +79,67 @@ int LuaDrag(lua_State* L) noexcept;
 int LuaShowText(lua_State* L) noexcept;
 int LuaButton(lua_State* L) noexcept;
 int LuaInput(lua_State* L) noexcept;
+int LuaSameLine(lua_State* L) noexcept;
+int LuaCheckbox(lua_State* L) noexcept;
+int LuaSeparator(lua_State* L) noexcept;
+int LuaSpacing(lua_State* L) noexcept;
+int LuaNewLine(lua_State* L) noexcept;
 static constexpr struct luaL_Reg imguiLib[] = {
 	{"Text", LuaShowText},
 	{"Button", LuaButton},
 	{"Input", LuaInput},
 	{"Drag", LuaDrag},
+	{"Checkbox", LuaCheckbox},
+
+	{"SameLine", LuaSameLine},
+	{"Separator", LuaSeparator},
+	{"Spacing", LuaSpacing},
+	{"NewLine", LuaNewLine},
 	{NULL, NULL}
 };
+
+static int LuaSpacing(lua_State* L) noexcept
+{
+	ImGui::Spacing();
+	return 0;
+}
+
+static int LuaNewLine(lua_State* L) noexcept
+{
+	ImGui::NewLine();
+	return 0;
+}
+
+static int LuaSeparator(lua_State* L) noexcept
+{
+	ImGui::Separator();
+	return 0;
+}
+
+static int LuaCheckbox(lua_State* L) noexcept
+{
+	int nargs = lua_gettop(L);
+	bool valueChanged = false;
+	if (nargs >= 2) {
+		luaL_argcheck(L, lua_isstring(L, 1), 1, "Expected string.");
+		luaL_argcheck(L, lua_isboolean(L, 2), 2, "Expected boolean.");
+		const char* str = lua_tostring(L, 1);
+		bool value = lua_toboolean(L, 2);
+		if (str) {
+			valueChanged = ImGui::Checkbox(str, &value);
+			lua_pushboolean(L, value);
+			lua_pushboolean(L, valueChanged);
+			return 2;
+		}
+	}
+	return 0;
+}
+
+static int LuaSameLine(lua_State* L) noexcept
+{
+	ImGui::SameLine();
+	return 0;
+}
 
 static int LuaDrag(lua_State* L) noexcept 
 {
@@ -130,13 +178,14 @@ static int LuaShowText(lua_State* L) noexcept
 static int LuaButton(lua_State* L) noexcept
 {
 	int nargs = lua_gettop(L);
-	bool result = false;
-	if (nargs == 1) {
+	if (nargs >= 1) {
+		luaL_argcheck(L, lua_isstring(L, 1), 1, "Expected string.");
 		const char* str = lua_tostring(L, 1);
-		result = ImGui::Button(str);
+		bool result = ImGui::Button(str);
+		lua_pushboolean(L, result);
+		return 1;
 	}
-	lua_pushboolean(L, result);
-	return 1;
+	return 0;
 }
 
 static int LuaInput(lua_State* L) noexcept
@@ -248,15 +297,66 @@ static void ActionGetterSetter(lua_State* L, int scriptIndex) noexcept
 	lua_createtable(L, 0, 2);
 	lua_pushlightuserdata(L, (void*)(intptr_t)scriptIndex);
 	lua_pushcclosure(L, getter, 1);
-	//lua_pushcfunction(L, getter);
 	lua_setfield(L, -2, "__index");
 
 	lua_pushlightuserdata(L, (void*)(intptr_t)scriptIndex);
 	lua_pushcclosure(L, setter, 1);
-	//lua_pushcfunction(L, setter);
 	lua_setfield(L, -2, "__newindex");
+}
 
-	//lua_setglobal(L, OFS_LuaExtensions::GlobalActionMetaTable);
+int LuaPlayerSeek(lua_State* L) noexcept;
+int LuaPlayerPlay(lua_State* L) noexcept;
+int LuaPlayerCurrentTime(lua_State* L) noexcept;
+int LuaPlayerDuration(lua_State* L) noexcept;
+static constexpr struct luaL_Reg playerLib[] = {
+	{"Play", LuaPlayerPlay},
+	{"Seek", LuaPlayerSeek},
+	{"CurrentTime", LuaPlayerCurrentTime},
+	{"Duration", LuaPlayerDuration},
+	{NULL, NULL}
+};
+
+static int LuaPlayerPlay(lua_State* L) noexcept
+{
+	int nargs = lua_gettop(L);
+	auto app = OpenFunscripter::ptr;
+	bool play = app->player->isPaused(); // toggle by default
+	if (nargs >= 1) {
+		luaL_argcheck(L, lua_isboolean(L, 1), 1, "Expected boolean: playing true/false");
+		play = lua_toboolean(L, 1);
+	}
+
+	app->player->setPaused(!play);
+
+	return 0;
+}
+
+static int LuaPlayerSeek(lua_State* L) noexcept
+{
+	auto app = OpenFunscripter::ptr;
+	int nargs = lua_gettop(L);
+	if (nargs >= 1) {
+		luaL_argcheck(L, lua_isnumber(L, 1), 1, "Expected time in seconds.");
+		lua_Number time = lua_tonumber(L, 1);
+		app->player->setPositionExact(time);
+	}
+	return 0;
+}
+
+static int LuaPlayerDuration(lua_State* L) noexcept
+{
+	auto app = OpenFunscripter::ptr;
+	lua_Number duration = app->player->getDuration();
+	lua_pushnumber(L, duration);
+	return 1;
+}
+
+static int LuaPlayerCurrentTime(lua_State* L) noexcept
+{
+	auto app = OpenFunscripter::ptr;
+	lua_Number time = app->player->getCurrentPositionSecondsInterp();
+	lua_pushnumber(L, time);
+	return 1;
 }
 
 int LuaGetActiveIdx(lua_State* L) noexcept;
@@ -593,9 +693,9 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 				lua_pop(ext.L, 1);
 				FUN_ASSERT(false, error);
 			}
-
 			if(DevMode)
 			{   // benchmark
+				ImGui::Separator();
 				std::chrono::duration<double> duration = std::chrono::high_resolution_clock::now() - startTime;
 				if (duration.count() > ext.MaxTime) ext.MaxTime = duration.count();
 				ImGui::Text("Lua time: %lf ms", duration.count() * 1000.0);
@@ -701,7 +801,11 @@ bool OFS_LuaExtension::Load(const std::filesystem::path& directory) noexcept
 	lua_createtable(L, 0, sizeof(ofsLib) / sizeof(luaL_Reg) + sizeof(imguiLib) / sizeof(luaL_Reg));
 	luaL_setfuncs(L, ofsLib, 0);
 	luaL_setfuncs(L, imguiLib, 0);
-	lua_setglobal(L, "ofs");
+	lua_setglobal(L, OFS_LuaExtensions::DefaultNamespace);
+
+	lua_createtable(L, 0, sizeof(playerLib) / sizeof(luaL_Reg));
+	luaL_setfuncs(L, playerLib, 0);
+	lua_setglobal(L, OFS_LuaExtensions::PlayerNamespace);
 
 	auto addToLuaPath = [](lua_State* L, const char* path)
 	{
