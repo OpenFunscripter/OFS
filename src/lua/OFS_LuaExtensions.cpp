@@ -177,7 +177,9 @@ static void ActionGetterSetter(lua_State* L, int scriptIndex) noexcept
 		int scriptIndex = (intptr_t)lua_touserdata(L, lua_upvalueindex(1));
 		if (nargs == 3 && scriptIndex >= 0 && scriptIndex < app->LoadedFunscripts().size()) {
 			auto& script = app->LoadedFunscripts()[scriptIndex];
-			FunscriptAction* action = (FunscriptAction*)lua_touserdata(L, 1);
+			int actionIdx = (intptr_t)lua_touserdata(L, 1);
+			FunscriptAction* action = (FunscriptAction*)&script->Actions()[actionIdx];
+			
 			FunscriptAction newAction = *action;
 			assert(action);
 			const char* key = lua_tostring(L, 2);
@@ -191,7 +193,7 @@ static void ActionGetterSetter(lua_State* L, int scriptIndex) noexcept
 				}
 				script->EditActionUnsafe(action, newAction);
 				if (isSelected) {
-					script->SetSelected(*action, true);
+					script->SetSelected(newAction, true);
 				}
 			}
 			else if (strcmp(key, "at") == 0) {
@@ -202,7 +204,7 @@ static void ActionGetterSetter(lua_State* L, int scriptIndex) noexcept
 				}
 				script->EditActionUnsafe(action, newAction);
 				if (isSelected) {
-					script->SetSelected(*action, true);
+					script->SetSelected(newAction, true);
 				}
 			}
 			else if (strcmp(key, "selected") == 0) {
@@ -220,7 +222,9 @@ static void ActionGetterSetter(lua_State* L, int scriptIndex) noexcept
 
 		if (nargs == 2 && scriptIndex >= 0 && scriptIndex < app->LoadedFunscripts().size()) {
 			auto& script = app->LoadedFunscripts()[scriptIndex];
-			FunscriptAction* action = (FunscriptAction*)lua_touserdata(L, 1);
+			int actionIdx = (intptr_t)lua_touserdata(L, 1);
+			auto action = &script->Actions()[actionIdx];
+
 			assert(action);
 			const char* key = lua_tostring(L, 2);
 			if (strcmp(key, "pos") == 0) {
@@ -351,9 +355,8 @@ static int LuaAddAction(lua_State* L) noexcept
 		auto actionCount = script->Actions().size();
 		lua_getfield(L, 1, OFS_LuaExtensions::ScriptActionsField); 
 		
-		const FunscriptAction* begin = &script->Actions()[0];
 		for (int i = 0, size = actionCount; i < size; ++i) {
-			lua_pushlightuserdata(L, (void*)(begin+i));
+			lua_pushlightuserdata(L, (void*)(intptr_t)i);
 			assert(lua_istable(L, -2));
 			lua_rawseti(L, -2, i + 1);
 		}
@@ -393,9 +396,8 @@ static int LuaRemoveAction(lua_State* L) noexcept
 
 		if (actionCount == 0) return 0;
 
-		const FunscriptAction* begin = &script->Actions()[0];
 		for (int i = 0, size = script->Actions().size(); i < size; ++i) {
-			lua_pushlightuserdata(L, (void*)(begin+i));
+			lua_pushlightuserdata(L, (void*)(intptr_t)i);
 			assert(lua_istable(L, -2));
 			lua_rawseti(L, -2, i + 1);
 		}
@@ -423,8 +425,7 @@ static int LuaGetScript(lua_State* L) noexcept
 
 			lua_createtable(L, script->Actions().size(), 2); // 3
 			for(int i=0, size=script->Actions().size(); i < size; ++i) {
-				auto& action = script->Actions()[i];
-				lua_pushlightuserdata(L, (void*)&action);
+				lua_pushlightuserdata(L, (void*)(intptr_t)i);
 				lua_getglobal(L, OFS_LuaExtensions::GlobalActionMetaTable);
 				assert(lua_isuserdata(L, -2));
 				lua_setmetatable(L, -2);
@@ -638,6 +639,7 @@ void OFS_LuaExtensions::HandleBinding(Binding* binding) noexcept
 {
 	OFS_BindableLuaFunction tmp;
 	tmp.GlobalName = binding->identifier;
+#if 1
 
 	for (auto& ext : Extensions) {
 		if (!ext.Active || !ext.L) continue;
@@ -646,23 +648,24 @@ void OFS_LuaExtensions::HandleBinding(Binding* binding) noexcept
 			auto& t = Tasks.emplace();
 			t.L = ext.L;
 			t.Function = it->Name;
-			//lua_getglobal(ext.L, it->Name.c_str());
-			//if (lua_isfunction(ext.L, -1)) {
-			//	int status = lua_pcall(ext.L, 0, 1, 0); // 0 arguments 1 results
-			//	if (status) {
-			//		const char* error = lua_tostring(ext.L, -1);
-			//		LOG_ERROR(error);
-			//		lua_pop(ext.L, 1);
-			//	}
-			//}
 			return;
 		}
-		// no idea how to use this...
-		//auto it = ext.Bindables.find_as(binding->identifier,
-		//	[](const auto& a,  const std::string& id) {
-		//		return a.GlobalName < id;
-		//	});
 	}
+#else
+	for (auto& ext : Extensions) {
+		if (!ext.Active || !ext.L) continue;
+		auto it = ext.Bindables.find(tmp);
+		lua_getglobal(ext.L, it->Name.c_str());
+		if (lua_isfunction(ext.L, -1)) {
+			int status = lua_pcall(ext.L, 0, 1, 0); // 0 arguments 1 results
+			if (status) {
+				const char* error = lua_tostring(ext.L, -1);
+				LOG_ERROR(error);
+				lua_pop(ext.L, 1);
+			}
+		}
+	}
+#endif
 }
 
 // ============================================================ Extension
@@ -683,6 +686,7 @@ bool OFS_LuaExtension::Load(const std::filesystem::path& directory) noexcept
 	extensionText.emplace_back('\0');
 
 	if (L) { lua_close(L); L = 0; }
+	MaxTime = 0.0;
 
 	L = luaL_newstate();
 	luaL_openlibs(L);
@@ -694,6 +698,24 @@ bool OFS_LuaExtension::Load(const std::filesystem::path& directory) noexcept
 	luaL_setfuncs(L, ofsLib, 0);
 	luaL_setfuncs(L, imguiLib, 0);
 	lua_setglobal(L, "ofs");
+
+	auto addToLuaPath = [](lua_State* L, const char* path)
+	{
+		lua_getglobal(L, "package");
+		lua_getfield(L, -1, "path"); // get field "path" from table at top of stack (-1)
+		std::string cur_path = lua_tostring(L, -1); // grab path string from top of stack
+		cur_path.append(";"); // do your path magic here
+		cur_path.append(path);
+		lua_pop(L, 1); // get rid of the string on the stack we just pushed on line 5
+		lua_pushstring(L, cur_path.c_str()); // push the new one
+		lua_setfield(L, -2, "path"); // set the field "path" in table at -2 with value at top of stack
+		lua_pop(L, 1); // get rid of package table from top of stack
+	};
+	{
+		auto dirPath = Util::PathFromString(Directory);
+		addToLuaPath(L, (dirPath / "?.lua").u8string().c_str());
+		addToLuaPath(L, (dirPath / "lib" / "?.lua").u8string().c_str());
+	}
 
 	lua_pushlightuserdata(L, this);
 	lua_setglobal(L, OFS_LuaExtensions::GlobalExtensionPtr);
