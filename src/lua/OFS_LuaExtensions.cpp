@@ -2,6 +2,7 @@
 #include "OFS_Util.h"
 #include "OFS_Profiling.h"
 #include "OFS_Serialization.h"
+#include "OFS_ImGui.h"
 #include "OpenFunscripter.h"
 
 #include "imgui.h"
@@ -588,6 +589,7 @@ static int LuaScheduleTask(lua_State* L) noexcept
 static int LuaBindFunction(lua_State* L) noexcept
 {
 	auto app = OpenFunscripter::ptr;
+	int nargs = lua_gettop(L);
 	luaL_argcheck(L, lua_isstring(L, 1), 1, "Expected function name.");
 	const char* str = lua_tostring(L, 1);
 	lua_getglobal(L, str);
@@ -603,6 +605,11 @@ static int LuaBindFunction(lua_State* L) noexcept
 	OFS_BindableLuaFunction func;
 	func.Name = str;
 	func.GlobalName = Util::Format("%s::%s", ext->Name.c_str(), func.Name.c_str());
+
+	if (nargs >= 2) {
+		luaL_argcheck(L, lua_isstring(L, 2), 2, "Expected function description.");
+		func.Description = lua_tostring(L, 2);
+	}
 	ext->Bindables.emplace(std::move(func));
 
 	return 0;
@@ -692,6 +699,20 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 			if (!ext.Active) continue;
 			
 			ImGui::Begin(ext.NameId.c_str(), open, ImGuiWindowFlags_None);
+
+			if (!ext.Bindables.empty()) {
+				if (ImGui::CollapsingHeader("Bindable functions")) {
+					for (auto& bind : ext.Bindables) {
+						ImGui::Text("%s", bind.GlobalName.c_str()); ImGui::SameLine();
+						if (!bind.Description.empty()) {
+							ImGui::TextDisabled(": %s", bind.Description.c_str());
+						}
+						OFS::Tooltip(bind.Description.c_str());
+					}
+					ImGui::Separator();
+				}
+			}
+
 			if (!ext.ExtensionError.empty()) {
 				ImGui::TextUnformatted("Encountered error");
 				ImGui::TextWrapped("Error:\n%s", ext.ExtensionError.c_str());
@@ -700,14 +721,6 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 				}
 				ImGui::End();
 				continue;
-			}
-
-			if (DevMode && !ext.Bindables.empty()) {
-				ImGui::TextUnformatted("Bindable functions");
-				for (auto& bind : ext.Bindables) {
-					ImGui::TextDisabled("%s", bind.GlobalName.c_str());
-				}
-				ImGui::Separator();
 			}
 
 			if (DevMode && ImGui::Button("Reload", ImVec2(-1.f, 0.f))) { 

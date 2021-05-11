@@ -21,6 +21,7 @@ struct OFS_BindableLuaFunction
 {
 	std::string GlobalName;
 	std::string Name;
+	std::string Description;
 };
 
 struct OFS_BindableLuaFunctionLessOperator
