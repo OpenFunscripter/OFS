@@ -53,9 +53,9 @@ std::array<const char*, 6> OpenFunscripter::SupportedVideoExtensions {
 
 std::array<const char*, 4> OpenFunscripter::SupportedAudioExtensions{
     ".mp3",
+    ".ogg",
     ".flac",
-    ".wmv",
-    ".ogg"
+    ".wav",
 };
 
 OpenFunscripter* OpenFunscripter::ptr = nullptr;
@@ -2674,12 +2674,15 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     return std::abs(mark.atS - currentTime) <= thresholdTime;
                 });
             if (editBookmark != scriptSettings.Bookmarks.end()) {
+                int bookmarkIdx = std::distance(scriptSettings.Bookmarks.begin(), editBookmark);
+                ImGui::PushID(bookmarkIdx);
                 if (ImGui::InputText("Name", &(*editBookmark).name)) {
                     editBookmark->UpdateType();
                 }
                 if (ImGui::MenuItem("Delete")) {
                     scriptSettings.Bookmarks.erase(editBookmark);
                 }
+                ImGui::PopID();
             }
             else {
                 if (ImGui::InputText("Name", &bookmarkName, ImGuiInputTextFlags_EnterReturnsTrue) 
