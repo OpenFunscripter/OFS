@@ -122,17 +122,98 @@ set (LUA_HEADERS
 	"lua/lauxlib.h"
 	"lua/lualib.h"
 )
+
 add_library(lua STATIC ${LUA_SOURCES} ${LUA_HEADERS})
-set_source_files_properties(${LUA_SOURCES} PROPERTIES LANGUAGE CXX)
-set_target_properties(lua PROPERTIES LINKER_LANGUAGE CXX)
-set_target_properties(lua PROPERTIES LANGUAGE CXX)
 target_include_directories(lua PUBLIC "lua/")
 
-add_library(LuaJIT INTERFACE)
-target_include_directories(LuaJIT INTERFACE "LuaJIT/src")
-target_link_libraries(LuaJIT INTERFACE 
-	"${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT/src/lua51.lib"
+set(LOVE_SRC_3P_LUASOCKET_ROOT
+	luasocket/luasocket.cpp
+	luasocket/luasocket.h
 )
+
+set(LOVE_SRC_3P_LUASOCKET_LIBLUASOCKET
+	luasocket/libluasocket/auxiliar.c
+	luasocket/libluasocket/auxiliar.h
+	luasocket/libluasocket/buffer.c
+	luasocket/libluasocket/buffer.h
+	luasocket/libluasocket/compat.c
+	luasocket/libluasocket/compat.h
+	luasocket/libluasocket/except.c
+	luasocket/libluasocket/except.h
+	luasocket/libluasocket/ftp.lua.h
+	luasocket/libluasocket/headers.lua.h
+	luasocket/libluasocket/http.lua.h
+	luasocket/libluasocket/inet.c
+	luasocket/libluasocket/inet.h
+	luasocket/libluasocket/io.c
+	luasocket/libluasocket/io.h
+	luasocket/libluasocket/ltn12.lua.h
+	luasocket/libluasocket/luasocket.c
+	luasocket/libluasocket/luasocket.h
+	luasocket/libluasocket/mbox.lua.h
+	luasocket/libluasocket/mime.c
+	luasocket/libluasocket/mime.h
+	luasocket/libluasocket/mime.lua.h
+	luasocket/libluasocket/options.c
+	luasocket/libluasocket/options.h
+	luasocket/libluasocket/pierror.h
+	luasocket/libluasocket/select.c
+	luasocket/libluasocket/select.h
+	luasocket/libluasocket/smtp.lua.h
+	luasocket/libluasocket/socket.h
+	luasocket/libluasocket/socket.lua.h
+	luasocket/libluasocket/tcp.c
+	luasocket/libluasocket/tcp.h
+	luasocket/libluasocket/timeout.c
+	luasocket/libluasocket/timeout.h
+	luasocket/libluasocket/tp.lua.h
+	luasocket/libluasocket/udp.c
+	luasocket/libluasocket/udp.h
+	luasocket/libluasocket/url.lua.h
+)
+
+set(LOVE_LINK_L3P_LUASOCKET_LIBLUASOCKET)
+
+if(MSVC)
+	set(LOVE_SRC_3P_LUASOCKET_LIBLUASOCKET
+		${LOVE_SRC_3P_LUASOCKET_LIBLUASOCKET}
+		luasocket/libluasocket/wsocket.c
+		luasocket/libluasocket/wsocket.h
+	)
+
+	set(LOVE_LINK_L3P_LUASOCKET_LIBLUASOCKET
+		${LOVE_LINK_L3P_LUASOCKET_LIBLUASOCKET}
+		ws2_32.lib
+	)
+else()
+	set(LOVE_SRC_3P_LUASOCKET_LIBLUASOCKET
+		${LOVE_SRC_3P_LUASOCKET_LIBLUASOCKET}
+		luasocket/libluasocket/serial.c
+		luasocket/libluasocket/unix.c
+		luasocket/libluasocket/unix.h
+		luasocket/libluasocket/unixtcp.c
+		luasocket/libluasocket/unixtcp.h
+		luasocket/libluasocket/unixudp.c
+		luasocket/libluasocket/unixudp.h
+		luasocket/libluasocket/usocket.c
+		luasocket/libluasocket/usocket.h
+	)
+endif()
+
+set(LOVE_SRC_3P_LUASOCKET
+	${LOVE_SRC_3P_LUASOCKET_ROOT}
+	${LOVE_SRC_3P_LUASOCKET_LIBLUASOCKET}
+)
+
+add_library(love_3p_luasocket ${LOVE_SRC_3P_LUASOCKET})
+target_link_libraries(love_3p_luasocket lua ${LOVE_LINK_L3P_LUASOCKET_LIBLUASOCKET})
+target_include_directories(love_3p_luasocket PUBLIC "luasocket/")
+
+#add_library(LuaJIT INTERFACE)
+#target_include_directories(LuaJIT INTERFACE "LuaJIT/src")
+#target_link_libraries(LuaJIT INTERFACE 
+#	"${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT/src/lua51.lib"
+#)
 
 # =========
 # = IMGUI =
