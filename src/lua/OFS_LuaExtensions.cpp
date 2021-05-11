@@ -229,10 +229,10 @@ static void ActionGetterSetter(lua_State* L, int scriptIndex) noexcept
 		if (nargs == 3 && scriptIndex >= 0 && scriptIndex < app->LoadedFunscripts().size()) {
 			auto& script = app->LoadedFunscripts()[scriptIndex];
 			int actionIdx = (intptr_t)lua_touserdata(L, 1);
+			assert(actionIdx >= 0 && actionIdx < script->Actions().size());
 			FunscriptAction* action = (FunscriptAction*)&script->Actions()[actionIdx];
 			
 			FunscriptAction newAction = *action;
-			assert(action);
 			const char* key = lua_tostring(L, 2);
 			lua_Number value = lua_tonumber(L, 3);
 
@@ -250,6 +250,7 @@ static void ActionGetterSetter(lua_State* L, int scriptIndex) noexcept
 			else if (strcmp(key, "at") == 0) {
 				bool isSelected = script->IsSelected(*action); // TODO: awful perf
 				newAction.atS = value / 1000.0;
+				newAction.atS = std::max(newAction.atS, 0.f);
 				if (isSelected) {
 					script->SetSelected(*action, false);
 				}
@@ -274,6 +275,7 @@ static void ActionGetterSetter(lua_State* L, int scriptIndex) noexcept
 		if (nargs == 2 && scriptIndex >= 0 && scriptIndex < app->LoadedFunscripts().size()) {
 			auto& script = app->LoadedFunscripts()[scriptIndex];
 			int actionIdx = (intptr_t)lua_touserdata(L, 1);
+			assert(actionIdx >= 0 && actionIdx < script->Actions().size());
 			auto action = &script->Actions()[actionIdx];
 
 			assert(action);
@@ -375,16 +377,29 @@ static int LuaRemoveAction(lua_State* L) noexcept;
 static int LuaBindFunction(lua_State* L) noexcept;
 static int LuaScheduleTask(lua_State* L) noexcept;
 static int LuaSnapshot(lua_State* L) noexcept;
+static int LuaUndo(lua_State* L) noexcept;
 static constexpr struct luaL_Reg ofsLib[] = {
 	{"Script", LuaGetScript},
 	{"AddAction", LuaAddAction},
 	{"RemoveAction", LuaRemoveAction},
 	{"ActiveIdx", LuaGetActiveIdx},
 	{"Task", LuaScheduleTask},
-	{"Snapshot", LuaSnapshot},
 	{"Bind", LuaBindFunction},
+	{"Snapshot", LuaSnapshot},
+	{"Undo", LuaUndo},
 	{NULL, NULL}
 };
+
+static int LuaUndo(lua_State* L) noexcept
+{
+	bool undo = false;
+	auto app = OpenFunscripter::ptr;
+	if (app->undoSystem->MatchUndoTop(StateType::CUSTOM_LUA)) {
+		undo = app->undoSystem->Undo();
+	}
+	lua_pushboolean(L, undo);
+	return 1;
+}
 
 static int LuaSnapshot(lua_State* L) noexcept
 {
@@ -674,8 +689,18 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 	auto app = OpenFunscripter::ptr;
 	if (!app->blockingTask.Running) {
 		for (auto& ext : this->Extensions) {
-			if (!ext.Active || !ext.L) continue;
+			if (!ext.Active) continue;
+			
 			ImGui::Begin(ext.NameId.c_str(), open, ImGuiWindowFlags_None);
+			if (!ext.ExtensionError.empty()) {
+				ImGui::TextUnformatted("Encountered error");
+				ImGui::TextWrapped("Error:\n%s", ext.ExtensionError.c_str());
+				if (ImGui::Button("Try reloading")) {
+					ext.Load(Util::PathFromString(ext.Directory));
+				}
+				ImGui::End();
+				continue;
+			}
 
 			if (DevMode && !ext.Bindables.empty()) {
 				ImGui::TextUnformatted("Bindable functions");
@@ -699,8 +724,7 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 			if (result) {
 				const char* error = lua_tostring(ext.L, -1);
 				LOG_ERROR(error);
-				lua_pop(ext.L, 1);
-				FUN_ASSERT(false, error);
+				ext.Fail(error);
 			}
 			if(DevMode)
 			{   // benchmark
@@ -788,6 +812,7 @@ bool OFS_LuaExtension::Load(const std::filesystem::path& directory) noexcept
 	Hash = Util::Hash(Directory.c_str(), Directory.size());
 	NameId = directory.filename().u8string();
 	NameId = Util::Format("%s##_%s_", Name.c_str(), Name.c_str());
+	ExtensionError.clear();
 
 	std::vector<uint8_t> extensionText;
 	if (!Util::ReadFile(mainFile.u8string().c_str(), extensionText)) {
@@ -843,7 +868,7 @@ bool OFS_LuaExtension::Load(const std::filesystem::path& directory) noexcept
 	if (status != 0) {
 		const char* error = lua_tostring(L, -1);
 		LOG_ERROR(error);
-		lua_pop(L, 1);
+		Fail(error);
 		return false;
 	}
 
@@ -852,7 +877,7 @@ bool OFS_LuaExtension::Load(const std::filesystem::path& directory) noexcept
 	if (status != 0) {
 		const char* error = lua_tostring(L, -1);
 		LOG_ERROR(error);
-		lua_pop(L, 1);
+		Fail(error);
 		return false;
 	}
 

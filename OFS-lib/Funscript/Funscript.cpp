@@ -161,8 +161,12 @@ void Funscript::EditActionUnsafe(FunscriptAction* edit, FunscriptAction action) 
 			*edit = action;
 		}
 		else {
+			FunscriptAction copyDeleted = *edit;
 			data.Actions.erase(edit);
-			data.Actions.emplace(action);
+			auto succ = data.Actions.emplace(action);
+			if (!succ.second) {
+				data.Actions.emplace(copyDeleted);
+			}
 		}
 		NotifyActionsChanged(true);
 	}

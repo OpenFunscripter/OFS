@@ -6,6 +6,7 @@
 #include <vector>
 #include <filesystem>
 
+#include "OFS_Util.h"
 #include "OFS_Reflection.h"
 
 #include "EASTL/vector_set.h"
@@ -44,7 +45,15 @@ struct OFS_LuaExtension
 	bool Active = false;
 	double MaxTime = 0.0;
 
+	std::string ExtensionError;
+
 	eastl::vector_set<OFS_BindableLuaFunction, OFS_BindableLuaFunctionLessOperator> Bindables;
+
+	void Fail(const char* error) noexcept
+	{
+		ExtensionError = error;
+		Shutdown();
+	}
 
 	bool Load(const std::filesystem::path& directory) noexcept;
 	void Shutdown() noexcept {

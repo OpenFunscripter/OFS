@@ -81,6 +81,7 @@ public:
 	bool Undo() noexcept;
 	bool Redo() noexcept;
 
+	inline bool MatchUndoTop(int32_t type) const noexcept { return !UndoEmpty() && UndoStack.back().Type == type; }
 	inline bool UndoEmpty() const noexcept { return UndoStack.empty(); }
 	inline bool RedoEmpty() const noexcept { return RedoStack.empty(); }
 };
