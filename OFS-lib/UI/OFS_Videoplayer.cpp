@@ -301,6 +301,9 @@ bool VideoplayerWindow::setup(bool force_hw_decoding)
 		if (!suc)
 			LOG_WARN("failed to set mpv hardware decoding to \"auto-safe\"");
 	}
+	else {
+		suc = mpv_set_property_string(mpv, "hwdec", "no") == 0;
+	}
 
 	// without this the file gets closed when the end is reached
 	suc = mpv_set_property_string(mpv, "keep-open", "yes") == 0;
