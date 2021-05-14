@@ -436,18 +436,39 @@ static int LuaBindFunction(lua_State* L) noexcept;
 static int LuaScheduleTask(lua_State* L) noexcept;
 static int LuaSnapshot(lua_State* L) noexcept;
 static int LuaUndo(lua_State* L) noexcept;
+static int LuaHasSelection(lua_State* L) noexcept;
 static constexpr struct luaL_Reg ofsLib[] = {
 	{"Script", LuaGetScript},
 	{"AddAction", LuaAddAction},
 	{"RemoveAction", LuaRemoveAction},
 	{"ActiveIdx", LuaGetActiveIdx},
 	{"ClearScript", LuaClearScript},
+	{"HasSelection", LuaHasSelection},
+
 	{"Task", LuaScheduleTask},
 	{"Bind", LuaBindFunction},
 	{"Snapshot", LuaSnapshot},
 	{"Undo", LuaUndo},
 	{NULL, NULL}
 };
+
+static int LuaHasSelection(lua_State* L) noexcept
+{
+	auto app = OpenFunscripter::ptr;
+	int nargs = lua_gettop(L);
+	bool hasSelection = false;
+	if (nargs >= 1) {
+		luaL_argcheck(L, lua_istable(L, 1), 1, "Expected script");
+		lua_getfield(L, 1, OFS_LuaExtensions::ScriptIdxUserdata);
+		assert(lua_isuserdata(L, -1));
+		int scriptIdx = (intptr_t)lua_touserdata(L, -1);
+		if (scriptIdx >= 0 && scriptIdx < app->LoadedFunscripts().size()) {
+			hasSelection = app->LoadedFunscripts()[scriptIdx]->HasSelection();
+		}
+	}
+	lua_pushboolean(L, hasSelection);
+	return 1;
+}
 
 static int LuaClearScript(lua_State* L) noexcept
 {
@@ -855,9 +876,9 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 		if (!ext.Bindables.empty()) {
 			if (ImGui::CollapsingHeader("Bindable functions")) {
 				for (auto& bind : ext.Bindables) {
-					ImGui::Text("%s", bind.GlobalName.c_str()); ImGui::SameLine();
+					ImGui::Text("%s:", bind.GlobalName.c_str()); ImGui::SameLine();
 					if (!bind.Description.empty()) {
-						ImGui::TextDisabled(": %s", bind.Description.c_str());
+						ImGui::TextDisabled("%s", bind.Description.c_str());
 					}
 					OFS::Tooltip(bind.Description.c_str());
 				}
