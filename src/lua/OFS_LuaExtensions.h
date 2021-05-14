@@ -24,6 +24,7 @@ struct OFS_BindableLuaFunction
 	std::string GlobalName;
 	std::string Name;
 	std::string Description;
+	bool UseTask = true;
 };
 
 struct OFS_BindableLuaFunctionLessOperator

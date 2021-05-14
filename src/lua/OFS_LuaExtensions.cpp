@@ -649,11 +649,18 @@ static int LuaBindFunction(lua_State* L) noexcept
 	func.GlobalName = Util::Format("%s::%s", ext->Name.c_str(), func.Name.c_str());
 
 	if (nargs >= 2) {
-		luaL_argcheck(L, lua_isstring(L, 2), 2, "Expected function description.");
+		luaL_argcheck(L, lua_isstring(L, 2), 2, "Expected function description");
 		func.Description = lua_tostring(L, 2);
 	}
-	ext->Bindables.emplace(std::move(func));
+	if (nargs >= 3) {
+		luaL_argcheck(L, lua_isboolean(L, 3), 3, "Expected use task boolean");
+		func.UseTask = lua_toboolean(L, 3);
+	}
 
+	auto [item, suc] = ext->Bindables.emplace(std::move(func));
+	if (!suc) {
+		*item = func;
+	}
 	return 0;
 }
 
@@ -852,33 +859,30 @@ void OFS_LuaExtensions::HandleBinding(Binding* binding) noexcept
 {
 	OFS_BindableLuaFunction tmp;
 	tmp.GlobalName = binding->identifier;
-#if 1
 
 	for (auto& ext : Extensions) {
 		if (!ext.Active || !ext.L) continue;
 		auto it = ext.Bindables.find(tmp);
 		if (it != ext.Bindables.end()) {
-			auto& t = Tasks.emplace();
-			t.L = ext.L;
-			t.Function = it->Name;
+			if (it->UseTask) {
+				auto& t = Tasks.emplace();
+				t.L = ext.L;
+				t.Function = it->Name;
+			}
+			else {
+				lua_getglobal(ext.L, it->Name.c_str());
+				if (lua_isfunction(ext.L, -1)) {
+					int status = Lua_Pcall(ext.L, 0, 1, 0); // 0 arguments 1 results
+					if (status) {
+						const char* error = lua_tostring(ext.L, -1);
+						LOG_ERROR(error);
+						ext.Fail(error);
+					}
+				}
+			}
 			return;
 		}
 	}
-#else
-	for (auto& ext : Extensions) {
-		if (!ext.Active || !ext.L) continue;
-		auto it = ext.Bindables.find(tmp);
-		lua_getglobal(ext.L, it->Name.c_str());
-		if (lua_isfunction(ext.L, -1)) {
-			int status = Lua_Pcall(ext.L, 0, 1, 0); // 0 arguments 1 results
-			if (status) {
-				const char* error = lua_tostring(ext.L, -1);
-				LOG_ERROR(error);
-				lua_pop(ext.L, 1);
-			}
-		}
-	}
-#endif
 }
 
 // ============================================================ Extension
@@ -903,6 +907,7 @@ bool OFS_LuaExtension::Load(const std::filesystem::path& directory) noexcept
 	UpdateTime = 0.f;
 	MaxUpdateTime = 0.f;
 	MaxGuiTime = 0.f;
+	Bindables.clear();
 
 	L = luaL_newstate();
 	luaL_openlibs(L);
