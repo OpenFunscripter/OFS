@@ -9,6 +9,7 @@ set(OPEN_FUNSCRIPTER_SOURCES
   
   "UI/OpenFunscripterSettings.cpp"
   "lua/OFS_LuaExtensions.cpp"
+  "lua/OFS_LuaCoreExtension.cpp"
 
   "ScriptingMode.cpp"
   "OFS_Project.cpp"

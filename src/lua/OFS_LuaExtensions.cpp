@@ -4,6 +4,7 @@
 #include "OFS_Serialization.h"
 #include "OFS_ImGui.h"
 #include "OpenFunscripter.h"
+#include "OFS_LuaCoreExtension.h"
 
 #include "imgui.h"
 #include "imgui_stdlib.h"
@@ -771,6 +772,8 @@ OFS_LuaExtensions::OFS_LuaExtensions() noexcept
 	load(Util::Prefpath("extension.json"));
 	UpdateExtensionList();
 	
+	OFS_CoreExtension::setup();
+
 	auto app = OpenFunscripter::ptr;
 	app->keybinds.registerDynamicHandler(OFS_LuaExtensions::DynamicBindingHandler, [this](Binding* b) { HandleBinding(b); });
 
@@ -874,11 +877,14 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 			ImGui::Text("Lua slowest gui time: %f ms", ext.MaxGuiTime * 1000.f);
 		}
 		if (!ext.Bindables.empty()) {
+			auto& style = ImGui::GetStyle();
 			if (ImGui::CollapsingHeader("Bindable functions")) {
 				for (auto& bind : ext.Bindables) {
 					ImGui::Text("%s:", bind.GlobalName.c_str()); ImGui::SameLine();
 					if (!bind.Description.empty()) {
-						ImGui::TextDisabled("%s", bind.Description.c_str());
+						ImGui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled]);
+						ImGui::TextWrapped("%s", bind.Description.c_str());
+						ImGui::PopStyleColor(1);
 					}
 					OFS::Tooltip(bind.Description.c_str());
 				}
