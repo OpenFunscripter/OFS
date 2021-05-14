@@ -88,6 +88,7 @@ static int LuaPrint(lua_State* L) noexcept
 	return 0;
 }
 
+static int LuaSlider(lua_State* L) noexcept;
 static int LuaDrag(lua_State* L) noexcept;
 static int LuaShowText(lua_State* L) noexcept;
 static int LuaButton(lua_State* L) noexcept;
@@ -103,6 +104,7 @@ static constexpr struct luaL_Reg imguiLib[] = {
 	{"Input", LuaInput},
 	{"Drag", LuaDrag},
 	{"Checkbox", LuaCheckbox},
+	{"Slider", LuaSlider},
 
 	{"SameLine", LuaSameLine},
 	{"Separator", LuaSeparator},
@@ -110,6 +112,41 @@ static constexpr struct luaL_Reg imguiLib[] = {
 	{"NewLine", LuaNewLine},
 	{NULL, NULL}
 };
+
+static int LuaSlider(lua_State* L) noexcept
+{
+	int nargs = lua_gettop(L);
+	bool valueChanged = false;
+	if (nargs >= 4) {
+		luaL_argcheck(L, lua_isstring(L, 1), 1, "Expected string");
+		luaL_argcheck(L, lua_isnumber(L, 2), 2, "Expected number");
+		luaL_argcheck(L, lua_isnumber(L, 3), 3, "Expected min number");
+		luaL_argcheck(L, lua_isnumber(L, 4), 4, "Expected max number");
+
+		const char* str = lua_tostring(L, 1);
+		if (lua_isinteger(L, 2)) {
+			int value = lua_tointeger(L, 2);
+			int min = lua_tointeger(L, 3);
+			int max = lua_tointeger(L, 4);
+			valueChanged = ImGui::SliderInt(str, &value, min, max, "%d", ImGuiSliderFlags_AlwaysClamp);
+
+			lua_pushinteger(L, value);
+			lua_pushboolean(L, valueChanged);
+			return 2;
+		}
+		else {
+			float value = lua_tonumber(L, 2);
+			float min = lua_tonumber(L, 3);
+			float max = lua_tonumber(L, 4);
+
+			valueChanged = ImGui::SliderFloat(str, &value, min, max, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+			lua_pushnumber(L, value);
+			lua_pushboolean(L, valueChanged);
+			return 2;
+		}
+	}
+	return 0;
+}
 
 static int LuaSpacing(lua_State* L) noexcept
 {
@@ -159,15 +196,22 @@ static int LuaDrag(lua_State* L) noexcept
 	int nargs = lua_gettop(L);
 	bool valueChanged = false;
 	luaL_argcheck(L, lua_isstring(L, 1), 1, "Expected string.");
+	float stepSize = 1.f;
+	if (nargs >= 3) {
+		luaL_argcheck(L, lua_isnumber(L, 3), 3, "Expected step size number");
+		stepSize = lua_tonumber(L, 3);
+	}
+
+
 	const char* str = lua_tostring(L, 1);
 	if (lua_isinteger(L, 2)) {
 		int result = lua_tointeger(L, 2); // trucates to 32 bit
-		valueChanged = ImGui::DragInt(str, &result);
+		valueChanged = ImGui::DragInt(str, &result, stepSize);
 		lua_pushinteger(L, result);
 	}
 	else if (lua_isnumber(L, 2)) {
 		float result = lua_tonumber(L, 2); // precision loss
-		valueChanged = ImGui::DragFloat(str, &result);
+		valueChanged = ImGui::DragFloat(str, &result, stepSize);
 		lua_pushnumber(L, result);
 	}
 	else {
