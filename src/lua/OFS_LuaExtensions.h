@@ -9,6 +9,8 @@
 #include "OFS_Util.h"
 #include "OFS_Reflection.h"
 
+#include "SDL_thread.h"
+
 #include "EASTL/vector_set.h"
 
 struct OFS_LuaTask
@@ -35,16 +37,18 @@ struct OFS_BindableLuaFunctionLessOperator
 struct OFS_LuaExtension
 {
 	static constexpr const char* MainFile = "main.lua";
+	lua_State* L = nullptr;
 	uint32_t Hash;
 
 	std::string Name;
 	std::string NameId;
 	std::string Directory;
 
-	lua_State* L = nullptr;
-
 	bool Active = false;
-	double MaxTime = 0.0;
+	
+	float UpdateTime = 0.0;
+	float MaxUpdateTime = 0.0;
+	float MaxGuiTime = 0.0;
 
 	std::string ExtensionError;
 
@@ -52,13 +56,15 @@ struct OFS_LuaExtension
 
 	void Fail(const char* error) noexcept
 	{
-		ExtensionError = error;
+		ExtensionError = error ? error : "unknown error";
 		Shutdown();
 	}
 
 	bool Load(const std::filesystem::path& directory) noexcept;
 	void Shutdown() noexcept {
-		MaxTime = 0.0;
+		UpdateTime = 0.f;
+		MaxUpdateTime = 0.f;
+		MaxGuiTime = 0.f;
 		Bindables.clear();
 		if (L) {
 			lua_close(L); L = 0;
@@ -83,6 +89,8 @@ private:
 public:
 	static constexpr const char* DynamicBindingHandler = "OFS_LuaExtensions";
 	static bool DevMode;
+
+	bool TaskBusy = false;
 	std::vector<OFS_LuaExtension> Extensions;
 	void UpdateExtensionList() noexcept;
 
@@ -103,7 +111,7 @@ public:
 	static constexpr const char* RenderGui = "gui";
 
 
-	static bool InMainThread;
+	static SDL_threadID MainThread;
 	std::queue<OFS_LuaTask> Tasks;
 	
 	OFS_LuaExtensions() noexcept;

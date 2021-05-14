@@ -34,17 +34,29 @@
 //	return timestamp;
 //}
 
-
 constexpr const char* LuaDefaultFunctions = R"(
-
 function clamp(val, min, max)
 	return math.min(max, math.max(val, min))
 end
-
 )";
 
 bool OFS_LuaExtensions::DevMode = false;
-bool OFS_LuaExtensions::InMainThread = false;
+SDL_threadID OFS_LuaExtensions::MainThread = 0;
+
+
+inline int Lua_Pcall(lua_State* L, int a, int b, int c) noexcept
+{
+#ifndef NDEBUG
+	static volatile bool call = false;
+	FUN_ASSERT(!call, "this shouldn't happen");
+	call = true;
+#endif
+	auto result = lua_pcall(L, a, b, c);
+#ifndef NDEBUG
+	call = false;
+#endif
+	return result;
+}
 
 static int LuaPrint(lua_State* L) noexcept;
 static constexpr struct luaL_Reg printlib[] = {
@@ -374,6 +386,7 @@ static int LuaPlayerCurrentTime(lua_State* L) noexcept
 static int LuaGetActiveIdx(lua_State* L) noexcept;
 static int LuaGetScript(lua_State* L) noexcept;
 static int LuaAddAction(lua_State* L) noexcept;
+static int LuaClearScript(lua_State* L) noexcept;
 static int LuaRemoveAction(lua_State* L) noexcept;
 static int LuaBindFunction(lua_State* L) noexcept;
 static int LuaScheduleTask(lua_State* L) noexcept;
@@ -384,12 +397,34 @@ static constexpr struct luaL_Reg ofsLib[] = {
 	{"AddAction", LuaAddAction},
 	{"RemoveAction", LuaRemoveAction},
 	{"ActiveIdx", LuaGetActiveIdx},
+	{"ClearScript", LuaClearScript},
 	{"Task", LuaScheduleTask},
 	{"Bind", LuaBindFunction},
 	{"Snapshot", LuaSnapshot},
 	{"Undo", LuaUndo},
 	{NULL, NULL}
 };
+
+static int LuaClearScript(lua_State* L) noexcept
+{
+	auto app = OpenFunscripter::ptr;
+	int nargs = lua_gettop(L);
+	luaL_argcheck(L, lua_istable(L, 1), 1, "Expected script.");
+
+	lua_getfield(L, 1, OFS_LuaExtensions::ScriptIdxUserdata);
+	int scriptIdx = (intptr_t)lua_touserdata(L, -1);
+	if (scriptIdx >= 0 && scriptIdx < app->LoadedFunscripts().size()) {
+		auto& script = app->LoadedFunscripts()[scriptIdx];
+		script->SetActions(FunscriptArray());
+		script->ClearSelection();
+
+		lua_getfield(L, 1, OFS_LuaExtensions::ScriptActionsField);
+		assert(lua_istable(L, -1));
+		lua_createtable(L, 0, 0);
+		lua_setfield(L, 1, OFS_LuaExtensions::ScriptActionsField);
+	}
+	return 0;
+}
 
 static int LuaUndo(lua_State* L) noexcept
 {
@@ -409,7 +444,7 @@ static int LuaSnapshot(lua_State* L) noexcept
 
 	if (nargs == 0) {
 		// snapshot all scripts
-		if (OFS_LuaExtensions::InMainThread) {
+		if (OFS_LuaExtensions::MainThread == SDL_ThreadID()) {
 			app->undoSystem->Snapshot(StateType::CUSTOM_LUA);
 		}
 		else {
@@ -428,7 +463,7 @@ static int LuaSnapshot(lua_State* L) noexcept
 		assert(lua_isuserdata(L, -1));
 		auto index = (intptr_t)lua_touserdata(L, -1);
 		if (index >= 0 && index < app->LoadedFunscripts().size()) {
-			if (OFS_LuaExtensions::InMainThread) {
+			if (OFS_LuaExtensions::MainThread == SDL_ThreadID()) {
 				app->undoSystem->Snapshot(StateType::CUSTOM_LUA, app->LoadedFunscripts()[index]);
 			}
 			else {
@@ -459,11 +494,15 @@ static int LuaAddAction(lua_State* L) noexcept
 {
 	auto app = OpenFunscripter::ptr;
 	int nargs = lua_gettop(L);
-	if (nargs == 3) {
-		assert(lua_istable(L, 1)); // script
-		assert(lua_isnumber(L, 2)); // timestamp
-		assert(lua_isnumber(L, 3)); // pos
-
+	bool selectAction = false;
+	if (nargs >= 3) {
+		luaL_argcheck(L, lua_istable(L, 1), 1, "Expected script"); // script
+		luaL_argcheck(L, lua_isnumber(L, 2), 2, "Expected time"); // timestamp
+		luaL_argcheck(L, lua_isnumber(L, 3), 3, "Expected position"); // pos
+		if (nargs >= 4) {
+			luaL_argcheck(L, lua_isboolean(L, 4), 4, "Expected selected boolean"); // selected
+			selectAction = lua_toboolean(L, 4);
+		}
 		lua_getfield(L, 1, OFS_LuaExtensions::ScriptIdxUserdata);
 		assert(lua_isuserdata(L, -1));
 		auto index = (intptr_t)lua_touserdata(L, -1);
@@ -473,20 +512,21 @@ static int LuaAddAction(lua_State* L) noexcept
 
 		double atTime = lua_tonumber(L, 2) / 1000.0;
 		assert(atTime >= 0.f);
-		int pos = lua_tointeger(L, 3);
-		assert(pos >= 0 && pos <= 100);
+		lua_Number pos = lua_tonumber(L, 3);
+		luaL_argcheck(L, pos >= 0.0 && pos <= 100.0, 3, "Position has to be 0 to 100.");
 		FunscriptAction newAction(atTime, pos);
-		
 		script->AddAction(newAction);
+
+		if (selectAction) {
+			script->SelectAction(newAction);
+		}
 
 		auto actionCount = script->Actions().size();
 		lua_getfield(L, 1, OFS_LuaExtensions::ScriptActionsField); 
-		
-		for (int i = 0, size = actionCount; i < size; ++i) {
-			lua_pushlightuserdata(L, (void*)(intptr_t)i);
-			assert(lua_istable(L, -2));
-			lua_rawseti(L, -2, i + 1);
-		}
+		assert(lua_istable(L, -1));
+
+		lua_pushlightuserdata(L, (void*)(intptr_t)(actionCount-1));
+		lua_rawseti(L, -2, actionCount);
 	}
 	return 0;
 }
@@ -494,39 +534,41 @@ static int LuaAddAction(lua_State* L) noexcept
 static int LuaRemoveAction(lua_State* L) noexcept
 {
 	auto app = OpenFunscripter::ptr;
-
 	int nargs = lua_gettop(L);
 
 	if (nargs == 2) {
-		assert(lua_istable(L, 1));
-		assert(lua_isuserdata(L, 2));
+		luaL_argcheck(L, lua_istable(L, 1), 1, "Expected script");
+		luaL_argcheck(L, lua_isuserdata(L, 2), 2, "Expected action");
 		
 		lua_getfield(L, 1, OFS_LuaExtensions::ScriptIdxUserdata); // 3
 		assert(lua_isuserdata(L, -1));
 		auto index = (intptr_t)lua_touserdata(L, -1);
-		assert(index >= 0 && index < app->LoadedFunscripts().size());
 
-		auto& script = app->LoadedFunscripts()[index];
-		FunscriptAction* action = (FunscriptAction*)lua_touserdata(L, 2);
-		assert(action);
+		if (index >= 0 && index < app->LoadedFunscripts().size()) {
+			auto& script = app->LoadedFunscripts()[index];
+			
+			int actionIdx = (intptr_t)lua_touserdata(L, 2);
+			assert(actionIdx >= 0 && actionIdx < script->Actions().size());
+			auto action = &script->Actions()[actionIdx];
 
-		script->RemoveAction(*action, true);
-		int actionCount = script->Actions().size();
+			script->RemoveAction(*action, true);
 		
-		// update all FunscriptAction pointers
-		lua_getfield(L, 1, OFS_LuaExtensions::ScriptActionsField); // 4
-		assert(lua_istable(L, -1));
+			// update actions
+			lua_getfield(L, 1, OFS_LuaExtensions::ScriptActionsField); // 4
+			assert(lua_istable(L, -1));
 		
-		// remove element
-		lua_pushnil(L);
-		lua_seti(L, -2, actionCount+1);
+			// remove element
+			int actionCount = script->Actions().size();
+			lua_pushnil(L);
+			lua_seti(L, -2, actionCount+1);
 
-		if (actionCount == 0) return 0;
-
-		for (int i = 0, size = script->Actions().size(); i < size; ++i) {
-			lua_pushlightuserdata(L, (void*)(intptr_t)i);
-			assert(lua_istable(L, -2));
-			lua_rawseti(L, -2, i + 1);
+			if (actionCount > 0) {
+				for (int i = 0, size = actionCount; i < size; ++i) {
+					lua_pushlightuserdata(L, (void*)(intptr_t)i);
+					assert(lua_istable(L, -2));
+					lua_rawseti(L, -2, i + 1);
+				}
+			}
 		}
 	}
 	return 0;
@@ -653,6 +695,7 @@ void OFS_LuaExtensions::UpdateExtensionList() noexcept
 
 OFS_LuaExtensions::OFS_LuaExtensions() noexcept
 {
+	MainThread = SDL_ThreadID();
 	load(Util::Prefpath("extension.json"));
 	UpdateExtensionList();
 	
@@ -691,15 +734,20 @@ void OFS_LuaExtensions::save() noexcept
 void OFS_LuaExtensions::Update(float delta) noexcept
 {
 	for (auto& ext : this->Extensions) {
-		if (!ext.Active || !ext.ExtensionError.empty()) continue;
-		OFS_LuaExtensions::InMainThread = true; // HACK
+		if (!ext.Active || !ext.ExtensionError.empty() || this->TaskBusy) continue;
+		auto startTime = std::chrono::high_resolution_clock::now();
 		lua_getglobal(ext.L, OFS_LuaExtensions::UpdateFunction);
 		lua_pushnumber(ext.L, delta);
-		int result = lua_pcall(ext.L, 1, 1, 0); // 1 arguments 1 result
+		int result = Lua_Pcall(ext.L, 1, 1, 0); // 1 arguments 1 result
 		if (result) {
 			auto error = lua_tostring(ext.L, -1);
 			LOG_ERROR(error);
 			ext.Fail(error);
+		}
+		std::chrono::duration<float> updateDuration = std::chrono::high_resolution_clock::now() - startTime;
+		ext.UpdateTime = updateDuration.count();
+		if (ext.UpdateTime > ext.MaxUpdateTime) {
+			ext.MaxUpdateTime = ext.UpdateTime;
 		}
 	}
 }
@@ -710,60 +758,62 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 	OFS_PROFILE(__FUNCTION__);
 	
 	auto app = OpenFunscripter::ptr;
-	if (!app->blockingTask.Running) {
-		for (auto& ext : this->Extensions) {
-			if (!ext.Active) continue;	
 
-			ImGui::Begin(ext.NameId.c_str(), open, ImGuiWindowFlags_None);
-			if (!ext.Bindables.empty()) {
-				if (ImGui::CollapsingHeader("Bindable functions")) {
-					for (auto& bind : ext.Bindables) {
-						ImGui::Text("%s", bind.GlobalName.c_str()); ImGui::SameLine();
-						if (!bind.Description.empty()) {
-							ImGui::TextDisabled(": %s", bind.Description.c_str());
-						}
-						OFS::Tooltip(bind.Description.c_str());
-					}
-					ImGui::Separator();
-				}
-			}
+	for (auto& ext : this->Extensions) {
+		if (!ext.Active || this->TaskBusy) continue;	
 
-			if (!ext.ExtensionError.empty()) {
-				ImGui::TextUnformatted("Encountered error");
-				ImGui::TextWrapped("Error:\n%s", ext.ExtensionError.c_str());
-				if (ImGui::Button("Try reloading")) {
-					ext.Load(Util::PathFromString(ext.Directory));
-				}
-				ImGui::End(); continue;
+		ImGui::Begin(ext.NameId.c_str(), open, ImGuiWindowFlags_None);
+		if (!ext.ExtensionError.empty()) {
+			ImGui::TextUnformatted("Encountered error");
+			ImGui::TextWrapped("Error:\n%s", ext.ExtensionError.c_str());
+			if (ImGui::Button("Try reloading")) {
+				ext.Load(Util::PathFromString(ext.Directory));
 			}
+			ImGui::End(); continue;
+		}
 
-			if (DevMode && ImGui::Button("Reload", ImVec2(-1.f, 0.f))) { 
-				ext.Load(Util::PathFromString(ext.Directory)); 
+		if (DevMode && ImGui::Button("Reload", ImVec2(-1.f, 0.f))) { 
+			if (!ext.Load(Util::PathFromString(ext.Directory))) {
+				ImGui::End();
+				continue;
 			}
-			ImGui::SetWindowSize(ImVec2(300.f, 200.f), ImGuiCond_FirstUseEver);
+		}
+		ImGui::SetWindowSize(ImVec2(300.f, 200.f), ImGuiCond_FirstUseEver);
 			
-			auto startTime = std::chrono::high_resolution_clock::now();
+		auto startTime = std::chrono::high_resolution_clock::now();
 		
 
-			lua_getglobal(ext.L, RenderGui);
-			int result = lua_pcall(ext.L, 0, 1, 0); // 0 arguments 1 result
-			if (result) {
-				const char* error = lua_tostring(ext.L, -1);
-				LOG_ERROR(error);
-				ext.Fail(error);
-			}
-
-			if(DevMode)
-			{   // benchmark
-				ImGui::Separator();
-				std::chrono::duration<double> duration = std::chrono::high_resolution_clock::now() - startTime;
-				if (duration.count() > ext.MaxTime) ext.MaxTime = duration.count();
-				ImGui::Text("Lua time: %lf ms", duration.count() * 1000.0);
-				ImGui::Text("Lua slowest time: %lf ms", ext.MaxTime * 1000.0);
-			}
-
-			ImGui::End();
+		lua_getglobal(ext.L, RenderGui);
+		int result = Lua_Pcall(ext.L, 0, 1, 0); // 0 arguments 1 result
+		if (result) {
+			const char* error = lua_tostring(ext.L, -1);
+			LOG_ERROR(error);
+			ext.Fail(error);
 		}
+
+		if(DevMode)
+		{   // benchmark
+			ImGui::Separator();
+			std::chrono::duration<float> duration = std::chrono::high_resolution_clock::now() - startTime;
+			if (duration.count() > ext.MaxGuiTime) ext.MaxGuiTime = duration.count();
+			ImGui::Text("Lua update time: %f ms", ext.UpdateTime * 1000.f);
+			ImGui::Text("Lua slowest update time: %f ms", ext.MaxUpdateTime * 1000.f);
+			ImGui::Text("Lua gui time: %f ms", duration.count() * 1000.f);
+			ImGui::Text("Lua slowest gui time: %f ms", ext.MaxGuiTime * 1000.f);
+		}
+		if (!ext.Bindables.empty()) {
+			if (ImGui::CollapsingHeader("Bindable functions")) {
+				for (auto& bind : ext.Bindables) {
+					ImGui::Text("%s", bind.GlobalName.c_str()); ImGui::SameLine();
+					if (!bind.Description.empty()) {
+						ImGui::TextDisabled(": %s", bind.Description.c_str());
+					}
+					OFS::Tooltip(bind.Description.c_str());
+				}
+				ImGui::Separator();
+			}
+		}
+		ImGui::End();
 
 		if (!Tasks.empty()) {
 			auto taskData = std::make_unique<BlockingTaskData>();
@@ -777,8 +827,7 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 					OFS_LuaTask& lua = ext->Tasks.front();
 					lua_getglobal(lua.L, lua.Function.c_str());
 					if (lua_isfunction(lua.L, -1)) {
-						OFS_LuaExtensions::InMainThread = false; // HACK
-						int result = lua_pcall(lua.L, 0, 1, 0); // 0 arguments 1 result
+						int result = Lua_Pcall(lua.L, 0, 1, 0); // 0 arguments 1 result
 						if (result) {
 							const char* error = lua_tostring(lua.L, -1);
 							LOG_ERROR(error);
@@ -788,8 +837,10 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 					ext->Tasks.pop();
 					++task->Progress;
 				}
+				ext->TaskBusy = false;
 				return 0;
 			};
+			this->TaskBusy = true;
 			taskData->User = this;
 			taskData->DimBackground = false;
 			app->blockingTask.DoTask(std::move(taskData));
@@ -819,7 +870,7 @@ void OFS_LuaExtensions::HandleBinding(Binding* binding) noexcept
 		auto it = ext.Bindables.find(tmp);
 		lua_getglobal(ext.L, it->Name.c_str());
 		if (lua_isfunction(ext.L, -1)) {
-			int status = lua_pcall(ext.L, 0, 1, 0); // 0 arguments 1 results
+			int status = Lua_Pcall(ext.L, 0, 1, 0); // 0 arguments 1 results
 			if (status) {
 				const char* error = lua_tostring(ext.L, -1);
 				LOG_ERROR(error);
@@ -849,7 +900,9 @@ bool OFS_LuaExtension::Load(const std::filesystem::path& directory) noexcept
 	extensionText.emplace_back('\0');
 
 	if (L) { lua_close(L); L = 0; }
-	MaxTime = 0.0;
+	UpdateTime = 0.f;
+	MaxUpdateTime = 0.f;
+	MaxGuiTime = 0.f;
 
 	L = luaL_newstate();
 	luaL_openlibs(L);
@@ -900,7 +953,7 @@ bool OFS_LuaExtension::Load(const std::filesystem::path& directory) noexcept
 	}
 
 	lua_getglobal(L, OFS_LuaExtensions::InitFunction);
-	status = lua_pcall(L, 0, 1, 0); // 0 arguments 1 results
+	status = Lua_Pcall(L, 0, 1, 0); // 0 arguments 1 results
 	if (status != 0) {
 		const char* error = lua_tostring(L, -1);
 		LOG_ERROR(error);
