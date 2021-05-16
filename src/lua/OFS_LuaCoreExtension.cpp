@@ -56,7 +56,7 @@ function gui()
 
     ofs.Separator()
     ofs.Text("Spline smooth")
-    Spline.PointEveryMs, splineChanged = ofs.Slider("Pointer per ms", Spline.PointEveryMs, 20, 500)
+    Spline.PointEveryMs, splineChanged = ofs.Slider("Point per ms", Spline.PointEveryMs, 20, 500)
     if splineChanged then
         ofs.Undo()
         spline_smooth()
