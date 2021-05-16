@@ -269,7 +269,7 @@ public:
 		if (!isPaused()) {
 			OFS_PROFILE(__FUNCTION__);
 			smoothTime += delta * MpvData.currentSpeed;
-			const float realTime = getRealCurrentPositionSeconds() - lastVideoStep;
+			const float realTime = getRealCurrentPositionSeconds();
 			const float minError = lastVideoStep*2.f; 
 			const float estimateTime = getCurrentPositionSecondsInterp();
 			const float error = realTime-estimateTime;

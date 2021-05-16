@@ -489,12 +489,9 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 				if (!Util::CreateDirectories(outputPath)) {
 					return 0;
 				}
-				outputPath = (Util::PathFromString(outputPath) / "audio.mp3").u8string();
-
-				bool succ = ctx.waveform.GenerateMP3(ffmpegPath.u8string(), std::string(ctx.videoPath), outputPath);
-				if (!succ) { LOGF_ERROR("Failed to output mp3 from video. (ffmpeg_path: \"%s\")", ffmpegPath.u8string().c_str()); return 0;	}
-				succ = ctx.waveform.LoadMP3(outputPath);
-				if (!succ) { LOGF_ERROR("Failed load mp3. (path: \"%s\")", outputPath.c_str());	return 0; }
+				
+				outputPath = (Util::PathFromString(outputPath) / "audio.flac").u8string();
+				bool succ = ctx.waveform.GenerateAndLoadFlac(ffmpegPath.u8string(), ctx.videoPath, outputPath);
 				EventSystem::PushEvent(ScriptTimelineEvents::FfmpegAudioProcessingFinished);
 				return 0;
 			};

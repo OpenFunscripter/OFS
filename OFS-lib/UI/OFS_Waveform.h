@@ -20,9 +20,8 @@ public:
 
 	inline bool BusyGenerating() noexcept { return generating; }
 
-	bool LoadMP3(const std::string& path) noexcept;
-	bool GenerateMP3(const std::string& ffmpegPath, const std::string& videoPath, const std::string& output) noexcept;
-	
+	bool GenerateAndLoadFlac(const std::string& ffmpegPath, const std::string& videoPath, const std::string& output) noexcept;
+
 	inline void Clear() noexcept {
 		SamplesLow.clear();
 		SamplesMid.clear();

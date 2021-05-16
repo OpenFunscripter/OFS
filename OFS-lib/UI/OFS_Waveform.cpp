@@ -2,100 +2,61 @@
 #include "OFS_Util.h"
 #include "OFS_Profiling.h"
 
-//#define MINIMP3_ONLY_SIMD
-//#define MINIMP3_NO_SIMD
-#define MINIMP3_ONLY_MP3
-//#define MINIMP3_FLOAT_OUTPUT
-#define MINIMP3_IMPLEMENTATION
-#include "minimp3.h"
-#include "minimp3_ex.h"
+#define DR_FLAC_IMPLEMENTATION
+#include "dr_flac.h"
 
-bool OFS_Waveform::LoadMP3(const std::string& path) noexcept
+static bool LoadFlac(OFS_Waveform* waveform, const std::string& output) noexcept
 {
-	OFS_PROFILE(__FUNCTION__);
-	generating = true;
+	drflac* flac = drflac_open_file(output.c_str(), NULL);
+	if (!flac) return false;
 
-	mp3dec_t mp3d;
-	mp3dec_file_info_t info;
+	constexpr float LowRangeMin = 0.f; constexpr float LowRangeMax = 500.f;
+	constexpr float MidRangeMin = 501.f; constexpr float MidRangeMax = 6000.f;
+	constexpr float HighRangeMin = 6001.f; constexpr float HighRangeMax = 20000.f;
 
-	SamplesLow.clear();
-	SamplesMid.clear();
-	SamplesHigh.clear();
+	std::vector<drflac_int16> ChunkSamples; ChunkSamples.resize(48000);
+	constexpr int SamplesPerLine = 40; 
 
-	mp3dec_init(&mp3d);
+	uint32_t sampleCount = 0;
+	float lowPeak = 0.f;
+	float midPeak = 0.f;
+	float highPeak = 0.f;
+	while ((sampleCount = drflac_read_pcm_frames_s16(flac, ChunkSamples.size(), ChunkSamples.data())) > 0) {
+		for (int sampleIdx = 0; sampleIdx < sampleCount; sampleIdx += SamplesPerLine) {
+			int samplesInThisLine = std::min(SamplesPerLine, (int)sampleCount - sampleIdx);
+			for (int i = 0; i < samplesInThisLine; i++) {
+				auto sample = ChunkSamples[sampleIdx + i];
+				if (sample == 0) continue;
+				sample = std::abs(sample / 2);
 
-	struct Mp3Context {
-		mp3dec_t* mp3d;
-		OFS_Waveform* wave = nullptr;
-		float lowPeak = 0.f;
-		float midPeak = 0.f;
-		float highPeak = 0.f;
-	};
-	Mp3Context ctx;
-	ctx.wave = this;
-	ctx.mp3d = &mp3d;
-	mp3dec_iterate(path.c_str(),
-		[](void* user_data, const uint8_t* frame,
-			int frame_size, int free_format_bytes,
-			size_t buf_size, uint64_t offset,
-			mp3dec_frame_info_t* info) -> int 
-		{
-			constexpr float LowRangeMin = 0.f; constexpr float LowRangeMax = 500.f;
-			constexpr float MidRangeMin = 501.f; constexpr float MidRangeMax = 6000.f;
-			constexpr float HighRangeMin = 6001.f; constexpr float HighRangeMax = 20000.f;
-			Mp3Context* ctx = (Mp3Context*)user_data;
-			mp3d_sample_t pcm[MINIMP3_MAX_SAMPLES_PER_FRAME];
-			auto samples = mp3dec_decode_frame(ctx->mp3d, frame, buf_size, pcm, info);
-
-			FUN_ASSERT(samples <= 1152, "got more samples than expected");
-			// 1152 is the sample count per frame
-			constexpr int SamplesPerLine = 1152/32;
-
-			auto shortToFloat = [](int16_t pcmVal) -> float {
-				return (1.0f/32768.0f) * pcmVal;
-			};
-
-			for(int sampleIdx=0; sampleIdx < samples; sampleIdx += SamplesPerLine)
-			{
-				//float lowPeak = 0.f, midPeak = 0.f, highPeak = 0.f;
-				//int16_t lowPeak = 0, midPeak = 0, highPeak = 0;
-				for (int i = 0; i < SamplesPerLine; i++) { 
-					mp3d_sample_t sample = pcm[sampleIdx + i];
-					if (sample == 0) continue;
-					sample = std::abs(sample/2);
-
-					if (sample <= LowRangeMax) {
-						// low range
-						//lowPeak = std::max(lowPeak, sample);
-						ctx->lowPeak += sample;
-					}
-					if (sample <= MidRangeMax) {
-						// mid range
-						//midPeak = std::max(midPeak, sample);
-						ctx->midPeak += sample;
-					}
-					if (sample <= HighRangeMax) {
-						// high range
-						//highPeak = std::max(highPeak, sample);
-						ctx->highPeak += sample;
-					}
+				if (sample <= LowRangeMax) {
+					// low range
+					lowPeak += sample;
 				}
-				ctx->lowPeak /= (float)SamplesPerLine;
-				ctx->midPeak /= (float)SamplesPerLine;
-				ctx->highPeak /= (float)SamplesPerLine;
-
-				ctx->wave->SamplesLow.emplace_back(ctx->lowPeak);
-				ctx->wave->SamplesMid.emplace_back(ctx->midPeak);
-				ctx->wave->SamplesHigh.emplace_back(ctx->highPeak);
+				if (sample <= MidRangeMax) {
+					// mid range
+					midPeak += sample;
+				}
+				if (sample <= HighRangeMax) {
+					// high range
+					highPeak += sample;
+				}
 			}
+			lowPeak /= (float)SamplesPerLine;
+			midPeak /= (float)SamplesPerLine;
+			highPeak /= (float)SamplesPerLine;
 
-			return 0;
-	}, &ctx);
+			waveform->SamplesLow.emplace_back(lowPeak);
+			waveform->SamplesMid.emplace_back(midPeak);
+			waveform->SamplesHigh.emplace_back(highPeak);
+		}
+	}
+	drflac_close(flac);
 
-	SamplesLow.shrink_to_fit();
-	SamplesMid.shrink_to_fit();
-	SamplesHigh.shrink_to_fit();
-
+	waveform->SamplesLow.shrink_to_fit();
+	waveform->SamplesMid.shrink_to_fit();
+	waveform->SamplesHigh.shrink_to_fit();
+	
 	auto mapSamples = [](std::vector<float>& samples, float min, float max) noexcept
 	{
 		if (samples.size() <= 1) return;
@@ -106,43 +67,47 @@ bool OFS_Waveform::LoadMP3(const std::string& path) noexcept
 		}
 	};
 	
-	auto [lowMin, lowMax] = std::minmax_element(SamplesLow.begin(), SamplesLow.end());
-	LowMax = *lowMax;
-	auto [midMin, midMax] = std::minmax_element(SamplesMid.begin(), SamplesMid.end());
-	MidMax = *midMax;
-
-	auto [highMin, highMax] = std::minmax_element(SamplesHigh.begin(), SamplesHigh.end());
+	auto [lowMin, lowMax] = std::minmax_element(waveform->SamplesLow.begin(), waveform->SamplesLow.end());
+	waveform->LowMax = *lowMax;
+	auto [midMin, midMax] = std::minmax_element(waveform->SamplesMid.begin(), waveform->SamplesMid.end());
+	waveform->MidMax = *midMax;
+	
+	auto [highMin, highMax] = std::minmax_element(waveform->SamplesHigh.begin(), waveform->SamplesHigh.end());
 	float min = std::min(*lowMin, *midMin);	min = std::min(min, *highMin);
 	float max = std::max(*lowMax, *midMax);	max = std::max(max, *highMax);
-	mapSamples(SamplesLow, min, max);
-	mapSamples(SamplesMid, min, max);
-	mapSamples(SamplesHigh, min, max);
+	mapSamples(waveform->SamplesLow, min, max);
+	mapSamples(waveform->SamplesMid, min, max);
+	mapSamples(waveform->SamplesHigh, min, max);
+	
+	waveform->LowMax = Util::MapRange(waveform->LowMax, min, max, 0.f, 1.f);
+	waveform->MidMax = Util::MapRange(waveform->MidMax, min, max, 0.f, 1.f);
 
-	LowMax = Util::MapRange(LowMax, min, max, 0.f, 1.f);
-	MidMax = Util::MapRange(MidMax, min, max, 0.f, 1.f);
-
-	generating = false;
 	return true;
 }
 
-bool OFS_Waveform::GenerateMP3(const std::string& ffmpegPath, const std::string& videoPath, const std::string& output) noexcept
+bool OFS_Waveform::GenerateAndLoadFlac(const std::string& ffmpegPath, const std::string& videoPath, const std::string& output) noexcept
 {
 	generating = true;
 	reproc::options options;
 	options.redirect.parent = true;
-	std::array<const char*, 10> args =
+	std::array<const char*, 9> args =
 	{
 		ffmpegPath.c_str(),
 		"-y",
 		"-i", videoPath.c_str(),
-		"-b:a", "320k",
+		"-vn",
 		"-ac", "1",
 		output.c_str(),
 		nullptr
 	};
-	auto[status, ec] = reproc::run(args.data(), options);
+	auto [status, ec] = reproc::run(args.data(), options);
+	if (status != 0) { generating = false; return false; }
 
-	LOGF_WARN("OFS_Waveform::GenerateMP3: %s", ec.message().c_str());
+	if (!LoadFlac(this, output)) {
+		generating = false;
+		return false;
+	}
+
 	generating = false;
-	return status == 0;
+	return true;
 }
