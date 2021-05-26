@@ -577,12 +577,12 @@ void Funscript::RemoveSelectedActions() noexcept
 	NotifySelectionChanged();
 }
 
-void Funscript::moveActionsTime(std::vector<FunscriptAction*> moving, float timeOffset)
+void Funscript::moveAllActionsTime(float timeOffset)
 {
 	OFS_PROFILE(__FUNCTION__);
 	ClearSelection();
-	for (auto move : moving) {
-		move->atS += timeOffset;
+	for (auto& move : data.Actions) {
+		move.atS += timeOffset;
 	}
 	NotifyActionsChanged(true);
 }
@@ -602,13 +602,10 @@ void Funscript::MoveSelectionTime(float timeOffset, float frameTime) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	if (!HasSelection()) return;
-	std::vector<FunscriptAction*> moving;
 
 	// faster path when everything is selected
 	if (data.selection.size() == data.Actions.size()) {
-		for (auto& action : data.Actions)
-			moving.push_back(&action);
-		moveActionsTime(moving, timeOffset);
+		moveAllActionsTime(timeOffset);
 		SelectAll();
 		return;
 	}
@@ -625,25 +622,26 @@ void Funscript::MoveSelectionTime(float timeOffset, float frameTime) noexcept
 			timeOffset = std::min(timeOffset, max_bound - data.selection.back().atS);
 		}
 	}
-	else
-	{
+	else {
 		if (prev != nullptr) {
 			min_bound = prev->atS + frameTime;
 			timeOffset = std::max(timeOffset, min_bound - data.selection.front().atS);
 		}
 	}
 
-	for (auto& find : data.selection) {
-		auto m = getAction(find);
-		if(m != nullptr)
-			moving.push_back(m);
+	FunscriptArray newSelection;
+	newSelection.reserve(data.selection.size());
+	for (auto selected : data.selection) {
+		auto move = getAction(selected);
+		if (move) {
+			FunscriptAction newAction = *move;
+			newAction.atS += timeOffset;
+			newSelection.emplace(newAction);
+			EditActionUnsafe(move, newAction);
+		}
 	}
-
 	ClearSelection();
-	for (auto move : moving) {
-		move->atS += timeOffset;
-		data.selection.emplace(*move);
-	}
+	data.selection = std::move(newSelection);
 	NotifyActionsChanged(true);
 }
 

@@ -177,7 +177,7 @@ private:
 		return it-1 >= data.Actions.begin() ? it - 1 : nullptr;
 	}
 
-	void moveActionsTime(std::vector<FunscriptAction*> moving, float timeOffset);
+	void moveAllActionsTime(float timeOffset);
 	void moveActionsPosition(std::vector<FunscriptAction*> moving, int32_t posOffset);
 	inline void sortSelection() noexcept { sortActions(data.selection); }
 	inline void sortActions(FunscriptArray& actions) noexcept {
