@@ -178,7 +178,6 @@ void OFS_Project::Save(const std::string& path, bool clearUnsavedChanges) noexce
 	size_t writtenSize = 0;
 	{
 		SDL_LockMutex(ProjectMut);
-
 		ProjectBuffer.clear();
 		writtenSize = OFS_Binary::Serialize(ProjectBuffer, *this);
 	}
@@ -251,7 +250,6 @@ bool OFS_Project::ImportFunscript(const std::string& path) noexcept
 		Funscripts.emplace_back(std::move(script));
 		Loaded = true;
 		FUN_ASSERT(!LastPath.empty(), "path empty");
-		Save(true);
 		return true;
 	}
 	else {

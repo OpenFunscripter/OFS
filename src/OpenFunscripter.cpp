@@ -291,7 +291,7 @@ bool OpenFunscripter::setup(int argc, char* argv[])
     OFS_ScriptSettings::player = &player->settings;
     playerControls.setup();
     playerControls.player = player.get();
-    closeProject();
+    closeProject(true);
 
     undoSystem = std::make_unique<UndoSystem>(&LoadedProject->Funscripts);
 
@@ -1528,8 +1528,14 @@ void OpenFunscripter::ScriptTimelineActionClicked(SDL_Event& ev) noexcept
 void OpenFunscripter::DragNDrop(SDL_Event& ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if (closeProject()) {
-        openFile(ev.drop.file);
+    if (!LoadedProject->HasUnsavedEdits()) {
+        if (closeProject(false)) {
+            openFile(ev.drop.file);
+        }
+    }
+    else {
+        Util::MessageBoxAlert("Project has unsaved edits", 
+            "The current project has unsaved edits.");
     }
     SDL_free(ev.drop.file);
 }
@@ -1913,13 +1919,13 @@ bool OpenFunscripter::openFile(const std::string& file) noexcept
 bool OpenFunscripter::importFile(const std::string& file) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if (!closeProject() || !LoadedProject->Import(file))
+    if (!closeProject(false) || !LoadedProject->Import(file))
     {
         auto msg = "OpenFunscripter failed to import.\n"
             "Does a project with the same name already exist?\n"
             "Try opening that instead.";
         Util::MessageBoxAlert("Failed to import", msg);
-        closeProject();
+        closeProject(false);
         return false;
     }
     initProject();
@@ -1934,10 +1940,10 @@ bool OpenFunscripter::openProject(const std::string& file) noexcept
         return false;
     }
 
-    if (!closeProject() || !LoadedProject->Load(file)) {
+    if (!closeProject(false) || !LoadedProject->Load(file)) {
         Util::MessageBoxAlert("Failed to load", 
             Util::Format("The project failed to load.\n%s", LoadedProject->LoadingError.c_str()));
-        closeProject();
+        closeProject(false);
         return false;
     }
     initProject();
@@ -1951,7 +1957,6 @@ void OpenFunscripter::initProject() noexcept
         if (LoadedProject->ProjectSettings.NudgeMetadata) {
             ShowMetadataEditor = true;
             LoadedProject->ProjectSettings.NudgeMetadata = false;
-            LoadedProject->Save(true);
         }
 
         if (Util::FileExists(LoadedProject->MediaPath)) {
@@ -2021,10 +2026,10 @@ void OpenFunscripter::exportClips() noexcept
         });
 }
 
-bool OpenFunscripter::closeProject() noexcept
+bool OpenFunscripter::closeProject(bool closeWithUnsavedChanges) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if (LoadedProject->HasUnsavedEdits()) {
+    if (!closeWithUnsavedChanges && LoadedProject->HasUnsavedEdits()) {
         FUN_ASSERT(false, "this branch should ideally never be taken");
         return false;
     }
@@ -2361,19 +2366,33 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         }
                     }, false, {"*" OFS_PROJECT_EXT}, "Project (" OFS_PROJECT_EXT ")");
             }
-            if (ImGui::MenuItem("Import video/script", 0, false, !LoadedProject->Loaded))
-            {
-                Util::OpenFileDialog("Import video/script", settings->data().last_path,
-                    [&](auto& result) {
-                        if (result.files.size() > 0) {
-                            auto& file = result.files[0];
-                            if (Util::FileExists(file)) {
-                                importFile(file);
+            if (ImGui::MenuItem("Import video/script", 0, false)) {
+                auto importNewItem = [&]() {
+                    Util::OpenFileDialog("Import video/script", settings->data().last_path,
+                        [&](auto& result) {
+                            if (result.files.size() > 0) {
+                                auto& file = result.files[0];
+                                if (Util::FileExists(file)) {
+                                    importFile(file);
+                                }
                             }
-                        }
-                    }, false);
+                        }, false);
+                };
+
+                if (LoadedProject->HasUnsavedEdits()) {
+                    Util::YesNoCancelDialog("Close without saving?", 
+                        "The current project has unsaved changes do you want to close it without saving?",
+                        [this, importNewItem](Util::YesNoCancel result) {
+                            if (result == Util::YesNoCancel::Yes) {
+                                closeProject(true);
+                                importNewItem();
+                            }
+                        });
+                }
+                else {
+                    importNewItem();
+                }
             }
-            OFS::Tooltip(LoadedProject->Loaded ? "Close current project first." : "Videos & scripts get imported into a new project.");
             if (ImGui::BeginMenu("Recent files")) {
                 if (settings->data().recentFiles.size() == 0) {
                     ImGui::TextDisabled("%s", "No recent files");
@@ -2533,7 +2552,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::Separator();
             if (LoadedProject->Loaded && ImGui::MenuItem("Save and close project", NULL, false, LoadedProject->Loaded)) {
                 LoadedProject->Save(true);
-                closeProject();
+                closeProject(false);
             }
             ImGui::EndMenu();
         }

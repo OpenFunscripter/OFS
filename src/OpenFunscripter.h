@@ -92,7 +92,7 @@ private:
 	void saveProject() noexcept;
 	void quickExport() noexcept;
 	void exportClips() noexcept;
-	bool closeProject() noexcept;
+	bool closeProject(bool closeWithUnsavedChanges) noexcept;
 	void pickDifferentMedia() noexcept;
 
 
