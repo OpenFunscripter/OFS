@@ -1,0 +1,1 @@
+This was borrowed straight from https://github.com/love2d/love/tree/master/src/libraries/luasocket

@@ -464,3 +464,9 @@ std::filesystem::path Util::FfmpegPath() noexcept
 #endif
 	return ffmpeg_path;
 }
+
+uint32_t Util::Hash(const char* data, size_t size, int32_t seed) noexcept
+{
+	static_assert(sizeof(uint32_t) == sizeof(ImGuiID));
+	return ImHashStr(data, size, seed);
+}

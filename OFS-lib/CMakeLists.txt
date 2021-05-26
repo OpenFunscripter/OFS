@@ -74,6 +74,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	bitsery
 	tracy
 
+	love_3p_luasocket
+
 	EASTL
 	EAStdC
 	EAAssert

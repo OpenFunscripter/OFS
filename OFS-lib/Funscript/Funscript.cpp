@@ -151,6 +151,27 @@ void Funscript::AddActionRange(const FunscriptArray& range, bool checkDuplicates
 	NotifyActionsChanged(true);
 }
 
+void Funscript::EditActionUnsafe(FunscriptAction* edit, FunscriptAction action) noexcept
+{
+	if (edit >= data.Actions.begin() && edit < data.Actions.end()) {
+		FunscriptAction* before = edit > data.Actions.begin() ? edit - 1 : edit;
+		FunscriptAction* after = edit + 1 != data.Actions.end() ? edit + 1 : edit;
+
+		if (before->atS < action.atS && after->atS > action.atS) {
+			*edit = action;
+		}
+		else {
+			FunscriptAction copyDeleted = *edit;
+			data.Actions.erase(edit);
+			auto succ = data.Actions.emplace(action);
+			if (!succ.second) {
+				data.Actions.emplace(copyDeleted);
+			}
+		}
+		NotifyActionsChanged(true);
+	}
+}
+
 bool Funscript::EditAction(FunscriptAction oldAction, FunscriptAction newAction) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);

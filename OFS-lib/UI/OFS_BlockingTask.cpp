@@ -20,15 +20,41 @@ void OFS_BlockingTask::ShowBlockingTask() noexcept
 	else { return; }
 
 	if (!Running) {
+		RunningTimer = 0.f;
 		Running = true;
 		auto thread = SDL_CreateThread(BlockingTaskThread, "BlockingTaskThread", this);
 		SDL_DetachThread(thread);
 	}
+	RunningTimer += ImGui::GetIO().DeltaTime;
 
 	auto& style = ImGui::GetStyle();
+	float a = RunningTimer / 1.f;
+	if (!currentTask->DimBackground) {
+		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, Util::Clamp(a*a, 0.f, 1.f));
+		ImGui::PushStyleColor(ImGuiCol_ModalWindowDimBg, IM_COL32(0, 0, 0, 0));
+	}
 	ImGui::BeginPopupModal(ID, NULL, ImGuiWindowFlags_AlwaysAutoResize);
-	ImGui::Text("This may take a while... (%d/%d)", currentTask->Progress, currentTask->MaxProgress);	ImGui::SameLine();
-	OFS::Spinner("BlockingTaskSpinner", ImGui::GetFontSize()/2.f, ImGui::GetFontSize() / 4.f, ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_ButtonActive]));
-	ImGui::ProgressBar(currentTask->Progress / (float)currentTask->MaxProgress, ImVec2(-1.f, 0.f), currentTask->TaskDescription); ImGui::SameLine();
+	if (a >= 0.1f) {
+		const bool ShowProgress = currentTask->MaxProgress > 0;
+		if (ShowProgress) {
+			ImGui::Text("This may take a while... (%d/%d)", currentTask->Progress, currentTask->MaxProgress);
+		}
+		else {
+			ImGui::Text("This may take a while...");
+		}
+		ImGui::SameLine();
+	
+			OFS::Spinner("BlockingTaskSpinner", ImGui::GetFontSize()/2.f, ImGui::GetFontSize() / 4.f, ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_ButtonActive]));
+		if (ShowProgress) {
+			ImGui::ProgressBar(currentTask->Progress / (float)currentTask->MaxProgress,
+				ImVec2(-1.f, 0.f),
+				currentTask->TaskDescription); 
+			ImGui::SameLine();
+		}
+	}
 	ImGui::EndPopup();
+	if (!currentTask->DimBackground) {
+		ImGui::PopStyleVar(1);
+		ImGui::PopStyleColor(1);
+	}
 }

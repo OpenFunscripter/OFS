@@ -209,6 +209,10 @@ public:
 			unsavedEdits = true;
 			editTime = std::chrono::system_clock::now();
 		}
+
+#ifndef NDEBUG
+		data.Actions.set_capacity(data.Actions.size()); // force threading issues
+#endif
 	}
 
 	std::unique_ptr<FunscriptUndoSystem> undoSystem;
@@ -251,6 +255,7 @@ public:
 	inline void AddAction(FunscriptAction newAction) noexcept { addAction(data.Actions, newAction); }
 	void AddActionRange(const FunscriptArray& range, bool checkDuplicates = true) noexcept;
 
+	void EditActionUnsafe(FunscriptAction* edit, FunscriptAction action) noexcept;
 	bool EditAction(FunscriptAction oldAction, FunscriptAction newAction) noexcept;
 	void AddEditAction(FunscriptAction action, float frameTime) noexcept;
 	void RemoveAction(FunscriptAction action, bool checkInvalidSelection = true) noexcept;

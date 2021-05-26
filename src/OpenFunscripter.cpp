@@ -341,9 +341,10 @@ bool OpenFunscripter::setup(int argc, char* argv[])
     };
 
     HeatmapGradient::Init();
-
     tcode = std::make_unique<TCodePlayer>();
     tcode->loadSettings(Util::Prefpath("tcode.json"));
+
+    extensions = std::make_unique<OFS_LuaExtensions>();
     SDL_ShowWindow(window);
     return true;
 }
@@ -1575,6 +1576,7 @@ void OpenFunscripter::MpvPlayPauseChange(SDL_Event& ev) noexcept
 void OpenFunscripter::update() noexcept {
     OFS_PROFILE(__FUNCTION__);
     float& delta = ImGui::GetIO().DeltaTime;
+    extensions->Update(delta);
     player->update(delta);
     ActiveFunscript()->update();
     ControllerInput::UpdateControllers(settings->data().buttonRepeatIntervalMs);
@@ -1683,14 +1685,13 @@ void OpenFunscripter::step() noexcept {
             specialFunctions->ShowFunctionsWindow(&settings->data().show_special_functions);
             undoSystem->ShowUndoRedoHistory(&settings->data().show_history);
             simulator.ShowSimulator(&settings->data().show_simulator);
-            ShowStatisticsWindow(&settings->data().show_statistics);
             if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { 
                 LoadedProject->Save(true);
             }
             scripting->DrawScriptingMode(NULL);
             LoadedProject->ShowProjectWindow(&ShowProjectEditor);
 
-
+            extensions->ShowExtensions(&settings->data().show_extensions);
             tcode->DrawWindow(&settings->data().show_tcode, player->getCurrentPositionSecondsInterp());
 
             if (keybinds.ShowBindingWindow()) {
@@ -1703,7 +1704,7 @@ void OpenFunscripter::step() noexcept {
 
             playerControls.DrawControls(NULL);
 
-            if (Status & OFS_GradientNeedsUpdate) {
+            if (Status & OFS_GradientNeedsUpdate && !blockingTask.Running) {
                 Status &= ~(OFS_GradientNeedsUpdate);
                 playerControls.UpdateHeatmap(player->getDuration(), ActiveFunscript()->Actions());
             }
@@ -1776,11 +1777,14 @@ void OpenFunscripter::step() noexcept {
             playerControls.DrawTimeline(NULL, drawBookmarks);
             
             // this is an easter egg / gimmick
-            if (scriptPositions.WaveformPartyMode) {
-                scriptPositions.WaveShader->use();
-                scriptPositions.WaveShader->ScriptPos(ActiveFunscript()->SplineClamped(player->getCurrentPositionSecondsInterp()));
+            if (!blockingTask.Running) {
+                if (scriptPositions.WaveformPartyMode) {
+                    scriptPositions.WaveShader->use();
+                    scriptPositions.WaveShader->ScriptPos(ActiveFunscript()->SplineClamped(player->getCurrentPositionSecondsInterp()));
+                }
+                scriptPositions.ShowScriptPositions(NULL, player->getCurrentPositionSecondsInterp(), player->getDuration(), player->getFrameTime(), &LoadedFunscripts(), ActiveFunscriptIdx);
+                ShowStatisticsWindow(&settings->data().show_statistics);
             }
-            scriptPositions.ShowScriptPositions(NULL, player->getCurrentPositionSecondsInterp(), player->getDuration(), player->getFrameTime(), &LoadedFunscripts(), ActiveFunscriptIdx);
 
             if (settings->data().show_action_editor) {
                 ImGui::Begin(ActionEditorId, &settings->data().show_action_editor);
@@ -2789,30 +2793,54 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem("Preferences")) {
                 settings->ShowWindow = true;
             }
+            if (ControllerInput::AnythingConnected()) {
+                if (ImGui::BeginMenu("Controller")) {
+                    ImGui::TextColored(ImColor(IM_COL32(0, 255, 0, 255)), "%s", "Controller connected!");
+                    ImGui::DragInt("Repeat rate", &settings->data().buttonRepeatIntervalMs, 1, 25, 500, "%d", ImGuiSliderFlags_AlwaysClamp);
+                    static int32_t selectedController = 0;
+                    std::vector<const char*> padStrings;
+                    for (int i = 0; i < ControllerInput::Controllers.size(); i++) {
+                        auto& controller = ControllerInput::Controllers[i];
+                        if (controller.connected()) {
+                            padStrings.push_back(controller.GetName());
+                        }
+                        //else {
+                        //    padStrings.push_back("--");
+                        //}
+                    }
+                    ImGui::Combo("##ActiveControllers", &selectedController, padStrings.data(), (int32_t)padStrings.size());
+                    OFS::Tooltip("Selecting doesn't do anything right now.");
+
+                    ImGui::EndMenu();
+                }
+            }
             ImGui::EndMenu();
         }
-        if (ControllerInput::AnythingConnected()) {
-            if (ImGui::BeginMenu("Controller")) {
-                ImGui::TextColored(ImColor(IM_COL32(0, 255, 0, 255)), "%s", "Controller connected!");
-                ImGui::DragInt("Repeat rate", &settings->data().buttonRepeatIntervalMs, 1, 25, 500, "%d", ImGuiSliderFlags_AlwaysClamp);
-                static int32_t selectedController = 0;
-                std::vector<const char*> padStrings;
-                for (int i = 0; i < ControllerInput::Controllers.size(); i++) {
-                    auto& controller = ControllerInput::Controllers[i];
-                    if (controller.connected()) {
-                        padStrings.push_back(controller.GetName());
-                    }
-                    //else {
-                    //    padStrings.push_back("--");
-                    //}
-                }
-                ImGui::Combo("##ActiveControllers", &selectedController, padStrings.data(), (int32_t)padStrings.size());
-                OFS::Tooltip("Selecting doesn't do anything right now.");
-
-                ImGui::EndMenu();
+        if (ImGui::BeginMenu("Extensions")) {
+            if (ImGui::IsWindowAppearing()) {
+                extensions->UpdateExtensionList();
             }
+            if(ImGui::MenuItem("Show windows", NULL, &settings->data().show_extensions)) {}
+            if(ImGui::MenuItem("Developer mode", NULL, &OFS_LuaExtensions::DevMode)) {}
+            OFS::Tooltip("Enable extra functionality for extension developement.");
+            if (ImGui::MenuItem("Extension directory")) { 
+                Util::OpenFileExplorer(Util::Prefpath(OFS_LuaExtensions::ExtensionDir)); 
+            }
+            ImGui::Separator();
+            for (auto& ext : extensions->Extensions) {
+                if (ImGui::MenuItem(ext.NameId.c_str(), NULL, &ext.Active)) {
+                    if (ext.Active && !ext.L) {
+                        ext.Active = ext.Load(ext.Directory);
+                    }
+                    else if (!ext.Active) { ext.Shutdown(); }
+                }
+                if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Middle)) {
+                    Util::OpenFileExplorer(ext.Directory);
+                }
+            }
+            ImGui::EndMenu();
         }
-        if(ImGui::MenuItem("About", NULL, &ShowAbout)) {}
+        if(ImGui::MenuItem("?##About", NULL, &ShowAbout)) {}
         ImGui::Separator();
         ImGui::Spacing();
         if (ControllerInput::AnythingConnected()) {

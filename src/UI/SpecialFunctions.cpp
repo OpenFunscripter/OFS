@@ -724,6 +724,7 @@ bool CollectScriptOutputs(LuaThread& thread, lua_State* L) noexcept
     CHECK_OR_FAIL(lua_istable(L, -1));
 
     size = lua_rawlen(L, -1); // script count
+    //size = lua_objlen(L, -1); // script count
     if (size != scriptCount) {
         stbsp_snprintf(tmp, sizeof(tmp), "ERROR: LoadedScripts count doesn't match. expected %d got %d", scriptCount, size);
         WriteToConsole(tmp);
@@ -741,6 +742,7 @@ bool CollectScriptOutputs(LuaThread& thread, lua_State* L) noexcept
         CHECK_OR_FAIL(lua_istable(L, -1));
 
         actionCount = lua_rawlen(L, -1);
+        //actionCount = lua_objlen(L, -1);
         for (actionIdx = 1; actionIdx <= actionCount; actionIdx++) {
             lua_rawgeti(L, -1, actionIdx); // push single action
             CHECK_OR_FAIL(lua_istable(L, -1));

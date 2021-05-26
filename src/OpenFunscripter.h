@@ -17,6 +17,7 @@
 #include "OFS_AsyncIO.h"
 #include "OFS_Simulator3D.h"
 #include "OFS_BlockingTask.h"
+#include "OFS_LuaExtensions.h"
 
 #include <memory>
 #include <chrono>
@@ -142,6 +143,7 @@ public:
 	std::unique_ptr<ControllerInput> controllerInput;
 	std::unique_ptr<OpenFunscripterSettings> settings;
 	std::unique_ptr<UndoSystem> undoSystem;
+	std::unique_ptr<OFS_LuaExtensions> extensions;
 
 	std::unique_ptr<Simulator3D> sim3D;
 
