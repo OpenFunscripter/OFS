@@ -2,6 +2,7 @@
 
 #include "imgui.h"
 #include "OFS_Reflection.h"
+#include "OFS_BinarySerialization.h"
 
 class ScriptSimulator {
 private:
@@ -22,8 +23,8 @@ private:
 public:
 	static constexpr const char* SimulatorId = "Simulator";
 	struct SimulatorSettings {
-		ImVec2 P1;
-		ImVec2 P2;
+		ImVec2 P1 = {600.f, 300.f};
+		ImVec2 P2 = {600.f, 700.f};
 		ImColor Text = IM_COL32(0xFF, 0xFF, 0xFF, 0xFF);
 		ImColor Front = IM_COL32(0x01, 0xBA, 0xEF, 0xFF);
 		ImColor Back = IM_COL32(0x10, 0x10, 0x10, 0xBF);
@@ -43,28 +44,59 @@ public:
 		bool EnableHeightLines = true;
 		bool LockedPosition = false;
 
-		template <class Archive>
-		inline void reflect(Archive& ar)
-		{
-			OFS_REFLECT(P1, ar);
-			OFS_REFLECT(P2, ar);
-			OFS_REFLECT(Width, ar);
-			OFS_REFLECT(BorderWidth, ar);
-			OFS_REFLECT(LineWidth, ar);
-			OFS_REFLECT(ExtraLineWidth, ar);
-			OFS_REFLECT(Text, ar);
-			OFS_REFLECT(Front, ar);
-			OFS_REFLECT(Back, ar);
-			OFS_REFLECT(Border, ar);
-			OFS_REFLECT(ExtraLines, ar);
-			OFS_REFLECT(Indicator, ar);
-			OFS_REFLECT(GlobalOpacity, ar);
-			OFS_REFLECT(EnableIndicators, ar);
-			OFS_REFLECT(EnablePosition, ar);
-			OFS_REFLECT(EnableHeightLines, ar);
-			OFS_REFLECT(ExtraLinesCount, ar);
-			OFS_REFLECT(LockedPosition, ar);
+		//template <class Archive>
+		//inline void reflect(Archive& ar)
+		//{
+		//	OFS_REFLECT(P1, ar);
+		//	OFS_REFLECT(P2, ar);
+		//	OFS_REFLECT(Width, ar);
+		//	OFS_REFLECT(BorderWidth, ar);
+		//	OFS_REFLECT(LineWidth, ar);
+		//	OFS_REFLECT(ExtraLineWidth, ar);
+		//	OFS_REFLECT(Text, ar);
+		//	OFS_REFLECT(Front, ar);
+		//	OFS_REFLECT(Back, ar);
+		//	OFS_REFLECT(Border, ar);
+		//	OFS_REFLECT(ExtraLines, ar);
+		//	OFS_REFLECT(Indicator, ar);
+		//	OFS_REFLECT(GlobalOpacity, ar);
+		//	OFS_REFLECT(EnableIndicators, ar);
+		//	OFS_REFLECT(EnablePosition, ar);
+		//	OFS_REFLECT(EnableHeightLines, ar);
+		//	OFS_REFLECT(ExtraLinesCount, ar);
+		//	OFS_REFLECT(LockedPosition, ar);
+		//}
+
+		template<typename S>
+		void serialize(S& s) {
+			s.ext(*this, bitsery::ext::Growable{},
+				[](S& s, SimulatorSettings& o) {
+					// prevents defaults from being overwritten with 0
+					bool HackForSerialize = true;
+					s.boolValue(HackForSerialize);
+					if (!HackForSerialize) return;
+
+					s.object(o.P1);
+					s.object(o.P2);
+					s.value4b(o.Width);
+					s.value4b(o.BorderWidth);
+					s.value4b(o.LineWidth);
+					s.value4b(o.ExtraLineWidth);
+					s.object(o.Text);
+					s.object(o.Front);
+					s.object(o.Back);
+					s.object(o.Border);
+					s.object(o.ExtraLines);
+					s.object(o.Indicator);
+					s.value4b(o.GlobalOpacity);
+					s.boolValue(o.EnableIndicators);
+					s.boolValue(o.EnablePosition);
+					s.boolValue(o.EnableHeightLines);
+					s.boolValue(o.LockedPosition);
+					s.value4b(o.ExtraLinesCount);
+				});
 		}
+
 	} simulator;
 
 	float positionOverride = -1.f;

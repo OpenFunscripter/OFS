@@ -98,4 +98,19 @@ namespace bitsery
         s.value4b(o.x);
         s.value4b(o.y);
     }
+
+    template<typename S>
+    void serialize(S& s, ImVec4& o)
+    {
+        s.value4b(o.x);
+        s.value4b(o.y);
+        s.value4b(o.z);
+        s.value4b(o.w);
+    }
+
+    template<typename S>
+    void serialize(S& s, ImColor& o)
+    {
+        s.object(o.Value);
+    }
 }

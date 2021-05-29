@@ -313,6 +313,9 @@ bool OpenFunscripter::setup(int argc, char* argv[])
     events->Subscribe(VideoEvents::PlayPauseChanged, EVENT_SYSTEM_BIND(this, &OpenFunscripter::MpvPlayPauseChange));
     events->Subscribe(ScriptTimelineEvents::ActiveScriptChanged, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActiveScriptChanged));
 
+    // hook up settings
+    OFS_Project::ProjSettings::Simulator = &simulator.simulator;
+
     if (argc > 1) {
         const char* path = argv[1];
         openFile(path);

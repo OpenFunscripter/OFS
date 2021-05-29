@@ -100,9 +100,21 @@ public:
 		s.ext(*this, bitsery::ext::Growable{},
 			[](S& s, Funscript& o) {
 				s.container(o.data.Actions, o.data.Actions.kMaxSize);
-				// Metadata is centralized in OFS_Project
 				s.text1b(o.CurrentPath, o.CurrentPath.max_size());
 				s.text1b(o.Title, o.Title.max_size());
+
+				// this code can be deleted after a couple releases
+				// it just makes sure "Enabled" doesn't get 0 initialized
+				// when the project is from an older OFS version
+				if constexpr (std::is_same<S, ContextDeserializer>::value) {
+					auto& a = s.adapter();
+					if (a.currentReadEndPos() != a.currentReadPos()) {
+						s.boolValue(o.Enabled);
+					}
+				}
+				else {
+					s.boolValue(o.Enabled);
+				}
 			});
 	}
 

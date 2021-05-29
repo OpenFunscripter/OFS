@@ -8,9 +8,6 @@
 #include "imgui.h"
 #include "imgui_stdlib.h"
 
-#include <algorithm>
-
-
 OpenFunscripterSettings::OpenFunscripterSettings(const std::string& config)
 	: config_path(config)
 {
@@ -23,7 +20,6 @@ OpenFunscripterSettings::OpenFunscripterSettings(const std::string& config)
 		}
 	}
 
-	scripterSettings.simulator = &OpenFunscripter::ptr->simulator.simulator;	
 	if (!configObj[ConfigStr].is_object())
 		configObj[ConfigStr] = nlohmann::json::object();
 	else

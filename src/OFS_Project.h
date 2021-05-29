@@ -3,6 +3,7 @@
 #include "OFS_BinarySerialization.h"
 #include "OFS_ScriptSettings.h"
 #include "Funscript.h"
+#include "ScriptSimulator.h"
 
 #include <vector>
 
@@ -33,6 +34,7 @@ public:
 		// when this is true
 		// the user gets nudged to enter metadata
 		bool NudgeMetadata = true;
+		static ScriptSimulator::SimulatorSettings* Simulator;
 
 		template<typename S>
 		void serialize(S& s)
@@ -40,6 +42,8 @@ public:
 			s.ext(*this, bitsery::ext::Growable{},
 				[](S& s, ProjSettings& o) {
 					s.boolValue(o.NudgeMetadata);
+					FUN_ASSERT(o.Simulator, "Simulator not hooked up.");
+					s.object(*o.Simulator);
 				});
 		}
 	} ProjectSettings;

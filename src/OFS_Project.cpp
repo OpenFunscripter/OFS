@@ -9,6 +9,8 @@
 
 #include "EASTL/string.h"
 
+ScriptSimulator::SimulatorSettings* OFS_Project::ProjSettings::Simulator = nullptr;
+
 bool OFS_Project::FindMedia(const std::string& funscriptPath) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
