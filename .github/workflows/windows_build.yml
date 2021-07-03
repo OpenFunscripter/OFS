@@ -1,0 +1,98 @@
+# This is a basic workflow to help you get started with Actions
+
+name: windows_build
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  build:
+    runs-on: windows-2019
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'true'
+        fetch-depth: 0
+    
+    - name: Gets latest created release info
+      id: latest_release_info
+      uses: jossef/action-latest-release-info@v1.1.0
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      
+    - name: EASTL special treatment
+      run: |
+        cd lib/EASTL
+        git submodule update --init
+
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{runner.workspace}}/build
+
+    - name: Configure CMake
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      # Note the current convention is to use the -S and -B options here to specify source 
+      # and build directories, but this is only available with CMake 3.13 and higher.  
+      # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G "Visual Studio 16 2019" -A x64
+
+    - name: Build OFS
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: |
+        cmake --build . --config $BUILD_TYPE --target "OpenFunscripter"
+
+    
+    - name: FFMPEG & Zip 
+      run: |
+        choco install -y -r --no-progress 7zip
+        choco install -y -r --no-progress InnoSetup
+        powershell Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-essentials.7z" -OutFile "${{runner.workspace}}\ffmpeg.7z" 
+
+        mkdir "${{runner.workspace}}\ffmpeg"
+        7z e "${{runner.workspace}}\ffmpeg.7z" -o${{runner.workspace}}\ffmpeg
+        cp "${{runner.workspace}}\ffmpeg\ffmpeg.exe" "${{runner.workspace}}\OFS\bin\Release\ffmpeg.exe"
+        powershell Compress-Archive "${{runner.workspace}}\OFS\bin\Release" "${{runner.workspace}}\OFS-64x_${{github.sha}}.zip"
+
+#    - uses: actions/upload-artifact@v2
+#      with:
+#        name: OFS-64x_${{github.sha}}.zip
+#        path: ${{runner.workspace}}\OFS-64x_${{github.sha}}.zip
+
+    - name: Installer
+      run: iscc "${{runner.workspace}}\OFS\ofs-installer.iss"
+
+#    - uses: actions/upload-artifact@v2
+#      with:
+#        name: OFS-64x_${{github.sha}}.exe
+#        path: ${{runner.workspace}}\OFS\installer\ofs-installer.exe
+
+    - name: Upload Release Zip
+      id: upload-release-zip
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.latest_release_info.outputs.upload_url }}
+        asset_path: ${{runner.workspace}}\OFS-64x_${{github.sha}}.zip
+        asset_name: OFS-64x_${{github.sha}}.zip
+        asset_content_type: application/octet-stream
+
+    - name: Upload Release Installer
+      id: upload-release-installer 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.latest_release_info.outputs.upload_url }}
+        asset_path: ${{runner.workspace}}\OFS\installer\ofs-installer.exe
+        asset_name: OFS-64x_${{github.sha}}.exe
+        asset_content_type: application/octet-stream

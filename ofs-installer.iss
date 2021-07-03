@@ -1,17 +1,12 @@
 #define Configuration "Release"
 
-#define Version GetEnv('appveyor_build_version')
-#if Version == ""
-#define Version ""
-#endif
-
 [Setup]
 AppName=OpenFunscripter
-AppVersion={#Version}
+AppVersion=1.0
 AppPublisher=OpenFunscripter
 AppPublisherURL=www.github.com/OpenFunscripter/OFS
 AppId=OpenFunscripter/OFS
-
+ArchitecturesInstallIn64BitMode=x64
 DefaultDirName={pf}\OpenFunscripter
 DefaultGroupName=OpenFunscripter
 UninstallDisplayIcon={app}\OpenFunscripter.exe
@@ -23,7 +18,7 @@ OutputDir=.\installer
 [Files]
 Source: "bin\{#Configuration}\OpenFunscripter.exe"; DestDir: "{app}"
 Source: "bin\{#Configuration}\*.dll"; DestDir: "{app}"
-Source: "ffmpeg\ffmpeg.exe"; DestDir: "{app}"
+Source: "bin\{#Configuration}\ffmpeg.exe"; DestDir: "{app}"
 Source: "data\*"; Flags: recursesubdirs; DestDir: "{app}\data"
 
 [Icons]
