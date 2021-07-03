@@ -3107,7 +3107,7 @@ void OpenFunscripter::ShowAboutWindow(bool* open) noexcept
     ImGui::TextUnformatted("OpenFunscripter " OFS_LATEST_GIT_TAG);
     ImGui::Text("Commit: %s", OFS_LATEST_GIT_HASH);
     if (ImGui::Button("Latest release " ICON_GITHUB, ImVec2(-1.f, 0.f))) {
-        Util::OpenUrl("https://github.com/gagax1234/OpenFunscripter/releases/latest");
+        Util::OpenUrl("https://github.com/OpenFunscripter/OFS/releases/latest");
     }
     ImGui::End();
 }

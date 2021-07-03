@@ -1,9 +1,9 @@
 # OpenFunscripter
 I swear this is a C++ project despite what the statistic on this repo says 😅
 
-The project is based on OpenGL, SDL2, ImGui, libmpv, & all these other great [libraries](https://github.com/gagax1234/OpenFunscripter/tree/master/lib).
+The project is based on OpenGL, SDL2, ImGui, libmpv, & all these other great [libraries](https://github.com/OpenFunscripter/OpenFunscripter/tree/master/lib).
 
-![OpenFunscripter Screenshot](https://github.com/gagax1234/OpenFunscripter/raw/master/OpenFunscripter.jpg)
+![OpenFunscripter Screenshot](https://github.com/OpenFunscripter/OpenFunscripter/blob/1b4f096be8c2f6c75ceed7787a300a86a13fb167/OpenFunscripter.jpg)
 
 ### How to build ( for people who want to contribute or fork )
 1. clone the repository

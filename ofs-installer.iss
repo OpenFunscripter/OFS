@@ -8,9 +8,9 @@
 [Setup]
 AppName=OpenFunscripter
 AppVersion={#Version}
-AppPublisher=gagax1234
-AppPublisherURL=www.github.com/gagax1234/OpenFunscripter
-AppId=gagax1234/OpenFunscripter
+AppPublisher=OpenFunscripter
+AppPublisherURL=www.github.com/OpenFunscripter/OFS
+AppId=OpenFunscripter/OFS
 
 DefaultDirName={pf}\OpenFunscripter
 DefaultGroupName=OpenFunscripter
