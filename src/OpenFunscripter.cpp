@@ -2354,23 +2354,26 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
         if (ImGui::BeginMenu("File"))
         {
             if (ImGui::MenuItem(ICON_FOLDER_OPEN" Open project")) {
-                Util::OpenFileDialog("Open project", settings->data().last_path,
-                    [&](auto& result) {
-                        if (result.files.size() > 0) {
-                            auto& file = result.files[0];
-                            auto path = Util::PathFromString(file);
-                            if (path.extension().u8string() != OFS_Project::Extension) {
-                                Util::MessageBoxAlert("Wrong file", "That's not a project file.");
-                                return;
+                auto openProjectDialog = [&]() {
+                    Util::OpenFileDialog("Open project", settings->data().last_path,
+                        [&](auto& result) {
+                            if (result.files.size() > 0) {
+                                auto& file = result.files[0];
+                                auto path = Util::PathFromString(file);
+                                if (path.extension().u8string() != OFS_Project::Extension) {
+                                    Util::MessageBoxAlert("Wrong file", "That's not a project file.");
+                                    return;
+                                }
+                                else if (Util::FileExists(file)) {
+                                    openProject(file);
+                                }
                             }
-                            else if (Util::FileExists(file)) {
-                                openProject(file);
-                            }
-                        }
-                    }, false, {"*" OFS_PROJECT_EXT}, "Project (" OFS_PROJECT_EXT ")");
+                        }, false, { "*" OFS_PROJECT_EXT }, "Project (" OFS_PROJECT_EXT ")");
+                };
+                closeWithoutSavingDialog(std::move(openProjectDialog));
             }
             if (ImGui::MenuItem("Import video/script", 0, false)) {
-                auto importNewItem = [&]() {
+                auto importNewItemDialog = [&]() {
                     Util::OpenFileDialog("Import video/script", settings->data().last_path,
                         [&](auto& result) {
                             if (result.files.size() > 0) {
@@ -2381,20 +2384,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                             }
                         }, false);
                 };
-
-                if (LoadedProject->HasUnsavedEdits()) {
-                    Util::YesNoCancelDialog("Close without saving?", 
-                        "The current project has unsaved changes do you want to close it without saving?",
-                        [this, importNewItem](Util::YesNoCancel result) {
-                            if (result == Util::YesNoCancel::Yes) {
-                                closeProject(true);
-                                importNewItem();
-                            }
-                        });
-                }
-                else {
-                    importNewItem();
-                }
+                closeWithoutSavingDialog(std::move(importNewItemDialog));
             }
             if (ImGui::BeginMenu("Recent files")) {
                 if (settings->data().recentFiles.size() == 0) {

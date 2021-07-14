@@ -111,8 +111,10 @@ private:
 	void initProject() noexcept;
 	
 	void SetFullscreen(bool fullscreen);
-
 	void setupDefaultLayout(bool force) noexcept;
+
+	template<typename OnCloseAction>
+	void closeWithoutSavingDialog(OnCloseAction&& action) noexcept;
 
 	// UI
 	void CreateDockspace() noexcept;
@@ -184,3 +186,21 @@ public:
 	void Undo() noexcept;
 	void Redo() noexcept;
 };
+
+template<typename OnCloseAction>
+inline void OpenFunscripter::closeWithoutSavingDialog(OnCloseAction&& action) noexcept
+{
+	if (LoadedProject->HasUnsavedEdits()) {
+		Util::YesNoCancelDialog("Close without saving?",
+			"The current project has unsaved changes do you want to close it without saving?",
+			[this, action](Util::YesNoCancel result) {
+				if (result == Util::YesNoCancel::Yes) {
+					closeProject(true);
+					action();
+				}
+			});
+	}
+	else {
+		action();
+	}
+}
