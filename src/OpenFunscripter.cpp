@@ -1261,6 +1261,32 @@ void OpenFunscripter::registerBindings()
             0
         );
 
+        auto& goto_start = group.bindings.emplace_back(
+            "goto_start",
+            "Go to the start",
+            true,
+            [&](void*) {
+                player->setPositionPercent(0.f, false); 
+            }
+        );
+        goto_start.key = Keybinding(
+            0,
+            0
+        );
+
+        auto& goto_end = group.bindings.emplace_back(
+            "goto_end",
+            "Got to the end",
+            true,
+            [&](void*) {
+                player->setPositionPercent(1.f, false);
+            }
+        );
+        goto_end.key = Keybinding(
+            0,
+            0
+        );
+
         keybinds.registerBinding(std::move(group));
     }
 
