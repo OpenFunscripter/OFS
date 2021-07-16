@@ -76,7 +76,7 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
     const ImColor timeline_cursor_back = IM_COL32(255, 255, 255, 255);
     const ImColor timeline_cursor_front = IM_COL32(0, 0, 0, 255);
     auto mouse = ImGui::GetMousePos();
-    float rel_timeline_pos = ((mouse.x - frame_bb.Min.x) / frame_bb.GetWidth());
+    float relTimelinePos = ((mouse.x - frame_bb.Min.x) / frame_bb.GetWidth());
 
     if (item_hovered) {
         draw_list->AddLine(ImVec2(mouse.x, frame_bb.Min.y),
@@ -88,15 +88,20 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
 
         ImGui::BeginTooltipEx(ImGuiWindowFlags_None, ImGuiTooltipFlags_None);
         {
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                *position = relTimelinePos;
+                change = true;
+                dragging = true;
+            }
+
             videoPreview->update();
-            if (SDL_GetTicks() - lastPreviewUpdate >= PreviewUpdateMs)
-            {
-                videoPreview->setPosition(rel_timeline_pos);
+            if (SDL_GetTicks() - lastPreviewUpdate >= PreviewUpdateMs) {
+                videoPreview->setPosition(relTimelinePos);
                 lastPreviewUpdate = SDL_GetTicks();
             }
             const ImVec2 ImageDim = ImVec2(ImGui::GetFontSize()*7.f * (16.f / 9.f), ImGui::GetFontSize() * 7.f);
             ImGui::Image((void*)(intptr_t)videoPreview->renderTexture, ImageDim);
-            float time_seconds = player->getDuration() * rel_timeline_pos;
+            float time_seconds = player->getDuration() * relTimelinePos;
             float time_delta = time_seconds - player->getCurrentPositionSecondsInterp();
             Util::FormatTime(tmp_buf[0], sizeof(tmp_buf[0]), time_seconds, false);
             Util::FormatTime(tmp_buf[1], sizeof(tmp_buf[1]), (time_delta > 0) ? time_delta : -time_delta, false);
@@ -106,17 +111,32 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
                 ImGui::Text("%s (-%s)", tmp_buf[0], tmp_buf[1]);
         }
         ImGui::EndTooltip();
-
-        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-            *position = rel_timeline_pos;
-            change = true;
-            dragging = true;
-        }
     }
 
     if (dragging && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-        *position = rel_timeline_pos;
-        change = true;
+        auto viewport = ImGui::GetWindowViewport();
+        auto mouseDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
+        float timelineY = frame_bb.GetCenter().y;
+        float timelineHeight = frame_bb.GetHeight();
+        float screenY = viewport->Size.y;
+        float scrubScale = 1.f - ((std::abs(timelineY - mouse.y) - timelineHeight * 1.f) / screenY);
+        scrubScale = Util::Clamp(scrubScale, 0.005f, 1.f);
+
+        if (scrubScale < 1.f) {
+            scrubScale = scrubScale - 0.75f;
+            scrubScale = Util::Clamp(scrubScale, 0.005f, 1.f);
+            ImGui::BeginTooltipEx(ImGuiWindowFlags_None, ImGuiTooltipFlags_None);
+            ImGui::Text("Speed: x%0.3f", scrubScale);
+            ImGui::EndTooltip();
+        }
+
+        if (std::abs(mouseDelta.x) > 0.f) {
+            float startDragRelPos = (((mouse.x - mouseDelta.x) - frame_bb.Min.x) / frame_bb.GetWidth());
+            float dragPosDelta = relTimelinePos - startDragRelPos;
+            *position += dragPosDelta * scrubScale;
+            ImGui::ResetMouseDragDelta(ImGuiMouseButton_Left);
+            change = true;
+        }
     }
     else {
         dragging = false;
@@ -127,7 +147,9 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
 
     constexpr float min_val = 0.f;
     constexpr float max_val = 1.f;
-    if (change) { *position = Util::Clamp(*position, min_val, max_val); }
+    if (change) { 
+        *position = Util::Clamp(*position, min_val, max_val); 
+    }
 
     return change;
 }
