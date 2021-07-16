@@ -341,20 +341,20 @@ static int32_t TCodeThread(void* threadData) noexcept {
         if (std::abs(playbackError) >= maxError && !correctError) {
             // correct error
             correctError = true;
-            LOGF_DEBUG("T-Code: correcting playback error...");
+            LOG_DEBUG("T-Code: correcting playback error...");
         }
 
         if (playbackError >= maxError * 100) {
             currentTime -= playbackError;
             data->producer->sync(currentTime, tickrate);
-            LOGF_DEBUG("T-Code: resync");
+            LOG_DEBUG("T-Code: resync");
         }
 
         if (correctError) {
             currentTime -= playbackError * (1.f / tickrate);
             if (std::abs(currentTime - actualScriptTime) < 0.01f) {
                 correctError = false;
-                LOGF_DEBUG("T-Code: playback error corrected!");
+                LOG_DEBUG("T-Code: playback error corrected!");
             }
         }
 

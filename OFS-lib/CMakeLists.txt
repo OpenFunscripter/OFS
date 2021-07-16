@@ -49,12 +49,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	"${PROJECT_SOURCE_DIR}/UI/"
 	"${PROJECT_SOURCE_DIR}/imgui_impl/"
 	"${PROJECT_SOURCE_DIR}/gl/"
-	"${PROJECT_SOURCE_DIR}/im3d/"
 	"${PROJECT_SOURCE_DIR}/"
 	"${PROJECT_SOURCE_DIR}/player/"
 	"../lib/stb/"
-	"../lib/CSerial/"
-	"../lib/minimp3/"
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
@@ -73,8 +70,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	reproc++
 	bitsery
 	tracy
-
-	love_3p_luasocket
 
 	EASTL
 	EAStdC

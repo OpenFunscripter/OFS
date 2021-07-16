@@ -8,8 +8,6 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "Funscript/OFS_ScriptSettings.cpp"
   
   "UI/OpenFunscripterSettings.cpp"
-  "lua/OFS_LuaExtensions.cpp"
-  "lua/OFS_LuaCoreExtension.cpp"
 
   "ScriptingMode.cpp"
   "OFS_Project.cpp"
@@ -26,7 +24,10 @@ set(OPEN_FUNSCRIPTER_SOURCES
 
 
 if(WIN32)
-	set(OPEN_FUNSCRIPTER_SOURCES ${OPEN_FUNSCRIPTER_SOURCES} "../icon.rc")
+	set(OPEN_FUNSCRIPTER_SOURCES ${OPEN_FUNSCRIPTER_SOURCES} "../icon.rc"
+		"lua/OFS_LuaExtensions.cpp"
+		"lua/OFS_LuaCoreExtension.cpp"
+	)
 endif()
 
 if(APPLE)
@@ -43,8 +44,6 @@ add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
 
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
-  lua
-  #LuaJIT
   OFS_lib
 )
 
@@ -53,6 +52,9 @@ if(WIN32)
 	add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy
                    "${CMAKE_SOURCE_DIR}/lib/libmpv/mpv-1.dll" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/mpv-1.dll")
+	target_link_libraries(${PROJECT_NAME} PRIVATE lua love_3p_luasocket)
+else()
+	target_link_libraries(${PROJECT_NAME} PRIVATE lua)
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
@@ -64,8 +66,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	"${PROJECT_SOURCE_DIR}/UI/"
 	"${PROJECT_SOURCE_DIR}/Funscript/"
 	"${PROJECT_SOURCE_DIR}/gl/"
-	"${PROJECT_SOURCE_DIR}/lua/"
 	"${PROJECT_SOURCE_DIR}/event/"
+	"${PROJECT_SOURCE_DIR}/lua/"
 )
 
 # c++17

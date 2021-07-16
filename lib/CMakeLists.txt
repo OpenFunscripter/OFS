@@ -124,6 +124,11 @@ set (LUA_HEADERS
 )
 
 add_library(lua STATIC ${LUA_SOURCES} ${LUA_HEADERS})
+if(NOT WIN32)
+	set_source_files_properties(${LUA_SOURCES} PROPERTIES LANGUAGE CXX)
+	set_target_properties(lua PROPERTIES LINKER_LANGUAGE CXX)
+	set_target_properties(lua PROPERTIES LANGUAGE CXX)
+endif()
 target_include_directories(lua PUBLIC "lua/")
 
 set(LOVE_SRC_3P_LUASOCKET_ROOT
