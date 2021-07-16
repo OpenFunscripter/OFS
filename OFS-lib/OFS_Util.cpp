@@ -242,14 +242,7 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
 		if (result != nullptr) {
 			saveDialogResult->files.emplace_back(result);
 		}
-		auto eventData = new EventSystem::SingleShotEventData;
-		eventData->ctx = saveDialogResult;
-		eventData->handler = std::move(data->handler);
-
-		SDL_Event ev{ 0 };
-		ev.type = EventSystem::SingleShotEvent;
-		ev.user.data1 = eventData;
-		SDL_PushEvent(&ev);
+		EventSystem::SingleShot(std::move(data->handler), saveDialogResult);
 		delete data;
 		return 0;
 	};

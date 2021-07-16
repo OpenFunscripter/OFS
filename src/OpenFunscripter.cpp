@@ -2372,6 +2372,12 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 };
                 closeWithoutSavingDialog(std::move(openProjectDialog));
             }
+            if (LoadedProject->Loaded && ImGui::MenuItem("Close project", NULL, false, LoadedProject->Loaded)) {
+                closeWithoutSavingDialog([&]() {
+                    closeProject(true);
+                });
+            }
+            ImGui::Separator();
             if (ImGui::MenuItem("Import video/script", 0, false)) {
                 auto importNewItemDialog = [&]() {
                     Util::OpenFileDialog("Import video/script", settings->data().last_path,
@@ -2402,7 +2408,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             }
             ImGui::Separator();
 
-            if (ImGui::MenuItem("Save project", BINDING_STRING("save_project"))) {
+            if (ImGui::MenuItem("Save project", BINDING_STRING("save_project"), false, LoadedProject->Loaded)) {
                 saveProject();
             }
             if (ImGui::BeginMenu("Export...", LoadedProject->Loaded))
@@ -2541,12 +2547,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         });
                 }
                 ImGui::EndMenu();
-            }
-            ImGui::Separator();
-            if (LoadedProject->Loaded && ImGui::MenuItem("Save and close project", NULL, false, LoadedProject->Loaded)) {
-                LoadedProject->Save(true);
-                closeProject(false);
-            }
+            }           
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Edit"))
