@@ -1495,6 +1495,8 @@ void OpenFunscripter::render() noexcept
         ImGui::RenderPlatformWindowsDefault();
         SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
     }
+    glFlush();
+    glFinish();
 }
 
 void OpenFunscripter::processEvents() noexcept
