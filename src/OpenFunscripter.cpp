@@ -318,12 +318,11 @@ bool OpenFunscripter::setup(int argc, char* argv[])
 
     if (argc > 1) {
         const char* path = argv[1];
-        openFile(path);
-    }
-    else if (!settings->data().recentFiles.empty()) {
+        openFile(path, false);
+    } else if (!settings->data().recentFiles.empty()) {
         auto& project = settings->data().recentFiles.back().projectPath;
         if (!project.empty()) {
-            openProject(project);           
+            openProject(project, false);           
         }
     }
 
@@ -1563,10 +1562,9 @@ void OpenFunscripter::DragNDrop(SDL_Event& ev) noexcept
     OFS_PROFILE(__FUNCTION__);
     if (!LoadedProject->HasUnsavedEdits()) {
         if (closeProject(false)) {
-            openFile(ev.drop.file);
+            openFile(ev.drop.file, true);
         }
-    }
-    else {
+    } else {
         Util::MessageBoxAlert("Project has unsaved edits", 
             "The current project has unsaved edits.");
     }
@@ -1940,13 +1938,17 @@ void OpenFunscripter::Redo() noexcept
     if(undoSystem->Redo()) scripting->redo();
 }
 
-bool OpenFunscripter::openFile(const std::string& file) noexcept
+bool OpenFunscripter::openFile(const std::string& file, bool withFailDialog) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if (!Util::FileExists(file)) return false;
-    std::filesystem::path filePath = Util::PathFromString(file);
+    if (!Util::FileExists(file)) {
+        if (withFailDialog) Util::MessageBoxAlert("File not found", "Couldn't find file:\n" + file);
+        return false;
+    }
+
+    auto filePath = Util::PathFromString(file);
     if (filePath.extension().u8string() == OFS_Project::Extension) {
-        return openProject(filePath.u8string());
+        return openProject(filePath.u8string(), withFailDialog);
     }
     else {
         return importFile(filePath.u8string());
@@ -1969,17 +1971,19 @@ bool OpenFunscripter::importFile(const std::string& file) noexcept
     return true;
 }
 
-bool OpenFunscripter::openProject(const std::string& file) noexcept
+bool OpenFunscripter::openProject(const std::string& file, bool withFailDialog) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     if (!Util::FileExists(file)) {
-        Util::MessageBoxAlert("File not found", "Couldn't find file:\n" + file);
+        if(withFailDialog) Util::MessageBoxAlert("File not found", "Couldn't find file:\n" + file);
         return false;
     }
 
-    if (!closeProject(false) || !LoadedProject->Load(file)) {
-        Util::MessageBoxAlert("Failed to load", 
-            Util::Format("The project failed to load.\n%s", LoadedProject->LoadingError.c_str()));
+    if ((!closeProject(false) || !LoadedProject->Load(file))) {
+        if (withFailDialog) {
+            Util::MessageBoxAlert("Failed to load",
+                Util::Format("The project failed to load.\n%s", LoadedProject->LoadingError.c_str()));
+        }
         closeProject(false);
         return false;
     }
@@ -2000,6 +2004,9 @@ void OpenFunscripter::initProject() noexcept
             player->openVideo(LoadedProject->MediaPath);
         }
         else {
+            Util::MessageBoxAlert("Failed to find video.", 
+                "The Video was not found.\n"
+                "Please pick the correct video.");
             pickDifferentMedia();
         }
     }
@@ -2385,8 +2392,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
     {
         ImVec2 region = ImGui::GetContentRegionAvail();
 
-        if (ImGui::BeginMenu("File"))
-        {
+        if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem(ICON_FOLDER_OPEN" Open project")) {
                 auto openProjectDialog = [&]() {
                     Util::OpenFileDialog("Open project", settings->data().last_path,
@@ -2399,7 +2405,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                                     return;
                                 }
                                 else if (Util::FileExists(file)) {
-                                    openProject(file);
+                                    openProject(file, true);
                                 }
                             }
                         }, false, { "*" OFS_PROJECT_EXT }, "Project (" OFS_PROJECT_EXT ")");
@@ -2435,7 +2441,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     auto& recent = *it;
                     if (ImGui::MenuItem(recent.name.c_str())) {
                         if (!recent.projectPath.empty())
-                            openFile(recent.projectPath);
+                            openFile(recent.projectPath, true);
                     }
                 }
                 ImGui::EndMenu();
@@ -2918,8 +2924,7 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
     bool save = false;
     auto& metadata = LoadedProject->Metadata;
     
-    if (ImGui::BeginPopupModal("Metadata Editor", open, ImGuiWindowFlags_NoDocking))
-    {
+    if (ImGui::BeginPopupModal("Metadata Editor", open, ImGuiWindowFlags_NoDocking)) {
         ImGui::InputText("Title", &metadata.title);
         metadata.duration = (int64_t)player->getDuration();
         Util::FormatTime(tmpBuf[0], sizeof(tmpBuf[0]), (float)metadata.duration, false);
@@ -2957,8 +2962,7 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
             }
         }
     
-        auto renderTagButtons = [](std::vector<std::string>& tags)
-        {
+        auto renderTagButtons = [](std::vector<std::string>& tags) {
             auto availableWidth = ImGui::GetContentRegionAvail().x;
             int removeIndex = -1;
             for (int i = 0; i < tags.size(); i++) {
