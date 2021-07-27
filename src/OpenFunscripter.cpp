@@ -1472,7 +1472,7 @@ void OpenFunscripter::newFrame() noexcept
 
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplSDL2_NewFrame(window);
+    ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
     ImGuizmo::BeginFrame();
 }
@@ -2090,8 +2090,7 @@ bool OpenFunscripter::closeProject(bool closeWithUnsavedChanges) noexcept
 void OpenFunscripter::pickDifferentMedia() noexcept
 {
     Util::OpenFileDialog("Pick different media", LoadedProject->MediaPath,
-        [&](auto& result)
-        {
+        [&](auto& result) {
             if (!result.files.empty() && Util::FileExists(result.files[0])) {
                 LoadedProject->MediaPath = result.files[0];
                 LoadedProject->Save(true);
@@ -2139,7 +2138,6 @@ void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
         playerControls.Heatmap.Gradient.computeColorAt(relPos, &color.Value.x);
         black.Value.w = 0.f;
         for (int y = 0; y < height; y++) {
-
             uint32_t* target_pixel = (uint32_t*)((uint8_t*)surface->pixels + y * surface->pitch + x * sizeof(uint32_t));
             ImColor mix = color;
             mix.Value.x = mix.Value.x * (1.f - black.Value.w) + black.Value.x * black.Value.w;
@@ -2257,8 +2255,7 @@ void OpenFunscripter::pasteSelectionExact() noexcept {
     OFS_PROFILE(__FUNCTION__);
     if (CopiedSelection.size() == 0) return;
     
-    if (CopiedSelection.size() >= 2)
-    {
+    if (CopiedSelection.size() >= 2) {
         FUN_ASSERT(CopiedSelection.front().atS < CopiedSelection.back().atS, "order is messed up");
         ActiveFunscript()->RemoveActionsInInterval(CopiedSelection.front().atS, CopiedSelection.back().atS);
     }
@@ -2388,8 +2385,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
     }
 
     ImGui::PushStyleColor(ImGuiCol_MenuBarBg, alertCol.Value);
-    if (ImGui::BeginMainMenuBar())
-    {
+    if (ImGui::BeginMainMenuBar()) {
         ImVec2 region = ImGui::GetContentRegionAvail();
 
         if (ImGui::BeginMenu("File")) {
@@ -2590,10 +2586,8 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             }           
             ImGui::EndMenu();
         }
-        if (ImGui::BeginMenu("Edit"))
-        {
-            if (ImGui::MenuItem("Save frame as image", BINDING_STRING("save_frame_as_image")))
-            { 
+        if (ImGui::BeginMenu("Edit")) {
+            if (ImGui::MenuItem("Save frame as image", BINDING_STRING("save_frame_as_image"))) { 
                 auto screenshot_dir = Util::Prefpath("screenshot");
                 player->saveFrameToImage(screenshot_dir);
             }
@@ -2638,12 +2632,10 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem("Cut", BINDING_STRING("cut"), false, ActiveFunscript()->HasSelection())) {
                 cutSelection();
             }
-            if (ImGui::MenuItem("Copy", BINDING_STRING("copy"), false, ActiveFunscript()->HasSelection()))
-            {
+            if (ImGui::MenuItem("Copy", BINDING_STRING("copy"), false, ActiveFunscript()->HasSelection())) {
                 copySelection();
             }
-            if (ImGui::MenuItem("Paste", BINDING_STRING("paste"), false, CopiedSelection.size() > 0))
-            {
+            if (ImGui::MenuItem("Paste", BINDING_STRING("paste"), false, CopiedSelection.size() > 0)) {
                 pasteSelection();
             }
             ImGui::EndMenu();
@@ -2745,7 +2737,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         bookmarkName = Util::Format("%d#", scriptSettings.Bookmarks.size()+1);
                     }
 
-                    OFS_ScriptSettings::Bookmark bookmark(std::move(bookmarkName),currentTime);
+                    OFS_ScriptSettings::Bookmark bookmark(std::move(bookmarkName), currentTime);
                     scriptSettings.AddBookmark(std::move(bookmark));
                 }
 
@@ -2790,8 +2782,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 settings->saveSettings();
             }
 
-            if (ImGui::MenuItem("Delete all bookmarks"))
-            {
+            if (ImGui::MenuItem("Delete all bookmarks")) {
                 scriptSettings.Bookmarks.clear();
             }
 

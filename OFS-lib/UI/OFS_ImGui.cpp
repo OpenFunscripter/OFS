@@ -34,7 +34,7 @@ bool OFS::GamepadContextMenu() noexcept
     ImGuiWindow* window = GImGui->CurrentWindow;
     if (window->SkipItems)
         return false;
-    ImGuiID id = window->DC.LastItemId; // If user hasn't passed an ID, we can use the LastItemID. Using LastItemID as a Popup ID won't conflict!
+    ImGuiID id = GImGui->LastItemData.ID; // If user hasn't passed an ID, we can use the LastItemID. Using LastItemID as a Popup ID won't conflict!
     IM_ASSERT(id != 0);                                                  // You cannot pass a NULL str_id if the last item has no identifier (e.g. a Text() item)
     if (ImGui::IsNavInputTest(ImGuiNavInput_Input, ImGuiInputReadMode_Pressed) && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
         ImGui::OpenPopupEx(id, ImGuiPopupFlags_None);
@@ -135,7 +135,7 @@ static bool BoundedSliderScalar(const char* label, ImGuiDataType data_type, Numb
     bool temp_input_is_active = temp_input_allowed && TempInputIsActive(id);
     if (!temp_input_is_active)
     {
-        const bool focus_requested = temp_input_allowed && (window->DC.LastItemStatusFlags & ImGuiItemStatusFlags_Focused) != 0;
+        const bool focus_requested = temp_input_allowed && (g.LastItemData.StatusFlags & ImGuiItemStatusFlags_Focused) != 0;
         const bool clicked = (hovered && g.IO.MouseClicked[0]);
         if (focus_requested || clicked || g.NavActivateId == id || g.NavInputId == id)
         {
