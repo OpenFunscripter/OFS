@@ -17,6 +17,7 @@
 #include "OFS_AsyncIO.h"
 #include "OFS_Simulator3D.h"
 #include "OFS_BlockingTask.h"
+#include "OFS_DynamicFontAtlas.h"
 
 #ifdef WIN32
 #include "OFS_LuaExtensions.h"
@@ -61,7 +62,6 @@ private:
 
 	void exitApp(bool force = false) noexcept;
 
-	bool loadFonts(const char* font_override = nullptr) noexcept;
 	bool imguiSetup() noexcept;
 	void processEvents() noexcept;
 
@@ -127,7 +127,6 @@ private:
 	bool ShowMetadataEditorWindow(bool* open) noexcept;
 public:
 	static OpenFunscripter* ptr;
-	static ImFont* DefaultFont2; // x2 size of default
 	static std::array<const char*, 6> SupportedVideoExtensions;
 	static std::array<const char*, 4> SupportedAudioExtensions;
 	uint8_t Status = OFS_Status::OFS_AutoBackup;
@@ -188,7 +187,10 @@ public:
 
 	inline const std::vector<FunscriptAction>& FunscriptClipboard() const { return CopiedSelection; }
 
-	inline bool LoadOverrideFont(const std::string& font) noexcept { return loadFonts(font.empty() ? nullptr : font.c_str()); }
+	inline void LoadOverrideFont(const std::string& font) noexcept { 
+		OFS_DynFontAtlas::FontOverride = font;
+		OFS_DynFontAtlas::ptr->forceRebuild = true;
+	}
 	void Undo() noexcept;
 	void Redo() noexcept;
 };

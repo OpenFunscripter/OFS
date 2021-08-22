@@ -342,7 +342,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
         // TEXT
         if (simulator.EnablePosition) {
             stbsp_snprintf(tmp, sizeof(tmp), "%.0f", currentPos);
-            ImGui::PushFont(OpenFunscripter::DefaultFont2);
+            ImGui::PushFont(OFS_DynFontAtlas::DefaultFont2);
             auto textOffset = ImGui::CalcTextSize(tmp);
             textOffset /= 2.f;
             frontDraw->AddText(

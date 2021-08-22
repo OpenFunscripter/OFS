@@ -59,7 +59,6 @@ std::array<const char*, 4> OpenFunscripter::SupportedAudioExtensions{
 };
 
 OpenFunscripter* OpenFunscripter::ptr = nullptr;
-ImFont* OpenFunscripter::DefaultFont2 = nullptr;
 
 constexpr const char* glsl_version = "#version 330";
 
@@ -71,88 +70,6 @@ constexpr int DefaultWidth = 1920;
 constexpr int DefaultHeight= 1080;
 
 constexpr int AutoBackupIntervalSeconds = 60;
-
-bool OpenFunscripter::loadFonts(const char* font_override) noexcept
-{
-    auto& io = ImGui::GetIO();
-
-    // LOAD FONTS
-    auto roboto = font_override ? font_override : Util::Resource("fonts/RobotoMono-Regular.ttf");    
-    auto fontawesome = Util::Resource("fonts/fontawesome-webfont.ttf");
-    auto noto_jp = Util::Resource("fonts/NotoSansJP-Regular.otf");
-
-    unsigned char* pixels;
-    int width, height;
-
-    // Add character ranges and merge into the previous font
-    // The ranges array is not copied by the AddFont* functions and is used lazily
-    // so ensure it is available for duration of font usage
-    static const ImWchar icons_ranges[] = { 0xf000, 0xf3ff, 0 }; // will not be copied by AddFont* so keep in scope.
-    ImFontConfig config;
-
-    ImFont* font = nullptr;
-
-    GLuint font_tex = (GLuint)(intptr_t)io.Fonts->TexID;
-    io.Fonts->Clear();
-    io.Fonts->AddFontDefault();
-
-    if (!Util::FileExists(roboto)) { 
-        LOGF_WARN("\"%s\" font is missing.", roboto.c_str());
-        roboto = Util::Resource("fonts/RobotoMono-Regular.ttf");
-    }
-
-    if (!Util::FileExists(roboto)) {
-        LOGF_WARN("\"%s\" font is missing.", roboto.c_str());
-    }
-    else {
-        font = io.Fonts->AddFontFromFileTTF(roboto.c_str(), settings->data().default_font_size, &config);
-        if (font == nullptr) return false;
-        io.FontDefault = font;
-    }
-
-    if (!Util::FileExists(fontawesome)) {
-        LOGF_WARN("\"%s\" font is missing. No icons.", fontawesome.c_str());
-    }
-    else {
-        config.MergeMode = true;
-        font = io.Fonts->AddFontFromFileTTF(fontawesome.c_str(), settings->data().default_font_size, &config, icons_ranges);
-        if (font == nullptr) return false;
-    }
-
-    if (!Util::FileExists(noto_jp)) {
-        LOGF_WARN("\"%s\" font is missing. No japanese glyphs.", noto_jp.c_str());
-    }
-    else {
-        config.MergeMode = true;
-        font = io.Fonts->AddFontFromFileTTF(noto_jp.c_str(), settings->data().default_font_size, &config, io.Fonts->GetGlyphRangesJapanese());
-        if (font == nullptr) {
-            LOG_WARN("Missing japanese glyphs!!!");
-        }
-    }
-
-    if (!Util::FileExists(roboto)) {
-        LOGF_WARN("\"%s\" font is missing.", roboto.c_str());
-    } 
-    else
-    {
-        config.MergeMode = false;
-        DefaultFont2 = io.Fonts->AddFontFromFileTTF(roboto.c_str(), settings->data().default_font_size * 2.0f, &config);
-    }
-    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
-    
-    // Upload texture to graphics system
-    if (!font_tex) {
-        glGenTextures(1, &font_tex);
-    }
-    glBindTexture(GL_TEXTURE_2D, font_tex);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-
-    io.Fonts->TexID = (void*)(intptr_t)font_tex;
-    return true;
-}
 
 bool OpenFunscripter::imguiSetup() noexcept
 {
@@ -183,7 +100,21 @@ bool OpenFunscripter::imguiSetup() noexcept
     LOGF_DEBUG("init imgui with glsl: %s", glsl_version);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    loadFonts(settings->data().font_override.empty() ? nullptr : settings->data().font_override.c_str());
+    OFS_DynFontAtlas::FontOverride = settings->data().font_override;
+    OFS_DynFontAtlas::Init();
+
+    {
+		// hook into paste for the dynamic atlas
+		auto& io = ImGui::GetIO();
+		if(io.GetClipboardTextFn) {
+			static auto OriginalSDL2_GetClipboardFunc = io.GetClipboardTextFn;
+			io.GetClipboardTextFn = [](void* d) -> const char* {
+				auto clipboard = OriginalSDL2_GetClipboardFunc(d);
+				OFS_DynFontAtlas::AddText(clipboard);
+				return clipboard;
+			};
+		}
+	}
   
     return true;
 }
@@ -1471,6 +1402,9 @@ void OpenFunscripter::newFrame() noexcept
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame();
+    if(OFS_DynFontAtlas::NeedsRebuild()) {
+		OFS_DynFontAtlas::RebuildFont();
+	}
     ImGui::NewFrame();
     ImGuizmo::BeginFrame();
 }
@@ -1521,6 +1455,11 @@ void OpenFunscripter::processEvents() noexcept
                     IsExiting = true;
                 }
             }
+            break;
+        }
+        case SDL_TEXTINPUT: 
+        {
+            OFS_DynFontAtlas::AddText(event.text.text);
             break;
         }
 #ifndef NDEBUG

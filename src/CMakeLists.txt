@@ -20,6 +20,8 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "event/OFS_Events.cpp"
 
   "gl/OFS_Simulator3D.cpp"
+  
+  "OFS_DynamicFontAtlas.cpp"
 )
 
 

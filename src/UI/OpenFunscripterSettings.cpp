@@ -91,12 +91,8 @@ bool OpenFunscripterSettings::ShowPreferenceWindow() noexcept
 							[&](auto& result) {
 								if (result.files.size() > 0) {
 									scripterSettings.font_override = result.files.back();
-									if (!OpenFunscripter::ptr->LoadOverrideFont(scripterSettings.font_override)) {
-										scripterSettings.font_override = "";
-									}
-									else {
-										save = true;
-									}
+									OpenFunscripter::ptr->LoadOverrideFont(scripterSettings.font_override);
+									save = true;
 								}
 							}, false, { "*.ttf", "*.otf" }, "Fonts (*.ttf, *.otf)");
 					}
