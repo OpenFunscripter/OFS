@@ -248,6 +248,8 @@ target_link_libraries(imgui_stdlib PUBLIC imgui)
 # = SDL2 =
 # ========
 set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+set(SDL_STATIC ON CACHE BOOL "" FORCE)
+set(LIBC ON CACHE BOOL "" FORCE)
 add_subdirectory("SDL2/")
 
 

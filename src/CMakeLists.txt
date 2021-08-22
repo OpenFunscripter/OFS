@@ -31,10 +31,13 @@ if(WIN32)
 endif()
 
 if(APPLE)
-add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${OPEN_FUNSCRIPTER_SOURCES})
+	add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${OPEN_FUNSCRIPTER_SOURCES})
+elseif(WIN32)
+	add_executable(${PROJECT_NAME} WIN32 ${OPEN_FUNSCRIPTER_SOURCES})
 else()
-add_executable(${PROJECT_NAME} ${OPEN_FUNSCRIPTER_SOURCES})
+	add_executable(${PROJECT_NAME} ${OPEN_FUNSCRIPTER_SOURCES})
 endif()
+
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
 
 # copy data directory
@@ -74,6 +77,10 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
 if(WIN32)
+	if(CMAKE_BUILD_TYPE MATCHES "Release" OR CMAKE_BUILD_TYPE MATCHES "RelWithDebInfo") 
+		target_compile_options(${PROJECT_NAME} PUBLIC /GL)
+		message("== ${PROJECT_NAME} - Whole program optimization enabled.")
+	endif()
 	# target_compile_options(${PROJECT_NAME} PRIVATE /W2 /WX)
 	# target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
 elseif(UNIX AND NOT APPLE) # clang/gcc
