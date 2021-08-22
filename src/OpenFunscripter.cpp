@@ -206,9 +206,7 @@ OpenFunscripter::~OpenFunscripter()
 
 bool OpenFunscripter::setup(int argc, char* argv[])
 {
-#ifndef NDEBUG
-    SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
-#endif
+    OFS_FileLogger::Init();
     FUN_ASSERT(ptr == nullptr, "there can only be one instance");
     ptr = this;
     auto prefPath = Util::Prefpath("");
@@ -1879,6 +1877,8 @@ void OpenFunscripter::step() noexcept {
 
         render();
     }
+
+    OFS_FileLogger::Flush();
     OFS_ENDPROFILING();
     SDL_GL_SwapWindow(window);
 }
@@ -1919,6 +1919,7 @@ void OpenFunscripter::shutdown() noexcept
     SDL_GL_DeleteContext(glContext);   
     SDL_DestroyWindow(window);
     SDL_Quit();
+    OFS_FileLogger::Shutdown();
 }
 
 void OpenFunscripter::SetCursorType(ImGuiMouseCursor id) noexcept

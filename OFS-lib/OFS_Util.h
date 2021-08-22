@@ -1,7 +1,5 @@
 ﻿#pragma once
-
 #include "SDL_rwops.h"
-#include "SDL_log.h"
 #include "SDL_filesystem.h"
 #include "nlohmann/json.hpp"
 
@@ -15,6 +13,8 @@
 
 #include "stb_sprintf.h"
 #include "stb_image.h"
+
+#include "OFS_FileLogging.h"
 
 #include "emmintrin.h" // for _mm_pause
 
@@ -46,28 +46,6 @@
 #define ICON_LINK "\xef\x83\x81"
 #define ICON_UNLINK "\xef\x84\xa7"
 #define ICON_COPY "\xef\x83\x85"
-
-#ifndef NDEBUG
-#define LOG_INFO(msg)  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, msg)
-#define LOG_WARN(msg)  SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, msg)
-#define LOG_DEBUG(msg)  SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, msg)
-#define LOG_ERROR(msg)  SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, msg)
-
-#define LOGF_INFO( format, ...)	SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, format, __VA_ARGS__)
-#define LOGF_WARN( format, ...)	SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, format, __VA_ARGS__)
-#define LOGF_DEBUG(format, ...)	SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, format, __VA_ARGS__)
-#define LOGF_ERROR(format, ...)	SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, format, __VA_ARGS__)
-#else
-#define LOG_INFO(msg)  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, msg)
-#define LOG_WARN(msg)  SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, msg)
-#define LOG_DEBUG(msg)
-#define LOG_ERROR(msg)  SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, msg)
-
-#define LOGF_INFO( format, ...)	SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, format, __VA_ARGS__)
-#define LOGF_WARN( format, ...)	SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, format, __VA_ARGS__)
-#define LOGF_DEBUG(format, ...)
-#define LOGF_ERROR(format, ...)	SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, format, __VA_ARGS__)
-#endif
 
 #if defined(WIN32)
 #define FUN_DEBUG_BREAK() __debugbreak()
