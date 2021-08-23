@@ -1,5 +1,4 @@
 #pragma once 
-
 #include "OFS_BinarySerialization.h"
 #include "OFS_ScriptSettings.h"
 #include "Funscript.h"

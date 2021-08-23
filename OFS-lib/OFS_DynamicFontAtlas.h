@@ -35,6 +35,7 @@ struct OFS_DynFontAtlas
 	// dynamic text is anything the user inputs but also paths from the file picker dialog or other data from outside
 	// text which is known at compile time should be added in the OFS_DynFontAtlas constructor
 	inline static void AddText(const std::string& displayedText) noexcept {
+		if(displayedText.empty()) return;
 		AddText(displayedText.c_str());
 	}
 	inline static void AddText(const char* displayedText) noexcept

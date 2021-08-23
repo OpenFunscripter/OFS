@@ -106,9 +106,7 @@ void OFS_DynFontAtlas::RebuildFont(float fontSize) noexcept
 		}
 		{
 			OFS_PROFILE("Load fontawesome font");
-			ptr->config.GlyphOffset = ImVec2(/*4.f*/ 0.f, 3.f);
 			font = AddFontFromFile(ptr, fontawesome.c_str(), fontSize, true);
-			ptr->config.GlyphOffset = ImVec2(0.f, 0.f);
 			if(!font) {
 				LOGF_ERROR("Failed to load \"%s\"", fontawesome.c_str());
 			}

@@ -2,12 +2,11 @@
 #include "OFS_Util.h"
 #include "OFS_Profiling.h"
 #include "OFS_ImGui.h"
+#include "OFS_DynamicFontAtlas.h"
 #include "SDL_thread.h"
 
 #include "EventSystem.h"
 #include "OpenFunscripter.h"
-
-#include "EASTL/string.h"
 
 ScriptSimulator::SimulatorSettings* OFS_Project::ProjSettings::Simulator = nullptr;
 
@@ -92,7 +91,8 @@ void OFS_Project::LoadScripts(const std::string& funscriptPath) noexcept
 	    // load the related files
 	    for(int i = relatedFiles.size()-1; i >= 0; i--) {
 	        auto& file = relatedFiles[i];
-	        project->ImportFunscript(file.u8string());
+			auto filePathString = file.u8string();
+	        project->ImportFunscript(filePathString);
 	    }
 	};
 	
@@ -149,10 +149,21 @@ bool OFS_Project::Load(const std::string& path) noexcept
 	LastPath = path;
 	ProjectBuffer.clear();
 	if (Util::ReadFile(ProjectPath.u8string().c_str(), ProjectBuffer) > 0) {
+		OFS_DynFontAtlas::AddText(path);
 		Funscripts.clear();
 		auto state = OFS_Binary::Deserialize(ProjectBuffer, *this);
 		if (state == bitsery::ReaderError::NoError && Valid) {
 			Loaded = true;
+			OFS_DynFontAtlas::AddText(Metadata.type);
+			OFS_DynFontAtlas::AddText(Metadata.title);
+			OFS_DynFontAtlas::AddText(Metadata.creator);
+			OFS_DynFontAtlas::AddText(Metadata.script_url);
+			OFS_DynFontAtlas::AddText(Metadata.video_url);
+			for(auto& tag : Metadata.tags) OFS_DynFontAtlas::AddText(tag);
+			for(auto& performer : Metadata.performers) OFS_DynFontAtlas::AddText(performer);
+			OFS_DynFontAtlas::AddText(Metadata.description);
+			OFS_DynFontAtlas::AddText(Metadata.license);
+			OFS_DynFontAtlas::AddText(Metadata.notes);
 			return true;
 		}
 		else {
@@ -249,6 +260,7 @@ bool OFS_Project::ImportFunscript(const std::string& path) noexcept
 	if (!Loaded) Funscripts.clear(); // clear placeholder
 	auto script = std::make_shared<Funscript>();
 	if (script->open(path))	{
+		OFS_DynFontAtlas::AddText(path);
 		Funscripts.emplace_back(std::move(script));
 		Loaded = true;
 		FUN_ASSERT(!LastPath.empty(), "path empty");

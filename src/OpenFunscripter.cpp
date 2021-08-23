@@ -2826,7 +2826,11 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::EndMenu();
         }
         #endif
-        if(ImGui::MenuItem("?##About", NULL, &ShowAbout)) {}
+        if(ImGui::BeginMenu("?##About")) {
+            ShowAbout = true;
+            ImGui::CloseCurrentPopup();
+            ImGui::EndMenu();
+        }
         ImGui::Separator();
         ImGui::Spacing();
         if (ControllerInput::AnythingConnected()) {
