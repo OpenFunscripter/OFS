@@ -282,6 +282,9 @@ bool OFS_Project::Import(const std::string& path) noexcept
 		basePath.replace_extension(".funscript");
 		LoadScripts(basePath.u8string());
 	}
+	if(Loaded && !Funscripts.empty()) {
+		Metadata = Funscripts.front()->LocalMetadata;
+	}
 	return Loaded;
 }
 
