@@ -5,6 +5,7 @@
 #include "OFS_Simulator3D.h"
 #include "GradientBar.h"
 #include "FunscriptHeatmap.h"
+#include "OFS_DownloadFfmpeg.h"
 #include "OFS_Shader.h"
 
 #include <filesystem>
@@ -277,7 +278,7 @@ bool OpenFunscripter::setup(int argc, char* argv[])
 
 #ifdef WIN32
     extensions = std::make_unique<OFS_LuaExtensions>();
-    Util::DownloadFfmpeg();
+    OFS_DownloadFfmpeg::FfmpegMissing = !Util::FileExists(Util::FfmpegPath().u8string());
 #endif
 
     SDL_ShowWindow(window);
@@ -287,6 +288,8 @@ bool OpenFunscripter::setup(int argc, char* argv[])
 void OpenFunscripter::setupDefaultLayout(bool force) noexcept
 {
     MainDockspaceID = ImGui::GetID("MainAppDockspace");
+    OFS_DownloadFfmpeg::ModalId = ImGui::GetID(OFS_DownloadFfmpeg::ModalText);
+
     auto imgui_ini = ImGui::GetIO().IniFilename;
     bool imgui_ini_found = Util::FileExists(imgui_ini);
     if (force || !imgui_ini_found) {
@@ -1658,6 +1661,14 @@ void OpenFunscripter::step() noexcept {
             // IMGUI HERE
             CreateDockspace();
             blockingTask.ShowBlockingTask();
+            
+            #ifdef WIN32
+            if(OFS_DownloadFfmpeg::FfmpegMissing) {
+                ImGui::OpenPopup(OFS_DownloadFfmpeg::ModalId);
+                OFS_DownloadFfmpeg::DownloadFfmpegModal();
+            }
+            #endif
+
             sim3D->ShowWindow(&settings->data().show_simulator_3d, player->getCurrentPositionSecondsInterp(), BaseOverlay::SplineMode, LoadedProject->Funscripts);
             ShowAboutWindow(&ShowAbout);
             specialFunctions->ShowFunctionsWindow(&settings->data().show_special_functions);

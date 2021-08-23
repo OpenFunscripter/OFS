@@ -16,6 +16,7 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "UI/SpecialFunctions.cpp"
   
   "UI/OFS_ScriptPositionsOverlays.cpp"
+  "UI/OFS_DownloadFfmpeg.cpp"
 
   "event/OFS_Events.cpp"
 
