@@ -1403,7 +1403,7 @@ void OpenFunscripter::newFrame() noexcept
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame();
     if(OFS_DynFontAtlas::NeedsRebuild()) {
-		OFS_DynFontAtlas::RebuildFont();
+		OFS_DynFontAtlas::RebuildFont(settings->data().default_font_size);
 	}
     ImGui::NewFrame();
     ImGuizmo::BeginFrame();

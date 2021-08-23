@@ -1,7 +1,6 @@
 #include "OFS_DynamicFontAtlas.h"
 #include "OFS_Util.h"
 #include "OFS_Profiling.h"
-#include "OpenFunscripter.h"
 
 #include "imgui.h"
 #include "glad/gl.h"
@@ -64,7 +63,7 @@ static ImFont* AddFontFromFile(OFS_DynFontAtlas* builder, const char* path, floa
 	return nullptr;
 }
 
-void OFS_DynFontAtlas::RebuildFont() noexcept
+void OFS_DynFontAtlas::RebuildFont(float fontSize) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	assert(ptr->builder.UsedChars.size_in_bytes() == ptr->LastUsedChars.size_in_bytes());
@@ -81,8 +80,6 @@ void OFS_DynFontAtlas::RebuildFont() noexcept
 		auto& io = ImGui::GetIO();
 		GLuint fontTexture = (GLuint)(intptr_t)io.Fonts->TexID;
 		io.Fonts->Clear();
-
-		float fontSize = OpenFunscripter::ptr->settings->data().default_font_size;
 
 		auto roboto = Util::Resource("fonts/RobotoMono-Regular.ttf");
 		auto mainFont = FontOverride.empty() ? roboto : FontOverride;    

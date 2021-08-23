@@ -44,5 +44,5 @@ struct OFS_DynFontAtlas
 	}
 
 	inline static bool NeedsRebuild() noexcept { return ptr->checkIfRebuildNeeded || ptr->forceRebuild; }
-	static void RebuildFont() noexcept;
+	static void RebuildFont(float fontSize) noexcept;
 };

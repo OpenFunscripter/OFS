@@ -41,6 +41,7 @@ set(OFS_LIB_SOURCES
 	"OFS_Util.cpp"
 	"OFS_Threadpool.cpp"
 	"OFS_FileLogging.cpp"
+	"OFS_DynamicFontAtlas.cpp"
 )
 
 add_library(${PROJECT_NAME} STATIC ${OFS_LIB_SOURCES})
