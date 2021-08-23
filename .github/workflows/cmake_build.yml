@@ -102,13 +102,13 @@ jobs:
       run: |
         cmake --build . --config $BUILD_TYPE --target "OpenFunscripter"
 
-    - name: FFMPEG & Zip 
-      run: |
-        choco install -y -r --no-progress 7zip
-        powershell Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-essentials.7z" -OutFile "${{runner.workspace}}\ffmpeg.7z" 
-        mkdir "${{runner.workspace}}\ffmpeg"
-        7z e "${{runner.workspace}}\ffmpeg.7z" -o${{runner.workspace}}\ffmpeg
-        cp "${{runner.workspace}}\ffmpeg\ffmpeg.exe" "${{runner.workspace}}\OFS\bin\Release\ffmpeg.exe"
+    #- name: FFMPEG & Zip 
+    #  run: |
+    #    choco install -y -r --no-progress 7zip
+    #    powershell Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-essentials.7z" -OutFile "${{runner.workspace}}\ffmpeg.7z" 
+    #    mkdir "${{runner.workspace}}\ffmpeg"
+    #    7z e "${{runner.workspace}}\ffmpeg.7z" -o${{runner.workspace}}\ffmpeg
+    #    cp "${{runner.workspace}}\ffmpeg\ffmpeg.exe" "${{runner.workspace}}\OFS\bin\Release\ffmpeg.exe"
         
     - uses: actions/upload-artifact@v2
       with:

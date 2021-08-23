@@ -463,3 +463,40 @@ uint32_t Util::Hash(const char* data, size_t size, int32_t seed) noexcept
 	static_assert(sizeof(uint32_t) == sizeof(ImGuiID));
 	return ImHashStr(data, size, seed);
 }
+
+
+void Util::DownloadFfmpeg() noexcept
+{
+#ifdef WIN32
+	auto ffmpeg = Util::FfmpegPath();
+	if(!Util::FileExists(ffmpeg.u8string())) {
+		auto path = Util::Basepath();
+		auto downloadPath = path / "ffmpeg.zip";
+
+		std::wstringstream ss;
+		if(!Util::FileExists(downloadPath.u8string())) {
+			ss << L"powershell Write-Host \"ffmpeg.exe was not found.\";";
+			ss << L"$confirmation = Read-Host \"Do you want do download it? [y/n]\";";
+			ss << L" if ($confirmation -eq 'y') {";
+			ss << L" Write-Host \"Downloading ffmpeg.exe\";";
+			ss << L" Invoke-WebRequest ";
+			ss << L" -Uri \"https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip\"";
+			ss << L" -OutFile \"" << downloadPath.wstring() << L'"';
+			ss << L'}';
+			auto downloadScript = ss.str();
+			_wsystem(downloadScript.c_str());
+		}
+
+		if(Util::FileExists(downloadPath.u8string())) {
+			{
+				ss.str(std::wstring());
+				ss << L"tar.exe -xvf ";
+				ss << L'"' << downloadPath.wstring() << L'"';
+				ss << L" --strip-components 2  **/ffmpeg.exe";
+				auto extractScript = ss.str();
+				_wsystem(extractScript.c_str());
+			}
+		}
+	}
+#endif
+}

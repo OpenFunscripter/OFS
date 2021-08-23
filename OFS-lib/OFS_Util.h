@@ -402,7 +402,7 @@ public:
 	static bool SavePNG(const std::string& path, void* buffer, int32_t width, int32_t height, int32_t channels = 3, bool flipVertical = true) noexcept;
 
 	static std::filesystem::path FfmpegPath() noexcept;
-
+	static void DownloadFfmpeg() noexcept;
 
 	static char FormatBuffer[4096];
 	inline static const char* Format(const char* fmt, ...) noexcept

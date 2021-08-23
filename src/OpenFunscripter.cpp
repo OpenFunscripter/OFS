@@ -277,7 +277,9 @@ bool OpenFunscripter::setup(int argc, char* argv[])
 
 #ifdef WIN32
     extensions = std::make_unique<OFS_LuaExtensions>();
+    Util::DownloadFfmpeg();
 #endif
+
     SDL_ShowWindow(window);
     return true;
 }
