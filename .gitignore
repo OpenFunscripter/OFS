@@ -1,5 +1,4 @@
 .vs
-.vscode
 build
 build_app
 out
@@ -13,3 +12,4 @@ CMakeSettings.json
 LogoOFP.xcf
 OFP.png
 TODO.txt
+.vscode/settings.json

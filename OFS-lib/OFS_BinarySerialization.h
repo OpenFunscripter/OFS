@@ -1,5 +1,5 @@
 #pragma once
-
+#include <limits>
 #include "bitsery/bitsery.h"
 #include "bitsery/adapter/buffer.h"
 #include "bitsery/traits/vector.h"

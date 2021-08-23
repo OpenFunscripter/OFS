@@ -16,8 +16,7 @@ SDL_RWops* OFS_FileLogger::LogFileHandle = nullptr;
 struct OFS_LogThread
 {
     SDL_SpinLock lock;
-    SDL_mutex* WaitMut = nullptr;
-    SDL_cond* WaitMsg = nullptr;
+    SDL_cond* WaitFlush = nullptr;
     std::vector<char> LogMsgBuffer;
 
     volatile bool ShouldExit = false;
@@ -25,16 +24,16 @@ struct OFS_LogThread
 
     void Init() noexcept
     {
-        WaitMsg = SDL_CreateCond();
+        WaitFlush = SDL_CreateCond();
         LogMsgBuffer.reserve(4096);
     }
 
     void Shutdown() noexcept
     {
         ShouldExit = true;
-        SDL_CondSignal(WaitMsg);
+        SDL_CondSignal(WaitFlush);
         while(!Exited) { SDL_Delay(1); }
-        SDL_DestroyCond(WaitMsg);
+        SDL_DestroyCond(WaitFlush);
     }
 };
 
@@ -44,10 +43,11 @@ static int LogThreadFunction(void* threadData) noexcept
 {
     auto& thread = *(OFS_LogThread*)threadData;
     auto& msg = thread.LogMsgBuffer;
-    thread.WaitMut = SDL_CreateMutex();
+    auto waitMut = SDL_CreateMutex();
 
     while(!thread.ShouldExit && OFS_FileLogger::LogFileHandle) {
-        if(SDL_CondWait(thread.WaitMsg, thread.WaitMut) == 0) {
+        SDL_LockMutex(waitMut);
+        if(SDL_CondWait(thread.WaitFlush, waitMut) == 0) {
             SDL_AtomicLock(&thread.lock);
             SDL_RWwrite(OFS_FileLogger::LogFileHandle, msg.data(), 1, msg.size());
             msg.clear();
@@ -55,7 +55,7 @@ static int LogThreadFunction(void* threadData) noexcept
         }
     }
 
-    SDL_DestroyMutex(thread.WaitMut);
+    SDL_DestroyMutex(waitMut);
     thread.Exited = true;
 
     return 0;
@@ -128,7 +128,7 @@ void OFS_FileLogger::LogToFileR(OFS_LogLevel level, const char* msg, uint32_t si
 
 void OFS_FileLogger::Flush() noexcept
 {
-    if(!Thread.LogMsgBuffer.empty()) SDL_CondSignal(Thread.WaitMsg);
+    if(!Thread.LogMsgBuffer.empty()) SDL_CondSignal(Thread.WaitFlush);
 }
 
 void OFS_FileLogger::LogToFileF(OFS_LogLevel level, const char* fmt, ...) noexcept
