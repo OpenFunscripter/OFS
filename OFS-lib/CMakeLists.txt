@@ -144,10 +144,21 @@ elseif(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
 		OpenGL
 	)
 elseif(APPLE)
+	execute_process(
+		COMMAND brew --prefix mpv
+		RESULT_VARIABLE BREW_MPV
+		OUTPUT_VARIABLE BREW_MPV_PREFIX
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+	)
+	if (BREW_MPV EQUAL 0 AND EXISTS "${BREW_MPV_PREFIX}")
+		message(STATUS "Found mpv installed by Homebrew at ${BREW_MPV_PREFIX}")
+		set(MPV_INCLUDE "${BREW_MPV_PREFIX}/include")
+		set(MPV_LIB "${BREW_MPV_PREFIX}/lib")
+	endif()
 	target_include_directories(${PROJECT_NAME} PUBLIC
-		"/opt/local/include/"
+		"${MPV_INCLUDE}"
 	)
 	target_link_libraries(${PROJECT_NAME} PUBLIC
-		"/opt/local/lib/libmpv.dylib"
+		"${MPV_LIB}/libmpv.dylib"
 	)
 endif()
