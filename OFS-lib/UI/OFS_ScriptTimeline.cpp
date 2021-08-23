@@ -294,6 +294,8 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 			continue;
 		}
 
+		draw_list->PushClipRect(itemBB.Min - ImVec2(0.f, 1.f), itemBB.Max + ImVec2(0.f, 1.f));
+
 		bool ItemIsHovered = ImGui::IsItemHovered();
 		if (ItemIsHovered) {
 			hovereScriptIdx = i;
@@ -513,13 +515,19 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 			}
 			ImGui::EndPopup();
 		}
+
+		draw_list->PopClipRect();
 	}
+
 
 	// draw points on top of lines
 	float opacity = 20.f / visibleTime;
 	opacity = opacity > 1.f ? 1.f : opacity * opacity;
 	overlay->PointSize = 7.f * opacity;
 	if (opacity >= 0.25f) {
+		draw_list->PushClipRect(startCursor - ImVec2(0.f, 20.f),
+			(startCursor + ImGui::GetWindowSize() - (style.FramePadding*2.f) - (style.ItemInnerSpacing * 2.f))
+			+ ImVec2(0.f, 20.f), true);
 		int opcacityInt = 255 * opacity;
 		for (auto&& p : overlay->ActionScreenCoordinates) {
 			draw_list->AddCircleFilled(p, overlay->PointSize, IM_COL32(0, 0, 0, opcacityInt), 8); // border
@@ -531,11 +539,8 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 			const auto selectedDots = IM_COL32(11, 252, 3, opcacityInt);
 			draw_list->AddCircleFilled(p, overlay->PointSize * 0.7f, selectedDots, 8);
 		}
+		draw_list->PopClipRect();
 	}
-	else {
-		overlay->PointSize = 0.f;
-	}
-
 	ImGui::End();
 }
 
