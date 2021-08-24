@@ -34,32 +34,30 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 		mpv_event* mp_event = mpv_wait_event(mpv, 0.);
 		if (mp_event->event_id == MPV_EVENT_NONE)
 			break;
+			
 		switch (mp_event->event_id) {
 		case MPV_EVENT_LOG_MESSAGE:
 		{
 			mpv_event_log_message* msg = (mpv_event_log_message*)mp_event->data;
-			if (msg->log_level <= MPV_LOG_LEVEL_INFO) {
-				switch (msg->log_level)
-				{
-				case MPV_LOG_LEVEL_INFO:
-					LOGF_INFO("MPV (%s): %s", msg->prefix, msg->text);
-					break;
-				case MPV_LOG_LEVEL_FATAL:
-					LOGF_ERROR("!!! MPV (%s): %s !!!", msg->prefix, msg->text);
-					break;
-				case MPV_LOG_LEVEL_ERROR:
-					LOGF_ERROR("! MPV (%s): %s !", msg->prefix, msg->text);
-					break;
-				case MPV_LOG_LEVEL_WARN:
-					LOGF_WARN("MPV (%s): %s", msg->prefix, msg->text);
-					break;
-				case MPV_LOG_LEVEL_DEBUG:
-					LOGF_DEBUG("MPV (%s): %s", msg->prefix, msg->text);
-					break;
-				default:
-					LOGF_INFO("MPV (%s): %s", msg->prefix, msg->text);
-					break;
-				}
+			OFS_FileLogger::LogToFileF(OFS_LogLevel::OFS_MPV_LOG_INFO, "(%s)", msg->prefix);
+			switch (msg->log_level)
+			{
+			case MPV_LOG_LEVEL_INFO:
+				OFS_FileLogger::LogToFileR(OFS_LogLevel::OFS_MPV_LOG_INFO, msg->text);
+				break;
+			case MPV_LOG_LEVEL_FATAL:
+				OFS_FileLogger::LogToFileR(OFS_LogLevel::OFS_MPV_LOG_ERROR, msg->text);
+				break;
+			case MPV_LOG_LEVEL_ERROR:
+				OFS_FileLogger::LogToFileR(OFS_LogLevel::OFS_MPV_LOG_ERROR, msg->text);
+				break;
+			case MPV_LOG_LEVEL_WARN:
+				OFS_FileLogger::LogToFileR(OFS_LogLevel::OFS_MPV_LOG_WARN, msg->text);
+				break;
+			case MPV_LOG_LEVEL_DEBUG:
+			default:
+				OFS_FileLogger::LogToFileR(OFS_LogLevel::OFS_MPV_LOG_DEBUG, msg->text);
+				break;
 			}
 			continue;
 		}

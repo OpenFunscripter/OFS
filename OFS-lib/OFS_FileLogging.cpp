@@ -92,16 +92,16 @@ inline static void LogToConsole(OFS_LogLevel level, const char* msg) noexcept
     }
 }
 
-void OFS_FileLogger::LogToFileR(OFS_LogLevel level, const char* msg, uint32_t size) noexcept
+inline static void AppendToBuf(std::vector<char>& buffer, const char* msg, uint32_t size) noexcept {
+    auto initialSize = buffer.size();               
+    buffer.resize(initialSize + size);
+    memcpy(buffer.data() + initialSize, msg, size);
+};
+
+void OFS_FileLogger::LogToFileR(OFS_LogLevel level, const char* msg, uint32_t size, bool newLine) noexcept
 {
     LogToConsole(level, msg);
     SDL_AtomicLock(&Thread.lock);
-
-    auto memcpyToBuf = [](std::vector<char>& buffer, const char* msg, uint32_t size) noexcept {
-        auto initialSize = buffer.size();               
-        buffer.resize(initialSize + size);
-        memcpy(buffer.data() + initialSize, msg, size);
-    };
 
     auto& buffer = Thread.LogMsgBuffer;
     {
@@ -122,17 +122,27 @@ void OFS_FileLogger::LogToFileR(OFS_LogLevel level, const char* msg, uint32_t si
             case OFS_LogLevel::OFS_LOG_ERROR: 
                 msgTypeLen = stbsp_snprintf(fileFmt, sizeof(fileFmt), fmt, time, "ERROR");
                 break;
+            case OFS_LogLevel::OFS_MPV_LOG_DEBUG:
+            case OFS_LogLevel::OFS_MPV_LOG_ERROR:
+            case OFS_LogLevel::OFS_MPV_LOG_WARN:
+            case OFS_LogLevel::OFS_MPV_LOG_INFO:
+            {
+                msgTypeLen = stbsp_snprintf(fileFmt, sizeof(fileFmt), "[%6.3f][  MPV]: ", time);
+                break;
+            }
         }
-        memcpyToBuf(buffer, fileFmt, msgTypeLen);
+        AppendToBuf(buffer, fileFmt, msgTypeLen);
     }
     
     size = size == 0 ? strlen(msg) : size;
-    memcpyToBuf(buffer, msg, size);
+    AppendToBuf(buffer, msg, size);
 
-    // insert a newline if needed
-    if(!buffer.empty() &&  buffer.back() != '\n') {
-        buffer.resize(buffer.size() + 1);
-        buffer.back() = '\n';
+    if(newLine) {
+        // insert a newline if needed
+        if(!buffer.empty() &&  buffer.back() != '\n') {
+            buffer.resize(buffer.size() + 1);
+            buffer.back() = '\n';
+        }
     }
 
     SDL_AtomicUnlock(&Thread.lock);
@@ -150,5 +160,5 @@ void OFS_FileLogger::LogToFileF(OFS_LogLevel level, const char* fmt, ...) noexce
     va_start(args, fmt);
     auto len = stbsp_vsnprintf(FormatBuffer, sizeof(FormatBuffer), fmt, args);
     va_end(args);
-    LogToFileR(level, FormatBuffer, len);
+    LogToFileR(level, FormatBuffer, len > sizeof(FormatBuffer) ? sizeof(FormatBuffer) : len);
 }

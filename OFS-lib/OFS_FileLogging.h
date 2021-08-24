@@ -8,6 +8,11 @@ enum class OFS_LogLevel : int32_t
     OFS_LOG_WARN,
     OFS_LOG_DEBUG,
     OFS_LOG_ERROR,
+
+    OFS_MPV_LOG_INFO,
+    OFS_MPV_LOG_WARN,
+    OFS_MPV_LOG_DEBUG,
+    OFS_MPV_LOG_ERROR,
 };
 
 class OFS_FileLogger
@@ -21,7 +26,7 @@ public:
 
     static void Flush() noexcept;
 
-    static void LogToFileR(OFS_LogLevel level, const char* msg, uint32_t size = 0) noexcept;
+    static void LogToFileR(OFS_LogLevel level, const char* msg, uint32_t size = 0, bool newLine = true) noexcept;
     static void LogToFileF(OFS_LogLevel level, const char* fmt, ...) noexcept;
 };
 
