@@ -1,10 +1,9 @@
 #include "OFS_DynamicFontAtlas.h"
 #include "OFS_Util.h"
 #include "OFS_Profiling.h"
+#include "OFS_GL.h"
 
 #include "imgui.h"
-#include "glad/gl.h"
-
 #include "SDL_rwops.h"
 #include "SDL_timer.h"
 
@@ -143,7 +142,7 @@ void OFS_DynFontAtlas::RebuildFont(float fontSize) noexcept
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+		glTexImage2D(GL_TEXTURE_2D, 0, OFS_InternalTexFormat, width, height, 0, OFS_TexFormat, GL_UNSIGNED_BYTE, pixels);
 		
 		io.Fonts->ClearTexData();
 		io.Fonts->TexID = (void*)(intptr_t)fontTexture;

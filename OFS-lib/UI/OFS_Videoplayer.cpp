@@ -4,7 +4,7 @@
 #include <mpv/render_gl.h>
 #include "stb_sprintf.h"
 #include "stb_image_write.h"
-#include "glad/gl.h"
+#include "OFS_GL.h"
 
 #include "EventSystem.h"
 #include "OFS_ImGui.h"
@@ -225,12 +225,14 @@ void VideoplayerWindow::renderToTexture() noexcept
 	OFS_PROFILE(__FUNCTION__);
 	redrawVideo = false;
 	mpv_opengl_fbo fbo{ 0 };
-	fbo.fbo = framebufferObj; fbo.w = MpvData.videoWidth; fbo.h = MpvData.videoHeight;
-	int enable = 1;
-	int disable = 0;
+	fbo.fbo = framebufferObj; 
+	fbo.w = MpvData.videoWidth;
+	fbo.h = MpvData.videoHeight;
+	fbo.internal_format = OFS_InternalTexFormat;
+
+	uint32_t disable = 0;
 	mpv_render_param params[] = {
 		{MPV_RENDER_PARAM_OPENGL_FBO, &fbo},
-		{MPV_RENDER_PARAM_FLIP_Y, &enable},
 		// without this the whole application slows down to the framerate of the video
 		{MPV_RENDER_PARAM_BLOCK_FOR_TARGET_TIME, &disable}, 
 		mpv_render_param{}
@@ -240,21 +242,23 @@ void VideoplayerWindow::renderToTexture() noexcept
 
 void VideoplayerWindow::updateRenderTexture() noexcept
 {
-	if (framebufferObj == 0) {
+	if (!framebufferObj) {
 		glGenFramebuffers(1, &framebufferObj);
 		glBindFramebuffer(GL_FRAMEBUFFER, framebufferObj);
 
 		glGenTextures(1, &renderTexture);
 		glBindTexture(GL_TEXTURE_2D, renderTexture);
-		const int default_width = 1920;
-		const int default_height = 1080;
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, default_width, default_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+		const int defaultWidth = 1920;
+		const int defaultHeight = 1080;
+		glTexImage2D(GL_TEXTURE_2D, 0, OFS_InternalTexFormat, defaultWidth, defaultHeight, 0, OFS_TexFormat, GL_UNSIGNED_BYTE, 0);
 
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 		// Set "renderedTexture" as our colour attachement #0
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderTexture, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTexture, 0);
 
 		// Set the list of draw buffers.
 		GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
@@ -262,12 +266,16 @@ void VideoplayerWindow::updateRenderTexture() noexcept
 
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 			LOG_ERROR("Failed to create framebuffer for video!");
+			FUN_ASSERT(false, "framebuffer not setup");
 		}
 	}
-	else {
+	else if(MpvData.videoHeight > 0 && MpvData.videoWidth > 0) {
 		// update size of render texture based on video resolution
 		glBindTexture(GL_TEXTURE_2D, renderTexture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, MpvData.videoWidth, MpvData.videoHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, OFS_InternalTexFormat, MpvData.videoWidth, MpvData.videoHeight, 0, OFS_TexFormat, GL_UNSIGNED_BYTE, 0);
+	}
+	else {
+		FUN_ASSERT(false, "Video height/width was 0");
 	}
 }
 
@@ -327,7 +335,7 @@ bool VideoplayerWindow::setup(bool force_hw_decoding)
 	mpv_opengl_init_params init_params{ 0 };
 	init_params.get_proc_address = getProcAddressMpv;
 
-	const int64_t enable = 1;
+	uint32_t enable = 1;
 	mpv_render_param params[] = {
 		mpv_render_param{MPV_RENDER_PARAM_API_TYPE, (void*)MPV_RENDER_API_TYPE_OPENGL},
 		mpv_render_param{MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &init_params},
@@ -341,7 +349,7 @@ bool VideoplayerWindow::setup(bool force_hw_decoding)
 		// If you want to use synchronous calls, either make them on a separate
 		// thread, or remove the option below (this will disable features like
 		// DR and is not recommended anyway).
-		mpv_render_param{MPV_RENDER_PARAM_ADVANCED_CONTROL, (void*)&enable },
+		mpv_render_param{MPV_RENDER_PARAM_ADVANCED_CONTROL, &enable },
 		mpv_render_param{}
 	};
 
@@ -487,8 +495,8 @@ void VideoplayerWindow::drawVrVideo(ImDrawList* draw_list) noexcept
 				ctx.vrShader->VideoAspectRatio(ctx.MpvData.videoWidth /(float)ctx.MpvData.videoHeight);
 			}
 		}, this);
-	//ImGui::Image((void*)(intptr_t)render_texture, ImGui::GetContentRegionAvail(), ImVec2(0.f, 1.f),	ImVec2(1.f, 0.f));
-	OFS::ImageWithId(videoImageId, (void*)(intptr_t)renderTexture, ImGui::GetContentRegionAvail(), ImVec2(0.f, 1.f), ImVec2(1.f, 0.f));
+	//ImGui::Image((void*)(intptr_t)renderTexture, ImGui::GetContentRegionAvail(), ImVec2(0.f, 0.f), ImVec2(1.f, 1.f));
+	OFS::ImageWithId(videoImageId, (void*)(intptr_t)renderTexture, ImGui::GetContentRegionAvail(), ImVec2(0.f, 0.f), ImVec2(1.f, 1.f));
 	videoRightClickMenu();
 	videoDrawSize = ImGui::GetItemRectSize();
 }
@@ -502,8 +510,8 @@ void VideoplayerWindow::draw2dVideo(ImDrawList* draw_list) noexcept
 	videoSize.x *= baseScaleFactor;
 	videoSize.y *= baseScaleFactor;
 
-	ImVec2 uv0(0.f, 1.f);
-	ImVec2 uv1(1.f, 0.f);
+	ImVec2 uv0(0.f, 0.f);
+	ImVec2 uv1(1.f, 1.f);
 
 	switch (settings.activeMode) {
 	case VideoMode::LEFT_PANE:

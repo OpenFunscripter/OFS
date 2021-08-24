@@ -3,8 +3,7 @@
 #include "mpv/client.h"
 #include "mpv/render_gl.h"
 
-#include "SDL.h"
-#include "glad/gl.h"
+#include "OFS_GL.h"
 #include "EventSystem.h"
 
 int32_t VideoPreviewEvents::PreviewWakeUpMpvEvents = 0;
@@ -42,11 +41,13 @@ void VideoPreview::updateRenderTexture() noexcept
 		glGenTextures(1, &renderTexture);
 		glBindTexture(GL_TEXTURE_2D, renderTexture);
 		
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 360, 200, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, OFS_InternalTexFormat, 360, 200, 0, OFS_TexFormat, GL_UNSIGNED_BYTE, 0);
 
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		
 		// Set "renderedTexture" as our colour attachement #0
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderTexture, 0);
 
@@ -61,7 +62,7 @@ void VideoPreview::updateRenderTexture() noexcept
 	else {
 		// update size of render texture based on video resolution
 		glBindTexture(GL_TEXTURE_2D, renderTexture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, videoWidth, videoHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, OFS_InternalTexFormat, videoWidth, videoHeight, 0, OFS_TexFormat, GL_UNSIGNED_BYTE, 0);
 	}
 }
 
@@ -77,12 +78,14 @@ void VideoPreview::redraw() noexcept
 	OFS_PROFILE(__FUNCTION__);
 	needsRedraw = false;
 	mpv_opengl_fbo fbo{ 0 };
-	fbo.fbo = framebufferObj; fbo.w = videoWidth; fbo.h = videoHeight;
-	int enable = 1;
-	int disable = 0;
+	fbo.fbo = framebufferObj;
+	fbo.w = videoWidth;
+	fbo.h = videoHeight;
+	fbo.internal_format = OFS_InternalTexFormat;
+
+	uint32_t disable = 0;
 	mpv_render_param params[] = {
 		{MPV_RENDER_PARAM_OPENGL_FBO, &fbo},
-		{MPV_RENDER_PARAM_FLIP_Y, &disable},
 		// without this the whole application slows down to the framerate of the video
 		{MPV_RENDER_PARAM_BLOCK_FOR_TARGET_TIME, &disable},
 		mpv_render_param{}
