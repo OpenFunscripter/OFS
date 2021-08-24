@@ -97,32 +97,44 @@ void OFS_FileLogger::LogToFileR(OFS_LogLevel level, const char* msg, uint32_t si
     LogToConsole(level, msg);
     SDL_AtomicLock(&Thread.lock);
 
-    char FormatBuffer[1024];
+    auto memcpyToBuf = [](std::vector<char>& buffer, const char* msg, uint32_t size) noexcept {
+        auto initialSize = buffer.size();               
+        buffer.resize(initialSize + size);
+        memcpy(buffer.data() + initialSize, msg, size);
+    };
 
-    constexpr const char* fmt = "[%s]: %%s";
-    char fileFmt[32];
-    switch(level) {
-        case OFS_LogLevel::OFS_LOG_INFO: stbsp_snprintf(fileFmt, sizeof(fileFmt), fmt, "INFO"); break;
-        case OFS_LogLevel::OFS_LOG_WARN: stbsp_snprintf(fileFmt, sizeof(fileFmt), fmt, "WARN"); break;
-        case OFS_LogLevel::OFS_LOG_DEBUG: stbsp_snprintf(fileFmt, sizeof(fileFmt), fmt, "DEBUG"); break;
-        case OFS_LogLevel::OFS_LOG_ERROR: stbsp_snprintf(fileFmt, sizeof(fileFmt), fmt, "ERROR"); break;
-    }
-    stbsp_snprintf(FormatBuffer, sizeof(FormatBuffer), fileFmt, msg);
-    msg = FormatBuffer;
-    
-    const char* foo = Thread.LogMsgBuffer.data();
-    auto currentSize = Thread.LogMsgBuffer.size();
-    size = size == 0 ? strlen(msg) : size;
     auto& buffer = Thread.LogMsgBuffer;
-    Thread.LogMsgBuffer.resize(currentSize + size + 1);
-    memcpy(Thread.LogMsgBuffer.data() + currentSize, msg, size);
-    if(Thread.LogMsgBuffer.size() >= 2 &&  *(Thread.LogMsgBuffer.end() - 2) != '\n') {
-        *(Thread.LogMsgBuffer.end() - 2) = '\n';
-        Thread.LogMsgBuffer.resize(Thread.LogMsgBuffer.size() - 1);
+    {
+        constexpr const char* fmt = "[%6.3f][%s]: ";
+        char fileFmt[32];
+        int msgTypeLen;
+        const float time = SDL_GetTicks() / 1000.f;
+        switch(level) {
+            case OFS_LogLevel::OFS_LOG_INFO:
+                msgTypeLen = stbsp_snprintf(fileFmt, sizeof(fileFmt), fmt, time, "INFO "); 
+                break;
+            case OFS_LogLevel::OFS_LOG_WARN: 
+                msgTypeLen = stbsp_snprintf(fileFmt, sizeof(fileFmt), fmt, time, "WARN ");
+                break;
+            case OFS_LogLevel::OFS_LOG_DEBUG: 
+                msgTypeLen = stbsp_snprintf(fileFmt, sizeof(fileFmt), fmt, time, "DEBUG"); 
+                break;
+            case OFS_LogLevel::OFS_LOG_ERROR: 
+                msgTypeLen = stbsp_snprintf(fileFmt, sizeof(fileFmt), fmt, time, "ERROR");
+                break;
+        }
+        memcpyToBuf(buffer, fileFmt, msgTypeLen);
     }
-    else {
-        Thread.LogMsgBuffer.resize(Thread.LogMsgBuffer.size() - 1);
+    
+    size = size == 0 ? strlen(msg) : size;
+    memcpyToBuf(buffer, msg, size);
+
+    // insert a newline if needed
+    if(!buffer.empty() &&  buffer.back() != '\n') {
+        buffer.resize(buffer.size() + 1);
+        buffer.back() = '\n';
     }
+
     SDL_AtomicUnlock(&Thread.lock);
 }
 
@@ -136,7 +148,7 @@ void OFS_FileLogger::LogToFileF(OFS_LogLevel level, const char* fmt, ...) noexce
     char FormatBuffer[1024];
     va_list args;
     va_start(args, fmt);
-    stbsp_vsnprintf(FormatBuffer, sizeof(FormatBuffer), fmt, args);
+    auto len = stbsp_vsnprintf(FormatBuffer, sizeof(FormatBuffer), fmt, args);
     va_end(args);
-    LogToFileR(level, FormatBuffer);
+    LogToFileR(level, FormatBuffer, len);
 }
