@@ -3,8 +3,10 @@
 #include "SDL_thread.h"
 
 #include <sstream>
+#include <filesystem>
 
 #ifdef WIN32
+    //#define WIN32_LEAN_AND_MEAN 
     #include <Windows.h>
     #include <urlmon.h>
     #pragma comment(lib, "urlmon.lib")
@@ -53,11 +55,40 @@
             return S_OK;
         }
     };
+
     static DownloadStatusCallback cb;
+
+    static bool ExecuteSynchronous(const wchar_t* program, const wchar_t* params) noexcept
+    {
+        bool succ = false;
+        SHELLEXECUTEINFOW ShExecInfo = {0};
+        ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+        ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+        ShExecInfo.hwnd = NULL;
+        ShExecInfo.lpVerb = NULL;
+        ShExecInfo.lpFile = program;        
+        ShExecInfo.lpParameters = params;   
+        ShExecInfo.lpDirectory = NULL;
+        ShExecInfo.nShow = SW_HIDE;
+        ShExecInfo.hInstApp = NULL; 
+        ShellExecuteExW(&ShExecInfo);
+        WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
+        
+        DWORD resultCode;
+        if(!GetExitCodeProcess(ShExecInfo.hProcess, &resultCode)) {
+            succ = false;
+        }
+        else {
+            succ = resultCode == 0;
+        }
+        CloseHandle(ShExecInfo.hProcess);
+        return succ;
+    }
 #endif
 
 ImGuiID OFS_DownloadFfmpeg::ModalId = 0;
 bool OFS_DownloadFfmpeg::FfmpegMissing = false;
+
 
 void OFS_DownloadFfmpeg::DownloadFfmpegModal() noexcept
 {
@@ -90,32 +121,34 @@ void OFS_DownloadFfmpeg::DownloadFfmpegModal() noexcept
             ImGui::CloseCurrentPopup();
         }
 
-        if(ZipExists || cb.Progress >= 1.f) {
+        if(!ExtractFailed && (ZipExists || cb.Stopped && cb.Progress >= 1.f)) {
             DownloadInProgress = false;
             ZipExists = true;
-            ImGui::TextUnformatted("Extracting uses tar.exe.\nIt will fail if it's not on your system.");
-            ImGui::TextDisabled("tar.exe has been part of Windows 10 since build 17063");
-            if(ImGui::Button("Extract", ImVec2(-1.f, 0.f))) {
-                std::wstringstream ss;
-                auto path = Util::Basepath();
-                auto downloadPath = (path / "ffmpeg.zip");
+            std::wstringstream ss;
+            auto path = Util::Basepath();
+            auto downloadPath = (path / "ffmpeg.zip");
 
-				ss << L"tar.exe -xvf ";
-				ss << L'"' << downloadPath.wstring() << L'"';
-				ss << L" --strip-components 2  **/ffmpeg.exe";
+            ss << L"-xvf ";
+            ss << L'"' << downloadPath.wstring() << L'"';
+            ss << L" --strip-components 2  **/ffmpeg.exe";
 
-				auto extractScript = ss.str();
-				ExtractFailed = !_wsystem(extractScript.c_str()) == 0;
-                if(!ExtractFailed) {
-                    FfmpegMissing = false;
-                    ImGui::CloseCurrentPopup();
-                    Util::MessageBoxAlert("Done.", "ffmpeg.exe was successfully extracted.");
-                }
-            }
-            if(ExtractFailed) {
-                ImGui::TextUnformatted("Failed to extract ffmpeg.exe.");
+            auto params = ss.str();
+            ExtractFailed = !ExecuteSynchronous(L"tar.exe", params.c_str());
+
+            if(!ExtractFailed) {
+                FfmpegMissing = false;
+                ImGui::CloseCurrentPopup();
+                Util::MessageBoxAlert("Done.", "ffmpeg.exe was successfully extracted.");
+                std::error_code ec;
+                std::filesystem::remove(downloadPath, ec);
             }
         }
+        else if(ExtractFailed) {
+            ImGui::TextColored((ImColor)IM_COL32(255, 0, 0, 255), "Failed to extract ffmpeg.exe.");
+            ImGui::TextUnformatted("Extracting uses tar.exe.\nIt will fail if it's not on your system.");
+            ImGui::TextDisabled("tar.exe has been part of Windows 10 since build 17063");
+        }
+
         ImGui::EndPopup();
     }
 
