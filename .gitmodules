@@ -16,9 +16,6 @@
 [submodule "lib/reproc"]
 	path = lib/reproc
 	url = https://github.com/DaanDeMeyer/reproc.git
-[submodule "lib/implot"]
-	path = lib/implot
-	url = https://github.com/epezent/implot.git
 [submodule "lib/ImGuizmo"]
 	path = lib/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo.git

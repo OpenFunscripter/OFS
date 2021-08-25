@@ -5,36 +5,9 @@
 #include "OFS_Profiling.h"
 
 #include "imgui.h"
-#include "implot.h"
 
 #include "libserialport.h"
 #include "libserialport_internal.h"
-
-// utility structure for realtime plot
-struct ScrollingBuffer {
-    int MaxSize;
-    int Offset;
-    ImVector<ImVec2> Data;
-    ScrollingBuffer() {
-        MaxSize = 2000;
-        Offset = 0;
-        Data.reserve(MaxSize);
-    }
-    void AddPoint(float x, float y) {
-        if (Data.size() < MaxSize)
-            Data.push_back(ImVec2(x, y));
-        else {
-            Data[Offset] = ImVec2(x, y);
-            Offset = (Offset + 1) % MaxSize;
-        }
-    }
-    void Erase() {
-        if (Data.size() > 0) {
-            Data.shrink(0);
-            Offset = 0;
-        }
-    }
-};
 
 bool TCodePlayer::openPort(struct sp_port* openthis) noexcept
 {
@@ -69,10 +42,7 @@ bool TCodePlayer::openPort(struct sp_port* openthis) noexcept
 
 TCodePlayer::TCodePlayer() noexcept
 {
-#ifndef NDEBUG
-    if(ImPlot::GetCurrentContext() == nullptr)
-        ImPlot::CreateContext();
-#endif
+
 }
 
 TCodePlayer::~TCodePlayer() noexcept
@@ -262,46 +232,7 @@ void TCodePlayer::DrawWindow(bool* open, float currentTime) noexcept
         }
     }
 
-#ifndef NDEBUG
-    static bool debugShowPlot = false;
-    ImGui::Checkbox("Plot", &debugShowPlot);
-#endif
 	ImGui::End();
-
-
-#ifndef NDEBUG
-    if (!debugShowPlot) return;
-    ImGui::Begin("Plot");
-
-    static float history = 10.0f;
-    static float t = (SDL_GetTicks()/1000.f) + 0.1f;
-    t += ImGui::GetIO().DeltaTime;
-
-    static ScrollingBuffer RawSpeed;
-    static ScrollingBuffer RawData;
-
-    static ScrollingBuffer FilteredSpeed;
-    static ScrollingBuffer FilteredData;
-
-    float timestamp = SDL_GetTicks() / 1000.f;
-    FilteredData.AddPoint(timestamp,  prod.GetProd(TChannel::L0).LastValue);
-    RawData.AddPoint(timestamp, prod.GetProd(TChannel::L0).LastValueRaw);
-    FilteredSpeed.AddPoint(timestamp, prod.GetProd(TChannel::L0).FilteredSpeed);
-    RawSpeed.AddPoint(timestamp, prod.GetProd(TChannel::L0).RawSpeed);
-
-    static ImPlotAxisFlags rt_axis = ImPlotAxisFlags_NoTickLabels;
-    ImPlot::SetNextPlotLimitsX(t - history, t, ImGuiCond_Always);
-    if (ImPlot::BeginPlot("##EuroComp", NULL, NULL, ImVec2(-1, -1), 0, rt_axis, rt_axis | ImPlotAxisFlags_LockMin)) {
-        ImPlot::PlotLine("RawSpeed", &RawSpeed.Data[0].x, &RawSpeed.Data[0].y, RawSpeed.Data.size(), RawSpeed.Offset, 2 * sizeof(float));
-        ImPlot::PlotLine("FilteredSpeed", &FilteredSpeed.Data[0].x, &FilteredSpeed.Data[0].y, FilteredSpeed.Data.size(), FilteredSpeed.Offset, 2 * sizeof(float));
-
-        ImPlot::PlotLine("Raw", &RawData.Data[0].x, &RawData.Data[0].y, RawData.Data.size(), RawData.Offset, 2 * sizeof(float));
-        ImPlot::PlotLine("Filtered", &FilteredData.Data[0].x, &FilteredData.Data[0].y, FilteredData.Data.size(), FilteredData.Offset, 2 * sizeof(float));
-        ImPlot::EndPlot();
-    }
-
-    ImGui::End();
-#endif
 }
 
 

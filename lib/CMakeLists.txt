@@ -249,7 +249,16 @@ target_link_libraries(imgui_stdlib PUBLIC imgui)
 # ========
 set(SDL_SHARED OFF CACHE BOOL "" FORCE)
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
+set(SDL_AUDIO OFF CACHE BOOL "" FORCE)
+set(SDL_RENDER OFF CACHE BOOL "" FORCE)
+set(SDL_SENSOR OFF CACHE BOOL "" FORCE)
+set(SDL_HAPTIC OFF CACHE BOOL "" FORCE)
+set(SDL_POWER OFF CACHE BOOL "" FORCE)
+set(SDL_DLOPEN OFF CACHE BOOL "" FORCE)
 set(LIBC ON CACHE BOOL "" FORCE)
+set(DIRECTX OFF CACHE BOOL "" FORCE)
+set(RENDER_D3D OFF CACHE BOOL "" FORCE)
+set(VIDEO_VULKAN OFF CACHE BOOL "" FORCE)
 add_subdirectory("SDL2/")
 
 
@@ -282,24 +291,6 @@ set(JSON_BuildTests OFF CACHE BOOL "" FORCE)
 set(JSON_MultipleHeaders ON CACHE BOOL "" FORCE)
 set(JSON_Install OFF CACHE BOOL "" FORCE)
 add_subdirectory("json/")
-
-# ============
-# === implot ===
-# ============
-set(implot_SOURCES
-	"implot/implot.cpp"
-	"implot/implot_demo.cpp"
-	"implot/implot_items.cpp"
-)
-set(implot_HEADERS
-	"implot/implot.h"
-	"implot/implot_internal.h"
-)
-add_library(implot STATIC ${implot_SOURCES} ${implot_HEADERS})
-target_include_directories(implot PUBLIC "implot")
-target_link_libraries(implot PUBLIC imgui)
-target_compile_features(implot PUBLIC cxx_std_17)
-
 
 # =============
 # === tracy ===

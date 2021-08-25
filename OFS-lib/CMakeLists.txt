@@ -66,16 +66,14 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	tinyfiledialogs
 	libserialport
 	glm
-	implot
 	ImGuizmo
 	reproc++
 	bitsery
-	tracy
 
 	EASTL
 	EAStdC
-	EAAssert
-	EAThread
+	#EAAssert
+	#EAThread
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
@@ -114,6 +112,7 @@ endif()
 
 if(OFS_PROFILE)
 	target_compile_definitions(${PROJECT_NAME} PUBLIC OFS_PROFILE_ENABLED=1)
+	target_link_libraries(${PROJECT_NAME} PUBLIC tracy)
 else()
 	target_compile_definitions(${PROJECT_NAME} PUBLIC OFS_PROFILE_ENABLED=0)
 endif()
