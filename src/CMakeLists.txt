@@ -1,20 +1,16 @@
 project(OpenFunscripter)
 
-
 set(OPEN_FUNSCRIPTER_SOURCES
   "main.cpp"
   "OpenFunscripter.cpp"
+  "ScriptingMode.cpp"
+  "OFS_Project.cpp"
   
   "Funscript/OFS_ScriptSettings.cpp"
   
   "UI/OpenFunscripterSettings.cpp"
-
-  "ScriptingMode.cpp"
-  "OFS_Project.cpp"
-  
   "UI/ScriptSimulator.cpp"
   "UI/SpecialFunctions.cpp"
-  
   "UI/OFS_ScriptPositionsOverlays.cpp"
   "UI/OFS_DownloadFfmpeg.cpp"
 
@@ -22,7 +18,6 @@ set(OPEN_FUNSCRIPTER_SOURCES
 
   "gl/OFS_Simulator3D.cpp"
 )
-
 
 if(WIN32)
 	set(OPEN_FUNSCRIPTER_SOURCES ${OPEN_FUNSCRIPTER_SOURCES} "../icon.rc"
@@ -80,26 +75,14 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 if(WIN32)
 	if(CMAKE_BUILD_TYPE MATCHES "Release" OR CMAKE_BUILD_TYPE MATCHES "RelWithDebInfo") 
 		target_compile_options(${PROJECT_NAME} PUBLIC /GL)
+		target_link_options(${PROJECT_NAME} PUBLIC /LTCG)
 		message("== ${PROJECT_NAME} - Whole program optimization enabled.")
 	endif()
-	# target_compile_options(${PROJECT_NAME} PRIVATE /W2 /WX)
-	# target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
 elseif(UNIX AND NOT APPLE) # clang/gcc
     target_compile_options(${PROJECT_NAME} PUBLIC -fpermissive)
-    
-	#target_compile_options(${PROJECT_NAME} PRIVATE -g -fsanitize=undefined)
-    #target_link_options(${PROJECT_NAME} PRIVATE -g -fsanitize=undefined)
-
-	# target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic -Werror 
-	# 	-Wno-error=unused-parameter 
-	# 	-Wno-error=unused-variable 
-	# 	-Wno-gnu-anonymous-struct
-	# 	-Wno-nested-anon-types
-	# )
 	install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION "bin/")
 elseif(APPLE)
 	target_compile_options(${PROJECT_NAME} PUBLIC -fpermissive)
-	
 	# Note Mac specific extension .app
 	set(APPS "\${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}.app")
 endif()

@@ -53,7 +53,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	"${PROJECT_SOURCE_DIR}/gl/"
 	"${PROJECT_SOURCE_DIR}/"
 	"${PROJECT_SOURCE_DIR}/player/"
-	"../lib/stb/"
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
