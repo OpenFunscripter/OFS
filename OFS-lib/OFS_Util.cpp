@@ -464,13 +464,12 @@ bool Util::SavePNG(const std::string& path, void* buffer, int32_t width, int32_t
 
 std::filesystem::path Util::FfmpegPath() noexcept
 {
-	auto base_path = Util::Basepath();
 #if WIN32
-	auto ffmpeg_path = base_path / "ffmpeg.exe";
+	return Util::PathFromString(Util::Prefpath("ffmpeg.exe"));
 #else
-	auto ffmpeg_path = std::filesystem::path("ffmpeg");
+	auto ffmpegPath = std::filesystem::path("ffmpeg");
+	return ffmpegPath;
 #endif
-	return ffmpeg_path;
 }
 
 uint32_t Util::Hash(const char* data, size_t size, int32_t seed) noexcept

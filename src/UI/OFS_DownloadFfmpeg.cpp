@@ -57,7 +57,7 @@
 
     static DownloadStatusCallback cb;
 
-    static bool ExecuteSynchronous(const wchar_t* program, const wchar_t* params) noexcept
+    static bool ExecuteSynchronous(const wchar_t* program, const wchar_t* params, const wchar_t* directory) noexcept
     {
         bool succ = false;
         SHELLEXECUTEINFOW ShExecInfo = {0};
@@ -67,7 +67,7 @@
         ShExecInfo.lpVerb = NULL;
         ShExecInfo.lpFile = program;        
         ShExecInfo.lpParameters = params;   
-        ShExecInfo.lpDirectory = NULL;
+        ShExecInfo.lpDirectory = directory;
         ShExecInfo.nShow = SW_HIDE;
         ShExecInfo.hInstApp = NULL; 
         ShellExecuteExW(&ShExecInfo);
@@ -94,7 +94,7 @@ void OFS_DownloadFfmpeg::DownloadFfmpegModal() noexcept
 #ifdef WIN32
     static bool DownloadInProgress = false;
     static bool ExtractFailed = false;
-    static auto ZipExists = Util::FileExists((Util::Basepath() / "ffmpeg.zip").u8string());
+    static auto ZipExists = Util::FileExists(Util::Prefpath("ffmpeg.zip"));
 
     bool isOpen = true;
     if(ImGui::BeginPopupModal(OFS_DownloadFfmpeg::ModalText, DownloadInProgress ? NULL : &isOpen, ImGuiWindowFlags_AlwaysAutoResize)) {
@@ -103,9 +103,9 @@ void OFS_DownloadFfmpeg::DownloadFfmpegModal() noexcept
             ImGui::TextUnformatted("ffmpeg.exe was not found.\nDo you want to download it?");
             if(ImGui::Button("Yes", ImVec2(-1.f, 0.f))) {
                 auto dlThread = [](void* data) -> int {
-                    auto path = Util::Basepath();
-                    auto downloadPath = (path / "ffmpeg.zip").u8string();
-                    URLDownloadToFile(NULL, "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip",
+                    auto path = Util::PathFromString(Util::Prefpath());
+                    auto downloadPath =(path / "ffmpeg.zip").wstring();
+                    URLDownloadToFileW(NULL, L"https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip",
                         downloadPath.c_str(), 0, &cb);
                     return 0;
                 };
@@ -124,15 +124,16 @@ void OFS_DownloadFfmpeg::DownloadFfmpegModal() noexcept
             DownloadInProgress = false;
             ZipExists = true;
             std::wstringstream ss;
-            auto path = Util::Basepath();
+            auto path = Util::PathFromString(Util::Prefpath());
             auto downloadPath = (path / "ffmpeg.zip");
 
-            ss << L"-xvf ";
+            ss << L" -xvf ";
             ss << L'"' << downloadPath.wstring() << L'"';
             ss << L" --strip-components 2  **/ffmpeg.exe";
 
             auto params = ss.str();
-            ExtractFailed = !ExecuteSynchronous(L"tar.exe", params.c_str());
+            auto dir = Util::PathFromString(Util::Prefpath()).wstring();
+            ExtractFailed = !ExecuteSynchronous(L"tar.exe", params.c_str(), dir.c_str());
 
             if(!ExtractFailed) {
                 FfmpegMissing = false;
