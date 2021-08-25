@@ -226,15 +226,11 @@ target_include_directories(love_3p_luasocket PUBLIC "luasocket/")
 file (GLOB IMGUI_SOURCES imgui/**.cpp)
 file (GLOB IMGUI_HEADERS imgui/**.h)
 add_library(imgui STATIC ${IMGUI_SOURCES} ${IMGUI_HEADERS})
-# set_property(TARGET imgui PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(imgui PUBLIC "imgui/")
-#target_include_directories(imgui PUBLIC "/")
 target_compile_definitions(imgui PUBLIC "IMGUI_USE_STB_SPRINTF")
 target_include_directories(imgui PUBLIC "stb/")
 target_compile_definitions(imgui PUBLIC "IMGUI_DEFINE_MATH_OPERATORS")
 target_compile_definitions(imgui PUBLIC "IMGUI_DISABLE_OBSOLETE_FUNCTIONS")
-
-#target_compile_definitions(imgui PUBLIC "ImDrawIdx=unsigned int") # TODO: not do this???
 #target_compile_definitions(imgui PUBLIC "IMGUI_DEBUG_PARANOID")
 
 # ================
@@ -314,4 +310,3 @@ file (GLOB ImGuizmo_HEADERS ImGuizmo/*.h)
 add_library(ImGuizmo STATIC ${ImGuizmo_SOURCES} ${ImGuizmo_HEADERS})
 target_include_directories(ImGuizmo PUBLIC "ImGuizmo/")
 target_link_libraries(ImGuizmo PUBLIC imgui)
-target_compile_features(ImGuizmo PUBLIC cxx_std_11)
