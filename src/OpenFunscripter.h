@@ -43,8 +43,10 @@ private:
 
 	bool ShowMetadataEditor = false;
 	bool ShowProjectEditor = false;
-	bool DebugMetrics = false;
+#ifndef NDEBUG
 	bool DebugDemo = false;
+#endif
+	bool DebugMetrics = false;
 	bool ShowAbout = false;
 	
 	std::vector<FunscriptAction> CopiedSelection;

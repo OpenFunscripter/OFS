@@ -84,6 +84,7 @@ void OFS_FileLogger::Shutdown() noexcept
 
 inline static void LogToConsole(OFS_LogLevel level, const char* msg) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     switch(level) {
         case OFS_LogLevel::OFS_LOG_INFO: SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, msg); break;
         case OFS_LogLevel::OFS_LOG_WARN: SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, msg); break;
@@ -93,6 +94,7 @@ inline static void LogToConsole(OFS_LogLevel level, const char* msg) noexcept
 }
 
 inline static void AppendToBuf(std::vector<char>& buffer, const char* msg, uint32_t size) noexcept {
+    OFS_PROFILE(__FUNCTION__);
     auto initialSize = buffer.size();               
     buffer.resize(initialSize + size);
     memcpy(buffer.data() + initialSize, msg, size);
@@ -100,6 +102,7 @@ inline static void AppendToBuf(std::vector<char>& buffer, const char* msg, uint3
 
 inline static void AddNewLine() noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     // insert a newline if needed
     auto& buffer = Thread.LogMsgBuffer;
     if(!buffer.empty() &&  buffer.back() != '\n') {
@@ -110,6 +113,7 @@ inline static void AddNewLine() noexcept
 
 void OFS_FileLogger::LogToFileR(const char* prefix, const char* msg, bool newLine) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     SDL_Log("%s %s", prefix, msg);
     SDL_AtomicLock(&Thread.lock);
     
@@ -126,6 +130,7 @@ void OFS_FileLogger::LogToFileR(const char* prefix, const char* msg, bool newLin
 
 void OFS_FileLogger::LogToFileR(OFS_LogLevel level, const char* msg, uint32_t size, bool newLine) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     LogToConsole(level, msg);
     SDL_AtomicLock(&Thread.lock);
 
@@ -172,6 +177,7 @@ void OFS_FileLogger::Flush() noexcept
 
 void OFS_FileLogger::LogToFileF(OFS_LogLevel level, const char* fmt, ...) noexcept
 {
+    OFS_PROFILE(__FUNCTION__);
     char FormatBuffer[1024];
     va_list args;
     va_start(args, fmt);

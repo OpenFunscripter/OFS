@@ -206,7 +206,7 @@ void VideoplayerWindow::renderToTexture() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	redrawVideo = false;
-	mpv_opengl_fbo fbo{ 0 };
+	mpv_opengl_fbo fbo = {0};
 	fbo.fbo = framebufferObj; 
 	fbo.w = MpvData.videoWidth;
 	fbo.h = MpvData.videoHeight;
@@ -314,7 +314,7 @@ bool VideoplayerWindow::setup(bool force_hw_decoding)
 	mpv_request_log_messages(mpv, "info");
 #endif
 
-	mpv_opengl_init_params init_params{ 0 };
+	mpv_opengl_init_params init_params = {0};
 	init_params.get_proc_address = getProcAddressMpv;
 
 	uint32_t enable = 1;

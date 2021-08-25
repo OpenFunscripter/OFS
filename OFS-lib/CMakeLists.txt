@@ -103,15 +103,10 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 	"IMGUI_IMPL_OPENGL_LOADER_GLAD2"
 )
 
-if(OFS_BENCHMARKS)
-	target_compile_definitions(${PROJECT_NAME} PUBLIC OFS_BENCHMARK_ENABLED=1)
-else()
-	target_compile_definitions(${PROJECT_NAME} PUBLIC OFS_BENCHMARK_ENABLED=0)
-endif()
-
 if(OFS_PROFILE)
 	target_compile_definitions(${PROJECT_NAME} PUBLIC OFS_PROFILE_ENABLED=1)
 	target_link_libraries(${PROJECT_NAME} PUBLIC tracy)
+	message("== ${PROJECT_NAME} - Profiling enabled.")
 else()
 	target_compile_definitions(${PROJECT_NAME} PUBLIC OFS_PROFILE_ENABLED=0)
 endif()

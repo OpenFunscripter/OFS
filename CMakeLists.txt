@@ -8,12 +8,12 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
 
 if(WIN32)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX")
 endif()
 
 # =============
 # == OPTIONS ==
 # =============
-option(OFS_BENCHMARKS OFF)
 option(OFS_PROFILE OFF)
 
 # ====================

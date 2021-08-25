@@ -1815,10 +1815,11 @@ void OpenFunscripter::step() noexcept {
                 ImGui::End();
             }
 
+#ifndef NDEBUG
             if (DebugDemo) {
                 ImGui::ShowDemoWindow(&DebugDemo);
             }
-
+#endif
             if (DebugMetrics) {
                 ImGui::ShowMetricsWindow(&DebugMetrics);
             }
@@ -2073,7 +2074,7 @@ void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
     const bool mustLock = SDL_MUSTLOCK(surface); 
     if (mustLock) { SDL_LockSurface(surface); }
 
-    SDL_Rect rect{ 0 };
+    SDL_Rect rect = {0};
     rect.h = height;
 
     const float relStep = 1.f / width;
@@ -2769,8 +2770,10 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 "\0");
             ImGui::Separator();
             if (ImGui::BeginMenu("DEBUG ONLY")) {
-                if (ImGui::MenuItem("ImGui", NULL, &DebugMetrics)) {}
+                if (ImGui::MenuItem("Metrics", NULL, &DebugMetrics)) {}
+#ifndef NDEBUG
                 if (ImGui::MenuItem("ImGui Demo", NULL, &DebugDemo)) {}
+#endif
                 ImGui::EndMenu();
             }
             ImGui::EndMenu();
@@ -2995,7 +2998,7 @@ bool OpenFunscripter::ShowMetadataEditorWindow(bool* open) noexcept
 }
 
 void OpenFunscripter::SetFullscreen(bool fullscreen) {
-    static SDL_Rect restoreRect{ 0,0, 1280,720 };
+    static SDL_Rect restoreRect = {0, 0, 1280, 720};
     if (fullscreen) {
         SDL_GetWindowPosition(window, &restoreRect.x, &restoreRect.y);
         SDL_GetWindowSize(window, &restoreRect.w, &restoreRect.h);
