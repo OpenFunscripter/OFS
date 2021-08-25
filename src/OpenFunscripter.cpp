@@ -146,8 +146,7 @@ bool OpenFunscripter::setup(int argc, char* argv[])
 
     settings = std::make_unique<OpenFunscripterSettings>(Util::Prefpath("config.json"));
     
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
-    {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
         LOGF_ERROR("Error: %s\n", SDL_GetError());
         return false;
     }

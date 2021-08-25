@@ -497,19 +497,27 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 				EventSystem::PushEvent(ScriptTimelineEvents::FfmpegAudioProcessingFinished);
 				return 0;
 			};
-			if (ImGui::BeginMenu("Audio waveform")) {
-				ImGui::DragFloat("Scale", &ScaleAudio, 0.01f, 0.01f, 10.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-				ImGui::ColorEdit3("Color", &WaveformColor.Value.x, ImGuiColorEditFlags_None);
+			if (ImGui::BeginMenu("Waveform")) {
+				if(ImGui::BeginMenu("Settings")) {
+					ImGui::DragFloat("Scale", &ScaleAudio, 0.01f, 0.01f, 10.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+					ImGui::ColorEdit3("Color", &WaveformColor.Value.x, ImGuiColorEditFlags_None);
+					ImGui::EndMenu();
+				}
 				if (ImGui::MenuItem("Enable waveform", NULL, &ShowAudioWaveform, !waveform.BusyGenerating())) {}
-				if (ImGui::MenuItem(waveform.BusyGenerating() 
-					? "Processing audio..." 
-					: "Update waveform", NULL, false, !waveform.BusyGenerating() && videoPath != nullptr)) {
+
+				if(waveform.BusyGenerating()) {
+					ImGui::MenuItem("Processing audio...", NULL, false, false);
+					ImGui::SameLine();
+					OFS::Spinner("##AudioSpin", ImGui::GetFontSize() / 3.f, 4.f, ImGui::GetColorU32(ImGuiCol_TabActive));
+				}
+				else if(ImGui::MenuItem("Update waveform", NULL, false, !waveform.BusyGenerating() && videoPath != nullptr)) {
 					if (!waveform.BusyGenerating()) {
 						ShowAudioWaveform = false; // gets switched true after processing
 						auto handle = SDL_CreateThread(updateAudioWaveformThread, "OFS_GenWaveform", this);
 						SDL_DetachThread(handle);
 					}
 				}
+
 				if (ShowAudioWaveform) { if (ImGui::MenuItem("Enable P-Mode " ICON_WARNING_SIGN, 0, &WaveformPartyMode)) {} }
 				ImGui::EndMenu();
 			}
