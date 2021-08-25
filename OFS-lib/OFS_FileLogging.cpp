@@ -98,6 +98,32 @@ inline static void AppendToBuf(std::vector<char>& buffer, const char* msg, uint3
     memcpy(buffer.data() + initialSize, msg, size);
 };
 
+inline static void AddNewLine() noexcept
+{
+    // insert a newline if needed
+    auto& buffer = Thread.LogMsgBuffer;
+    if(!buffer.empty() &&  buffer.back() != '\n') {
+        buffer.resize(buffer.size() + 1);
+        buffer.back() = '\n';
+    }
+}
+
+void OFS_FileLogger::LogToFileR(const char* prefix, const char* msg, bool newLine) noexcept
+{
+    SDL_Log("%s %s", prefix, msg);
+    SDL_AtomicLock(&Thread.lock);
+    
+    auto& buffer = Thread.LogMsgBuffer;
+    AppendToBuf(buffer, prefix, strlen(prefix));
+    AppendToBuf(buffer, msg, strlen(msg));
+
+    if(newLine) {
+        AddNewLine();
+    }
+
+    SDL_AtomicUnlock(&Thread.lock);   
+}
+
 void OFS_FileLogger::LogToFileR(OFS_LogLevel level, const char* msg, uint32_t size, bool newLine) noexcept
 {
     LogToConsole(level, msg);
@@ -122,14 +148,9 @@ void OFS_FileLogger::LogToFileR(OFS_LogLevel level, const char* msg, uint32_t si
             case OFS_LogLevel::OFS_LOG_ERROR: 
                 msgTypeLen = stbsp_snprintf(fileFmt, sizeof(fileFmt), fmt, time, "ERROR");
                 break;
-            case OFS_LogLevel::OFS_MPV_LOG_DEBUG:
-            case OFS_LogLevel::OFS_MPV_LOG_ERROR:
-            case OFS_LogLevel::OFS_MPV_LOG_WARN:
-            case OFS_LogLevel::OFS_MPV_LOG_INFO:
-            {
-                msgTypeLen = stbsp_snprintf(fileFmt, sizeof(fileFmt), "[%6.3f][  MPV]: ", time);
+            default:
+                msgTypeLen = stbsp_snprintf(fileFmt, sizeof(fileFmt), fmt, time, "-----");
                 break;
-            }
         }
         AppendToBuf(buffer, fileFmt, msgTypeLen);
     }
@@ -138,11 +159,7 @@ void OFS_FileLogger::LogToFileR(OFS_LogLevel level, const char* msg, uint32_t si
     AppendToBuf(buffer, msg, size);
 
     if(newLine) {
-        // insert a newline if needed
-        if(!buffer.empty() &&  buffer.back() != '\n') {
-            buffer.resize(buffer.size() + 1);
-            buffer.back() = '\n';
-        }
+        AddNewLine();
     }
 
     SDL_AtomicUnlock(&Thread.lock);

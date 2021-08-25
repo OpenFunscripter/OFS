@@ -8,9 +8,13 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-#if WIN32
+#if defined(WIN32)
 #define STBI_WINDOWS_UTF8
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#include <shellapi.h>
 #endif
+
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 #include "glad/gl.h"
@@ -19,7 +23,10 @@
 #include "imgui_internal.h"
 
 #include "tinyfiledialogs.h"
-#include "utf8.h"
+
+#if defined(WIN32)
+	#include "utf_utils.h"
+#endif
 
 char Util::FormatBuffer[4096];
 
@@ -90,34 +97,52 @@ bool Util::LoadTextureFromBuffer(const char* buffer, size_t buffsize, unsigned i
 	return true;
 }
 
+#ifdef WIN32
+inline static int WindowsShellExecute(const wchar_t* op, const wchar_t* program, const wchar_t* params) noexcept
+{
+	// https://docs.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-shellexecutew
+	//If the function succeeds, it returns a value greater than 32. 
+	//If the function fails, it returns an error value that indicates the cause of the failure.
+	//The return value is cast as an HINSTANCE for backward compatibility with 16-bit Windows applications.
+	//It is not a true HINSTANCE, however.
+	//It can be cast only to an INT_PTR and compared to either 32 or the following error codes below.
+	auto val = (INT_PTR)ShellExecuteW(NULL, op, program, params, NULL, SW_SHOWNORMAL);
+	return val > 32;
+}
+#endif
+
 int Util::OpenFileExplorer(const std::string& str)
 {
-#if WIN32
+#if defined(WIN32)
 	std::wstring wstr = Util::Utf8ToUtf16(str);
 	std::wstringstream ss;
-	ss << '"' << "explorer " << wstr << '"';
-	return _wsystem(ss.str().c_str());
-#elif __APPLE__
+	ss << L'"' << wstr << L'"';
+	auto params = ss.str();
+	return WindowsShellExecute(nullptr, L"explorer", params.c_str());
+#elif defined(__APPLE__)
 	LOG_ERROR("Not implemented for this platform.");
+	return 1;
 #else
 	return OpenUrl(str);
 #endif
-	return 1;
 }
 
 int Util::OpenUrl(const std::string& url)
 {
-	char tmp[1024];
-#if WIN32
-	stbsp_snprintf(tmp, sizeof(tmp), "start \"\" \"%s\"", url.c_str());
-	return std::system(tmp);
-#elif __APPLE__
+#if defined(WIN32)
+	std::wstring wstr = Util::Utf8ToUtf16(url);
+	std::wstringstream ss;
+	ss << L'"' << wstr << L'"';
+	auto params = ss.str();
+	return WindowsShellExecute(L"open", params.c_str(), NULL);
+#elif defined(__APPLE__)
 	LOG_ERROR("Not implemented for this platform.");
+	return 1;
 #else
+	char tmp[1024];
 	stbsp_snprintf(tmp, sizeof(tmp), "xdg-open \"%s\"", url.c_str());
 	return std::system(tmp);
 #endif
-	return 1;
 }
 
 void Util::ForceMinumumWindowSize(ImGuiWindow* window) noexcept
@@ -149,15 +174,15 @@ void Util::OpenFileDialog(const std::string& title, const std::string& path, Fil
 		}
 
 #ifdef WIN32
-		std::wstring wtitle(tinyfd_utf8to16(data->title.c_str()));
-		std::wstring wpath(tinyfd_utf8to16(data->path.c_str()));
-		std::wstring wfilterText(tinyfd_utf8to16(data->filterText.c_str()));
+		std::wstring wtitle = Util::Utf8ToUtf16(data->title);
+		std::wstring wpath = Util::Utf8ToUtf16(data->path);
+		std::wstring wfilterText = Util::Utf8ToUtf16(data->filterText);
 		std::vector<std::wstring> wfilters;
 		std::vector<const wchar_t*> wc_str;
 		wfilters.reserve(data->filters.size());
 		wc_str.reserve(data->filters.size());
 		for (auto&& filter : data->filters) {
-			wfilters.emplace_back(tinyfd_utf8to16(filter));
+			wfilters.emplace_back(Util::Utf8ToUtf16(filter));
 			wc_str.push_back(wfilters.back().c_str());
 		}
 		auto result = tinyfd_utf16to8(tinyfd_openFileDialogW(wtitle.c_str(), wpath.c_str(), wc_str.size(), wc_str.data(), wfilterText.empty() ? NULL : wfilterText.c_str(), data->multiple));
@@ -389,29 +414,19 @@ std::string Util::Resource(const std::string& path) noexcept
 	return (base / "data" / rel).string();
 }
 
+#if defined(WIN32)
 std::wstring Util::Utf8ToUtf16(const std::string& str) noexcept
 {
-	std::wstring result;
-
-	if (!utf8::is_valid(str.begin(), str.end())) {
-		LOGF_ERROR("%s is not valid utf8", str.c_str());
-		return result;
-	}
-
-	result.reserve(utf8::unchecked::distance(str.begin(), str.end()));
-	utf8::unchecked::utf8to16(str.begin(), str.end(), std::back_inserter(result));
-	return result;
+	using namespace uu;
+	std::wstring wideStr; wideStr.resize(str.size());
+	auto end = UtfUtils::SseSmallTableConvert(
+		(const UtfUtils::char8_t*)str.c_str(),
+		(const UtfUtils::char8_t*)str.c_str() + str.size(),
+		(char16_t*)wideStr.data());
+	wideStr.resize(end);
+	return wideStr;
 }
-
-uint32_t Util::Utf8Length(const std::string& str) noexcept
-{
-	if (!utf8::is_valid(str.begin(), str.end())) {
-		LOGF_ERROR("%s is not valid utf8", str.c_str());
-		return 0;
-	}
-
-	return utf8::unchecked::distance(str.begin(), str.end());
-}
+#endif
 
 std::filesystem::path Util::PathFromString(const std::string& str) noexcept
 {
@@ -462,41 +477,4 @@ uint32_t Util::Hash(const char* data, size_t size, int32_t seed) noexcept
 {
 	static_assert(sizeof(uint32_t) == sizeof(ImGuiID));
 	return ImHashStr(data, size, seed);
-}
-
-
-void Util::DownloadFfmpeg() noexcept
-{
-#ifdef WIN32
-	auto ffmpeg = Util::FfmpegPath();
-	if(!Util::FileExists(ffmpeg.u8string())) {
-		auto path = Util::Basepath();
-		auto downloadPath = path / "ffmpeg.zip";
-
-		std::wstringstream ss;
-		if(!Util::FileExists(downloadPath.u8string())) {
-			ss << L"powershell Write-Host \"ffmpeg.exe was not found.\";";
-			ss << L"$confirmation = Read-Host \"Do you want do download it? [y/n]\";";
-			ss << L" if ($confirmation -eq 'y') {";
-			ss << L" Write-Host \"Downloading ffmpeg.exe\";";
-			ss << L" Invoke-WebRequest ";
-			ss << L" -Uri \"https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip\"";
-			ss << L" -OutFile \"" << downloadPath.wstring() << L'"';
-			ss << L'}';
-			auto downloadScript = ss.str();
-			_wsystem(downloadScript.c_str());
-		}
-
-		if(Util::FileExists(downloadPath.u8string())) {
-			{
-				ss.str(std::wstring());
-				ss << L"tar.exe -xvf ";
-				ss << L'"' << downloadPath.wstring() << L'"';
-				ss << L" --strip-components 2  **/ffmpeg.exe";
-				auto extractScript = ss.str();
-				_wsystem(extractScript.c_str());
-			}
-		}
-	}
-#endif
 }

@@ -7,9 +7,6 @@
 [submodule "lib/json"]
 	path = lib/json
 	url = https://github.com/nlohmann/json.git
-[submodule "lib/utfcpp"]
-	path = lib/utfcpp
-	url = https://github.com/nemtrif/utfcpp.git
 [submodule "lib/glm"]
 	path = lib/glm
 	url = https://github.com/g-truc/glm.git
@@ -34,3 +31,6 @@
 [submodule "lib/EASTL"]
 	path = lib/EASTL
 	url = https://github.com/electronicarts/EASTL.git
+[submodule "lib/utf_utils"]
+	path = lib/utf_utils
+	url = https://github.com/BobSteagall/utf_utils.git

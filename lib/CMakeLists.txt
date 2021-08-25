@@ -262,13 +262,11 @@ add_library(tinyfiledialogs STATIC ${tiny_SRC} ${tiny_HEADER})
 target_include_directories(tinyfiledialogs PUBLIC "tinyfiledialogs/")
 
 
-# ==========
-# = utfcpp = 
-# ==========
-set(UTF8_TESTS OFF CACHE BOOL "" FORCE)
-set(UTF8_INSTALL OFF CACHE BOOL "" FORCE)
-set(UTF8_SAMPLES OFF CACHE BOOL "" FORCE)
-add_subdirectory("utfcpp/")
+# =============
+# = utf_utils = 
+# =============
+add_library(utf_utils STATIC "utf_utils/src/utf_utils.cpp")
+target_include_directories(utf_utils PUBLIC "utf_utils/src/")
 
 # ==============
 # === reproc ===

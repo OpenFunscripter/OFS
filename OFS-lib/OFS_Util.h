@@ -305,8 +305,7 @@ public:
 	inline static bool StringStartsWith(const std::string& string, const std::string& start) noexcept
 	{
 		if (string.length() >= start.length()) {
-			for (int i = 0; i < start.size(); i++)
-			{
+			for (int i = 0; i < start.size(); i++) {
 				if (string[i] != start[i]) return false;
 			}
 			return true;
@@ -393,8 +392,9 @@ public:
 		return true;
 	}
 
+#if defined(WIN32)
 	static std::wstring Utf8ToUtf16(const std::string& str) noexcept;
-	static uint32_t Utf8Length(const std::string& str) noexcept;
+#endif
 
 	static std::filesystem::path PathFromString(const std::string& str) noexcept;
 	static void ConcatPathSafe(std::filesystem::path& path, const std::string& element) noexcept;
@@ -402,7 +402,6 @@ public:
 	static bool SavePNG(const std::string& path, void* buffer, int32_t width, int32_t height, int32_t channels = 3, bool flipVertical = true) noexcept;
 
 	static std::filesystem::path FfmpegPath() noexcept;
-	static void DownloadFfmpeg() noexcept;
 
 	static char FormatBuffer[4096];
 	inline static const char* Format(const char* fmt, ...) noexcept

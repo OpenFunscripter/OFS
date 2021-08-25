@@ -39,26 +39,10 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 		case MPV_EVENT_LOG_MESSAGE:
 		{
 			mpv_event_log_message* msg = (mpv_event_log_message*)mp_event->data;
-			OFS_FileLogger::LogToFileF(OFS_LogLevel::OFS_MPV_LOG_INFO, "(%s)", msg->prefix);
-			switch (msg->log_level)
-			{
-			case MPV_LOG_LEVEL_INFO:
-				OFS_FileLogger::LogToFileR(OFS_LogLevel::OFS_MPV_LOG_INFO, msg->text);
-				break;
-			case MPV_LOG_LEVEL_FATAL:
-				OFS_FileLogger::LogToFileR(OFS_LogLevel::OFS_MPV_LOG_ERROR, msg->text);
-				break;
-			case MPV_LOG_LEVEL_ERROR:
-				OFS_FileLogger::LogToFileR(OFS_LogLevel::OFS_MPV_LOG_ERROR, msg->text);
-				break;
-			case MPV_LOG_LEVEL_WARN:
-				OFS_FileLogger::LogToFileR(OFS_LogLevel::OFS_MPV_LOG_WARN, msg->text);
-				break;
-			case MPV_LOG_LEVEL_DEBUG:
-			default:
-				OFS_FileLogger::LogToFileR(OFS_LogLevel::OFS_MPV_LOG_DEBUG, msg->text);
-				break;
-			}
+			char MpvLogPrefix[48];
+			int len = stbsp_snprintf(MpvLogPrefix, sizeof(MpvLogPrefix), "[%s][MPV] (%s): ", msg->level, msg->prefix);
+			FUN_ASSERT(len <= sizeof(MpvLogPrefix), "buffer to small");
+			OFS_FileLogger::LogToFileR(MpvLogPrefix, msg->text);
 			continue;
 		}
 		case MPV_EVENT_COMMAND_REPLY:
