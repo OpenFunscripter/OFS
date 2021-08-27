@@ -122,7 +122,6 @@ if(WIN32)
 	target_link_libraries(${PROJECT_NAME} PUBLIC
 		# linking of libmpv can be improved but this works...
 		mpv.lib
-		utf_utils
 	)
 	target_compile_definitions(${PROJECT_NAME} PUBLIC
 		"NOMINMAX"

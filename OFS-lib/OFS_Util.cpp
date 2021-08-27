@@ -24,9 +24,7 @@
 
 #include "tinyfiledialogs.h"
 
-#if defined(WIN32)
-	#include "utf_utils.h"
-#endif
+#include "EAStdC/EAString.h"
 
 char Util::FormatBuffer[4096];
 
@@ -408,25 +406,21 @@ void Util::MessageBoxAlert(const std::string& title, const std::string& message)
 
 std::string Util::Resource(const std::string& path) noexcept
 {
-	auto rel = std::filesystem::path(path);
-	rel.make_preferred();
-	auto base = Util::Basepath();
-	return (base / "data" / rel).string();
+	auto base = Util::Basepath() / L"data" / Util::Utf8ToUtf16(path);
+	base.make_preferred();
+	return base.u8string();
 }
 
-#if defined(WIN32)
 std::wstring Util::Utf8ToUtf16(const std::string& str) noexcept
 {
-	using namespace uu;
-	std::wstring wideStr; wideStr.resize(str.size());
-	auto end = UtfUtils::SseSmallTableConvert(
-		(const UtfUtils::char8_t*)str.c_str(),
-		(const UtfUtils::char8_t*)str.c_str() + str.size(),
-		(char16_t*)wideStr.data());
-	wideStr.resize(end);
+	using namespace EA::StdC;
+	auto strLen = StrlenUTF8Decoded(str.c_str());
+	std::wstring wideStr; 
+	wideStr.resize(strLen + 1); // for '\0'
+	auto end = Strlcpy(wideStr.data(), str.c_str(), wideStr.size(), str.size());
+	wideStr.resize(strLen);
 	return wideStr;
 }
-#endif
 
 std::filesystem::path Util::PathFromString(const std::string& str) noexcept
 {

@@ -28,6 +28,3 @@
 [submodule "lib/EASTL"]
 	path = lib/EASTL
 	url = https://github.com/electronicarts/EASTL.git
-[submodule "lib/utf_utils"]
-	path = lib/utf_utils
-	url = https://github.com/BobSteagall/utf_utils.git
