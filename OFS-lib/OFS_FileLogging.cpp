@@ -44,9 +44,8 @@ static int LogThreadFunction(void* threadData) noexcept
     auto& thread = *(OFS_LogThread*)threadData;
     auto& msg = thread.LogMsgBuffer;
     auto waitMut = SDL_CreateMutex();
-
+    SDL_LockMutex(waitMut);
     while(!thread.ShouldExit && OFS_FileLogger::LogFileHandle) {
-        SDL_LockMutex(waitMut);
         if(SDL_CondWait(thread.WaitFlush, waitMut) == 0) {
             SDL_AtomicLock(&thread.lock);
             SDL_RWwrite(OFS_FileLogger::LogFileHandle, msg.data(), 1, msg.size());
