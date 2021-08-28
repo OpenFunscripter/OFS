@@ -65,9 +65,10 @@ void ScriptTimeline::setup(UndoSystem* undoSystem)
 
 	glGenTextures(1, &WaveformTex);
 	glBindTexture(GL_TEXTURE_1D, WaveformTex);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	WaveShader = std::make_unique<WaveformShader>();
 }
 
@@ -576,32 +577,32 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 		const float relEnd = (offsetTime + visibleTime) / duration;
 		int32_t startIndex = relStart * (float)waveform.SampleCount();
 		int32_t endIndex = relEnd * (float)waveform.SampleCount();
-		const int totalSamples = endIndex - startIndex;
 
 		WaveformViewport = ImGui::GetWindowViewport();
-		auto renderWaveform = [](const std::vector<float>& samples, ScriptTimeline* timeline, const OverlayDrawingCtx& ctx, int start_index, int end_index)
+
+		auto renderWaveform = [](const std::vector<float>& samples, ScriptTimeline* timeline, const OverlayDrawingCtx& ctx, int startIndex, int endIndex) noexcept
 		{
 			OFS_PROFILE(__FUNCTION__);
-			const int total_samples = end_index - start_index;
-
-			const int line_merge = 1 + (total_samples / ctx.canvas_size.x);
+			const int totalSamples = endIndex - startIndex;
+			const float desiredSamples = ctx.canvas_size.x / 2.5f;
+			const int everyNth = std::ceilf(totalSamples / desiredSamples);
 
 			timeline->WaveformLineBuffer.clear();
 			float sample = 0.f;
-			for (int i = start_index; i <= end_index; i++) {
+			for (int i = startIndex; i <= endIndex; i++) {
 				if (i >= 0 && i < samples.size()) {
-					float s = samples[i];
+					float s = std::abs(samples[i]);
 					sample = std::max(sample, s);
 				}
 
-				if (i % line_merge == 0) {
-					timeline->WaveformLineBuffer.emplace_back(sample);
+				if (i % everyNth == 0) {
+					timeline->WaveformLineBuffer.emplace_back(sample*255);
 					sample = 0.f;
 				}
 			}
 			glActiveTexture(GL_TEXTURE1);
 			glBindTexture(GL_TEXTURE_1D, timeline->WaveformTex);
-			glTexImage1D(GL_TEXTURE_1D, 0, GL_RED, timeline->WaveformLineBuffer.size(), 0, GL_RED, GL_FLOAT, timeline->WaveformLineBuffer.data());
+			glTexImage1D(GL_TEXTURE_1D, 0, GL_R8, timeline->WaveformLineBuffer.size(), 0, GL_RED, GL_UNSIGNED_BYTE, timeline->WaveformLineBuffer.data());
 
 			ctx.draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) noexcept {
 				ScriptTimeline* ctx = (ScriptTimeline*)cmd->UserCallbackData;
@@ -628,15 +629,16 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 				ctx->WaveShader->PartyMode(ctx->WaveformPartyMode);
 				ctx->WaveShader->Color(&ctx->WaveformColor.Value.x);
 			}, timeline);
+
 			ctx.draw_list->AddImage(0, ctx.canvas_pos, ctx.canvas_pos + ctx.canvas_size);
 			ctx.draw_list->AddCallback(ImDrawCallback_ResetRenderState, 0);
 			ctx.draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) noexcept { glActiveTexture(GL_TEXTURE0); }, 0);
 		};
 
-#if 0 // TODO: this has bad perf
-		renderWaveform(waveform.SamplesHigh, HighRangeCol, waveform.MidMax);
-		renderWaveform(waveform.SamplesMid, MidRangeCol, waveform.LowMax);
-		renderWaveform(waveform.SamplesLow, LowRangeCol, 0.f);
+#if 0 
+		renderWaveform(waveform.SamplesHigh, &HighColor, ctx, startIndex, endIndex);
+		renderWaveform(waveform.SamplesMid, &MidColor, ctx, startIndex, endIndex);
+		renderWaveform(waveform.SamplesLow, &LowColor, ctx, startIndex, endIndex);
 #else
 		renderWaveform(waveform.SamplesHigh, this, ctx, startIndex, endIndex);
 #endif

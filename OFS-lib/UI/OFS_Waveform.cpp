@@ -27,19 +27,19 @@ static bool LoadFlac(OFS_Waveform* waveform, const std::string& output) noexcept
 			for (int i = 0; i < samplesInThisLine; i++) {
 				auto sample = ChunkSamples[sampleIdx + i];
 				if (sample == 0) continue;
-				sample = std::abs(sample / 2);
+				auto floatSample = sample / 32768.f;
 
 				if (sample <= LowRangeMax) {
 					// low range
-					lowPeak += sample;
+					lowPeak += floatSample;
 				}
 				if (sample <= MidRangeMax) {
 					// mid range
-					midPeak += sample;
+					midPeak += floatSample;
 				}
 				if (sample <= HighRangeMax) {
 					// high range
-					highPeak += sample;
+					highPeak += floatSample;
 				}
 			}
 			lowPeak /= (float)SamplesPerLine;
@@ -67,20 +67,14 @@ static bool LoadFlac(OFS_Waveform* waveform, const std::string& output) noexcept
 		}
 	};
 	
-	auto [lowMin, lowMax] = std::minmax_element(waveform->SamplesLow.begin(), waveform->SamplesLow.end());
-	waveform->LowMax = *lowMax;
-	auto [midMin, midMax] = std::minmax_element(waveform->SamplesMid.begin(), waveform->SamplesMid.end());
-	waveform->MidMax = *midMax;
-	
-	auto [highMin, highMax] = std::minmax_element(waveform->SamplesHigh.begin(), waveform->SamplesHigh.end());
-	float min = std::min(*lowMin, *midMin);	min = std::min(min, *highMin);
-	float max = std::max(*lowMax, *midMax);	max = std::max(max, *highMax);
-	mapSamples(waveform->SamplesLow, min, max);
-	mapSamples(waveform->SamplesMid, min, max);
-	mapSamples(waveform->SamplesHigh, min, max);
-	
-	waveform->LowMax = Util::MapRange(waveform->LowMax, min, max, 0.f, 1.f);
-	waveform->MidMax = Util::MapRange(waveform->MidMax, min, max, 0.f, 1.f);
+	//auto [lowMin, lowMax] = std::minmax_element(waveform->SamplesLow.begin(), waveform->SamplesLow.end());
+	//auto [midMin, midMax] = std::minmax_element(waveform->SamplesMid.begin(), waveform->SamplesMid.end());
+	//auto [highMin, highMax] = std::minmax_element(waveform->SamplesHigh.begin(), waveform->SamplesHigh.end());
+	//float min = std::min(*lowMin, *midMin);	min = std::min(min, *highMin);
+	//float max = std::max(*lowMax, *midMax);	max = std::max(max, *highMax);
+	//mapSamples(waveform->SamplesLow, min, max);
+	//mapSamples(waveform->SamplesMid, min, max);
+	//mapSamples(waveform->SamplesHigh, min, max);
 
 	return true;
 }

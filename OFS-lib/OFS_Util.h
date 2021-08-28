@@ -93,6 +93,18 @@ public:
 	}
 
 	template<typename T>
+	inline static T Min(T v1, T v2) noexcept
+	{
+		return (v1 < v2) ? v1 : v2;
+	}
+
+	template<typename T>
+	inline static T Max(T v1, T v2) noexcept
+	{
+		return (v1 > v2) ? v1 : v2;
+	}
+
+	template<typename T>
 	inline static T MapRange(T val, T a1, T a2, T b1, T b2) noexcept {
 		return b1 + (val - a1) * (b2 - b1) / (a2 - a1);
 	}

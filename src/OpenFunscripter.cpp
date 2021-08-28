@@ -2769,7 +2769,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 "VR\0"
                 "\0");
             ImGui::Separator();
-            if (ImGui::BeginMenu("DEBUG ONLY")) {
+            if (ImGui::BeginMenu("Debug")) {
                 if (ImGui::MenuItem("Metrics", NULL, &DebugMetrics)) {}
 #ifndef NDEBUG
                 if (ImGui::MenuItem("ImGui Demo", NULL, &DebugDemo)) {}

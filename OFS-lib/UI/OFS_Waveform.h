@@ -15,9 +15,6 @@ public:
 	std::vector<float> SamplesMid;
 	std::vector<float> SamplesLow;
 
-	float MidMax = 0.f;
-	float LowMax = 0.f;
-
 	inline bool BusyGenerating() noexcept { return generating; }
 
 	bool GenerateAndLoadFlac(const std::string& ffmpegPath, const std::string& videoPath, const std::string& output) noexcept;

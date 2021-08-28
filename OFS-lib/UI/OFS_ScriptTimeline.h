@@ -56,7 +56,7 @@ public:
 	std::unique_ptr<BaseOverlay> overlay;
 	std::vector<std::pair<FunscriptAction, FunscriptAction>> RecordingBuffer;
 	
-	std::vector<float> WaveformLineBuffer;
+	std::vector<uint8_t> WaveformLineBuffer;
 	uint32_t WaveformTex = 0;
 	std::unique_ptr<class WaveformShader> WaveShader;
 	bool WaveformPartyMode = false;
