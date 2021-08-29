@@ -88,7 +88,7 @@ void OFS_WaveformLOD::Update(const OverlayDrawingCtx& ctx) noexcept
 	float visibleSampleCountF = endIndexF - startIndexF;
 
 	const float desiredSamples = ctx.canvas_size.x/3.f;
-	const float everyNth = std::ceilf(visibleSampleCountF / desiredSamples);
+	const float everyNth = SDL_ceilf(visibleSampleCountF / desiredSamples);
 
 	auto& lineBuf = WaveformLineBuffer;		
 	if((int32_t)lastMultiple != (int32_t)(startIndexF / everyNth)) {
@@ -134,7 +134,8 @@ void OFS_WaveformLOD::Update(const OverlayDrawingCtx& ctx) noexcept
 			}
 		}
 
-		lastMultiple = std::floorf(startIndexF / everyNth);
+		
+		lastMultiple = SDL_floorf(startIndexF / everyNth);
 		lastCanvasX = ctx.canvas_size.x;
 		lastVisibleDuration = ctx.visibleTime;
 		Upload();

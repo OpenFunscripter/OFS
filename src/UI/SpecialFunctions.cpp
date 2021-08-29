@@ -660,7 +660,7 @@ void CustomLua::resetVM() noexcept
             }
 
             if (i == scriptIndex) { 
-                stbsp_snprintf(tmp, sizeof(tmp), "CurrentScript=LoadedScripts[%d]\n", i + 1, loadedScript->Path().c_str());
+                stbsp_snprintf(tmp, sizeof(tmp), "CurrentScript=LoadedScripts[%d]\n", i + 1);
                 builder << tmp;
                 continue; 
             }
@@ -668,16 +668,15 @@ void CustomLua::resetVM() noexcept
 
         {
             // paths
-            auto vPath = app->player->getVideoPath();
-            if (vPath) {
-                stbsp_snprintf(tmp, sizeof(tmp), "VideoFilePath=[=[%s]=]\n", app->player->getVideoPath());
-                builder << tmp;
+            auto videoPath = app->player->getVideoPath();
+            if(!videoPath) videoPath = "";
+            stbsp_snprintf(tmp, sizeof(tmp), "VideoFilePath=[=[%s]=]\n", videoPath);
+            builder << tmp;
 
-                auto path = Util::PathFromString(vPath);
-                path.replace_filename("");
-                stbsp_snprintf(tmp, sizeof(tmp), "VideoFileDirectory=[=[%s]=]\n", path.u8string().c_str());
-                builder << tmp;
-            }
+            auto path = Util::PathFromString(videoPath);
+            path.replace_filename("");
+            stbsp_snprintf(tmp, sizeof(tmp), "VideoFileDirectory=[=[%s]=]\n", path.u8string().c_str());
+            builder << tmp;
         }
 
         Thread.NewPositionMs = (double)app->player->getCurrentPositionSecondsInterp() * 1000.0;
