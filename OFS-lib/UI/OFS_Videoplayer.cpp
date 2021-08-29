@@ -150,9 +150,8 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 				break;
 			}
 			case MpvFilePath:
-				// I'm not sure if I own this memory :/
-				// But I can't free it so I will assume I don't
-				MpvData.filePath = *((const char**)(prop->data));
+                // Copy string to ensure we own the memory and control the lifetime
+				MpvData.filePath = std::string(*((const char**)(prop->data)));
 				notifyVideoLoaded();
 				break;
 			case MpvAbLoopA:
@@ -431,7 +430,7 @@ void VideoplayerWindow::setupVrMode() noexcept
 
 void VideoplayerWindow::notifyVideoLoaded() noexcept
 {
-	EventSystem::PushEvent(VideoEvents::MpvVideoLoaded, (void*)MpvData.filePath);
+	EventSystem::PushEvent(VideoEvents::MpvVideoLoaded, (void*)MpvData.filePath.c_str());
 }
 
 void VideoplayerWindow::drawVrVideo(ImDrawList* draw_list) noexcept

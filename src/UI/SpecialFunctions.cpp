@@ -643,9 +643,9 @@ void CustomLua::resetVM() noexcept
             builder << "table.insert(LoadedScripts,Funscript:new())\n";
 
             // i+1 because lua indexing starts at 1 !!!
-            stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d].title=[[%s]]\n", i+1, loadedScript->Title.c_str());
+            stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d].title=[=[%s]=]\n", i+1, loadedScript->Title.c_str());
             builder << tmp;
-            stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d].path=[[%s]]\n", i+1, loadedScript->Path().c_str());
+            stbsp_snprintf(tmp, sizeof(tmp), "LoadedScripts[%d].path=[=[%s]=]\n", i+1, loadedScript->Path().c_str());
             builder << tmp;
 
             for (auto&& action : loadedScript->Actions()) {
@@ -668,14 +668,14 @@ void CustomLua::resetVM() noexcept
 
         {
             // paths
-            stbsp_snprintf(tmp, sizeof(tmp), "VideoFilePath=[[%s]]\n", app->player->getVideoPath());
-            builder << tmp;
-
             auto vPath = app->player->getVideoPath();
             if (vPath) {
+                stbsp_snprintf(tmp, sizeof(tmp), "VideoFilePath=[=[%s]=]\n", app->player->getVideoPath());
+                builder << tmp;
+
                 auto path = Util::PathFromString(vPath);
                 path.replace_filename("");
-                stbsp_snprintf(tmp, sizeof(tmp), "VideoFileDirectory=[[%s]]\n", path.u8string().c_str());
+                stbsp_snprintf(tmp, sizeof(tmp), "VideoFileDirectory=[=[%s]=]\n", path.u8string().c_str());
                 builder << tmp;
             }
         }
