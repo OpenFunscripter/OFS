@@ -105,7 +105,7 @@ private:
 
 
 		bool videoLoaded = false;
-		const char* filePath = nullptr;
+        std::string filePath = "";
 	} MpvData;
 
 
@@ -259,7 +259,7 @@ public:
 
 	void closeVideo() noexcept;
 
-	inline const char* getVideoPath() const noexcept { return (MpvData.filePath == nullptr) ? "" : MpvData.filePath; }
+	inline const char* getVideoPath() const noexcept { return MpvData.filePath.c_str(); }
 
 	inline uint32_t VideoWidth() const noexcept { return MpvData.videoWidth; }
 	inline uint32_t VideoHeight() const noexcept { return MpvData.videoHeight; }
