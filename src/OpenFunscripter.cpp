@@ -1584,7 +1584,7 @@ void OpenFunscripter::autoBackup() noexcept
     static auto BackupStartPoint = asap::now();
     name = Util::Format("%s_%02d%02d%02d_%02d%02d%02d", 
         name.c_str(), BackupStartPoint.year(), 
-        BackupStartPoint.month(), 
+        BackupStartPoint.month() + 1, 
         BackupStartPoint.mday(), 
         BackupStartPoint.hour(), BackupStartPoint.minute(), BackupStartPoint.second());
 
