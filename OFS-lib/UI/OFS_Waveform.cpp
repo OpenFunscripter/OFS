@@ -17,6 +17,8 @@ bool OFS_Waveform::LoadFlac(const std::string& output) noexcept
 
 	uint32_t sampleCount = 0;
 	float avgSample = 0.f;
+	Samples.clear();
+	Samples.reserve(flac->totalPCMFrameCount / SamplesPerLine);
 	while ((sampleCount = drflac_read_pcm_frames_s16(flac, ChunkSamples.size(), ChunkSamples.data())) > 0) {
 		for (int sampleIdx = 0; sampleIdx < sampleCount; sampleIdx += SamplesPerLine) {
 			int samplesInThisLine = std::min(SamplesPerLine, (int)sampleCount - sampleIdx);
