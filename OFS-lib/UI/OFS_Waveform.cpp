@@ -1,81 +1,37 @@
 #include "OFS_Waveform.h"
 #include "OFS_Util.h"
 #include "OFS_Profiling.h"
+#include "OFS_GL.h"
+#include "OFS_ScriptTimeline.h"
 
 #define DR_FLAC_IMPLEMENTATION
 #include "dr_flac.h"
 
-static bool LoadFlac(OFS_Waveform* waveform, const std::string& output) noexcept
+bool OFS_Waveform::LoadFlac(const std::string& output) noexcept
 {
 	drflac* flac = drflac_open_file(output.c_str(), NULL);
 	if (!flac) return false;
 
-	constexpr float LowRangeMin = 0.f; constexpr float LowRangeMax = 500.f;
-	constexpr float MidRangeMin = 501.f; constexpr float MidRangeMax = 6000.f;
-	constexpr float HighRangeMin = 6001.f; constexpr float HighRangeMax = 20000.f;
-
 	std::vector<drflac_int16> ChunkSamples; ChunkSamples.resize(48000);
-	constexpr int SamplesPerLine = 40; 
+	constexpr int SamplesPerLine = 60; 
 
 	uint32_t sampleCount = 0;
-	float lowPeak = 0.f;
-	float midPeak = 0.f;
-	float highPeak = 0.f;
+	float avgSample = 0.f;
 	while ((sampleCount = drflac_read_pcm_frames_s16(flac, ChunkSamples.size(), ChunkSamples.data())) > 0) {
 		for (int sampleIdx = 0; sampleIdx < sampleCount; sampleIdx += SamplesPerLine) {
 			int samplesInThisLine = std::min(SamplesPerLine, (int)sampleCount - sampleIdx);
 			for (int i = 0; i < samplesInThisLine; i++) {
 				auto sample = ChunkSamples[sampleIdx + i];
-				if (sample == 0) continue;
 				auto floatSample = sample / 32768.f;
-
-				if (sample <= LowRangeMax) {
-					// low range
-					lowPeak += floatSample;
-				}
-				if (sample <= MidRangeMax) {
-					// mid range
-					midPeak += floatSample;
-				}
-				if (sample <= HighRangeMax) {
-					// high range
-					highPeak += floatSample;
-				}
+				avgSample += floatSample;
 			}
-			lowPeak /= (float)SamplesPerLine;
-			midPeak /= (float)SamplesPerLine;
-			highPeak /= (float)SamplesPerLine;
-
-			waveform->SamplesLow.emplace_back(lowPeak);
-			waveform->SamplesMid.emplace_back(midPeak);
-			waveform->SamplesHigh.emplace_back(highPeak);
+			avgSample /= (float)SamplesPerLine;
+			Samples.emplace_back(avgSample);
 		}
 	}
 	drflac_close(flac);
 
-	waveform->SamplesLow.shrink_to_fit();
-	waveform->SamplesMid.shrink_to_fit();
-	waveform->SamplesHigh.shrink_to_fit();
-	
-	auto mapSamples = [](std::vector<float>& samples, float min, float max) noexcept
-	{
-		if (samples.size() <= 1) return;
-		if (min != 0.f || max != 1.f) {
-			for (auto& val : samples) {
-				val = Util::MapRange<float>(val, min, max, 0.f, 1.f);
-			}
-		}
-	};
-	
-	//auto [lowMin, lowMax] = std::minmax_element(waveform->SamplesLow.begin(), waveform->SamplesLow.end());
-	//auto [midMin, midMax] = std::minmax_element(waveform->SamplesMid.begin(), waveform->SamplesMid.end());
-	//auto [highMin, highMax] = std::minmax_element(waveform->SamplesHigh.begin(), waveform->SamplesHigh.end());
-	//float min = std::min(*lowMin, *midMin);	min = std::min(min, *highMin);
-	//float max = std::max(*lowMax, *midMax);	max = std::max(max, *highMax);
-	//mapSamples(waveform->SamplesLow, min, max);
-	//mapSamples(waveform->SamplesMid, min, max);
-	//mapSamples(waveform->SamplesHigh, min, max);
-
+	Samples.shrink_to_fit();
 	return true;
 }
 
@@ -97,11 +53,113 @@ bool OFS_Waveform::GenerateAndLoadFlac(const std::string& ffmpegPath, const std:
 	auto [status, ec] = reproc::run(args.data(), options);
 	if (status != 0) { generating = false; return false; }
 
-	if (!LoadFlac(this, output)) {
+	if (!LoadFlac(output)) {
 		generating = false;
 		return false;
 	}
 
 	generating = false;
 	return true;
+}
+
+void OFS_WaveformLOD::Init() noexcept
+{
+	glGenTextures(1, &WaveformTex);
+	glBindTexture(GL_TEXTURE_1D, WaveformTex);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	WaveShader = std::make_unique<WaveformShader>();
+}
+
+void OFS_WaveformLOD::Update(const OverlayDrawingCtx& ctx) noexcept
+{
+	OFS_PROFILE(__FUNCTION__);
+	const float relStart = ctx.offsetTime / ctx.totalDuration;
+	const float relDuration = ctx.visibleTime / ctx.totalDuration;
+	
+	const auto& samples = data.Samples;
+	const float totalSampleCount = samples.size();
+
+	float startIndexF = relStart * totalSampleCount;
+	float endIndexF = (relStart* totalSampleCount) + (totalSampleCount * relDuration);
+
+	float visibleSampleCountF = endIndexF - startIndexF;
+
+	const float desiredSamples = ctx.canvas_size.x/3.f;
+	const float everyNth = std::ceilf(visibleSampleCountF / desiredSamples);
+
+	auto& lineBuf = WaveformLineBuffer;		
+	if((int32_t)lastMultiple != (int32_t)(startIndexF / everyNth)) {
+		int32_t scrollBy = (startIndexF/everyNth) - lastMultiple;
+
+		if(lastVisibleDuration == ctx.visibleTime
+		&& lastCanvasX == ctx.canvas_size.x
+		&& scrollBy > 0 && scrollBy < lineBuf.size()) {
+			OFS_PROFILE("WaveformScrolling");
+			std::memcpy(lineBuf.data(), lineBuf.data() + scrollBy, sizeof(float) * (lineBuf.size() - scrollBy));
+			lineBuf.resize(lineBuf.size() - scrollBy);
+			
+			int addedCount = 0;
+			float maxSample;
+			for(int32_t i = endIndexF - (everyNth*scrollBy); i <= endIndexF; i += everyNth) {
+				maxSample = 0.f;
+				for(int32_t j=0; j < everyNth; j += 1) {
+					int32_t currentIndex = i + j;
+					if(currentIndex >= 0 && currentIndex < totalSampleCount) {
+						float s = std::abs(data.Samples[currentIndex]);
+						maxSample = Util::Max(maxSample, s);
+					}
+				}
+				lineBuf.emplace_back(maxSample);
+				addedCount += 1; 
+				if(addedCount == scrollBy) break;
+			}
+			assert(addedCount == scrollBy);
+		} else if(scrollBy != 0) {
+			OFS_PROFILE("WaveformUpdate");
+			lineBuf.clear();
+			float maxSample;
+			for(int32_t i = startIndexF; i <= endIndexF; i += everyNth) {
+				maxSample = 0.f;
+				for(int32_t j=0; j < everyNth; j += 1) {
+					int32_t currentIndex = i + j;
+					if(currentIndex >= 0 && currentIndex < totalSampleCount) {
+						float s = std::abs(data.Samples[currentIndex]);
+						maxSample = Util::Max(maxSample, s);
+					}
+				}
+				lineBuf.emplace_back(maxSample);
+			}
+		}
+
+		lastMultiple = std::floorf(startIndexF / everyNth);
+		lastCanvasX = ctx.canvas_size.x;
+		lastVisibleDuration = ctx.visibleTime;
+		Upload();
+	}
+
+	samplingOffset = (1.f / lineBuf.size()) * ((startIndexF/everyNth) - lastMultiple);
+
+#if 0
+	ImGui::Begin("Waveform Debug");
+	ImGui::Text("Audio samples: %lld", lineBuf.size());
+	ImGui::Text("Expected samples: %f", (endIndexF - startIndexF)/everyNth);
+	ImGui::Text("Samples in view: %f", (endIndexF - startIndexF));
+	ImGui::Text("Start: %f", startIndexF);
+	ImGui::Text("End: %f", endIndexF);
+	ImGui::Text("Every nth: %f", everyNth);
+	ImGui::Text("Last multiple: %f", lastMultiple);
+	ImGui::SliderFloat("Offset", &samplingOffset, 0.f, 1.f/lineBuf.size(), "%f");
+	ImGui::End();
+#endif
+}
+
+void OFS_WaveformLOD::Upload() noexcept
+{
+	OFS_PROFILE(__FUNCTION__);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_1D, WaveformTex);
+	glTexImage1D(GL_TEXTURE_1D, 0, GL_R32F, WaveformLineBuffer.size(), 0, GL_RED, GL_FLOAT, WaveformLineBuffer.data());
 }

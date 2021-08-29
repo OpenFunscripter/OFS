@@ -55,13 +55,6 @@ public:
 
 	std::unique_ptr<BaseOverlay> overlay;
 	std::vector<std::pair<FunscriptAction, FunscriptAction>> RecordingBuffer;
-	
-	std::vector<uint8_t> WaveformLineBuffer;
-	uint32_t WaveformTex = 0;
-	std::unique_ptr<class WaveformShader> WaveShader;
-	bool WaveformPartyMode = false;
-	ImColor WaveformColor = IM_COL32(227, 66, 52, 255);
-	ImGuiViewport* WaveformViewport = nullptr;
 		
 	const char* videoPath = nullptr;
 	float frameTime = 16.66667;
@@ -114,15 +107,16 @@ private:
 	
 	bool ShowAudioWaveform = false;
 	float ScaleAudio = 1.f;
-	OFS_Waveform waveform;
+	
 public:
+	OFS_WaveformLOD Wave;
 	static constexpr const char* PositionsId = "Positions";
 
 	static constexpr float MAX_WINDOW_SIZE = 300.f;
 	static constexpr float MIN_WINDOW_SIZE = 1.f;
 	void setup(UndoSystem* undo);
 
-	inline void ClearAudioWaveform() noexcept { ShowAudioWaveform = false; waveform.Clear(); }
+	inline void ClearAudioWaveform() noexcept { ShowAudioWaveform = false; Wave.data.Clear(); }
 	inline void setStartSelection(float time) noexcept { startSelectionTime = time; }
 	inline float selectionStart() const noexcept { return startSelectionTime; }
 	void ShowScriptPositions(bool* open, float currentTime, float duration, float frameTime, const std::vector<std::shared_ptr<Funscript>>* scripts, int activeScriptIdx) noexcept;

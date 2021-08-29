@@ -174,8 +174,8 @@ private:
 	int32_t AspectLoc = 0;
 	int32_t VideoAspectLoc = 0;
 
-	// this shader handles SBS + top/bottom 180° & top/bottom 360°
-	// SBS 360° is untested
+	// this shader handles SBS + top/bottom 180 & top/bottom 360
+	// SBS 360 is untested
 	static constexpr const char* frag_shader = R"(
 			#version 330 core
 			uniform sampler2D Texture;
@@ -266,19 +266,15 @@ private:
 	int32_t ProjMtxLoc = 0;
 	int32_t AudioLoc = 0;
 	int32_t AudioScaleLoc = 0;
-	int32_t TimeLoc = 0;
-	int32_t ScriptPosLoc = 0;
-	int32_t PartyModeLoc = 0;
+	int32_t AudioSamplingOffset = 0;
 	int32_t ColorLoc = 0;
 
 	static constexpr const char* frag_shader = R"(
 			#version 330 core
+			uniform vec3 Color;
 			uniform sampler1D audio;
 			uniform float scaleAudio;
-			uniform float Time;
-			uniform float ScriptPos;
-			uniform bool PartyMode;
-			uniform vec3 Color;
+			uniform float SamplingOffset;
 
 			in vec2 Frag_UV;
 			in vec4 Frag_Color;
@@ -289,42 +285,46 @@ private:
 			  return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
 			}
 
+			// https://shahriyarshahrabi.medium.com/procedural-color-algorithm-a37739f6dc1
+			#define _Color1 vec3(0.16470588235, 0.61568627451, 0.56078431372) 
+			#define _Color2 vec3(0.91372549019, 0.76862745098, 0.41568627451)
+			//#define _Color3 vec3(0.95686274509, 0.63529411764, 0.38039215686)
+			#define _Color3 Color
+
+			vec3 sampleOnATriangle(float r1, float r2 ){
+				return (1. - sqrt(r1))*_Color1 + (sqrt(r1)*(1. - r2))*_Color2 + (r2*sqrt(r1)) * _Color3;   
+			}
+
+			float randOneD(float seed){
+				return fract(sin(seed*21.)*61.);
+			}
+
 			void main()	{
-				float sample = texture(audio, Frag_UV.x).x * scaleAudio;
+				const float frequencyBase = 16000.f;
+				const float lowT = (500.f / frequencyBase) * 2.f;
+				const float midT = (2000.f / frequencyBase) * 2.f;
+
+				float unscaledSample = texture(audio, Frag_UV.x + SamplingOffset).x;
+				float sample = unscaledSample * scaleAudio;
 				float padding = (1.f - sample) / 2.f;
 				
-				if(Frag_UV.y >= padding && Frag_UV.y <= (1.f - padding)) {
-					Out_Color = vec4(Color, 1.f);
-				}
-				else if(PartyMode) {
-					if(Frag_UV.y < padding) {
-						Out_Color = vec4(Color.r, 0.0f, Color.b, (Frag_UV.y / padding) * .4f);
-					}
-					else {
-						Out_Color = vec4(Color.r, 0.0f, Color.b, ((1.f - Frag_UV.y) / padding) * .4f);
-					}
-				}
+				//float h1 = step(0.f, (sample/2.f) - abs(Frag_UV.y - 0.5f));
+				//float m1 = step(midT, (sample/2.f) - abs(Frag_UV.y - 0.5f));
+				//float l1 = step(lowT, (sample/2.f) - abs(Frag_UV.y - 0.5f));
+				
+				float normPos = (sample/2.f) - abs(Frag_UV.y - 0.5f);
+				float h1 = step(0.f, normPos);
+				float m1 = smoothstep(lowT, midT, normPos);
+				float l1 = smoothstep(0.f, lowT, normPos);
+				float s1 = smoothstep(-0.04f, 0.0f, normPos);
 
-				if(PartyMode) {
-					vec2 uPos = Frag_UV;
-					uPos.y -= 0.5;	//center waves		
-					
-					vec3 color = vec3(0.0);
-					float levels = texture(audio, uPos.x).x * .5 + 0.2;	//audio
-					
-					const float k = 5.;	//how many waves
-					for(float i = 1.0; i < k; ++i) {
-						float t = (2.f * Time * exp(0.1f)) + ((ScriptPos + 1.f) * 0.01f);
-	
-						uPos.y += exp((ScriptPos*0.01f) +  scaleAudio * 6.0 * levels) * sin( uPos.x*exp(i) - t) * 0.01;
-						float fTemp = abs(1.0/(50.0*k) / uPos.y);
-						color += vec3( fTemp*(i*0.03), fTemp*i/k, pow(fTemp,0.93)*1.2 ).zyx;
-					}
-	
-					vec4 color_final = vec4(color, 0.0);
-					color_final.a = color_final.x + color_final.y + color_final.z;
-					Out_Color += color_final;
-				}
+				vec3 highCol = sampleOnATriangle(Color.x + Color.y, Color.x + Color.z);
+				vec3 midCol = sampleOnATriangle(Color.y + Color.z, Color.y + Color.x);
+				vec3 lowCol = sampleOnATriangle(Color.z + Color.x, Color.z + Color.y);
+
+				vec3 c = mix(highCol, midCol, l1);
+				c = mix(c, lowCol, m1);
+				Out_Color = vec4(c, h1 + s1);
 			}
 	)";
 
@@ -338,10 +338,8 @@ public:
 
 	void ProjMtx(const float* mat4) noexcept;
 	void AudioData(uint32_t unit) noexcept;
+	void SampleOffset(float offset) noexcept;
 	void ScaleFactor(float scale) noexcept;
-	void Time(float time) noexcept;
-	void PartyMode(bool enable) noexcept;
-	void ScriptPos(float pos) noexcept;
 	void Color(float* vec3) noexcept;
 };
 

@@ -63,13 +63,7 @@ void ScriptTimeline::setup(UndoSystem* undoSystem)
 	EventSystem::ev().Subscribe(ScriptTimelineEvents::FfmpegAudioProcessingFinished, EVENT_SYSTEM_BIND(this, &ScriptTimeline::FfmpegAudioProcessingFinished));
 	EventSystem::ev().Subscribe(VideoEvents::MpvVideoLoaded, EVENT_SYSTEM_BIND(this, &ScriptTimeline::videoLoaded));
 
-	glGenTextures(1, &WaveformTex);
-	glBindTexture(GL_TEXTURE_1D, WaveformTex);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	WaveShader = std::make_unique<WaveformShader>();
+	Wave.Init();
 }
 
 void ScriptTimeline::mousePressed(SDL_Event& ev) noexcept
@@ -494,32 +488,30 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 				}
 				
 				outputPath = (Util::PathFromString(outputPath) / "audio.flac").u8string();
-				bool succ = ctx.waveform.GenerateAndLoadFlac(ffmpegPath.u8string(), ctx.videoPath, outputPath);
+				bool succ = ctx.Wave.data.GenerateAndLoadFlac(ffmpegPath.u8string(), ctx.videoPath, outputPath);
 				EventSystem::PushEvent(ScriptTimelineEvents::FfmpegAudioProcessingFinished);
 				return 0;
 			};
 			if (ImGui::BeginMenu("Waveform")) {
 				if(ImGui::BeginMenu("Settings")) {
 					ImGui::DragFloat("Scale", &ScaleAudio, 0.01f, 0.01f, 10.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-					ImGui::ColorEdit3("Color", &WaveformColor.Value.x, ImGuiColorEditFlags_None);
+					ImGui::ColorEdit3("Color", &Wave.WaveformColor.Value.x, ImGuiColorEditFlags_None);
 					ImGui::EndMenu();
 				}
-				if (ImGui::MenuItem("Enable waveform", NULL, &ShowAudioWaveform, !waveform.BusyGenerating())) {}
+				if (ImGui::MenuItem("Enable waveform", NULL, &ShowAudioWaveform, !Wave.data.BusyGenerating())) {}
 
-				if(waveform.BusyGenerating()) {
+				if(Wave.data.BusyGenerating()) {
 					ImGui::MenuItem("Processing audio...", NULL, false, false);
 					ImGui::SameLine();
 					OFS::Spinner("##AudioSpin", ImGui::GetFontSize() / 3.f, 4.f, ImGui::GetColorU32(ImGuiCol_TabActive));
 				}
-				else if(ImGui::MenuItem("Update waveform", NULL, false, !waveform.BusyGenerating() && videoPath != nullptr)) {
-					if (!waveform.BusyGenerating()) {
+				else if(ImGui::MenuItem("Update waveform", NULL, false, !Wave.data.BusyGenerating() && videoPath != nullptr)) {
+					if (!Wave.data.BusyGenerating()) {
 						ShowAudioWaveform = false; // gets switched true after processing
 						auto handle = SDL_CreateThread(updateAudioWaveformThread, "OFS_GenWaveform", this);
 						SDL_DetachThread(handle);
 					}
 				}
-
-				if (ShowAudioWaveform) { if (ImGui::MenuItem("Enable P-Mode " ICON_WARNING_SIGN, 0, &WaveformPartyMode)) {} }
 				ImGui::EndMenu();
 			}
 			ImGui::EndPopup();
@@ -564,53 +556,30 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 
 #if 0
 	if (!ShowAudioWaveform) {
-		waveform.LoadMP3(Util::Prefpath("tmp/audio.mp3"));
+		Wave.data.LoadFlac(Util::Prefpath("tmp/audio.flac"));
 		EventSystem::PushEvent(ScriptTimelineEvents::FfmpegAudioProcessingFinished);
 	}
 #endif
 	auto& canvas_pos = ctx.canvas_pos;
 	auto& canvas_size = ctx.canvas_size;
 	const auto draw_list = ctx.draw_list;
-	if (ShowAudioWaveform && waveform.SampleCount() > 0) {
-		const float& duration = ctx.totalDuration;
-		const float relStart = offsetTime / duration;
-		const float relEnd = (offsetTime + visibleTime) / duration;
-		int32_t startIndex = relStart * (float)waveform.SampleCount();
-		int32_t endIndex = relEnd * (float)waveform.SampleCount();
+	if (ShowAudioWaveform && Wave.data.SampleCount() > 0) {
+		FUN_ASSERT(Wave.data.SampleCount() < 16777217, "switch to doubles"); 
 
-		WaveformViewport = ImGui::GetWindowViewport();
-
-		auto renderWaveform = [](const std::vector<float>& samples, ScriptTimeline* timeline, const OverlayDrawingCtx& ctx, int startIndex, int endIndex) noexcept
+		Wave.WaveformViewport = ImGui::GetWindowViewport();
+		auto renderWaveform = [](ScriptTimeline* timeline, const OverlayDrawingCtx& ctx) noexcept
 		{
-			OFS_PROFILE(__FUNCTION__);
-			const int totalSamples = endIndex - startIndex;
-			const float desiredSamples = ctx.canvas_size.x / 2.5f;
-			const int everyNth = std::ceilf(totalSamples / desiredSamples);
-
-			timeline->WaveformLineBuffer.clear();
-			float sample = 0.f;
-			for (int i = startIndex; i <= endIndex; i++) {
-				if (i >= 0 && i < samples.size()) {
-					float s = std::abs(samples[i]);
-					sample = std::max(sample, s);
-				}
-
-				if (i % everyNth == 0) {
-					timeline->WaveformLineBuffer.emplace_back(sample*255);
-					sample = 0.f;
-				}
-			}
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_1D, timeline->WaveformTex);
-			glTexImage1D(GL_TEXTURE_1D, 0, GL_R8, timeline->WaveformLineBuffer.size(), 0, GL_RED, GL_UNSIGNED_BYTE, timeline->WaveformLineBuffer.data());
-
+			OFS_PROFILE("DrawAudioWaveform::renderWaveform");
+			
+			timeline->Wave.Update(ctx);
+			
 			ctx.draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) noexcept {
 				ScriptTimeline* ctx = (ScriptTimeline*)cmd->UserCallbackData;
 				
 				glActiveTexture(GL_TEXTURE1);
-				glBindTexture(GL_TEXTURE_1D, ctx->WaveformTex);
-				ctx->WaveShader->use();
-				auto draw_data = ctx->WaveformViewport->DrawData;
+				glBindTexture(GL_TEXTURE_1D, ctx->Wave.WaveformTex);
+				ctx->Wave.WaveShader->use();
+				auto draw_data = ctx->Wave.WaveformViewport->DrawData;
 				float L = draw_data->DisplayPos.x;
 				float R = draw_data->DisplayPos.x + draw_data->DisplaySize.x;
 				float T = draw_data->DisplayPos.y;
@@ -622,12 +591,11 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 					{ 0.0f, 0.0f, -1.0f, 0.0f },
 					{ (R + L) / (L - R),  (T + B) / (B - T),  0.0f,   1.0f },
 				};
-				ctx->WaveShader->ProjMtx(&ortho_projection[0][0]);
-				ctx->WaveShader->AudioData(1);
-				ctx->WaveShader->ScaleFactor(ctx->ScaleAudio);
-				ctx->WaveShader->Time((SDL_GetTicks() / 1000.f));
-				ctx->WaveShader->PartyMode(ctx->WaveformPartyMode);
-				ctx->WaveShader->Color(&ctx->WaveformColor.Value.x);
+				ctx->Wave.WaveShader->ProjMtx(&ortho_projection[0][0]);
+				ctx->Wave.WaveShader->AudioData(1);
+				ctx->Wave.WaveShader->SampleOffset(ctx->Wave.samplingOffset);
+				ctx->Wave.WaveShader->ScaleFactor(ctx->ScaleAudio);
+				ctx->Wave.WaveShader->Color(&ctx->Wave.WaveformColor.Value.x);
 			}, timeline);
 
 			ctx.draw_list->AddImage(0, ctx.canvas_pos, ctx.canvas_pos + ctx.canvas_size);
@@ -635,12 +603,6 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 			ctx.draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) noexcept { glActiveTexture(GL_TEXTURE0); }, 0);
 		};
 
-#if 0 
-		renderWaveform(waveform.SamplesHigh, &HighColor, ctx, startIndex, endIndex);
-		renderWaveform(waveform.SamplesMid, &MidColor, ctx, startIndex, endIndex);
-		renderWaveform(waveform.SamplesLow, &LowColor, ctx, startIndex, endIndex);
-#else
-		renderWaveform(waveform.SamplesHigh, this, ctx, startIndex, endIndex);
-#endif
+		renderWaveform(this, ctx);
 	}
 }

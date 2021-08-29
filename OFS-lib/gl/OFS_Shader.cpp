@@ -157,9 +157,7 @@ void WaveformShader::initUniformLocations() noexcept
 	ProjMtxLoc = glGetUniformLocation(program, "ProjMtx");
 	AudioLoc = glGetUniformLocation(program, "audio");
 	AudioScaleLoc = glGetUniformLocation(program, "scaleAudio");
-	TimeLoc = glGetUniformLocation(program, "Time");
-	PartyModeLoc = glGetUniformLocation(program, "PartyMode");
-	ScriptPosLoc = glGetUniformLocation(program, "ScriptPos");
+	AudioSamplingOffset = glGetUniformLocation(program, "SamplingOffset");
 	ColorLoc = glGetUniformLocation(program, "Color");
 }
 
@@ -173,24 +171,14 @@ void WaveformShader::AudioData(uint32_t unit) noexcept
 	glUniform1i(AudioLoc, unit);
 }
 
+void WaveformShader::SampleOffset(float offset) noexcept
+{
+	glUniform1f(AudioSamplingOffset, offset);
+}
+
 void WaveformShader::ScaleFactor(float scale) noexcept
 {
 	glUniform1f(AudioScaleLoc, scale);
-}
-
-void WaveformShader::Time(float time) noexcept
-{
-	glUniform1f(TimeLoc, time);
-}
-
-void WaveformShader::PartyMode(bool enable) noexcept
-{
-	glUniform1i(PartyModeLoc, enable);
-}
-
-void WaveformShader::ScriptPos(float pos) noexcept
-{
-	glUniform1f(ScriptPosLoc, pos);
 }
 
 void WaveformShader::Color(float* vec3) noexcept

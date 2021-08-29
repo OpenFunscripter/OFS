@@ -1766,12 +1766,7 @@ void OpenFunscripter::step() noexcept {
 
             playerControls.DrawTimeline(NULL, drawBookmarks);
             
-            // this is an easter egg / gimmick
             if (!blockingTask.Running) {
-                if (scriptPositions.WaveformPartyMode) {
-                    scriptPositions.WaveShader->use();
-                    scriptPositions.WaveShader->ScriptPos(ActiveFunscript()->SplineClamped(player->getCurrentPositionSecondsInterp()));
-                }
                 scriptPositions.ShowScriptPositions(NULL, player->getCurrentPositionSecondsInterp(), player->getDuration(), player->getFrameTime(), &LoadedFunscripts(), ActiveFunscriptIdx);
                 ShowStatisticsWindow(&settings->data().show_statistics);
             }
