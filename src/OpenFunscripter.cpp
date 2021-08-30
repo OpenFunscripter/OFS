@@ -1471,7 +1471,7 @@ void OpenFunscripter::processEvents() noexcept
             OFS_DynFontAtlas::AddText(event.text.text);
             break;
         }
-#ifndef NDEBUG
+#if 0
         case SDL_KEYDOWN:
         {
             if (event.key.keysym.sym == SDLK_ESCAPE) {

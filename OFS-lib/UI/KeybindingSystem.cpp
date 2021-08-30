@@ -559,7 +559,7 @@ void KeybindingSystem::addPassiveBindingGroup(PassiveBindingGroup& group, bool& 
 void KeybindingSystem::passiveBindingTab(bool& save) noexcept
 {
     ImGui::TextUnformatted("Here modifiers can be configured which change certain behaviour.");
-    ImGui::TextUnformatted("Right now only a single modifier can be assigned. (Shift, Ctrl, Alt)");
+    ImGui::TextUnformatted("You can only use Shift, Ctrl & Alt.");
     for(int i=0; i < ActiveBindings.passiveGroups.size(); i++) {
         auto& group = ActiveBindings.passiveGroups[i];
         ImGui::PushID(i);
