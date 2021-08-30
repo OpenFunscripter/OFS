@@ -18,10 +18,7 @@
 #include "OFS_Simulator3D.h"
 #include "OFS_BlockingTask.h"
 #include "OFS_DynamicFontAtlas.h"
-
-#ifdef WIN32
 #include "OFS_LuaExtensions.h"
-#endif
 
 #include <memory>
 #include <chrono>
@@ -149,10 +146,7 @@ public:
 	std::unique_ptr<ControllerInput> controllerInput;
 	std::unique_ptr<OpenFunscripterSettings> settings;
 	std::unique_ptr<UndoSystem> undoSystem;
-
-	#ifdef WIN32
 	std::unique_ptr<OFS_LuaExtensions> extensions;
-	#endif
 
 	std::unique_ptr<Simulator3D> sim3D;
 

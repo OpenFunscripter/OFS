@@ -274,9 +274,9 @@ bool OpenFunscripter::setup(int argc, char* argv[])
     HeatmapGradient::Init();
     tcode = std::make_unique<TCodePlayer>();
     tcode->loadSettings(Util::Prefpath("tcode.json"));
+    extensions = std::make_unique<OFS_LuaExtensions>();
 
 #ifdef WIN32
-    extensions = std::make_unique<OFS_LuaExtensions>();
     OFS_DownloadFfmpeg::FfmpegMissing = !Util::FileExists(Util::FfmpegPath().u8string());
 #endif
 
@@ -1554,9 +1554,7 @@ void OpenFunscripter::MpvPlayPauseChange(SDL_Event& ev) noexcept
 void OpenFunscripter::update() noexcept {
     OFS_PROFILE(__FUNCTION__);
     float& delta = ImGui::GetIO().DeltaTime;
-    #ifdef WIN32
     extensions->Update(delta);
-    #endif
     player->update(delta);
     ActiveFunscript()->update();
     ControllerInput::UpdateControllers(settings->data().buttonRepeatIntervalMs);
@@ -1679,9 +1677,7 @@ void OpenFunscripter::step() noexcept {
             scripting->DrawScriptingMode(NULL);
             LoadedProject->ShowProjectWindow(&ShowProjectEditor);
 
-            #ifdef WIN32
             extensions->ShowExtensions(&settings->data().show_extensions);
-            #endif
             tcode->DrawWindow(&settings->data().show_tcode, player->getCurrentPositionSecondsInterp());
 
             if (keybinds.ShowBindingWindow()) {
@@ -2810,7 +2806,6 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             }
             ImGui::EndMenu();
         }
-        #ifdef WIN32
         if (ImGui::BeginMenu("Extensions")) {
             if (ImGui::IsWindowAppearing()) {
                 extensions->UpdateExtensionList();
@@ -2835,7 +2830,6 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             }
             ImGui::EndMenu();
         }
-        #endif
         if(ImGui::BeginMenu("?##About")) {
             ShowAbout = true;
             ImGui::CloseCurrentPopup();

@@ -17,13 +17,12 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "event/OFS_Events.cpp"
 
   "gl/OFS_Simulator3D.cpp"
+  "lua/OFS_LuaExtensions.cpp"
+  "lua/OFS_LuaCoreExtension.cpp"
 )
 
 if(WIN32)
-	set(OPEN_FUNSCRIPTER_SOURCES ${OPEN_FUNSCRIPTER_SOURCES} "../icon.rc"
-		"lua/OFS_LuaExtensions.cpp"
-		"lua/OFS_LuaCoreExtension.cpp"
-	)
+	set(OPEN_FUNSCRIPTER_SOURCES ${OPEN_FUNSCRIPTER_SOURCES} "../icon.rc")
 endif()
 
 if(APPLE)
@@ -53,7 +52,7 @@ if(WIN32)
                    "${CMAKE_SOURCE_DIR}/lib/libmpv/mpv-1.dll" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/mpv-1.dll")
 	target_link_libraries(${PROJECT_NAME} PRIVATE lua love_3p_luasocket)
 else()
-	target_link_libraries(${PROJECT_NAME} PRIVATE lua)
+	target_link_libraries(${PROJECT_NAME} PRIVATE lua love_3p_luasocket)
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC

@@ -131,6 +131,12 @@ elseif(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
 	# linux etc. 
 	find_package(PkgConfig REQUIRED) 
 	pkg_check_modules(mpv REQUIRED IMPORTED_TARGET mpv)
+	
+	# mpv is required for the headers
+	# but not linked
+	# instead libmpv.so.1 is loaded at runtime
+	# this avoids linking issues with mpv and lua symbols
+	
 	target_link_libraries(${PROJECT_NAME} PUBLIC
 		#mpv
 		OpenGL

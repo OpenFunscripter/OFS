@@ -3,6 +3,7 @@
 
 #ifndef WIN32
 #include "SDL_loadso.h"
+#include <type_traits>
 
 static void* mpvHandle = nullptr;
 
@@ -23,13 +24,17 @@ mpv_set_property_async_FUNC MpvLoader::mpv_set_property_async_REAL = NULL;
 mpv_render_context_free_FUNC MpvLoader::mpv_render_context_free_REAL = NULL;
 mpv_detach_destroy_FUNC MpvLoader::mpv_detach_destroy_REAL = NULL;
 
-#define LOAD_FUNCTION(name) name##_REAL = (name##_FUNC)SDL_LoadFunction(mpvHandle, #name); if(!name##_REAL) return false
+#define LOAD_FUNCTION(name) name##_REAL = (name##_FUNC)SDL_LoadFunction(mpvHandle, #name);\
+if(!name##_REAL) return false;\
+static_assert(std::is_same<decltype(&name), name##_FUNC>::value, "Function pointer signature doesn't match mpv signature.")
+
 
 bool MpvLoader::Load() noexcept
 {
     if(mpvHandle) return true;
     /// lib64/libmpv.so.1
     mpvHandle = SDL_LoadObject("libmpv.so.1");
+    
     LOAD_FUNCTION(mpv_create);
     LOAD_FUNCTION(mpv_wait_event);
     LOAD_FUNCTION(mpv_observe_property);
@@ -46,6 +51,7 @@ bool MpvLoader::Load() noexcept
     LOAD_FUNCTION(mpv_set_property_async);
     LOAD_FUNCTION(mpv_render_context_free);
     LOAD_FUNCTION(mpv_detach_destroy);
+
     return true;
 }
 

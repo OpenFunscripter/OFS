@@ -5,7 +5,7 @@
 #include <mpv/render_gl.h>
 
 
-typedef mpv_handle* (*mpv_create_FUNC)(void);
+typedef mpv_handle* (*mpv_create_FUNC)();
 typedef int (*mpv_initialize_FUNC)(mpv_handle *ctx);
 typedef mpv_event* (*mpv_wait_event_FUNC)(mpv_handle *ctx, double timeout);
 typedef int (*mpv_observe_property_FUNC)(mpv_handle *mpv, uint64_t reply_userdata, const char *name, mpv_format format);
