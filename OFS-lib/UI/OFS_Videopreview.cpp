@@ -5,6 +5,8 @@
 
 #include "OFS_GL.h"
 #include "EventSystem.h"
+
+#define OFS_MPV_LOADER_MACROS
 #include "OFS_MpvLoader.h"
 
 int32_t VideoPreviewEvents::PreviewWakeUpMpvEvents = 0;
@@ -103,7 +105,7 @@ void VideoPreview::redraw() noexcept
 VideoPreview::~VideoPreview()
 {
 	mpv_render_context_free(mpv_gl);
-	mpv_detach_destroy(mpv);
+	mpv_destroy(mpv);
 	EventSystem::ev().UnsubscribeAll(this);
 	
 	glDeleteFramebuffers(1, &framebufferObj);

@@ -10,6 +10,8 @@
 #include "OFS_ImGui.h"
 #include "OFS_Profiling.h"
 #include "OFS_Shader.h"
+
+#define OFS_MPV_LOADER_MACROS
 #include "OFS_MpvLoader.h"
 
 
@@ -268,10 +270,6 @@ bool VideoplayerWindow::setup(bool force_hw_decoding)
 	EventSystem::ev().Subscribe(VideoEvents::WakeupOnMpvRenderUpdate, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvRenderUpdate));
 	EventSystem::ev().Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::mouseScroll));
 
-	#ifndef WIN32
-	if(!MpvLoader::Load()) return false;
-	#endif
-
 	updateRenderTexture();
 	mpv = mpv_create();
 	auto confPath = Util::Prefpath();
@@ -370,7 +368,7 @@ bool VideoplayerWindow::setup(bool force_hw_decoding)
 VideoplayerWindow::~VideoplayerWindow()
 {
 	mpv_render_context_free(mpv_gl);
-	mpv_detach_destroy(mpv);
+	mpv_destroy(mpv);
 	glDeleteTextures(1, &renderTexture);
 	glDeleteFramebuffers(1, &framebufferObj);
 	EventSystem::ev().UnsubscribeAll(this);

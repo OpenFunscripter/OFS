@@ -7,6 +7,7 @@
 #include "FunscriptHeatmap.h"
 #include "OFS_DownloadFfmpeg.h"
 #include "OFS_Shader.h"
+#include "OFS_MpvLoader.h"
 
 #include <filesystem>
 
@@ -148,6 +149,10 @@ bool OpenFunscripter::setup(int argc, char* argv[])
     
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
         LOGF_ERROR("Error: %s\n", SDL_GetError());
+        return false;
+    }
+    if(!OFS_MpvLoader::Load()) {
+        LOG_ERROR("Failed to load mpv library.");
         return false;
     }
 
@@ -1862,6 +1867,11 @@ void OpenFunscripter::shutdown() noexcept
     SDL_GL_DeleteContext(glContext);   
     SDL_DestroyWindow(window);
     SDL_Quit();
+
+    // these players need to be freed before unloading mpv
+    player.reset();
+    playerControls.videoPreview.reset();
+    OFS_MpvLoader::Unload();
     OFS_FileLogger::Shutdown();
 }
 

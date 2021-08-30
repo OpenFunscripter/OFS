@@ -102,6 +102,7 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 	"OFS_LATEST_GIT_TAG=${LATEST_GIT_TAG}"
 	"OFS_LATEST_GIT_HASH=${LATEST_GIT_HASH}"
 	"IMGUI_IMPL_OPENGL_LOADER_GLAD2"
+	"MPV_ENABLE_DEPRECATED=0"
 )
 
 if(OFS_PROFILE)
@@ -117,13 +118,13 @@ if(WIN32)
 	target_include_directories(${PROJECT_NAME} PUBLIC 
 		"../lib/libmpv/include"
 	)
-	target_link_directories(${PROJECT_NAME} PUBLIC 
-		"../lib/libmpv/"
-	)
-	target_link_libraries(${PROJECT_NAME} PUBLIC
-		# linking of libmpv can be improved but this works...
-		mpv.lib
-	)
+	#target_link_directories(${PROJECT_NAME} PUBLIC 
+	#	"../lib/libmpv/"
+	#)
+	#target_link_libraries(${PROJECT_NAME} PUBLIC
+	#	# linking of libmpv can be improved but this works...
+	#	mpv.lib
+	#)
 	target_compile_definitions(${PROJECT_NAME} PUBLIC
 		"NOMINMAX"
 	)
@@ -138,7 +139,6 @@ elseif(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
 	# this avoids linking issues with mpv and lua symbols
 	
 	target_link_libraries(${PROJECT_NAME} PUBLIC
-		#mpv
 		OpenGL
 	)
 elseif(APPLE)
@@ -156,7 +156,7 @@ elseif(APPLE)
 	target_include_directories(${PROJECT_NAME} PUBLIC
 		"${MPV_INCLUDE}"
 	)
-	target_link_libraries(${PROJECT_NAME} PUBLIC
-		"${MPV_LIB}/libmpv.dylib"
-	)
+	#target_link_libraries(${PROJECT_NAME} PUBLIC
+	#	"${MPV_LIB}/libmpv.dylib"
+	#)
 endif()
