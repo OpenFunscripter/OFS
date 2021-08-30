@@ -42,8 +42,6 @@ end
 )";
 
 bool OFS_LuaExtensions::DevMode = false;
-SDL_threadID OFS_LuaExtensions::MainThread = 0;
-
 
 inline int Lua_Pcall(lua_State* L, int a, int b, int c) noexcept
 {
@@ -510,17 +508,7 @@ static int LuaSnapshot(lua_State* L) noexcept
 
 	if (nargs == 0) {
 		// snapshot all scripts
-		if (OFS_LuaExtensions::MainThread == SDL_ThreadID()) {
-			app->undoSystem->Snapshot(StateType::CUSTOM_LUA);
-		}
-		else {
-			// for thread safety reasons we do this
-			auto handle = EventSystem::ev().WaitableSingleShot([](void*) {
-				auto app = OpenFunscripter::ptr;
-				app->undoSystem->Snapshot(StateType::CUSTOM_LUA);
-			}, 0);
-			handle->wait();
-		}
+		app->undoSystem->Snapshot(StateType::CUSTOM_LUA);
 	}
 	else if (nargs == 1) {
 		// snapshot a single script
@@ -529,18 +517,7 @@ static int LuaSnapshot(lua_State* L) noexcept
 		assert(lua_isuserdata(L, -1));
 		auto index = (intptr_t)lua_touserdata(L, -1);
 		if (index >= 0 && index < app->LoadedFunscripts().size()) {
-			if (OFS_LuaExtensions::MainThread == SDL_ThreadID()) {
-				app->undoSystem->Snapshot(StateType::CUSTOM_LUA, app->LoadedFunscripts()[index]);
-			}
-			else {
-				// for thread safety reasons we do this
-				auto handle = EventSystem::ev().WaitableSingleShot([](void* index) {
-					auto i = (intptr_t)index;
-					auto app = OpenFunscripter::ptr;
-					app->undoSystem->Snapshot(StateType::CUSTOM_LUA, app->LoadedFunscripts()[i]);
-					}, (void*)(intptr_t)index);
-				handle->wait();
-			}
+			app->undoSystem->Snapshot(StateType::CUSTOM_LUA, app->LoadedFunscripts()[index]);
 		}
 	}
 
@@ -718,14 +695,10 @@ static int LuaBindFunction(lua_State* L) noexcept
 		luaL_argcheck(L, lua_isstring(L, 2), 2, "Expected function description");
 		func.Description = lua_tostring(L, 2);
 	}
-	if (nargs >= 3) {
-		luaL_argcheck(L, lua_isboolean(L, 3), 3, "Expected use task boolean");
-		func.UseTask = lua_toboolean(L, 3);
-	}
 
-	auto [item, suc] = ext->Bindables.emplace(std::move(func));
+	auto [item, suc] = ext->Bindables.emplace(eastl::make_pair(func.GlobalName, std::move(func)));
 	if (!suc) {
-		*item = func;
+		item->second = func;
 	}
 	return 0;
 }
@@ -768,7 +741,6 @@ void OFS_LuaExtensions::UpdateExtensionList() noexcept
 
 OFS_LuaExtensions::OFS_LuaExtensions() noexcept
 {
-	MainThread = SDL_ThreadID();
 	load(Util::Prefpath("extension.json"));
 	UpdateExtensionList();
 	
@@ -825,6 +797,35 @@ void OFS_LuaExtensions::Update(float delta) noexcept
 			ext.MaxUpdateTime = ext.UpdateTime;
 		}
 	}
+	
+	if (!Tasks.empty()) {
+		auto& task = Tasks.front();
+		if(!task.Co) {
+			lua_getglobal(task.L, task.Function.c_str());
+			if (lua_isfunction(task.L, -1)) {
+				task.Co = lua_newthread(task.L);
+				lua_pushvalue(task.L, -2);
+				lua_xmove(task.L, task.Co, 1);
+			}
+		}
+		int resultCount;
+		auto result = lua_resume(task.Co, task.L, 0, &resultCount);
+		if(result == LUA_YIELD) {
+			// yielded
+			//LOG_DEBUG("function yielded");
+		}
+		else if(result == LUA_OK) {
+			// finished
+			Tasks.pop();
+		}
+		else if(result != LUA_YIELD && result != LUA_OK) {
+			// error
+			Tasks.pop();
+			//const char* error = lua_tostring(task.L, -1);
+			//LOG_ERROR(error);
+			//if(error) lua_pop(task.L, 1);
+		}
+	}
 }
 
 void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
@@ -879,7 +880,8 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 		if (!ext.Bindables.empty()) {
 			auto& style = ImGui::GetStyle();
 			if (ImGui::CollapsingHeader("Bindable functions")) {
-				for (auto& bind : ext.Bindables) {
+				for (auto& bindP : ext.Bindables) {
+					auto& bind = bindP.second;
 					ImGui::Text("%s:", bind.GlobalName.c_str()); ImGui::SameLine();
 					if (!bind.Description.empty()) {
 						ImGui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled]);
@@ -892,37 +894,6 @@ void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
 			}
 		}
 		ImGui::End();
-
-		if (!Tasks.empty()) {
-			auto taskData = std::make_unique<BlockingTaskData>();
-			taskData->TaskDescription = "Lua extension";
-			taskData->TaskThreadFunc = [](void* data)->int
-			{
-				BlockingTaskData* task = (BlockingTaskData*)data;
-				OFS_LuaExtensions* ext = (OFS_LuaExtensions*)task->User;
-				task->MaxProgress = ext->Tasks.size();
-				while (!ext->Tasks.empty()) {
-					OFS_LuaTask& lua = ext->Tasks.front();
-					lua_getglobal(lua.L, lua.Function.c_str());
-					if (lua_isfunction(lua.L, -1)) {
-						int result = Lua_Pcall(lua.L, 0, 1, 0); // 0 arguments 1 result
-						if (result) {
-							const char* error = lua_tostring(lua.L, -1);
-							LOG_ERROR(error);
-							lua_pop(lua.L, 1);
-						}
-					}
-					ext->Tasks.pop();
-					++task->Progress;
-				}
-				ext->TaskBusy = false;
-				return 0;
-			};
-			this->TaskBusy = true;
-			taskData->User = this;
-			taskData->DimBackground = false;
-			app->blockingTask.DoTask(std::move(taskData));
-		}
 	}
 }
 
@@ -933,24 +904,12 @@ void OFS_LuaExtensions::HandleBinding(Binding* binding) noexcept
 
 	for (auto& ext : Extensions) {
 		if (!ext.Active || !ext.L) continue;
-		auto it = ext.Bindables.find(tmp);
+		auto it = ext.Bindables.find(binding->identifier);
 		if (it != ext.Bindables.end()) {
-			if (it->UseTask) {
-				auto& t = Tasks.emplace();
-				t.L = ext.L;
-				t.Function = it->Name;
-			}
-			else {
-				lua_getglobal(ext.L, it->Name.c_str());
-				if (lua_isfunction(ext.L, -1)) {
-					int status = Lua_Pcall(ext.L, 0, 1, 0); // 0 arguments 1 results
-					if (status) {
-						const char* error = lua_tostring(ext.L, -1);
-						LOG_ERROR(error);
-						ext.Fail(error);
-					}
-				}
-			}
+			OFS_LuaTask task;
+			task.L = ext.L;
+			task.Function = it->second.Name;
+			Tasks.emplace(std::move(task));
 			return;
 		}
 	}
@@ -1038,7 +997,8 @@ bool OFS_LuaExtension::Load(const std::filesystem::path& directory) noexcept
 	}
 
 	auto app = OpenFunscripter::ptr;
-	for (auto& bind : Bindables) {
+	for (auto& bindP : Bindables) {
+		auto& bind = bindP.second;
 		Binding binding(
 			bind.GlobalName,
 			bind.GlobalName,

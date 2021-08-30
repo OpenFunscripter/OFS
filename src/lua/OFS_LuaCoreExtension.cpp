@@ -20,9 +20,9 @@ Spline.PointEveryMs = 100
 
 function init()
     -- this runs once at when loading the extension
-    ofs.Bind("jitter", "Adds jitter to selection.", false)
-    ofs.Bind("random_noise", "Generates a random script.", false)
-    ofs.Bind("spline_smooth", "Adds spline smoothing to selection.", true)
+    ofs.Bind("jitter", "Adds jitter to selection.")
+    ofs.Bind("random_noise", "Generates a random script.")
+    ofs.Bind("spline_smooth", "Adds spline smoothing to selection.")
 end
 
 function update(delta)
@@ -111,12 +111,14 @@ function spline_smooth()
             --ofs.AddAction(script, time_ms, spline_pos)
             table.insert( smoothedActions, {at=time_ms, pos=spline_pos} )
         end
-
-         ::continue::
+        ::continue::
     end
 
     for idx, action in ipairs(smoothedActions) do
         ofs.AddAction(script, action.at, action.pos)
+        if math.fmod(idx, 100) == 0 then
+            coroutine.yield() 
+        end
     end
 end
 
@@ -161,7 +163,7 @@ function jitter()
 
             -- ATTENTION
             -- there's a bug here
-            -- when the time change, changes the chronological order of the actions,
+            -- the timestamp change can reorder actions when that happens
             -- the position jitter will be applied to the wrong action
 
             -- A more sophisticated function would check the next and the previous action
@@ -177,7 +179,11 @@ void OFS_CoreExtension::setup() noexcept
 {
     std::error_code ec;
     auto path = Util::PathFromString(Util::Prefpath(OFS_LuaExtensions::ExtensionDir)) / "Core";
+    #if 0
+    if(true) {
+    #else
     if (!std::filesystem::exists(path, ec)) {
+    #endif
         std::filesystem::create_directories(path);
         path /= "main.lua";
         auto pString = path.u8string();

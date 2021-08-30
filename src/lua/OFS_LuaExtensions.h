@@ -11,11 +11,12 @@
 
 #include "SDL_thread.h"
 
-#include "EASTL/vector_set.h"
+#include "EASTL/vector_map.h"
 
 struct OFS_LuaTask
 {
 	lua_State* L = nullptr;
+	lua_State* Co = nullptr;
 	std::string Function;
 };
 
@@ -24,15 +25,6 @@ struct OFS_BindableLuaFunction
 	std::string GlobalName;
 	std::string Name;
 	std::string Description;
-	bool UseTask = true;
-};
-
-struct OFS_BindableLuaFunctionLessOperator
-{
-	bool operator()(const OFS_BindableLuaFunction& a, const OFS_BindableLuaFunction& b) const noexcept
-	{
-		return a.GlobalName < b.GlobalName;
-	}
 };
 
 struct OFS_LuaExtension
@@ -53,7 +45,7 @@ struct OFS_LuaExtension
 
 	std::string ExtensionError;
 
-	eastl::vector_set<OFS_BindableLuaFunction, OFS_BindableLuaFunctionLessOperator> Bindables;
+	eastl::vector_map<std::string, OFS_BindableLuaFunction> Bindables;
 
 	void Fail(const char* error) noexcept
 	{
@@ -111,8 +103,6 @@ public:
 	static constexpr const char* UpdateFunction = "update";
 	static constexpr const char* RenderGui = "gui";
 
-
-	static SDL_threadID MainThread;
 	std::queue<OFS_LuaTask> Tasks;
 	
 	OFS_LuaExtensions() noexcept;
