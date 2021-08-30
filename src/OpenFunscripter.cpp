@@ -1829,6 +1829,7 @@ void OpenFunscripter::step() noexcept {
     OFS_FileLogger::Flush();
     OFS_ENDPROFILING();
     SDL_GL_SwapWindow(window);
+    player->NotifySwap();
 }
 
 int OpenFunscripter::run() noexcept

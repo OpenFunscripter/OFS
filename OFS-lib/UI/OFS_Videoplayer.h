@@ -264,6 +264,8 @@ public:
 	inline uint32_t VideoWidth() const noexcept { return MpvData.videoWidth; }
 	inline uint32_t VideoHeight() const noexcept { return MpvData.videoHeight; }
 
+	void NotifySwap() const noexcept;
+
 	inline void update(float delta) noexcept
 	{
 		if (!isPaused()) {
@@ -278,7 +280,7 @@ public:
 				correctPlaybackErrorActive = true;
 			}
 
-#ifndef NDEBUG
+#if 0
 			static float displayVal = error;
 			static int frameCount = 0;
 			++frameCount;

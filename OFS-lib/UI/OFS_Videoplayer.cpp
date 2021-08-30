@@ -787,6 +787,11 @@ void VideoplayerWindow::closeVideo() noexcept
 	setPaused(true);
 }
 
+void VideoplayerWindow::NotifySwap() const noexcept
+{
+	mpv_render_context_report_swap(mpv_gl);
+}
+
 int32_t VideoEvents::MpvVideoLoaded = 0;
 int32_t VideoEvents::WakeupOnMpvEvents = 0;
 int32_t VideoEvents::WakeupOnMpvRenderUpdate = 0;

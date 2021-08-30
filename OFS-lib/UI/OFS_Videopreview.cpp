@@ -19,7 +19,6 @@ void VideoPreviewEvents::RegisterEvents() noexcept
 	PreviewWakeUpMpvRender = SDL_RegisterEvents(1);
 }
 
-
 static void* get_proc_address_mpv(void* fn_ctx, const char* name)
 {
 	return SDL_GL_GetProcAddress(name);

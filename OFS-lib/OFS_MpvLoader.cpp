@@ -30,19 +30,17 @@ if(!name##_REAL) {\
     LOG_ERROR(SDL_GetError());\
     return false;\
 }\
-static_assert(std::is_same<decltype(&name), name##_FUNC>::value, "Function pointer signature doesn't match mpv signature.")
-
+static_assert(std::is_same<decltype(&name), name##_FUNC>::value, "Function pointer signature doesn't match libmpv function signature.")
 
 bool OFS_MpvLoader::Load() noexcept
 {
     if(mpvHandle) return true;
     const char* lib = nullptr;
-    /// lib64/libmpv.so.1
     #if defined(WIN32)
     lib = "mpv-1.dll";
     #elif defined(__APPLE__)
     lib = "libmpv.dylib";
-    #else
+    #else // linux
     lib = "libmpv.so.1";
     #endif
 
@@ -79,6 +77,7 @@ void OFS_MpvLoader::Unload() noexcept
 {
     if(!mpvHandle) return;
     SDL_UnloadObject(mpvHandle);
+    mpvHandle = nullptr;
     SET_NULL(mpv_create);
     SET_NULL(mpv_wait_event);
     SET_NULL(mpv_observe_property);

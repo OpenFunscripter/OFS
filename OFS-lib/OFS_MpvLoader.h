@@ -3,6 +3,14 @@
 #include <mpv/client.h>
 #include <mpv/render_gl.h>
 
+/*
+    Due to linking issues related to LuaJit symbols in mpv's libraries.
+    We load the functions dynamically at runtime.
+    This way we don't need to link mpv. We only need the headers.
+
+    This is only a subset of libmpv functions.
+*/
+
 typedef mpv_handle* (*mpv_create_FUNC)();
 typedef int (*mpv_initialize_FUNC)(mpv_handle *ctx);
 typedef mpv_event* (*mpv_wait_event_FUNC)(mpv_handle *ctx, double timeout);
@@ -20,10 +28,7 @@ typedef int (*mpv_set_property_async_FUNC)(mpv_handle *ctx, uint64_t reply_userd
 typedef void (*mpv_render_context_free_FUNC)(mpv_render_context *ctx);
 typedef void (*mpv_detach_destroy_FUNC)(mpv_handle *ctx);
 typedef void (*mpv_destroy_FUNC)(mpv_handle *ctx);
-
-
 typedef void (*mpv_render_context_report_swap_FUNC)(mpv_render_context *ctx);
-
 
 struct OFS_MpvLoader
 {
