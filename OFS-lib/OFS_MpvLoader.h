@@ -10,6 +10,9 @@
 
     This is only a subset of libmpv functions.
 */
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef mpv_handle* (*mpv_create_FUNC)();
 typedef int (*mpv_initialize_FUNC)(mpv_handle *ctx);
@@ -73,3 +76,7 @@ struct OFS_MpvLoader
 #define mpv_destroy(ctx) OFS_MpvLoader::mpv_destroy_REAL(ctx)
 #define mpv_render_context_report_swap(ctx) OFS_MpvLoader::mpv_render_context_report_swap_REAL(ctx)
 #endif // OFS_MPV_LOADER_NO_MACROS
+
+#ifdef __cplusplus
+}
+#endif
