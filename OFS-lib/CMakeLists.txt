@@ -42,6 +42,7 @@ set(OFS_LIB_SOURCES
 	"OFS_Threadpool.cpp"
 	"OFS_FileLogging.cpp"
 	"OFS_DynamicFontAtlas.cpp"
+	"OFS_MpvLoader.cpp"
 )
 
 add_library(${PROJECT_NAME} STATIC ${OFS_LIB_SOURCES})
@@ -130,9 +131,8 @@ elseif(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
 	# linux etc. 
 	find_package(PkgConfig REQUIRED) 
 	pkg_check_modules(mpv REQUIRED IMPORTED_TARGET mpv)
-
 	target_link_libraries(${PROJECT_NAME} PUBLIC
-		mpv
+		#mpv
 		OpenGL
 	)
 elseif(APPLE)

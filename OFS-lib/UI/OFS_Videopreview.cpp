@@ -5,6 +5,7 @@
 
 #include "OFS_GL.h"
 #include "EventSystem.h"
+#include "OFS_MpvLoader.h"
 
 int32_t VideoPreviewEvents::PreviewWakeUpMpvEvents = 0;
 int32_t VideoPreviewEvents::PreviewWakeUpMpvRender = 0;

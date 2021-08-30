@@ -10,6 +10,8 @@
 #include "OFS_ImGui.h"
 #include "OFS_Profiling.h"
 #include "OFS_Shader.h"
+#include "OFS_MpvLoader.h"
+
 
 static void* getProcAddressMpv(void* fn_ctx, const char* name) noexcept
 {
@@ -265,6 +267,10 @@ bool VideoplayerWindow::setup(bool force_hw_decoding)
 	EventSystem::ev().Subscribe(VideoEvents::WakeupOnMpvEvents, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvEvents));
 	EventSystem::ev().Subscribe(VideoEvents::WakeupOnMpvRenderUpdate, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::MpvRenderUpdate));
 	EventSystem::ev().Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &VideoplayerWindow::mouseScroll));
+
+	#ifndef WIN32
+	if(!MpvLoader::Load()) return false;
+	#endif
 
 	updateRenderTexture();
 	mpv = mpv_create();
