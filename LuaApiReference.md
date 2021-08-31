@@ -48,7 +48,7 @@ end
 # Core API
 | Call        |Params| Returns | Description |
 | ----------- |------| ------- |----------- |
-| `print(msg)`|String| nil | Will print a to the OFS log file.|
+| `print(msg)`|String| nil | Will print to the OFS log file.|
 | `ofs.Bind(functionName, description)` |String, String| nil | Will create a "Dynamic" key binding.<br/>Must be called from within `init()`.<br/>Bindings will always run in another thread. |
 | `ofs.Task(functionName)` | String | nil |Will run a function in another thread. Use cautiously. |
 
