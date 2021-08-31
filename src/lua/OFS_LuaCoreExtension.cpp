@@ -54,6 +54,14 @@ function gui()
         random_noise()
     end
 
+    if ofs.Button("Select all") then
+        select_all()
+    end
+
+    if ofs.Button("Select none") then
+        select_none()
+    end
+
     ofs.Separator()
     ofs.Text("Spline smooth")
     Spline.PointEveryMs, splineChanged = ofs.Slider("Point per ms", Spline.PointEveryMs, 20, 500)
@@ -112,6 +120,11 @@ function spline_smooth()
         end
         ::continue::
     end
+
+    for idx, action in ipairs(smoothedActions) do
+        ofs.AddAction(script, action.at, action.pos)
+    end
+    ofs.Commit(script)
 end
 
 function random_noise()
@@ -137,10 +150,26 @@ function random_noise()
     end
 
     ofs.Commit(script)
-    print("random_noise end")
+end
+
+function select_all() 
+    local script = ofs.Script(ofs.ActiveIdx())
+    for idx, action in ipairs(script.actions) do
+        action.selected = true
+    end
+    ofs.Commit(script)
+end
+
+function select_none()
+    local script = ofs.Script(ofs.ActiveIdx())
+    for idx, action in ipairs(script.actions) do
+        action.selected = false
+    end
+    ofs.Commit(script)
 end
 
 function jitter()
+    print('hello from jitter()')
     local script = ofs.Script(ofs.ActiveIdx())
 
     if not ofs.HasSelection(script) then
@@ -164,6 +193,7 @@ function jitter()
             action.pos = action.pos + pos_jitter_value
         end
     end
+    ofs.Commit(script)
 end
 )";
 

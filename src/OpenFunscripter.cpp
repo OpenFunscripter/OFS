@@ -1695,7 +1695,7 @@ void OpenFunscripter::step() noexcept {
 
             playerControls.DrawControls(NULL);
 
-            if (Status & OFS_GradientNeedsUpdate && !blockingTask.Running) {
+            if (Status & OFS_GradientNeedsUpdate) {
                 Status &= ~(OFS_GradientNeedsUpdate);
                 playerControls.UpdateHeatmap(player->getDuration(), ActiveFunscript()->Actions());
             }
@@ -1767,10 +1767,8 @@ void OpenFunscripter::step() noexcept {
 
             playerControls.DrawTimeline(NULL, drawBookmarks);
             
-            if (!blockingTask.Running) {
-                scriptPositions.ShowScriptPositions(NULL, player->getCurrentPositionSecondsInterp(), player->getDuration(), player->getFrameTime(), &LoadedFunscripts(), ActiveFunscriptIdx);
-                ShowStatisticsWindow(&settings->data().show_statistics);
-            }
+            scriptPositions.ShowScriptPositions(NULL, player->getCurrentPositionSecondsInterp(), player->getDuration(), player->getFrameTime(), &LoadedFunscripts(), ActiveFunscriptIdx);
+            ShowStatisticsWindow(&settings->data().show_statistics);
 
             if (settings->data().show_action_editor) {
                 ImGui::Begin(ActionEditorId, &settings->data().show_action_editor);

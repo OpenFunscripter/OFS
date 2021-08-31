@@ -79,6 +79,7 @@ private:
 	std::string LastConfigPath;
 	void RemoveNonExisting() noexcept;
 public:
+	static SDL_threadID MainThread;
 	static constexpr const char* DynamicBindingHandler = "OFS_LuaExtensions";
 	static bool DevMode;
 
