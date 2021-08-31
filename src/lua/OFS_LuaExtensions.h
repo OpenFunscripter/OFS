@@ -16,7 +16,6 @@
 struct OFS_LuaTask
 {
 	lua_State* L = nullptr;
-	lua_State* Co = nullptr;
 	std::string Function;
 };
 
@@ -96,6 +95,7 @@ public:
 	static constexpr const char* GlobalExtensionPtr = "OFS_ExtensionPtr";
 	static constexpr const char* GlobalActionMetaTable = "OFS_TmpActionMetaTable";
 	static constexpr const char* ScriptIdxUserdata = "OFS_ScriptIdx";
+	static constexpr const char* ScriptDataUserdata = "OFS_ScriptData";
 	static constexpr const char* ScriptActionsField = "actions";
 
 	// functions

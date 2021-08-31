@@ -76,7 +76,6 @@ function spline_smooth()
         return (f1 * v1 + f2 * v2 + f3 * v3 + f4 * v4) / 2.0;
     end
     local script = ofs.Script(ofs.ActiveIdx())
-    ofs.Snapshot(script)
     local actionCount = #script.actions
 
     local smoothedActions = {}
@@ -113,18 +112,10 @@ function spline_smooth()
         end
         ::continue::
     end
-
-    for idx, action in ipairs(smoothedActions) do
-        ofs.AddAction(script, action.at, action.pos)
-        if math.fmod(idx, 100) == 0 then
-            coroutine.yield() 
-        end
-    end
 end
 
 function random_noise()
     local script = ofs.Script(ofs.ActiveIdx())
-    ofs.Snapshot(script)
     ofs.ClearScript(script)
 
     local LastTimeMs = 0
@@ -144,14 +135,15 @@ function random_noise()
         LastPos = clamp(LastPos, 0, 100)
         LastTimeMs = LastTimeMs + math.random(Random.MinStrokeDuration, Random.MaxStrokeDuration)
     end
+
+    ofs.Commit(script)
+    print("random_noise end")
 end
 
 function jitter()
     local script = ofs.Script(ofs.ActiveIdx())
 
-    if ofs.HasSelection(script) then
-        ofs.Snapshot(script)
-    else 
+    if not ofs.HasSelection(script) then
         return
     end
     
@@ -179,7 +171,7 @@ void OFS_CoreExtension::setup() noexcept
 {
     std::error_code ec;
     auto path = Util::PathFromString(Util::Prefpath(OFS_LuaExtensions::ExtensionDir)) / "Core";
-    #if 0
+    #if 1
     if(true) {
     #else
     if (!std::filesystem::exists(path, ec)) {

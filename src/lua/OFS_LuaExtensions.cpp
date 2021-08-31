@@ -433,7 +433,8 @@ static int LuaClearScript(lua_State* L) noexcept;
 static int LuaRemoveAction(lua_State* L) noexcept;
 static int LuaBindFunction(lua_State* L) noexcept;
 static int LuaScheduleTask(lua_State* L) noexcept;
-static int LuaSnapshot(lua_State* L) noexcept;
+//static int LuaSnapshot(lua_State* L) noexcept;
+static int LuaCommitChanges(lua_State* L) noexcept;
 static int LuaUndo(lua_State* L) noexcept;
 static int LuaHasSelection(lua_State* L) noexcept;
 static constexpr struct luaL_Reg ofsLib[] = {
@@ -446,7 +447,8 @@ static constexpr struct luaL_Reg ofsLib[] = {
 
 	{"Task", LuaScheduleTask},
 	{"Bind", LuaBindFunction},
-	{"Snapshot", LuaSnapshot},
+	{"Commit", LuaCommitChanges},
+	//{"Snapshot", LuaSnapshot},
 	{"Undo", LuaUndo},
 	{NULL, NULL}
 };
@@ -458,12 +460,10 @@ static int LuaHasSelection(lua_State* L) noexcept
 	bool hasSelection = false;
 	if (nargs >= 1) {
 		luaL_argcheck(L, lua_istable(L, 1), 1, "Expected script");
-		lua_getfield(L, 1, OFS_LuaExtensions::ScriptIdxUserdata);
+		lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
 		assert(lua_isuserdata(L, -1));
-		int scriptIdx = (intptr_t)lua_touserdata(L, -1);
-		if (scriptIdx >= 0 && scriptIdx < app->LoadedFunscripts().size()) {
-			hasSelection = app->LoadedFunscripts()[scriptIdx]->HasSelection();
-		}
+		auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+		hasSelection = !scriptData->selection.empty();
 	}
 	lua_pushboolean(L, hasSelection);
 	return 1;
@@ -475,18 +475,14 @@ static int LuaClearScript(lua_State* L) noexcept
 	int nargs = lua_gettop(L);
 	luaL_argcheck(L, lua_istable(L, 1), 1, "Expected script.");
 
-	lua_getfield(L, 1, OFS_LuaExtensions::ScriptIdxUserdata);
-	int scriptIdx = (intptr_t)lua_touserdata(L, -1);
-	if (scriptIdx >= 0 && scriptIdx < app->LoadedFunscripts().size()) {
-		auto& script = app->LoadedFunscripts()[scriptIdx];
-		script->SetActions(FunscriptArray());
-		script->ClearSelection();
+	lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
+	auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+	*scriptData = Funscript::FunscriptData();
 
-		lua_getfield(L, 1, OFS_LuaExtensions::ScriptActionsField);
-		assert(lua_istable(L, -1));
-		lua_createtable(L, 0, 0);
-		lua_setfield(L, 1, OFS_LuaExtensions::ScriptActionsField);
-	}
+	lua_getfield(L, 1, OFS_LuaExtensions::ScriptActionsField);
+	assert(lua_istable(L, -1));
+	lua_createtable(L, 0, 0);
+	lua_setfield(L, 1, OFS_LuaExtensions::ScriptActionsField);
 	return 0;
 }
 
@@ -501,28 +497,50 @@ static int LuaUndo(lua_State* L) noexcept
 	return 1;
 }
 
-static int LuaSnapshot(lua_State* L) noexcept
+static int LuaCommitChanges(lua_State* L) noexcept
 {
 	auto app = OpenFunscripter::ptr;
 	int nargs = lua_gettop(L);
+	luaL_argcheck(L, lua_istable(L, 1), 1, "Expected script.");
+	lua_getfield(L, 1, OFS_LuaExtensions::ScriptIdxUserdata);
+	assert(lua_isuserdata(L, -1));
+	int scriptIdx = (intptr_t)lua_touserdata(L, -1);
 
-	if (nargs == 0) {
-		// snapshot all scripts
-		app->undoSystem->Snapshot(StateType::CUSTOM_LUA);
-	}
-	else if (nargs == 1) {
-		// snapshot a single script
-		assert(lua_istable(L, 1));
-		lua_getfield(L, 1, OFS_LuaExtensions::ScriptIdxUserdata);
-		assert(lua_isuserdata(L, -1));
-		auto index = (intptr_t)lua_touserdata(L, -1);
-		if (index >= 0 && index < app->LoadedFunscripts().size()) {
-			app->undoSystem->Snapshot(StateType::CUSTOM_LUA, app->LoadedFunscripts()[index]);
-		}
-	}
+	lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
+	assert(lua_isuserdata(L, -1));
+	auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
 
+	if(scriptIdx >= 0 && scriptIdx < app->LoadedFunscripts().size()) {
+		auto& script = app->LoadedFunscripts()[scriptIdx];
+		app->undoSystem->Snapshot(StateType::CUSTOM_LUA, script);
+		script->SetActions(scriptData->Actions);
+		script->SetSelection(scriptData->selection, true);
+	}
 	return 0;
 }
+
+//static int LuaSnapshot(lua_State* L) noexcept
+//{
+//	auto app = OpenFunscripter::ptr;
+//	int nargs = lua_gettop(L);
+//
+//	if (nargs == 0) {
+//		// snapshot all scripts
+//		app->undoSystem->Snapshot(StateType::CUSTOM_LUA);
+//	}
+//	else if (nargs == 1) {
+//		// snapshot a single script
+//		assert(lua_istable(L, 1));
+//		lua_getfield(L, 1, OFS_LuaExtensions::ScriptIdxUserdata);
+//		assert(lua_isuserdata(L, -1));
+//		auto index = (intptr_t)lua_touserdata(L, -1);
+//		if (index >= 0 && index < app->LoadedFunscripts().size()) {
+//			app->undoSystem->Snapshot(StateType::CUSTOM_LUA, app->LoadedFunscripts()[index]);
+//		}
+//	}
+//
+//	return 0;
+//}
 
 static int LuaGetActiveIdx(lua_State* L) noexcept
 {
@@ -546,25 +564,23 @@ static int LuaAddAction(lua_State* L) noexcept
 			luaL_argcheck(L, lua_isboolean(L, 4), 4, "Expected selected boolean"); // selected
 			selectAction = lua_toboolean(L, 4);
 		}
-		lua_getfield(L, 1, OFS_LuaExtensions::ScriptIdxUserdata);
+		lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
 		assert(lua_isuserdata(L, -1));
-		auto index = (intptr_t)lua_touserdata(L, -1);
-		assert(index >= 0 && index < app->LoadedFunscripts().size());
-
-		auto& script = app->LoadedFunscripts()[index];
+		auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
 
 		double atTime = lua_tonumber(L, 2) / 1000.0;
 		assert(atTime >= 0.f);
 		lua_Number pos = lua_tonumber(L, 3);
 		luaL_argcheck(L, pos >= 0.0 && pos <= 100.0, 3, "Position has to be 0 to 100.");
 		FunscriptAction newAction(atTime, pos);
-		script->AddAction(newAction);
+
+		scriptData->Actions.emplace(newAction);
 
 		if (selectAction) {
-			script->SelectAction(newAction);
+			scriptData->selection.emplace(newAction);
 		}
 
-		auto actionCount = script->Actions().size();
+		auto actionCount = scriptData->Actions.size();
 		lua_getfield(L, 1, OFS_LuaExtensions::ScriptActionsField); 
 		assert(lua_istable(L, -1));
 
@@ -583,34 +599,41 @@ static int LuaRemoveAction(lua_State* L) noexcept
 		luaL_argcheck(L, lua_istable(L, 1), 1, "Expected script");
 		luaL_argcheck(L, lua_isuserdata(L, 2), 2, "Expected action");
 		
-		lua_getfield(L, 1, OFS_LuaExtensions::ScriptIdxUserdata); // 3
+		lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata); // 3
 		assert(lua_isuserdata(L, -1));
-		auto index = (intptr_t)lua_touserdata(L, -1);
+		auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
 
-		if (index >= 0 && index < app->LoadedFunscripts().size()) {
-			auto& script = app->LoadedFunscripts()[index];
-			
-			int actionIdx = (intptr_t)lua_touserdata(L, 2);
-			assert(actionIdx >= 0 && actionIdx < script->Actions().size());
-			auto action = &script->Actions()[actionIdx];
+		int actionIdx = (intptr_t)lua_touserdata(L, 2);
+		assert(actionIdx >= 0 && actionIdx < scriptData->Actions.size());
 
-			script->RemoveAction(*action, true);
-		
-			// update actions
-			lua_getfield(L, 1, OFS_LuaExtensions::ScriptActionsField); // 4
-			assert(lua_istable(L, -1));
-		
-			// remove element
-			int actionCount = script->Actions().size();
-			lua_pushnil(L);
-			lua_seti(L, -2, actionCount+1);
-
-			if (actionCount > 0) {
-				for (int i = 0, size = actionCount; i < size; ++i) {
-					lua_pushlightuserdata(L, (void*)(intptr_t)i);
-					assert(lua_istable(L, -2));
-					lua_rawseti(L, -2, i + 1);
+		{
+			// deletes action & selection
+			auto& action = scriptData->Actions[actionIdx];
+			auto it = scriptData->Actions.find(action);
+			if (it != scriptData->Actions.end()) {
+				scriptData->Actions.erase(it);
+				auto selIt = scriptData->selection.find(action);
+				if(selIt != scriptData->selection.end()) {
+					scriptData->selection.erase(selIt);
 				}
+			}
+		}		
+
+	
+		// update actions
+		lua_getfield(L, 1, OFS_LuaExtensions::ScriptActionsField); // 4
+		assert(lua_istable(L, -1));
+	
+		// remove element
+		int actionCount = scriptData->Actions.size();
+		lua_pushnil(L);
+		lua_seti(L, -2, actionCount+1);
+
+		if (actionCount > 0) {
+			for (int i = 0, size = actionCount; i < size; ++i) {
+				lua_pushlightuserdata(L, (void*)(intptr_t)i);
+				assert(lua_istable(L, -2));
+				lua_rawseti(L, -2, i + 1);
 			}
 		}
 	}
@@ -627,10 +650,28 @@ static int LuaGetScript(lua_State* L) noexcept
 
 		if (index >= 1 && index <= app->LoadedFunscripts().size()) {
 			auto& script = app->LoadedFunscripts()[index - 1];
-			lua_createtable(L, 0, 2); // 2
-			
+			lua_createtable(L, 0, 3); // 2
+
 			lua_pushlightuserdata(L, (void*)(intptr_t)(index - 1));
 			lua_setfield(L, -2, OFS_LuaExtensions::ScriptIdxUserdata); // pops off
+			
+			auto scriptCopy = new Funscript::FunscriptData(script->Data());
+			lua_pushlightuserdata(L, (void*)scriptCopy);
+			lua_setfield(L, -2, OFS_LuaExtensions::ScriptDataUserdata); // pops off
+
+			auto gcFunc = [](lua_State* L) -> int {
+				LOG_DEBUG("This function can invoke destructors???");
+				lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata); // 3
+				assert(lua_isuserdata(L, -1));
+				auto data = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+				delete data;
+				return 0;
+			};
+
+			lua_createtable(L, 0, 1);
+			lua_pushcfunction(L, gcFunc);
+			lua_setfield(L, -2, "__gc");
+			int f = lua_setmetatable(L, 2);
 
 			ActionGetterSetter(L, index - 1);
 			lua_setglobal(L, OFS_LuaExtensions::GlobalActionMetaTable); // this gets reused for every action
