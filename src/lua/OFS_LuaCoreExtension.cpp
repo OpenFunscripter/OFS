@@ -169,7 +169,6 @@ function select_none()
 end
 
 function jitter()
-    print('hello from jitter()')
     local script = ofs.Script(ofs.ActiveIdx())
 
     if not ofs.HasSelection(script) then

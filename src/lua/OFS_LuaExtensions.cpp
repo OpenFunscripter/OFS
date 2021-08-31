@@ -376,14 +376,25 @@ static int LuaPlayerSeek(lua_State* L) noexcept;
 static int LuaPlayerPlay(lua_State* L) noexcept;
 static int LuaPlayerCurrentTime(lua_State* L) noexcept;
 static int LuaPlayerDuration(lua_State* L) noexcept;
+static int LuaPlayerGetVideo(lua_State* L) noexcept;
+
 static constexpr struct luaL_Reg playerLib[] = {
 	{"Play", LuaPlayerPlay},
 	{"Seek", LuaPlayerSeek},
 	{"CurrentTime", LuaPlayerCurrentTime},
 	{"Duration", LuaPlayerDuration},
 	{"IsPlaying", LuaPlayerIsPlaying},
+	{"CurrentVideo", LuaPlayerGetVideo},
 	{NULL, NULL}
 };
+
+static int LuaPlayerGetVideo(lua_State* L) noexcept
+{
+	auto app = OpenFunscripter::ptr;
+	// this actually creates a copy of the string in Lua
+	lua_pushstring(L, app->player->getVideoPath());
+	return 1;
+}
 
 static int LuaPlayerIsPlaying(lua_State* L) noexcept
 {
@@ -403,7 +414,6 @@ static int LuaPlayerPlay(lua_State* L) noexcept
 	}
 
 	app->player->setPaused(!play);
-
 	return 0;
 }
 
@@ -452,7 +462,6 @@ static constexpr struct luaL_Reg ofsLib[] = {
 	{"ActiveIdx", LuaGetActiveIdx},
 	{"ClearScript", LuaClearScript},
 	{"HasSelection", LuaHasSelection},
-
 	{"Task", LuaScheduleTask},
 	{"Bind", LuaBindFunction},
 	{"Commit", LuaCommitChanges},
@@ -547,29 +556,6 @@ static int LuaCommitChanges(lua_State* L) noexcept
 	}
 	return 0;
 }
-
-//static int LuaSnapshot(lua_State* L) noexcept
-//{
-//	auto app = OpenFunscripter::ptr;
-//	int nargs = lua_gettop(L);
-//
-//	if (nargs == 0) {
-//		// snapshot all scripts
-//		app->undoSystem->Snapshot(StateType::CUSTOM_LUA);
-//	}
-//	else if (nargs == 1) {
-//		// snapshot a single script
-//		assert(lua_istable(L, 1));
-//		lua_getfield(L, 1, OFS_LuaExtensions::ScriptIdxUserdata);
-//		assert(lua_isuserdata(L, -1));
-//		auto index = (intptr_t)lua_touserdata(L, -1);
-//		if (index >= 0 && index < app->LoadedFunscripts().size()) {
-//			app->undoSystem->Snapshot(StateType::CUSTOM_LUA, app->LoadedFunscripts()[index]);
-//		}
-//	}
-//
-//	return 0;
-//}
 
 static int LuaGetActiveIdx(lua_State* L) noexcept
 {
