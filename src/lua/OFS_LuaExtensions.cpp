@@ -15,27 +15,6 @@
 #include <algorithm>
 #include "EASTL/string.h"
 
-//#ifdef WIN32
-////used to obtain file age on windows
-//#define WIN32_LEAN_AND_MEAN
-//#include "windows.h"
-//#endif
-
-//static uint64_t GetWriteTime(const wchar_t* path) {
-//	OFS_PROFILE(__FUNCTION__);
-//	std::error_code ec;
-//	uint64_t timestamp = 0;
-//	HANDLE file = CreateFileW((wchar_t*)path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-//	if (file == INVALID_HANDLE_VALUE) {	}
-//	else {
-//		FILETIME ftCreate;
-//		GetFileTime(file, NULL, NULL, &ftCreate);
-//		timestamp = *(uint64_t*)&ftCreate;
-//		CloseHandle(file);
-//	}
-//	return timestamp;
-//}
-
 constexpr const char* LuaDefaultFunctions = R"(
 function clamp(val, min, max)
 	return math.min(max, math.max(val, min))
@@ -381,6 +360,7 @@ static int LuaPlayerPlay(lua_State* L) noexcept;
 static int LuaPlayerCurrentTime(lua_State* L) noexcept;
 static int LuaPlayerDuration(lua_State* L) noexcept;
 static int LuaPlayerGetVideo(lua_State* L) noexcept;
+static int LuaPlayerGetFPS(lua_State* L) noexcept;
 
 static constexpr struct luaL_Reg playerLib[] = {
 	{"Play", LuaPlayerPlay},
@@ -389,8 +369,16 @@ static constexpr struct luaL_Reg playerLib[] = {
 	{"Duration", LuaPlayerDuration},
 	{"IsPlaying", LuaPlayerIsPlaying},
 	{"CurrentVideo", LuaPlayerGetVideo},
+	{"FPS", LuaPlayerGetFPS},
 	{NULL, NULL}
 };
+
+static int LuaPlayerGetFPS(lua_State* L) noexcept
+{
+	auto app = OpenFunscripter::ptr;
+	lua_pushnumber(L, app->player->getFps());
+	return 1;
+}
 
 static int LuaPlayerGetVideo(lua_State* L) noexcept
 {
@@ -459,19 +447,54 @@ static int LuaScheduleTask(lua_State* L) noexcept;
 static int LuaCommitChanges(lua_State* L) noexcept;
 static int LuaUndo(lua_State* L) noexcept;
 static int LuaHasSelection(lua_State* L) noexcept;
+static int LuaGetExtensionDir(lua_State* L) noexcept;
+static int LuaGetScriptTitle(lua_State* L) noexcept;
+static int LuaClosestActionAfter(lua_State* L) noexcept;
+static int LuaClosestActionBefore(lua_State* L) noexcept;
+
 static constexpr struct luaL_Reg ofsLib[] = {
+	// core
+	{"Task", LuaScheduleTask},
+	{"Bind", LuaBindFunction},
+	{"Undo", LuaUndo},
+	{"ExtensionDir", LuaGetExtensionDir},
+
+	// funscript api
 	{"Script", LuaGetScript},
 	{"AddAction", LuaAddAction},
 	{"RemoveAction", LuaRemoveAction},
 	{"ActiveIdx", LuaGetActiveIdx},
 	{"ClearScript", LuaClearScript},
 	{"HasSelection", LuaHasSelection},
-	{"Task", LuaScheduleTask},
-	{"Bind", LuaBindFunction},
 	{"Commit", LuaCommitChanges},
-	{"Undo", LuaUndo},
+	{"ScriptTitle", LuaGetScriptTitle},
+	{"ClosestActionAfter", LuaClosestActionAfter},
+	{"ClosestActionBefore", LuaClosestActionBefore},
 	{NULL, NULL}
 };
+
+static int LuaGetScriptTitle(lua_State* L) noexcept
+{
+	auto app = OpenFunscripter::ptr;
+	int nargs = lua_gettop(L);
+	if(nargs >= 1) {
+		luaL_argcheck(L, lua_isinteger(L, 1), 1, "Expected script index.");
+		int scriptIndex = lua_tointeger(L, 1) - 1;
+		luaL_argcheck(L, scriptIndex >= 0 && scriptIndex < app->LoadedFunscripts().size(), 1, "Script index invalid.");
+		lua_pushstring(L, app->LoadedFunscripts()[scriptIndex]->Title.c_str());
+		return 1;
+	}
+	return 0;
+}
+
+static int LuaGetExtensionDir(lua_State* L) noexcept
+{
+	lua_getglobal(L, OFS_LuaExtensions::GlobalExtensionPtr);
+	assert(lua_isuserdata(L, -1));
+	OFS_LuaExtension* ext = (OFS_LuaExtension*)lua_touserdata(L, -1);
+	lua_pushstring(L, ext->Directory.c_str());
+	return 1;
+}
 
 static int LuaHasSelection(lua_State* L) noexcept
 {
@@ -487,6 +510,60 @@ static int LuaHasSelection(lua_State* L) noexcept
 	}
 	lua_pushboolean(L, hasSelection);
 	return 1;
+}
+
+static int LuaClosestActionAfter(lua_State* L) noexcept
+{
+	int nargs = lua_gettop(L);	
+	if(nargs >= 2) {
+		luaL_argcheck(L, lua_istable(L, 1), 1, "Expected script");
+		luaL_argcheck(L, lua_isnumber(L, 2), 2, "Expected time in ms");
+
+		lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
+		assert(lua_isuserdata(L, -1));
+		auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+
+		lua_Number time = lua_tonumber(L, 2);
+
+		{
+			if (scriptData->Actions.empty()) return 0;
+			auto it = scriptData->Actions.upper_bound(FunscriptAction(time, 0));
+			if(it != scriptData->Actions.end()) {
+				int actionIndex = std::distance(scriptData->Actions.begin(), it);
+				lua_pushinteger(L, actionIndex + 1);
+				return 1;
+			}
+		}
+	}	
+	return 0;
+}
+
+static int LuaClosestActionBefore(lua_State* L) noexcept
+{
+	int nargs = lua_gettop(L);	
+	if(nargs >= 2) {
+		luaL_argcheck(L, lua_istable(L, 1), 1, "Expected script");
+		luaL_argcheck(L, lua_isnumber(L, 2), 2, "Expected time in ms");
+
+		lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
+		assert(lua_isuserdata(L, -1));
+		auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+
+		lua_Number time = lua_tonumber(L, 2);
+
+		{
+			if (scriptData->Actions.empty()) return 0;
+			auto it = scriptData->Actions.lower_bound(FunscriptAction(time, 0));
+			if(it-1 >= scriptData->Actions.begin()) {
+				auto before = it - 1; 
+				int actionIndex = std::distance(scriptData->Actions.begin(), before);
+				lua_pushinteger(L, actionIndex + 1);
+				return 1;
+			}
+		}
+	}	
+
+	return 0;
 }
 
 static int LuaClearScript(lua_State* L) noexcept

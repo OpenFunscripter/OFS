@@ -54,6 +54,7 @@ end
 | `print(msg)`|String| nil | Will print to the OFS log file.|
 | `ofs.Bind(functionName, description)` |String, String| nil | Will create a "Dynamic" key binding.<br/>Must be called from within `init()`.<br/>Bindings will always run in another thread. |
 | `ofs.Task(functionName)` | String | nil |Will run a function in another thread. Use cautiously. |
+| `ofs.ExtensionDir()` | None | String | Path to extension directory. |
 
 
 # Video player API
@@ -66,6 +67,7 @@ end
 | `player.Duration()`| None | Number | Returns the total duration of the video in seconds. |
 | `player.IsPlaying()`| None | bool | Returns a boolean if the player is playing or not. |
 | `player.CurrentVideo()`| None | String | Returns a path to the currently playing video. |
+| `player.FPS()`| None | Number | Returns the fps of the video. |
 
 # Funscript API
 
@@ -146,6 +148,9 @@ end
 |`ofs.HasSelection(script)`| Funscript | bool | Returns if the script has a selection. |
 |`ofs.Commit(script)`| Funscript | nil | This creates an undo snapshot and saves changes back to OFS.<br/>If you forget to call commit nothing will change in OFS. |
 |`ofs.Undo()`| None | nil | Will undo the last modification done by a Lua script.<br/>It will do nothing if the last modification wasn't done by a script.<br/>Essentially you only undo modifications by `ofs.Commit`. |
+|`ofs.ScriptTitle(index)`| Number | String | Returns title of a funscript. |
+|`ofs.ClosestActionAfter(script, time)`| Funscript, Number | Number | Given a funscript and a time in seconds it returns an action index or nil. |
+|`ofs.ClosestActionBefore(script, time)`| Funscript, Number | Number | Given a funscript and a time in seconds it returns an action index or nil. |
 
 
 # GUI API
