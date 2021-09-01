@@ -42,6 +42,8 @@ add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
 
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
+  lua
+  love_3p_luasocket
   OFS_lib
 )
 
@@ -51,9 +53,6 @@ if(WIN32)
                    COMMAND ${CMAKE_COMMAND} -E copy
                    "${CMAKE_SOURCE_DIR}/lib/libmpv/mpv-1.dll" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/mpv-1.dll"
 				   DEPENDS "$<TARGET_FILE_DIR:${PROJECT_NAME}>/mpv-1.dll")
-	target_link_libraries(${PROJECT_NAME} PRIVATE lua love_3p_luasocket)
-else()
-	target_link_libraries(${PROJECT_NAME} PRIVATE lua love_3p_luasocket)
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC

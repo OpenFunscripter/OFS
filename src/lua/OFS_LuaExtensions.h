@@ -123,5 +123,6 @@ public:
 	{
 		OFS_REFLECT(Extensions, ar);
 		OFS_REFLECT(DevMode, ar);
+		OFS_REFLECT(ShowLogs, ar);
 	}
 };

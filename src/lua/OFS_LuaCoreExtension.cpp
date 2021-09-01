@@ -87,6 +87,10 @@ function spline_smooth()
     local script = ofs.Script(ofs.ActiveIdx())
     local actionCount = #script.actions
 
+    if not ofs.HasSelection(script) then
+        return
+    end
+
     local smoothedActions = {}
 
     for idx, action in ipairs(script.actions) do
