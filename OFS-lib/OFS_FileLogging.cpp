@@ -1,6 +1,7 @@
 #include "OFS_FileLogging.h"
 #include "OFS_Util.h"
 #include "OFS_Profiling.h"
+#include "OFS_ImGui.h"
 
 #include "SDL_log.h"
 #include "SDL_rwops.h"
@@ -10,6 +11,7 @@
 #include "stb_sprintf.h"
 #include <vector>
 
+static OFS::AppLog OFS_MainLog;
 
 SDL_RWops* OFS_FileLogger::LogFileHandle = nullptr;
 
@@ -81,14 +83,32 @@ void OFS_FileLogger::Shutdown() noexcept
     SDL_RWclose(LogFileHandle);
 }
 
+void OFS_FileLogger::DrawLogWindow(bool* open) noexcept
+{
+    if(!*open) return;
+    OFS_MainLog.Draw("OFS Log Output", open);
+}
+
 inline static void LogToConsole(OFS_LogLevel level, const char* msg) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     switch(level) {
-        case OFS_LogLevel::OFS_LOG_INFO: SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, msg); break;
-        case OFS_LogLevel::OFS_LOG_WARN: SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, msg); break;
-        case OFS_LogLevel::OFS_LOG_DEBUG: SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, msg); break;
-        case OFS_LogLevel::OFS_LOG_ERROR: SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, msg); break;
+        case OFS_LogLevel::OFS_LOG_INFO:
+            SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, msg);
+            OFS_MainLog.AddLog("[INFO]: %s\n", msg);
+            break;
+        case OFS_LogLevel::OFS_LOG_WARN:
+            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, msg);
+            OFS_MainLog.AddLog("[WARN]: %s\n", msg);
+            break;
+        case OFS_LogLevel::OFS_LOG_DEBUG: 
+            SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, msg); 
+            OFS_MainLog.AddLog("[DEBUG]: %s\n", msg);
+            break;
+        case OFS_LogLevel::OFS_LOG_ERROR: 
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, msg); 
+            OFS_MainLog.AddLog("[ERROR]: %s\n", msg);
+            break;
     }
 }
 

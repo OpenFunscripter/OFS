@@ -53,6 +53,7 @@ private:
 		bool force_hw_decoding = false;
 		bool mirror_mode = false;
 		bool show_tcode = false;
+		bool show_debug_log = false;
 
 		int32_t	vsync = 0;
 		int32_t framerateLimit = 150;
@@ -112,6 +113,7 @@ private:
 			OFS_REFLECT(font_override, ar);
 			OFS_REFLECT(show_tcode, ar);
 			OFS_REFLECT(defaultMetadata, ar);
+			OFS_REFLECT(show_debug_log, ar);
 			OFS_REFLECT_NAMED("SplineMode", BaseOverlay::SplineMode, ar);
 			OFS_REFLECT_NAMED("SyncLineEnable", BaseOverlay::SyncLineEnable, ar);
 		}

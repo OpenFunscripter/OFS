@@ -1685,6 +1685,8 @@ void OpenFunscripter::step() noexcept {
             extensions->ShowExtensions();
             tcode->DrawWindow(&settings->data().show_tcode, player->getCurrentPositionSecondsInterp());
 
+            OFS_FileLogger::DrawLogWindow(&settings->data().show_debug_log);
+
             if (keybinds.ShowBindingWindow()) {
                 keybinds.save();
             }
@@ -2771,6 +2773,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::Separator();
             if (ImGui::BeginMenu("Debug")) {
                 if (ImGui::MenuItem("Metrics", NULL, &DebugMetrics)) {}
+                if (ImGui::MenuItem("Log output", NULL, &settings->data().show_debug_log)) {}
 #ifndef NDEBUG
                 if (ImGui::MenuItem("ImGui Demo", NULL, &DebugDemo)) {}
 #endif

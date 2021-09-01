@@ -20,6 +20,7 @@ public:
     static void Shutdown() noexcept;
 
     static void Flush() noexcept;
+    static void DrawLogWindow(bool* open) noexcept;
 
     static void LogToFileR(const char* prefix, const char* msg, bool newLine = true) noexcept;
     static void LogToFileR(OFS_LogLevel level, const char* msg, uint32_t size = 0, bool newLine = true) noexcept;
