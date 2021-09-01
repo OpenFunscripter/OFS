@@ -13,6 +13,7 @@
 
 #include <filesystem>
 #include <algorithm>
+#include "EASTL/string.h"
 
 //#ifdef WIN32
 ////used to obtain file age on windows
@@ -35,14 +36,127 @@
 //	return timestamp;
 //}
 
+// ExampleAppLog taken from "imgui_demo.cpp"
+struct ExtensionLog
+{
+    ImGuiTextBuffer     Buf;
+    ImGuiTextFilter     Filter;
+    ImVector<int>       LineOffsets; // Index to lines offset. We maintain this with AddLog() calls.
+    bool                AutoScroll;  // Keep scrolling if already at the bottom.
+
+    ExtensionLog() noexcept
+    {
+        AutoScroll = true;
+        Clear();
+    }
+
+    void Clear() noexcept
+    {
+        Buf.clear();
+        LineOffsets.clear();
+        LineOffsets.push_back(0);
+    }
+
+	inline int LogSizeBytes() const noexcept
+	{
+		return Buf.Buf.size_in_bytes() + LineOffsets.size_in_bytes();
+	}
+
+	inline int AllocatedSizeBytes() const noexcept
+	{
+		return Buf.Buf.Capacity + LineOffsets.Capacity*sizeof(int);
+	}
+
+    void AddLog(const char* fmt, ...) noexcept IM_FMTARGS(2)
+    {
+        int old_size = Buf.size();
+        va_list args;
+        va_start(args, fmt);
+        Buf.appendfv(fmt, args);
+        va_end(args);
+        for (int new_size = Buf.size(); old_size < new_size; old_size++)
+            if (Buf[old_size] == '\n')
+                LineOffsets.push_back(old_size + 1);
+    }
+
+    void Draw(const char* title, bool* p_open = NULL) noexcept
+    {
+        if (!ImGui::Begin(title, p_open)) {
+            ImGui::End();
+            return;
+        }
+
+        // Options menu
+        if (ImGui::BeginPopup("Options")) {
+            ImGui::Checkbox("Auto-scroll", &AutoScroll);
+            ImGui::EndPopup();
+        }
+
+        // Main window
+        if (ImGui::Button("Options"))
+            ImGui::OpenPopup("Options");
+        ImGui::SameLine();
+        bool clear = ImGui::Button("Clear");
+        ImGui::SameLine();
+        bool copy = ImGui::Button("Copy");
+        ImGui::SameLine();
+        Filter.Draw("Filter", -100.0f);
+
+		ImGui::Text("Used: %.2f MB",  LogSizeBytes() / (1024.f * 1024.f));
+		ImGui::SameLine();
+		ImGui::Text("Allocated: %.2f MB", AllocatedSizeBytes() /  (1024.f * 1024.f));
+        ImGui::Separator();
+        ImGui::BeginChild("scrolling", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+
+        if (clear)
+            Clear();
+        if (copy)
+            ImGui::LogToClipboard();
+
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+        const char* buf = Buf.begin();
+        const char* buf_end = Buf.end();
+        if (Filter.IsActive()) {
+            for (int line_no = 0; line_no < LineOffsets.Size; line_no++) {
+                const char* line_start = buf + LineOffsets[line_no];
+                const char* line_end = (line_no + 1 < LineOffsets.Size) ? (buf + LineOffsets[line_no + 1] - 1) : buf_end;
+                if (Filter.PassFilter(line_start, line_end))
+                    ImGui::TextUnformatted(line_start, line_end);
+            }
+        }
+		else {
+            ImGuiListClipper clipper;
+            clipper.Begin(LineOffsets.Size);
+            while (clipper.Step()) {
+                for (int line_no = clipper.DisplayStart; line_no < clipper.DisplayEnd; line_no++) {
+                    const char* line_start = buf + LineOffsets[line_no];
+                    const char* line_end = (line_no + 1 < LineOffsets.Size) ? (buf + LineOffsets[line_no + 1] - 1) : buf_end;
+                    ImGui::TextUnformatted(line_start, line_end);
+                }
+            }
+            clipper.End();
+        }
+        ImGui::PopStyleVar();
+
+        if (AutoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
+            ImGui::SetScrollHereY(1.0f);
+
+        ImGui::EndChild();
+        ImGui::End();
+    }
+};
+
 constexpr const char* LuaDefaultFunctions = R"(
 function clamp(val, min, max)
 	return math.min(max, math.max(val, min))
 end
 )";
 
+static ExtensionLog ExtensionLogBuffer;
+
 SDL_threadID OFS_LuaExtensions::MainThread = SDL_ThreadID();
 bool OFS_LuaExtensions::DevMode = false;
+bool OFS_LuaExtensions::ShowLogs = false;
 
 inline int Lua_Pcall(lua_State* L, int a, int b, int c) noexcept
 {
@@ -68,23 +182,24 @@ static int LuaPrint(lua_State* L) noexcept
 {
 	int nargs = lua_gettop(L);
 
-	std::stringstream ss;
+	eastl::string logMsg;
+	logMsg.reserve(1024);
+
+	lua_getglobal(L, OFS_LuaExtensions::GlobalExtensionPtr);
+	assert(lua_isuserdata(L, -1));
+	OFS_LuaExtension* ext = (OFS_LuaExtension*)lua_touserdata(L, -1);
+
+	logMsg.append_sprintf("[%s]: ", ext->Name.c_str());
 	for (int i = 1; i <= nargs; ++i) {
 		const char* str = lua_tostring(L, i);
 		if (str != nullptr) {
-			size_t len = strlen(str);
-			if (len >= 1024) {
-				ss.write(str, 1024);
-				ss << "[...] " << len << " characters were truncated";
-			}
-			else {
-				ss << str;
-			}
+			logMsg.append(str);
 		}
 	}
-	ss << std::endl;
 
-	LOG_INFO(ss.str().c_str());
+	LOG_INFO(logMsg.c_str());
+	logMsg.append(1, '\n');
+	ExtensionLogBuffer.AddLog(logMsg.c_str());
 	return 0;
 }
 
@@ -889,10 +1004,17 @@ void OFS_LuaExtensions::Update(float delta) noexcept
 	}
 }
 
+inline static void ShowExtensionLogWindow(bool* open) noexcept
+{
+	if(!*open) return;
+	ExtensionLogBuffer.Draw("Extension Log Output", open);
+}
+
 void OFS_LuaExtensions::ShowExtensions() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	auto app = OpenFunscripter::ptr;
+	ShowExtensionLogWindow(&OFS_LuaExtensions::ShowLogs);
 	for (auto& ext : this->Extensions) {
 		if (!ext.WindowOpen || !ext.Active || this->TaskBusy) continue;	
 

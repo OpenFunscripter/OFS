@@ -23,6 +23,7 @@ function init()
     ofs.Bind("jitter", "Adds jitter to selection.")
     ofs.Bind("random_noise", "Generates a random script.")
     ofs.Bind("spline_smooth", "Adds spline smoothing to selection.")
+    print("initialized")
 end
 
 function update(delta)

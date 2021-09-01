@@ -84,7 +84,7 @@ public:
 	static SDL_threadID MainThread;
 	static constexpr const char* DynamicBindingHandler = "OFS_LuaExtensions";
 	static bool DevMode;
-
+	static bool ShowLogs;
 	bool TaskBusy = false;
 	std::vector<OFS_LuaExtension> Extensions;
 	void UpdateExtensionList() noexcept;

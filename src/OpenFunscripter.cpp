@@ -2820,6 +2820,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 extensions->UpdateExtensionList();
             }
             if(ImGui::MenuItem("Developer mode", NULL, &OFS_LuaExtensions::DevMode)) {}
+            if(ImGui::MenuItem("Show logs", NULL, &OFS_LuaExtensions::ShowLogs)) {}
             OFS::Tooltip("Enable extra functionality for extension developement.");
             if (ImGui::MenuItem("Extension directory")) { 
                 Util::OpenFileExplorer(Util::Prefpath(OFS_LuaExtensions::ExtensionDir)); 
