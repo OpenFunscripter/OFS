@@ -69,7 +69,7 @@ void ScriptSimulator::MouseMovement(SDL_Event& ev)
     MouseOnSimulator = areaRect.Contains(mousePosOnSim);
 
     mouseValue = clamped;
-    mouseValue = ((mouseValue - 0.f) / (1.f - 0.f)) * (1.f - -1.f) + -1.f;
+    mouseValue = mouseValue * 2.f - 1.f;
 }
 
 void ScriptSimulator::MouseDown(SDL_Event& ev)
