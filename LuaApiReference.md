@@ -1,12 +1,14 @@
-# OFS Lua Extension API Reference
+# Extension API Reference
 
 Here I'm trying to document all the API calls of the new Extension API.
 
-1. Extension Structure
-2. Core API
-3. Video player API
-4. Funscript API
-5. GUI API
+- [Extension API Reference](#extension-api-reference)
+- [Extension Structure](#extension-structure)
+- [Core API](#core-api)
+- [Video player API](#video-player-api)
+- [Funscript API](#funscript-api)
+  - [Some pitfalls](#some-pitfalls)
+- [GUI API](#gui-api)
 
 # Extension Structure
 
