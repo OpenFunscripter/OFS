@@ -6,6 +6,7 @@ Here I'm trying to document all the API calls of the new Extension API.
 2. Core API
 3. Video player API
 4. Funscript API
+5. GUI API
 
 # Extension Structure
 
@@ -142,4 +143,35 @@ end
 |`ofs.ClearScript(script)`| Funscript | nil | Removes all actions. |
 |`ofs.HasSelection(script)`| Funscript | bool | Returns if the script has a selection. |
 |`ofs.Commit(script)`| Funscript | nil | This creates an undo snapshot and saves changes back to OFS.<br/>If you forget to call commit nothing will change in OFS. |
-|`ofs.Undo()`| None | nil | Will undo the last modification done by a Lua script.<br/>It will do nothing if the last modification wasn't done by a script. |
+|`ofs.Undo()`| None | nil | Will undo the last modification done by a Lua script.<br/>It will do nothing if the last modification wasn't done by a script.<br/>Essentially you only undo modifications by `ofs.Commit`. |
+
+
+# GUI API
+This is a subset of ImGui functions exposed through Lua.  
+These functions must be called from within `gui()`.  
+You can't pass values by reference in Lua which is why things like `ofs.Slider` have multiple return values.
+
+```Lua
+x = 0 -- global value x
+
+function gui()
+    x, valueChanged = ofs.Slider("x", x, 0, 100) -- slider min: 0 & max: 100
+    if valueChanged then
+        print("The value changed!")
+    end
+end
+```
+
+
+| Call        | Params | Returns | Description |
+| ----------- | ------ | ------- | ----------- |
+| `ofs.Text(txt)` | String | nil | Can be used to display text. |
+| `clicked = ofs.Button(txt)` | String | bool | Creates a button. Returns if the button was clicked. |
+| `newValue, valueChanged = ofs.Input(txt, currentValue)` | String, (String \| Number) | (String \| Number), bool | Creates an Input field for either strings or numbers. |
+| `newValue, valueChanged = ofs.Drag(txt, currentValue, stepSize)` | String, Number, [optional Number] | Number, bool | Creates a drag button.|
+| `newValue, valueChanged = ofs.Slider(txt, currentVal, min, max)` | String, Number, Number, Number | Number, bool | Creates a slider. |
+| `newValue, valueChanged = ofs.Checkbox(txt, value)` | String, Number, Number, Number | Number, bool | Creates a slider. |
+| `ofs.Sameline()` | None | nil | Can be used to put things on the same line.<br/> For example if you want two buttons next two each other. |
+| `ofs.Separator()` | None | nil | Inserts a separator. |
+| `ofs.Spacing()` | None | nil | Controls after this will be a bit further spaced away. |
+| `ofs.NewLine()` | None | nil | Controls after this will go into the next line. |

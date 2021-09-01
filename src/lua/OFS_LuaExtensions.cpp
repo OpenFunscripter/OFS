@@ -205,7 +205,7 @@ static int LuaDrag(lua_State* L) noexcept
 
 	const char* str = lua_tostring(L, 1);
 	if (lua_isinteger(L, 2)) {
-		int result = lua_tointeger(L, 2); // trucates to 32 bit
+		int result = lua_tointeger(L, 2); // truncates to 32 bit
 		valueChanged = ImGui::DragInt(str, &result, stepSize);
 		lua_pushinteger(L, result);
 	}
@@ -227,7 +227,7 @@ static int LuaShowText(lua_State* L) noexcept
 	int nargs = lua_gettop(L);
 	if (nargs == 1) {
 		const char* str = lua_tostring(L, 1);
-		if (str) ImGui::TextUnformatted(str);
+		if (str) ImGui::TextWrapped("%s", str);
 	}
 	return 0;
 }
