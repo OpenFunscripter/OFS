@@ -9,10 +9,10 @@ private:
 	ImVec2 startDragP1;
 	ImVec2 startDragP2;
 	ImVec2* dragging = nullptr;
+	float mouseValue;
 	bool IsMovingSimulator = false;
 	bool EnableVanilla = false;
-	bool MouseBetweenSimulator = false;
-	float mouseValue;
+	bool MouseOnSimulator = false;
 
 	inline int32_t GetColor(const ImColor& col) const noexcept {
 		auto color = ImGui::ColorConvertFloat4ToU32(col);

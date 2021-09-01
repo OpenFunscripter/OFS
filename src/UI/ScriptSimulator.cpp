@@ -22,11 +22,18 @@ void ScriptSimulator::setup()
     app->events->Subscribe(SDL_MOUSEBUTTONDOWN, EVENT_SYSTEM_BIND(this, &ScriptSimulator::MouseDown));
 }
 
+inline static float CalcBearing(const ImVec2 p1, const ImVec2 p2) noexcept 
+{
+    float theta = SDL_atan2f(p2.x - p1.x, p1.y - p2.y);
+    if (theta < 0.0)
+        theta += M_PI*2.f;
+    return theta;
+}
+
 void ScriptSimulator::MouseMovement(SDL_Event& ev)
 {
     OFS_PROFILE(__FUNCTION__);
     SDL_MouseMotionEvent& motion = ev.motion;
-    // there's alot of indirection here
     const auto& simP1 = simulator.P1;
     const auto& simP2 = simulator.P2;
 
@@ -43,7 +50,24 @@ void ScriptSimulator::MouseMovement(SDL_Event& ev)
         mouseValue /= top_y - bottom_y;
     }
     auto clamped = Util::Clamp(mouseValue, 0.f, 1.f);
-    MouseBetweenSimulator = clamped == mouseValue;
+
+    // Create a axis aligned rectangle with the size of the simulator + padding
+    constexpr float areaPadding = 10.f;
+    float simLength = Distance(simP1, simP2);
+    auto simPos = (simP1 + simP2) / 2.f;
+    ImRect areaRect;
+    areaRect.Min = simPos - ImVec2(areaPadding, areaPadding);
+    areaRect.Max = simPos + ImVec2(simulator.Width, simLength) + ImVec2(areaPadding, areaPadding);
+    areaRect.Min -= ImVec2(simulator.Width / 2.f, simLength / 2.f);
+    areaRect.Max -= ImVec2(simulator.Width / 2.f, simLength / 2.f);
+
+    // rotate mouse pos into the same direction as the simulator
+    float theta = CalcBearing(simP1, simP2);
+    ImVec2 mousePosOnSim = ImVec2(motion.x, motion.y) - simPos;
+    mousePosOnSim = simPos + ImRotate(mousePosOnSim, -SDL_cosf(theta), SDL_sinf(theta));
+    // check if mousePos is on the simulator
+    MouseOnSimulator = areaRect.Contains(mousePosOnSim);
+
     mouseValue = clamped;
     mouseValue = ((mouseValue - 0.f) / (1.f - 0.f)) * (1.f - -1.f) + -1.f;
 }
@@ -54,7 +78,7 @@ void ScriptSimulator::MouseDown(SDL_Event& ev)
     auto& button = ev.button;
     bool clickAddMofifer = KeybindingSystem::PassiveModifier("click_add_point_simulator");
     if (clickAddMofifer && button.button == SDL_BUTTON_LEFT) {
-        if (MouseBetweenSimulator) {
+        if (MouseOnSimulator) {
             auto app = OpenFunscripter::ptr;
             app->undoSystem->Snapshot(StateType::ADD_EDIT_ACTION, app->ActiveFunscript());
             app->scripting->addEditAction(FunscriptAction(app->player->getCurrentPositionSecondsInterp(), 50 + (50 * mouseValue)));
