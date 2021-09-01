@@ -36,6 +36,7 @@ struct OFS_LuaExtension
 	std::string NameId;
 	std::string Directory;
 
+	bool WindowOpen = false;
 	bool Active = false;
 	
 	float UpdateTime = 0.0;
@@ -69,6 +70,7 @@ struct OFS_LuaExtension
 		OFS_REFLECT(NameId, ar);
 		OFS_REFLECT(Directory, ar);
 		OFS_REFLECT(Active, ar);
+		OFS_REFLECT(WindowOpen, ar);
 		Hash = Util::Hash(Directory.c_str(), Directory.size());
 	}
 };
@@ -113,7 +115,7 @@ public:
 	void save() noexcept;
 
 	void Update(float delta) noexcept;
-	void ShowExtensions(bool* open) noexcept;
+	void ShowExtensions() noexcept;
 	void HandleBinding(class Binding* binding) noexcept;
 
 	template<typename Archive>

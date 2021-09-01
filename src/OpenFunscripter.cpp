@@ -1682,7 +1682,7 @@ void OpenFunscripter::step() noexcept {
             scripting->DrawScriptingMode(NULL);
             LoadedProject->ShowProjectWindow(&ShowProjectEditor);
 
-            extensions->ShowExtensions(&settings->data().show_extensions);
+            extensions->ShowExtensions();
             tcode->DrawWindow(&settings->data().show_tcode, player->getCurrentPositionSecondsInterp());
 
             if (keybinds.ShowBindingWindow()) {
@@ -2819,7 +2819,6 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::IsWindowAppearing()) {
                 extensions->UpdateExtensionList();
             }
-            if(ImGui::MenuItem("Show windows", NULL, &settings->data().show_extensions)) {}
             if(ImGui::MenuItem("Developer mode", NULL, &OFS_LuaExtensions::DevMode)) {}
             OFS::Tooltip("Enable extra functionality for extension developement.");
             if (ImGui::MenuItem("Extension directory")) { 
@@ -2827,14 +2826,18 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             }
             ImGui::Separator();
             for (auto& ext : extensions->Extensions) {
-                if (ImGui::MenuItem(ext.NameId.c_str(), NULL, &ext.Active)) {
-                    if (ext.Active && !ext.L) {
-                        ext.Active = ext.Load(ext.Directory);
+                if(ImGui::BeginMenu(ext.NameId.c_str())) {
+                    if(ImGui::MenuItem(Util::Format("Enabled##Activate%s", ext.NameId.c_str()), NULL, &ext.Active)) {
+                        if (ext.Active && !ext.L) {
+                            ext.Active = ext.Load(ext.Directory);
+                        }
+                        else if (!ext.Active) { ext.Shutdown(); }
                     }
-                    else if (!ext.Active) { ext.Shutdown(); }
-                }
-                if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Middle)) {
-                    Util::OpenFileExplorer(ext.Directory);
+                    if(ImGui::MenuItem(Util::Format("Show Window##Show%s", ext.NameId.c_str()), NULL, &ext.WindowOpen, ext.Active)) {}
+                    if(ImGui::MenuItem(Util::Format("Open directory##Directory%s", ext.NameId.c_str()), NULL)) {
+                        Util::OpenFileExplorer(ext.Directory);            
+                    }
+                    ImGui::EndMenu();
                 }
             }
             ImGui::EndMenu();

@@ -53,7 +53,6 @@ private:
 		bool force_hw_decoding = false;
 		bool mirror_mode = false;
 		bool show_tcode = false;
-		bool show_extensions = false;
 
 		int32_t	vsync = 0;
 		int32_t framerateLimit = 150;
@@ -92,7 +91,6 @@ private:
 			OFS_REFLECT(last_path, ar);
 			OFS_REFLECT(always_show_bookmark_labels, ar);
 			OFS_REFLECT_PTR_NAMED("theme", (uint32_t*)&current_theme, ar);
-			OFS_REFLECT(show_extensions, ar);
 			OFS_REFLECT(draw_video, ar);
 			OFS_REFLECT(show_simulator, ar);
 			OFS_REFLECT(show_simulator_3d, ar);

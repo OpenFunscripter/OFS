@@ -889,17 +889,14 @@ void OFS_LuaExtensions::Update(float delta) noexcept
 	}
 }
 
-void OFS_LuaExtensions::ShowExtensions(bool* open) noexcept
+void OFS_LuaExtensions::ShowExtensions() noexcept
 {
-	if (!*open) return;
 	OFS_PROFILE(__FUNCTION__);
-	
 	auto app = OpenFunscripter::ptr;
-
 	for (auto& ext : this->Extensions) {
-		if (!ext.Active || this->TaskBusy) continue;	
+		if (!ext.WindowOpen || !ext.Active || this->TaskBusy) continue;	
 
-		ImGui::Begin(ext.NameId.c_str(), open, ImGuiWindowFlags_None);
+		ImGui::Begin(ext.NameId.c_str(), &ext.WindowOpen, ImGuiWindowFlags_None);
 		if (!ext.ExtensionError.empty()) {
 			ImGui::TextUnformatted("Encountered error");
 			ImGui::TextWrapped("Error:\n%s", ext.ExtensionError.c_str());
