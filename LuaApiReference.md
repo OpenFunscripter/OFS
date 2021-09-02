@@ -30,7 +30,7 @@ The `main.lua` must define 3 functions otherwise things will explode.
 ```lua
 function init()
     -- this runs once at when loading the extension
-    -- if you want to register a custom keybinding: ofs.Bind must be called here
+    -- custom keybinding are registered here with "ofs.Bind"
 end
 
 function update(delta)
@@ -46,12 +46,14 @@ function gui()
 end
 ```
 
-
+One of the biggest differences to the older Lua scripting API is that Extensions can have their own state.  
+When an Extension gets enabled it gets it's own Lua VM seperate from other extensions.
 
 # Core API
 | Call        |Params| Returns | Description |
 | ----------- |------| ------- |----------- |
-| `print(msg)`|String| nil | Will print to the OFS log file.|
+| `print(msg)`|String| nil | Will print to the "Extension Log Output".<br/>Accessible through "Extensions"->"Show logs"|
+| `clamp(val, min, max)`| Number, Number, Number | Number | Clamps a value.<br/>This is a Lua function which I placed in global scope. |
 | `ofs.Bind(functionName, description)` |String, String| nil | Will create a "Dynamic" key binding.<br/>Must be called from within `init()`.<br/>Bindings will always run in another thread. |
 | `ofs.Task(functionName)` | String | nil |Will run a function in another thread. Use cautiously. |
 | `ofs.ExtensionDir()` | None | String | Path to extension directory. |
