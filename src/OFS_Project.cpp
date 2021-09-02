@@ -224,14 +224,12 @@ void OFS_Project::AddFunscript(const std::string& path) noexcept
 	if (script->open(path)) {
 		// add existing script to project
 		Funscripts.emplace_back(std::move(script));
-		Save(true);
 	}
 	else {
 		// add empty script to project
 		script = std::make_shared<Funscript>();
 		script->UpdatePath(path);
 		Funscripts.emplace_back(std::move(script));
-		Save(true);
 	}
 }
 
@@ -240,7 +238,6 @@ void OFS_Project::RemoveFunscript(int idx) noexcept
 	OFS_PROFILE(__FUNCTION__);
 	if (idx >= 0 && idx < Funscripts.size()) {
 		Funscripts.erase(Funscripts.begin() + idx);
-		Save(true);
 	}
 }
 
