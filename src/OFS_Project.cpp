@@ -295,7 +295,9 @@ bool OFS_Project::Import(const std::string& path) noexcept
 		LoadScripts(basePath.u8string());
 	}
 	if(Loaded && !Funscripts.empty()) {
-		Metadata = Funscripts.front()->LocalMetadata;
+		if(!Funscripts.front()->LocalMetadata.title.empty()) {
+			Metadata = Funscripts.front()->LocalMetadata;
+		}
 	}
 	return Loaded;
 }
