@@ -24,22 +24,14 @@
 #include "glad/gl.h"
 
 // FIX: Add type checking to the deserialization. It does crash if a field type doesn't match.
-
-// TODO: improve shift click add action with simulator
-//       it bugs out if the simulator is on the same height as the script timeline
-
 // TODO: Use ImGui tables API in keybinding UI
-
 // TODO: extend "range extender" functionality ( only extend bottom/top, range reducer )
 // TODO: render simulator relative to video position & zoom
-
 // TODO: make speed coloring configurable
-
 // TODO: higher level representation for selections (array of intervals)
 //       use that to add the ability to cycle between selection modes
 // TODO: OFS_ScriptTimeline selections cause alot of unnecessary overdraw. find a way to not have any overdraw
 // TODO: binding to toggle video player fullscreen
-
 // BUG: audio files don't have a frame count which will cause recording mode to fail horribly
 
 // the video player supports a lot more than these
@@ -61,8 +53,7 @@ std::array<const char*, 4> OpenFunscripter::SupportedAudioExtensions{
 };
 
 OpenFunscripter* OpenFunscripter::ptr = nullptr;
-
-constexpr const char* glsl_version = "#version 330";
+constexpr const char* GlslVersion = "#version 330";
 
 static ImGuiID MainDockspaceID;
 constexpr const char* StatisticsId = "Statistics";
@@ -99,8 +90,8 @@ bool OpenFunscripter::imguiSetup() noexcept
 
     // Setup Platform/Renderer bindings
     ImGui_ImplSDL2_InitForOpenGL(window, glContext);
-    LOGF_DEBUG("init imgui with glsl: %s", glsl_version);
-    ImGui_ImplOpenGL3_Init(glsl_version);
+    LOGF_DEBUG("init imgui with glsl: %s", GlslVersion);
+    ImGui_ImplOpenGL3_Init(GlslVersion);
 
     OFS_DynFontAtlas::FontOverride = settings->data().font_override;
     OFS_DynFontAtlas::Init();
