@@ -15,6 +15,13 @@
 #include <algorithm>
 #include "EASTL/string.h"
 
+#if defined(WIN32)
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#include <shellapi.h>
+#endif
+
+
 constexpr const char* LuaDefaultFunctions = R"(
 function clamp(val, min, max)
 	return math.min(max, math.max(val, min))
@@ -451,6 +458,7 @@ static int LuaGetExtensionDir(lua_State* L) noexcept;
 static int LuaGetScriptTitle(lua_State* L) noexcept;
 static int LuaClosestActionAfter(lua_State* L) noexcept;
 static int LuaClosestActionBefore(lua_State* L) noexcept;
+static int LuaSilentCmd(lua_State* L) noexcept;
 
 static constexpr struct luaL_Reg ofsLib[] = {
 	// core
@@ -458,6 +466,7 @@ static constexpr struct luaL_Reg ofsLib[] = {
 	{"Bind", LuaBindFunction},
 	{"Undo", LuaUndo},
 	{"ExtensionDir", LuaGetExtensionDir},
+	{"SilentCmd", LuaSilentCmd},
 
 	// funscript api
 	{"Script", LuaGetScript},
@@ -472,6 +481,49 @@ static constexpr struct luaL_Reg ofsLib[] = {
 	{"ClosestActionBefore", LuaClosestActionBefore},
 	{NULL, NULL}
 };
+
+static int LuaSilentCmd(lua_State* L) noexcept
+{
+	int nargs = lua_gettop(L);
+	bool success = false;
+	if(nargs >= 1) {
+		bool runAsync = false;
+		luaL_argcheck(L, lua_isstring(L, 1), 1, "Expected string.");
+		if(nargs >= 2) { 
+			luaL_argcheck(L, lua_isboolean(L, 2), 2, "Expected boolean.");
+			runAsync = lua_toboolean(L, 2);		
+		}
+		const char* cmd = lua_tostring(L, 1);
+		#if defined(WIN32)
+		auto wCmd = L"/c " + Util::Utf8ToUtf16(cmd);
+
+		if(!runAsync) {
+			SHELLEXECUTEINFOW info = {0};
+			info.cbSize = sizeof(SHELLEXECUTEINFOW);
+			info.fMask = SEE_MASK_NOCLOSEPROCESS;
+			info.hwnd = NULL;
+			info.lpVerb = NULL;
+			info.lpFile = L"cmd.exe";        
+			info.lpParameters = wCmd.c_str();   
+			info.lpDirectory = NULL;
+			info.nShow = SW_HIDE;
+			info.hInstApp = NULL; 
+			success = ShellExecuteExW(&info);
+			WaitForSingleObject(info.hProcess, INFINITE);
+			CloseHandle(info.hProcess);
+		}
+		else {
+			auto val = (INT_PTR)ShellExecuteW(NULL, L"open", L"cmd.exe", wCmd.c_str(), NULL, SW_HIDE);
+			success = val > 32;
+		}
+
+		#else
+		success = std::system(cmd);
+		#endif
+	}
+	lua_pushboolean(L, success);
+	return 1;
+}
 
 static int LuaGetScriptTitle(lua_State* L) noexcept
 {

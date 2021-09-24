@@ -30,7 +30,7 @@ The `main.lua` must define 3 functions otherwise things will explode.
 ```lua
 function init()
     -- this runs once at when loading the extension
-    -- custom keybinding are registered here with "ofs.Bind"
+    -- custom keybindings are registered here with "ofs.Bind"
 end
 
 function update(delta)
@@ -57,6 +57,7 @@ When an Extension gets enabled it gets it's own Lua VM seperate from other exten
 | `ofs.Bind(functionName, description)` |String, String| nil | Will create a "Dynamic" key binding.<br/>Must be called from within `init()`.<br/>Bindings will always run in another thread. |
 | `ofs.Task(functionName)` | String | nil |Will run a function in another thread. Use cautiously. |
 | `ofs.ExtensionDir()` | None | String | Path to extension directory. |
+| `ofs.SilentCmd(cmd, async)` | String, [Optional bool] | bool | (Windows only)<br/>Executes a command without opening a window.<br/>By default it blocks and doesn't run async.<br/>On other platforms it just does std::system(cmd). |
 
 
 # Video player API
