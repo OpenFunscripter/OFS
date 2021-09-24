@@ -13,6 +13,7 @@
 
 #include <filesystem>
 #include <algorithm>
+#include <sstream>
 #include "EASTL/string.h"
 
 #if defined(WIN32)
@@ -459,6 +460,8 @@ static int LuaGetScriptTitle(lua_State* L) noexcept;
 static int LuaClosestActionAfter(lua_State* L) noexcept;
 static int LuaClosestActionBefore(lua_State* L) noexcept;
 static int LuaSilentCmd(lua_State* L) noexcept;
+static int LuaSaveScript(lua_State* L) noexcept;
+static int LuaScriptPath(lua_State* L) noexcept;
 
 static constexpr struct luaL_Reg ofsLib[] = {
 	// core
@@ -479,6 +482,8 @@ static constexpr struct luaL_Reg ofsLib[] = {
 	{"ScriptTitle", LuaGetScriptTitle},
 	{"ClosestActionAfter", LuaClosestActionAfter},
 	{"ClosestActionBefore", LuaClosestActionBefore},
+	{"SaveScript", LuaSaveScript},
+	{"ScriptPath", LuaScriptPath},
 	{NULL, NULL}
 };
 
@@ -495,7 +500,11 @@ static int LuaSilentCmd(lua_State* L) noexcept
 		}
 		const char* cmd = lua_tostring(L, 1);
 		#if defined(WIN32)
-		auto wCmd = L"/c " + Util::Utf8ToUtf16(cmd);
+
+
+		std::wstringstream wstrm;
+		wstrm << L"/c \"" << Util::Utf8ToUtf16(cmd) << L'"';
+		auto wCmd = wstrm.str();
 
 		if(!runAsync) {
 			SHELLEXECUTEINFOW info = {0};
@@ -784,6 +793,49 @@ static int LuaRemoveAction(lua_State* L) noexcept
 				lua_rawseti(L, -2, i + 1);
 			}
 		}
+	}
+	return 0;
+}
+
+static int LuaSaveScript(lua_State* L) noexcept 
+{
+	auto app = OpenFunscripter::ptr;
+	int nargs = lua_gettop(L);
+	bool saved = false;
+	if(nargs >= 1) {
+		luaL_argcheck(L, lua_isnumber(L, 1), 1, "Expected script index.");
+		int scriptIdx = lua_tonumber(L, 1) - 1;
+		luaL_argcheck(L, scriptIdx >= 0 && scriptIdx < app->LoadedFunscripts().size(), 1, "Script index is invalid");
+		auto& script = app->LoadedFunscripts()[scriptIdx];
+		const char* savePath = script->Path().c_str();
+
+		if(nargs >= 2) {
+			luaL_argcheck(L, lua_isstring(L, 2), 2, "Expected path string.");
+			savePath = lua_tostring(L, 2);
+		}
+
+		script->save(savePath, false);
+		// HACK: when "script->save" returns the file might not exist yet.
+		//		 to avoid race conditions we wait 2 ms.
+		//       we need to add a synchronous funscript save
+		SDL_Delay(2);
+		saved = true;
+	}
+	lua_pushboolean(L, saved);
+	return 1;
+}
+
+static int LuaScriptPath(lua_State* L) noexcept
+{
+	auto app = OpenFunscripter::ptr;
+	int nargs = lua_gettop(L);
+	if(nargs >= 1) {
+		luaL_argcheck(L, lua_isnumber(L, 1), 1, "Expected script index.");
+		int scriptIdx = lua_tonumber(L, 1) - 1;
+		luaL_argcheck(L, scriptIdx >= 0 && scriptIdx < app->LoadedFunscripts().size(), 1, "Script index is invalid");
+		auto& script = app->LoadedFunscripts()[scriptIdx];
+		lua_pushstring(L, script->Path().c_str());
+		return 1;
 	}
 	return 0;
 }
