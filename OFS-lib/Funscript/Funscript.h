@@ -138,7 +138,8 @@ private:
 		return it != data.Actions.end() ? it : nullptr;
 	}
 
-	inline FunscriptAction* getActionAtTime(FunscriptArray& actions, float time, float maxErrorTime) noexcept
+	public:
+	static inline FunscriptAction* getActionAtTime(FunscriptArray& actions, float time, float maxErrorTime) noexcept
 	{
 		OFS_PROFILE(__FUNCTION__);
 		if (actions.empty()) return nullptr;
@@ -147,9 +148,9 @@ private:
 		FunscriptAction* smallestErrorAction = nullptr;
 
 		int i = 0;
-		auto it = data.Actions.lower_bound(FunscriptAction(time - maxErrorTime, 0));
-		if (it != data.Actions.end()) {
-			i = std::distance(data.Actions.begin(), it);
+		auto it = actions.lower_bound(FunscriptAction(time - maxErrorTime, 0));
+		if (it != actions.end()) {
+			i = std::distance(actions.begin(), it);
 			if (i > 0) --i;
 		}
 
@@ -172,7 +173,7 @@ private:
 		}
 		return smallestErrorAction;
 	}
-
+	private:
 	inline FunscriptAction* getNextActionAhead(float time) noexcept
 	{
 		OFS_PROFILE(__FUNCTION__);
