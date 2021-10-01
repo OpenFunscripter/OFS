@@ -505,6 +505,7 @@ static int LuaUndo(lua_State* L) noexcept;
 static int LuaHasSelection(lua_State* L) noexcept;
 static int LuaGetExtensionDir(lua_State* L) noexcept;
 static int LuaGetScriptTitle(lua_State* L) noexcept;
+static int LuaClosestAction(lua_State* L) noexcept;
 static int LuaClosestActionAfter(lua_State* L) noexcept;
 static int LuaClosestActionBefore(lua_State* L) noexcept;
 static int LuaSilentCmd(lua_State* L) noexcept;
@@ -528,6 +529,7 @@ static constexpr struct luaL_Reg ofsLib[] = {
 	{"HasSelection", LuaHasSelection},
 	{"Commit", LuaCommitChanges},
 	{"ScriptTitle", LuaGetScriptTitle},
+	{"ClosestAction", LuaClosestAction},
 	{"ClosestActionAfter", LuaClosestActionAfter},
 	{"ClosestActionBefore", LuaClosestActionBefore},
 	{"SaveScript", LuaSaveScript},
@@ -625,13 +627,40 @@ static int LuaHasSelection(lua_State* L) noexcept
 	return 1;
 }
 
+static int LuaClosestAction(lua_State* L) noexcept
+{
+	CLEAN_STACK_CHECK(L, 1);
+	int nargs = lua_gettop(L);
+	luaL_argcheck(L, nargs >= 2, 0, "Not enough arguments.");
+	luaL_argcheck(L, lua_istable(L, 1), 1, "Expected script.");
+	luaL_argcheck(L, lua_isnumber(L, 2), 2, "Expected time in seconds.");
+
+	lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
+	assert(lua_isuserdata(L, -1));
+	auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // pop ScriptUserdata
+
+	lua_Number time = lua_tonumber(L, 2);
+
+	{
+		auto closestAction = Funscript::getActionAtTime(scriptData->Actions, time, 0.f);
+		if(closestAction) {
+			auto i = std::distance(scriptData->Actions.begin(), closestAction);
+			lua_pushinteger(L, i + 1);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
 static int LuaClosestActionAfter(lua_State* L) noexcept
 {
 	int nargs = lua_gettop(L);	
 	if(nargs >= 2) {
 		CLEAN_STACK_CHECK(L, 1);
 		luaL_argcheck(L, lua_istable(L, 1), 1, "Expected script");
-		luaL_argcheck(L, lua_isnumber(L, 2), 2, "Expected time in ms");
+		luaL_argcheck(L, lua_isnumber(L, 2), 2, "Expected time in seconds");
 
 		lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
 		assert(lua_isuserdata(L, -1));
@@ -658,7 +687,7 @@ static int LuaClosestActionBefore(lua_State* L) noexcept
 	if(nargs >= 2) {
 		CLEAN_STACK_CHECK(L, 1);
 		luaL_argcheck(L, lua_istable(L, 1), 1, "Expected script");
-		luaL_argcheck(L, lua_isnumber(L, 2), 2, "Expected time in ms");
+		luaL_argcheck(L, lua_isnumber(L, 2), 2, "Expected time in seconds");
 
 		lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
 		assert(lua_isuserdata(L, -1));
@@ -1162,7 +1191,6 @@ void OFS_LuaExtensions::ShowExtensions() noexcept
 
 		ImGui::Begin(ext.NameId.c_str(), &ext.WindowOpen, ImGuiWindowFlags_None);
 		if (!ext.ExtensionError.empty()) {
-			ImGui::TextUnformatted("Encountered error");
 			ImGui::TextWrapped("Error:\n%s", ext.ExtensionError.c_str());
 			if (ImGui::Button("Try reloading")) {
 				ext.Load(Util::PathFromString(ext.Directory));
@@ -1181,7 +1209,7 @@ void OFS_LuaExtensions::ShowExtensions() noexcept
 		auto startTime = std::chrono::high_resolution_clock::now();
 		
 
-		{
+		{		
 			CLEAN_STACK_CHECK(ext.L, 0);
 			lua_getglobal(ext.L, RenderGui);
 			int result = Lua_Pcall(ext.L, 0, 0, 0);
@@ -1192,7 +1220,7 @@ void OFS_LuaExtensions::ShowExtensions() noexcept
 			}
 		}
 
-		if(DevMode)
+		if(DevMode && ext.L)
 		{   // benchmark
 			ImGui::Separator();
 			std::chrono::duration<float> duration = std::chrono::high_resolution_clock::now() - startTime;

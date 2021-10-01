@@ -152,6 +152,7 @@ end
 |`ofs.Commit(script)`| Funscript | nil | This creates an undo snapshot and saves changes back to OFS.<br/>If you forget to call commit nothing will change in OFS. |
 |`ofs.Undo()`| None | nil | Will undo the last modification done by a Lua script.<br/>It will do nothing if the last modification wasn't done by a script.<br/>Essentially you only undo modifications by `ofs.Commit`. |
 |`ofs.ScriptTitle(index)`| Number | String | Returns title of a funscript. |
+|`ofs.ClosestAction(script, time)`| Funscript, Number | Number | Given a funscript and a time in seconds it returns an action index or nil. |
 |`ofs.ClosestActionAfter(script, time)`| Funscript, Number | Number | Given a funscript and a time in seconds it returns an action index or nil. |
 |`ofs.ClosestActionBefore(script, time)`| Funscript, Number | Number | Given a funscript and a time in seconds it returns an action index or nil. |
 |`ofs.ScriptPath(idx)`| Number | String | Given an index it returns the funscript path. |
