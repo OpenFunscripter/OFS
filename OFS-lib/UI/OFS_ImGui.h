@@ -1,6 +1,7 @@
 #pragma once
 
 #include "imgui.h"
+#include "OFS_Util.h"
 
 namespace OFS {
 	// ExampleAppLog taken from "imgui_demo.cpp"
@@ -69,9 +70,9 @@ namespace OFS {
 			ImGui::SameLine();
 			Filter.Draw("Filter", -100.0f);
 
-			ImGui::Text("Used: %.2f MB",  LogSizeBytes() / (1024.f * 1024.f));
+			ImGui::Text("Used: %s", Util::FormatBytes(LogSizeBytes()));
 			ImGui::SameLine();
-			ImGui::Text("Allocated: %.2f MB", AllocatedSizeBytes() /  (1024.f * 1024.f));
+			ImGui::Text("Allocated: %s", Util::FormatBytes(AllocatedSizeBytes()));
 			ImGui::Separator();
 			ImGui::BeginChild("scrolling", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
 

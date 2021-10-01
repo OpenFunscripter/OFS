@@ -22,6 +22,8 @@
 #include <shellapi.h>
 #endif
 
+#include "lstate.h"
+
 
 constexpr const char* LuaDefaultFunctions = R"(
 function clamp(val, min, max)
@@ -34,6 +36,37 @@ static OFS::AppLog ExtensionLogBuffer;
 SDL_threadID OFS_LuaExtensions::MainThread = SDL_ThreadID();
 bool OFS_LuaExtensions::DevMode = false;
 bool OFS_LuaExtensions::ShowLogs = false;
+
+#ifndef NDEBUG
+// asserts that the Lua stack was cleaned properly
+struct LuaStackCheck
+{
+	static inline size_t LuaStackSize(lua_State* L) noexcept
+	{
+		return (size_t)L->top - (size_t)L->stack;
+	}
+
+	lua_State* L = nullptr;
+	size_t InitialStackSize = 0;
+	int valuesReturned = 0;
+	inline LuaStackCheck(lua_State* L, int stackValuesReturned = 0) noexcept
+		: L(L), valuesReturned(stackValuesReturned)
+	{
+		InitialStackSize = LuaStackSize(L);
+	}
+
+	inline ~LuaStackCheck() noexcept
+	{
+		auto newStackSize = LuaStackSize(L);
+		newStackSize -= sizeof(StackValue) * (size_t)valuesReturned;
+		FUN_ASSERT(newStackSize == InitialStackSize, "Stack wasn't cleaned.");
+	}
+};
+#define CLEAN_STACK_CHECK(L, ReturnValues) LuaStackCheck XXXcheckStack(L, ReturnValues);
+#else
+#define CLEAN_STACK_CHECK
+#endif
+
 
 inline int Lua_Pcall(lua_State* L, int a, int b, int c) noexcept
 {
@@ -57,6 +90,7 @@ static constexpr struct luaL_Reg printlib[] = {
 
 static int LuaPrint(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 0);
 	int nargs = lua_gettop(L);
 
 	eastl::string logMsg;
@@ -65,6 +99,7 @@ static int LuaPrint(lua_State* L) noexcept
 	lua_getglobal(L, OFS_LuaExtensions::GlobalExtensionPtr);
 	assert(lua_isuserdata(L, -1));
 	OFS_LuaExtension* ext = (OFS_LuaExtension*)lua_touserdata(L, -1);
+	lua_pop(L, 1);
 
 	logMsg.append_sprintf("[%s]: ", ext->Name.c_str());
 	for (int i = 1; i <= nargs; ++i) {
@@ -109,6 +144,7 @@ static int LuaSlider(lua_State* L) noexcept
 	int nargs = lua_gettop(L);
 	bool valueChanged = false;
 	if (nargs >= 4) {
+		CLEAN_STACK_CHECK(L, 2);
 		luaL_argcheck(L, lua_isstring(L, 1), 1, "Expected string");
 		luaL_argcheck(L, lua_isnumber(L, 2), 2, "Expected number");
 		luaL_argcheck(L, lua_isnumber(L, 3), 3, "Expected min number");
@@ -141,18 +177,21 @@ static int LuaSlider(lua_State* L) noexcept
 
 static int LuaSpacing(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 0);
 	ImGui::Spacing();
 	return 0;
 }
 
 static int LuaNewLine(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 0);
 	ImGui::NewLine();
 	return 0;
 }
 
 static int LuaSeparator(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 0);
 	ImGui::Separator();
 	return 0;
 }
@@ -162,6 +201,7 @@ static int LuaCheckbox(lua_State* L) noexcept
 	int nargs = lua_gettop(L);
 	bool valueChanged = false;
 	if (nargs >= 2) {
+		CLEAN_STACK_CHECK(L, 2);
 		luaL_argcheck(L, lua_isstring(L, 1), 1, "Expected string.");
 		luaL_argcheck(L, lua_isboolean(L, 2), 2, "Expected boolean.");
 		const char* str = lua_tostring(L, 1);
@@ -178,21 +218,23 @@ static int LuaCheckbox(lua_State* L) noexcept
 
 static int LuaSameLine(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 0);
 	ImGui::SameLine();
 	return 0;
 }
 
 static int LuaDrag(lua_State* L) noexcept 
 {
+	CLEAN_STACK_CHECK(L, 2);
 	int nargs = lua_gettop(L);
 	bool valueChanged = false;
 	luaL_argcheck(L, lua_isstring(L, 1), 1, "Expected string.");
+	luaL_argcheck(L, lua_isnumber(L, 2) || lua_isinteger(L, 2), 2, "Expected number");
 	float stepSize = 1.f;
 	if (nargs >= 3) {
 		luaL_argcheck(L, lua_isnumber(L, 3), 3, "Expected step size number");
 		stepSize = lua_tonumber(L, 3);
 	}
-
 
 	const char* str = lua_tostring(L, 1);
 	if (lua_isinteger(L, 2)) {
@@ -205,9 +247,6 @@ static int LuaDrag(lua_State* L) noexcept
 		valueChanged = ImGui::DragFloat(str, &result, stepSize);
 		lua_pushnumber(L, result);
 	}
-	else {
-		return 0;
-	}
 
 	lua_pushboolean(L, valueChanged);
 	return 2;
@@ -215,6 +254,7 @@ static int LuaDrag(lua_State* L) noexcept
 
 static int LuaShowText(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 0);
 	int nargs = lua_gettop(L);
 	if (nargs == 1) {
 		const char* str = lua_tostring(L, 1);
@@ -227,6 +267,7 @@ static int LuaButton(lua_State* L) noexcept
 {
 	int nargs = lua_gettop(L);
 	if (nargs >= 1) {
+		CLEAN_STACK_CHECK(L, 1);
 		luaL_argcheck(L, lua_isstring(L, 1), 1, "Expected string.");
 		const char* str = lua_tostring(L, 1);
 		bool result = ImGui::Button(str);
@@ -238,9 +279,12 @@ static int LuaButton(lua_State* L) noexcept
 
 static int LuaInput(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 2);
 	int nargs = lua_gettop(L);
 	bool valueChanged = false;
 	luaL_argcheck(L, lua_isstring(L, 1), 1, "Expected string.");
+	luaL_argcheck(L, lua_isnumber(L, 2) || lua_isstring(L, 2) || lua_isinteger(L, 2), 2, "Expected string or number.");
+
 	const char* str = lua_tostring(L, 1);
 	if (lua_isinteger(L, 2)) {
 		int result = lua_tointeger(L, 2); // this will truncate to 32 bit
@@ -259,15 +303,12 @@ static int LuaInput(lua_State* L) noexcept
 		valueChanged = ImGui::InputText(str, buffer, sizeof(buffer));
 		lua_pushstring(L, buffer);
 	}
-	else {
-		return 0;
-	}
+
 	lua_pushboolean(L, valueChanged);
 	return 2;
 }
 
-
-static bool ScriptDataHelperCheckIfSelected(const Funscript::FunscriptData& data, FunscriptAction action) noexcept
+inline static bool ScriptDataHelperCheckIfSelected(const Funscript::FunscriptData& data, FunscriptAction action) noexcept
 {
 	// TODO: awful perf
 	return data.selection.find(action) != data.selection.end();
@@ -275,7 +316,9 @@ static bool ScriptDataHelperCheckIfSelected(const Funscript::FunscriptData& data
 
 static void ActionGetterSetter(lua_State* L, Funscript::FunscriptData* scriptData) noexcept
 {
+	CLEAN_STACK_CHECK(L, 1);
 	auto setter = [](lua_State* L) -> int {
+		CLEAN_STACK_CHECK(L, 0);
 		auto app = OpenFunscripter::ptr;
 		int nargs = lua_gettop(L);
 		assert(lua_isuserdata(L, lua_upvalueindex(1)));
@@ -325,12 +368,13 @@ static void ActionGetterSetter(lua_State* L, Funscript::FunscriptData* scriptDat
 	};
 
 	auto getter = [](lua_State* L) -> int {
+		CLEAN_STACK_CHECK(L, 1);
 		auto app = OpenFunscripter::ptr;
 		int nargs = lua_gettop(L);
 		assert(lua_isuserdata(L, lua_upvalueindex(1)));
 		auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, lua_upvalueindex(1));
 
-		if (nargs == 2) {
+		if (nargs >= 2) {
 			int actionIdx = (intptr_t)lua_touserdata(L, 1);
 			assert(actionIdx >= 0 && actionIdx < scriptData->Actions.size());
 			const auto& action = scriptData->Actions[actionIdx];
@@ -338,18 +382,15 @@ static void ActionGetterSetter(lua_State* L, Funscript::FunscriptData* scriptDat
 			const char* key = lua_tostring(L, 2);
 			if (strcmp(key, "pos") == 0) {
 				lua_pushinteger(L, action.pos);
-				return 1;
 			}
 			else if (strcmp(key, "at") == 0) {
 				lua_pushnumber(L, (double)action.atS * 1000.0);
-				return 1;
 			}
 			else if (strcmp(key, "selected") == 0) {
 				lua_pushboolean(L, ScriptDataHelperCheckIfSelected(*scriptData, action));
-				return 1;
 			}
 		}
-		return 0;
+		return 1;
 	};
 
 	lua_createtable(L, 0, 2);
@@ -383,6 +424,7 @@ static constexpr struct luaL_Reg playerLib[] = {
 
 static int LuaPlayerGetFPS(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 1);
 	auto app = OpenFunscripter::ptr;
 	lua_pushnumber(L, app->player->getFps());
 	return 1;
@@ -390,6 +432,7 @@ static int LuaPlayerGetFPS(lua_State* L) noexcept
 
 static int LuaPlayerGetVideo(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 1);
 	auto app = OpenFunscripter::ptr;
 	// this actually creates a copy of the string in Lua
 	lua_pushstring(L, app->player->getVideoPath());
@@ -398,6 +441,7 @@ static int LuaPlayerGetVideo(lua_State* L) noexcept
 
 static int LuaPlayerIsPlaying(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 1);
 	auto app = OpenFunscripter::ptr;
 	lua_pushboolean(L, !app->player->isPaused());
 	return 1;
@@ -405,6 +449,7 @@ static int LuaPlayerIsPlaying(lua_State* L) noexcept
 
 static int LuaPlayerPlay(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 0);
 	int nargs = lua_gettop(L);
 	auto app = OpenFunscripter::ptr;
 	bool play = app->player->isPaused(); // toggle by default
@@ -419,6 +464,7 @@ static int LuaPlayerPlay(lua_State* L) noexcept
 
 static int LuaPlayerSeek(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 0);
 	auto app = OpenFunscripter::ptr;
 	int nargs = lua_gettop(L);
 	if (nargs >= 1) {
@@ -431,6 +477,7 @@ static int LuaPlayerSeek(lua_State* L) noexcept
 
 static int LuaPlayerDuration(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 1);
 	auto app = OpenFunscripter::ptr;
 	lua_Number duration = app->player->getDuration();
 	lua_pushnumber(L, duration);
@@ -439,6 +486,7 @@ static int LuaPlayerDuration(lua_State* L) noexcept
 
 static int LuaPlayerCurrentTime(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 1);
 	auto app = OpenFunscripter::ptr;
 	lua_Number time = app->player->getCurrentPositionSecondsInterp();
 	lua_pushnumber(L, time);
@@ -489,6 +537,7 @@ static constexpr struct luaL_Reg ofsLib[] = {
 
 static int LuaSilentCmd(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 1);
 	int nargs = lua_gettop(L);
 	bool success = false;
 	if(nargs >= 1) {
@@ -500,8 +549,6 @@ static int LuaSilentCmd(lua_State* L) noexcept
 		}
 		const char* cmd = lua_tostring(L, 1);
 		#if defined(WIN32)
-
-
 		std::wstringstream wstrm;
 		wstrm << L"/c \"" << Util::Utf8ToUtf16(cmd) << L'"';
 		auto wCmd = wstrm.str();
@@ -539,6 +586,7 @@ static int LuaGetScriptTitle(lua_State* L) noexcept
 	auto app = OpenFunscripter::ptr;
 	int nargs = lua_gettop(L);
 	if(nargs >= 1) {
+		CLEAN_STACK_CHECK(L, 1);
 		luaL_argcheck(L, lua_isinteger(L, 1), 1, "Expected script index.");
 		int scriptIndex = lua_tointeger(L, 1) - 1;
 		luaL_argcheck(L, scriptIndex >= 0 && scriptIndex < app->LoadedFunscripts().size(), 1, "Script index invalid.");
@@ -550,15 +598,18 @@ static int LuaGetScriptTitle(lua_State* L) noexcept
 
 static int LuaGetExtensionDir(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 1);
 	lua_getglobal(L, OFS_LuaExtensions::GlobalExtensionPtr);
 	assert(lua_isuserdata(L, -1));
 	OFS_LuaExtension* ext = (OFS_LuaExtension*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // pop off GlobalExtensionPtr
 	lua_pushstring(L, ext->Directory.c_str());
 	return 1;
 }
 
 static int LuaHasSelection(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 1);
 	auto app = OpenFunscripter::ptr;
 	int nargs = lua_gettop(L);
 	bool hasSelection = false;
@@ -567,6 +618,7 @@ static int LuaHasSelection(lua_State* L) noexcept
 		lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
 		assert(lua_isuserdata(L, -1));
 		auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+		lua_pop(L, 1); // pop off ScriptDataUserdata
 		hasSelection = !scriptData->selection.empty();
 	}
 	lua_pushboolean(L, hasSelection);
@@ -577,13 +629,14 @@ static int LuaClosestActionAfter(lua_State* L) noexcept
 {
 	int nargs = lua_gettop(L);	
 	if(nargs >= 2) {
+		CLEAN_STACK_CHECK(L, 1);
 		luaL_argcheck(L, lua_istable(L, 1), 1, "Expected script");
 		luaL_argcheck(L, lua_isnumber(L, 2), 2, "Expected time in ms");
 
 		lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
 		assert(lua_isuserdata(L, -1));
 		auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
-
+		lua_pop(L, 1); // pop ScriptDataUserdata
 		lua_Number time = lua_tonumber(L, 2);
 
 		{
@@ -603,13 +656,14 @@ static int LuaClosestActionBefore(lua_State* L) noexcept
 {
 	int nargs = lua_gettop(L);	
 	if(nargs >= 2) {
+		CLEAN_STACK_CHECK(L, 1);
 		luaL_argcheck(L, lua_istable(L, 1), 1, "Expected script");
 		luaL_argcheck(L, lua_isnumber(L, 2), 2, "Expected time in ms");
 
 		lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
 		assert(lua_isuserdata(L, -1));
 		auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
-
+		lua_pop(L, 1); // pop ScriptDataUserdata
 		lua_Number time = lua_tonumber(L, 2);
 
 		{
@@ -629,16 +683,16 @@ static int LuaClosestActionBefore(lua_State* L) noexcept
 
 static int LuaClearScript(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 0);
 	auto app = OpenFunscripter::ptr;
 	int nargs = lua_gettop(L);
 	luaL_argcheck(L, lua_istable(L, 1), 1, "Expected script.");
 
 	lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
 	auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // pop ScriptDataUserdata
 	*scriptData = Funscript::FunscriptData();
 
-	lua_getfield(L, 1, OFS_LuaExtensions::ScriptActionsField);
-	assert(lua_istable(L, -1));
 	lua_createtable(L, 0, 0);
 	lua_setfield(L, 1, OFS_LuaExtensions::ScriptActionsField);
 	return 0;
@@ -646,6 +700,7 @@ static int LuaClearScript(lua_State* L) noexcept
 
 static int LuaUndo(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 1);
 	bool undo = false;
 	auto app = OpenFunscripter::ptr;
 	if (app->undoSystem->MatchUndoTop(StateType::CUSTOM_LUA)) {
@@ -655,44 +710,42 @@ static int LuaUndo(lua_State* L) noexcept
 	return 1;
 }
 
+
+
+inline void CommitScriptChanges(lua_State* L) noexcept
+{
+	auto app = OpenFunscripter::ptr;
+	lua_getfield(L, 1, OFS_LuaExtensions::ScriptIdxUserdata);
+	assert(lua_isuserdata(L, -1));
+	int scriptIdx = (intptr_t)lua_touserdata(L, -1);
+	lua_pop(L, 1); // pop script index
+
+	lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
+	assert(lua_isuserdata(L, -1));
+	auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // pop ScriptDataUserdata
+
+	if(scriptIdx >= 0 && scriptIdx < app->LoadedFunscripts().size()) {
+		auto& script = app->LoadedFunscripts()[scriptIdx];
+		app->undoSystem->Snapshot(StateType::CUSTOM_LUA, script);
+		script->SetActions(scriptData->Actions);
+		script->SetSelection(scriptData->selection, true);
+	}
+}
+
 static int LuaCommitChanges(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 0);
 	auto app = OpenFunscripter::ptr;
 	int nargs = lua_gettop(L);
 	luaL_argcheck(L, lua_istable(L, 1), 1, "Expected script.");
 
 	if(SDL_ThreadID() == OFS_LuaExtensions::MainThread) {
-		lua_getfield(L, 1, OFS_LuaExtensions::ScriptIdxUserdata);
-		assert(lua_isuserdata(L, -1));
-		int scriptIdx = (intptr_t)lua_touserdata(L, -1);
-		lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
-		assert(lua_isuserdata(L, -1));
-		auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
-
-		if(scriptIdx >= 0 && scriptIdx < app->LoadedFunscripts().size()) {
-			auto& script = app->LoadedFunscripts()[scriptIdx];
-			app->undoSystem->Snapshot(StateType::CUSTOM_LUA, script);
-			script->SetActions(scriptData->Actions);
-			script->SetSelection(scriptData->selection, true);
-		}
+		CommitScriptChanges(L);
 	}
 	else if(nargs >= 1) {
 		auto handle = EventSystem::ev().WaitableSingleShot([](void* ctx) noexcept {
-			auto app = OpenFunscripter::ptr;
-			lua_State* L = (lua_State*)ctx;
-			lua_getfield(L, 1, OFS_LuaExtensions::ScriptIdxUserdata);
-			assert(lua_isuserdata(L, -1));
-			int scriptIdx = (intptr_t)lua_touserdata(L, -1);
-			lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
-			assert(lua_isuserdata(L, -1));
-			auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
-
-			if(scriptIdx >= 0 && scriptIdx < app->LoadedFunscripts().size()) {
-				auto& script = app->LoadedFunscripts()[scriptIdx];
-				app->undoSystem->Snapshot(StateType::CUSTOM_LUA, script);
-				script->SetActions(scriptData->Actions);
-				script->SetSelection(scriptData->selection, true);
-			}
+			CommitScriptChanges((lua_State*)ctx);
 		}, (void*)L);
 		handle->wait();
 	}
@@ -701,6 +754,7 @@ static int LuaCommitChanges(lua_State* L) noexcept
 
 static int LuaGetActiveIdx(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 1);
 	int nargs = lua_gettop(L);
 	luaL_argcheck(L, nargs == 0, 1, "Expected no arguments.");
 	auto app = OpenFunscripter::ptr;
@@ -709,7 +763,8 @@ static int LuaGetActiveIdx(lua_State* L) noexcept
 }
 
 static int LuaAddAction(lua_State* L) noexcept
-{
+{		
+	CLEAN_STACK_CHECK(L, 0);
 	auto app = OpenFunscripter::ptr;
 	int nargs = lua_gettop(L);
 	bool selectAction = false;
@@ -724,6 +779,7 @@ static int LuaAddAction(lua_State* L) noexcept
 		lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
 		assert(lua_isuserdata(L, -1));
 		auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+		lua_pop(L, 1); // pop ScriptDataUserdata
 
 		double atTime = lua_tonumber(L, 2) / 1000.0;
 		assert(atTime >= 0.f);
@@ -732,7 +788,6 @@ static int LuaAddAction(lua_State* L) noexcept
 		FunscriptAction newAction(atTime, pos);
 
 		scriptData->Actions.emplace(newAction);
-
 		if (selectAction) {
 			scriptData->selection.emplace(newAction);
 		}
@@ -743,12 +798,14 @@ static int LuaAddAction(lua_State* L) noexcept
 
 		lua_pushlightuserdata(L, (void*)(intptr_t)(actionCount-1));
 		lua_rawseti(L, -2, actionCount);
+		lua_pop(L, 1); // pop ScriptActionsField
 	}
 	return 0;
 }
 
 static int LuaRemoveAction(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 0);
 	auto app = OpenFunscripter::ptr;
 	int nargs = lua_gettop(L);
 
@@ -759,6 +816,7 @@ static int LuaRemoveAction(lua_State* L) noexcept
 		lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata); // 3
 		assert(lua_isuserdata(L, -1));
 		auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+		lua_pop(L, 1); // pop ScriptDataUserdata
 
 		int actionIdx = (intptr_t)lua_touserdata(L, 2);
 		assert(actionIdx >= 0 && actionIdx < scriptData->Actions.size());
@@ -784,7 +842,7 @@ static int LuaRemoveAction(lua_State* L) noexcept
 		// remove element
 		int actionCount = scriptData->Actions.size();
 		lua_pushnil(L);
-		lua_seti(L, -2, actionCount+1);
+		lua_rawseti(L, -2, actionCount+1);
 
 		if (actionCount > 0) {
 			for (int i = 0, size = actionCount; i < size; ++i) {
@@ -793,12 +851,14 @@ static int LuaRemoveAction(lua_State* L) noexcept
 				lua_rawseti(L, -2, i + 1);
 			}
 		}
+		lua_pop(L, 1); // pop ScriptActionsField
 	}
 	return 0;
 }
 
 static int LuaSaveScript(lua_State* L) noexcept 
 {
+	CLEAN_STACK_CHECK(L, 1);
 	auto app = OpenFunscripter::ptr;
 	int nargs = lua_gettop(L);
 	bool saved = false;
@@ -830,6 +890,7 @@ static int LuaScriptPath(lua_State* L) noexcept
 	auto app = OpenFunscripter::ptr;
 	int nargs = lua_gettop(L);
 	if(nargs >= 1) {
+		CLEAN_STACK_CHECK(L, 0);
 		luaL_argcheck(L, lua_isnumber(L, 1), 1, "Expected script index.");
 		int scriptIdx = lua_tonumber(L, 1) - 1;
 		luaL_argcheck(L, scriptIdx >= 0 && scriptIdx < app->LoadedFunscripts().size(), 1, "Script index is invalid");
@@ -845,6 +906,7 @@ static int LuaGetScript(lua_State* L) noexcept
 	auto app = OpenFunscripter::ptr;
 	int nargs = lua_gettop(L);
 	if (nargs == 1) {
+		CLEAN_STACK_CHECK(L, 1);
 		assert(lua_isnumber(L, 1));
 		lua_Integer index = lua_tointeger(L, 1);
 
@@ -897,6 +959,7 @@ static int LuaGetScript(lua_State* L) noexcept
 
 static int LuaScheduleTask(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 1);
 	auto app = OpenFunscripter::ptr;
 	auto& ext = app->extensions;
 
@@ -916,6 +979,7 @@ static int LuaScheduleTask(lua_State* L) noexcept
 
 static int LuaBindFunction(lua_State* L) noexcept
 {
+	CLEAN_STACK_CHECK(L, 0);
 	auto app = OpenFunscripter::ptr;
 	int nargs = lua_gettop(L);
 	luaL_argcheck(L, lua_isstring(L, 1), 1, "Expected function name.");
@@ -930,6 +994,8 @@ static int LuaBindFunction(lua_State* L) noexcept
 	lua_getglobal(L, OFS_LuaExtensions::GlobalExtensionPtr);
 	assert(lua_isuserdata(L, -1));
 	OFS_LuaExtension* ext = (OFS_LuaExtension*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // pop GlobalExtensionPtr
+
 	OFS_BindableLuaFunction func;
 	func.Name = str;
 	func.GlobalName = Util::Format("%s::%s", ext->Name.c_str(), func.Name.c_str());
@@ -1026,13 +1092,16 @@ void OFS_LuaExtensions::Update(float delta) noexcept
 	for (auto& ext : this->Extensions) {
 		if (!ext.Active || !ext.ExtensionError.empty() || this->TaskBusy) continue;
 		auto startTime = std::chrono::high_resolution_clock::now();
-		lua_getglobal(ext.L, OFS_LuaExtensions::UpdateFunction);
-		lua_pushnumber(ext.L, delta);
-		int result = Lua_Pcall(ext.L, 1, 1, 0); // 1 arguments 1 result
-		if (result) {
-			auto error = lua_tostring(ext.L, -1);
-			LOG_ERROR(error);
-			ext.Fail(error);
+		{
+			CLEAN_STACK_CHECK(ext.L, 0);
+			lua_getglobal(ext.L, OFS_LuaExtensions::UpdateFunction);
+			lua_pushnumber(ext.L, delta);
+			int result = Lua_Pcall(ext.L, 1, 0, 0); 
+			if (result) {
+				auto error = lua_tostring(ext.L, -1);
+				LOG_ERROR(error);
+				ext.Fail(error);
+			}
 		}
 		std::chrono::duration<float> updateDuration = std::chrono::high_resolution_clock::now() - startTime;
 		ext.UpdateTime = updateDuration.count();
@@ -1052,13 +1121,16 @@ void OFS_LuaExtensions::Update(float delta) noexcept
 			task->MaxProgress = ext->Tasks.size();
 			while (!ext->Tasks.empty()) {
 				OFS_LuaTask& lua = ext->Tasks.front();
-				lua_getglobal(lua.L, lua.Function.c_str());
-				if (lua_isfunction(lua.L, -1)) {
-					int result = Lua_Pcall(lua.L, 0, 1, 0); // 0 arguments 1 result
-					if (result) {
-						const char* error = lua_tostring(lua.L, -1);
-						LOG_ERROR(error);
-						lua_pop(lua.L, 1);
+				{
+					CLEAN_STACK_CHECK(lua.L, 0);
+					lua_getglobal(lua.L, lua.Function.c_str());
+					if (lua_isfunction(lua.L, -1)) {
+						int result = Lua_Pcall(lua.L, 0, 0, 0);
+						if (result) {
+							const char* error = lua_tostring(lua.L, -1);
+							LOG_ERROR(error);
+							lua_pop(lua.L, 1);
+						}
 					}
 				}
 				ext->Tasks.pop();
@@ -1109,12 +1181,15 @@ void OFS_LuaExtensions::ShowExtensions() noexcept
 		auto startTime = std::chrono::high_resolution_clock::now();
 		
 
-		lua_getglobal(ext.L, RenderGui);
-		int result = Lua_Pcall(ext.L, 0, 1, 0); // 0 arguments 1 result
-		if (result) {
-			const char* error = lua_tostring(ext.L, -1);
-			LOG_ERROR(error);
-			ext.Fail(error);
+		{
+			CLEAN_STACK_CHECK(ext.L, 0);
+			lua_getglobal(ext.L, RenderGui);
+			int result = Lua_Pcall(ext.L, 0, 0, 0);
+			if (result) {
+				const char* error = lua_tostring(ext.L, -1);
+				LOG_ERROR(error);
+				ext.Fail(error);
+			}
 		}
 
 		if(DevMode)
@@ -1122,10 +1197,17 @@ void OFS_LuaExtensions::ShowExtensions() noexcept
 			ImGui::Separator();
 			std::chrono::duration<float> duration = std::chrono::high_resolution_clock::now() - startTime;
 			if (duration.count() > ext.MaxGuiTime) ext.MaxGuiTime = duration.count();
-			ImGui::Text("Lua update time: %f ms", ext.UpdateTime * 1000.f);
-			ImGui::Text("Lua slowest update time: %f ms", ext.MaxUpdateTime * 1000.f);
-			ImGui::Text("Lua gui time: %f ms", duration.count() * 1000.f);
-			ImGui::Text("Lua slowest gui time: %f ms", ext.MaxGuiTime * 1000.f);
+			ImGui::Text("Memory usage: %s", Util::FormatBytes(ext.L->l_G->totalbytes));
+			ImGui::Text("Update: %f ms", ext.UpdateTime * 1000.f);
+			ImGui::Text("Update (slowest): %f ms", ext.MaxUpdateTime * 1000.f);
+			ImGui::Text("GUI: %f ms", duration.count() * 1000.f);
+			ImGui::Text("GUI (slowest): %f ms", ext.MaxGuiTime * 1000.f);
+			#ifndef NDEBUG
+			ImGui::Separator();
+			ImGui::Text("Stack size: %lld bytes", (intptr_t)((intptr_t)ext.L->top - (intptr_t)ext.L->stack));
+			ImGui::Text("Stack value size: %lld bytes", sizeof(StackValue));
+			ImGui::Text("Stack values: %lld", ext.L->top - ext.L->stack);
+			#endif
 		}
 		if (!ext.Bindables.empty()) {
 			auto& style = ImGui::GetStyle();
@@ -1237,13 +1319,16 @@ bool OFS_LuaExtension::Load(const std::filesystem::path& directory) noexcept
 		return false;
 	}
 
-	lua_getglobal(L, OFS_LuaExtensions::InitFunction);
-	status = Lua_Pcall(L, 0, 1, 0); // 0 arguments 1 results
-	if (status != 0) {
-		const char* error = lua_tostring(L, -1);
-		LOG_ERROR(error);
-		Fail(error);
-		return false;
+	{
+		CLEAN_STACK_CHECK(L, 0);
+		lua_getglobal(L, OFS_LuaExtensions::InitFunction);
+		status = Lua_Pcall(L, 0, 0, 0);
+		if (status != 0) {
+			const char* error = lua_tostring(L, -1);
+			LOG_ERROR(error);
+			Fail(error);
+			return false;
+		}
 	}
 
 	auto app = OpenFunscripter::ptr;

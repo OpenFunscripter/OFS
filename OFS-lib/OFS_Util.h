@@ -422,5 +422,21 @@ public:
 		return FormatBuffer;
 	}
 
+	inline static const char* FormatBytes(size_t bytes) noexcept
+	{
+		if (bytes < 1024) {
+			return Util::Format("%lld bytes", bytes); // bytes
+		}
+		else if (bytes >= 1024 && bytes < (1024 * 1024)) {
+			return Util::Format("%0.2lf KB", bytes / 1024.0); // kilobytes
+		}
+		else if (bytes >= (1024 * 1024) && bytes < (1024 * 1024 * 1024)) {
+			return Util::Format("%0.2lf MB", bytes / (1024.0 * 1024.0)); // megabytes
+		}
+		else /*if (bytes > (1024 * 1024 * 1024))*/ {
+			return Util::Format("%0.2lf GB", bytes / (1024.0 * 1024.0 * 1024.0));  // gigabytes
+		}
+	}
+
 	static uint32_t Hash(const char* data, size_t size = 0, int32_t seed = 0x42069) noexcept;
 };
