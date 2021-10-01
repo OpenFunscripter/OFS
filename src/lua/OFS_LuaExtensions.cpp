@@ -285,15 +285,22 @@ static int LuaInput(lua_State* L) noexcept
 	luaL_argcheck(L, lua_isstring(L, 1), 1, "Expected string.");
 	luaL_argcheck(L, lua_isnumber(L, 2) || lua_isstring(L, 2) || lua_isinteger(L, 2), 2, "Expected string or number.");
 
+	lua_Number stepSize = 1.0;
+
+	if(nargs >= 3) {
+		luaL_argcheck(L, lua_isnumber(L, 3) || lua_isinteger(L, 3) && !lua_isstring(L, 2), 3, "Expected step size.");
+		stepSize = lua_tonumber(L, 3);
+	}
+
 	const char* str = lua_tostring(L, 1);
 	if (lua_isinteger(L, 2)) {
 		int result = lua_tointeger(L, 2); // this will truncate to 32 bit
-		valueChanged = ImGui::InputInt(str, &result);
+		valueChanged = ImGui::InputInt(str, &result, stepSize);
 		lua_pushinteger(L, result);
 	}
 	else if (lua_isnumber(L, 2)) {	
 		lua_Number result = result = lua_tonumber(L, 2);
-		valueChanged = ImGui::InputDouble(str, &result);
+		valueChanged = ImGui::InputDouble(str, &result, stepSize);
 		lua_pushnumber(L, result);
 	}
 	else if (lua_isstring(L, 2)) {

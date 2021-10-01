@@ -182,9 +182,9 @@ end
 | ----------- | ------ | ------- | ----------- |
 | `ofs.Text(txt)` | String | nil | Can be used to display text. |
 | `clicked = ofs.Button(txt)` | String | bool | Creates a button. Returns if the button was clicked. |
-| `newValue, valueChanged = ofs.Input(txt, currentValue)` | String, (String \| Number) | (String \| Number), bool | Creates an Input field for either strings or numbers. |
-| `newValue, valueChanged = ofs.Drag(txt, currentValue, stepSize)` | String, Number, [optional Number] | Number, bool | Creates a drag button.|
-| `newValue, valueChanged = ofs.Slider(txt, currentVal, min, max)` | String, Number, Number, Number | Number, bool | Creates a slider. |
+| `newValue, valueChanged = ofs.Input(txt, value, stepSize)` | String, (String \| Number), [optional Number] | (String \| Number), bool | Creates an Input field for either strings or numbers. |
+| `newValue, valueChanged = ofs.Drag(txt, value, stepSize)` | String, Number, [optional Number] | Number, bool | Creates a drag button.|
+| `newValue, valueChanged = ofs.Slider(txt, value, min, max)` | String, Number, Number, Number | Number, bool | Creates a slider. |
 | `newValue, valueChanged = ofs.Checkbox(txt, value)` | String, Number, Number, Number | Number, bool | Creates a slider. |
 | `ofs.SameLine()` | None | nil | Can be used to put things on the same line.<br/> For example if you want two buttons next two each other. |
 | `ofs.Separator()` | None | nil | Inserts a separator. |
