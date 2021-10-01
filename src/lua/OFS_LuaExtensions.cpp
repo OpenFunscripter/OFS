@@ -1335,6 +1335,15 @@ void OFS_LuaExtensions::HandleBinding(Binding* binding) noexcept
 	}
 }
 
+void OFS_LuaExtensions::ReloadEnabledExtensions() noexcept
+{
+	for(auto& ext : Extensions) {
+		if(ext.Active || ext.L) {
+			ext.Load(Util::PathFromString(ext.Directory));
+		}
+	}
+}
+
 // ============================================================ Extension
 
 bool OFS_LuaExtension::Load(const std::filesystem::path& directory) noexcept

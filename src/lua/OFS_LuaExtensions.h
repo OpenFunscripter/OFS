@@ -118,6 +118,8 @@ public:
 	void ShowExtensions() noexcept;
 	void HandleBinding(class Binding* binding) noexcept;
 
+	void ReloadEnabledExtensions() noexcept;
+
 	template<typename Archive>
 	void reflect(Archive& ar)
 	{

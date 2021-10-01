@@ -1222,6 +1222,20 @@ void OpenFunscripter::registerBindings()
 
     {
         KeybindingGroup group;
+        group.name = "Extensions";
+        auto& reload_enabled_extensions = group.bindings.emplace_back(
+            "reload_enabled_extensions",
+            "Reload enabled extensions",
+            true,
+            [&](void*) { 
+                extensions->ReloadEnabledExtensions();
+            }
+        );
+        keybinds.registerBinding(std::move(group));
+    }
+
+    {
+        KeybindingGroup group;
         group.name = "Controller";
         auto& toggle_nav_mode = group.bindings.emplace_back(
             "toggle_controller_navmode",
