@@ -177,6 +177,31 @@ function gui()
 end
 ```
 
+**When using multiple controls with the same name you have to give them a unique id.**
+<br>This applies to all controls not just buttons.
+```Lua
+function gui()
+    -- THIS WON'T WORK
+    if ofs.Button("Apply") then
+        -- do something
+    end
+    if ofs.Button("Apply") then
+        -- do something
+    end
+
+    -- Do this instead
+    -- unique id "ApplyBtn1"
+    if ofs.Button("Apply##ApplyBtn1") then
+        -- do something
+    end
+    -- unique id "ApplyBtn2"
+    if ofs.Button("Apply##ApplyBtn2") then
+        -- do something
+    end
+end
+```
+
+
 
 | Call        | Params | Returns | Description |
 | ----------- | ------ | ------- | ----------- |
