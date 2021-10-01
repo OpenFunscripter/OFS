@@ -146,7 +146,8 @@ end
 | `ofs.Script(index)` | Number | Funscript | Given an index this returns a copy of a currently loaded Funscript.<br/>Following the Lua convention the index starts at 1. |
 |`ofs.ActiveIdx()`| None | Number| Returns index of the currently active script.<br/>A common pattern would be `ofs.Script(ofs.ActiveIdx())` |
 |`ofs.AddAction(script, time, pos, selected)`| Funscript, Number, Number, [Optional bool] | nil | Adds an action to the script. The selected bool is optional. <br/>**This is the only way to add actions.** |
-|`ofs.RemoveAction(script, action)`| Funscript, Action | nil | Removes an action from the script.<br/>**This is the only way to remove actions.**|
+|`ofs.RemoveAction(script, action)`| Funscript, Action | nil | Removes an action from the script.|
+|`ofs.RemoveSelected(script)`| Funscript | nil | Removes all selected actions. | 
 |`ofs.ClearScript(script)`| Funscript | nil | Removes all actions. |
 |`ofs.HasSelection(script)`| Funscript | bool | Returns if the script has a selection. |
 |`ofs.Commit(script)`| Funscript | nil | This creates an undo snapshot and saves changes back to OFS.<br/>If you forget to call commit nothing will change in OFS. |

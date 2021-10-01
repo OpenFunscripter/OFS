@@ -498,6 +498,7 @@ static int LuaGetScript(lua_State* L) noexcept;
 static int LuaAddAction(lua_State* L) noexcept;
 static int LuaClearScript(lua_State* L) noexcept;
 static int LuaRemoveAction(lua_State* L) noexcept;
+static int LuaRemoveSelected(lua_State* L) noexcept;
 static int LuaBindFunction(lua_State* L) noexcept;
 static int LuaScheduleTask(lua_State* L) noexcept;
 static int LuaCommitChanges(lua_State* L) noexcept;
@@ -524,6 +525,7 @@ static constexpr struct luaL_Reg ofsLib[] = {
 	{"Script", LuaGetScript},
 	{"AddAction", LuaAddAction},
 	{"RemoveAction", LuaRemoveAction},
+	{"RemoveSelected", LuaRemoveSelected},
 	{"ActiveIdx", LuaGetActiveIdx},
 	{"ClearScript", LuaClearScript},
 	{"HasSelection", LuaHasSelection},
@@ -882,6 +884,29 @@ static int LuaRemoveAction(lua_State* L) noexcept
 		}
 		lua_pop(L, 1); // pop ScriptActionsField
 	}
+	return 0;
+}
+
+static int LuaRemoveSelected(lua_State* L) noexcept
+{
+	int nargs = lua_gettop(L);
+	luaL_argcheck(L, lua_istable(L, 1), 1, "Expected script.");
+	
+	lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
+	assert(lua_isuserdata(L, -1));
+	auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // pop ScriptDataUserdata
+
+	auto& removeActions = scriptData->selection;
+	auto it = std::remove_if(scriptData->Actions.begin(), scriptData->Actions.end(),
+		[&removeActions, end = removeActions.end()](auto action) {
+			if (removeActions.find(action) != end) {
+				return true;
+			}
+			return false;
+		});
+	scriptData->Actions.erase(it, scriptData->Actions.end());
+	scriptData->selection.clear();
 	return 0;
 }
 
