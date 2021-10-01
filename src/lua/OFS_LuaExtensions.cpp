@@ -504,6 +504,7 @@ static int LuaScheduleTask(lua_State* L) noexcept;
 static int LuaCommitChanges(lua_State* L) noexcept;
 static int LuaUndo(lua_State* L) noexcept;
 static int LuaHasSelection(lua_State* L) noexcept;
+static int LuaSelectedIndices(lua_State* L) noexcept;
 static int LuaGetExtensionDir(lua_State* L) noexcept;
 static int LuaGetScriptTitle(lua_State* L) noexcept;
 static int LuaClosestAction(lua_State* L) noexcept;
@@ -529,6 +530,7 @@ static constexpr struct luaL_Reg ofsLib[] = {
 	{"ActiveIdx", LuaGetActiveIdx},
 	{"ClearScript", LuaClearScript},
 	{"HasSelection", LuaHasSelection},
+	{"SelectedIndices", LuaSelectedIndices},
 	{"Commit", LuaCommitChanges},
 	{"ScriptTitle", LuaGetScriptTitle},
 	{"ClosestAction", LuaClosestAction},
@@ -626,6 +628,32 @@ static int LuaHasSelection(lua_State* L) noexcept
 		hasSelection = !scriptData->selection.empty();
 	}
 	lua_pushboolean(L, hasSelection);
+	return 1;
+}
+
+static int LuaSelectedIndices(lua_State* L) noexcept
+{
+	CLEAN_STACK_CHECK(L, 1);
+	int nargs = lua_gettop(L);
+	luaL_argcheck(L, nargs >= 1, 0, "Not enough arguments.");
+	luaL_argcheck(L, lua_istable(L, 1), 1, "Expected script.");
+	
+	lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
+	assert(lua_isuserdata(L, -1));
+	auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // pop off ScriptDataUserdata
+
+
+	lua_createtable(L, scriptData->selection.size(), 1);
+	for(int i=0, size=scriptData->selection.size(); i < size; ++i) {
+		auto& selected = scriptData->selection[i];
+		auto it = scriptData->Actions.find(selected);
+		auto index = std::distance(scriptData->Actions.begin(), it);
+		lua_pushinteger(L, index+1);
+		assert(lua_istable(L, -2));
+		lua_rawseti(L, -2, i + 1);
+	}
+
 	return 1;
 }
 

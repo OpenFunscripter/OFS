@@ -158,6 +158,7 @@ end
 |`ofs.ClosestActionBefore(script, time)`| Funscript, Number | Number | Given a funscript and a time in seconds it returns an action index or nil. |
 |`ofs.ScriptPath(idx)`| Number | String | Given an index it returns the funscript path. |
 |`ofs.SaveScript(idx, path)`| Number, [Optional String] | bool | Given an index it saves the funscript.<br/>If no path is provided the default is used. |
+|`ofs.SelectedIndices(script)`| Funscript | Array of Numbers | Returns an array of the selected action indices | 
 
 
 # GUI API
