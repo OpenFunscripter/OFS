@@ -680,7 +680,7 @@ static int LuaClosestAction(lua_State* L) noexcept
 	lua_Number time = lua_tonumber(L, 2);
 
 	{
-		auto closestAction = Funscript::getActionAtTime(scriptData->Actions, time, 0.f);
+		auto closestAction = Funscript::getActionAtTime(scriptData->Actions, time, std::numeric_limits<float>::max());
 		if(closestAction) {
 			auto i = std::distance(scriptData->Actions.begin(), closestAction);
 			lua_pushinteger(L, i + 1);
