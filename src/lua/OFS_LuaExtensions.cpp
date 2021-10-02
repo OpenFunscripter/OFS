@@ -776,8 +776,6 @@ static int LuaUndo(lua_State* L) noexcept
 	return 1;
 }
 
-
-
 inline void CommitScriptChanges(lua_State* L) noexcept
 {
 	auto app = OpenFunscripter::ptr;

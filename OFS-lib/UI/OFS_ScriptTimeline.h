@@ -47,8 +47,9 @@ public:
 	bool IsSelecting = false;
 	bool IsMoving = false;
 	bool PositionsItemHovered = false;
-	float relX1 = 0.0f;
-	float relX2 = 0.0f;
+	
+	float absSel1 = 0.f; // absolute selection start
+	float relSel2 = 0.f; // relative selection end
 
 	ScriptTimelineEvents::ActionClickedEventArgs ActionClickEventData;
 	ScriptTimelineEvents::SelectTime SelectTimeEventData = {0};
@@ -108,6 +109,8 @@ private:
 	bool ShowAudioWaveform = false;
 	float ScaleAudio = 1.f;
 	
+	void handleSelectionScrolling() noexcept;
+
 public:
 	OFS_WaveformLOD Wave;
 	static constexpr const char* PositionsId = "Positions";

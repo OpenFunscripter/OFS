@@ -36,9 +36,10 @@ void ScriptTimelineEvents::RegisterEvents() noexcept
 void ScriptTimeline::updateSelection(ScriptTimelineEvents::Mode mode, bool clear) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	float min = std::min(relX1, relX2);
-	float max = std::max(relX1, relX2);
-	
+	float relSel1 = (absSel1 - offsetTime) / visibleTime;
+	float min = std::min(relSel1, relSel2);
+	float max = std::max(relSel1, relSel2);
+
 	SelectTimeEventData.startTime = offsetTime + (visibleTime * min);
 	SelectTimeEventData.endTime = offsetTime + (visibleTime * max);
 	SelectTimeEventData.clear = clear;
@@ -143,8 +144,9 @@ void ScriptTimeline::mousePressed(SDL_Event& ev) noexcept
 			if (rect.Contains(ImGui::GetMousePos())) {
 				// start drag selection
 				IsSelecting = true;
-				relX1 = (mousePos.x - activeCanvasPos.x) / rect.GetWidth();
-				relX2 = relX1;
+				float relSel1 = (mousePos.x - activeCanvasPos.x) / rect.GetWidth();
+				relSel2 = relSel1;
+				absSel1 = offsetTime + (visibleTime * relSel1);
 			}
 		}
 	}
@@ -186,7 +188,8 @@ void ScriptTimeline::mouseDrag(SDL_Event& ev) noexcept
 	auto& activeScript = (*Scripts)[activeScriptIdx];
 
 	if (IsSelecting) {
-		relX2 = (ImGui::GetMousePos().x - activeCanvasPos.x) / activeCanvasSize.x;
+		relSel2 = (ImGui::GetMousePos().x - activeCanvasPos.x) / activeCanvasSize.x;
+		relSel2 = Util::Clamp(relSel2, 0.f, 1.f);
 	}
 	else if (IsMoving) {
 		if (!activeScript->HasSelection()) { IsMoving = false; return; }
@@ -236,6 +239,25 @@ void ScriptTimeline::videoLoaded(SDL_Event& ev) noexcept
 	videoPath = (const char*)ev.user.data1;
 }
 
+void ScriptTimeline::handleSelectionScrolling() noexcept
+{
+	constexpr float seekBorderMargin = 0.03f;
+	constexpr float scrollSpeed = 80.f;
+	if(relSel2 < seekBorderMargin || relSel2 > (1.f - seekBorderMargin)) {
+		float seekToTime = offsetTime + (visibleTime / 2.f);
+		seekToTime = Util::Max(0.f, seekToTime);
+		float relSeek = (relSel2 < seekBorderMargin) 
+			? -(seekBorderMargin - relSel2) 
+			: relSel2 - (1.f - seekBorderMargin);
+
+		relSeek *= ImGui::GetIO().DeltaTime * scrollSpeed;
+
+		float seek = visibleTime * relSeek; 
+		seekToTime += seek;
+		EventSystem::PushEvent(ScriptTimelineEvents::ScriptpositionWindowDoubleClick, (void*)(*(intptr_t*)&seekToTime));
+	}
+}
+
 void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float duration, float frameTime, const std::vector<std::shared_ptr<Funscript>>* scripts, int activeScriptIdx) noexcept
 {
 	if (open != nullptr && !*open) return;
@@ -251,6 +273,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 
 	auto& style = ImGui::GetStyle();
 	offsetTime = currentTime - (visibleTime / 2.0);
+	if(IsSelecting) handleSelectionScrolling();
 	
 	OverlayDrawingCtx drawingCtx;
 	drawingCtx.offsetTime = offsetTime;
@@ -430,9 +453,10 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 		constexpr auto selectColor = IM_COL32(3, 252, 207, 255);
 		constexpr auto selectColorBackground = IM_COL32(3, 252, 207, 100);
 		if (IsSelecting && (scriptPtr.get() == activeScript)) {
-			draw_list->AddRectFilled(drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * relX1, 0), drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * relX2, drawingCtx.canvas_size.y), selectColorBackground);
-			draw_list->AddLine(drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * relX1, 0), drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * relX1, drawingCtx.canvas_size.y), selectColor, 3.0f);
-			draw_list->AddLine(drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * relX2, 0), drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * relX2, drawingCtx.canvas_size.y), selectColor, 3.0f);
+			float relSel1 = (absSel1 - offsetTime) / visibleTime;
+			draw_list->AddRectFilled(drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * relSel1, 0), drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * relSel2, drawingCtx.canvas_size.y), selectColorBackground);
+			draw_list->AddLine(drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * relSel1, 0), drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * relSel1, drawingCtx.canvas_size.y), selectColor, 3.0f);
+			draw_list->AddLine(drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * relSel2, 0), drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * relSel2, drawingCtx.canvas_size.y), selectColor, 3.0f);
 		}
 
 		// TODO: refactor this
