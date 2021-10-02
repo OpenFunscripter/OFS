@@ -1338,7 +1338,7 @@ void OFS_LuaExtensions::HandleBinding(Binding* binding) noexcept
 void OFS_LuaExtensions::ReloadEnabledExtensions() noexcept
 {
 	for(auto& ext : Extensions) {
-		if(ext.Active || ext.L) {
+		if(ext.Active) {
 			ext.Load(Util::PathFromString(ext.Directory));
 		}
 	}
