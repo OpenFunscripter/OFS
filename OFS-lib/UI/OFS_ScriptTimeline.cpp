@@ -19,7 +19,7 @@
 #include "SDL_events.h"
 
 int32_t ScriptTimelineEvents::FfmpegAudioProcessingFinished = 0;
-int32_t ScriptTimelineEvents::ScriptpositionWindowDoubleClick = 0;
+int32_t ScriptTimelineEvents::SetTimePosition = 0;
 int32_t ScriptTimelineEvents::FunscriptActionClicked = 0;
 int32_t ScriptTimelineEvents::FunscriptSelectTime = 0;
 int32_t ScriptTimelineEvents::ActiveScriptChanged = 0;
@@ -29,7 +29,7 @@ void ScriptTimelineEvents::RegisterEvents() noexcept
 	FfmpegAudioProcessingFinished = SDL_RegisterEvents(1);
 	FunscriptActionClicked = SDL_RegisterEvents(1);
 	FunscriptSelectTime = SDL_RegisterEvents(1);
-	ScriptpositionWindowDoubleClick = SDL_RegisterEvents(1);
+	SetTimePosition = SDL_RegisterEvents(1);
 	ActiveScriptChanged = SDL_RegisterEvents(1);
 }
 
@@ -78,15 +78,14 @@ void ScriptTimeline::mousePressed(SDL_Event& ev) noexcept
 	const FunscriptAction* clickedAction = nullptr;
 
 	if (PositionsItemHovered) {
-		if (button.button == SDL_BUTTON_LEFT && button.clicks == 2) {
+		if (button.button == SDL_BUTTON_MIDDLE && button.clicks == 2) {
 			// seek to position double click
 			float relX = (mousePos.x - activeCanvasPos.x) / activeCanvasSize.x;
 			float seekToTime = offsetTime + (visibleTime * relX);
-			EventSystem::PushEvent(ScriptTimelineEvents::ScriptpositionWindowDoubleClick, (void*)(*(intptr_t*)&seekToTime));
+			EventSystem::PushEvent(ScriptTimelineEvents::SetTimePosition, (void*)(*(intptr_t*)&seekToTime));
 			return;
 		}
-		else if (button.button == SDL_BUTTON_LEFT && button.clicks == 1)
-		{
+		else if (button.button == SDL_BUTTON_LEFT && button.clicks == 1)	{
 			// test if an action has been clicked
 			if (overlay->PointSize > 0.f) {
 				int index = 0;
@@ -221,6 +220,14 @@ void ScriptTimeline::mouseDrag(SDL_Event& ev) noexcept
 			activeScript->SetSelected(newAction, true);
 		}
 	}
+	else if(PositionsItemHovered) {
+		if(ImGui::IsMouseDown(ImGuiMouseButton_Middle)) {
+			float relX = (motion.xrel * 2) / hoveredCanvasSize.x;
+			float seekToTime = (offsetTime + (visibleTime / 2.f)) + (visibleTime * relX);
+			EventSystem::PushEvent(ScriptTimelineEvents::SetTimePosition, (void*)(*(intptr_t*)&seekToTime));
+			return;
+		}
+	}
 }
 
 void ScriptTimeline::mouseScroll(SDL_Event& ev) noexcept
@@ -254,7 +261,7 @@ void ScriptTimeline::handleSelectionScrolling() noexcept
 
 		float seek = visibleTime * relSeek; 
 		seekToTime += seek;
-		EventSystem::PushEvent(ScriptTimelineEvents::ScriptpositionWindowDoubleClick, (void*)(*(intptr_t*)&seekToTime));
+		EventSystem::PushEvent(ScriptTimelineEvents::SetTimePosition, (void*)(*(intptr_t*)&seekToTime));
 	}
 }
 

@@ -12,12 +12,10 @@
 
 class ScriptTimelineEvents {
 public:
-	static int32_t FfmpegAudioProcessingFinished;
-	
 	using ActionClickedEventArgs = std::tuple<SDL_Event, FunscriptAction>;
+	static int32_t FfmpegAudioProcessingFinished;
 	static int32_t FunscriptActionClicked;
-
-	static int32_t ScriptpositionWindowDoubleClick;
+	static int32_t SetTimePosition;
 	static int32_t ActiveScriptChanged;
 
 	enum class Mode : int32_t
