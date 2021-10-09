@@ -222,7 +222,7 @@ void ScriptTimeline::mouseDrag(SDL_Event& ev) noexcept
 	}
 	else if(PositionsItemHovered) {
 		if(ImGui::IsMouseDown(ImGuiMouseButton_Middle)) {
-			float relX = (motion.xrel * 2) / hoveredCanvasSize.x;
+			float relX = -motion.xrel / hoveredCanvasSize.x;
 			float seekToTime = (offsetTime + (visibleTime / 2.f)) + (visibleTime * relX);
 			EventSystem::PushEvent(ScriptTimelineEvents::SetTimePosition, (void*)(*(intptr_t*)&seekToTime));
 			return;
