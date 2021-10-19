@@ -222,6 +222,7 @@ end
 | ----------- |------| ------- |----------- |
 | `ofs.CreateProcess(program, args...)`| String, [variable amount of Strings]| ProcessHandle | Will create a process or return nil.|
 | `ofs.IsProcessAlive(process)`| ProcessHandle | bool | Returns if the process is still running. |
+| `ofs.JoinProcess(process)`| ProcessHandle | Number | Waits for the process to finish.<br/> Returns the exit code. |
 
 ### Example usage
 ```Lua
