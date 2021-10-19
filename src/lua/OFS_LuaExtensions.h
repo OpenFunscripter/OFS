@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <filesystem>
+#include <cstdint>
 
 #include "OFS_Util.h"
 #include "OFS_Reflection.h"

@@ -60,6 +60,39 @@ struct LuaStackCheck
 #define CLEAN_STACK_CHECK
 #endif
 
+struct OFS_ScriptMemoryPool
+{
+	using Handle = int64_t;
+
+	std::vector<Funscript::FunscriptData> Data;
+	std::vector<Handle> Freelist;
+
+	inline Handle GetNew() noexcept
+	{
+		if(Freelist.empty()) {
+			Data.emplace_back(Funscript::FunscriptData{});
+			Freelist.emplace_back(Data.size());
+		}
+		auto handle = Freelist.back();
+		Freelist.pop_back();
+		return handle;
+	}
+
+	inline Funscript::FunscriptData& Get(Handle handle) noexcept
+	{
+		assert(handle >= 0 && handle - 1 < Data.size());
+		return Data[handle-1];
+	}
+
+	inline void Free(Handle handle) noexcept
+	{
+		Data[handle-1].Actions.clear();
+		Data[handle-1].selection.clear();
+		Freelist.emplace_back(handle);
+	}
+};
+
+static OFS_ScriptMemoryPool ScriptMemoryPool;
 
 inline int Lua_Pcall(lua_State* L, int a, int b, int c) noexcept
 {
@@ -322,7 +355,7 @@ static void ActionGetterSetter(lua_State* L, Funscript::FunscriptData* scriptDat
 		auto app = OpenFunscripter::ptr;
 		int nargs = lua_gettop(L);
 		assert(lua_isuserdata(L, lua_upvalueindex(1)));
-		auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, lua_upvalueindex(1));
+		auto scriptData = &ScriptMemoryPool.Get((OFS_ScriptMemoryPool::Handle)lua_touserdata(L, lua_upvalueindex(1)));
 
 		if (nargs == 3) {
 			int actionIdx = (intptr_t)lua_touserdata(L, 1);
@@ -372,7 +405,7 @@ static void ActionGetterSetter(lua_State* L, Funscript::FunscriptData* scriptDat
 		auto app = OpenFunscripter::ptr;
 		int nargs = lua_gettop(L);
 		assert(lua_isuserdata(L, lua_upvalueindex(1)));
-		auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, lua_upvalueindex(1));
+		auto scriptData = &ScriptMemoryPool.Get((OFS_ScriptMemoryPool::Handle)lua_touserdata(L, lua_upvalueindex(1)));
 
 		if (nargs >= 2) {
 			int actionIdx = (intptr_t)lua_touserdata(L, 1);
@@ -646,7 +679,7 @@ static int LuaHasSelection(lua_State* L) noexcept
 		luaL_argcheck(L, lua_istable(L, 1), 1, "Expected script");
 		lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
 		assert(lua_isuserdata(L, -1));
-		auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+		auto scriptData = &ScriptMemoryPool.Get((OFS_ScriptMemoryPool::Handle)lua_touserdata(L, -1));
 		lua_pop(L, 1); // pop off ScriptDataUserdata
 		hasSelection = !scriptData->selection.empty();
 	}
@@ -663,7 +696,7 @@ static int LuaSelectedIndices(lua_State* L) noexcept
 	
 	lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
 	assert(lua_isuserdata(L, -1));
-	auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+	auto scriptData = &ScriptMemoryPool.Get((OFS_ScriptMemoryPool::Handle)lua_touserdata(L, -1));
 	lua_pop(L, 1); // pop off ScriptDataUserdata
 
 
@@ -690,7 +723,7 @@ static int LuaClosestAction(lua_State* L) noexcept
 
 	lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
 	assert(lua_isuserdata(L, -1));
-	auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+	auto scriptData = &ScriptMemoryPool.Get((OFS_ScriptMemoryPool::Handle)lua_touserdata(L, -1));
 	lua_pop(L, 1); // pop ScriptUserdata
 
 	lua_Number time = lua_tonumber(L, 2);
@@ -717,7 +750,7 @@ static int LuaClosestActionAfter(lua_State* L) noexcept
 
 		lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
 		assert(lua_isuserdata(L, -1));
-		auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+		auto scriptData = &ScriptMemoryPool.Get((OFS_ScriptMemoryPool::Handle)lua_touserdata(L, -1));
 		lua_pop(L, 1); // pop ScriptDataUserdata
 		lua_Number time = lua_tonumber(L, 2);
 
@@ -744,7 +777,7 @@ static int LuaClosestActionBefore(lua_State* L) noexcept
 
 		lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
 		assert(lua_isuserdata(L, -1));
-		auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+		auto scriptData = &ScriptMemoryPool.Get((OFS_ScriptMemoryPool::Handle)lua_touserdata(L, -1));
 		lua_pop(L, 1); // pop ScriptDataUserdata
 		lua_Number time = lua_tonumber(L, 2);
 
@@ -771,7 +804,7 @@ static int LuaClearScript(lua_State* L) noexcept
 	luaL_argcheck(L, lua_istable(L, 1), 1, "Expected script.");
 
 	lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
-	auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+	auto scriptData = &ScriptMemoryPool.Get((OFS_ScriptMemoryPool::Handle)lua_touserdata(L, -1));
 	lua_pop(L, 1); // pop ScriptDataUserdata
 	*scriptData = Funscript::FunscriptData();
 
@@ -802,7 +835,7 @@ inline void CommitScriptChanges(lua_State* L) noexcept
 
 	lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
 	assert(lua_isuserdata(L, -1));
-	auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+	auto scriptData = &ScriptMemoryPool.Get((OFS_ScriptMemoryPool::Handle)lua_touserdata(L, -1));
 	lua_pop(L, 1); // pop ScriptDataUserdata
 
 	if(scriptIdx >= 0 && scriptIdx < app->LoadedFunscripts().size()) {
@@ -858,7 +891,7 @@ static int LuaAddAction(lua_State* L) noexcept
 		}
 		lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
 		assert(lua_isuserdata(L, -1));
-		auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+		auto scriptData = &ScriptMemoryPool.Get((OFS_ScriptMemoryPool::Handle)lua_touserdata(L, -1));
 		lua_pop(L, 1); // pop ScriptDataUserdata
 
 		double atTime = lua_tonumber(L, 2) / 1000.0;
@@ -895,7 +928,7 @@ static int LuaRemoveAction(lua_State* L) noexcept
 		
 		lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata); // 3
 		assert(lua_isuserdata(L, -1));
-		auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+		auto scriptData = &ScriptMemoryPool.Get((OFS_ScriptMemoryPool::Handle)lua_touserdata(L, -1));
 		lua_pop(L, 1); // pop ScriptDataUserdata
 
 		int actionIdx = (intptr_t)lua_touserdata(L, 2);
@@ -943,7 +976,7 @@ static int LuaRemoveSelected(lua_State* L) noexcept
 	
 	lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata);
 	assert(lua_isuserdata(L, -1));
-	auto scriptData = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+	auto scriptData = &ScriptMemoryPool.Get((OFS_ScriptMemoryPool::Handle)lua_touserdata(L, -1));
 	lua_pop(L, 1); // pop ScriptDataUserdata
 
 	auto& removeActions = scriptData->selection;
@@ -1020,7 +1053,8 @@ static int LuaGetScript(lua_State* L) noexcept
 			lua_pushlightuserdata(L, (void*)(intptr_t)(index - 1));
 			lua_setfield(L, -2, OFS_LuaExtensions::ScriptIdxUserdata); // pops off
 			
-			auto scriptData = new Funscript::FunscriptData(script->Data());
+			auto scriptData = ScriptMemoryPool.GetNew();
+			ScriptMemoryPool.Get(scriptData) = script->Data();
 			lua_pushlightuserdata(L, (void*)scriptData);
 			lua_setfield(L, -2, OFS_LuaExtensions::ScriptDataUserdata); // pops off
 
@@ -1028,10 +1062,9 @@ static int LuaGetScript(lua_State* L) noexcept
 				CLEAN_STACK_CHECK(L, 0);
 				lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata); // 3
 				assert(lua_isuserdata(L, -1));
-				auto data = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+				auto data = (OFS_ScriptMemoryPool::Handle)lua_touserdata(L, -1);
 				lua_pop(L, 1);
-				assert(data);
-				if(data) delete data;
+				ScriptMemoryPool.Free(data);
 				return 0;
 			};
 
@@ -1040,7 +1073,7 @@ static int LuaGetScript(lua_State* L) noexcept
 			lua_setfield(L, -2, "__gc");
 			int f = lua_setmetatable(L, 2);
 
-			ActionGetterSetter(L, scriptData);
+			ActionGetterSetter(L, &ScriptMemoryPool.Get(scriptData));
 			lua_setglobal(L, OFS_LuaExtensions::GlobalActionMetaTable); // this gets reused for every action
 
 			// allocating these action arrays in steps of 100 seems to reduce memory usage
