@@ -16,14 +16,7 @@
 #include <sstream>
 #include "EASTL/string.h"
 
-#if defined(WIN32)
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include <shellapi.h>
-#endif
-
 #include "lstate.h"
-
 
 constexpr const char* LuaDefaultFunctions = R"(
 function clamp(val, min, max)
@@ -517,9 +510,11 @@ static int LuaGetScriptTitle(lua_State* L) noexcept;
 static int LuaClosestAction(lua_State* L) noexcept;
 static int LuaClosestActionAfter(lua_State* L) noexcept;
 static int LuaClosestActionBefore(lua_State* L) noexcept;
-static int LuaSilentCmd(lua_State* L) noexcept;
 static int LuaSaveScript(lua_State* L) noexcept;
 static int LuaScriptPath(lua_State* L) noexcept;
+
+static int LuaCreateProcess(lua_State* L) noexcept;
+static int LuaProcessAlive(lua_State* L) noexcept;
 
 static constexpr struct luaL_Reg ofsLib[] = {
 	// core
@@ -527,7 +522,6 @@ static constexpr struct luaL_Reg ofsLib[] = {
 	{"Bind", LuaBindFunction},
 	{"Undo", LuaUndo},
 	{"ExtensionDir", LuaGetExtensionDir},
-	{"SilentCmd", LuaSilentCmd},
 
 	// funscript api
 	{"Script", LuaGetScript},
@@ -545,52 +539,74 @@ static constexpr struct luaL_Reg ofsLib[] = {
 	{"ClosestActionBefore", LuaClosestActionBefore},
 	{"SaveScript", LuaSaveScript},
 	{"ScriptPath", LuaScriptPath},
+
+	// process api
+	{"CreateProcess", LuaCreateProcess},
+	{"IsProcessAlive", LuaProcessAlive},
 	{NULL, NULL}
 };
 
-static int LuaSilentCmd(lua_State* L) noexcept
+static int LuaCreateProcess(lua_State* L) noexcept
 {
 	CLEAN_STACK_CHECK(L, 1);
 	int nargs = lua_gettop(L);
-	bool success = false;
 	if(nargs >= 1) {
-		bool runAsync = false;
+		bool succ = lua_isstring(L, 1);
+
 		luaL_argcheck(L, lua_isstring(L, 1), 1, "Expected string.");
-		if(nargs >= 2) { 
-			luaL_argcheck(L, lua_isboolean(L, 2), 2, "Expected boolean.");
-			runAsync = lua_toboolean(L, 2);		
+		const char* program = lua_tostring(L, 1);
+		const char** args = (const char**)alloca(sizeof(const char*) * (nargs + 1));
+		args[0] = program;
+		for(int i=1; i < nargs; i += 1) {
+			luaL_argcheck(L, lua_isstring(L, i+1), i+1, "Expected string.");
+			succ &= (bool)lua_isstring(L, i+1);
+			args[i] = lua_tostring(L, 1+i);
 		}
-		const char* cmd = lua_tostring(L, 1);
-		#if defined(WIN32)
-		std::wstringstream wstrm;
-		wstrm << L"/c \"" << Util::Utf8ToUtf16(cmd) << L'"';
-		auto wCmd = wstrm.str();
+		args[nargs] = nullptr;
 
-		if(!runAsync) {
-			SHELLEXECUTEINFOW info = {0};
-			info.cbSize = sizeof(SHELLEXECUTEINFOW);
-			info.fMask = SEE_MASK_NOCLOSEPROCESS;
-			info.hwnd = NULL;
-			info.lpVerb = NULL;
-			info.lpFile = L"cmd.exe";        
-			info.lpParameters = wCmd.c_str();   
-			info.lpDirectory = NULL;
-			info.nShow = SW_HIDE;
-			info.hInstApp = NULL; 
-			success = ShellExecuteExW(&info);
-			WaitForSingleObject(info.hProcess, INFINITE);
-			CloseHandle(info.hProcess);
-		}
-		else {
-			auto val = (INT_PTR)ShellExecuteW(NULL, L"open", L"cmd.exe", wCmd.c_str(), NULL, SW_HIDE);
-			success = val > 32;
-		}
+		if(succ) {
+			OFS_LuaProcess* process = (OFS_LuaProcess*)lua_newuserdata(L, sizeof(OFS_LuaProcess));
+			new(process) OFS_LuaProcess;
 
-		#else
-		success = std::system(cmd);
-		#endif
+			process->success = subprocess_create(args, subprocess_option_no_window, &process->proc) == 0;
+			if(!process->success) {
+				delete process;
+				return 0;
+			}
+
+			auto gcFunc = [](lua_State* L) -> int {
+				CLEAN_STACK_CHECK(L, 0);
+				assert(lua_isuserdata(L, 1));
+				auto data = (OFS_LuaProcess*)lua_touserdata(L, 1);
+				assert(data);
+				if(data) {
+					data->Shutdown();
+				}
+				return 0;
+			};
+
+			lua_createtable(L, 1, 1);
+			lua_pushcfunction(L, gcFunc);
+			lua_setfield(L, -2, "__gc");
+			assert(lua_isuserdata(L, -2));
+			int f = lua_setmetatable(L, -2);
+			assert(lua_isuserdata(L, -1));
+			return 1;
+		}
 	}
-	lua_pushboolean(L, success);
+	return 0;
+}
+
+static int LuaProcessAlive(lua_State* L) noexcept
+{
+	CLEAN_STACK_CHECK(L, 1);
+	bool alive = false;
+	int nargs = lua_gettop(L);
+	if(nargs >= 1 && lua_isuserdata(L, 1)) {
+		OFS_LuaProcess* proc = (OFS_LuaProcess*)lua_touserdata(L, 1);
+		alive = subprocess_alive(&proc->proc);
+	}
+	lua_pushboolean(L, alive);
 	return 1;
 }
 
@@ -1019,7 +1035,7 @@ static int LuaGetScript(lua_State* L) noexcept
 				return 0;
 			};
 
-			luaL_newmetatable(L, "Script");
+			lua_createtable(L, 1, 1);
 			lua_pushcfunction(L, gcFunc);
 			lua_setfield(L, -2, "__gc");
 			int f = lua_setmetatable(L, 2);

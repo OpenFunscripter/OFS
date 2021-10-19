@@ -9,6 +9,8 @@ Here I'm trying to document all the API calls of the new Extension API.
 - [Funscript API](#funscript-api)
   - [Some pitfalls](#some-pitfalls)
 - [GUI API](#gui-api)
+- [Process API](#process-api)
+    - [Example usage](#example-usage)
 
 # Extension Structure
 
@@ -57,7 +59,6 @@ When an Extension gets enabled it gets it's own Lua VM seperate from other exten
 | `ofs.Bind(functionName, description)` |String, String| nil | Will create a "Dynamic" key binding.<br/>Must be called from within `init()`.<br/>Bindings will always run in another thread. |
 | `ofs.Task(functionName)` | String | nil |Will run a function in another thread. Use cautiously. |
 | `ofs.ExtensionDir()` | None | String | Path to extension directory. |
-| `ofs.SilentCmd(cmd, async)` | String, [Optional bool] | bool | (Windows only)<br/>Executes a command without opening a window.<br/>By default it blocks and doesn't run async.<br/>On other platforms it just does std::system(cmd). |
 
 
 # Video player API
@@ -215,3 +216,32 @@ end
 | `ofs.Separator()` | None | nil | Inserts a separator. |
 | `ofs.Spacing()` | None | nil | Controls after this will be a bit further spaced away. |
 | `ofs.NewLine()` | None | nil | Controls after this will go into the next line. |
+
+# Process API
+| Call        |Params| Returns | Description |
+| ----------- |------| ------- |----------- |
+| `ofs.CreateProcess(program, args...)`| String, [variable amount of Strings]| ProcessHandle | Will create a process or return nil.|
+| `ofs.IsProcessAlive(process)`| ProcessHandle | bool | Returns if the process is still running. |
+
+### Example usage
+```Lua
+process_handle = nil
+
+function start_process()
+    -- store process handle globally so it doesn't get garbage collected
+    process_handle = ofs.CreateProcess("notepad.exe", "arg1", "arg2", "arg3")
+end
+
+function terminate_process()
+    -- to terminate the process let it be garbage collected like this
+    process_handle = nil
+end
+
+function update(dt)
+    -- detecting if the processs has finished could work like this
+    if process_handle and not ofs.IsProcessAlive(process_handle) then
+        print("process has terminated")
+        process_handle = nil
+    end
+end
+```

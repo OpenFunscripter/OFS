@@ -13,6 +13,24 @@
 
 #include "EASTL/vector_map.h"
 
+#include "subprocess.h"
+
+struct OFS_LuaProcess
+{
+	struct subprocess_s proc = {0};
+	bool success = false;
+
+	inline void Shutdown() noexcept
+	{
+		if(success) {
+			if(subprocess_alive(&proc)) {
+				subprocess_terminate(&proc);
+			}
+			subprocess_destroy(&proc);
+		}
+	}
+};
+
 struct OFS_LuaTask
 {
 	lua_State* L = nullptr;
