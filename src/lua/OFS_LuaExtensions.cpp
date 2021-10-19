@@ -1009,17 +1009,17 @@ static int LuaGetScript(lua_State* L) noexcept
 			lua_setfield(L, -2, OFS_LuaExtensions::ScriptDataUserdata); // pops off
 
 			auto gcFunc = [](lua_State* L) -> int {
+				CLEAN_STACK_CHECK(L, 0);
 				lua_getfield(L, 1, OFS_LuaExtensions::ScriptDataUserdata); // 3
 				assert(lua_isuserdata(L, -1));
 				auto data = (Funscript::FunscriptData*)lua_touserdata(L, -1);
+				lua_pop(L, 1);
 				assert(data);
-				if(data) {
-					delete data;
-				}
+				if(data) delete data;
 				return 0;
 			};
 
-			lua_createtable(L, 0, 1);
+			luaL_newmetatable(L, "Script");
 			lua_pushcfunction(L, gcFunc);
 			lua_setfield(L, -2, "__gc");
 			int f = lua_setmetatable(L, 2);
@@ -1027,7 +1027,10 @@ static int LuaGetScript(lua_State* L) noexcept
 			ActionGetterSetter(L, scriptData);
 			lua_setglobal(L, OFS_LuaExtensions::GlobalActionMetaTable); // this gets reused for every action
 
-			lua_createtable(L, script->Actions().size(), 2); // 3
+			// allocating these action arrays in steps of 100 seems to reduce memory usage
+			// probably because it allows the allocator to reuse memory more easily
+			int allocSize = ((script->Actions().size() / 100)+1) * 100;			
+			lua_createtable(L, allocSize, 2); // 3
 			for(int i=0, size=script->Actions().size(); i < size; ++i) {
 				lua_pushlightuserdata(L, (void*)(intptr_t)i);
 				lua_getglobal(L, OFS_LuaExtensions::GlobalActionMetaTable);
@@ -1283,7 +1286,7 @@ void OFS_LuaExtensions::ShowExtensions() noexcept
 			ImGui::Separator();
 			std::chrono::duration<float> duration = std::chrono::high_resolution_clock::now() - startTime;
 			if (duration.count() > ext.MaxGuiTime) ext.MaxGuiTime = duration.count();
-			ImGui::Text("Memory usage: %s", Util::FormatBytes(ext.L->l_G->totalbytes));
+			ImGui::Text("Memory usage: %s", Util::FormatBytes(ext.L->l_G->GCestimate));
 			ImGui::Text("Update: %f ms", ext.UpdateTime * 1000.f);
 			ImGui::Text("Update (slowest): %f ms", ext.MaxUpdateTime * 1000.f);
 			ImGui::Text("GUI: %f ms", duration.count() * 1000.f);
