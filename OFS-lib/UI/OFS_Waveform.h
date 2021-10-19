@@ -2,9 +2,9 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 
 #include "OFS_Shader.h"
-#include "reproc++/run.hpp"
 #include "imgui.h"
 
 // helper class to render audio waves

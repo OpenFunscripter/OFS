@@ -260,12 +260,6 @@ set(tiny_HEADER "tinyfiledialogs/tinyfiledialogs.h")
 add_library(tinyfiledialogs STATIC ${tiny_SRC} ${tiny_HEADER})
 target_include_directories(tinyfiledialogs PUBLIC "tinyfiledialogs/")
 
-# ==============
-# === reproc ===
-# ==============
-set(REPROC++ ON CACHE BOOL "" FORCE)
-add_subdirectory("reproc/")
-
 # ============
 # === json ===
 # ============

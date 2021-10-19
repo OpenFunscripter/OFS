@@ -8,6 +8,8 @@
 #include "EventSystem.h"
 #include "OpenFunscripter.h"
 
+#include "subprocess.h"
+
 ScriptSimulator::SimulatorSettings* OFS_Project::ProjSettings::Simulator = nullptr;
 
 bool OFS_Project::FindMedia(const std::string& funscriptPath) noexcept
@@ -433,9 +435,14 @@ void OFS_Project::ExportClips(const std::string& outputDirectory) noexcept
 					videoOutputString.c_str(),
 					nullptr
 				};
-				auto [status, ec] = reproc::run(args.data());
-
-				LOGF_DEBUG("OFS_Project::ExportClips: %s", ec.message().c_str());
+				struct subprocess_s proc;
+				if(subprocess_create(args.data(), subprocess_option_no_window, &proc) != 0) {
+					assert(false);
+				}
+				else {
+					int return_code;
+					subprocess_join(&proc, &return_code);
+				}
 			}
 			i++;
 		}

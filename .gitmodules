@@ -13,9 +13,6 @@
 [submodule "lib/lua"]
 	path = lib/lua
 	url = https://github.com/lua/lua.git
-[submodule "lib/reproc"]
-	path = lib/reproc
-	url = https://github.com/DaanDeMeyer/reproc.git
 [submodule "lib/ImGuizmo"]
 	path = lib/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo.git

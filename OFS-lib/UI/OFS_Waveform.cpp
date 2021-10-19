@@ -7,6 +7,8 @@
 #define DR_FLAC_IMPLEMENTATION
 #include "dr_flac.h"
 
+#include "subprocess.h"
+
 bool OFS_Waveform::LoadFlac(const std::string& output) noexcept
 {
 	drflac* flac = drflac_open_file(output.c_str(), NULL);
@@ -40,8 +42,7 @@ bool OFS_Waveform::LoadFlac(const std::string& output) noexcept
 bool OFS_Waveform::GenerateAndLoadFlac(const std::string& ffmpegPath, const std::string& videoPath, const std::string& output) noexcept
 {
 	generating = true;
-	reproc::options options;
-	options.redirect.parent = true;
+
 	std::array<const char*, 9> args =
 	{
 		ffmpegPath.c_str(),
@@ -52,8 +53,13 @@ bool OFS_Waveform::GenerateAndLoadFlac(const std::string& ffmpegPath, const std:
 		output.c_str(),
 		nullptr
 	};
-	auto [status, ec] = reproc::run(args.data(), options);
-	if (status != 0) { generating = false; return false; }
+	struct subprocess_s proc;
+	if(subprocess_create(args.data(), subprocess_option_no_window, &proc) != 0) {
+		generating = false; 
+		return false; 
+	}
+	int return_code;
+	subprocess_join(&proc, &return_code);
 
 	if (!LoadFlac(output)) {
 		generating = false;

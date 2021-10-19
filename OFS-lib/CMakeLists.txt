@@ -67,7 +67,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	libserialport
 	glm
 	ImGuizmo
-	reproc++
 	bitsery
 
 	EASTL
