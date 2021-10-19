@@ -347,7 +347,7 @@ inline static bool ScriptDataHelperCheckIfSelected(const Funscript::FunscriptDat
 	return data.selection.find(action) != data.selection.end();
 };
 
-static void ActionGetterSetter(lua_State* L, Funscript::FunscriptData* scriptData) noexcept
+static void ActionGetterSetter(lua_State* L, OFS_ScriptMemoryPool::Handle handle) noexcept
 {
 	CLEAN_STACK_CHECK(L, 1);
 	auto setter = [](lua_State* L) -> int {
@@ -427,11 +427,11 @@ static void ActionGetterSetter(lua_State* L, Funscript::FunscriptData* scriptDat
 	};
 
 	lua_createtable(L, 0, 2);
-	lua_pushlightuserdata(L, (void*)scriptData);
+	lua_pushlightuserdata(L, (void*)handle);
 	lua_pushcclosure(L, getter, 1);
 	lua_setfield(L, -2, "__index");
 
-	lua_pushlightuserdata(L, (void*)scriptData);
+	lua_pushlightuserdata(L, (void*)handle);
 	lua_pushcclosure(L, setter, 1);
 	lua_setfield(L, -2, "__newindex");
 }
@@ -1073,7 +1073,7 @@ static int LuaGetScript(lua_State* L) noexcept
 			lua_setfield(L, -2, "__gc");
 			int f = lua_setmetatable(L, 2);
 
-			ActionGetterSetter(L, &ScriptMemoryPool.Get(scriptData));
+			ActionGetterSetter(L, scriptData);
 			lua_setglobal(L, OFS_LuaExtensions::GlobalActionMetaTable); // this gets reused for every action
 
 			// allocating these action arrays in steps of 100 seems to reduce memory usage
