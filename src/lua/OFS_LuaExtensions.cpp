@@ -603,7 +603,7 @@ static int LuaCreateProcess(lua_State* L) noexcept
 			OFS_LuaProcess* process = (OFS_LuaProcess*)lua_newuserdata(L, sizeof(OFS_LuaProcess));
 			new(process) OFS_LuaProcess;
 
-			process->success = subprocess_create(args, subprocess_option_no_window, &process->proc) == 0;
+			process->success = subprocess_create(args, subprocess_option_inherit_environment | subprocess_option_no_window, &process->proc) == 0;
 			if(!process->success) {
 				return 0;
 			}
@@ -1337,12 +1337,15 @@ void OFS_LuaExtensions::ShowExtensions() noexcept
 
 		{		
 			CLEAN_STACK_CHECK(ext.L, 0);
-			lua_getglobal(ext.L, RenderGui);
+			lua_getglobal(ext.L, OFS_LuaExtensions::RenderGui);
 			int result = Lua_Pcall(ext.L, 0, 0, 0);
 			if (result) {
 				const char* error = lua_tostring(ext.L, -1);
 				LOG_ERROR(error);
 				ext.Fail(error);
+			}
+			else {
+				lua_gc(ext.L, LUA_GCCOLLECT);
 			}
 		}
 
