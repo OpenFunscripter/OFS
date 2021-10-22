@@ -223,6 +223,7 @@ end
 | `ofs.CreateProcess(program, args...)`| String, [variable amount of Strings]| ProcessHandle | Will create a process or return nil.|
 | `ofs.IsProcessAlive(process)`| ProcessHandle | bool | Returns if the process is still running. |
 | `ofs.JoinProcess(process)`| ProcessHandle | Number | Waits for the process to finish.<br/> Returns the exit code. |
+| `ofs.DetachProcess(process)`| ProcessHandle | nil | Detaches the process.<br/>The process handle becomes inactive. |
 
 ### Example usage
 ```Lua

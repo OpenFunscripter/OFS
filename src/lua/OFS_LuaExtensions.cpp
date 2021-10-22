@@ -549,6 +549,7 @@ static int LuaScriptPath(lua_State* L) noexcept;
 static int LuaCreateProcess(lua_State* L) noexcept;
 static int LuaProcessAlive(lua_State* L) noexcept;
 static int LuaJoinProcess(lua_State* L) noexcept;
+static int LuaDetachProcess(lua_State* L) noexcept;
 
 static constexpr struct luaL_Reg ofsLib[] = {
 	// core
@@ -578,6 +579,7 @@ static constexpr struct luaL_Reg ofsLib[] = {
 	{"CreateProcess", LuaCreateProcess},
 	{"IsProcessAlive", LuaProcessAlive},
 	{"JoinProcess", LuaJoinProcess},
+	{"DetachProcess", LuaDetachProcess},
 	{NULL, NULL}
 };
 
@@ -627,6 +629,17 @@ static int LuaCreateProcess(lua_State* L) noexcept
 			assert(lua_isuserdata(L, -1));
 			return 1;
 		}
+	}
+	return 0;
+}
+
+static int LuaDetachProcess(lua_State* L) noexcept
+{
+	CLEAN_STACK_CHECK(L, 0);
+	int nargs = lua_gettop(L);
+	if(nargs >= 1 && lua_isuserdata(L, 1)) {
+		OFS_LuaProcess* proc = (OFS_LuaProcess*)lua_touserdata(L, 1);
+		proc->Detach();
 	}
 	return 0;
 }

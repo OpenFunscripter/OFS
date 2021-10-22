@@ -30,6 +30,14 @@ struct OFS_LuaProcess
 			subprocess_destroy(&proc);
 		}
 	}
+
+	inline void Detach() noexcept
+	{
+		if(success) {
+			subprocess_destroy(&proc);
+			success = false;
+		}
+	}
 };
 
 struct OFS_LuaTask
