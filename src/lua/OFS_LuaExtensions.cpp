@@ -605,8 +605,8 @@ static int LuaCreateProcess(lua_State* L) noexcept
 			OFS_LuaProcess* process = (OFS_LuaProcess*)lua_newuserdata(L, sizeof(OFS_LuaProcess));
 			new(process) OFS_LuaProcess;
 
-			process->success = subprocess_create(args, subprocess_option_inherit_environment | subprocess_option_no_window, &process->proc) == 0;
-			if(!process->success) {
+			process->active = subprocess_create(args, subprocess_option_inherit_environment | subprocess_option_no_window, &process->proc) == 0;
+			if(!process->active) {
 				return 0;
 			}
 

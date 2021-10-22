@@ -19,11 +19,11 @@
 struct OFS_LuaProcess
 {
 	struct subprocess_s proc = {0};
-	bool success = false;
+	bool active = false;
 
 	inline void Shutdown() noexcept
 	{
-		if(success) {
+		if(active) {
 			if(subprocess_alive(&proc)) {
 				subprocess_terminate(&proc);
 			}
@@ -33,9 +33,9 @@ struct OFS_LuaProcess
 
 	inline void Detach() noexcept
 	{
-		if(success) {
+		if(active) {
 			subprocess_destroy(&proc);
-			success = false;
+			active = false;
 		}
 	}
 };
