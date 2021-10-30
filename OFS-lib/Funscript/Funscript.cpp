@@ -205,13 +205,14 @@ void Funscript::AddEditAction(FunscriptAction action, float frameTime) noexcept
 void Funscript::checkForInvalidatedActions() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	auto it = std::remove_if(data.selection.begin(), data.selection.end(), [this](auto selected) {
-		auto found = getAction(selected);
-		if (found) return false;
-		return true;
-	});
+	auto it = std::remove_if(data.selection.begin(), data.selection.end(), 
+		[this](auto selected) {
+			auto found = getAction(selected);
+			return !found;
+		});
 	if (it != data.selection.end()) {
-		data.selection.erase(it);
+		
+		data.selection.erase(it, data.selection.end());
 		NotifySelectionChanged();
 	}
 }
