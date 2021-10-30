@@ -3109,7 +3109,7 @@ void OpenFunscripter::ShowStatisticsWindow(bool* open) noexcept
     OFS_PROFILE(__FUNCTION__);
     ImGui::Begin(StatisticsId, open, ImGuiWindowFlags_None);
     const float currentTime = player->getCurrentPositionSecondsInterp();
-    const FunscriptAction* front = ActiveFunscript()->GetActionAtTime(currentTime, 0.f);
+    const FunscriptAction* front = ActiveFunscript()->GetActionAtTime(currentTime, 0.001f);
     const FunscriptAction* behind = nullptr;
     if (front != nullptr) {
         behind = ActiveFunscript()->GetPreviousActionBehind(front->atS);
@@ -3120,6 +3120,8 @@ void OpenFunscripter::ShowStatisticsWindow(bool* open) noexcept
     }
 
     if (behind != nullptr) {
+        FUN_ASSERT(((double)currentTime - behind->atS)*1000.0 > 0.001, "This maybe a bug");
+        
         ImGui::Text("Interval: %.2lf ms", ((double)currentTime - behind->atS)*1000.0);
         if (front != nullptr) {
             auto duration = front->atS - behind->atS;
