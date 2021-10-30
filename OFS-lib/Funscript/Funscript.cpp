@@ -62,17 +62,24 @@ void Funscript::startSaveThread(const std::string& path, FunscriptArray&& action
 		data->jsonObj["inverted"] = false;
 		data->jsonObj["range"] = 100; // I think this is mostly ignored anyway
 
+		eastl::vector_set<int64_t> timestamps;
+		timestamps.reserve(data->actions.size());
+
 		auto& actions = data->jsonObj["actions"];
 		for (auto action : data->actions) {
 			// a little validation just in case
 			if (action.atS < 0.f)
 				continue;
-
-			nlohmann::json actionObj = {
-				{ "at", (int32_t)std::round(action.atS*1000.0) },
-				{ "pos", Util::Clamp<int32_t>(action.pos, 0, 100) }
-			};
-			actions.emplace_back(std::move(actionObj));
+				
+			int64_t ts = (int64_t)std::round(action.atS*1000.0);
+			// make sure timestamps are unique
+			if(timestamps.emplace(ts).second) { 
+				nlohmann::json actionObj = {
+					{ "at",  ts },
+					{ "pos", Util::Clamp<int32_t>(action.pos, 0, 100) }
+				};
+				actions.emplace_back(std::move(actionObj));
+			}
 	}
 
 #ifdef NDEBUG
