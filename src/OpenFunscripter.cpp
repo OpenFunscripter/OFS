@@ -2198,11 +2198,10 @@ void OpenFunscripter::pasteSelection() noexcept
     float currentTime = player->getCurrentPositionSecondsInterp();
     float offsetTime = currentTime - CopiedSelection.begin()->atS;
 
-    if (CopiedSelection.size() >= 2)
-    {
-        FUN_ASSERT(CopiedSelection.front().atS < CopiedSelection.back().atS, "order is messed up");
-        ActiveFunscript()->RemoveActionsInInterval(currentTime, currentTime + (CopiedSelection.back().atS - CopiedSelection.front().atS));
-    }
+    ActiveFunscript()->RemoveActionsInInterval(
+        currentTime - 0.0005f,
+         currentTime + (CopiedSelection.back().atS - CopiedSelection.front().atS + 0.0005f)
+        );
 
     for (auto&& action : CopiedSelection) {
         ActiveFunscript()->AddAction(FunscriptAction(action.atS + offsetTime, action.pos));
@@ -3108,6 +3107,9 @@ void OpenFunscripter::ShowStatisticsWindow(bool* open) noexcept
     if (!*open) return;
     OFS_PROFILE(__FUNCTION__);
     ImGui::Begin(StatisticsId, open, ImGuiWindowFlags_None);
+#ifndef NDEBUG
+    ImGui::Text("Action count: %lld", ActiveFunscript()->Data().Actions.size());
+#endif
     const float currentTime = player->getCurrentPositionSecondsInterp();
     const FunscriptAction* front = ActiveFunscript()->GetActionAtTime(currentTime, 0.001f);
     const FunscriptAction* behind = nullptr;
