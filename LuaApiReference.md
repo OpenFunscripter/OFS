@@ -212,6 +212,7 @@ end
 | `newValue, valueChanged = ofs.Drag(txt, value, stepSize)` | String, Number, [optional Number] | Number, bool | Creates a drag button.|
 | `newValue, valueChanged = ofs.Slider(txt, value, min, max)` | String, Number, Number, Number | Number, bool | Creates a slider. |
 | `newValue, valueChanged = ofs.Checkbox(txt, value)` | String, Number, Number, Number | Number, bool | Creates a slider. |
+| `selectionNumber, selectionChanged = ofs.Combo(txt, selectionNumber, comboItems)` | String, Number, Array of Strings | Number, bool | Creates a combo box. |
 | `ofs.SameLine()` | None | nil | Can be used to put things on the same line.<br/> For example if you want two buttons next two each other. |
 | `ofs.Separator()` | None | nil | Inserts a separator. |
 | `ofs.Spacing()` | None | nil | Controls after this will be a bit further spaced away. |

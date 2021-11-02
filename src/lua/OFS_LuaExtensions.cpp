@@ -145,6 +145,7 @@ static int LuaDrag(lua_State* L) noexcept;
 static int LuaShowText(lua_State* L) noexcept;
 static int LuaButton(lua_State* L) noexcept;
 static int LuaInput(lua_State* L) noexcept;
+static int LuaCombo(lua_State* L) noexcept;
 static int LuaSameLine(lua_State* L) noexcept;
 static int LuaCheckbox(lua_State* L) noexcept;
 static int LuaSeparator(lua_State* L) noexcept;
@@ -157,6 +158,7 @@ static constexpr struct luaL_Reg imguiLib[] = {
 	{"Drag", LuaDrag},
 	{"Checkbox", LuaCheckbox},
 	{"Slider", LuaSlider},
+	{"Combo", LuaCombo},
 
 	{"SameLine", LuaSameLine},
 	{"Separator", LuaSeparator},
@@ -164,6 +166,46 @@ static constexpr struct luaL_Reg imguiLib[] = {
 	{"NewLine", LuaNewLine},
 	{NULL, NULL}
 };
+
+static int LuaCombo(lua_State* L) noexcept
+{
+	int nargs = lua_gettop(L);
+	bool selectionChanged = false;
+	if(nargs >= 3) {
+		CLEAN_STACK_CHECK(L, 2);
+		luaL_argcheck(L, lua_isstring(L, 1), 1, "Expected string");
+		luaL_argcheck(L, lua_isnumber(L, 2), 2, "Expected number");
+		luaL_argcheck(L, lua_istable(L, 3), 3, "Expected array of strings");
+
+		const char* str = lua_tostring(L, 1);
+		int currentItem = lua_tonumber(L, 2) - 1;
+
+		lua_rawgeti(L, 3, currentItem + 1);
+		const char* currentItemStr = lua_tostring(L, -1);
+		if(ImGui::BeginCombo(str, currentItemStr, ImGuiComboFlags_None)) {
+			int tableLen = lua_rawlen(L, 3);
+			for(int i=1; i <= tableLen; i += 1) {
+				lua_rawgeti(L, 3, i);
+				luaL_argcheck(L, lua_isstring(L, -1), 3, "Expected array of strings");
+				const char* item = lua_tostring(L, -1);
+				if(!item) return 0;
+				bool isSelected = i == (currentItem+1);
+				if(ImGui::Selectable(item, isSelected)) {
+					currentItem = i - 1;
+					selectionChanged = true;
+				}
+				lua_pop(L, 1);
+			}
+			ImGui::EndCombo();
+		}
+		lua_pop(L, 1); // pop currentItemStr		
+
+		lua_pushnumber(L, currentItem + 1);
+		lua_pushboolean(L, selectionChanged);
+		return 2;
+	}
+	return 0;
+}
 
 static int LuaSlider(lua_State* L) noexcept
 {
