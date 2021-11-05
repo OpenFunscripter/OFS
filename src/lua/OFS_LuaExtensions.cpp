@@ -9,8 +9,6 @@
 #include "imgui.h"
 #include "imgui_stdlib.h"
 
-#include "luasocket.h"
-
 #include <filesystem>
 #include <algorithm>
 #include <sstream>
@@ -1494,7 +1492,6 @@ bool OFS_LuaExtension::Load(const std::filesystem::path& directory) noexcept
 
 	L = luaL_newstate();
 	luaL_openlibs(L);
-	love::luasocket::__open(L);
 
 	lua_getglobal(L, "_G");
 	luaL_setfuncs(L, printlib, 0);

@@ -43,7 +43,6 @@ add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
   lua
-  love_3p_luasocket
   OFS_lib
 )
 
