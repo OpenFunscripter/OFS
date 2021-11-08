@@ -1,0 +1,85 @@
+name: PublishAppImage
+
+on:
+   workflow_dispatch:
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+jobs:
+  AppImage_creation:
+    runs-on: ubuntu-20.04
+    
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'true'
+        fetch-depth: 0
+
+    - name: EASTL special treatment
+      run: |
+        cd lib/EASTL
+        git submodule update --init
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential libmpv-dev libglvnd-dev wget patchelf libgtk-3-dev librsvg2-dev
+        
+    - name: Gets latest created release info
+      id: latest_release_info
+      uses: jossef/action-latest-release-info@v1.1.0
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        
+    - name: Create Build Environment
+      run: |
+        cmake -E make_directory ${{runner.workspace}}/build
+      
+    - name: Configure CMake
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: |
+        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE    
+
+    - name: Build OFS
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: |
+        cmake --build . --config $BUILD_TYPE --target "OpenFunscripter"
+
+    - name: Get linuxdeploy & appimagetool
+      shell: bash
+      working-directory: ${{runner.workspace}}/OFS/bin/
+      run: |
+        pwd
+        wget "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage"
+        wget "https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage"
+        chmod +x linuxdeploy-x86_64.AppImage
+        chmod +x appimagetool-x86_64.AppImage
+        mv "${{runner.workspace}}/OFS/AppImage" "AppDir"
+        chmod +x "AppDir/AppRun"
+        mkdir -p "AppDir/usr/bin"
+        cp -R "${{runner.workspace}}/OFS/data" "AppDir/usr/bin/"
+        whereis libmpv.so.1
+        export DISABLE_COPYRIGHT_FILES_DEPLOYMENT=1
+        ./linuxdeploy-x86_64.AppImage -e OpenFunscripter --appdir=AppDir
+        ARCH=x86_64 ./appimagetool-x86_64.AppImage AppDir/
+        ls
+    
+    #- uses: actions/upload-artifact@v2
+    #  with:
+    #    name: OFS-64x_${{github.sha}}.zip
+    #    path: ${{runner.workspace}}
+    #    retention-days: 14
+        
+    - name: Upload AppImage
+      id: upload-release-installer 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.latest_release_info.outputs.upload_url }}
+        asset_path: ${{runner.workspace}}/OFS/bin/OpenFunscripter-x86_64.AppImage
+        asset_name: OFS-64x_${{github.sha}}.AppImage
+        asset_content_type: application/octet-stream

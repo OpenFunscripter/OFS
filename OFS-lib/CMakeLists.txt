@@ -136,10 +136,6 @@ elseif(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
 	# but not linked
 	# instead libmpv.so.1 is loaded at runtime
 	# this avoids linking issues with mpv and lua symbols
-	
-	target_link_libraries(${PROJECT_NAME} PUBLIC
-		OpenGL
-	)
 elseif(APPLE)
 	execute_process(
 		COMMAND brew --prefix mpv

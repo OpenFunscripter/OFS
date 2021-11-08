@@ -47,6 +47,7 @@ bool OFS_MpvLoader::Load() noexcept
     mpvHandle = SDL_LoadObject(lib);
     if(!mpvHandle) {
         LOGF_ERROR("Failed to load \"%s\"", lib);
+        LOGF_ERROR("%s", SDL_GetError());
         return false;
     }
     
