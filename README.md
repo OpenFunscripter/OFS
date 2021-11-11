@@ -21,5 +21,5 @@ Currently using: [mpv-dev-x86_64-20200816-git-7f67c52.7z (it's part of the repos
 
 
 ### Platforms
-I'm providing windows binaries and a linux snap package.  
+I'm providing windows binaries and a linux AppImage.  
 In theory OSX should work as well but I lack the hardware to set any of that up.
