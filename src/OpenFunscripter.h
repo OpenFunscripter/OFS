@@ -1,15 +1,15 @@
 #pragma once
-#include "ScriptingMode.h"
+#include "OFS_ScriptingMode.h"
 #include "KeybindingSystem.h"
-#include "OpenFunscripterSettings.h"
+#include "OFS_Settings.h"
 #include "OFS_ScriptTimeline.h"
 #include "OFS_Videoplayer.h"
 #include "OFS_UndoSystem.h"
 #include "EventSystem.h"
-#include "ScriptSimulator.h"
+#include "OFS_ScriptSimulator.h"
 #include "OFS_ControllerInput.h"
 #include "GradientBar.h"
-#include "SpecialFunctions.h"
+#include "OFS_SpecialFunctions.h"
 #include "OFS_Events.h"
 #include "OFS_VideoplayerControls.h"
 #include "OFS_TCode.h"
@@ -144,7 +144,7 @@ public:
 	std::unique_ptr<ScriptingMode> scripting;
 	std::unique_ptr<EventSystem> events;
 	std::unique_ptr<ControllerInput> controllerInput;
-	std::unique_ptr<OpenFunscripterSettings> settings;
+	std::unique_ptr<OFS_Settings> settings;
 	std::unique_ptr<UndoSystem> undoSystem;
 	std::unique_ptr<OFS_LuaExtensions> extensions;
 

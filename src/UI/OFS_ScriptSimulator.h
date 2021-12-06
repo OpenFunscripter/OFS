@@ -44,28 +44,28 @@ public:
 		bool EnableHeightLines = true;
 		bool LockedPosition = false;
 
-		//template <class Archive>
-		//inline void reflect(Archive& ar)
-		//{
-		//	OFS_REFLECT(P1, ar);
-		//	OFS_REFLECT(P2, ar);
-		//	OFS_REFLECT(Width, ar);
-		//	OFS_REFLECT(BorderWidth, ar);
-		//	OFS_REFLECT(LineWidth, ar);
-		//	OFS_REFLECT(ExtraLineWidth, ar);
-		//	OFS_REFLECT(Text, ar);
-		//	OFS_REFLECT(Front, ar);
-		//	OFS_REFLECT(Back, ar);
-		//	OFS_REFLECT(Border, ar);
-		//	OFS_REFLECT(ExtraLines, ar);
-		//	OFS_REFLECT(Indicator, ar);
-		//	OFS_REFLECT(GlobalOpacity, ar);
-		//	OFS_REFLECT(EnableIndicators, ar);
-		//	OFS_REFLECT(EnablePosition, ar);
-		//	OFS_REFLECT(EnableHeightLines, ar);
-		//	OFS_REFLECT(ExtraLinesCount, ar);
-		//	OFS_REFLECT(LockedPosition, ar);
-		//}
+		template <class Archive>
+		inline void reflect(Archive& ar)
+		{
+			OFS_REFLECT(P1, ar);
+			OFS_REFLECT(P2, ar);
+			OFS_REFLECT(Width, ar);
+			OFS_REFLECT(BorderWidth, ar);
+			OFS_REFLECT(LineWidth, ar);
+			OFS_REFLECT(ExtraLineWidth, ar);
+			OFS_REFLECT(Text, ar);
+			OFS_REFLECT(Front, ar);
+			OFS_REFLECT(Back, ar);
+			OFS_REFLECT(Border, ar);
+			OFS_REFLECT(ExtraLines, ar);
+			OFS_REFLECT(Indicator, ar);
+			OFS_REFLECT(GlobalOpacity, ar);
+			OFS_REFLECT(EnableIndicators, ar);
+			OFS_REFLECT(EnablePosition, ar);
+			OFS_REFLECT(EnableHeightLines, ar);
+			OFS_REFLECT(ExtraLinesCount, ar);
+			OFS_REFLECT(LockedPosition, ar);
+		}
 
 		template<typename S>
 		void serialize(S& s) {

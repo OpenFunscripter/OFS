@@ -2,7 +2,7 @@
 #include "OFS_BinarySerialization.h"
 #include "OFS_ScriptSettings.h"
 #include "Funscript.h"
-#include "ScriptSimulator.h"
+#include "OFS_ScriptSimulator.h"
 
 #include <vector>
 

@@ -18,9 +18,7 @@
 #include "imgui_impl_opengl3.h"
 
 #include "ImGuizmo.h"
-
 #include "asap.h"
-
 #include "glad/gl.h"
 
 // FIX: Add type checking to the deserialization. It does crash if a field type doesn't match.
@@ -136,7 +134,7 @@ bool OpenFunscripter::setup(int argc, char* argv[])
     auto prefPath = Util::Prefpath("");
     Util::CreateDirectories(prefPath);
 
-    settings = std::make_unique<OpenFunscripterSettings>(Util::Prefpath("config.json"));
+    settings = std::make_unique<OFS_Settings>(Util::Prefpath("config.json"));
     
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
         LOGF_ERROR("Error: %s\n", SDL_GetError());
@@ -1531,9 +1529,8 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
 
     Status |= OFS_Status::OFS_GradientNeedsUpdate;
     const char* VideoName = (const char*)ev.user.data1;
-    if (VideoName)
-    {
-        auto recentFile = OpenFunscripterSettings::RecentFile{ LoadedProject->Metadata.title, LoadedProject->LastPath };
+    if (VideoName) {
+        auto recentFile = OFS_Settings::RecentFile{ LoadedProject->Metadata.title, LoadedProject->LastPath };
         settings->addRecentFile(recentFile);
         scriptPositions.ClearAudioWaveform();
     }

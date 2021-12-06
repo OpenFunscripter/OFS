@@ -1,6 +1,5 @@
-#include "ScriptingMode.h"
-
 #include "OpenFunscripter.h"
+#include "OFS_ScriptingMode.h"
 #include "OFS_Util.h"
 #include "OFS_Profiling.h"
 

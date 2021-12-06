@@ -1,5 +1,5 @@
-#include "SpecialFunctions.h"
 #include "OpenFunscripter.h"
+#include "OFS_SpecialFunctions.h"
 #include "FunscriptUndoSystem.h"
 #include "OFS_ImGui.h"
 #include "imgui.h"

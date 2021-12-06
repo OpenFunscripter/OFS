@@ -1,6 +1,6 @@
-#include "ScriptSimulator.h"
-#include "OFS_ImGui.h"
 #include "OpenFunscripter.h"
+#include "OFS_ScriptSimulator.h"
+#include "OFS_ImGui.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "stb_sprintf.h"
@@ -137,7 +137,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
         ImVec2 canvasSize = ImGui::GetContentRegionAvail();
         auto& style = ImGui::GetStyle();
         
-
+        ImGui::Checkbox(simulator.LockedPosition ? "Lock " ICON_LINK : "Lock " ICON_UNLINK, &simulator.LockedPosition);
         ImGui::Columns(2, 0, false);
         if (ImGui::Button("Center", ImVec2(-1.f, 0.f))) { CenterSimulator(); }
         ImGui::NextColumn();
@@ -147,8 +147,25 @@ void ScriptSimulator::ShowSimulator(bool* open)
             simulator.P2 = tmp; 
         }
         ImGui::Columns(1);
-        ImGui::Checkbox(simulator.LockedPosition ? "Lock " ICON_LINK : "Lock " ICON_UNLINK, &simulator.LockedPosition);
 
+        ImGui::Columns(2, 0, false);
+        if (ImGui::Button("Load config", ImVec2(-1.f, 0.f))) {
+            simulator = app->settings->data().defaultSimulatorConfig;
+        }
+        ImGui::NextColumn();
+        if (ImGui::Button("Save config", ImVec2(-1.f, 0.f))) { 
+            Util::YesNoCancelDialog("Save simulator configuration",
+            "Do you want do save the current config?\n"
+            "This will override any existing default config.", 
+                [this](Util::YesNoCancel result) {
+                    if(result == Util::YesNoCancel::Yes) {
+                        auto app = OpenFunscripter::ptr;
+                        app->settings->data().defaultSimulatorConfig = simulator;
+                    }
+                }
+            );
+        }
+        ImGui::Columns(1);
         if (ImGui::CollapsingHeader("Configuration", ImGuiTreeNodeFlags_SpanAvailWidth)) {
             ImGui::ColorEdit4("Text", &simulator.Text.Value.x);
             ImGui::ColorEdit4("Border", &simulator.Border.Value.x);
@@ -179,12 +196,13 @@ void ScriptSimulator::ShowSimulator(bool* open)
                 simulator.ExtraLinesCount = Util::Clamp(simulator.ExtraLinesCount, 0, 10);
             }
             ImGui::Checkbox("Show position", &simulator.EnablePosition);
+            ImGui::Checkbox("Vanilla", &EnableVanilla);
+            OFS::Tooltip("The original simulator from day one.");
+            if(ImGui::Button("Reset to defaults", ImVec2(-1.f, 0.f))) { 
+                simulator = SimulatorSettings();
+            }
         }
 
-        if (ImGui::Button("Vanilla")) {
-            EnableVanilla = true;
-        }
-        OFS::Tooltip("Switch to vanilla simulator.");
 
         // Because the simulator is always drawn on top
         // we don't draw if there is a popup modal

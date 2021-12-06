@@ -1,4 +1,4 @@
-#include "OpenFunscripterSettings.h"
+#include "OFS_Settings.h"
 #include "OFS_Util.h"
 #include "OpenFunscripter.h"
 
@@ -8,7 +8,7 @@
 #include "imgui.h"
 #include "imgui_stdlib.h"
 
-OpenFunscripterSettings::OpenFunscripterSettings(const std::string& config)
+OFS_Settings::OFS_Settings(const std::string& config) noexcept
 	: config_path(config)
 {
 	bool success = false;
@@ -26,23 +26,23 @@ OpenFunscripterSettings::OpenFunscripterSettings(const std::string& config)
 		load_config();
 }
 
-void OpenFunscripterSettings::save_config()
+void OFS_Settings::save_config()
 {
 	Util::WriteJson(configObj, config_path, true);
 }
 
-void OpenFunscripterSettings::load_config()
+void OFS_Settings::load_config()
 {
 	OFS::serializer::load(&scripterSettings, &config());
 }
 
-void OpenFunscripterSettings::saveSettings()
+void OFS_Settings::saveSettings()
 {
 	OFS::serializer::save(&scripterSettings, &config());
 	save_config();
 }
 
-bool OpenFunscripterSettings::ShowPreferenceWindow() noexcept
+bool OFS_Settings::ShowPreferenceWindow() noexcept
 {
 	bool save = false;
 	if (ShowWindow)
@@ -146,7 +146,7 @@ bool OpenFunscripterSettings::ShowPreferenceWindow() noexcept
 	return save;
 }
 
-void OpenFunscripterSettings::SetTheme(OFS_Theme theme) noexcept
+void OFS_Settings::SetTheme(OFS_Theme theme) noexcept
 {
 	auto& style = ImGui::GetStyle();
 	auto& io = ImGui::GetIO();

@@ -6,7 +6,7 @@
 #include <vector>
 #include <string>
 
-#include "ScriptSimulator.h"
+#include "OFS_ScriptSimulator.h"
 
 #include "OFS_Reflection.h"
 #include "OFS_Util.h"
@@ -20,7 +20,7 @@ enum class OFS_Theme : uint32_t
 	light
 };
 constexpr const char* CurrentSettingsVersion = "1";
-class OpenFunscripterSettings
+class OFS_Settings
 {
 public:
 	struct RecentFile {
@@ -77,6 +77,7 @@ private:
 		} heatmapSettings;
 
 		Funscript::Metadata defaultMetadata;
+		ScriptSimulator::SimulatorSettings defaultSimulatorConfig;
 
 		std::vector<RecentFile> recentFiles;
 		template <class Archive>
@@ -116,6 +117,7 @@ private:
 			OFS_REFLECT(show_debug_log, ar);
 			OFS_REFLECT_NAMED("SplineMode", BaseOverlay::SplineMode, ar);
 			OFS_REFLECT_NAMED("SyncLineEnable", BaseOverlay::SyncLineEnable, ar);
+			OFS_REFLECT(defaultSimulatorConfig, ar);
 		}
 	} scripterSettings;
 
@@ -128,7 +130,7 @@ private:
 	void save_config();
 	void load_config();
 public:
-	OpenFunscripterSettings(const std::string& config);
+	OFS_Settings(const std::string& config) noexcept;
 	ScripterSettingsData& data() noexcept { return scripterSettings; }
 	void saveSettings();
 
