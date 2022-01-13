@@ -71,3 +71,68 @@ jobs:
         asset_path: ${{runner.workspace}}\OFS\installer\ofs-installer.exe
         asset_name: OFS-64x_${{github.sha}}.exe
         asset_content_type: application/octet-stream
+
+  buildAVX:
+    runs-on: windows-2019
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'true'
+        fetch-depth: 0
+    
+    - name: Gets latest created release info
+      id: latest_release_info
+      uses: jossef/action-latest-release-info@v1.1.0
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      
+    - name: EASTL special treatment
+      run: |
+        cd lib/EASTL
+        git submodule update --init
+
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{runner.workspace}}/build
+
+    - name: Configure CMake
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: cmake $GITHUB_WORKSPACE -DOFS_AVX=1 -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G "Visual Studio 16 2019" -A x64
+
+    - name: Build OFS
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: |
+        cmake --build . --config $BUILD_TYPE --target "OpenFunscripter"
+
+    
+    - name: FFMPEG & Zip 
+      run: |
+        choco install -y -r --no-progress InnoSetup
+        powershell Compress-Archive "${{runner.workspace}}\OFS\bin\Release" "${{runner.workspace}}\OFS-64x_AVX_${{github.sha}}.zip"
+
+    - name: Installer
+      run: iscc "${{runner.workspace}}\OFS\ofs-installer.iss"
+
+    - name: Upload Release Zip
+      id: upload-release-zip
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.latest_release_info.outputs.upload_url }}
+        asset_path: ${{runner.workspace}}\OFS-64x_AVX_${{github.sha}}.zip
+        asset_name: OFS-64x_AVX_${{github.sha}}.zip
+        asset_content_type: application/octet-stream
+
+    - name: Upload Release Installer
+      id: upload-release-installer 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.latest_release_info.outputs.upload_url }}
+        asset_path: ${{runner.workspace}}\OFS\installer\ofs-installer.exe
+        asset_name: OFS-64x_AVX_${{github.sha}}.exe
+        asset_content_type: application/octet-stream
