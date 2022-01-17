@@ -54,6 +54,7 @@ private:
 		bool mirror_mode = false;
 		bool show_tcode = false;
 		bool show_debug_log = false;
+		bool show_meta_on_new = true;
 
 		int32_t	vsync = 0;
 		int32_t framerateLimit = 150;

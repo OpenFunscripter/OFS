@@ -1953,7 +1953,7 @@ void OpenFunscripter::initProject() noexcept
     OFS_PROFILE(__FUNCTION__);
     if (LoadedProject->Loaded) {
         if (LoadedProject->ProjectSettings.NudgeMetadata) {
-            ShowMetadataEditor = true;
+            ShowMetadataEditor = settings->data().show_meta_on_new;
             LoadedProject->ProjectSettings.NudgeMetadata = false;
         }
 
