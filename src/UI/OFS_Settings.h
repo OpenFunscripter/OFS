@@ -54,7 +54,7 @@ private:
 		bool mirror_mode = false;
 		bool show_tcode = false;
 		bool show_debug_log = false;
-		bool show_meta_on_new = true;
+		bool show_meta_on_new = false;
 
 		int32_t	vsync = 0;
 		int32_t framerateLimit = 150;
@@ -116,6 +116,7 @@ private:
 			OFS_REFLECT(show_tcode, ar);
 			OFS_REFLECT(defaultMetadata, ar);
 			OFS_REFLECT(show_debug_log, ar);
+			OFS_REFLECT(show_meta_on_new, ar);
 			OFS_REFLECT_NAMED("SplineMode", BaseOverlay::SplineMode, ar);
 			OFS_REFLECT_NAMED("SyncLineEnable", BaseOverlay::SyncLineEnable, ar);
 			OFS_REFLECT(defaultSimulatorConfig, ar);
