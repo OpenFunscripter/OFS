@@ -135,6 +135,10 @@ bool OFS_Settings::ShowPreferenceWindow() noexcept
 						scripterSettings.fast_step_amount = Util::Clamp<int32_t>(scripterSettings.fast_step_amount, 2, 30);
 					}
 					OFS::Tooltip("Amount of frames to skip with fast step.");
+					ImGui::Separator();
+					if (ImGui::Checkbox("Show metadata dialog on new project", &scripterSettings.show_meta_on_new)) {
+						save = true;
+					}
 					ImGui::EndTabItem();
 				}
 				ImGui::EndTabBar();
