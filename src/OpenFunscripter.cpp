@@ -2006,6 +2006,8 @@ void OpenFunscripter::saveProject() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     LoadedProject->Save(true);
+    auto recentFile = OFS_Settings::RecentFile{ LoadedProject->Metadata.title, LoadedProject->LastPath };
+    settings->addRecentFile(recentFile);
 }
 
 void OpenFunscripter::quickExport() noexcept

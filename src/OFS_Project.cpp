@@ -215,9 +215,6 @@ void OFS_Project::Save(const std::string& path, bool clearUnsavedChanges) noexce
 	if (clearUnsavedChanges) {
 		for (auto& script : Funscripts) script->SetSavedFromOutside();
 	}
-
-	auto recentFile = OFS_Settings::RecentFile{ Metadata.title, LastPath };
-	OpenFunscripter::ptr->settings->addRecentFile(recentFile);
 }
 
 void OFS_Project::AddFunscript(const std::string& path) noexcept
