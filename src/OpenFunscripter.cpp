@@ -1530,8 +1530,6 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
     Status |= OFS_Status::OFS_GradientNeedsUpdate;
     const char* VideoName = (const char*)ev.user.data1;
     if (VideoName) {
-        auto recentFile = OFS_Settings::RecentFile{ LoadedProject->Metadata.title, LoadedProject->LastPath };
-        settings->addRecentFile(recentFile);
         scriptPositions.ClearAudioWaveform();
     }
 
@@ -1945,6 +1943,8 @@ bool OpenFunscripter::openProject(const std::string& file, bool withFailDialog) 
         return false;
     }
     initProject();
+    auto recentFile = OFS_Settings::RecentFile{ LoadedProject->Metadata.title, LoadedProject->LastPath };
+    settings->addRecentFile(recentFile);
     return true;
 }
 
@@ -2006,6 +2006,8 @@ void OpenFunscripter::saveProject() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     LoadedProject->Save(true);
+    auto recentFile = OFS_Settings::RecentFile{ LoadedProject->Metadata.title, LoadedProject->LastPath };
+    settings->addRecentFile(recentFile);
 }
 
 void OpenFunscripter::quickExport() noexcept
