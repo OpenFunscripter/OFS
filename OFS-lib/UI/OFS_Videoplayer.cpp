@@ -223,6 +223,10 @@ void VideoplayerWindow::renderToTexture() noexcept
 		mpv_render_param{}
 	};
 	mpv_render_context_render(mpv_gl, params);
+
+	MpvData.framePercentPos = MpvData.percentPos;
+	frameSmoothTime = smoothTime;
+
 }
 
 void VideoplayerWindow::updateRenderTexture() noexcept

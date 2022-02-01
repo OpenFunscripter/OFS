@@ -108,9 +108,16 @@ void ScriptSimulator::ShowSimulator(bool* open)
             positionOverride = -1.f;
         }
         else {
-            currentPos = BaseOverlay::SplineMode 
-                ? app->ActiveFunscript()->SplineClamped(app->player->getCurrentPositionSecondsInterp()) 
-                : app->ActiveFunscript()->GetPositionAtTime(app->player->getCurrentPositionSecondsInterp());
+            if (simulator.LockedFPS) {
+                currentPos = BaseOverlay::SplineMode
+                    ? app->ActiveFunscript()->SplineClamped(app->player->getFramePositionSecondsInterp())
+                    : app->ActiveFunscript()->GetPositionAtTime(app->player->getFramePositionSecondsInterp());
+            }
+            else {
+                currentPos = BaseOverlay::SplineMode
+                    ? app->ActiveFunscript()->SplineClamped(app->player->getCurrentPositionSecondsInterp())
+                    : app->ActiveFunscript()->GetPositionAtTime(app->player->getCurrentPositionSecondsInterp());
+            }
         }
 
         if (EnableVanilla) {
@@ -136,9 +143,13 @@ void ScriptSimulator::ShowSimulator(bool* open)
         ImVec2 canvasPos = ImGui::GetCursorScreenPos();
         ImVec2 canvasSize = ImGui::GetContentRegionAvail();
         auto& style = ImGui::GetStyle();
-        
-        ImGui::Checkbox(simulator.LockedPosition ? "Lock " ICON_LINK : "Lock " ICON_UNLINK, &simulator.LockedPosition);
+                
         ImGui::Columns(2, 0, false);
+        ImGui::Checkbox(simulator.LockedPosition ? "Lock Position" ICON_LINK : "Lock Position" ICON_UNLINK, &simulator.LockedPosition);
+        ImGui::NextColumn();
+        ImGui::Checkbox(simulator.LockedFPS ? "Lock FPS" ICON_LINK : "Lock FPS" ICON_UNLINK, &simulator.LockedFPS);
+        ImGui::NextColumn();
+
         if (ImGui::Button("Center", ImVec2(-1.f, 0.f))) { CenterSimulator(); }
         ImGui::NextColumn();
         if (ImGui::Button("Invert", ImVec2(-1.f, 0.f))) { 
@@ -320,14 +331,31 @@ void ScriptSimulator::ShowSimulator(bool* open)
 
         // INDICATORS
         if (simulator.EnableIndicators) {
-            auto previousAction = app->ActiveFunscript()->GetActionAtTime(app->player->getCurrentPositionSeconds(), app->player->getFrameTime());
-            if (previousAction == nullptr) {
-                previousAction = app->ActiveFunscript()->GetPreviousActionBehind(app->player->getCurrentPositionSeconds());
+
+            const FunscriptAction* previousAction = 0;
+            const FunscriptAction* nextAction = 0;
+
+            if (simulator.LockedFPS) {
+                previousAction = app->ActiveFunscript()->GetActionAtTime(app->player->getFramePositionSeconds(), app->player->getFrameTime());
+                if (previousAction == nullptr) {
+                    previousAction = app->ActiveFunscript()->GetPreviousActionBehind(app->player->getFramePositionSeconds());
+                }
+                nextAction = app->ActiveFunscript()->GetNextActionAhead(app->player->getFramePositionSeconds());
+                if (previousAction != nullptr && nextAction == previousAction) {
+                    nextAction = app->ActiveFunscript()->GetNextActionAhead(previousAction->atS);
+                }
             }
-            auto nextAction = app->ActiveFunscript()->GetNextActionAhead(app->player->getCurrentPositionSeconds());
-            if (previousAction != nullptr && nextAction == previousAction) {
-                nextAction = app->ActiveFunscript()->GetNextActionAhead(previousAction->atS);
+            else {
+                previousAction = app->ActiveFunscript()->GetActionAtTime(app->player->getCurrentPositionSeconds(), app->player->getFrameTime());
+                if (previousAction == nullptr) {
+                    previousAction = app->ActiveFunscript()->GetPreviousActionBehind(app->player->getCurrentPositionSeconds());
+                }
+                nextAction = app->ActiveFunscript()->GetNextActionAhead(app->player->getCurrentPositionSeconds());
+                if (previousAction != nullptr && nextAction == previousAction) {
+                    nextAction = app->ActiveFunscript()->GetNextActionAhead(previousAction->atS);
+                }
             }
+
 
             if (previousAction != nullptr) {
                 if (previousAction->pos > 0 && previousAction->pos < 100) {

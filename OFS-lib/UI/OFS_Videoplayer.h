@@ -58,6 +58,7 @@ private:
 	float lastVideoStep = 0.f;
 	float baseScaleFactor = 1.f;
 	float smoothTime = 0.f;
+	float frameSmoothTime = 0.f;
 	bool correctPlaybackErrorActive = false;
 	bool videoHovered = false;
 	bool dragStarted = false;
@@ -91,6 +92,7 @@ private:
 		double duration = 1.0;
 		double percentPos = 0.0;
 		double realPercentPos = 0.0;
+		double framePercentPos = 0.0;
 		double currentSpeed = 1.0;
 		double fps = 30.0;
 		double averageFrameTime = 1.0/fps;
@@ -216,6 +218,21 @@ public:
 	inline double getCurrentPositionSeconds() const noexcept { 
 		return MpvData.percentPos * MpvData.duration; 
 	}
+
+	inline double getFramePositionSecondsInterp() const noexcept {
+		OFS_PROFILE(__FUNCTION__);
+		if (MpvData.paused) {
+			return getFramePositionSeconds();
+		}
+		else {
+			return getFramePositionSeconds() + frameSmoothTime;
+		}
+	}
+
+	inline double getFramePositionSeconds() const noexcept {
+		return MpvData.framePercentPos * MpvData.duration;
+	}
+
 
 	inline double getRealCurrentPositionSeconds() const noexcept { return MpvData.realPercentPos * MpvData.duration;  }
 	inline void syncWithRealTime() noexcept { MpvData.percentPos = MpvData.realPercentPos; }
