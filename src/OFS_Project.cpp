@@ -106,7 +106,7 @@ void OFS_Project::LoadScripts(const std::string& funscriptPath) noexcept
 		// insert empty script
 		if (!MediaPath.empty())
 		{
-			Loaded = true;
+			LoadedSuccessful();
 			AddFunscript(funscriptPath);
 		}
 	}
@@ -137,6 +137,17 @@ void OFS_Project::Clear() noexcept
 	*OFS_ScriptSettings::player = VideoplayerWindow::OFS_VideoPlayerSettings();
 }
 
+void OFS_Project::LoadedSuccessful() noexcept
+{
+	FUN_ASSERT(!Loaded, "was already loaded");
+	Loaded = true;
+	Metadata.title = Util::PathFromString(LastPath)
+		.replace_extension("")
+		.filename()
+		.u8string();
+	OFS_DynFontAtlas::AddText(Metadata.title.c_str());
+}
+
 bool OFS_Project::Load(const std::string& path) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
@@ -155,7 +166,6 @@ bool OFS_Project::Load(const std::string& path) noexcept
 		Funscripts.clear();
 		auto state = OFS_Binary::Deserialize(ProjectBuffer, *this);
 		if (state == bitsery::ReaderError::NoError && Valid) {
-			Loaded = true;
 			OFS_DynFontAtlas::AddText(Metadata.type);
 			OFS_DynFontAtlas::AddText(Metadata.title);
 			OFS_DynFontAtlas::AddText(Metadata.creator);
@@ -166,6 +176,7 @@ bool OFS_Project::Load(const std::string& path) noexcept
 			OFS_DynFontAtlas::AddText(Metadata.description);
 			OFS_DynFontAtlas::AddText(Metadata.license);
 			OFS_DynFontAtlas::AddText(Metadata.notes);
+			LoadedSuccessful();
 			return true;
 		}
 		else {
@@ -187,6 +198,7 @@ void OFS_Project::Save(const std::string& path, bool clearUnsavedChanges) noexce
 		.replace_extension("")
 		.filename()
 		.u8string();
+	OFS_DynFontAtlas::AddText(Metadata.title.c_str());
 	Metadata.duration = app->player->getDuration();
 	Settings.lastPlayerPosition = app->player->getCurrentPositionSeconds();
 
@@ -225,14 +237,15 @@ void OFS_Project::AddFunscript(const std::string& path) noexcept
 	auto script = std::make_shared<Funscript>();
 	if (script->open(path)) {
 		// add existing script to project
-		Funscripts.emplace_back(std::move(script));
+		script = Funscripts.emplace_back(std::move(script));
 	}
 	else {
 		// add empty script to project
 		script = std::make_shared<Funscript>();
 		script->UpdatePath(path);
-		Funscripts.emplace_back(std::move(script));
+		script = Funscripts.emplace_back(std::move(script));
 	}
+	OFS_DynFontAtlas::AddText(script->Title.c_str());
 }
 
 void OFS_Project::RemoveFunscript(int idx) noexcept
@@ -261,8 +274,8 @@ bool OFS_Project::ImportFunscript(const std::string& path) noexcept
 	if (script->open(path))	{
 		OFS_DynFontAtlas::AddText(path);
 		Funscripts.emplace_back(std::move(script));
-		Loaded = true;
 		FUN_ASSERT(!LastPath.empty(), "path empty");
+		LoadedSuccessful();
 		return true;
 	}
 	else {

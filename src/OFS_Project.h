@@ -21,6 +21,7 @@ class OFS_Project
 	bool FindMedia(const std::string& funscriptPath) noexcept;
 	void LoadScripts(const std::string& funscriptPath) noexcept;
 	bool ImportFunscript(const std::string& path) noexcept;
+	void LoadedSuccessful() noexcept;
 public:
 	static constexpr const char* Extension = OFS_PROJECT_EXT;
 

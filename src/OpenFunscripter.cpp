@@ -1615,8 +1615,8 @@ void OpenFunscripter::autoBackup() noexcept
     }
     
     auto time = asap::now();
-    auto savePath = backupDir
-        / Util::Format("%s_%02d-%02d-%02d" OFS_PROJECT_EXT ".backup", name.c_str(), time.hour(), time.minute(), time.second());
+    auto fileName = Util::PathFromString(Util::Format("%s_%02d-%02d-%02d" OFS_PROJECT_EXT ".backup", name.c_str(), time.hour(), time.minute(), time.second()));
+    auto savePath = backupDir / fileName; 
     LOGF_INFO("Backup at \"%s\"", savePath.u8string().c_str());
     LoadedProject->Save(savePath.u8string(), false);
 }
