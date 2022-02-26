@@ -38,9 +38,15 @@ endif()
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
 
 # copy data directory
-add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
-					COMMAND ${CMAKE_COMMAND} -E copy_directory
-					"${CMAKE_SOURCE_DIR}/data/" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/data")
+if(APPLE)
+	add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
+						COMMAND ${CMAKE_COMMAND} -E copy_directory
+						"${CMAKE_SOURCE_DIR}/data/" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/../Resources/data")
+else()
+	add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
+						COMMAND ${CMAKE_COMMAND} -E copy_directory
+						"${CMAKE_SOURCE_DIR}/data/" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/data")
+endif()
 
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
