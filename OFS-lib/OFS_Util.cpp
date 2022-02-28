@@ -184,6 +184,8 @@ void Util::OpenFileDialog(const std::string& title, const std::string& path, Fil
 			wc_str.push_back(wfilters.back().c_str());
 		}
 		auto result = tinyfd_utf16to8(tinyfd_openFileDialogW(wtitle.c_str(), wpath.c_str(), wc_str.size(), wc_str.data(), wfilterText.empty() ? NULL : wfilterText.c_str(), data->multiple));
+#elif __APPLE__
+		auto result = tinyfd_openFileDialog(data->title.c_str(), data->path.c_str(), 0, nullptr, data->filterText.empty() ? NULL : data->filterText.c_str(), data->multiple);
 #else
 		auto result = tinyfd_openFileDialog(data->title.c_str(), data->path.c_str(), data->filters.size(), data->filters.data(), data->filterText.empty() ? NULL : data->filterText.c_str(), data->multiple);
 #endif
