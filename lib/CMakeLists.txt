@@ -144,6 +144,7 @@ target_include_directories(imgui PUBLIC "stb/")
 target_compile_definitions(imgui PUBLIC "IMGUI_DEFINE_MATH_OPERATORS")
 target_compile_definitions(imgui PUBLIC "IMGUI_DISABLE_OBSOLETE_FUNCTIONS")
 #target_compile_definitions(imgui PUBLIC "IMGUI_DEBUG_PARANOID")
+target_compile_features(imgui PUBLIC cxx_std_17)
 
 # ================
 # = IMGUI_STDLIB =
