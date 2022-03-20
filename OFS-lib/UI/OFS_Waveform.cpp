@@ -43,10 +43,12 @@ bool OFS_Waveform::GenerateAndLoadFlac(const std::string& ffmpegPath, const std:
 {
 	generating = true;
 
-	std::array<const char*, 9> args =
+	std::array<const char*, 11> args =
 	{
 		ffmpegPath.c_str(),
 		"-y",
+		"-loglevel",
+		"quiet",
 		"-i", videoPath.c_str(),
 		"-vn",
 		"-ac", "1",
