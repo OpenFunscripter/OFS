@@ -1915,9 +1915,7 @@ bool OpenFunscripter::importFile(const std::string& file) noexcept
     OFS_PROFILE(__FUNCTION__);
     if (!closeProject(false) || !LoadedProject->Import(file))
     {
-        auto msg = "OpenFunscripter failed to import.\n"
-            "Does a project with the same name already exist?\n"
-            "Try opening that instead.";
+        auto msg = "OpenFunscripter failed to import.";
         Util::MessageBoxAlert("Failed to import", msg);
         closeProject(false);
         return false;

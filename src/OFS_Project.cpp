@@ -289,11 +289,18 @@ bool OFS_Project::Import(const std::string& path) noexcept
 	OFS_PROFILE(__FUNCTION__);
 	Loaded = false;
 	auto basePath = Util::PathFromString(path);
-	LastPath = basePath.replace_extension("").u8string() + OFS_Project::Extension;
-	if (Util::FileExists(LastPath)) {
-		// there already exists a project file 
-		// and we don't want to overwrite it
-		return false;
+	LastPath =
+		basePath.replace_extension("").u8string() + OFS_Project::Extension;
+	if (Util::FileExists(LastPath))
+	{
+		// there already exists a project file
+		// try loading that instead
+		LOGF_INFO(
+			"There's already a project file for \"%s\". opening that "
+			"instead...",
+			path.c_str());
+		auto importPath = LastPath;
+		return this->Load(importPath);
 	}
 
 	basePath = Util::PathFromString(path);
