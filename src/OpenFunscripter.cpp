@@ -1580,7 +1580,7 @@ void OpenFunscripter::autoBackup() noexcept
     OFS_PROFILE(__FUNCTION__);
     lastBackup = std::chrono::steady_clock::now();
 
-    auto backupDir = std::filesystem::path(Util::Prefpath("backup"));
+    auto backupDir = Util::PathFromString(Util::Prefpath("backup"));
     auto name = Util::Filename(player->getVideoPath());
     name = Util::trim(name); // this needs to be trimmed because trailing spaces
     

@@ -426,26 +426,14 @@ std::wstring Util::Utf8ToUtf16(const std::string& str) noexcept
 
 std::filesystem::path Util::PathFromString(const std::string& str) noexcept
 {
-	// this is not very efficient but avoids encoding issues...
-	std::filesystem::path result;
-#if WIN32
-	auto wideString = Util::Utf8ToUtf16(str);
-	result = std::filesystem::path(wideString);
-#else
-	result = std::filesystem::path(str);
-#endif
+	auto result = std::filesystem::u8path(str);
 	result.make_preferred();
 	return result;
 }
 
 void Util::ConcatPathSafe(std::filesystem::path& path, const std::string& element) noexcept
 {
-	// I don't know if this is safe lol
-#if WIN32
-	path /= Util::Utf8ToUtf16(element);
-#else
-	path /= element;
-#endif
+	path /= Util::PathFromString(element);
 }
 
 bool Util::SavePNG(const std::string& path, void* buffer, int32_t width, int32_t height, int32_t channels, bool flipVertical) noexcept
