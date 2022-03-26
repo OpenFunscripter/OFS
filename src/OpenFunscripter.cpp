@@ -1959,10 +1959,20 @@ void OpenFunscripter::initProject() noexcept
             player->openVideo(LoadedProject->MediaPath);
         }
         else {
-            Util::MessageBoxAlert("Failed to find video.", 
-                "The Video was not found.\n"
-                "Please pick the correct video.");
-            pickDifferentMedia();
+            auto mediaName = Util::PathFromString(LoadedProject->MediaPath).filename();
+            auto projectDir = Util::PathFromString(LoadedProject->LastPath).parent_path();
+            auto testPath = (projectDir / mediaName).u8string();
+            if (Util::FileExists(testPath)) {
+                LoadedProject->MediaPath = testPath;
+                LoadedProject->Save(true);
+                player->openVideo(testPath);
+            }
+            else {
+                Util::MessageBoxAlert("Failed to find video.",
+                    "The Video was not found.\n"
+                    "Please pick the correct video.");
+                pickDifferentMedia();
+            }
         }
     }
     updateTitle();
