@@ -312,7 +312,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 		drawingCtx.scriptIdx = i;
 		drawingCtx.canvas_pos = ImGui::GetCursorScreenPos();
 		drawingCtx.canvas_size = ImVec2(availSize.x, availSize.y / (float)drawingCtx.drawnScriptCount);
-		const ImGuiID itemID = ImGui::GetID(script.Title.c_str());
+		const ImGuiID itemID = ImGui::GetID(script.Title.empty() ? "empty script" : script.Title.c_str());
 		ImRect itemBB(drawingCtx.canvas_pos, drawingCtx.canvas_pos + drawingCtx.canvas_size);
 		ImGui::ItemSize(itemBB);
 		if (!ImGui::ItemAdd(itemBB, itemID)) {
