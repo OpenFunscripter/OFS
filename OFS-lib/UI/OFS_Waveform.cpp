@@ -60,8 +60,22 @@ bool OFS_Waveform::GenerateAndLoadFlac(const std::string& ffmpegPath, const std:
 		generating = false; 
 		return false; 
 	}
+
+	if(proc.stdout_file) 
+	{
+		fclose(proc.stdout_file);
+		proc.stdout_file = nullptr;
+	}
+	
+	if(proc.stderr_file) 
+	{
+		fclose(proc.stderr_file);
+		proc.stderr_file = nullptr;
+	}
+
 	int return_code;
 	subprocess_join(&proc, &return_code);
+	subprocess_destroy(&proc);
 
 	if (!LoadFlac(output)) {
 		generating = false;

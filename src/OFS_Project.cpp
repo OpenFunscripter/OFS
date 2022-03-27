@@ -457,12 +457,25 @@ void OFS_Project::ExportClips(const std::string& outputDirectory) noexcept
 				};
 				struct subprocess_s proc;
 				if(subprocess_create(args.data(), subprocess_option_no_window, &proc) != 0) {
-					assert(false);
+					delete exportData;
+					return 0;
 				}
-				else {
-					int return_code;
-					subprocess_join(&proc, &return_code);
+
+				if(proc.stdout_file) 
+				{
+					fclose(proc.stdout_file);
+					proc.stdout_file = nullptr;
 				}
+
+				if(proc.stderr_file)
+				{
+					fclose(proc.stderr_file);
+					proc.stderr_file = nullptr;
+				}
+
+				int return_code;
+				subprocess_join(&proc, &return_code);
+				subprocess_destroy(&proc);
 			}
 			i++;
 		}
