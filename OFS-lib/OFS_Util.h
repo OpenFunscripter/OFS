@@ -272,7 +272,7 @@ public:
 	inline static bool DirectoryExists(const std::string& dir) noexcept
 	{
 		std::error_code ec;
-		bool exists = std::filesystem::exists(dir, ec);
+		bool exists = std::filesystem::exists(Util::PathFromString(dir), ec);
 		return exists && !ec;
 	}
 

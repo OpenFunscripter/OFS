@@ -293,8 +293,6 @@ bool OFS_Project::Import(const std::string& path) noexcept
 		basePath.replace_extension("").u8string() + OFS_Project::Extension;
 	if (Util::FileExists(LastPath))
 	{
-		// there already exists a project file
-		// try loading that instead
 		LOGF_INFO(
 			"There's already a project file for \"%s\". opening that "
 			"instead...",
