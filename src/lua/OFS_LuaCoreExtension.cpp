@@ -210,7 +210,7 @@ void OFS_CoreExtension::setup() noexcept
     #else
     if (!std::filesystem::exists(path, ec)) {
     #endif
-        std::filesystem::create_directories(path);
+        Util::CreateDirectories(path);
         path /= "main.lua";
         auto pString = path.u8string();
         auto handle = Util::OpenFile(pString.c_str(), "wb", pString.size());

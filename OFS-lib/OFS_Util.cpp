@@ -248,15 +248,10 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
 		auto data = (SaveFileDialogThreadData*)ctx;
 
 		auto dialogPath = Util::PathFromString(data->path);
-		if (std::filesystem::is_directory(dialogPath) && !std::filesystem::exists(dialogPath)) {
+		dialogPath.replace_filename("");
+		std::error_code ec;
+		if (!std::filesystem::exists(dialogPath, ec)) {
 			data->path = "";
-		}
-		else {
-			auto directory = dialogPath;
-			directory.replace_filename("");
-			if (!std::filesystem::exists(directory)) {
-				data->path = "";
-			}
 		}
 
 		SanitizeString(data->path);
@@ -296,16 +291,9 @@ void Util::OpenDirectoryDialog(const std::string& title, const std::string& path
 	auto thread = [](void* ctx) -> int32_t {
 		auto data = (OpenDirectoryDialogThreadData*)ctx;
 
-		auto dialogPath = Util::PathFromString(data->path);
-		if (std::filesystem::is_directory(dialogPath) && !std::filesystem::exists(dialogPath)) {
+		if(!Util::DirectoryExists(data->path)) 
+		{
 			data->path = "";
-		}
-		else {
-			auto directory = dialogPath;
-			directory.replace_filename("");
-			if (!std::filesystem::exists(directory)) {
-				data->path = "";
-			}
 		}
 
 		auto result = tinyfd_selectFolderDialog(data->title.c_str(), data->path.c_str());

@@ -671,7 +671,7 @@ void VideoplayerWindow::openVideo(const std::string& file)
 void VideoplayerWindow::saveFrameToImage(const std::string& directory)
 {
 	std::stringstream ss;
-	std::filesystem::path currentFile(getVideoPath());
+	auto currentFile = Util::PathFromString(getVideoPath());
 	std::string filename = currentFile.filename().replace_extension("").string();
 	std::array<char, 15> tmp;
 	double time = getCurrentPositionSeconds();
@@ -682,7 +682,7 @@ void VideoplayerWindow::saveFrameToImage(const std::string& directory)
 	if(!Util::CreateDirectories(directory)) {
 		return;
 	}
-	std::filesystem::path dir(directory);
+	auto dir = Util::PathFromString(directory);
 	dir.make_preferred();
 	std::string finalPath = (dir / ss.str()).string();
 	const char* cmd[]{ "screenshot-to-file", finalPath.c_str(), NULL };
