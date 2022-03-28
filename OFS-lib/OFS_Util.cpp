@@ -167,13 +167,14 @@ void Util::OpenFileDialog(const std::string& title, const std::string& path, Fil
 	};
 	auto thread = [](void* ctx) {
 		auto data = (FileDialogThreadData*)ctx;
-		if (!std::filesystem::exists(data->path)) {
-			data->path = "";
-		}
 
 #ifdef WIN32
 		std::wstring wtitle = Util::Utf8ToUtf16(data->title);
 		std::wstring wpath = Util::Utf8ToUtf16(data->path);
+		if (!std::filesystem::exists(wpath)) {
+			data->path = "";
+			wpath = L"";
+		}
 		std::wstring wfilterText = Util::Utf8ToUtf16(data->filterText);
 		std::vector<std::wstring> wfilters;
 		std::vector<const wchar_t*> wc_str;
@@ -187,6 +188,9 @@ void Util::OpenFileDialog(const std::string& title, const std::string& path, Fil
 #elif __APPLE__
 		auto result = tinyfd_openFileDialog(data->title.c_str(), data->path.c_str(), 0, nullptr, data->filterText.empty() ? NULL : data->filterText.c_str(), data->multiple);
 #else
+		if (!std::filesystem::exists(data->path)) {
+			data->path = "";
+		}
 		auto result = tinyfd_openFileDialog(data->title.c_str(), data->path.c_str(), data->filters.size(), data->filters.data(), data->filterText.empty() ? NULL : data->filterText.c_str(), data->multiple);
 #endif
 		auto dialogResult = new FileDialogResult;
