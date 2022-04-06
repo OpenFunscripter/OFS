@@ -413,19 +413,35 @@ static void ActionGetterSetter(lua_State* L, OFS_ScriptMemoryPool::Handle handle
 					scriptData->selection.erase(toBeUpdated);
 					scriptData->selection.emplace(newVal);
 				}
-				toBeUpdated = newVal;
+
+				// in order to prevent duplicate timestamps we remove the 'toBeUpdated' action
+				// and then we insert the 'newVal' action
+				scriptData->Actions.erase(&toBeUpdated);
+				auto result = scriptData->Actions.insert(newVal);
+				
+				// if the insert fails an error is thrown
+				if(!result.second && result.first) {
+					return false;
+				}
+				return true;
 			};
 
 			if (strcmp(key, "pos") == 0) {
 				bool isSelected = ScriptDataHelperCheckIfSelected(*scriptData, action);
 				newAction.pos = Util::Clamp(setValue, 0.0, 100.0);
-				updateAction(scriptData, action, newAction, isSelected);
+				updateAction(scriptData, action, newAction, isSelected); // this can only fail when updating 'at'
 			}
 			else if (strcmp(key, "at") == 0) {
 				bool isSelected = ScriptDataHelperCheckIfSelected(*scriptData, action);
 				newAction.atS = setValue / 1000.0;
 				newAction.atS = std::max(newAction.atS, 0.f);
-				updateAction(scriptData, action, newAction, isSelected);
+				if(!updateAction(scriptData, action, newAction, isSelected)) 
+				{
+					lua_Debug ar;
+					lua_getstack(L, 1, &ar);
+					lua_getinfo(L, "nSl", &ar );
+					luaL_error(L, "OFS: There can't be more than one action with the same timestamp.\nAt line: %d", ar.currentline);
+				}
 			}
 			else if (strcmp(key, "selected") == 0) {
 				auto shouldSelect = lua_toboolean(L, 3);
