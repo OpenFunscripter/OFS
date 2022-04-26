@@ -666,6 +666,19 @@ static int LuaCreateProcess(lua_State* L) noexcept
 				return 0;
 			}
 
+			auto& proc = process->proc;
+			if(proc.stdout_file) 
+			{
+				fclose(proc.stdout_file);
+				proc.stdout_file = nullptr;
+			}
+
+			if(proc.stderr_file)
+			{
+				fclose(proc.stderr_file);
+				proc.stderr_file = nullptr;
+			}
+
 			auto gcFunc = [](lua_State* L) -> int {
 				CLEAN_STACK_CHECK(L, 0);
 				assert(lua_isuserdata(L, 1));
