@@ -43,6 +43,7 @@ public:
 		bool EnablePosition = false;
 		bool EnableHeightLines = true;
 		bool LockedPosition = false;
+		bool LockedFPS = false;
 
 		template <class Archive>
 		inline void reflect(Archive& ar)
@@ -65,6 +66,7 @@ public:
 			OFS_REFLECT(EnableHeightLines, ar);
 			OFS_REFLECT(ExtraLinesCount, ar);
 			OFS_REFLECT(LockedPosition, ar);
+			OFS_REFLECT(LockedFPS, ar);
 		}
 
 		template<typename S>
@@ -93,6 +95,7 @@ public:
 					s.boolValue(o.EnablePosition);
 					s.boolValue(o.EnableHeightLines);
 					s.boolValue(o.LockedPosition);
+					s.boolValue(o.LockedFPS);
 					s.value4b(o.ExtraLinesCount);
 				});
 		}
