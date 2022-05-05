@@ -335,6 +335,7 @@ void KeybindingSystem::ControllerButtonDown(SDL_Event& ev) noexcept
                         goto breaking_out_of_nested_loop_lol;
                     }
                     LOGF_INFO("The button is already bound for \"%s\"", binding.description.c_str());
+                    Util::MessageBoxAlert(TR(BUTTON_ALREADY_IN_USE), FMT(TR(BUTTON_ALREADY_IN_USE_MSG), binding.description.c_str()));
                     return;
                 }
             }
