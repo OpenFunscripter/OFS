@@ -118,6 +118,7 @@ void KeybindingSystem::handleBindingModification(SDL_Event& ev, uint16_t modstat
                     goto breaking_out_of_nested_loop_lol;
                 }
                 LOGF_INFO("Key already bound for \"%s\"", binding.description.c_str());
+                Util::MessageBoxAlert(TR(KEY_ALREADY_IN_USE), FMT(TR(KEY_ALREADY_IN_USE_MSG), binding.description.c_str()));
                 currentlyHeldKeys.str("");
                 return;
             }
