@@ -190,13 +190,13 @@ namespace OFS
 					unpacker des(&item);
 					T unpacked;
 					unpacked.template reflect<unpacker>(des);
-					pair.value->push_back(unpacked);
+					pair.value->emplace_back(std::move(unpacked));
 				}
 				else if constexpr (BlackMagic::has_reflect_function<T, unpacker>::value) {
 					unpacker des(&item);
 					T unpacked;
 					reflect_function<T, unpacker>().reflect(unpacked, des);
-					pair.value->push_back(unpacked);
+					pair.value->emplace_back(std::move(unpacked));
 				}
 				else {
 					if (node->is_null()) {
