@@ -25,3 +25,6 @@
 [submodule "lib/EASTL"]
 	path = lib/EASTL
 	url = https://github.com/electronicarts/EASTL.git
+[submodule "lib/LuaBridge3"]
+	path = lib/LuaBridge3
+	url = https://github.com/kunitoki/LuaBridge3.git

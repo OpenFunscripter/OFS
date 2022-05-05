@@ -1,5 +1,6 @@
 #include "OFS_LuaCoreExtension.h"
 #include "OFS_LuaExtensions.h"
+#include "OFS_Util.h"
 
 #include <filesystem>
 

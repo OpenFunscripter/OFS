@@ -2834,8 +2834,8 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 extensions->UpdateExtensionList();
             }
             if(ImGui::MenuItem("Developer mode", NULL, &OFS_LuaExtensions::DevMode)) {}
-            if(ImGui::MenuItem("Show logs", NULL, &OFS_LuaExtensions::ShowLogs)) {}
             OFS::Tooltip("Enable extra functionality for extension developement.");
+            if(ImGui::MenuItem("Show logs", NULL, &OFS_LuaExtensions::ShowLogs)) {}
             if (ImGui::MenuItem("Extension directory")) { 
                 Util::OpenFileExplorer(Util::Prefpath(OFS_LuaExtensions::ExtensionDir)); 
             }
@@ -2843,10 +2843,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             for (auto& ext : extensions->Extensions) {
                 if(ImGui::BeginMenu(ext.NameId.c_str())) {
                     if(ImGui::MenuItem(Util::Format("Enabled##Activate%s", ext.NameId.c_str()), NULL, &ext.Active)) {
-                        if (ext.Active && !ext.L) {
-                            ext.Active = ext.Load(ext.Directory);
-                        }
-                        else if (!ext.Active) { ext.Shutdown(); }
+                        ext.Toggle();
                     }
                     if(ImGui::MenuItem(Util::Format("Show Window##Show%s", ext.NameId.c_str()), NULL, &ext.WindowOpen, ext.Active)) {}
                     if(ImGui::MenuItem(Util::Format("Open directory##Directory%s", ext.NameId.c_str()), NULL)) {

@@ -20,7 +20,9 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "gl/OFS_GPU.cpp"
 
   "lua/OFS_LuaExtensions.cpp"
+  "lua/OFS_LuaExtension.cpp"
   "lua/OFS_LuaCoreExtension.cpp"
+  "lua/OFS_LuaExtensionApi.cpp"
 )
 
 if(WIN32)
@@ -51,6 +53,7 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
   lua
+  LuaBridge
   OFS_lib
 )
 
