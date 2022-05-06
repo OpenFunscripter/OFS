@@ -1,6 +1,7 @@
 #include "ScriptPositionsOverlayMode.h"
 #include "OFS_ScriptTimeline.h"
 #include "OFS_Profiling.h"
+#include "OFS_Localization.h"
 #include "FunscriptHeatmap.h"
 
 #include <cmath>
@@ -267,8 +268,7 @@ void BaseOverlay::DrawSecondsLabel(const OverlayDrawingCtx& ctx) noexcept
     auto& style = ImGui::GetStyle();
     if (ctx.scriptIdx == ctx.drawnScriptCount - 1) {
         OFS_PROFILE(__FUNCTION__);
-        char tmp[16];
-        stbsp_snprintf(tmp, sizeof(tmp), "%.2f seconds", ctx.visibleTime);
+        auto tmp = FMT("%.2f %s", ctx.visibleTime, TR(TIMELINE_SECONDS));
         auto textSize = ImGui::CalcTextSize(tmp);
         ctx.draw_list->AddText(
             ctx.canvas_pos + ImVec2(style.FramePadding.x, ctx.canvas_size.y - textSize.y - style.FramePadding.y),

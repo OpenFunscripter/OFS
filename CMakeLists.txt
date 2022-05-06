@@ -23,9 +23,15 @@ endif()
 # === DEPENDENCIES ===
 # ====================
 add_subdirectory("lib/")
-add_subdirectory("OFS-lib/")
+
+# =====================
+# ==== BUILD-TOOLS ====
+# =====================
+add_subdirectory("localization/")
 
 # ==============
 # ==== SRC ====
 # ==============
+add_subdirectory("OFS-lib/")
 add_subdirectory("src/")
+

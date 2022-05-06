@@ -43,6 +43,10 @@ set(OFS_LIB_SOURCES
 	"OFS_FileLogging.cpp"
 	"OFS_DynamicFontAtlas.cpp"
 	"OFS_MpvLoader.cpp"
+
+	"OFS_StringsGenerated.cpp"
+
+	"localization/OFS_Localization.cpp"
 )
 
 add_library(${PROJECT_NAME} STATIC ${OFS_LIB_SOURCES})
@@ -54,7 +58,15 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	"${PROJECT_SOURCE_DIR}/gl/"
 	"${PROJECT_SOURCE_DIR}/"
 	"${PROJECT_SOURCE_DIR}/player/"
+	"${PROJECT_SOURCE_DIR}/localization/"
+	"${CMAKE_CURRENT_BINARY_DIR}"
 )
+
+add_custom_command(OUTPUT "OFS_StringsGenerated.cpp" "OFS_StringsGenerated.h"
+                   COMMAND gen_localization ARGS "${CMAKE_SOURCE_DIR}/localization/localization.csv"
+                   MAIN_DEPENDENCY "${CMAKE_SOURCE_DIR}/localization/localization.csv"
+                   DEPENDS gen_localization
+                   VERBATIM)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
 	SDL2-static

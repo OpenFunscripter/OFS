@@ -2,6 +2,7 @@
 
 #include "imgui.h"
 #include "OFS_Util.h"
+#include "OFS_Localization.h"
 
 namespace OFS {
 	// ExampleAppLog taken from "imgui_demo.cpp"
@@ -55,24 +56,24 @@ namespace OFS {
 			}
 
 			// Options menu
-			if (ImGui::BeginPopup("Options")) {
-				ImGui::Checkbox("Auto-scroll", &AutoScroll);
+			if (ImGui::BeginPopup(TR_ID("OPTIONS", Tr::OPTIONS))) {
+				ImGui::Checkbox(TR(AUTO_SCROLL), &AutoScroll);
 				ImGui::EndPopup();
 			}
 
 			// Main window
-			if (ImGui::Button("Options"))
-				ImGui::OpenPopup("Options");
+			if (ImGui::Button(TR(OPTIONS)))
+				ImGui::OpenPopup(TR_ID("OPTIONS", Tr::OPTIONS));
 			ImGui::SameLine();
-			bool clear = ImGui::Button("Clear");
+			bool clear = ImGui::Button(TR(CLEAR));
 			ImGui::SameLine();
-			bool copy = ImGui::Button("Copy");
+			bool copy = ImGui::Button(TR(COPY));
 			ImGui::SameLine();
-			Filter.Draw("Filter", -100.0f);
+			Filter.Draw(TR(FILTER), -100.0f);
 
-			ImGui::Text("Used: %s", Util::FormatBytes(LogSizeBytes()));
+			ImGui::Text("%s: %s", TR(USED), Util::FormatBytes(LogSizeBytes()));
 			ImGui::SameLine();
-			ImGui::Text("Allocated: %s", Util::FormatBytes(AllocatedSizeBytes()));
+			ImGui::Text("%s: %s", TR(ALLOCATED), Util::FormatBytes(AllocatedSizeBytes()));
 			ImGui::Separator();
 			ImGui::BeginChild("scrolling", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
 

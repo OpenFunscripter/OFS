@@ -3,6 +3,7 @@
 #include "OFS_Serialization.h"
 #include "EventSystem.h"
 #include "OFS_Profiling.h"
+#include "OFS_Localization.h"
 
 #include "imgui.h"
 #include "imgui_stdlib.h"
@@ -14,22 +15,22 @@
 KeybindingSystem* KeybindingSystem::ptr = nullptr;
 
 // strings for SDL_GameControllerButton enum
-static const std::array<const char*, SDL_CONTROLLER_BUTTON_MAX> gameButtonString {
-    "A / X",
-    "B / Circle",
-    "X / Square",
-    "Y / Triangle",
-    "Back / Share",
-    "Guide",
-    "Start",
-    "Leftstick",
-    "Rightstick",
-    "Leftshoulder",
-    "Rightshoulder",
-    "DPAD Up",
-    "DPAD Down",
-    "DPAD Left",
-    "DPAD Right"
+static const std::array<Tr, SDL_CONTROLLER_BUTTON_MAX> gameButtonTr {
+    Tr::CONTROLLER_BUTTON_A,
+    Tr::CONTROLLER_BUTTON_B,
+    Tr::CONTROLLER_BUTTON_X,
+    Tr::CONTROLLER_BUTTON_Y,
+    Tr::CONTROLLER_BUTTON_BACK,
+    Tr::CONTROLLER_BUTTON_GUIDE,
+    Tr::CONTROLLER_BUTTON_START,
+    Tr::CONTROLLER_BUTTON_LEFTSTICK,
+    Tr::CONTROLLER_BUTTON_RIGHTSTICK,
+    Tr::CONTROLLER_BUTTON_LEFTSHOULDER,
+    Tr::CONTROLLER_BUTTON_RIGHTSHOULDER,
+    Tr::CONTROLLER_BUTTON_DPAD_UP,
+    Tr::CONTROLLER_BUTTON_DPAD_DOWN,
+    Tr::CONTROLLER_BUTTON_DPAD_LEFT,
+    Tr::CONTROLLER_BUTTON_DPAD_RIGHT,
 };
 
 static constexpr std::array<uint16_t, 3> possibleModifiers{
@@ -40,10 +41,10 @@ static constexpr std::array<uint16_t, 3> possibleModifiers{
 
 static const char* GetButtonString(int32_t button) noexcept {
     if (button >= 0 && button < SDL_CONTROLLER_BUTTON_MAX) {
-        return gameButtonString[button];
+        return TRD(gameButtonTr[button]);
     }
     else {
-        return "- Not set -";
+        return TR(CONTROLLER_NOT_SET);
     }
 }
 
@@ -83,7 +84,7 @@ void KeybindingSystem::handleBindingModification(SDL_Event& ev, uint16_t modstat
     currentlyHeldKeys.str("");
 
     if (modstate & KMOD_CTRL) {
-        addKeyString("Ctrl");
+        addKeyString(TR(KEY_MOD_CTRL));
         switch (key.keysym.sym) {
         case SDLK_LCTRL:
         case SDLK_RCTRL:
@@ -92,7 +93,7 @@ void KeybindingSystem::handleBindingModification(SDL_Event& ev, uint16_t modstat
     }
 
     if (modstate & KMOD_ALT) {
-        addKeyString("Alt");
+        addKeyString(TR(KEY_MOD_ALT));
         switch (key.keysym.sym) {
         case SDLK_LALT:
         case SDLK_RALT:
@@ -101,7 +102,7 @@ void KeybindingSystem::handleBindingModification(SDL_Event& ev, uint16_t modstat
     }
 
     if (modstate & KMOD_SHIFT) {
-        addKeyString("Shift");
+        addKeyString(TR(KEY_MOD_SHIFT));
         switch (key.keysym.sym) {
         case SDLK_LSHIFT:
         case SDLK_RSHIFT:
@@ -117,8 +118,8 @@ void KeybindingSystem::handleBindingModification(SDL_Event& ev, uint16_t modstat
                     // the binding is being set to the key it already has which is fine
                     goto breaking_out_of_nested_loop_lol;
                 }
-                LOGF_INFO("Key already bound for \"%s\"", binding.description.c_str());
-                Util::MessageBoxAlert(TR(KEY_ALREADY_IN_USE), FMT(TR(KEY_ALREADY_IN_USE_MSG), binding.description.c_str()));
+                LOGF_INFO("Key already bound for \"%s\"", TRD(binding.display_name));
+                Util::MessageBoxAlert(TR(KEY_ALREADY_IN_USE), FMT(TR(KEY_ALREADY_IN_USE_MSG), TRD(binding.display_name)));
                 currentlyHeldKeys.str("");
                 return;
             }
@@ -145,15 +146,15 @@ void KeybindingSystem::handlePassiveBindingModification(SDL_Event& ev, uint16_t 
     currentlyHeldKeys.str("");
 
     if (modstate & KMOD_CTRL) {
-        addKeyString("Ctrl");
+        addKeyString(TR(KEY_MOD_CTRL));
     }
 
     if (modstate & KMOD_ALT) {
-        addKeyString("Alt");
+        addKeyString(TR(KEY_MOD_ALT));
     }
 
     if (modstate & KMOD_SHIFT) {
-        addKeyString("Shift");
+        addKeyString(TR(KEY_MOD_ALT));
     }
 
     passiveChangingTempModifiers = modstate;
@@ -334,8 +335,8 @@ void KeybindingSystem::ControllerButtonDown(SDL_Event& ev) noexcept
                         // the binding is being set to the key it already has which is fine
                         goto breaking_out_of_nested_loop_lol;
                     }
-                    LOGF_INFO("The button is already bound for \"%s\"", binding.description.c_str());
-                    Util::MessageBoxAlert(TR(BUTTON_ALREADY_IN_USE), FMT(TR(BUTTON_ALREADY_IN_USE_MSG), binding.description.c_str()));
+                    LOGF_INFO("The button is already bound for \"%s\"", TRD(binding.display_name));
+                    Util::MessageBoxAlert(TR(BUTTON_ALREADY_IN_USE), FMT(TR(BUTTON_ALREADY_IN_USE_MSG), TRD(binding.display_name)));
                     return;
                 }
             }
@@ -371,15 +372,15 @@ std::string KeybindingSystem::loadKeyString(SDL_Keycode key, int mod) noexcept
 {
     currentlyHeldKeys.str("");
     if (mod & KMOD_CTRL) {
-        addKeyString("Ctrl");
+        addKeyString(TR(KEY_MOD_CTRL));
     }
 
     if (mod & KMOD_ALT) {
-        addKeyString("Alt");
+        addKeyString(TR(KEY_MOD_ALT));
     }
 
     if (mod & KMOD_SHIFT) {
-        addKeyString("Shift");
+        addKeyString(TR(KEY_MOD_SHIFT));
     }
     if (key > 0) { addKeyString(SDL_GetKeyName(key)); }
 
@@ -482,7 +483,7 @@ void KeybindingSystem::addDynamicBinding(Binding&& binding) noexcept
     else {
         it->dynamicHandlerId = std::move(binding.dynamicHandlerId);
         it->identifier = std::move(binding.identifier);
-        it->description = std::move(binding.description);
+        it->display_name = std::move(binding.display_name);
         it->ignore_repeats = binding.ignore_repeats;
     }
 }
@@ -507,26 +508,26 @@ void KeybindingSystem::addPassiveBindingGroup(PassiveBindingGroup& group, bool& 
     if (ImGui::CollapsingHeader(group.name.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::Columns(3);
         ImGui::Separator();
-        ImGui::Text("Description"); ImGui::NextColumn();
-        ImGui::Text("Keyboard"); ImGui::NextColumn();
-        ImGui::Text("Active"); ImGui::NextColumn();
+        ImGui::Text(TR(DESCRIPTION)); ImGui::NextColumn();
+        ImGui::Text(TR(KEYBOARD)); ImGui::NextColumn();
+        ImGui::Text(TR(ACTIVE)); ImGui::NextColumn();
         for (auto& binding : group.bindings) {
-            ImGui::PushID(binding.description.c_str());
-            ImGui::TextUnformatted(binding.description.c_str()); ImGui::NextColumn();
-            if (ImGui::Button(!binding.key.key_str.empty() ? binding.key.key_str.c_str() : "-- Not set --", ImVec2(-1.f, 0.f))) {
+            ImGui::PushID(binding.identifier.c_str());
+            ImGui::TextUnformatted(TRD(binding.displayName)); ImGui::NextColumn();
+            if (ImGui::Button(!binding.key.key_str.empty() ? binding.key.key_str.c_str() : TR(KEY_NOT_SET), ImVec2(-1.f, 0.f))) {
                 changingController = false;
                 currentlyChangingPassive = &binding;
                 passiveChangingTempModifiers = binding.key.modifiers;
                 passiveChangingStartTimer = SDL_GetTicks();
                 currentlyHeldKeys.str("");
-                ImGui::OpenPopup("Change key");
+                ImGui::OpenPopup(TR_ID("CHANGE_KEY", Tr::CHANGE_KEY));
             }
             ImGui::NextColumn(); 
             save = ImGui::Checkbox("##passiveActive", &binding.active) || save;
             ImGui::NextColumn();
-            if (ImGui::BeginPopupModal("Change key", 0, ImGuiWindowFlags_AlwaysAutoResize)) {
+            if (ImGui::BeginPopupModal(TR_ID("CHANGE_KEY", Tr::CHANGE_KEY), 0, ImGuiWindowFlags_AlwaysAutoResize)) {
                 if (currentlyHeldKeys.tellp() == 0) { 
-                    ImGui::TextUnformatted("Press any key...\nEscape to clear."); 
+                    ImGui::TextUnformatted(TR(CHANGE_KEY_MSG)); 
                 }
                 else {
                     ImGui::Text(currentlyHeldKeys.str().c_str());
@@ -560,8 +561,8 @@ void KeybindingSystem::addPassiveBindingGroup(PassiveBindingGroup& group, bool& 
 
 void KeybindingSystem::passiveBindingTab(bool& save) noexcept
 {
-    ImGui::TextUnformatted("Here modifiers can be configured which change certain behaviour.");
-    ImGui::TextUnformatted("You can only use Shift, Ctrl & Alt.");
+    ImGui::TextUnformatted(TR(PASSIVE_BINDING_TXT1));
+    ImGui::TextUnformatted(TR(PASSIVE_BINDING_TXT2));
     for(int i=0; i < ActiveBindings.passiveGroups.size(); i++) {
         auto& group = ActiveBindings.passiveGroups[i];
         ImGui::PushID(i);
@@ -584,26 +585,26 @@ bool KeybindingSystem::ShowBindingWindow() noexcept
 {
     bool save = false;
     if (ShowWindow)
-        ImGui::OpenPopup("Keys");
+        ImGui::OpenPopup(TR_ID("KEYS", Tr::KEYS));
 
-    if (ImGui::BeginPopupModal("Keys", &ShowWindow, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysVerticalScrollbar)) {
+    if (ImGui::BeginPopupModal(TR_ID("KEYS", Tr::KEYS), &ShowWindow, ImGuiWindowFlags_None | ImGuiWindowFlags_AlwaysVerticalScrollbar)) {
         OFS_PROFILE(__FUNCTION__);
 
         if (ImGui::BeginTabBar("##KeysTabBar", ImGuiTabBarFlags_None)) {
-            if (ImGui::BeginTabItem("Bindings"))
+            if (ImGui::BeginTabItem(TR_ID("BINDINGS", Tr::BINDINGS)))
             {
                 constexpr bool disable_indent = true;
                 if constexpr (disable_indent)
                     ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 0.0f);
 
-                ImGui::TextUnformatted("You can use CTRL, SHIFT & ALT as modifiers.");
-                ImGui::TextUnformatted("Only controller buttons can be bound. The DPAD directions count as a buttons.");
-                ImGui::TextUnformatted("The bindings get saved everytime a change is made.");
-                ImGui::TextUnformatted("Config: \"data/keybindings.json\"\nIf you wan't to revert to defaults delete the config.");
+                ImGui::TextUnformatted(TR(BINDING_TXT1));
+                ImGui::TextUnformatted(TR(BINDING_TXT2));
+                ImGui::TextUnformatted(TR(BINDING_TXT3));
+                ImGui::TextUnformatted(TR(BINDING_TXT4));
         
                 ImGui::Spacing();
-                ImGui::InputText("Filter", &filterString); 
-                ImGui::SameLine(); ImGui::Checkbox(" " ICON_GAMEPAD " only", &ControllerOnly);
+                ImGui::InputText(TR(FILTER), &filterString); 
+                ImGui::SameLine(); ImGui::Checkbox(FMT(" " ICON_GAMEPAD " %s", TR(GAMEPAD_ONLY)), &ControllerOnly);
                 ImGui::Spacing();
 
                 auto& style = ImGui::GetStyle();
@@ -624,7 +625,7 @@ bool KeybindingSystem::ShowBindingWindow() noexcept
                     ImGui::PopStyleVar();
                 ImGui::EndTabItem();
             }
-            if (ImGui::BeginTabItem("Modifiers")) {
+            if (ImGui::BeginTabItem(TR_ID("MODIFIERS", Tr::MODIFIERS))) {
                 passiveBindingTab(save);
                 ImGui::EndTabItem();
             }
@@ -662,7 +663,7 @@ void KeybindingSystem::addBindingsGroup(KeybindingGroup& group, bool& save, bool
 
     for (auto&& binding : group.bindings) {
         if (ControllerOnly && binding.controller.button < 0) { continue; }
-        if (!filterString.empty() && !Util::ContainsInsensitive(binding.description, filterString)) { continue; }
+        if (!filterString.empty() && !Util::ContainsInsensitive(TRD(binding.display_name), filterString)) { continue; }
         filteredBindings.emplace_back(&binding);
     }
     if (filteredBindings.size() == 0) { return; }
@@ -671,32 +672,33 @@ void KeybindingSystem::addBindingsGroup(KeybindingGroup& group, bool& save, bool
     }
 
     ImGui::Columns(1);
-    if (ImGui::CollapsingHeader(group.name.c_str(), headerFlags)) {
+    if (ImGui::CollapsingHeader(TRD(group.displayName), headerFlags)) {
         ImGui::PushID(group.name.c_str());
 
         ImGui::Columns(4, "bindings");
         ImGui::Separator();
-        ImGui::Text("Action"); ImGui::NextColumn();
-        ImGui::Text("Keyboard"); ImGui::NextColumn();
-        ImGui::Text("Controller"); ImGui::NextColumn();
-        ImGui::Text("Ignore repeats"); ImGui::NextColumn();
+        ImGui::TextUnformatted(TR(ACTION)); ImGui::NextColumn();
+        ImGui::TextUnformatted(TR(KEYBOARD)); ImGui::NextColumn();
+        ImGui::TextUnformatted(TR(CONTROLLER)); ImGui::NextColumn();
+        ImGui::TextUnformatted(TR(IGNORE_REPEATS)); ImGui::NextColumn();
 
         Binding* deleteBinding = nullptr;
         for (auto bindingPtr : filteredBindings) {
             auto& binding = *bindingPtr;
-            ImGui::PushID(bindingPtr->description.c_str());
-            ImGui::TextUnformatted(binding.description.c_str()); ImGui::NextColumn();
-            if (ImGui::Button(!binding.key.key_str.empty() ? binding.key.key_str.c_str() : "-- Not set --", ImVec2(-1.f, 0.f))) {
+            ImGui::PushID(binding.identifier.c_str());
+            ImGui::TextUnformatted(binding.name());
+            ImGui::NextColumn();
+            if (ImGui::Button(!binding.key.key_str.empty() ? binding.key.key_str.c_str() : TR(KEY_NOT_SET), ImVec2(-1.f, 0.f))) {
                 changingController = false;
                 currentlyChanging = &binding;
                 currentlyHeldKeys.str("");
-                ImGui::OpenPopup("Change key");
+                ImGui::OpenPopup(TR_ID("CHANGE_KEY", Tr::CHANGE_KEY));
             }
             ImGui::NextColumn();
             if (ImGui::Button(GetButtonString(binding.controller.button), ImVec2(-1.f, 0.f))) {
                 changingController = true;
                 currentlyChanging = &binding;
-                ImGui::OpenPopup("Change button");
+                ImGui::OpenPopup(TR_ID("CHANGE_BUTTON", Tr::CHANGE_BUTTON));
             }
             ImGui::NextColumn();
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (ImGui::GetColumnWidth(3) / 2.f) - (2.f * ImGui::GetFontSize()) + style.ItemSpacing.x);
@@ -709,10 +711,10 @@ void KeybindingSystem::addBindingsGroup(KeybindingGroup& group, bool& save, bool
                 }
             }
             ImGui::NextColumn();
-            if (ImGui::BeginPopupModal("Change key", 0, ImGuiWindowFlags_AlwaysAutoResize))
+            if (ImGui::BeginPopupModal(TR_ID("CHANGE_KEY", Tr::CHANGE_KEY), 0, ImGuiWindowFlags_AlwaysAutoResize))
             {
                 if (currentlyHeldKeys.tellp() == 0)
-                    ImGui::TextUnformatted("Press any key...\nEscape to clear.");
+                    ImGui::TextUnformatted(TR(CHANGE_KEY_MSG));
                 else
                     ImGui::Text(currentlyHeldKeys.str().c_str());
                 if (!currentlyChanging) {
@@ -722,8 +724,8 @@ void KeybindingSystem::addBindingsGroup(KeybindingGroup& group, bool& save, bool
                 ImGui::EndPopup();
             }
 
-            if (ImGui::BeginPopupModal("Change button")) {
-                ImGui::TextUnformatted("Press any button...\nEscape to clear.");
+            if (ImGui::BeginPopupModal(TR_ID("CHANGE_BUTTON", Tr::CHANGE_BUTTON))) {
+                ImGui::TextUnformatted(TR(CHANGE_BUTTON_MSG));
                 if (!currentlyChanging) {
                     save = true; // autosave
                     ImGui::CloseCurrentPopup();

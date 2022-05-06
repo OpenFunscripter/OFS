@@ -2,6 +2,7 @@
 #include "OFS_Util.h"
 #include "OFS_Profiling.h"
 #include "OFS_ImGui.h"
+#include "OFS_Localization.h"
 
 #include "SDL_log.h"
 #include "SDL_rwops.h"
@@ -86,7 +87,7 @@ void OFS_FileLogger::Shutdown() noexcept
 void OFS_FileLogger::DrawLogWindow(bool* open) noexcept
 {
     if(!*open) return;
-    OFS_MainLog.Draw("OFS Log Output", open);
+    OFS_MainLog.Draw(TR_ID("OFS_LOG_OUTPUT", Tr::OFS_LOG_OUTPUT), open);
 }
 
 inline static void LogToConsole(OFS_LogLevel level, const char* msg) noexcept

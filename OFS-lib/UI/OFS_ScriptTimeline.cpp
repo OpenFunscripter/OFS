@@ -288,7 +288,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 	drawingCtx.totalDuration = duration;
 	if (drawingCtx.totalDuration == 0.f) return;
 	
-	ImGui::Begin(PositionsId, open, ImGuiWindowFlags_None);
+	ImGui::Begin(TR_ID(WindowId, Tr::POSITIONS), open, ImGuiWindowFlags_None);
 	auto draw_list = ImGui::GetWindowDrawList();
 	drawingCtx.draw_list = draw_list;
 	PositionsItemHovered = ImGui::IsWindowHovered();
@@ -483,7 +483,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 		// right click context menu
 		if (ImGui::BeginPopupContextItem(script.Title.c_str()))
 		{
-			if (ImGui::BeginMenu("Scripts")) {
+			if (ImGui::BeginMenu(TR_ID("SCRIPTS", Tr::SCRIPTS))) {
 				for (auto&& script : *Scripts) {
 					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, drawingCtx.drawnScriptCount == 1 && script->Enabled);
 					if (ImGui::Checkbox(script->Title.c_str(), &script->Enabled) && !script->Enabled) {
@@ -501,11 +501,11 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 				}
 				ImGui::EndMenu();
 			}
-			if (ImGui::BeginMenu("Rendering")) {
-				ImGui::MenuItem("Show actions", 0, &BaseOverlay::ShowActions);
-				ImGui::MenuItem("Spline mode", 0, &BaseOverlay::SplineMode);
-				ImGui::MenuItem("Show video position", 0, &BaseOverlay::SyncLineEnable);
-				OFS::Tooltip("(Frame overlay only)\nShows a red line where the current frame is.\nMore of a debugging feature.");
+			if (ImGui::BeginMenu(TR_ID("RENDERING", Tr::RENDERING))) {
+				ImGui::MenuItem(TR(SHOW_ACTIONS), 0, &BaseOverlay::ShowActions);
+				ImGui::MenuItem(TR(SPLINE_MODE), 0, &BaseOverlay::SplineMode);
+				ImGui::MenuItem(TR(SHOW_VIDEO_POSITION), 0, &BaseOverlay::SyncLineEnable);
+				OFS::Tooltip(TR(SHOW_VIDEO_POSITION_TOOLTIP));
 				ImGui::EndMenu();
 			}
 
@@ -523,20 +523,20 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 				EventSystem::PushEvent(ScriptTimelineEvents::FfmpegAudioProcessingFinished);
 				return 0;
 			};
-			if (ImGui::BeginMenu("Waveform")) {
-				if(ImGui::BeginMenu("Settings")) {
-					ImGui::DragFloat("Scale", &ScaleAudio, 0.01f, 0.01f, 10.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-					ImGui::ColorEdit3("Color", &Wave.WaveformColor.Value.x, ImGuiColorEditFlags_None);
+			if (ImGui::BeginMenu(TR_ID("WAVEFORM", Tr::WAVEFORM))) {
+				if(ImGui::BeginMenu(TR_ID("SETTINGS", Tr::SETTINGS))) {
+					ImGui::DragFloat(TR(SCALE), &ScaleAudio, 0.01f, 0.01f, 10.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+					ImGui::ColorEdit3(TR(COLOR), &Wave.WaveformColor.Value.x, ImGuiColorEditFlags_None);
 					ImGui::EndMenu();
 				}
-				if (ImGui::MenuItem("Enable waveform", NULL, &ShowAudioWaveform, !Wave.data.BusyGenerating())) {}
+				if (ImGui::MenuItem(TR(ENABLE_WAVEFORM), NULL, &ShowAudioWaveform, !Wave.data.BusyGenerating())) {}
 
 				if(Wave.data.BusyGenerating()) {
-					ImGui::MenuItem("Processing audio...", NULL, false, false);
+					ImGui::MenuItem(TR(PROCESSING_AUDIO), NULL, false, false);
 					ImGui::SameLine();
 					OFS::Spinner("##AudioSpin", ImGui::GetFontSize() / 3.f, 4.f, ImGui::GetColorU32(ImGuiCol_TabActive));
 				}
-				else if(ImGui::MenuItem("Update waveform", NULL, false, !Wave.data.BusyGenerating() && videoPath != nullptr)) {
+				else if(ImGui::MenuItem(TR(UPDATE_WAVEFORM), NULL, false, !Wave.data.BusyGenerating() && videoPath != nullptr)) {
 					if (!Wave.data.BusyGenerating()) {
 						ShowAudioWaveform = false; // gets switched true after processing
 						auto handle = SDL_CreateThread(updateAudioWaveformThread, "OFS_GenWaveform", this);

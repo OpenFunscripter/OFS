@@ -111,7 +111,7 @@ private:
 
 public:
 	OFS_WaveformLOD Wave;
-	static constexpr const char* PositionsId = "Positions";
+	static constexpr const char* WindowId = "###POSITIONS";
 
 	static constexpr float MAX_WINDOW_SIZE = 300.f;
 	static constexpr float MIN_WINDOW_SIZE = 1.f;

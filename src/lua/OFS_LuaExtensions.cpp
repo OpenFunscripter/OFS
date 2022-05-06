@@ -1386,7 +1386,7 @@ void OFS_LuaExtensions::Update(float delta) noexcept
 inline static void ShowExtensionLogWindow(bool* open) noexcept
 {
 	if(!*open) return;
-	ExtensionLogBuffer.Draw("Extension Log Output", open);
+	ExtensionLogBuffer.Draw(TR(EXTENSION_LOG_OUTPUT), open);
 }
 
 void OFS_LuaExtensions::ShowExtensions() noexcept
@@ -1399,14 +1399,14 @@ void OFS_LuaExtensions::ShowExtensions() noexcept
 
 		ImGui::Begin(ext.NameId.c_str(), &ext.WindowOpen, ImGuiWindowFlags_None);
 		if (!ext.ExtensionError.empty()) {
-			ImGui::TextWrapped("Error:\n%s", ext.ExtensionError.c_str());
-			if (ImGui::Button("Try reloading")) {
+			ImGui::TextWrapped("%s:\n%s", TR(ERROR_STR), ext.ExtensionError.c_str());
+			if (ImGui::Button(TR(TRY_RELOADING))) {
 				ext.Load(Util::PathFromString(ext.Directory));
 			}
 			ImGui::End(); continue;
 		}
 
-		if (DevMode && ImGui::Button("Reload", ImVec2(-1.f, 0.f))) { 
+		if (DevMode && ImGui::Button(TR(RELOAD), ImVec2(-1.f, 0.f))) { 
 			if (!ext.Load(Util::PathFromString(ext.Directory))) {
 				ImGui::End();
 				continue;
@@ -1416,7 +1416,6 @@ void OFS_LuaExtensions::ShowExtensions() noexcept
 			
 		auto startTime = std::chrono::high_resolution_clock::now();
 		
-
 		{		
 			CLEAN_STACK_CHECK(ext.L, 0);
 			lua_getglobal(ext.L, OFS_LuaExtensions::RenderGui);
@@ -1450,7 +1449,7 @@ void OFS_LuaExtensions::ShowExtensions() noexcept
 		}
 		if (!ext.Bindables.empty()) {
 			auto& style = ImGui::GetStyle();
-			if (ImGui::CollapsingHeader("Bindable functions")) {
+			if (ImGui::CollapsingHeader(TR(BINDABLE_FUNCTIONS))) {
 				for (auto& bindP : ext.Bindables) {
 					auto& bind = bindP.second;
 					ImGui::Text("%s:", bind.GlobalName.c_str()); ImGui::SameLine();

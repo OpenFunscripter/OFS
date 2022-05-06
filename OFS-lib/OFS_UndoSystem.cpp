@@ -1,58 +1,58 @@
 #include "OFS_Profiling.h"
 #include "OFS_UndoSystem.h"
 #include "FunscriptUndoSystem.h"
+#include "OFS_Localization.h"
 
 #include <array>
 
 // this array provides strings for the StateType enum
 // for this to work the order needs to be maintained
-static std::array<const char*, (int32_t)StateType::TOTAL_UNDOSTATE_TYPES> stateStrings = {
-	"Add/Edit actions",
-	"Add/Edit action",
-	"Add action",
+static std::array<Tr, (int32_t)StateType::TOTAL_UNDOSTATE_TYPES> stateTranslations = {
+	Tr::ADD_EDIT_ACTIONS,
+	Tr::ADD_EDIT_ACTION,
+	Tr::ADD_ACTION,
 
-	"Remove actions",
-	"Remove action",
+	Tr::REMOVE_ACTIONS,
+	Tr::REMOVE_ACTION,
 
-	"Mouse moved actions",
-	"Actions moved",
+	Tr::MOUSE_MOVED_ACTIONS,
+	Tr::ACTIONS_MOVED,
 
-	"Cut selection",
-	"Remove selection",
-	"Paste selection",
+	Tr::CUT_SELECTION,
+	Tr::REMOVE_SELECTION,
+	Tr::PASTE_SELECTION,
 
-	"Equalize",
-	"Invert",
-	"Isolate",
+	Tr::EQUALIZE,
+	Tr::INVERT,
+	Tr::ISOLATE,
 
-	"Top points",
-	"Mid points",
-	"Bottom points",
+	Tr::TOP_POINTS,
+	Tr::MID_POINTS,
+	Tr::BOTTOM_POINTS,
 
-	"Generate actions",
-	"Frame align",
-	"Range extend",
+	Tr::GENERATE_ACTIONS,
+	Tr::FRAME_ALIGN,
+	Tr::RANGE_EXTEND,
 
-	"Repeat stroke",
+	Tr::REPEAT_STROKE,
+	Tr::MOVE_TO_CURRENT_POSITION,
 
-	"Move to current position",
-
-	"Simplify",
-	"Lua script",
+	Tr::SIMPLIFY,
+	Tr::LUA_SCRIPT
 };
 
 const char* ScriptState::Description() const noexcept
 {
 	uint32_t typeIdx = (uint32_t)type;
-	FUN_ASSERT(typeIdx < stateStrings.size(), "out of bounds");
-	return stateStrings[typeIdx];
+	FUN_ASSERT(typeIdx < stateTranslations.size(), "out of bounds");
+	return TRD(stateTranslations[typeIdx]);
 }
 
 const char* UndoSystem::UndoContext::Description() const noexcept
 {
 	uint32_t typeIdx = (uint32_t)Type;
-	FUN_ASSERT(typeIdx < stateStrings.size(), "out of bounds");
-	return stateStrings[typeIdx];
+	FUN_ASSERT(typeIdx < stateTranslations.size(), "out of bounds");
+	return TRD(stateTranslations[typeIdx]);
 }
 
 void UndoSystem::ShowUndoRedoHistory(bool* open) noexcept
@@ -60,8 +60,8 @@ void UndoSystem::ShowUndoRedoHistory(bool* open) noexcept
 	if (*open) {
 		OFS_PROFILE(__FUNCTION__);
 		ImGui::SetNextWindowSizeConstraints(ImVec2(200, 100), ImVec2(200, 200));
-		ImGui::Begin(UndoHistoryId, open, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
-		ImGui::TextDisabled("Redo stack");
+		ImGui::Begin(TR_ID(UndoSystem::WindowId, Tr::UNDO_REDO_HISTORY), open, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
+		ImGui::TextDisabled(TR(REDO_STACK));
 
 		for (auto it = RedoStack.begin(), end = RedoStack.end(); it != end; ++it) {
 			int count = 1;
@@ -76,7 +76,7 @@ void UndoSystem::ShowUndoRedoHistory(bool* open) noexcept
 			ImGui::BulletText("%s (%d)", it->Description(), count);
 		}
 		ImGui::Separator();
-		ImGui::TextDisabled("Undo stack");
+		ImGui::TextDisabled(TR(UNDO_STACK));
 		for (auto it = UndoStack.rbegin(), end = UndoStack.rend(); it != end; ++it) {
 			int count = 1;
 			auto copy_it = it;

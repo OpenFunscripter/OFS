@@ -7,6 +7,7 @@
 #include "OFS_BinarySerialization.h"
 #include "OFS_Util.h"
 #include "OFS_Shader.h"
+#include "OFS_Localization.h"
 
 #include <string>
 #include "SDL_events.h"
@@ -129,7 +130,7 @@ private:
 	void showText(const char* text) noexcept;
 	void clearLoop() noexcept;
 public:
-	static constexpr const char* PlayerId = "Player";
+	static constexpr const char* WindowId = "###VIDEOPLAYER";
 	ImDrawCallback OnRenderCallback = nullptr;
 
 	struct OFS_VideoPlayerSettings {

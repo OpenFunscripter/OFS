@@ -11,7 +11,7 @@
 #include <array>
 
 // ATTENTION: no reordering
-enum ScriptingModeEnum {
+enum ScriptingModeEnum : int32_t {
 	DEFAULT_MODE,
 	ALTERNATING,
 	DYNAMIC_INJECTION,
@@ -129,7 +129,7 @@ public:
 	inline ScriptingModeEnum mode() const { return activeMode; }
 	inline ScripingModeBaseImpl& Impl() { return *impl; }
 
-	static constexpr const char* ScriptingModeId = "Mode";
+	static constexpr const char* WindowId = "###SCRIPTING_MODE";
 	void setup();
 	void DrawScriptingMode(bool* open) noexcept;
 	void setMode(ScriptingModeEnum mode) noexcept;

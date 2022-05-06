@@ -84,15 +84,15 @@ void TempoOverlay::DrawSettings() noexcept
     BaseOverlay::DrawSettings();
     auto app = OpenFunscripter::ptr;
     auto& tempo = app->LoadedProject->Settings.tempoSettings;
-    if (ImGui::InputInt("BPM", &tempo.bpm, 1, 100)) {
+    if (ImGui::InputInt(TR(BPM), &tempo.bpm, 1, 100)) {
         tempo.bpm = std::max(1, tempo.bpm);
     }
 
-    ImGui::DragFloat("Offset", &tempo.beatOffsetSeconds, 0.001f, -10.f, 10.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::DragFloat(TR(OFFSET), &tempo.beatOffsetSeconds, 0.001f, -10.f, 10.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
 
-    if (ImGui::BeginCombo("Snap", beatMultiplesStrings[tempo.measureIndex], ImGuiComboFlags_PopupAlignLeft)) {
+    if (ImGui::BeginCombo(TR(SNAP), TRD(beatMultiplesStrings[tempo.measureIndex]), ImGuiComboFlags_PopupAlignLeft)) {
         for (int i = 0; i < beatMultiples.size(); i++) {
-            if (ImGui::Selectable(beatMultiplesStrings[i])) {
+            if (ImGui::Selectable(TRD(beatMultiplesStrings[i]))) {
                 tempo.measureIndex = i;
             }
             else if (ImGui::IsItemHovered()) {
@@ -102,7 +102,7 @@ void TempoOverlay::DrawSettings() noexcept
         ImGui::EndCombo();
     }
 
-    ImGui::Text("Interval: %.2fms", static_cast<float>(((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.measureIndex]));
+    ImGui::Text("%s: %.2fms", TR(INTERVAL), static_cast<float>(((60.f * 1000.f) / tempo.bpm) * beatMultiples[tempo.measureIndex]));
 }
 
 void TempoOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept

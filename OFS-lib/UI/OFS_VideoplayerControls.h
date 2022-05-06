@@ -26,8 +26,8 @@ private:
 
 	void VideoLoaded(SDL_Event& ev) noexcept;
 public:
-	static constexpr const char* PlayerControlId = "Controls";
-	static constexpr const char* PlayerTimeId = "Time";
+	static constexpr const char* ControlId = "###CONTROLS";
+	static constexpr const char* TimeId = "###TIME";
 	VideoplayerWindow* player = nullptr;
 	HeatmapGradient Heatmap;
 	std::unique_ptr<VideoPreview> videoPreview;

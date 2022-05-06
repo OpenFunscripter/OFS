@@ -440,3 +440,5 @@ public:
 
 	static uint32_t Hash(const char* data, size_t size = 0, int32_t seed = 0x42069) noexcept;
 };
+
+#define FMT(fmt, ...) Util::Format(fmt, __VA_ARGS__)

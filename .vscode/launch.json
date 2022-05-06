@@ -17,6 +17,18 @@
             "preLaunchTask": "build"
         },
         {
+            "name": "(Windows) gen_localization",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/gen_localization.exe",
+            "args": ["localization.csv"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/localization",
+            "environment": [],
+            "console": "integratedTerminal",
+            "preLaunchTask": "buildLocalization"
+        },
+        {
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",

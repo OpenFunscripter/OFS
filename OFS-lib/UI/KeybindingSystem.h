@@ -1,5 +1,6 @@
 #pragma once
 #include "OFS_Reflection.h"
+#include "OFS_Localization.h"
 #include "OFS_Util.h"
 #include "SDL.h"
 
@@ -10,6 +11,7 @@
 #include <functional>
 #include <sstream>
 #include <unordered_map>
+
 
 class KeybindingEvents
 {
@@ -62,27 +64,32 @@ struct ControllerBinding {
 
 struct Binding {
 	std::string identifier;
-	std::string description;
+	Tr display_name;
 	bool ignore_repeats = true;
 	Keybinding key;
 	ControllerBinding controller;
 	BindingAction action;
 	void* userdata = nullptr;
+
 	std::string dynamicHandlerId = "";
+	std::string dynamicName = "";
 
 	Binding() noexcept {}
 
-	Binding(const std::string& id, const std::string& description, bool ignore_repeats, BindingAction action) noexcept
-		: identifier(id), description(description), ignore_repeats(ignore_repeats), action(action) {}
+	Binding(const std::string& id, Tr display_name, bool ignore_repeats, BindingAction action) noexcept
+		: identifier(id), display_name(display_name), ignore_repeats(ignore_repeats), action(action) {}
+	
+	Binding(const std::string& id, const std::string dynamicName, bool ignore_repeats, BindingAction action) noexcept
+		: identifier(id), dynamicName(dynamicName), ignore_repeats(ignore_repeats), action(action), display_name(Tr::INVALID_TR) {}
 
 	template<class Archive>
 	inline void reflect(Archive& ar) {
 		OFS_REFLECT(identifier, ar);
-		OFS_REFLECT(description, ar);
 		OFS_REFLECT(key, ar);
 		OFS_REFLECT(controller, ar);
 		OFS_REFLECT(ignore_repeats, ar);
 		OFS_REFLECT(dynamicHandlerId, ar);
+		OFS_REFLECT(dynamicName, ar);
 	}
 
 	inline void execute() noexcept {
@@ -90,11 +97,31 @@ struct Binding {
 			action(userdata == nullptr ? this : userdata);
 		}
 	}
+
+	inline const char* name() const noexcept
+	{
+		if(dynamicHandlerId.empty())
+		{
+			return TRD(display_name);
+		}
+		else 
+		{
+			return dynamicName.c_str();
+		}
+	}
 };
 
 struct KeybindingGroup {
 	std::string name;
+	Tr displayName;
 	std::vector<Binding> bindings;
+
+	KeybindingGroup() noexcept
+		: name(std::string()), displayName(Tr::INVALID_TR)
+	{}
+	KeybindingGroup(const char* name_id, Tr displayName) noexcept
+		: name(name_id), displayName(displayName)
+	{}
 
 	template<class Archive>
 	inline void reflect(Archive& ar) {
@@ -107,19 +134,18 @@ struct KeybindingGroup {
 struct PassiveBinding
 {
 	std::string identifier;
-	std::string description;
+	Tr displayName;
 	Keybinding key;
 	bool active = true;
 
 	PassiveBinding() noexcept {}
 
-	PassiveBinding(const std::string& id, const std::string& description, bool active = true) noexcept
-		: identifier(id), description(description), active(active) {}
+	PassiveBinding(const std::string& id, Tr displayName, bool active = true) noexcept
+		: identifier(id), displayName(displayName), active(active) {}
 
 	template<class Archive>
 	inline void reflect(Archive& ar) {
 		OFS_REFLECT(identifier, ar);
-		OFS_REFLECT(description, ar);
 		OFS_REFLECT(key, ar);
 		OFS_REFLECT(active, ar);
 	}
@@ -128,7 +154,15 @@ struct PassiveBinding
 struct PassiveBindingGroup
 {
 	std::string name;
+	Tr displayName;
 	std::vector<PassiveBinding> bindings;
+
+	PassiveBindingGroup() noexcept
+		: name(std::string()), displayName(Tr::INVALID_TR)
+	{}
+	PassiveBindingGroup(const char* name_id, Tr displayName) noexcept
+		: name(name_id), displayName(displayName)
+	{}
 
 	template<class Archive>
 	inline void reflect(Archive& ar) {
@@ -143,7 +177,7 @@ struct Keybindings {
 	std::vector<KeybindingGroup> groups;
 	std::vector<PassiveBindingGroup> passiveGroups;
 
-	KeybindingGroup DynamicBindings{"Dynamic"};
+	KeybindingGroup DynamicBindings{ "Dynamic", Tr::DYNAMIC_BINDING_GROUP };
 
 	template<class Archive>
 	inline void reflect(Archive& ar) {

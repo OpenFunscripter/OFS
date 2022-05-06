@@ -9,6 +9,7 @@
 
 #include "OFS_Util.h"
 #include "OFS_Reflection.h"
+#include "OFS_Localization.h"
 
 #include "SDL_thread.h"
 
@@ -76,7 +77,7 @@ struct OFS_LuaExtension
 
 	void Fail(const char* error) noexcept
 	{
-		ExtensionError = error ? error : "unknown error";
+		ExtensionError = error ? error : TR(UNKNOWN_ERROR);
 		Shutdown();
 	}
 
