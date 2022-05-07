@@ -6,6 +6,7 @@ OFS_Translator* OFS_Translator::ptr = nullptr;
 
 OFS_Translator::OFS_Translator() noexcept
 {
+    Util::CreateDirectories(Util::Prefpath(TranslationDir));
     // initialize with the default strings
     LoadDefaults();
 }

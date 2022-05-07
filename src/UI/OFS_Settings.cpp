@@ -152,6 +152,11 @@ bool OFS_Settings::ShowPreferenceWindow() noexcept
 						data().language_csv = std::string();
 						OFS_Translator::ptr->LoadDefaults();
 					}
+					ImGui::SameLine();
+					if(ImGui::Button(TR_ID("OPEN_DIR_LANG", Tr::DIRECTORY)))
+					{
+						Util::OpenFileExplorer(Util::Prefpath(OFS_Translator::TranslationDir));
+					}
 					ImGui::EndTabItem();
 				}
 				if (ImGui::BeginTabItem(TR(VIDEOPLAYER))) {

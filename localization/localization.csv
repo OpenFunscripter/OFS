@@ -502,3 +502,5 @@ MEMORY_USAGE,Memory usage,Memory usage
 UPDATE,Update,Update
 SLOWEST,slowest,slowest
 LANGUAGE,Language,Language
+ACTION_RELOAD_TRANSLATION,Reload current translation,Reload current translation
+DIRECTORY,Directory,Directory

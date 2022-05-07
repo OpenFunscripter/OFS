@@ -551,6 +551,22 @@ void OpenFunscripter::registerBindings()
             0
         );
 
+        auto& reload_translation = group.bindings.emplace_back(
+            "reload_translation_csv",
+            Tr::ACTION_RELOAD_TRANSLATION,
+            true,
+            [&](void*)
+            {
+                if(!settings->data().language_csv.empty())
+                {
+                    if(OFS_Translator::ptr->LoadTranslation(settings->data().language_csv.c_str()))
+                    {
+                        OFS_DynFontAtlas::AddTranslationText();
+                    }
+                }
+            }
+        );
+
         keybinds.registerBinding(std::move(group));
     }
     {
