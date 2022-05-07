@@ -76,9 +76,7 @@ BINDINGS,Bindings,Bindings
 BINDING_TXT1,"You can use CTRL, SHIFT & ALT as modifiers.","You can use CTRL, SHIFT & ALT as modifiers."
 BINDING_TXT2,Only controller buttons can be bound. The DPAD directions count as a buttons.,Only controller buttons can be bound. The DPAD directions count as a buttons.
 BINDING_TXT3,The configuration gets saved everytime a change is made.,The configuration gets saved everytime a change is made.
-BINDING_TXT4,"Config: ""data/keybindings.json""
-If you wan't to revert to defaults delete the config.","Config: ""data/keybindings.json""
-If you wan't to revert to defaults delete the config."
+BINDING_TXT4,"If you wan't to revert to the defaults, you'll have to delete the config.","If you wan't to revert to the defaults, you'll have to delete the config."
 FILTER,Filter,Filter
 MODIFIERS,Modifiers,Modifiers
 ACTION,Action,Action
@@ -500,3 +498,7 @@ RANGE_EXTENDER_TXT,Select atleast 5 actions to extend.,Select atleast 5 actions 
 EPSILON,Epsilon,Epsilon
 SIMPLIFY_TXT,Select atleast 5 actions to simplify.,Select atleast 5 actions to simplify.
 SPECIAL_FUNCTIONS,Special functions,Special functions
+MEMORY_USAGE,Memory usage,Memory usage
+UPDATE,Update,Update
+SLOWEST,slowest,slowest
+LANGUAGE,Language,Language

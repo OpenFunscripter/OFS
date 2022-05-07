@@ -94,6 +94,13 @@ bool OpenFunscripter::imguiSetup() noexcept
 
     OFS_DynFontAtlas::FontOverride = settings->data().font_override;
     OFS_DynFontAtlas::Init();
+    OFS_Translator::Init();
+    if(!settings->data().language_csv.empty()) {
+        if(OFS_Translator::ptr->LoadTranslation(settings->data().language_csv.c_str()))
+        {
+            OFS_DynFontAtlas::AddTranslationText();
+        }
+    }
 
     {
 		// hook into paste for the dynamic atlas
@@ -1932,6 +1939,9 @@ int OpenFunscripter::run() noexcept
 
 void OpenFunscripter::shutdown() noexcept
 {
+    OFS_DynFontAtlas::Shutdown();
+    OFS_Translator::Shutdown();
+    
     IO->Shutdown();
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL2_Shutdown();

@@ -1,4 +1,5 @@
 #include "OFS_DynamicFontAtlas.h"
+#include "OFS_Localization.h"
 #include "OFS_Util.h"
 #include "OFS_Profiling.h"
 #include "OFS_GL.h"
@@ -10,6 +11,7 @@
 #include <vector>
 
 OFS_DynFontAtlas* OFS_DynFontAtlas::ptr = nullptr;
+
 
 ImFont* OFS_DynFontAtlas::DefaultFont = nullptr;
 ImFont* OFS_DynFontAtlas::DefaultFont2 = nullptr;
@@ -51,7 +53,22 @@ OFS_DynFontAtlas::OFS_DynFontAtlas() noexcept
 	builder.AddText(ICON_UNLINK );
 	builder.AddText(ICON_COPY );
 
+	for(auto defaultStr : OFS_DefaultStrings::Default)
+	{
+		builder.AddText(defaultStr);
+	}
+
 	LastUsedChars.resize(builder.UsedChars.Size);
+}
+
+void OFS_DynFontAtlas::AddTranslationText() noexcept
+{
+	auto atlas = OFS_DynFontAtlas::ptr;
+	for(auto defaultStr : OFS_Translator::ptr->Translation)
+	{
+		atlas->builder.AddText(defaultStr);
+	}
+	atlas->checkIfRebuildNeeded = true;
 }
 
 static ImFont* AddFontFromFile(OFS_DynFontAtlas* builder, const char* path, float fontSize, bool merge) noexcept

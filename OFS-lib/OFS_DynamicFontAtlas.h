@@ -19,6 +19,7 @@ struct OFS_DynFontAtlas
 
 	OFS_DynFontAtlas() noexcept;
 
+
 	static OFS_DynFontAtlas* ptr;
 	static void Init() noexcept {
 		if(ptr != nullptr) return;
@@ -28,6 +29,7 @@ struct OFS_DynFontAtlas
 	static void Shutdown() noexcept {
 		if(ptr) {
 			delete ptr;
+			ptr = nullptr;
 		}
 	}
 
@@ -43,6 +45,7 @@ struct OFS_DynFontAtlas
 		ptr->builder.AddText(displayedText);
 		ptr->checkIfRebuildNeeded = true;
 	}
+	static void AddTranslationText() noexcept;
 
 	inline static bool NeedsRebuild() noexcept { return ptr->checkIfRebuildNeeded || ptr->forceRebuild; }
 	static void RebuildFont(float fontSize) noexcept;

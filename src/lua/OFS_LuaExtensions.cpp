@@ -1435,11 +1435,11 @@ void OFS_LuaExtensions::ShowExtensions() noexcept
 			ImGui::Separator();
 			std::chrono::duration<float> duration = std::chrono::high_resolution_clock::now() - startTime;
 			if (duration.count() > ext.MaxGuiTime) ext.MaxGuiTime = duration.count();
-			ImGui::Text("Memory usage: %s", Util::FormatBytes(ext.L->l_G->GCestimate));
-			ImGui::Text("Update: %f ms", ext.UpdateTime * 1000.f);
-			ImGui::Text("Update (slowest): %f ms", ext.MaxUpdateTime * 1000.f);
+			ImGui::Text("%s: %s", TR(MEMORY_USAGE), Util::FormatBytes(ext.L->l_G->GCestimate));
+			ImGui::Text("%s: %f ms", TR(UPDATE), ext.UpdateTime * 1000.f);
+			ImGui::Text("%s (%s): %f ms", TR(UPDATE), TR(SLOWEST), ext.MaxUpdateTime * 1000.f);
 			ImGui::Text("GUI: %f ms", duration.count() * 1000.f);
-			ImGui::Text("GUI (slowest): %f ms", ext.MaxGuiTime * 1000.f);
+			ImGui::Text("GUI (%s): %f ms", TR(SLOWEST), ext.MaxGuiTime * 1000.f);
 			#ifndef NDEBUG
 			ImGui::Separator();
 			ImGui::Text("Stack size: %lld bytes", (intptr_t)((intptr_t)ext.L->top - (intptr_t)ext.L->stack));

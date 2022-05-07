@@ -1,6 +1,7 @@
 #include "OFS_Settings.h"
 #include "OFS_Util.h"
 #include "OpenFunscripter.h"
+#include "OFS_Localization.h"
 
 #include "OFS_Serialization.h"
 #include "OFS_ImGui.h"
@@ -118,6 +119,38 @@ bool OFS_Settings::ShowPreferenceWindow() noexcept
 							app->LoadOverrideFont(app->settings->data().font_override);
 							}, nullptr);
 						save = true;
+					}
+					if(ImGui::BeginCombo(TR_ID("LANGUAGE", Tr::LANGUAGE), data().language_csv.empty() ? "English" : data().language_csv.c_str()))
+					{
+						for(auto& file : translationFiles)
+						{
+							if(ImGui::Selectable(file.c_str(), file == data().language_csv))
+							{
+								if(OFS_Translator::ptr->LoadTranslation(file.c_str()))
+								{
+									data().language_csv = file;
+									OFS_DynFontAtlas::AddTranslationText();
+								}
+							}
+						}
+						ImGui::EndCombo();
+					}
+					if(ImGui::IsItemClicked(ImGuiMouseButton_Left))
+					{
+						translationFiles.clear();
+						std::error_code ec;
+						std::filesystem::directory_iterator dirIt(Util::Prefpath(OFS_Translator::TranslationDir), ec);
+						for (auto&& pIt : dirIt) {
+							if(pIt.path().extension() == ".csv")
+							{
+								translationFiles.emplace_back(pIt.path().filename().u8string());
+							}
+						}
+					}
+					ImGui::SameLine();
+					if(ImGui::Button(TR(RESET))) {
+						data().language_csv = std::string();
+						OFS_Translator::ptr->LoadDefaults();
 					}
 					ImGui::EndTabItem();
 				}

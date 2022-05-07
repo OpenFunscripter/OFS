@@ -18,6 +18,8 @@ enum ColIdx : uint32_t
 constexpr const char* HeaderHead = R"(#pragma once
 #include <cstdint>
 #include <array>
+#include <unordered_map>
+#include <string>
 
 enum class Tr : uint32_t
 {
@@ -29,23 +31,32 @@ constexpr const char* HeaderFooter = R"(
 struct OFS_DefaultStrings
 {
     static std::array<const char*, static_cast<uint32_t>(Tr::MAX_STRING_COUNT)> Default;
+    static std::unordered_map<std::string, Tr> KeyMapping;
 };
 )";
 
 
-constexpr const char* SrcHead = R"(#include "OFS_StringsGenerated.h"
+constexpr const char* SrcArrayHead = R"(#include "OFS_StringsGenerated.h"
 std::array<const char*, static_cast<uint32_t>(Tr::MAX_STRING_COUNT)> OFS_DefaultStrings::Default =
 {
     )";
 
-constexpr const char* SrcFooter = R"(
+constexpr const char* SrcArrayFooter = R"(
+};
+)";
+
+constexpr const char* SrcMappingHead = R"(
+std::unordered_map<std::string, Tr> OFS_DefaultStrings::KeyMapping =
+{
+)";
+constexpr const char* SrcMappingFooter = R"(
 };
 )";
 
 static void write_src_file(FILE* src, rapidcsv::Document& doc) noexcept
 {
-    fwrite(SrcHead, 1, strlen(SrcHead), src);
-
+    // write the array
+    fwrite(SrcArrayHead, 1, strlen(SrcArrayHead), src);
     auto row = doc.GetRow<std::string>(0);
     fwrite("R\"(", 1, sizeof("R\"(") - 1, src);
     fwrite(row[ColIdx::Default].data(), 1, row[ColIdx::Default].size(), src);
@@ -58,8 +69,26 @@ static void write_src_file(FILE* src, rapidcsv::Document& doc) noexcept
         fwrite(row[ColIdx::Default].data(), 1, row[ColIdx::Default].size(), src);
         fwrite(")\",\n\t", 1, sizeof(")\",\n\t") - 1, src);
     }
+    fwrite(SrcArrayFooter, 1, strlen(SrcArrayFooter), src);
 
-    fwrite(SrcFooter, 1, strlen(SrcFooter), src);
+    // write the key to enum hashmap
+    fwrite(SrcMappingHead, 1, strlen(SrcMappingHead), src);
+    row = doc.GetRow<std::string>(0);
+    fwrite("\t{\"", 1, sizeof("\t{\"")-1, src);
+    fwrite(row[0].data(), 1, row[0].size(), src);
+    fwrite("\", Tr::", 1, sizeof("\", Tr::")-1, src);
+    fwrite(row[0].data(), 1, row[0].size(), src);
+    fwrite("},\n", 1, sizeof("},\n")-1, src);
+    for(size_t i=1; i < doc.GetRowCount(); i += 1)
+    {
+        row = doc.GetRow<std::string>(i);
+        fwrite("\t{\"", 1, sizeof("\t{\"")-1, src);
+        fwrite(row[0].data(), 1, row[0].size(), src);
+        fwrite("\", Tr::", 1, sizeof("\", Tr::")-1, src);
+        fwrite(row[0].data(), 1, row[0].size(), src);
+        fwrite("},\n", 1, sizeof("},\n")-1, src);
+    }
+    fwrite(SrcMappingFooter, 1, strlen(SrcMappingFooter), src);
     fclose(src);
 }
 
@@ -105,7 +134,7 @@ int main(int argc, char* argv[])
     {
         rapidcsv::Document doc(csvFile, 
             rapidcsv::LabelParams(),
-            rapidcsv::SeparatorParams(',', true, true, true),
+            rapidcsv::SeparatorParams(',', false, true, true),
             rapidcsv::ConverterParams(),
             rapidcsv::LineReaderParams()
         );
