@@ -486,7 +486,7 @@ void OFS_Project::ExportClips(const std::string& outputDirectory) noexcept
 
 	auto task = std::make_unique<BlockingTaskData>();
 	task->TaskThreadFunc = blockingTask;
-	task->TaskDescription = "Exporting clips";
+	task->TaskDescription = TR(TASK_EXPORTING_CLIPS);
 	task->User = taskData;
 	OpenFunscripter::ptr->blockingTask.DoTask(std::move(task));
 }
@@ -505,23 +505,23 @@ bool OFS_Project::HasUnsavedEdits() noexcept
 void OFS_Project::ShowProjectWindow(bool* open) noexcept
 {
 	if (*open) {
-		ImGui::OpenPopup("Project");
+		ImGui::OpenPopup(TR_ID("PROJECT", Tr::PROJECT));
 	}
 
-	if (ImGui::BeginPopupModal("Project", open, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginPopupModal(TR_ID("PROJECT", Tr::PROJECT), open, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		OFS_PROFILE(__FUNCTION__);
 		auto app = OpenFunscripter::ptr;
 		ImGui::PushID(Metadata.title.c_str());
 		
-		ImGui::Text("Media: %s", MediaPath.c_str()); 
+		ImGui::Text("%s: %s", TR(MEDIA), MediaPath.c_str()); 
 		OFS::Tooltip(MediaPath.c_str());
 		ImGui::Separator();
 		ImGui::Spacing();
-		ImGui::TextDisabled("Scripts");
+		ImGui::TextDisabled(TR(SCRIPTS));
 		for (auto& script : Funscripts) {
 			if (ImGui::Button(script->Title.c_str(), ImVec2(-1.f, 0.f))) {
-				Util::SaveFileDialog("Change default location",
+				Util::SaveFileDialog(TR(CHANGE_DEFAULT_LOCATION),
 					script->Path(),
 					[&](auto result) {
 						if (!result.files.empty()) {
@@ -532,7 +532,7 @@ void OFS_Project::ShowProjectWindow(bool* open) noexcept
 						}
 					});
 			}
-			OFS::Tooltip("Change location");
+			OFS::Tooltip(TR(CHANGE_LOCATION));
 		}
 		ImGui::PopID();
 		ImGui::EndPopup();

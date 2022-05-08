@@ -72,7 +72,7 @@ public:
 		RedoStack.reserve(OFS::MaxScriptStateInMemory);
 	}
 
-	static constexpr const char* UndoHistoryId = "Undo/Redo history";
+	static constexpr const char* WindowId = "UNDO_REDO_HISTORY";
 	void ShowUndoRedoHistory(bool* open) noexcept;
 
 	void Snapshot(StateType type, 

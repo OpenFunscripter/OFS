@@ -135,7 +135,7 @@ void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::ve
     float ratio = viewport->Size.x / viewport->Size.y;
     projection = glm::ortho(-Zoom*ratio, Zoom*ratio, -Zoom, Zoom, 0.1f, 100.f);
     
-    ImGui::Begin("Simulator 3D", open, ImGuiWindowFlags_None);
+    ImGui::Begin(TR_ID("SIMULATOR_3D", Tr::SIMULATOR_3D), open, ImGuiWindowFlags_None);
 
     if (Editing == IsEditing::No) {
         if (posIndex >= 0 && posIndex < loadedScriptsCount) {
@@ -182,12 +182,12 @@ void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::ve
 
     if (ImGui::BeginTabBar("##3D tab bar", ImGuiTabBarFlags_None))
     {
-        if (ImGui::BeginTabItem("Configuration")) {
-            if (ImGui::Button("Reset", ImVec2(-1.f, 0.f))) {
+        if (ImGui::BeginTabItem(TR(CONFIGURATION))) {
+            if (ImGui::Button(TR(RESET), ImVec2(-1.f, 0.f))) {
                 reset();
             }
 
-            if (ImGui::Button("Move", ImVec2(-1.f, 0.f))) { TranslateEnabled = !TranslateEnabled; }
+            if (ImGui::Button(TR(MOVE), ImVec2(-1.f, 0.f))) { TranslateEnabled = !TranslateEnabled; }
             glm::mat3 rot(1.f);
             glm::vec3 scale(1.f);
 
@@ -208,24 +208,24 @@ void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::ve
                 }
             }
 
-            ImGui::SliderFloat("Distance", &Zoom, 0.1f, MaxZoom);
-            ImGui::SliderAngle("Global yaw", &globalYaw, -180.f, 180.f);
-            ImGui::SliderAngle("Global pitch", &globalPitch, -90.f, 90.f);
+            ImGui::SliderFloat(TR(DISTANCE), &Zoom, 0.1f, MaxZoom);
+            ImGui::SliderAngle(TR(GLOBAL_YAW), &globalYaw, -180.f, 180.f);
+            ImGui::SliderAngle(TR(GLOBAL_PITCH), &globalPitch, -90.f, 90.f);
 
-            if (ImGui::CollapsingHeader("Settings")) {
-                ImGui::ColorEdit4("Box", &boxColor.Value.x);
-                ImGui::ColorEdit4("Container", &containerColor.Value.x);
-                ImGui::ColorEdit4("Twist", &twistBoxColor.Value.x);
+            if (ImGui::CollapsingHeader(TR(SETTINGS))) {
+                ImGui::ColorEdit4(TR(BOX), &boxColor.Value.x);
+                ImGui::ColorEdit4(TR(CONTAINER), &containerColor.Value.x);
+                ImGui::ColorEdit4(TR(TWIST), &twistBoxColor.Value.x);
 
-                ImGui::InputFloat("Roll deg", &rollRange);
-                ImGui::InputFloat("Pitch deg", &pitchRange);
-                ImGui::InputFloat("Twist deg", &twistRange);
+                ImGui::InputFloat(TR(ROLL_DEG), &rollRange);
+                ImGui::InputFloat(TR(PITCH_DEG), &pitchRange);
+                ImGui::InputFloat(TR(TWIST_DEG), &twistRange);
             }
 
             auto ScriptCombo = [](auto Id, int32_t* index, uint32_t loadedScriptsCount, const auto& scripts) noexcept
             {
-                if (ImGui::BeginCombo(Id, *index >= 0 && *index < loadedScriptsCount ? scripts[*index]->Title.c_str() : "None", ImGuiComboFlags_PopupAlignLeft)) {
-                    if (ImGui::Selectable("None", *index < 0) || ImGui::IsItemHovered()) {
+                if (ImGui::BeginCombo(Id, *index >= 0 && *index < loadedScriptsCount ? scripts[*index]->Title.c_str() : TR(NONE), ImGuiComboFlags_PopupAlignLeft)) {
+                    if (ImGui::Selectable(TR(NONE), *index < 0) || ImGui::IsItemHovered()) {
                         *index = -1;
                     }
                     for (int i = 0; i < loadedScriptsCount; i++) {
@@ -236,13 +236,13 @@ void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::ve
                     ImGui::EndCombo();
                 }
             };
-            ScriptCombo("Position", &posIndex, loadedScriptsCount, scripts);
-            ScriptCombo("Roll", &rollIndex, loadedScriptsCount, scripts);
-            ScriptCombo("Pitch", &pitchIndex, loadedScriptsCount, scripts);
-            ScriptCombo("Twist", &twistIndex, loadedScriptsCount, scripts);
+            ScriptCombo(TR(POSITION), &posIndex, loadedScriptsCount, scripts);
+            ScriptCombo(TR(ROLL), &rollIndex, loadedScriptsCount, scripts);
+            ScriptCombo(TR(PITCH), &pitchIndex, loadedScriptsCount, scripts);
+            ScriptCombo(TR(TWIST), &twistIndex, loadedScriptsCount, scripts);
             ImGui::EndTabItem();
         }
-        if (ImGui::BeginTabItem("Edit")) {
+        if (ImGui::BeginTabItem(TR(EDIT))) {
             auto addEditAction = [](const auto& script, float value, float min, float max) noexcept
             {
                 auto app = OpenFunscripter::ptr;
@@ -282,22 +282,22 @@ void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::ve
 
             bool editOccured = false;
             if (rollIndex >= 0 && rollIndex < loadedScriptsCount) {
-                editOccured = editAxisSlider("Roll", 
+                editOccured = editAxisSlider(TR(ROLL), 
                     &roll, -(rollRange / 2.f), (rollRange / 2.f), 
                     &Editing,  &EditingIdx, rollIndex, EditingScrollMultiplier) || editOccured;
             }
             if (pitchIndex >= 0 && pitchIndex < loadedScriptsCount) {
-                editOccured = editAxisSlider("Pitch", 
+                editOccured = editAxisSlider(TR(PITCH), 
                     &pitch, -(pitchRange / 2.f), (pitchRange / 2.f), 
                     &Editing, &EditingIdx, pitchIndex, EditingScrollMultiplier) || editOccured;
             }
             if (twistIndex >= 0 && twistIndex < loadedScriptsCount) {
-                editOccured = editAxisSlider("Yaw", 
+                editOccured = editAxisSlider(TR(YAW), 
                     &yaw, -(twistRange / 2.f), (twistRange / 2.f), 
                     &Editing, &EditingIdx, twistIndex, EditingScrollMultiplier) || editOccured;
             }
 
-            if (ImGui::Button("Insert current position", ImVec2(-1.f, 0.f)) || editOccured) {
+            if (ImGui::Button(TR(INSERT_CURRENT_POSITION), ImVec2(-1.f, 0.f)) || editOccured) {
                 auto app = OpenFunscripter::ptr;
                 app->undoSystem->Snapshot(StateType::ADD_EDIT_ACTION);
                 if (rollIndex >= 0 && rollIndex < loadedScriptsCount) {
@@ -313,10 +313,10 @@ void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::ve
 
             ImGui::Separator();
 
-            if (ImGui::InputFloat("Scroll (%)", &EditingScrollMultiplier, 1.f, 1.f, "%.3f", ImGuiInputTextFlags_None)) {
+            if (ImGui::InputFloat(TR(SCROLL_PERCENT), &EditingScrollMultiplier, 1.f, 1.f, "%.3f", ImGuiInputTextFlags_None)) {
                 EditingScrollMultiplier = Util::Clamp(EditingScrollMultiplier, 1.f, 20.f);
             }
-            OFS::Tooltip("You can use the mousewheel on the sliders above.");
+            OFS::Tooltip(TR(SCROLL_PERCENT_TOOLTIP));
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();

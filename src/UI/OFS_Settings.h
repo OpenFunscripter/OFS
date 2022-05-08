@@ -37,6 +37,7 @@ private:
 		std::string config_version = CurrentSettingsVersion;
 		std::string last_path;
 		std::string font_override;
+		std::string language_csv;
 
 		int32_t default_font_size = 18;
 		int32_t fast_step_amount = 6;
@@ -120,6 +121,7 @@ private:
 			OFS_REFLECT_NAMED("SplineMode", BaseOverlay::SplineMode, ar);
 			OFS_REFLECT_NAMED("SyncLineEnable", BaseOverlay::SyncLineEnable, ar);
 			OFS_REFLECT(defaultSimulatorConfig, ar);
+			OFS_REFLECT(language_csv, ar);
 		}
 	} scripterSettings;
 
@@ -128,6 +130,8 @@ private:
 	const char* ConfigStr = "config";
 	nlohmann::json configObj;
 	nlohmann::json& config() noexcept { return configObj[ConfigStr]; }
+
+	std::vector<std::string> translationFiles;
 
 	void save_config();
 	void load_config();

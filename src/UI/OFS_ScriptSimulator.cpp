@@ -114,7 +114,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
         }
 
         if (EnableVanilla) {
-            ImGui::Begin(SimulatorId, open, 
+            ImGui::Begin(TR_ID(WindowId, Tr::SIMULATOR), open, 
                 ImGuiWindowFlags_NoBackground
                 | ImGuiWindowFlags_NoDocking);
             ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
@@ -128,7 +128,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
             return;
         }
 
-        ImGui::Begin(SimulatorId, open, ImGuiWindowFlags_None);
+        ImGui::Begin(TR_ID(WindowId, Tr::SIMULATOR), open, ImGuiWindowFlags_None);
         char tmp[4];
         auto frontDraw = ImGui::GetForegroundDrawList();
         ImGuiContext* g = ImGui::GetCurrentContext();
@@ -137,11 +137,11 @@ void ScriptSimulator::ShowSimulator(bool* open)
         ImVec2 canvasSize = ImGui::GetContentRegionAvail();
         auto& style = ImGui::GetStyle();
         
-        ImGui::Checkbox(simulator.LockedPosition ? "Lock " ICON_LINK : "Lock " ICON_UNLINK, &simulator.LockedPosition);
+        ImGui::Checkbox(FMT("%s %s", TR(LOCK), simulator.LockedPosition ? ICON_LINK : ICON_UNLINK), &simulator.LockedPosition);
         ImGui::Columns(2, 0, false);
-        if (ImGui::Button("Center", ImVec2(-1.f, 0.f))) { CenterSimulator(); }
+        if (ImGui::Button(TR(CENTER), ImVec2(-1.f, 0.f))) { CenterSimulator(); }
         ImGui::NextColumn();
-        if (ImGui::Button("Invert", ImVec2(-1.f, 0.f))) { 
+        if (ImGui::Button(TR(INVERT), ImVec2(-1.f, 0.f))) { 
             auto tmp = simulator.P1;
             simulator.P1 = simulator.P2;
             simulator.P2 = tmp; 
@@ -149,14 +149,13 @@ void ScriptSimulator::ShowSimulator(bool* open)
         ImGui::Columns(1);
 
         ImGui::Columns(2, 0, false);
-        if (ImGui::Button("Load config", ImVec2(-1.f, 0.f))) {
+        if (ImGui::Button(TR(LOAD_CONFIG), ImVec2(-1.f, 0.f))) {
             simulator = app->settings->data().defaultSimulatorConfig;
         }
         ImGui::NextColumn();
-        if (ImGui::Button("Save config", ImVec2(-1.f, 0.f))) { 
-            Util::YesNoCancelDialog("Save simulator configuration",
-            "Do you want do save the current config?\n"
-            "This will override any existing default config.", 
+        if (ImGui::Button(TR(SAVE_CONFIG), ImVec2(-1.f, 0.f))) { 
+            Util::YesNoCancelDialog(TR(SAVE_SIMULATOR_CONFIG),
+                TR(SAVE_SIMULATOR_CONFIG_MSG), 
                 [this](Util::YesNoCancel result) {
                     if(result == Util::YesNoCancel::Yes) {
                         auto app = OpenFunscripter::ptr;
@@ -166,39 +165,39 @@ void ScriptSimulator::ShowSimulator(bool* open)
             );
         }
         ImGui::Columns(1);
-        if (ImGui::CollapsingHeader("Configuration", ImGuiTreeNodeFlags_SpanAvailWidth)) {
-            ImGui::ColorEdit4("Text", &simulator.Text.Value.x);
-            ImGui::ColorEdit4("Border", &simulator.Border.Value.x);
-            ImGui::ColorEdit4("Front", &simulator.Front.Value.x);
-            ImGui::ColorEdit4("Back", &simulator.Back.Value.x);
-            ImGui::ColorEdit4("Indicator", &simulator.Indicator.Value.x);
-            ImGui::ColorEdit4("Lines", &simulator.ExtraLines.Value.x);
+        if (ImGui::CollapsingHeader(TR(CONFIGURATION), ImGuiTreeNodeFlags_SpanAvailWidth)) {
+            ImGui::ColorEdit4(TR(TEXT), &simulator.Text.Value.x);
+            ImGui::ColorEdit4(TR(BORDER), &simulator.Border.Value.x);
+            ImGui::ColorEdit4(TR(FRONT), &simulator.Front.Value.x);
+            ImGui::ColorEdit4(TR(BACK), &simulator.Back.Value.x);
+            ImGui::ColorEdit4(TR(INDICATOR), &simulator.Indicator.Value.x);
+            ImGui::ColorEdit4(TR(LINES), &simulator.ExtraLines.Value.x);
 
-            if (ImGui::DragFloat("Width", &simulator.Width)) {
+            if (ImGui::DragFloat(TR(WIDTH), &simulator.Width)) {
                 simulator.Width = Util::Clamp<float>(simulator.Width, 0.f, 1000.f);
             }
-            if (ImGui::DragFloat("Border", &simulator.BorderWidth, 0.5f)) {
+            if (ImGui::DragFloat(TR(BORDER), &simulator.BorderWidth, 0.5f)) {
                 simulator.BorderWidth = Util::Clamp<float>(simulator.BorderWidth, 0.f, 1000.f);
             }
-            ImGui::DragFloat("Line", &simulator.LineWidth, 0.5f);
-            if (ImGui::SliderFloat("Opacity", &simulator.GlobalOpacity, 0.f, 1.f)) {
+            ImGui::DragFloat(TR(LINE), &simulator.LineWidth, 0.5f);
+            if (ImGui::SliderFloat(TR(OPACITY), &simulator.GlobalOpacity, 0.f, 1.f)) {
                 simulator.GlobalOpacity = Util::Clamp<float>(simulator.GlobalOpacity, 0.f, 1.f);
             }
 
-            if (ImGui::DragFloat("Lines2", &simulator.ExtraLineWidth, 0.5f)) {
+            if (ImGui::DragFloat(FMT("%s2", TR(LINE)), &simulator.ExtraLineWidth, 0.5f)) {
                 simulator.ExtraLineWidth = Util::Clamp<float>(simulator.ExtraLineWidth, 0.5f, 1000.f);
             }
 
-            ImGui::Checkbox("Indicators", &simulator.EnableIndicators);
+            ImGui::Checkbox(TR(INDICATOR), &simulator.EnableIndicators);
             ImGui::SameLine(); 
-            ImGui::Checkbox("Lines", &simulator.EnableHeightLines);
-            if (ImGui::InputInt("Extra lines", &simulator.ExtraLinesCount, 1, 2)) {
+            ImGui::Checkbox(TR(LINES), &simulator.EnableHeightLines);
+            if (ImGui::InputInt(TR(EXTRA_LINES), &simulator.ExtraLinesCount, 1, 2)) {
                 simulator.ExtraLinesCount = Util::Clamp(simulator.ExtraLinesCount, 0, 10);
             }
-            ImGui::Checkbox("Show position", &simulator.EnablePosition);
-            ImGui::Checkbox("Vanilla", &EnableVanilla);
-            OFS::Tooltip("The original simulator from day one.");
-            if(ImGui::Button("Reset to defaults", ImVec2(-1.f, 0.f))) { 
+            ImGui::Checkbox(TR(SHOW_POSITION), &simulator.EnablePosition);
+            ImGui::Checkbox(TR(VANILLA), &EnableVanilla);
+            OFS::Tooltip(TR(VANILLA_TOOLTIP));
+            if(ImGui::Button(TR(RESET_TO_DEFAULTS), ImVec2(-1.f, 0.f))) { 
                 simulator = SimulatorSettings();
             }
         }

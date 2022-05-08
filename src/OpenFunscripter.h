@@ -19,6 +19,7 @@
 #include "OFS_BlockingTask.h"
 #include "OFS_DynamicFontAtlas.h"
 #include "OFS_LuaExtensions.h"
+#include "OFS_Localization.h"
 
 #include <memory>
 #include <chrono>
@@ -195,8 +196,8 @@ template<typename OnCloseAction>
 inline void OpenFunscripter::closeWithoutSavingDialog(OnCloseAction&& action) noexcept
 {
 	if (LoadedProject->HasUnsavedEdits()) {
-		Util::YesNoCancelDialog("Close without saving?",
-			"The current project has unsaved changes do you want to close it without saving?",
+		Util::YesNoCancelDialog(TR(CLOSE_WITHOUT_SAVING),
+			TR(CLOSE_WITHOUT_SAVING_MSG),
 			[this, action](Util::YesNoCancel result) {
 				if (result == Util::YesNoCancel::Yes) {
 					closeProject(true);

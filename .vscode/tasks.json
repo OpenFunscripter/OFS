@@ -13,6 +13,17 @@
                 "--target",
                 "OpenFunscripter"
             ]
+        },
+        {
+            "label": "buildLocalization",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "build/",
+                "--target",
+                "gen_localization"
+            ]
         }
     ]
 }

@@ -126,7 +126,7 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
             scrubScale = scrubScale - 0.75f;
             scrubScale = Util::Clamp(scrubScale, 0.005f, 1.f);
             ImGui::BeginTooltipEx(ImGuiWindowFlags_None, ImGuiTooltipFlags_None);
-            ImGui::Text("Speed: x%0.3f", scrubScale);
+            ImGui::Text("%s: x%0.3f", TR(SPEED), scrubScale);
             ImGui::EndTooltip();
         }
 
@@ -159,7 +159,7 @@ void OFS_VideoplayerControls::DrawTimeline(bool* open, TimelineCustomDrawFunc&& 
     if (open != nullptr && !*open) return;
     OFS_PROFILE(__FUNCTION__);
     FUN_ASSERT(player != nullptr, "nullptr");
-    ImGui::Begin(PlayerTimeId, open);
+    ImGui::Begin(TR_ID(TimeId, Tr::TIME), open);
 
     {
         constexpr float speedCalcUpdateFrequency = 1.0f;
@@ -220,12 +220,12 @@ void OFS_VideoplayerControls::DrawTimeline(bool* open, TimelineCustomDrawFunc&& 
         "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
         player->setSpeed(player->settings.playbackSpeed);
     }
-    OFS::Tooltip("Speed");
+    OFS::Tooltip(TR(SPEED));
 
     ImGui::Columns(1, 0, false);
 
     float position = player->getPosition();
-    if (DrawTimelineWidget("Timeline", &position, std::move(customDraw))) {
+    if (DrawTimelineWidget(TR_ID("TIMELINE", Tr::TIMELINE), &position, std::move(customDraw))) {
         if (!player->isPaused()) {
             hasSeeked = true;
         }
@@ -245,7 +245,7 @@ void OFS_VideoplayerControls::DrawControls(bool* open) noexcept
     OFS_PROFILE(__FUNCTION__);
     FUN_ASSERT(player != nullptr, "nullptr");
 
-    ImGui::Begin(PlayerControlId, open);
+    ImGui::Begin(TR_ID(ControlId, Tr::CONTROLS), open);
 
     constexpr float seekTime = 3.f;
     // Playback controls

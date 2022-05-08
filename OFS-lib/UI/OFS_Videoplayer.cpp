@@ -5,6 +5,7 @@
 #include "stb_sprintf.h"
 #include "stb_image_write.h"
 #include "OFS_GL.h"
+#include "OFS_Localization.h"
 
 #include "EventSystem.h"
 #include "OFS_ImGui.h"
@@ -161,14 +162,14 @@ void VideoplayerWindow::MpvEvents(SDL_Event& ev) noexcept
 			case MpvAbLoopA:
 			{
 				MpvData.abLoopA = *(double*)prop->data;
-				showText("Loop A set.");
+				showText(TR(LOOP_A_SET));
 				LoopState = LoopEnum::A_set;
 				break;
 			}
 			case MpvAbLoopB:
 			{
 				MpvData.abLoopB = *(double*)prop->data;
-				showText("Loop B set.");
+				showText(TR(LOOP_B_SET));
 				LoopState = LoopEnum::B_set;
 				break;
 			}
@@ -545,15 +546,7 @@ void VideoplayerWindow::videoRightClickMenu() noexcept
 {
 	if (ImGui::BeginPopupContextItem())
 	{
-		ImGui::MenuItem("Lock", NULL, &settings.LockedPosition);
-
-
-#ifndef NDEBUG
-		if (ImGui::BeginMenu("Empty")) {
-			ImGui::TextDisabled("it really do be empty");
-			ImGui::EndMenu();
-		}
-#endif
+		ImGui::MenuItem(TR(LOCK), NULL, &settings.LockedPosition);
 		ImGui::EndPopup();
 	}
 }
@@ -585,7 +578,7 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open, bool* draw_video) noexcept
 	if (redrawVideo) { renderToTexture(); }
 	if (open != nullptr && !*open) return;
 	
-	ImGui::Begin(PlayerId, open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
+	ImGui::Begin(TR_ID("VIDEOPLAYER", Tr::VIDEOPLAYER), open, ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
 
 	if (!MpvData.videoLoaded) {
 		ImGui::End();
@@ -622,7 +615,7 @@ void VideoplayerWindow::DrawVideoPlayer(bool* open, bool* draw_video) noexcept
 	}
 	else
 	{
-		if (ImGui::Button("Click to enable video")) {
+		if (ImGui::Button(TR(CLICK_TO_ENABLE_VIDEO))) {
 			*draw_video = true;
 		}
 	}
@@ -774,7 +767,7 @@ void VideoplayerWindow::cycleLoopAB() noexcept
 	if (LoopState == LoopEnum::B_set) {
 		MpvData.abLoopA = 0.f;
 		MpvData.abLoopB = 0.f;
-		showText("Loop cleared.");
+		showText(TR(LOOP_CLEARED));
 		LoopState = LoopEnum::Clear;
 	}
 }

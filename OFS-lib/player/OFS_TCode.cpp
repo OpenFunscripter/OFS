@@ -3,6 +3,7 @@
 #include "SDL_thread.h"
 #include "OFS_ImGui.h"
 #include "OFS_Profiling.h"
+#include "OFS_Localization.h"
 
 #include "imgui.h"
 
@@ -86,8 +87,8 @@ void TCodePlayer::DrawWindow(bool* open, float currentTime) noexcept
     if (!*open) return;
     OFS_PROFILE(__FUNCTION__);
 
-    ImGui::Begin("T-Code", open, ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::Combo("Port", &current_port, [](void* data, int idx, const char** out_text) -> bool {
+    ImGui::Begin(TR_ID("T_CODE", Tr::T_CODE), open, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Combo(TR(PORT), &current_port, [](void* data, int idx, const char** out_text) -> bool {
         const char** port_list = (const char**)data;
         *out_text = ((sp_port*)port_list[idx])->description;
         return true;
@@ -113,11 +114,11 @@ void TCodePlayer::DrawWindow(bool* open, float currentTime) noexcept
         && port_list[0] != nullptr
         && current_port < port_count
         && port_list[current_port] != nullptr) {
-        if (ImGui::Button("Open port", ImVec2(-1.f, 0.f))) {
+        if (ImGui::Button(TR(OPEN_PORT), ImVec2(-1.f, 0.f))) {
             openPort(port_list[current_port]);
         }
     }
-    if (port != nullptr && ImGui::Button("Close port", ImVec2(-1.f, 0.f))) {
+    if (port != nullptr && ImGui::Button(TR(OPEN_PORT), ImVec2(-1.f, 0.f))) {
         sp_close(port);
         sp_free_port(port);
         port = nullptr;
@@ -125,7 +126,7 @@ void TCodePlayer::DrawWindow(bool* open, float currentTime) noexcept
 
     ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
 
-    if (ImGui::CollapsingHeader("Limits##ChannelLimits"))
+    if (ImGui::CollapsingHeader(TR_ID("ChannelLimits", Tr::LIMITS)))
     {
         auto limitsGui = [this](TChannel chan) noexcept {
             char buf[32];
@@ -137,7 +138,7 @@ void TCodePlayer::DrawWindow(bool* open, float currentTime) noexcept
             ImGui::DragIntRange2(buf,
                 &c.limits[0], &c.limits[1], 1,
                 TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue,
-                "Min: %d", "Max: %d", ImGuiSliderFlags_AlwaysClamp);
+                TR(MIN_INT_FMT), TR(MAX_INT_FMT), ImGuiSliderFlags_AlwaysClamp);
 
             ImGui::SameLine();
             ImGui::SetNextItemWidth(0.3f * availWidth);
@@ -145,7 +146,7 @@ void TCodePlayer::DrawWindow(bool* open, float currentTime) noexcept
             ImGui::Checkbox(buf, &c.Enabled);
         };
 
-        ImGui::TextUnformatted("Linear limits");
+        ImGui::TextUnformatted(TR(LINEAR_LIMITS));
         limitsGui(TChannel::L0);
         limitsGui(TChannel::L1);
         limitsGui(TChannel::L2);
@@ -153,34 +154,34 @@ void TCodePlayer::DrawWindow(bool* open, float currentTime) noexcept
 
         ImGui::Separator();
 
-        ImGui::TextUnformatted("Rotation limits");
+        ImGui::TextUnformatted(TR(ROTATION_LIMITS));
         limitsGui(TChannel::R0);
         limitsGui(TChannel::R1);
         limitsGui(TChannel::R2);
 
         ImGui::Separator();
 
-        ImGui::TextUnformatted("Vibration limits");
+        ImGui::TextUnformatted(TR(VIBRATION_LIMITS));
         limitsGui(TChannel::V0);
         limitsGui(TChannel::V1);
         limitsGui(TChannel::V2);
 
         ImGui::Separator();
     }
-    if (ImGui::CollapsingHeader("Global settings"))
+    if (ImGui::CollapsingHeader(TR(GLOBAL_SETTINGS)))
     {
-        ImGui::InputFloat("Delay", (float*)&delay, 0.01f, 0.01f); OFS::Tooltip("Negative: Backward in time.\nPositive: Forward in time.");
-        ImGui::SliderInt("Tickrate (Hz)", (int32_t*)&tickrate, 60, 300, "%d", ImGuiSliderFlags_AlwaysClamp); 
-        ImGui::Checkbox("Spline", &TCodeChannel::SplineMode);
-        OFS::Tooltip("Smooth motion instead of linear.");
-        ImGui::SameLine(); ImGui::Checkbox("Remap", &TCodeChannel::RemapToFullRange);
-        OFS::Tooltip("Remap script to use the full range.\ni.e. scripts using the range 10 to 90 become 0 to 100");
+        ImGui::InputFloat(TR(DELAY), (float*)&delay, 0.01f, 0.01f); OFS::Tooltip(TR(DELAY_TOOLTIP));
+        ImGui::SliderInt(TR(TCODE_TICKRATE), (int32_t*)&tickrate, 60, 300, "%d", ImGuiSliderFlags_AlwaysClamp); 
+        ImGui::Checkbox(TR(SPLINE), &TCodeChannel::SplineMode);
+        OFS::Tooltip(TR(SPLINE_TOOLTIP));
+        ImGui::SameLine(); ImGui::Checkbox(TR(REMAP), &TCodeChannel::RemapToFullRange);
+        OFS::Tooltip(TR(REMAP_TOOLTIP));
     }
 
     ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
-    ImGui::TextUnformatted("Outputs");
+    ImGui::TextUnformatted(TR(OUTPUTS));
     ImGui::SameLine(); ImGui::TextDisabled("(?)");
-    OFS::Tooltip("You can right click sliders.");
+    OFS::Tooltip(TR(YOU_CAN_RIGHT_CLICK_SLIDERS_TOOLTIP));
 
     for (int i = 0; i < tcode.channels.size(); i++) {
         if(i == 4 || i == 7) ImGui::Spacing();
@@ -191,8 +192,8 @@ void TCodePlayer::DrawWindow(bool* open, float currentTime) noexcept
         if (OFS::BoundedSliderInt(c.Id, &c.NextTCodeValue, TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue, c.limits[0], c.limits[1], "%d", ImGuiSliderFlags_AlwaysClamp));
         if (ImGui::BeginPopupContextItem())
         {
-            ImGui::MenuItem("Invert", NULL, &c.Invert);
-            ImGui::MenuItem("Rebalance", NULL, &c.Rebalance); OFS::Tooltip("Balance around 500 even with unevenly spread limits.");
+            ImGui::MenuItem(TR(INVERT), NULL, &c.Invert);
+            ImGui::MenuItem(TR(REBALANCE), NULL, &c.Rebalance); OFS::Tooltip(TR(REBALANCE_TOOLTIP));
             ImGui::Separator();
             auto activeIdx = prod.GetProd(static_cast<TChannel>(i)).ScriptIdx();
             

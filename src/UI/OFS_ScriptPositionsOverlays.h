@@ -1,6 +1,6 @@
 #pragma once
-
 #include "ScriptPositionsOverlayMode.h"
+#include "OFS_Localization.h"
 #include <cstdint>
 
 
@@ -39,18 +39,17 @@ private:
 		IM_COL32(0xeb, 0x38, 0x99, 0xFF), // 48ths
 		IM_COL32(0x23, 0xd2, 0x54, 0xFF), // 64ths
 	};
-	static constexpr std::array<const char*, 10> beatMultiplesStrings{
-		"whole measures", //???
-
-		"2nd measures",
-		"4th measures",
-		"8th measures",
-		"12th measures",
-		"16th measures",
-		"24th measures",
-		"32nd measures",
-		"48th measures",
-		"64th measures",
+	static constexpr std::array<Tr, 10> beatMultiplesStrings{
+		Tr::TEMPO_WHOLE_MEASURES,
+		Tr::TEMPO_2ND_MEASURES,
+		Tr::TEMPO_4TH_MEASURES,
+		Tr::TEMPO_8TH_MEASURES,
+		Tr::TEMPO_12TH_MEASURES,
+		Tr::TEMPO_16TH_MEASURES,
+		Tr::TEMPO_24TH_MEASURES,
+		Tr::TEMPO_32ND_MEASURES,
+		Tr::TEMPO_48TH_MEASURES,
+		Tr::TEMPO_64TH_MEASURES,
 	};
 public:
 	TempoOverlay(class ScriptTimeline* timeline)

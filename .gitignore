@@ -15,3 +15,9 @@ OFP.png
 TODO.txt
 .vscode/settings.json
 remedy.rdbg
+localization/__pycache__
+localization/xmnjvfk.py
+localization/localization_ja.csv
+localization/localization_ja_missing.csv
+localization/localization_bak2.csv
+localization/.~lock.localization.csv#

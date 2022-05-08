@@ -1,0 +1,506 @@
+Key (do not touch),Default,Translation
+INVALID_TR,%%this should not be displayed%%,%%this should not be displayed%%
+ABOUT,About,About
+LATEST_RELEASE,Latest release,Latest release
+OFS_LOG_OUTPUT,OFS Log Output,OFS Log Output
+ADD_EDIT_ACTIONS,Add/Edit actions,Add/Edit actions
+ADD_EDIT_ACTION,Add/Edit action,Add/Edit action
+ADD_ACTION,Add action,Add action
+REMOVE_ACTIONS,Remove actions,Remove actions
+REMOVE_ACTION,Remove action,Remove action
+MOUSE_MOVED_ACTIONS,Mouse moved actions,Mouse moved actions
+ACTIONS_MOVED,Actions moved,Actions moved
+CUT_SELECTION,Cut selection,Cut selection
+REMOVE_SELECTION,Remove selection,Remove selection
+PASTE_SELECTION,Paste selection,Paste selection
+EQUALIZE,Equalize,Equalize
+INVERT,Invert,Invert
+ISOLATE,Isolate,Isolate
+TOP_POINTS,Top points,Top points
+MID_POINTS,Mid points,Mid points
+BOTTOM_POINTS,Bottom points,Bottom points
+GENERATE_ACTIONS,Generate actions,Generate actions
+FRAME_ALIGN,Frame align,Frame align
+RANGE_EXTEND,Range extend,Range extend
+REPEAT_STROKE,Repeat stroke,Repeat stroke
+MOVE_TO_CURRENT_POSITION,Move to current position,Move to current position
+SIMPLIFY,Simplify,Simplify
+LUA_SCRIPT,Lua script,Lua script
+REDO_STACK,Redo stack,Redo stack
+UNDO_STACK,Undo stack,Undo stack
+UNDO_REDO_HISTORY,Undo/Redo history,Undo/Redo history
+T_CODE,T-Code,T-Code
+PORT,Port,Port
+OPEN_PORT,Open port,Open port
+LIMITS,Limits,Limits
+LINEAR_LIMITS,Linear limits,Linear limits
+ROTATION_LIMITS,Rotation limits,Rotation limits
+VIBRATION_LIMITS,Vibration limits,Vibration limits
+GLOBAL_SETTINGS,Global settings,Global settings
+DELAY,Delay,Delay
+CONTROLLER_BUTTON_A,A / X,A / X
+CONTROLLER_BUTTON_B,B / Circle,B / Circle
+CONTROLLER_BUTTON_X,X / Square,X / Square
+CONTROLLER_BUTTON_Y,Y / Triangle,Y / Triangle
+CONTROLLER_BUTTON_BACK,Back / Share,Back / Share
+CONTROLLER_BUTTON_GUIDE,Guide,Guide
+CONTROLLER_BUTTON_START,Start,Start
+CONTROLLER_BUTTON_LEFTSTICK,Leftstick,Leftstick
+CONTROLLER_BUTTON_RIGHTSTICK,Rightstick,Rightstick
+CONTROLLER_BUTTON_LEFTSHOULDER,Leftshoulder,Leftshoulder
+CONTROLLER_BUTTON_RIGHTSHOULDER,Rightshoulder,Rightshoulder
+CONTROLLER_BUTTON_DPAD_UP,DPAD Up,DPAD Up
+CONTROLLER_BUTTON_DPAD_DOWN,DPAD Down,DPAD Down
+CONTROLLER_BUTTON_DPAD_LEFT,DPAD Left,DPAD Left
+CONTROLLER_BUTTON_DPAD_RIGHT,DPAD Right,DPAD Right
+CONTROLLER_NOT_SET,- Not set -,- Not set -
+KEY_MOD_CTRL,Ctrl,Ctrl
+KEY_MOD_ALT,Alt,Alt
+KEY_MOD_SHIFT,Shift,Shift
+KEY_ALREADY_IN_USE,Key is in use,Key is in use
+KEY_ALREADY_IN_USE_MSG,Key already bound for [%s],Key already bound for [%s]
+BUTTON_ALREADY_IN_USE,Button is in use,Button is in use
+BUTTON_ALREADY_IN_USE_MSG,Button already bound for [%s],Button already bound for [%s]
+DESCRIPTION,Description,Description
+KEYBOARD,Keyboard,Keyboard
+ACTIVE,Active,Active
+KEY_NOT_SET,- Not set -,- Not set -
+CHANGE_KEY,Change key,Change key
+CHANGE_KEY_MSG,"Press any key...
+Escape to clear.","Press any key...
+Escape to clear."
+PASSIVE_BINDING_TXT1,Here modifiers can be configured which change certain behaviour.,Here modifiers can be configured which change certain behaviour.
+PASSIVE_BINDING_TXT2,"You can only use Shift, Ctrl & Alt.","You can only use Shift, Ctrl & Alt."
+KEYS,Keys,Keys
+BINDINGS,Bindings,Bindings
+BINDING_TXT1,"You can use CTRL, SHIFT & ALT as modifiers.","You can use CTRL, SHIFT & ALT as modifiers."
+BINDING_TXT2,Only controller buttons can be bound. The DPAD directions count as a buttons.,Only controller buttons can be bound. The DPAD directions count as a buttons.
+BINDING_TXT3,The configuration gets saved everytime a change is made.,The configuration gets saved everytime a change is made.
+BINDING_TXT4,"If you wan't to revert to the defaults, you'll have to delete the config.","If you wan't to revert to the defaults, you'll have to delete the config."
+FILTER,Filter,Filter
+MODIFIERS,Modifiers,Modifiers
+ACTION,Action,Action
+CONTROLLER,Controller,Controller
+IGNORE_REPEATS,Ignore repeats,Ignore repeats
+CHANGE_BUTTON,Change button,Change button
+CHANGE_BUTTON_MSG,"Press any button...
+Escape to clear.","Press any button...
+Escape to clear."
+RUNNING_TASK,Running task,Running task
+THIS_MAY_TAKE_A_WHILE,This may take a while...,This may take a while...
+OPTIONS,Options,Options
+AUTO_SCROLL,Auto-scroll,Auto-scroll
+CLEAR,Clear,Clear
+COPY,Copy,Copy
+USED,Used,Used
+ALLOCATED,Allocated,Allocated
+SCRIPTS,Scripts,Scripts
+RENDERING,Rendering,Rendering
+SHOW_ACTIONS,Show actions,Show actions
+SPLINE_MODE,Spline mode,Spline mode
+SHOW_VIDEO_POSITION,Show video position,Show video position
+WAVEFORM,Waveform,Waveform
+SETTINGS,Settings,Settings
+SCALE,Scale,Scale
+COLOR,Color,Color
+ENABLE_WAVEFORM,Enable waveform,Enable waveform
+MIN_INT_FMT,Min: %d,Min: %d
+MAX_INT_FMT,Max: %d,Max: %d
+TCODE_TICKRATE,Tickrate (Hz),Tickrate (Hz)
+SPLINE,Spline,Spline
+SPLINE_TOOLTIP,Smooth motion instead of linear.,Smooth motion instead of linear.
+REMAP,Remap,Remap
+REMAP_TOOLTIP,"Remap script to use the full range.
+i.e. scripts using the range 10 to 90 become 0 to 100.","Remap script to use the full range.
+i.e. scripts using the range 10 to 90 become 0 to 100."
+DELAY_TOOLTIP,"Negative: Backward in time.
+Positive: Forward in time.","Negative: Backward in time.
+Positive: Forward in time."
+OUTPUTS,Outputs,Outputs
+YOU_CAN_RIGHT_CLICK_SLIDERS_TOOLTIP,You can right click sliders.,You can right click sliders.
+REBALANCE,Rebalance,Rebalance
+REBALANCE_TOOLTIP,Balance around 500 even with unevenly spread limits.,Balance around 500 even with unevenly spread limits.
+GAMEPAD_ONLY,only,only
+SHOW_VIDEO_POSITION_TOOLTIP,"(Frame overlay only)
+Shows a red line where the current frame is.
+More of a debugging feature.","(Frame overlay only)
+Shows a red line where the current frame is.
+More of a debugging feature."
+PROCESSING_AUDIO,Processing audio...,Processing audio...
+UPDATE_WAVEFORM,Update waveform,Update waveform
+POSITIONS,Positions,Positions
+LOOP_A_SET,Loop A set,Loop A set
+LOOP_B_SET,Loop B set,Loop B set
+LOCK,Lock,Lock
+CLICK_TO_ENABLE_VIDEO,Click to enable video,Click to enable video
+LOOP_CLEARED,Loop cleared,Loop cleared
+VIDEOPLAYER,Player,Player
+SPEED,Speed,Speed
+TIMELINE,Timeline,Timeline
+TIME,Time,Time
+CONTROLS,Controls,Controls
+TIMELINE_SECONDS,seconds,seconds
+TASK_EXPORTING_CLIPS,Exporting clips,Exporting clips
+PROJECT,Project,Project
+MEDIA,Media,Media
+CHANGE_DEFAULT_LOCATION,Change default location,Change default location
+CHANGE_LOCATION,Change location,Change location
+SCRIPTING_MODE,Scripting mode,Scripting mode
+DEFAULT_MODE,Default,Default
+ALTERNATING_MODE,Alternating,Alternating
+DYNAMIC_INJECTION_MODE,Dynamic injection,Dynamic injection
+RECORDING_MODE,Recording,Recording
+SCRIPTING_OVERLAY,Scripting overlay,Scripting overlay
+FRAME_OVERLAY,Frame,Frame
+TEMPO_OVERLAY,Tempo,Tempo
+EMPTY_OVERLAY,None,None
+OFFSET_MS,Offset (ms),Offset (ms)
+OFFSET_TOOLTIP,"Applies an offset to actions inserted while the video is playing.
+- : inserts earlier
++ : inserts later","Applies an offset to actions inserted while the video is playing.
+- : inserts earlier
++ : inserts later"
+MIRROR_MODE,Mirror mode,Mirror mode
+MIRROR_MODE_TOOLTIP,Mirrors add/edit/remove action across all loaded scripts.,Mirrors add/edit/remove action across all loaded scripts.
+DI_TARGET_SPEED,Target speed (units/s),Target speed (units/s)
+DI_UP_DOWN_BIAS,Up/Down speed bias,Up/Down speed bias
+TOP,Top,Top
+BOTTOM,Bottom,Bottom
+NEXT_POINT,Next point,Next point
+NEXT_POINT_AT_FMT,Next point is at %d,Next point is at %d
+NEXT_POINT_IS_FMT,Next point is %s,Next point is %s
+INVERTED,inverted,inverted
+NOT_INVERTED,not inverted,not inverted
+FIXED_RANGE,Fixed range,Fixed range
+CONTEXT_SENSITIVE,Context sensitive,Context sensitive
+CONTEXT_SENSITIVE_TOOLTIP,Alternates based on the previous action.,Alternates based on the previous action.
+MODE,Mode,Mode
+MOUSE,Mouse,Mouse
+CONTROLLER_DEADZONE,Controller deadzone,Controller deadzone
+DEADZONE,Deadzone,Deadzone
+CENTER,Center,Center
+TWO_AXES,Two axes,Two axes
+TWO_AXES_TOOLTIP,"Recording pitch & roll at once.
+Using Simulator 3D settings.
+Only works with a controller.","Recording pitch & roll at once.
+Using Simulator 3D settings.
+Only works with a controller."
+RECORD_ON_PLAY,Record on play,Record on play
+TWO_AXES_AXES,X / Y,X / Y
+POSITION,Position,Position
+RECORDING_ACTIVE,Recording active,Recording active
+RECORDING_PAUSED,Recording paused,Recording paused
+STATISTICS,Statistics,Statistics
+ACTION_EDITOR,Action editor,Action editor
+DYNAMIC_BINDING_GROUP,Dynamic,Dynamic
+ACTIONS_BINDING_GROUP,Actions,Actions
+CORE_BINDING_GROUP,Core,Core
+NAVIGATION_BINDING_GROUP,Navigation,Navigation
+UTILITY_BINDING_GROUP,Utility,Utility
+MOVING_BINDING_GROUP,Moving,Moving
+SPECIAL_BINDING_GROUP,Special,Special
+VIDEOPLAYER_BINDING_GROUP,Video player,Video player
+EXTENSIONS_BINDING_GROUP,Extensions,Extensions
+CONTROLLER_BINDING_GROUP,Controller,Controller
+ACTION_REMOVE_ACTION,Remove action,Remove action
+ACTION_ACTION_0,Action at 0,Action at 0
+ACTION_ACTION_10,Action at 10,Action at 10
+ACTION_ACTION_20,Action at 20,Action at 20
+ACTION_ACTION_30,Action at 30,Action at 30
+ACTION_ACTION_40,Action at 40,Action at 40
+ACTION_ACTION_50,Action at 50,Action at 50
+ACTION_ACTION_60,Action at 60,Action at 60
+ACTION_ACTION_70,Action at 70,Action at 70
+ACTION_ACTION_80,Action at 80,Action at 80
+ACTION_ACTION_90,Action at 90,Action at 90
+ACTION_ACTION_100,Action at 100,Action at 100
+ACTION_SAVE_PROJECT,Save project,Save project
+ACTION_QUICK_EXPORT,Quick export,Quick export
+ACTION_SYNC_TIME_WITH_PLAYER,Sync time with player,Sync time with player
+ACTION_CYCLE_FORWARD_LOADED_SCRIPTS,Cycle forward loaded scripts,Cycle forward loaded scripts
+ACTION_CYCLE_BACKWARD_LOADED_SCRIPTS,Cycle backward loaded scripts,Cycle backward loaded scripts
+ACTION_PREVIOUS_ACTION,Previous action,Previous action
+ACTION_NEXT_ACTION,Next action,Next action
+ACTION_PREVIOUS_ACTION_MULTI,Previous action (multi),Previous action (multi)
+ACTION_NEXT_ACTION_MULTI,Next action (multi),Next action (multi)
+ACTION_PREV_FRAME,Previous frame,Previous frame
+ACTION_NEXT_FRAME,Next frame,Next frame
+ACTION_FAST_STEP,Fast step,Fast step
+ACTION_FAST_BACKSTEP,Fast backstep,Fast backstep
+ACTION_UNDO,Undo,Undo
+ACTION_REDO,Redo,Redo
+ACTION_COPY,Copy,Copy
+ACTION_PASTE,Paste,Paste
+ACTION_CUT,Cut,Cut
+ACTION_PASTE_EXACT,Paste exact,Paste exact
+ACTION_SELECT_ALL,Select all,Select all
+ACTION_DESELECT_ALL,Deselect all,Deselect all
+ACTION_SELECT_ALL_LEFT,Select all left,Select all left
+ACTION_SELECT_ALL_RIGHT,Select all right,Select all right
+ACTION_SELECT_TOP,Select top points,Select top points
+ACTION_SELECT_BOTTOM,Select bottom points,Select bottom points
+ACTION_SELECT_MID,Select middle points,Select middle points
+ACTION_TOGGLE_MIRROR_MODE,Toggle mirror mode,Toggle mirror mode
+ACTION_SAVE_FRAME,Save frame as image,Save frame as image
+ACTION_CYCLE_SUBTITLES,Cycle subtitles,Cycle subtitles
+ACTION_TOGGLE_FULLSCREEN,Toggle fullscreen,Toggle fullscreen
+ACTION_MOVE_UP_10,Move actions +10 up,Move actions +10 up
+ACTION_MOVE_DOWN_10,Move actions -10 down,Move actions -10 down
+ACTION_MOVE_UP_5,Move actions +5 up,Move actions +5 up
+ACTION_MOVE_DOWN_5,Move actions -5 down,Move actions -5 down
+ACTION_MOVE_ACTIONS_LEFT_SNAP,Move actions left with snapping,Move actions left with snapping
+ACTION_MOVE_ACTIONS_RIGHT_SNAP,Move actions right with snapping,Move actions right with snapping
+ACTION_MOVE_ACTIONS_LEFT,Move actions left,Move actions left
+ACTION_MOVE_ACTIONS_RIGHT,Move actions right,Move actions right
+ACTION_MOVE_ACTIONS_UP,Move actions up,Move actions up
+ACTION_MOVE_ACTIONS_DOWN,Move actions down,Move actions down
+ACTION_MOVE_TO_CURRENT_POSITION,Move to current position,Move to current position
+ACTION_EQUALIZE_ACTIONS,Equalize actions,Equalize actions
+ACTION_INVERT_ACTIONS,Invert actions,Invert actions
+ACTION_ISOLATE_ACTION,Isolate action,Isolate action
+ACTION_REPEAT_STROKE,Repeat stroke,Repeat stroke
+ACTION_TOGGLE_PLAY,Play / Pause,Play / Pause
+ACTION_REDUCE_PLAYBACK_SPEED,Playback speed -10%,Playback speed -10%
+ACTION_INCREASE_PLAYBACK_SPEED,Playback speed +10%,Playback speed +10%
+ACTION_GO_TO_START,Go to the start,Go to the start
+ACTION_GO_TO_END,Go to the end,Go to the end
+ACTION_RELOAD_ENABLED_EXTENSIONS,Reload enabled extensions,Reload enabled extensions
+ACTION_TOGGLE_CONTROLLER_NAV,Toggle controller navigation,Toggle controller navigation
+ACTION_SEEK_FORWARD_1,Forward 1 second,Forward 1 second
+ACTION_SEEK_BACKWARD_1,Backward 1 second,Backward 1 second
+ACTION_ADD_ACTION_CONTROLLER,Add action,Add action
+ACTION_TOGGLE_RECORDING_MODE,Toggle recording mode,Toggle recording mode
+ACTION_CONTROLLER_SELECT,Controller selection,Controller selection
+ACTION_SET_PLAYBACK_SPEED,Set current playback speed,Set current playback speed
+PASSIVE_GROUP_TIMELINE,Point timeline,Point timeline
+PASSIVE_GROUP_SIMULATOR,Simulator,Simulator
+MOD_MOVE_OR_ADD_POINT,Click drag/add point in the timeline,Click drag/add point in the timeline
+MOD_CLICK_SIM_ADD_PONT,Click simulator to add a point,Click simulator to add a point
+PROJECT_HAS_UNSAVED_EDITS,Project has unsaved edits,Project has unsaved edits
+UNSAVED_EDITS_MSG,The current project has unsaved edits.,The current project has unsaved edits.
+UNSAVED_CHANGES,Unsaved changes,Unsaved changes
+UNSAVED_CHANGES_MSG,Do you want to save and exit?,Do you want to save and exit?
+FILE_NOT_FOUND,File not found,File not found
+COULDNT_FIND_FILE,Couldn’t find file,Couldn’t find file
+OFS_FAILED_TO_IMPORT,OpenFunscripter failed to import.,OpenFunscripter failed to import.
+OFS_FAILED_TO_IMPORT_MSG,Failed to import,Failed to import
+FAILED_TO_LOAD,Failed to load,Failed to load
+FAILED_TO_LOAD_MSG,The project failed to load.,The project failed to load.
+FAILED_TO_FIND_VIDEO,Failed to find video,Failed to find video
+FAILED_TO_FIND_VIDEO_MSG,"The video was not found.
+Please pick the correct video.","The video was not found.
+Please pick the correct video."
+CHOOSE_OUTPUT_DIR,Choose output directory,Choose output directory
+PICK_DIFFERENT_MEDIA,Pick different media,Pick different media
+FILE,File,File
+OPEN_PROJECT,Open project,Open project
+SAVE,Save,Save
+CLOSE_PROJECT,Close project,Close project
+WRONG_FILE,Wrong file,Wrong file
+WRONG_FILE_MSG,The file isn’t a project file.,The file isn’t a project file.
+IMPORT_VIDEO_SCRIPT,Import video/script,Import video/script
+RECENT_FILES,Recent files,Recent files
+NO_RECENT_FILES,No recent files,No recent files
+SAVE_PROJECT,Save project,Save project
+EXPORT_MENU,Export...,Export...
+QUICK_EXPORT,Quick export,Quick export
+QUICK_EXPORT_TOOLTIP,Exports all scripts as .funscript in their default paths.,Exports all scripts as .funscript in their default paths.
+EXPORT_ACTIVE_SCRIPT,Export active script,Export active script
+EXPORT_ALL,Export all,Export all
+AUTO_BACKUP_TIMER_FMT,Auto Backup in %d seconds,Auto Backup in %d seconds
+AUTO_BACKUP,Auto Backup,Auto Backup
+OPEN_BACKUP_DIR,Open backup directory,Open backup directory
+CONFIGURE,Configure,Configure
+ADD_MENU,Add...,Add...
+ADD_SHORTCUTS,Shortcuts,Shortcuts
+ADD_NEW,Add new,Add new
+ADD_NEW_FUNSCRIPT,Add new funscript,Add new funscript
+ADD_EXISTING,Add existing,Add existing
+ADD_EXISTING_FUNSCRIPTS,Add existing funscripts,Add existing funscripts
+REMOVE_SCRIPT_CONFIRM_MSG,"If the script wasn’t previously exported, this can’t be reverted.
+Continue?","If the script wasn’t previously exported, this can’t be reverted.
+Continue?"
+REMOVE,Remove,Remove
+REMOVE_SCRIPT,Remove script,Remove script
+EDIT,Edit,Edit
+SAVE_FRAME_AS_IMAGE,Save frame as image,Save frame as image
+OPEN_SCREENSHOT_DIR,Open screenshot directory,Open screenshot directory
+SAVE_HEATMAP,Save heatmap,Save heatmap
+UNDO,Undo,Undo
+REDO,Redo,Redo
+CUT,Cut,Cut
+PASTE,Paste,Paste
+SELECT,Select,Select
+SELECT_ALL,Select all,Select all
+DESELECT_ALL,Deselect all,Deselect all
+SPECIAL,Special,Special
+SELECT_ALL_LEFT,Select all left,Select all left
+SELECT_ALL_RIGHT,Select all right,Select all right
+SET_SELECTION_START,Set selection start,Set selection start
+SET_SELECTION_END,Set selection end,Set selection end
+TOP_POINTS_ONLY,Top points only,Top points only
+MID_POINTS_ONLY,Mid points only,Mid points only
+BOTTOM_POINTS_ONLY,Bottom points only,Bottom points only
+BOOKMARKS,Bookmarks,Bookmarks
+EXPORT_CLIPS,Export clips,Export clips
+EXPORT_CLIPS_TOOLTIP,Export smaller clips based on bookmarks.,Export smaller clips based on bookmarks.
+NAME,Name,Name
+ADD_BOOKMARK,Add bookmark,Add bookmark
+CREATE_INTERVAL_FOR_FMT,"Create interval for ""%s""","Create interval for ""%s"""
+GO_TO_MENU,Go to...,Go to...
+NO_BOOKMARKS,No bookmarks,No bookmarks
+ALWAYS_SHOW_LABELS,Always show labels,Always show labels
+DELETE_ALL_BOOKMARKS,Delete all bookmarks,Delete all bookmarks
+VIEW_MENU,View,View
+SIMULATOR_3D,Simulator 3D,Simulator 3D
+METADATA,Metadata,Metadata
+DRAW_VIDEO,Draw video,Draw video
+RESET_VIDEO_POS,Reset video position,Reset video position
+VIDEO_MODE,Video mode,Video mode
+VIDEO_MODE_FULL,Full,Full
+VIDEO_MODE_LEFT_PANE,Left pane,Left pane
+VIDEO_MODE_RIGHT_PANE,Right pane,Right pane
+VIDEO_MODE_TOP_PANE,Top pane,Top pane
+VIDEO_MODE_BOTTOM_PANE,Bottom pane,Bottom pane
+VIDEO_MODE_VR,VR,VR
+DEBUG,Debug,Debug
+METRICS,Metrics,Metrics
+LOG_OUTPUT,Log output,Log output
+FULLSCREEN,Fullscreen,Fullscreen
+PREFERENCES,Preferences,Preferences
+REPEAT_RATE,Repeat rate,Repeat rate
+CONTROLLER_CONNECTED,Controller connected!,Controller connected!
+EXTENSIONS_MENU,Extensions,Extensions
+DEV_MODE,Developer mode,Developer mode
+SHOW_LOGS,Show logs,Show logs
+DEV_MODE_TOOLTIP,Enable extra functionality for extension developement.,Enable extra functionality for extension developement.
+EXTENSION_DIR,Extension directory,Extension directory
+ENABLED,Enabled,Enabled
+SHOW_WINDOW,Show window,Show window
+OPEN_DIRECTORY,Open directory,Open directory
+NAVIGATION,Navigation,Navigation
+SCRIPTING,Scripting,Scripting
+UNSAVED_CHANGES_FMT,unsaved changes %d minutes ago,unsaved changes %d minutes ago
+METADATA_EDITOR,Metadate editor,Metadate editor
+TITLE,Title,Title
+DURATION,Duration,Duration
+CREATOR,Creator,Creator
+URL,Url,Url
+VIDEO_URL,Video url,Video url
+NOTES,Notes,Notes
+LICENSE,License,License
+FREE,Free,Free
+PAID,Paid,Paid
+NONE,None,None
+TAGS,Tags,Tags
+ADD,Add,Add
+PERFORMERS,Performers,Performers
+SAVE_TEMPLATE,Save template,Save template
+SAVE_TEMPLATE_TOOLTIP,Saves all current values as defaults for later.,Saves all current values as defaults for later.
+GIT_COMMIT,Commit,Commit
+INTERVAL,Interval,Interval
+CLOSE_WITHOUT_SAVING,Close without saving?,Close without saving?
+CLOSE_WITHOUT_SAVING_MSG,The current project has unsaved changes do you want to close it without saving?,The current project has unsaved changes do you want to close it without saving?
+CONFIGURATION,Configuration,Configuration
+RESET,Reset,Reset
+MOVE,Move,Move
+DISTANCE,Distance,Distance
+GLOBAL_YAW,Global yaw,Global yaw
+GLOBAL_PITCH,Global pitch,Global pitch
+BOX,Box,Box
+CONTAINER,Container,Container
+TWIST,Twist,Twist
+ROLL_DEG,Roll deg,Roll deg
+PITCH_DEG,Pitch deg,Pitch deg
+TWIST_DEG,Twist deg,Twist deg
+ROLL,Roll,Roll
+PITCH,Pitch,Pitch
+YAW,Yaw,Yaw
+INSERT_CURRENT_POSITION,Insert current position,Insert current position
+SCROLL_PERCENT,Scroll (%),Scroll (%)
+SCROLL_PERCENT_TOOLTIP,You can use the mousewheel on the sliders above.,You can use the mousewheel on the sliders above.
+EXTENSION_LOG_OUTPUT,Extension log output,Extension log output
+ERROR_STR,Error,Error
+TRY_RELOADING,Try reloading,Try reloading
+RELOAD,Reload,Reload
+BPM,BPM,BPM
+OFFSET,Offset,Offset
+SNAP,Snap,Snap
+UNKNOWN_ERROR,unknown error,unknown error
+FFMPEG_WAS_NOT_FOUND_MSG,"ffmpeg.exe was not found.
+Do you want to download it?","ffmpeg.exe was not found.
+Do you want to download it?"
+BINDABLE_FUNCTIONS,Bindable functions,Bindable functions
+YES,Yes,Yes
+FFMPEG_FAILED_TO_DOWNLOAD_MSG,Failed to download from https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip,Failed to download from https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip
+DONE,Done,Done
+DONE_MSG,ffmpeg.exe was successfully extracted.,ffmpeg.exe was successfully extracted.
+EXTRACT_FAIL,Failed to extract ffmpeg.exe.,Failed to extract ffmpeg.exe.
+EXTRACT_FAIL_MSG,"Extracting uses tar.exe.
+It will fail if it's not on your system.","Extracting uses tar.exe.
+It will fail if it's not on your system."
+DOWNLOAD_FFMPEG,Download ffmpeg?,Download ffmpeg?
+TEMPO_WHOLE_MEASURES,whole measures,whole measures
+TEMPO_2ND_MEASURES,2nd measures,2nd measures
+TEMPO_4TH_MEASURES,4th measures,4th measures
+TEMPO_8TH_MEASURES,8th measures,8th measures
+TEMPO_12TH_MEASURES,12th measures,12th measures
+TEMPO_16TH_MEASURES,16th measures,16th measures
+TEMPO_24TH_MEASURES,24th measures,24th measures
+TEMPO_32ND_MEASURES,32nd measures,32nd measures
+TEMPO_48TH_MEASURES,48th measures,48th measures
+TEMPO_64TH_MEASURES,64th measures,64th measures
+LOAD_CONFIG,Load config,Load config
+SAVE_CONFIG,Save config,Save config
+SAVE_SIMULATOR_CONFIG,Save simulator configuration,Save simulator configuration
+SAVE_SIMULATOR_CONFIG_MSG,"Do you want do save the current config?
+This will override any existing default config.","Do you want do save the current config?
+This will override any existing default config."
+LINES,Lines,Lines
+TEXT,Text,Text
+FRONT,Front,Front
+BACK,Back,Back
+BORDER,Border,Border
+INDICATOR,Indicator,Indicator
+LINE,Line,Line
+WIDTH,Width,Width
+OPACITY,Opacity,Opacity
+EXTRA_LINES,Extra lines,Extra lines
+VANILLA,Vanilla,Vanilla
+SHOW_POSITION,Show position,Show position
+VANILLA_TOOLTIP,The original simulator from day one.,The original simulator from day one.
+RESET_TO_DEFAULTS,Reset to defaults,Reset to defaults
+SIMULATOR,Simulator,Simulator
+APPLICATION,Application,Application
+DARK_MODE,Dark mode,Dark mode
+LIGHT_MODE,Light mode,Light mode
+PREFERENCES_TXT,"Higher frame rate makes OFS feel ""snappier"" because input gets processed more frequently.","Higher frame rate makes OFS feel ""snappier"" because input gets processed more frequently."
+VSYNC,Vsync,Vsync
+VSYNC_TOOLTIP,"Limits frame rate to the refresh rate of the monitor.
+Frame limit is ignored.","Limits frame rate to the refresh rate of the monitor.
+Frame limit is ignored."
+FRAME_LIMIT,Frame limit,Frame limit
+FRAME_LIMIT_TOOLTIP,This limits the frame rate OFS is running at.,This limits the frame rate OFS is running at.
+FONT,Font,Font
+CHANGE,Change,Change
+CHOOSE_FONT,Choose font,Choose font
+DEFAULT_FONT,Default font,Default font
+FONT_SIZE,Font size,Font size
+FORCE_HW_DECODING,Force hardware decoding (Requires program restart),Force hardware decoding (Requires program restart)
+FORCE_HW_DECODING_TOOLTIP,May cause crashes on some systems.,May cause crashes on some systems.
+FAST_FRAME_STEP,Fast frame step,Fast frame step
+FAST_FRAME_STEP_TOOLTIP,Amount of frames to skip with fast step.,Amount of frames to skip with fast step.
+SHOW_METADATA_DIALOG_ON_NEW_PROJECT,Show metadata dialog on new project,Show metadata dialog on new project
+FUNCTIONS_RANGE_EXTENDER,Range extender,Range extender
+FUNCTIONS_SIMPLIFY,Simplify (Ramer-Douglas-Peucker),Simplify (Ramer-Douglas-Peucker)
+RANGE,Range,Range
+RANGE_EXTENDER_TXT,Select atleast 5 actions to extend.,Select atleast 5 actions to extend.
+EPSILON,Epsilon,Epsilon
+SIMPLIFY_TXT,Select atleast 5 actions to simplify.,Select atleast 5 actions to simplify.
+SPECIAL_FUNCTIONS,Special functions,Special functions
+MEMORY_USAGE,Memory usage,Memory usage
+UPDATE,Update,Update
+SLOWEST,slowest,slowest
+LANGUAGE,Language,Language
+ACTION_RELOAD_TRANSLATION,Reload current translation,Reload current translation
+DIRECTORY,Directory,Directory

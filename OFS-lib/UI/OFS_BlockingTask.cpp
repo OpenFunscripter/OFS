@@ -1,5 +1,6 @@
 #include "OFS_BlockingTask.h"
 #include "OFS_ImGui.h"
+#include "OFS_Localization.h"
 #include "imgui.h"
 
 static int BlockingTaskThread(void* data) noexcept
@@ -13,9 +14,8 @@ static int BlockingTaskThread(void* data) noexcept
 
 void OFS_BlockingTask::ShowBlockingTask() noexcept
 {
-	constexpr const char* ID = "Running task##BlockingTaskModal";
 	if (currentTask) {
-		ImGui::OpenPopup(ID, ImGuiPopupFlags_None);
+		ImGui::OpenPopup(TR_ID("RUNNING_TASK", Tr::RUNNING_TASK), ImGuiPopupFlags_None);
 	}
 	else { return; }
 
@@ -33,18 +33,17 @@ void OFS_BlockingTask::ShowBlockingTask() noexcept
 		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, Util::Clamp(a*a, 0.f, 1.f));
 		ImGui::PushStyleColor(ImGuiCol_ModalWindowDimBg, IM_COL32(0, 0, 0, 0));
 	}
-	ImGui::BeginPopupModal(ID, NULL, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::BeginPopupModal(TR_ID("RUNNING_TASK", Tr::RUNNING_TASK), NULL, ImGuiWindowFlags_AlwaysAutoResize);
 	if (a >= 0.1f) {
 		const bool ShowProgress = currentTask->MaxProgress > 0;
 		if (ShowProgress) {
-			ImGui::Text("This may take a while... (%d/%d)", currentTask->Progress, currentTask->MaxProgress);
+			ImGui::Text("%s (%d/%d)", TR(THIS_MAY_TAKE_A_WHILE), currentTask->Progress, currentTask->MaxProgress);
 		}
 		else {
-			ImGui::Text("This may take a while...");
+			ImGui::TextUnformatted(TR(THIS_MAY_TAKE_A_WHILE));
 		}
 		ImGui::SameLine();
-	
-			OFS::Spinner("BlockingTaskSpinner", ImGui::GetFontSize()/2.f, ImGui::GetFontSize() / 4.f, ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_ButtonActive]));
+		OFS::Spinner("BlockingTaskSpinner", ImGui::GetFontSize()/2.f, ImGui::GetFontSize() / 4.f, ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_ButtonActive]));
 		if (ShowProgress) {
 			ImGui::ProgressBar(currentTask->Progress / (float)currentTask->MaxProgress,
 				ImVec2(-1.f, 0.f),

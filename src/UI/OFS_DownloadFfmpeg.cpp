@@ -1,5 +1,6 @@
 #include "OFS_DownloadFfmpeg.h"
 #include "OFS_Util.h"
+#include "OFS_Localization.h"
 #include "SDL_thread.h"
 
 #include <sstream>
@@ -97,11 +98,11 @@ void OFS_DownloadFfmpeg::DownloadFfmpegModal() noexcept
     static auto ZipExists = Util::FileExists(Util::Prefpath("ffmpeg.zip"));
 
     bool isOpen = true;
-    if(ImGui::BeginPopupModal(OFS_DownloadFfmpeg::ModalText, DownloadInProgress ? NULL : &isOpen, ImGuiWindowFlags_AlwaysAutoResize)) {
+    if(ImGui::BeginPopupModal(TR_ID(OFS_DownloadFfmpeg::WindowId, Tr::DOWNLOAD_FFMPEG), DownloadInProgress ? NULL : &isOpen, ImGuiWindowFlags_AlwaysAutoResize)) {
         if(DownloadInProgress) ImGui::ProgressBar(cb.Progress);
         if(!ZipExists && !DownloadInProgress) {
-            ImGui::TextUnformatted("ffmpeg.exe was not found.\nDo you want to download it?");
-            if(ImGui::Button("Yes", ImVec2(-1.f, 0.f))) {
+            ImGui::TextUnformatted(TR(FFMPEG_WAS_NOT_FOUND_MSG));
+            if(ImGui::Button(TR(YES), ImVec2(-1.f, 0.f))) {
                 auto dlThread = [](void* data) -> int {
                     auto path = Util::PathFromString(Util::Prefpath());
                     auto downloadPath =(path / "ffmpeg.zip").wstring();
@@ -115,7 +116,7 @@ void OFS_DownloadFfmpeg::DownloadFfmpegModal() noexcept
         }
 
         if(cb.Stopped && (cb.Progress < 1.f || std::isnan(cb.Progress))) {
-            Util::MessageBoxAlert("Error", "Failed to download from https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip");
+            Util::MessageBoxAlert(TR(ERROR_STR), TR(FFMPEG_FAILED_TO_DOWNLOAD_MSG));
             FfmpegMissing = false;
             ImGui::CloseCurrentPopup();
         }
@@ -138,14 +139,14 @@ void OFS_DownloadFfmpeg::DownloadFfmpegModal() noexcept
             if(!ExtractFailed) {
                 FfmpegMissing = false;
                 ImGui::CloseCurrentPopup();
-                Util::MessageBoxAlert("Done.", "ffmpeg.exe was successfully extracted.");
+                Util::MessageBoxAlert(TR(DONE), TR(DONE_MSG));
                 std::error_code ec;
                 std::filesystem::remove(downloadPath, ec);
             }
         }
         else if(ExtractFailed) {
-            ImGui::TextColored((ImColor)IM_COL32(255, 0, 0, 255), "Failed to extract ffmpeg.exe.");
-            ImGui::TextUnformatted("Extracting uses tar.exe.\nIt will fail if it's not on your system.");
+            ImGui::TextColored((ImColor)IM_COL32(255, 0, 0, 255), TR(EXTRACT_FAIL));
+            ImGui::TextUnformatted(TR(EXTRACT_FAIL_MSG));
             ImGui::TextDisabled("tar.exe has been part of Windows 10 since build 17063");
         }
 
