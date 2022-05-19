@@ -211,5 +211,6 @@ target_include_directories(ImGuizmo PUBLIC "ImGuizmo/")
 target_link_libraries(ImGuizmo PUBLIC imgui)
 target_compile_features(ImGuizmo PRIVATE cxx_std_17)
 
-
-add_subdirectory("LuaBridge3/")
+set(SOL2_LUA_VERSION "5.4" CACHE BOOL "" FORCE)
+set(SOL2_BUILD_LUA OFF CACHE BOOL "" FORCE)
+add_subdirectory("sol2/")

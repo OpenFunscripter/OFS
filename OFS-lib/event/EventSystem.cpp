@@ -79,11 +79,19 @@ void EventSystem::SingleShot(SingleShotEventHandler&& handler, void* ctx) noexce
 std::unique_ptr<EventSystem::WaitableSingleShotEventData> EventSystem::WaitableSingleShot(SingleShotEventHandler&& handler, void* ctx) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	auto data = std::make_unique<WaitableSingleShotEventData>(ctx,  std::move(handler));
-	SDL_Event ev;
-	ev.type = EventSystem::WaitableSingleShotEvent;
-	ev.user.data1 = (void*)data.get();
+	auto data = std::make_unique<WaitableSingleShotEventData>(ctx, std::move(handler));
 	SDL_SemWait(data->waitSemaphore);
-	SDL_PushEvent(&ev);
+	PushEvent(EventSystem::WaitableSingleShotEvent, data.get());
 	return std::move(data);
+}
+
+std::unique_ptr<EventSystem::WaitableSingleShotEventData> EventSystem::RunOnMain(SingleShotEventHandler&& handler, void* ctx) noexcept
+{
+	if(Util::InMainThread()) {
+		handler(ctx);
+		return std::move(std::make_unique<WaitableSingleShotEventData>(ctx, std::move(handler)));
+	}
+	else {
+		return std::move(WaitableSingleShot(std::move(handler), ctx));
+	}
 }

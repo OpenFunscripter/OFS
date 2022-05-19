@@ -1,40 +1,50 @@
 #include "OFS_LuaExtensionApi.h"
 #include "OFS_Util.h"
-#include "LuaBridge/LuaBridge.h"
+#include "OFS_LuaExtensions.h"
 
+#include "EASTL/string.h"
 
-OFS_PlayerAPI::OFS_PlayerAPI() noexcept
+constexpr const char* LuaDefaultFunctions = R"(
+binding = {}
+function clamp(val, min, max)
+	return math.min(max, math.max(val, min))
+end
+)";
+
+static int LuaPrint(sol::variadic_args va) noexcept
 {
-    //luabridge::getGlobalNamespace(L)
-    //    .beginNamespace(OFS_ExtensionAPI::DefaultNamespace)
-    //    .endNamespace();
-    LOG_DEBUG("foo");    
+	eastl::string logMsg;
+	logMsg.reserve(256);
+
+	OFS_LuaExtension* ext = sol::state_view(va.lua_state())[OFS_LuaExtensions::GlobalExtensionPtr];
+	logMsg.append_sprintf("[%s]: ", ext->Name.c_str());
+	for(auto arg : va) {
+		auto str = lua_tostring(va.lua_state(), arg.stack_index());
+		if(str) {
+			logMsg.append(str);
+			logMsg.append(1, ' ');
+		}
+	}
+	logMsg.append(1, '\n');
+	OFS_LuaExtensions::ExtensionLogBuffer.AddLog(logMsg.c_str());
+	return 0;
 }
 
-OFS_PlayerAPI::~OFS_PlayerAPI() noexcept
+OFS_ExtensionAPI::OFS_ExtensionAPI(sol::usertype<class OFS_ExtensionAPI>& ofs) noexcept
 {
+	auto L = sol::state_view(ofs.lua_state());
+    guiAPI = std::make_unique<OFS_ImGuiAPI>(ofs);
+	procAPI = std::make_unique<OFS_ProcessAPI>(ofs);
+    scriptAPI = std::make_unique<OFS_ScriptAPI>(ofs);
+    playerAPI = std::make_unique<OFS_PlayerAPI>(L);
 
+	L.set_function("print", LuaPrint);
+
+    int status = luaL_dostring(L, LuaDefaultFunctions);
+	FUN_ASSERT(status == 0, "defaults failed");
 }
-
 
 OFS_ExtensionAPI::~OFS_ExtensionAPI() noexcept
 {
 
-}
-
-OFS_ExtensionAPI::OFS_ExtensionAPI(lua_State* L) noexcept
-{
-    static int foo = 420;
-
-    luabridge::getGlobalNamespace(L)
-        .beginClass<OFS_PlayerAPI>(PlayerNamespace)
-        .addConstructor<void(*)(void)>()
-        .addStaticProperty("foo", &foo)
-        .addFunction("bar", &OFS_PlayerAPI::bar)
-        .endClass();
-
-
-    luabridge::getGlobalNamespace(L)
-        .beginNamespace(OFS_ExtensionAPI::PlayerNamespace)
-        .endNamespace();
 }

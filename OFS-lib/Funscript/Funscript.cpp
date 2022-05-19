@@ -16,6 +16,7 @@ Funscript::Funscript()
 	NotifyActionsChanged(false);
 	saveMutex = SDL_CreateMutex();
 	undoSystem = std::make_unique<FunscriptUndoSystem>(this);
+	editTime = std::chrono::system_clock::now();
 }
 
 Funscript::~Funscript()

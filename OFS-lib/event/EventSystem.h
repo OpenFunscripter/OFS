@@ -53,8 +53,8 @@ public:
 			SDL_DestroySemaphore(waitSemaphore);
 		}
 
-		void wait() noexcept { SDL_SemWait(waitSemaphore); }
-		bool try_wait() noexcept { return SDL_SemTryWait(waitSemaphore) == 0; }
+		void Wait() noexcept { SDL_SemWait(waitSemaphore); }
+		bool TryWait() noexcept { return SDL_SemTryWait(waitSemaphore) == 0; }
 	};
 	static int32_t WaitableSingleShotEvent;
 
@@ -82,6 +82,8 @@ public:
 	}
 	static void SingleShot(SingleShotEventHandler&& handler, void* ctx) noexcept;
 	[[nodiscard/*("this must be waited on")*/]]static std::unique_ptr<WaitableSingleShotEventData> WaitableSingleShot(SingleShotEventHandler&& handler, void* ctx) noexcept;
+
+	[[nodiscard]] static std::unique_ptr<WaitableSingleShotEventData> RunOnMain(SingleShotEventHandler&& handler, void* ctx) noexcept;
 
 	static EventSystem* instance;
 	static EventSystem& ev() noexcept {

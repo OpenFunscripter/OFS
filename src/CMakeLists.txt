@@ -22,7 +22,11 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "lua/OFS_LuaExtensions.cpp"
   "lua/OFS_LuaExtension.cpp"
   "lua/OFS_LuaCoreExtension.cpp"
-  "lua/OFS_LuaExtensionApi.cpp"
+  "lua/OFS_LuaExtensionAPI.cpp"
+  "lua/api/OFS_LuaPlayerAPI.cpp"
+  "lua/api/OFS_LuaImGuiAPI.cpp"
+  "lua/api/OFS_LuaScriptAPI.cpp"
+  "lua/api/OFS_LuaProcessAPI.cpp"
 )
 
 if(WIN32)
@@ -53,7 +57,7 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
   lua
-  LuaBridge
+  sol2
   OFS_lib
 )
 

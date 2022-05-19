@@ -137,6 +137,7 @@ OpenFunscripter::~OpenFunscripter()
 bool OpenFunscripter::setup(int argc, char* argv[])
 {
     OFS_FileLogger::Init();
+    Util::InMainThread();
     FUN_ASSERT(ptr == nullptr, "there can only be one instance");
     ptr = this;
     auto prefPath = Util::Prefpath("");
@@ -277,6 +278,7 @@ bool OpenFunscripter::setup(int argc, char* argv[])
     tcode = std::make_unique<TCodePlayer>();
     tcode->loadSettings(Util::Prefpath("tcode.json"));
     extensions = std::make_unique<OFS_LuaExtensions>();
+    extensions->Init();
 
 #ifdef WIN32
     OFS_DownloadFfmpeg::FfmpegMissing = !Util::FileExists(Util::FfmpegPath().u8string());
@@ -2974,10 +2976,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             for (auto& ext : extensions->Extensions) {
                 if(ImGui::BeginMenu(ext.NameId.c_str())) {
                     if(ImGui::MenuItem(TR(ENABLED), NULL, &ext.Active)) {
-                        if (ext.Active && !ext.L) {
-                            ext.Active = ext.Load(ext.Directory);
-                        }
-                        else if (!ext.Active) { ext.Shutdown(); }
+                        ext.Toggle();
                     }
                     if(ImGui::MenuItem(Util::Format(TR(SHOW_WINDOW), ext.NameId.c_str()), NULL, &ext.WindowOpen, ext.Active)) {}
                     if(ImGui::MenuItem(Util::Format(TR(OPEN_DIRECTORY), ext.NameId.c_str()), NULL)) {

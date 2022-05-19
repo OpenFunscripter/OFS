@@ -1,44 +1,13 @@
 #include "OFS_LuaExtension.h"
 #include "OFS_LuaExtensions.h"
 #include "OFS_Util.h"
+#include "OpenFunscripter.h"
 
-#include "EASTL/string.h"
-#include "LuaBridge/LuaBridge.h"
-
-constexpr const char* LuaDefaultFunctions = R"(
-function clamp(val, min, max)
-	return math.min(max, math.max(val, min))
-end
-)";
-
-static int LuaPrint(lua_State* L) noexcept
-{
-	int nargs = lua_gettop(L);
-
-	eastl::string logMsg;
-	logMsg.reserve(1024);
-
-	lua_getglobal(L, OFS_LuaExtensions::GlobalExtensionPtr);
-	FUN_ASSERT(lua_isuserdata(L, -1), "Missing extension pointer.");
-	auto ext = (OFS_LuaExtension*)lua_touserdata(L, -1);
-	lua_pop(L, 1);
-
-	logMsg.append_sprintf("[%s]: ", ext->Name.c_str());
-	for (int i = 1; i <= nargs; ++i) {
-		const char* str = lua_tostring(L, i);
-		if (str != nullptr) {
-			logMsg.append(str);
-		}
-	}
-
-	logMsg.append(1, '\n');
-	OFS_LuaExtensions::ExtensionLogBuffer.AddLog(logMsg.c_str());
-	return 0;
-}
+#include <string>
 
 void OFS_LuaExtension::Toggle() noexcept
 {
-    if (this->Active && !this->L) {
+    if (this->Active) {
         this->Active = this->Load();
     }
     else if (!this->Active) { 
@@ -56,8 +25,29 @@ void OFS_LuaExtension::ShowWindow() noexcept
 		if (ImGui::Button("Try reloading")) {
 			Load();
 		}
+		ImGui::End();
+		return;
+	}
+
+	auto gui = L.get<sol::function>(OFS_LuaExtensions::RenderGui);
+	auto res = gui();
+	if(res.status() != sol::call_status::ok) {
+		auto err = sol::stack::get_traceback_or_errors(L.lua_state());
+		SetError(err.what());
 	}
 	ImGui::End();
+}
+
+void OFS_LuaExtension::Update() noexcept
+{
+	if(!Active) return;
+	auto update = L.get<sol::function>(OFS_LuaExtensions::UpdateFunction);
+	auto res = update(ImGui::GetIO().DeltaTime);
+	if(res.status() != sol::call_status::ok)
+	{
+		auto err = sol::stack::get_traceback_or_errors(L.lua_state());
+		SetError(err.what());
+	}
 }
 
 bool OFS_LuaExtension::Load() noexcept
@@ -71,24 +61,36 @@ bool OFS_LuaExtension::Load() noexcept
 	NameId = Util::Format("%s##_%s_", Name.c_str(), Name.c_str());
 	ClearError();
 
-	std::vector<uint8_t> extensionText;
-	if (!Util::ReadFile(mainFile.u8string().c_str(), extensionText)) {
-		FUN_ASSERT(false, "no file");
-		return false;
-	}
-	extensionText.emplace_back('\0');
+	std::string extensionText;
 
-	if (L) { 
-        lua_close(L); 
-        L = nullptr; 
-    }
+	{
+		std::vector<uint8_t> dataBuf;
+		if (!Util::ReadFile(mainFile.u8string().c_str(), dataBuf)) {
+			FUN_ASSERT(false, "no file");
+			return false;
+		}
+		//dataBuf.emplace_back('\0');
+		extensionText = std::string((char*)dataBuf.data(), dataBuf.size());
+	}
+
 	//UpdateTime = 0.f;
 	//MaxUpdateTime = 0.f;
 	//MaxGuiTime = 0.f;
 	//Bindables.clear();
 
-	L = luaL_newstate();
-	luaL_openlibs(L);
+	L = sol::state();
+	L.open_libraries(
+		sol::lib::base,
+		sol::lib::package,
+		sol::lib::coroutine,
+		sol::lib::string,
+		sol::lib::os,
+		sol::lib::table,
+		sol::lib::math,
+		sol::lib::utf8,
+		sol::lib::io
+	);
+
 	{
 		auto addToLuaPath = [](lua_State* L, const char* path) noexcept
 		{
@@ -103,74 +105,74 @@ bool OFS_LuaExtension::Load() noexcept
 			lua_pop(L, 1); // get rid of package table from top of stack
 		};
 		auto dirPath = Util::PathFromString(Directory);
-		addToLuaPath(L, (dirPath / "?.lua").u8string().c_str());
-		addToLuaPath(L, (dirPath / "lib" / "?.lua").u8string().c_str());
+		addToLuaPath(L.lua_state(), (dirPath / "?.lua").u8string().c_str());
+		addToLuaPath(L.lua_state(), (dirPath / "lib" / "?.lua").u8string().c_str());
 	}
 
-	api = std::make_unique<OFS_ExtensionAPI>(L);
+	auto ofs = L.new_usertype<OFS_ExtensionAPI>("ofs");
+	ofs["ExtensionDir"] = [this]() noexcept { return this->Directory.c_str(); };
+	api = std::make_unique<OFS_ExtensionAPI>(ofs);
+	
+	L[OFS_LuaExtensions::GlobalExtensionPtr] = this;
+	L.set_exception_handler([](lua_State* L, auto optEx, std::string_view msg)
+	{
+		__debugbreak();
+		return 0;
+	});
 
-	luabridge::getGlobalNamespace(L)
-		.addFunction("print", LuaPrint);
-		
+	L.set_panic([](lua_State* L)
+	{
+		__debugbreak();
+		return 0;
+	});
 
-	lua_pushlightuserdata(L, this);
-	lua_setglobal(L, OFS_LuaExtensions::GlobalExtensionPtr);
+	try
+	{
+		auto res = L.script(extensionText);
+		FUN_ASSERT(res.valid(), "what");
 
-	int status = luaL_dostring(L, LuaDefaultFunctions);
-	FUN_ASSERT(status == 0, "defaults failed");
-
-	// put all ofs functions into a ofs table
-	//lua_createtable(L, 0, sizeof(ofsLib) / sizeof(luaL_Reg) + sizeof(imguiLib) / sizeof(luaL_Reg));
-	//luaL_setfuncs(L, ofsLib, 0);
-	//luaL_setfuncs(L, imguiLib, 0);
-	//lua_setglobal(L, OFS_LuaExtensions::DefaultNamespace);
-
-	//lua_createtable(L, 0, sizeof(playerLib) / sizeof(luaL_Reg));
-	//luaL_setfuncs(L, playerLib, 0);
-	//lua_setglobal(L, OFS_LuaExtensions::PlayerNamespace);
-
-	status = luaL_dostring(L, (const char*)extensionText.data());
-	if (status != 0) {
-		const char* error = lua_tostring(L, -1);
-		LOG_ERROR(error);
-		SetError(error);
+		auto init = L.get<sol::function>(OFS_LuaExtensions::InitFunction);
+		res = init();
+		if(res.status() != sol::call_status::ok) {
+			auto err = sol::stack::get_traceback_or_errors(L.lua_state());
+			SetError(err.what());
+			return false;
+		}
+	}
+	catch(const std::exception& e)
+	{
+		SetError(e.what());
 		return false;
 	}
 
-	{
-		auto init = luabridge::getGlobal(L, OFS_LuaExtensions::InitFunction);
-		if(init.isNil())
+	sol::table btable = L["binding"];
+	if(btable.valid()) {
+		auto app = OpenFunscripter::ptr;
+		for(auto binding : btable) 
 		{
-			SetError("No init() function found.");
-			return false;
-		}
-
-		auto res = luabridge::call(init);
-		if(!res.wasOk())
-		{
-			LOG_ERROR(res.errorMessage().c_str());
-			SetError(res.errorMessage().c_str());
-			return false;
+			auto key = sol::stack::push_pop(binding.first);
+			const char* keyStr = lua_tostring(binding.first.lua_state(), key.idx);
+			std::string name = keyStr;
+			std::string globalName = Util::Format("%s::%s", Name.c_str(), keyStr);
+			app->extensions->AddBinding(NameId, globalName, name);
 		}
 	}
-
-	//auto app = OpenFunscripter::ptr;
-	//for (auto& bindP : Bindables) {
-	//	auto& bind = bindP.second;
-	//	Binding binding(
-	//		bind.GlobalName,
-	//		bind.GlobalName,
-	//		false,
-	//		[](void* user) {} // this gets handled by OFS_LuaExtensions::HandleBinding
-	//	);
-	//	binding.dynamicHandlerId = OFS_LuaExtensions::DynamicBindingHandler;
-	//	app->keybinds.addDynamicBinding(std::move(binding));
-	//}
 
 	return true;
 }
 
+void OFS_LuaExtension::Execute(const std::string& func) noexcept
+{
+	sol::function bind = L["binding"][func];
+	if(bind.valid()) {
+		auto res = bind();
+		if(res.status() != sol::call_status::ok) {
+			auto err = sol::stack::get_traceback_or_errors(L.lua_state());
+			SetError(err.what());
+		}
+	}
+}
+
 void OFS_LuaExtension::Shutdown() noexcept
 {
-
 }

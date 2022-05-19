@@ -2,13 +2,16 @@
 #include <string>
 #include "OFS_Lua.h"
 #include "OFS_LuaExtensionApi.h"
+#include "OFS_Util.h"
 
 #include <memory>
+
+#include "EASTL/vector_map.h"
 
 class OFS_LuaExtension
 {
 	private:
-		lua_State* L = nullptr;
+		sol::state L;
 		std::unique_ptr<OFS_ExtensionAPI> api = nullptr;
     public:
 		static constexpr const char* MainFile = "main.lua";
@@ -32,19 +35,20 @@ class OFS_LuaExtension
 		}
 
 		bool Load() noexcept;
-		
 		void SetError(const char* str) noexcept
 		{
+			LOG_ERROR(str);
 			Error = str;
 		}
-
 		void ClearError() noexcept
 		{
 			Error = std::string();
 		}
 
 		void ShowWindow() noexcept;
-
+		void Update() noexcept;
 		void Shutdown() noexcept;
 		void Toggle() noexcept;
+		
+		void Execute(const std::string& function) noexcept;
 };
