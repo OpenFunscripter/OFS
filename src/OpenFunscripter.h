@@ -134,7 +134,7 @@ public:
 	~OpenFunscripter();
 
 	KeybindingSystem keybinds;
-	ScriptTimeline scriptPositions;
+	ScriptTimeline scriptTimeline;
 	OFS_VideoplayerControls playerControls;
 	ScriptSimulator simulator;
 	OFS_BlockingTask blockingTask;

@@ -504,3 +504,5 @@ SLOWEST,slowest,slowest
 LANGUAGE,Language,Language
 ACTION_RELOAD_TRANSLATION,Reload current translation,Reload current translation
 DIRECTORY,Directory,Directory
+HIGHLIGHT_TRESHOLD,Highlight treshold,Highlight treshold
+ENABLE_MAX_SPEED_HIGHLIGHT,Max speed highlight,Max speed highlight

@@ -230,7 +230,7 @@ bool OpenFunscripter::setup(int argc, char* argv[])
     registerBindings(); // needs to happen before setBindings
     keybinds.load(Util::Prefpath("keybinds.json"));
 
-    scriptPositions.setup(undoSystem.get());
+    scriptTimeline.setup(undoSystem.get());
 
     scripting = std::make_unique<ScriptingMode>();
     scripting->setup();
@@ -932,8 +932,8 @@ void OpenFunscripter::registerBindings()
         
         if (app->ActiveFunscript()->HasSelection()) {
             auto time = forward
-                ? app->scriptPositions.overlay->steppingIntervalForward(app->ActiveFunscript()->Selection().front().atS)
-                : app->scriptPositions.overlay->steppingIntervalBackward(app->ActiveFunscript()->Selection().front().atS);
+                ? app->scriptTimeline.overlay->steppingIntervalForward(app->ActiveFunscript()->Selection().front().atS)
+                : app->scriptTimeline.overlay->steppingIntervalBackward(app->ActiveFunscript()->Selection().front().atS);
 
             app->undoSystem->Snapshot(StateType::ACTIONS_MOVED, app->ActiveFunscript());
             app->ActiveFunscript()->MoveSelectionTime(time, app->player->getFrameTime());
@@ -942,8 +942,8 @@ void OpenFunscripter::registerBindings()
             auto closest = ptr->ActiveFunscript()->GetClosestAction(app->player->getCurrentPositionSecondsInterp());
             if (closest != nullptr) {
                 auto time = forward
-                    ? app->scriptPositions.overlay->steppingIntervalForward(closest->atS)
-                    : app->scriptPositions.overlay->steppingIntervalBackward(closest->atS);
+                    ? app->scriptTimeline.overlay->steppingIntervalForward(closest->atS)
+                    : app->scriptTimeline.overlay->steppingIntervalBackward(closest->atS);
 
                 FunscriptAction moved(closest->atS + time, closest->pos);
                 auto closestInMoveRange = app->ActiveFunscript()->GetActionAtTime(moved.atS, app->player->getFrameTime());
@@ -960,8 +960,8 @@ void OpenFunscripter::registerBindings()
         auto app = OpenFunscripter::ptr;
         if (app->ActiveFunscript()->HasSelection()) {
             auto time = forward
-                ? app->scriptPositions.overlay->steppingIntervalForward(app->ActiveFunscript()->Selection().front().atS)
-                : app->scriptPositions.overlay->steppingIntervalBackward(app->ActiveFunscript()->Selection().front().atS);
+                ? app->scriptTimeline.overlay->steppingIntervalForward(app->ActiveFunscript()->Selection().front().atS)
+                : app->scriptTimeline.overlay->steppingIntervalBackward(app->ActiveFunscript()->Selection().front().atS);
 
             app->undoSystem->Snapshot(StateType::ACTIONS_MOVED, app->ActiveFunscript());
             app->ActiveFunscript()->MoveSelectionTime(time, app->player->getFrameTime());
@@ -973,8 +973,8 @@ void OpenFunscripter::registerBindings()
             auto closest = app->ActiveFunscript()->GetClosestAction(ptr->player->getCurrentPositionSecondsInterp());
             if (closest != nullptr) {
                 auto time = forward
-                    ? app->scriptPositions.overlay->steppingIntervalForward(closest->atS)
-                    : app->scriptPositions.overlay->steppingIntervalBackward(closest->atS);
+                    ? app->scriptTimeline.overlay->steppingIntervalForward(closest->atS)
+                    : app->scriptTimeline.overlay->steppingIntervalBackward(closest->atS);
 
                 FunscriptAction moved(closest->atS + time, closest->pos);
                 auto closestInMoveRange = app->ActiveFunscript()->GetActionAtTime(moved.atS, app->player->getFrameTime());
@@ -1406,14 +1406,14 @@ void OpenFunscripter::registerBindings()
             Tr::ACTION_CONTROLLER_SELECT,
             true,
             [&](void*) {
-                if (scriptPositions.selectionStart() < 0) {
-                    scriptPositions.setStartSelection(player->getCurrentPositionSecondsInterp());
+                if (scriptTimeline.selectionStart() < 0) {
+                    scriptTimeline.setStartSelection(player->getCurrentPositionSecondsInterp());
                 }
                 else {
                     auto tmp = player->getCurrentPositionSecondsInterp();
-                    auto [min, max] = std::minmax<float>(scriptPositions.selectionStart(), tmp);
+                    auto [min, max] = std::minmax<float>(scriptTimeline.selectionStart(), tmp);
                     ActiveFunscript()->SelectTime(min, max);
-                    scriptPositions.setStartSelection(-1);
+                    scriptTimeline.setStartSelection(-1);
                 }
             }
         );
@@ -1625,7 +1625,7 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
     Status |= OFS_Status::OFS_GradientNeedsUpdate;
     const char* VideoName = (const char*)ev.user.data1;
     if (VideoName) {
-        scriptPositions.ClearAudioWaveform();
+        scriptTimeline.ClearAudioWaveform();
     }
 
     tcode->reset();
@@ -1864,7 +1864,7 @@ void OpenFunscripter::step() noexcept {
 
             playerControls.DrawTimeline(NULL, drawBookmarks);
             
-            scriptPositions.ShowScriptPositions(NULL, player->getCurrentPositionSecondsInterp(), player->getDuration(), player->getFrameTime(), &LoadedFunscripts(), ActiveFunscriptIdx);
+            scriptTimeline.ShowScriptPositions(NULL, player->getCurrentPositionSecondsInterp(), player->getDuration(), player->getFrameTime(), &LoadedFunscripts(), ActiveFunscriptIdx);
             ShowStatisticsWindow(&settings->data().show_statistics);
 
             if (settings->data().show_action_editor) {
