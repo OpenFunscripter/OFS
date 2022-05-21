@@ -35,6 +35,10 @@ public:
 	static std::vector<ImVec2> SelectedActionScreenCoordinates;
 	static std::vector<ImVec2> ActionScreenCoordinates;
 	static float PointSize;
+	
+	static bool ShowMaxSpeedHighlight;
+	static float MaxSpeedPerSecond;
+	static ImColor MaxSpeedColor;
 
 	static ImGradient speedGradient;
 	static bool SplineMode;

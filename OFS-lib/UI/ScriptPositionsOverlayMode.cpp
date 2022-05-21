@@ -16,6 +16,10 @@ bool BaseOverlay::SplineMode = true;
 bool BaseOverlay::ShowActions = true;
 bool BaseOverlay::SyncLineEnable = false;
 
+bool BaseOverlay::ShowMaxSpeedHighlight = false;
+ImColor BaseOverlay::MaxSpeedColor = ImColor(0, 0, 255, 255);
+float BaseOverlay::MaxSpeedPerSecond = 400.f;
+
 BaseOverlay::BaseOverlay(ScriptTimeline* timeline) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
@@ -66,6 +70,18 @@ float EmptyOverlay::steppingIntervalForward(float fromTime) noexcept
 float EmptyOverlay::steppingIntervalBackward(float fromTime) noexcept
 {
     return -timeline->frameTime;
+}
+
+static void getActionLineColor(ImColor* speedColor, ImGradient& speedGradient, FunscriptAction action, FunscriptAction prevAction) noexcept
+{
+    float speed = std::abs(action.pos - prevAction.pos) / ((action.atS - prevAction.atS));
+    float relSpeed = Util::Clamp<float>(speed / HeatmapGradient::MaxSpeedPerSecond, 0.f, 1.f);
+    if(BaseOverlay::ShowMaxSpeedHighlight && speed >= BaseOverlay::MaxSpeedPerSecond) {
+        *speedColor = BaseOverlay::MaxSpeedColor;
+        return;
+    }
+    speedGradient.getColorAt(relSpeed, &speedColor->Value.x);
+    speedColor->Value.w = 1.f;
 }
 
 void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
@@ -175,12 +191,9 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
 
             if (prevAction != nullptr) {
                 // calculate speed relative to maximum speed
-                float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.atS - prevAction->atS))) / HeatmapGradient::MaxSpeedPerSecond, 0.f, 1.f);
-                ImColor speed_color;
-                speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
-                speed_color.Value.w = 1.f;
-
-                drawSpline(ctx, *prevAction, action, ImGui::ColorConvertFloat4ToU32(speed_color), 3.f);
+                ImColor speedColor;
+                getActionLineColor(&speedColor, speedGradient, action, *prevAction);
+                drawSpline(ctx, *prevAction, action, ImGui::ColorConvertFloat4ToU32(speedColor), 3.f);
             }
             prevAction = &action;
         }
@@ -198,13 +211,10 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
                 // draw line
                 auto p2 = getPointForAction(ctx, *prevAction);
                 // calculate speed relative to maximum speed
-                float rel_speed = Util::Clamp<float>((std::abs(action.pos - prevAction->pos) / ((action.atS - prevAction->atS))) / HeatmapGradient::MaxSpeedPerSecond, 0.f, 1.f);
-                ImColor speed_color;
-                speedGradient.getColorAt(rel_speed, &speed_color.Value.x);
-                speed_color.Value.w = 1.f;
-                
+                ImColor speedColor;
+                getActionLineColor(&speedColor, speedGradient, action, *prevAction);
                 ctx.draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
-                ColoredLines.emplace_back(std::move(BaseOverlay::ColoredLine{ p1, p2, ImGui::ColorConvertFloat4ToU32(speed_color) }));
+                ColoredLines.emplace_back(std::move(BaseOverlay::ColoredLine{ p1, p2, ImGui::ColorConvertFloat4ToU32(speedColor) }));
             }
 
             prevAction = &action;

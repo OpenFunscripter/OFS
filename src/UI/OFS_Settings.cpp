@@ -168,6 +168,20 @@ bool OFS_Settings::ShowPreferenceWindow() noexcept
 				}
 				if (ImGui::BeginTabItem(TR(SCRIPTING)))
 				{
+					if(ImGui::Checkbox(TR_ID("HighlightEnable", Tr::ENABLE_MAX_SPEED_HIGHLIGHT), &BaseOverlay::ShowMaxSpeedHighlight)) {
+						save = true;
+					}
+					ImGui::BeginDisabled(!BaseOverlay::ShowMaxSpeedHighlight);
+					if(ImGui::InputFloat(TR(HIGHLIGHT_TRESHOLD), &BaseOverlay::MaxSpeedPerSecond)) {
+						save = true;
+					}
+					ImGui::ColorEdit3(TR_ID("HighlightColor", Tr::COLOR), &BaseOverlay::MaxSpeedColor.Value.x, ImGuiColorEditFlags_None);
+					if(ImGui::IsItemDeactivatedAfterEdit()) {
+						save = true;
+					}
+					ImGui::EndDisabled();
+					
+					ImGui::Separator();
 					if (ImGui::InputInt(TR(FAST_FRAME_STEP), &scripterSettings.fast_step_amount, 1, 1)) {
 						save = true;
 						scripterSettings.fast_step_amount = Util::Clamp<int32_t>(scripterSettings.fast_step_amount, 2, 30);

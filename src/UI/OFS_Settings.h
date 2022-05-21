@@ -122,6 +122,10 @@ private:
 			OFS_REFLECT_NAMED("SyncLineEnable", BaseOverlay::SyncLineEnable, ar);
 			OFS_REFLECT(defaultSimulatorConfig, ar);
 			OFS_REFLECT(language_csv, ar);
+
+			OFS_REFLECT_NAMED("MaxSpeedHightlightEnabled", BaseOverlay::ShowMaxSpeedHighlight, ar);
+			OFS_REFLECT_NAMED("MaxSpeedHightlightColor", BaseOverlay::MaxSpeedColor, ar);
+			OFS_REFLECT_NAMED("MaxSpeedPerSecond", BaseOverlay::MaxSpeedPerSecond, ar);
 		}
 	} scripterSettings;
 
