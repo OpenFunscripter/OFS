@@ -111,6 +111,16 @@ bool OFS_LuaExtension::Load() noexcept
 
 	auto ofs = L.new_usertype<OFS_ExtensionAPI>("ofs");
 	ofs["ExtensionDir"] = [this]() noexcept { return this->Directory.c_str(); };
+	ofs["ScriptCount"] = []() noexcept { return OpenFunscripter::ptr->LoadedFunscripts().size(); };
+	ofs["ScriptName"] = [](lua_Integer idx) noexcept -> const char* {
+		auto app = OpenFunscripter::ptr;
+		idx -= 1;
+		if(idx >= 0 && idx < app->LoadedFunscripts().size()) {
+			return app->LoadedFunscripts()[idx]->Title.c_str();
+		}
+		return nullptr;
+	};
+
 	api = std::make_unique<OFS_ExtensionAPI>(ofs);
 	
 	L[OFS_LuaExtensions::GlobalExtensionPtr] = this;
