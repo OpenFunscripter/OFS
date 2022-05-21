@@ -1587,6 +1587,17 @@ void OpenFunscripter::processEvents() noexcept
 
 void OpenFunscripter::FunscriptChanged(SDL_Event& ev) noexcept
 {
+    // the event passes the address of the Funscript
+    // by searching for the funscript with the same address 
+    // the index can be retrieved
+    void* ptr = ev.user.data1;
+    for(int i=0, size=LoadedFunscripts().size(); i < size; i += 1) {
+        if(LoadedFunscripts()[i].get() == ptr) {
+            extensions->ScriptChanged(i);
+            break;
+        }
+    }
+    
     Status = Status | OFS_Status::OFS_GradientNeedsUpdate;
 }
 
@@ -1622,7 +1633,6 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
     OFS_PROFILE(__FUNCTION__);
     LoadedProject->Metadata.duration = player->getDuration();
     player->setPositionExact(LoadedProject->Settings.lastPlayerPosition);
-    ActiveFunscript()->NotifyActionsChanged(false);
 
     Status |= OFS_Status::OFS_GradientNeedsUpdate;
     const char* VideoName = (const char*)ev.user.data1;
@@ -2089,7 +2099,7 @@ void OpenFunscripter::UpdateNewActiveScript(int32_t activeIndex) noexcept
 {
     ActiveFunscriptIdx = activeIndex;
     updateTitle();
-    ActiveFunscript()->NotifyActionsChanged(false);
+    Status = Status | OFS_Status::OFS_GradientNeedsUpdate;
 }
 
 void OpenFunscripter::updateTitle() noexcept

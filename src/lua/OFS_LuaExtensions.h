@@ -55,7 +55,8 @@ class OFS_LuaExtensions
         void ShowExtensions() noexcept;
         void ReloadEnabledExtensions() noexcept;
         void HandleBinding(Binding* b) noexcept;
-
+        void ScriptChanged(uint32_t scriptIdx) noexcept;
+        
         void AddBinding(const std::string& extId, const std::string& uniqueId, const std::string& name) noexcept;
 
         template<typename Archive>

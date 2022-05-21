@@ -145,11 +145,10 @@ bool OFS_LuaExtension::Load() noexcept
 		return false;
 	}
 
-	sol::table btable = L["binding"];
+	sol::table btable = L[OFS_LuaExtension::BindingTable];
 	if(btable.valid()) {
 		auto app = OpenFunscripter::ptr;
-		for(auto binding : btable) 
-		{
+		for(auto binding : btable) {
 			auto key = sol::stack::push_pop(binding.first);
 			const char* keyStr = lua_tostring(binding.first.lua_state(), key.idx);
 			std::string name = keyStr;
@@ -163,9 +162,21 @@ bool OFS_LuaExtension::Load() noexcept
 
 void OFS_LuaExtension::Execute(const std::string& func) noexcept
 {
-	sol::function bind = L["binding"][func];
+	sol::function bind = L[OFS_LuaExtension::BindingTable][func];
 	if(bind.valid()) {
 		auto res = bind();
+		if(res.status() != sol::call_status::ok) {
+			auto err = sol::stack::get_traceback_or_errors(L.lua_state());
+			SetError(err.what());
+		}
+	}
+}
+
+void OFS_LuaExtension::ScriptChanged(uint32_t scriptIdx) noexcept
+{
+	sol::function change = L[OFS_LuaExtension::ScriptChangeFunction];
+	if(change.valid()) {
+		auto res = change(scriptIdx + 1);
 		if(res.status() != sol::call_status::ok) {
 			auto err = sol::stack::get_traceback_or_errors(L.lua_state());
 			SetError(err.what());

@@ -15,6 +15,9 @@ class OFS_LuaExtension
 		std::unique_ptr<OFS_ExtensionAPI> api = nullptr;
     public:
 		static constexpr const char* MainFile = "main.lua";
+		static constexpr const char* BindingTable = "binding";
+		static constexpr const char* ScriptChangeFunction = "scriptChange";
+
 		std::string Name;
 		std::string NameId;
 		std::string Directory;
@@ -49,6 +52,7 @@ class OFS_LuaExtension
 		void Update() noexcept;
 		void Shutdown() noexcept;
 		void Toggle() noexcept;
-		
+		void ScriptChanged(uint32_t scriptIdx) noexcept;
+
 		void Execute(const std::string& function) noexcept;
 };

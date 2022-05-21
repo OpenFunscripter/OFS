@@ -69,6 +69,15 @@ void OFS_LuaExtensions::HandleBinding(Binding* b) noexcept
 	}
 }
 
+void OFS_LuaExtensions::ScriptChanged(uint32_t scriptIdx) noexcept
+{
+	for(auto& ext : Extensions)
+	{
+		if(!ext.Active) continue;
+		ext.ScriptChanged(scriptIdx);
+	}
+}
+
 void OFS_LuaExtensions::removeNonExisting() noexcept
 {
 	Extensions.erase(std::remove_if(Extensions.begin(), Extensions.end(), 
