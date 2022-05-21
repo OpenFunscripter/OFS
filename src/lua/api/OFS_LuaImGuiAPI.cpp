@@ -34,6 +34,7 @@ OFS_ImGuiAPI::OFS_ImGuiAPI(sol::usertype<class OFS_ExtensionAPI>& ofs) noexcept
     ofs["SameLine"] = OFS_ImGuiAPI::SameLine;
     ofs["Separator"] = OFS_ImGuiAPI::Separator;
     ofs["NewLine"] = OFS_ImGuiAPI::NewLine;
+    ofs["Tooltip"] = OFS_ImGuiAPI::Tooltip;
 }
 
 OFS_ImGuiAPI::~OFS_ImGuiAPI() noexcept
@@ -142,4 +143,13 @@ void OFS_ImGuiAPI::NewLine() noexcept
 void OFS_ImGuiAPI::Separator() noexcept
 {
     ImGui::Separator();
+}
+
+void OFS_ImGuiAPI::Tooltip(const char* txt) noexcept
+{
+    if(ImGui::IsItemHovered()) {
+        ImGui::BeginTooltip();
+        ImGui::TextUnformatted(txt);
+        ImGui::EndTooltip();
+    }
 }

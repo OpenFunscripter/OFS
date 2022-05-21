@@ -9,6 +9,7 @@ class OFS_ImGuiAPI
     private:
     static void Text(const char* txt) noexcept;
     static bool Button(const char* txt) noexcept;
+    static void Tooltip(const char* txt) noexcept;
     static void SameLine() noexcept;
     static void Separator() noexcept;
     static void NewLine() noexcept;
