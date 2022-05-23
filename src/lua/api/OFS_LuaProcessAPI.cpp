@@ -11,7 +11,7 @@ OFS_ProcessAPI::OFS_ProcessAPI(sol::usertype<OFS_ExtensionAPI>& ofs) noexcept
     sol::state_view Lua(ofs.lua_state());
     auto process = Lua.new_usertype<OFS_LuaProcess>("Process", 
         sol::factories<>(OFS_LuaProcess::CreateProcess));
-    process["alive"] = sol::readonly_property(&OFS_LuaProcess::IsAlive);
+    process["alive"] = &OFS_LuaProcess::IsAlive;
     process["join"] = &OFS_LuaProcess::Join;
     process["detach"] = &OFS_LuaProcess::Detach;
     process["kill"] = &OFS_LuaProcess::Shutdown;

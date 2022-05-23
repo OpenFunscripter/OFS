@@ -24,6 +24,10 @@ static int LuaPrint(sol::variadic_args va) noexcept
 			logMsg.append(str);
 			logMsg.append(1, ' ');
 		}
+		else {
+			luaL_error(va.lua_state(), "Type can't be turned into a string.");
+			return 0;
+		}
 	}
 	logMsg.append(1, '\n');
 	OFS_LuaExtensions::ExtensionLogBuffer.AddLog(logMsg.c_str());

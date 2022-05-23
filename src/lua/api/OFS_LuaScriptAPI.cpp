@@ -5,7 +5,7 @@ OFS_ScriptAPI::OFS_ScriptAPI(sol::usertype<class OFS_ExtensionAPI>& ofs) noexcep
 {
     auto L = sol::state_view(ofs.lua_state());
     auto script = L.new_usertype<LuaFunscript>("Funscript");
-    script["hasSelection"] = sol::readonly_property(&LuaFunscript::HasSelection);
+    script["hasSelection"] = &LuaFunscript::HasSelection;
     script["actions"] = sol::readonly_property(&LuaFunscript::Actions);
     script["commit"] = &LuaFunscript::Commit;
     script["sort"] = &LuaFunscript::Sort;
