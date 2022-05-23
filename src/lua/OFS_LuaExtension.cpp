@@ -124,6 +124,8 @@ bool OFS_LuaExtension::Load() noexcept
 	api = std::make_unique<OFS_ExtensionAPI>(ofs);
 	
 	L[OFS_LuaExtensions::GlobalExtensionPtr] = this;
+
+#ifndef NDEBUG
 	L.set_exception_handler([](lua_State* L, auto optEx, std::string_view msg)
 	{
 		__debugbreak();
@@ -135,6 +137,7 @@ bool OFS_LuaExtension::Load() noexcept
 		__debugbreak();
 		return 0;
 	});
+#endif
 
 	try
 	{
