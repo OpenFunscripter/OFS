@@ -6,6 +6,7 @@
 #include <vector>
 #include <memory>
 #include <tuple>
+#include <set>
 
 struct LuaFunscriptAction
 {
@@ -53,6 +54,7 @@ class LuaFunscript
     private:
         std::weak_ptr<Funscript> script;
         LuaFunscriptArray actions;
+        std::set<uint32_t> markedIndices;
     public:
         LuaFunscript(std::weak_ptr<Funscript> script) noexcept;
         LuaFunscript(const std::vector<FunscriptAction>& actions) noexcept;
@@ -87,13 +89,15 @@ class LuaFunscript
         bool HasSelection() const noexcept;
         std::vector<lua_Integer> SelectedIndices() const noexcept;
 
-
         const char* Path() const noexcept;
         const char* Name() const noexcept;
 
         sol::optional<std::tuple<LuaFunscriptAction, lua_Integer>> ClosestAction(lua_Number time) noexcept;
         sol::optional<std::tuple<LuaFunscriptAction, lua_Integer>> ClosestActionAfter(lua_Number time) noexcept;
         sol::optional<std::tuple<LuaFunscriptAction, lua_Integer>> ClosestActionBefore(lua_Number time) noexcept;
+
+        void MarkForRemoval(lua_Integer actionIdx, sol::this_state L) noexcept;
+        lua_Integer RemoveMarked() noexcept;
 };
 
 class OFS_ScriptAPI

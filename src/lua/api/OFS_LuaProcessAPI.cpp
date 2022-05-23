@@ -1,5 +1,5 @@
 #include "OFS_LuaProcessAPI.h"
-#include "OFS_LuaExtensionApi.h"
+#include "OFS_LuaExtensionAPI.h"
 
 OFS_ProcessAPI::~OFS_ProcessAPI() noexcept
 {

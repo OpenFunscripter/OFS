@@ -1,4 +1,4 @@
-#include "OFS_LuaExtensionApi.h"
+#include "OFS_LuaExtensionAPI.h"
 #include "OFS_Util.h"
 #include "OFS_LuaExtensions.h"
 

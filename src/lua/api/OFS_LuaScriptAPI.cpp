@@ -13,6 +13,8 @@ OFS_ScriptAPI::OFS_ScriptAPI(sol::usertype<class OFS_ExtensionAPI>& ofs) noexcep
     script["closestActionAfter"] = &LuaFunscript::ClosestActionAfter;
     script["closestActionBefore"] = &LuaFunscript::ClosestActionBefore;
     script["selectedIndices"] = &LuaFunscript::SelectedIndices;
+    script["markForRemoval"] = &LuaFunscript::MarkForRemoval;
+    script["removeMarked"] = &LuaFunscript::RemoveMarked;
     
     script["path"] = sol::readonly_property(&LuaFunscript::Path);
     script["name"] = sol::readonly_property(&LuaFunscript::Name);
@@ -202,4 +204,29 @@ std::vector<lua_Integer> LuaFunscript::SelectedIndices() const noexcept
         }
     }
     return selectedIndices;
+}
+
+void LuaFunscript::MarkForRemoval(lua_Integer idx, sol::this_state L) noexcept
+{
+    idx -= 1;
+    if(idx >= 0 && idx < actions.size()) {
+        markedIndices.insert(idx);
+    }
+    else {
+        luaL_error(L.lua_state(), "Out of bounds index.");
+    }
+}
+
+lua_Integer LuaFunscript::RemoveMarked() noexcept
+{
+    LuaFunscriptArray filteredActions;
+    for(uint32_t i=0, size=actions.size(); i < size; i += 1) {
+        if(markedIndices.find(i) == markedIndices.end()) {
+            filteredActions.emplace_back(actions[i]);
+        }
+    }
+    auto removedCount = actions.size() - filteredActions.size();
+    actions = std::move(filteredActions);
+    markedIndices.clear();
+    return removedCount;
 }

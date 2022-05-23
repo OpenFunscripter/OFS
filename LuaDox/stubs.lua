@@ -241,6 +241,23 @@ function Funscript:closestActionBefore(time) end
 -- @treturn number[] indices
 function Funscript:selectedIndices() end
 
+--- Mark an action for removal
+-- @tparam number actionIdx
+-- @treturn nil
+-- @example
+--   for action, idx in ipairs(script.actions) do
+--     if action.pos > 50 then
+--       script:markForRemoval(idx)
+--     end
+--   end
+--   script:removeMarked()
+function Funscript:markForRemoval(actionIdx) end
+
+--- Remove all marked actions
+-- @treturn number removedCount
+function Funscript:removeMarked() end
+
+
 --- Action creation
 -- @module action
 
