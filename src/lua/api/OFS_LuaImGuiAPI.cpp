@@ -106,14 +106,14 @@ std::tuple<lua_Integer, bool> OFS_ImGuiAPI::Combo(const char* txt, lua_Integer c
     bool valueChanged = false;
     sol::reference currentItem = items.raw_get<sol::reference>(currentSelection);
     auto currentItemStack = sol::stack::push_pop(currentItem);   
-    auto currentItemStr = lua_tostring(items.lua_state(), currentItemStack.idx);
+    auto currentItemStr = lua_tostring(items.lua_state(), currentItemStack.m_index);
 
     if(currentItemStr) {
         if(ImGui::BeginCombo(txt, currentItemStr)) {
             for(int i=1, size=items.size(); i <= size; i += 1) {
                 sol::reference item = items[i];
                 auto stackItem = sol::stack::push_pop(item);
-                auto itemStr = lua_tostring(items.lua_state(), stackItem.idx);
+                auto itemStr = lua_tostring(items.lua_state(), stackItem.m_index);
                 if(itemStr) {
                     if(ImGui::Selectable(itemStr, i == currentSelection)) {
                         currentSelection = i;

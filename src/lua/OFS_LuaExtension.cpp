@@ -163,7 +163,7 @@ bool OFS_LuaExtension::Load() noexcept
 		auto app = OpenFunscripter::ptr;
 		for(auto binding : btable) {
 			auto key = sol::stack::push_pop(binding.first);
-			const char* keyStr = lua_tostring(binding.first.lua_state(), key.idx);
+			const char* keyStr = lua_tostring(binding.first.lua_state(), key.m_index);
 			std::string name = keyStr;
 			std::string globalName = Util::Format("%s::%s", Name.c_str(), keyStr);
 			app->extensions->AddBinding(NameId, globalName, name);

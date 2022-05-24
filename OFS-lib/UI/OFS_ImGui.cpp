@@ -29,18 +29,6 @@ void OFS::ImageWithId(ImGuiID id, ImTextureID user_texture_id, const ImVec2& siz
     }
 }
 
-bool OFS::GamepadContextMenu() noexcept
-{
-    ImGuiWindow* window = GImGui->CurrentWindow;
-    if (window->SkipItems)
-        return false;
-    ImGuiID id = GImGui->LastItemData.ID; // If user hasn't passed an ID, we can use the LastItemID. Using LastItemID as a Popup ID won't conflict!
-    IM_ASSERT(id != 0);                                                  // You cannot pass a NULL str_id if the last item has no identifier (e.g. a Text() item)
-    if (ImGui::IsNavInputTest(ImGuiNavInput_Input, ImGuiInputReadMode_Pressed) && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
-        ImGui::OpenPopupEx(id, ImGuiPopupFlags_None);
-    return ImGui::BeginPopupEx(id, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings);
-}
-
 bool OFS::Spinner(const char* label, float radius, int thickness, const ImU32& color) noexcept
 {
     ImGuiWindow* window = ImGui::GetCurrentWindow();
