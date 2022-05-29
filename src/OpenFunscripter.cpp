@@ -2299,7 +2299,7 @@ void OpenFunscripter::copySelection() noexcept
     if (ActiveFunscript()->HasSelection()) {
         CopiedSelection.clear();
         for (auto action : ActiveFunscript()->Selection()) {
-            CopiedSelection.emplace_back(action);
+            CopiedSelection.emplace(action);
         }
     }
 }
@@ -2328,15 +2328,14 @@ void OpenFunscripter::pasteSelection() noexcept
 
 void OpenFunscripter::pasteSelectionExact() noexcept {
     OFS_PROFILE(__FUNCTION__);
-    if (CopiedSelection.size() == 0) return;
+    if (CopiedSelection.empty()) return;
     
+    undoSystem->Snapshot(StateType::PASTE_COPIED_ACTIONS, ActiveFunscript());
     if (CopiedSelection.size() >= 2) {
-        FUN_ASSERT(CopiedSelection.front().atS < CopiedSelection.back().atS, "order is messed up");
         ActiveFunscript()->RemoveActionsInInterval(CopiedSelection.front().atS, CopiedSelection.back().atS);
     }
 
     // paste without altering timestamps
-    undoSystem->Snapshot(StateType::PASTE_COPIED_ACTIONS, ActiveFunscript());
     for (auto&& action : CopiedSelection) {
         ActiveFunscript()->AddAction(action);
     }

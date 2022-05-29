@@ -47,7 +47,7 @@ private:
 	bool DebugMetrics = false;
 	bool ShowAbout = false;
 	
-	std::vector<FunscriptAction> CopiedSelection;
+	FunscriptArray CopiedSelection;
 	std::chrono::steady_clock::time_point lastBackup;
 
 	char tmpBuf[2][32];
@@ -182,7 +182,7 @@ public:
 	static inline Funscript& script() noexcept { return *OpenFunscripter::ptr->ActiveFunscript(); }
 	static void SetCursorType(ImGuiMouseCursor id) noexcept;
 
-	inline const std::vector<FunscriptAction>& FunscriptClipboard() const { return CopiedSelection; }
+	inline const FunscriptArray& FunscriptClipboard() const { return CopiedSelection; }
 
 	inline void LoadOverrideFont(const std::string& font) noexcept { 
 		OFS_DynFontAtlas::FontOverride = font;

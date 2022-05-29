@@ -73,7 +73,7 @@ LuaFunscript::LuaFunscript(std::weak_ptr<Funscript> script) noexcept
     ->Wait();
 }
 
-LuaFunscript::LuaFunscript(const std::vector<FunscriptAction>& actions) noexcept
+LuaFunscript::LuaFunscript(const FunscriptArray& actions) noexcept
 {
     for(auto a : actions) {
         this->actions.emplace_back(a, false);

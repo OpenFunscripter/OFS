@@ -57,7 +57,7 @@ class LuaFunscript
         std::set<uint32_t> markedIndices;
     public:
         LuaFunscript(std::weak_ptr<Funscript> script) noexcept;
-        LuaFunscript(const std::vector<FunscriptAction>& actions) noexcept;
+        LuaFunscript(const FunscriptArray& actions) noexcept;
 
         inline void TakeSnapshot() noexcept
         {
