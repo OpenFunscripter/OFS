@@ -18,6 +18,7 @@
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
 
+#include "SDL.h"
 #include "ImGuizmo.h"
 #include "asap.h"
 #include "glad/gl.h"
@@ -1544,8 +1545,7 @@ void OpenFunscripter::processEvents() noexcept
     OFS_PROFILE(__FUNCTION__);
     SDL_Event event;
     bool IsExiting = false;
-    while (SDL_PollEvent(&event))
-    {
+    while (SDL_PollEvent(&event)) {
         ImGui_ImplSDL2_ProcessEvent(&event);
         switch (event.type) {
         case SDL_QUIT:
