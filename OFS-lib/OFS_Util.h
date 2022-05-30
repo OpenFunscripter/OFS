@@ -365,7 +365,7 @@ public:
 	static std::string Resource(const std::string& path) noexcept;
 
 	static std::string Prefpath(const std::string& path = std::string()) noexcept {
-		static const char* cachedPref = SDL_GetPrefPath("OFS", "OFS_data");
+		static const char* cachedPref = SDL_GetPrefPath("OFS", "OFS2_data");
 		static std::filesystem::path prefPath = Util::PathFromString(cachedPref);
 		if (!path.empty()) {
 			std::filesystem::path rel = Util::PathFromString(path);
