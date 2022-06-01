@@ -2984,10 +2984,14 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::Separator();
             for (auto& ext : extensions->Extensions) {
                 if(ImGui::BeginMenu(ext.NameId.c_str())) {
-                    if(ImGui::MenuItem(TR(ENABLED), NULL, &ext.Active)) {
+                    bool isActive = ext.IsActive();
+                    if(ImGui::MenuItem(TR(ENABLED), NULL, &isActive)) {
                         ext.Toggle();
+                        if(ext.HasError()) {
+                            Util::MessageBoxAlert(TR(UNKNOWN_ERROR), ext.Error);
+                        }
                     }
-                    if(ImGui::MenuItem(Util::Format(TR(SHOW_WINDOW), ext.NameId.c_str()), NULL, &ext.WindowOpen, ext.Active)) {}
+                    if(ImGui::MenuItem(Util::Format(TR(SHOW_WINDOW), ext.NameId.c_str()), NULL, &ext.WindowOpen, ext.IsActive())) {}
                     if(ImGui::MenuItem(Util::Format(TR(OPEN_DIRECTORY), ext.NameId.c_str()), NULL)) {
                         Util::OpenFileExplorer(ext.Directory);            
                     }

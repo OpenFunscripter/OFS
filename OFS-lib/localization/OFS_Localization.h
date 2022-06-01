@@ -18,6 +18,8 @@ class OFS_Translator
     bool LoadTranslation(const char* name) noexcept;
     void LoadDefaults() noexcept;
 
+    static bool MergeIntoOne(const char* input1, const char* input2, const char* outputPath) noexcept;
+
     static void Init() noexcept
     {
         if(ptr != nullptr) return;

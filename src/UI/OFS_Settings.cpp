@@ -43,6 +43,33 @@ void OFS_Settings::saveSettings()
 	save_config();
 }
 
+static void copyTranslationHelper() noexcept
+{
+	auto srcDir = Util::Basepath() / "data" / OFS_Translator::TranslationDir;
+	auto targetDir = Util::Prefpath(OFS_Translator::TranslationDir);
+	std::error_code ec;
+	std::filesystem::directory_iterator langDirIt(srcDir, ec);
+	for(auto& pIt : langDirIt) {
+		if(pIt.path().extension() == ".csv") {
+			auto targetFile = targetDir / pIt.path().filename();
+			if(Util::FileExists(targetFile.u8string())) {
+				// merge the two
+				auto input1 = pIt.path().u8string();
+				auto input2 = targetFile.u8string();
+				if(OFS_Translator::MergeIntoOne(input1.c_str(), input2.c_str(), input2.c_str())) {
+					std::filesystem::remove(pIt.path(), ec);
+				}
+			}
+			else {
+				std::filesystem::copy_file(pIt.path(), targetFile, ec);
+				if(!ec) {
+					std::filesystem::remove(pIt.path(), ec);
+				}
+			}
+		}
+	}
+}
+
 bool OFS_Settings::ShowPreferenceWindow() noexcept
 {
 	bool save = false;
@@ -71,18 +98,18 @@ bool OFS_Settings::ShowPreferenceWindow() noexcept
 					ImGui::Separator();
 
 					ImGui::TextWrapped(TR(PREFERENCES_TXT));
+					if (ImGui::InputInt(TR(FRAME_LIMIT), &scripterSettings.framerateLimit, 1, 10)) {
+						scripterSettings.framerateLimit = Util::Clamp(scripterSettings.framerateLimit, 60, 300);
+						save = true;
+					}
+					OFS::Tooltip(TR(FRAME_LIMIT_TOOLTIP));
+					ImGui::SameLine();
 					if (ImGui::Checkbox(TR(VSYNC), (bool*)&scripterSettings.vsync)) {
 						scripterSettings.vsync = Util::Clamp(scripterSettings.vsync, 0, 1); // just in case...
 						SDL_GL_SetSwapInterval(scripterSettings.vsync);
 						save = true;
 					}
 					OFS::Tooltip(TR(VSYNC_TOOLTIP));
-					ImGui::SameLine();
-					if (ImGui::InputInt(TR(FRAME_LIMIT), &scripterSettings.framerateLimit, 1, 10)) {
-						scripterSettings.framerateLimit = Util::Clamp(scripterSettings.framerateLimit, 60, 300);
-						save = true;
-					}
-					OFS::Tooltip(TR(FRAME_LIMIT_TOOLTIP));
 					ImGui::Separator();
 					ImGui::InputText(TR(FONT), scripterSettings.font_override.empty() ? (char*)TR(DEFAULT_FONT) : (char*)scripterSettings.font_override.c_str(),
 						scripterSettings.font_override.size(), ImGuiInputTextFlags_ReadOnly);
@@ -122,10 +149,8 @@ bool OFS_Settings::ShowPreferenceWindow() noexcept
 					}
 					if(ImGui::BeginCombo(TR_ID("LANGUAGE", Tr::LANGUAGE), data().language_csv.empty() ? "English" : data().language_csv.c_str()))
 					{
-						for(auto& file : translationFiles)
-						{
-							if(ImGui::Selectable(file.c_str(), file == data().language_csv))
-							{
+						for(auto& file : translationFiles) {
+							if(ImGui::Selectable(file.c_str(), file == data().language_csv)) {
 								if(OFS_Translator::ptr->LoadTranslation(file.c_str()))
 								{
 									data().language_csv = file;
@@ -135,14 +160,13 @@ bool OFS_Settings::ShowPreferenceWindow() noexcept
 						}
 						ImGui::EndCombo();
 					}
-					if(ImGui::IsItemClicked(ImGuiMouseButton_Left))
-					{
+					if(ImGui::IsItemClicked(ImGuiMouseButton_Left))	{
+						copyTranslationHelper();
 						translationFiles.clear();
 						std::error_code ec;
 						std::filesystem::directory_iterator dirIt(Util::Prefpath(OFS_Translator::TranslationDir), ec);
-						for (auto&& pIt : dirIt) {
-							if(pIt.path().extension() == ".csv")
-							{
+						for (auto& pIt : dirIt) {
+							if(pIt.path().extension() == ".csv") {
 								translationFiles.emplace_back(pIt.path().filename().u8string());
 							}
 						}

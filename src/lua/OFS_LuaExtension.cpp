@@ -7,10 +7,10 @@
 
 void OFS_LuaExtension::Toggle() noexcept
 {
-    if (this->Active) {
+    if (!this->Active) {
         this->Active = this->Load();
     }
-    else if (!this->Active) { 
+    else { 
         this->Shutdown(); 
     }
 }
@@ -54,22 +54,18 @@ bool OFS_LuaExtension::Load() noexcept
 {
     auto directory = Util::PathFromString(this->Directory);
     auto mainFile = directory / OFS_LuaExtension::MainFile;
-	//Directory = directory.u8string(); 
-	//Hash = Util::Hash(Directory.c_str(), Directory.size());
 
 	NameId = directory.filename().u8string();
 	NameId = Util::Format("%s##_%s_", Name.c_str(), Name.c_str());
 	ClearError();
 
 	std::string extensionText;
-
 	{
 		std::vector<uint8_t> dataBuf;
 		if (!Util::ReadFile(mainFile.u8string().c_str(), dataBuf)) {
 			FUN_ASSERT(false, "no file");
 			return false;
 		}
-		//dataBuf.emplace_back('\0');
 		extensionText = std::string((char*)dataBuf.data(), dataBuf.size());
 	}
 
@@ -199,4 +195,10 @@ void OFS_LuaExtension::ScriptChanged(uint32_t scriptIdx) noexcept
 
 void OFS_LuaExtension::Shutdown() noexcept
 {
+	// UpdateTime = 0.f;
+	// MaxUpdateTime = 0.f;
+	// MaxGuiTime = 0.f;
+	// Bindables.clear();
+	L = sol::state();
+	Active = false;
 }

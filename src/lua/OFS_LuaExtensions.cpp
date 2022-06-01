@@ -39,7 +39,7 @@ OFS_LuaExtensions::~OFS_LuaExtensions() noexcept
 bool OFS_LuaExtensions::Init() noexcept
 {
 	for (auto& ext : Extensions) {
-		if (ext.Active) ext.Load();
+		if (ext.IsActive()) ext.Load();
 	}
 	return true;
 }
@@ -60,7 +60,7 @@ void OFS_LuaExtensions::HandleBinding(Binding* b) noexcept
 	auto it = Bindings.find(b->identifier);
 	if(it != Bindings.end()) {
 		for(auto& ext : Extensions) {
-			if(!ext.Active) continue;
+			if(!ext.IsActive()) continue;
 			if(ext.NameId == it->second.ExtensionId) {
 				ext.Execute(it->second.Name);
 				break;
@@ -73,9 +73,16 @@ void OFS_LuaExtensions::ScriptChanged(uint32_t scriptIdx) noexcept
 {
 	for(auto& ext : Extensions)
 	{
-		if(!ext.Active) continue;
+		if(!ext.IsActive()) continue;
 		ext.ScriptChanged(scriptIdx);
 	}
+}
+
+void OFS_LuaExtensions::save() noexcept
+{
+	nlohmann::json json;
+	OFS::serializer::save(this, &json);
+	Util::WriteJson(json, LastConfigPath, true);
 }
 
 void OFS_LuaExtensions::removeNonExisting() noexcept
@@ -86,15 +93,31 @@ void OFS_LuaExtensions::removeNonExisting() noexcept
 		}), Extensions.end());
 }
 
-void OFS_LuaExtensions::save() noexcept
-{
-	nlohmann::json json;
-	OFS::serializer::save(this, &json);
-	Util::WriteJson(json, LastConfigPath, true);
-}
-
 void OFS_LuaExtensions::UpdateExtensionList() noexcept
 {
+	auto extensionDir = Util::Prefpath(ExtensionDir);
+	Util::CreateDirectories(extensionDir);
+	std::error_code ec;
+	std::filesystem::directory_iterator dirIt(extensionDir, ec);
+	
+	removeNonExisting();
+
+	for (auto it : dirIt) {
+		if (it.is_directory()) {
+			auto Name = it.path().filename().u8string();
+			auto Directory = it.path().u8string();
+			bool skip = std::any_of(Extensions.begin(), Extensions.end(), 
+				[&](auto& a) {
+				return a.Name == Name;
+			});
+			if (!skip) {
+				auto& ext = Extensions.emplace_back();
+				ext.Name = std::move(Name);
+				ext.NameId = Util::Format("%s##_%s_", ext.Name.c_str(), ext.Name.c_str());
+				ext.Directory = std::move(Directory);
+			}
+		}
+	}
 }
 
 void OFS_LuaExtensions::Update(float delta) noexcept
@@ -116,7 +139,7 @@ void OFS_LuaExtensions::ShowExtensions() noexcept
 void OFS_LuaExtensions::ReloadEnabledExtensions() noexcept
 {
     for(auto& ext : Extensions) {
-		if(ext.Active) {
+		if(ext.IsActive()) {
 			ext.Load();
 		}
 	}

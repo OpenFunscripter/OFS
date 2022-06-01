@@ -13,6 +13,7 @@ class OFS_LuaExtension
 	private:
 		sol::state L;
 		std::unique_ptr<OFS_ExtensionAPI> api = nullptr;
+		bool Active = false;
     public:
 		static constexpr const char* MainFile = "main.lua";
 		static constexpr const char* BindingTable = "binding";
@@ -24,7 +25,9 @@ class OFS_LuaExtension
 		std::string Error;
 
 		bool WindowOpen = false;
-		bool Active = false;
+
+		inline bool IsActive() const noexcept { return Active; } 
+		inline bool HasError() const noexcept { return !Error.empty(); }
 
 		template<class Archive>
 		void reflect(Archive& ar)
