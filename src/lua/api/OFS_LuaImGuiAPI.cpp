@@ -35,11 +35,45 @@ OFS_ImGuiAPI::OFS_ImGuiAPI(sol::usertype<class OFS_ExtensionAPI>& ofs) noexcept
     ofs["Separator"] = OFS_ImGuiAPI::Separator;
     ofs["NewLine"] = OFS_ImGuiAPI::NewLine;
     ofs["Tooltip"] = OFS_ImGuiAPI::Tooltip;
+    ofs["BeginDisabled"] = [this](bool disabled) noexcept {return this->BeginDisabled(disabled); };
+    ofs["EndDisabled"] = [this]() noexcept {return this->EndDisabled(); };
 }
 
 OFS_ImGuiAPI::~OFS_ImGuiAPI() noexcept
 {
 
+}
+
+bool OFS_ImGuiAPI::Validate() noexcept
+{
+    // if this returns false the api was used incorrectly
+    bool valid = BeginEndDisableCounter == 0;
+    if(!valid) ErrorStr = "Wrong use of BeginDisabled/EndDisabled";
+	if(!valid) TrySafe(); // try prevent crash
+    return valid;
+}
+
+void OFS_ImGuiAPI::TrySafe() noexcept
+{
+    // try to safe ofs from crashing due to wrong api use
+    while(this->BeginEndDisableCounter > 0) {
+        ImGui::EndDisabled();
+        this->BeginEndDisableCounter -= 1;
+    }
+}
+
+void OFS_ImGuiAPI::BeginDisabled(bool disable) noexcept
+{
+    this->BeginEndDisableCounter += 1;
+    ImGui::BeginDisabled(disable);
+}
+
+void OFS_ImGuiAPI::EndDisabled() noexcept
+{
+    if(this->BeginEndDisableCounter > 0) {
+        this->BeginEndDisableCounter -= 1;
+        ImGui::EndDisabled();
+    }
 }
 
 void OFS_ImGuiAPI::Text(const char* txt) noexcept

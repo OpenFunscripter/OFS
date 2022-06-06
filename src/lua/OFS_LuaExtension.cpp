@@ -35,6 +35,9 @@ void OFS_LuaExtension::ShowWindow() noexcept
 		auto err = sol::stack::get_traceback_or_errors(L.lua_state());
 		SetError(err.what());
 	}
+	if(!api->guiAPI->Validate()) {
+		SetError(api->guiAPI->Error().c_str());
+	}
 	ImGui::End();
 }
 

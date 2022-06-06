@@ -151,7 +151,18 @@ function ofs.NewLine() end
 -- @treturn nil
 function ofs.Tooltip(txt) end
 
+--- Begin disabled area
+-- @tparam bool disabled
+-- @example 
+--   ofs.BeginDisabled(true)
+--   ofs.Button("...") -- button is forever disabled
+--   ofs.EndDisabled()
+-- @treturn nil
+function ofs.BeginDisabled(disabled) end
 
+--- End disabled area
+-- @treturn nil
+function ofs.EndDisabled(disabled) end
 
 --- Player functions
 --

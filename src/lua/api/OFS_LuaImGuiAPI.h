@@ -7,12 +7,17 @@
 class OFS_ImGuiAPI
 {
     private:
+    uint32_t BeginEndDisableCounter = 0;
+    std::string ErrorStr; 
+
     static void Text(const char* txt) noexcept;
     static bool Button(const char* txt) noexcept;
     static void Tooltip(const char* txt) noexcept;
     static void SameLine() noexcept;
     static void Separator() noexcept;
     static void NewLine() noexcept;
+    void BeginDisabled(bool disable) noexcept;
+    void EndDisabled() noexcept;
 
     static std::tuple<lua_Number, bool> DragNumberWithoutStepSize(const char* txt, lua_Number current) noexcept
     { return DragNumber(txt, current, 1.0); }
@@ -42,4 +47,8 @@ class OFS_ImGuiAPI
     public:
     OFS_ImGuiAPI(sol::usertype<class OFS_ExtensionAPI>& ofs) noexcept;
     ~OFS_ImGuiAPI() noexcept;
+
+    bool Validate() noexcept;
+    const std::string& Error() const noexcept { return ErrorStr; }
+    void TrySafe() noexcept;
 };
