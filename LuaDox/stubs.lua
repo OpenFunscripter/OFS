@@ -275,7 +275,7 @@ function Funscript:removeMarked() end
 --- Create a new action
 -- @tparam number at
 -- @tparam number pos
--- @tparam bool selected
+-- @tparam bool|nil selected
 -- @treturn Action action
 function Action.new(at, pos, selected) end
 
