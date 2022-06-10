@@ -33,10 +33,10 @@ void OFS_LuaExtension::ShowWindow() noexcept
 	auto res = gui();
 	if(res.status() != sol::call_status::ok) {
 		auto err = sol::stack::get_traceback_or_errors(L.lua_state());
-		SetError(err.what());
+		AddError(err.what());
 	}
 	if(!api->guiAPI->Validate()) {
-		SetError(api->guiAPI->Error().c_str());
+		AddError(api->guiAPI->Error().c_str());
 	}
 	ImGui::End();
 }
@@ -49,7 +49,7 @@ void OFS_LuaExtension::Update() noexcept
 	if(res.status() != sol::call_status::ok)
 	{
 		auto err = sol::stack::get_traceback_or_errors(L.lua_state());
-		SetError(err.what());
+		AddError(err.what());
 	}
 }
 
@@ -147,13 +147,13 @@ bool OFS_LuaExtension::Load() noexcept
 		res = init();
 		if(res.status() != sol::call_status::ok) {
 			auto err = sol::stack::get_traceback_or_errors(L.lua_state());
-			SetError(err.what());
+			AddError(err.what());
 			return false;
 		}
 	}
 	catch(const std::exception& e)
 	{
-		SetError(e.what());
+		AddError(e.what());
 		return false;
 	}
 
@@ -179,7 +179,7 @@ void OFS_LuaExtension::Execute(const std::string& func) noexcept
 		auto res = bind();
 		if(res.status() != sol::call_status::ok) {
 			auto err = sol::stack::get_traceback_or_errors(L.lua_state());
-			SetError(err.what());
+			AddError(err.what());
 		}
 	}
 }
@@ -191,7 +191,7 @@ void OFS_LuaExtension::ScriptChanged(uint32_t scriptIdx) noexcept
 		auto res = change(scriptIdx + 1);
 		if(res.status() != sol::call_status::ok) {
 			auto err = sol::stack::get_traceback_or_errors(L.lua_state());
-			SetError(err.what());
+			AddError(err.what());
 		}
 	}
 }

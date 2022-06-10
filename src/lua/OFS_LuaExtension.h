@@ -41,11 +41,14 @@ class OFS_LuaExtension
 		}
 
 		bool Load() noexcept;
-		void SetError(const char* str) noexcept
+		
+		void AddError(const char* str) noexcept
 		{
 			LOG_ERROR(str);
-			Error = str;
+			if(!Error.empty()) Error += '\n';
+			Error += str;
 		}
+
 		void ClearError() noexcept
 		{
 			Error = std::string();
