@@ -41,6 +41,13 @@ bool OFS_Waveform::LoadFlac(const std::string& output) noexcept
 	drflac_close(flac);
 	Samples.shrink_to_fit();
 
+	if(std::abs(minSample) > std::abs(maxSample)) {
+		maxSample = std::abs(minSample);
+	}
+	else {
+		minSample = -maxSample;
+	}
+
 	for(auto& sample : Samples) {
 		sample = Util::MapRange(sample, minSample, maxSample, -1.f, 1.f);
 	}
