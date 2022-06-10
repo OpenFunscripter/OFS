@@ -17,6 +17,9 @@ bool OFS_Waveform::LoadFlac(const std::string& output) noexcept
 	std::vector<drflac_int16> ChunkSamples; ChunkSamples.resize(48000);
 	constexpr int SamplesPerLine = 60; 
 
+	float minSample = 0.f;
+	float maxSample = 0.f;
+
 	uint32_t sampleCount = 0;
 	float avgSample = 0.f;
 	Samples.clear();
@@ -30,12 +33,18 @@ bool OFS_Waveform::LoadFlac(const std::string& output) noexcept
 				avgSample += floatSample;
 			}
 			avgSample /= (float)SamplesPerLine;
+			minSample = Util::Min(minSample, avgSample);
+			maxSample = Util::Max(maxSample, avgSample);
 			Samples.emplace_back(avgSample);
 		}
 	}
 	drflac_close(flac);
-
 	Samples.shrink_to_fit();
+
+	for(auto& sample : Samples) {
+		sample = Util::MapRange(sample, minSample, maxSample, -1.f, 1.f);
+	}
+
 	return true;
 }
 
