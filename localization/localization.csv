@@ -199,7 +199,7 @@ NAVIGATION_BINDING_GROUP,Navigation,Navigation
 UTILITY_BINDING_GROUP,Utility,Utility
 MOVING_BINDING_GROUP,Moving,Moving
 SPECIAL_BINDING_GROUP,Special,Special
-VIDEOPLAYER_BINDING_GROUP,Video player,Video player
+VIDEOPLAYER_BINDING_GROUP,Videoplayer,Videoplayer
 EXTENSIONS_BINDING_GROUP,Extensions,Extensions
 CONTROLLER_BINDING_GROUP,Controller,Controller
 ACTION_REMOVE_ACTION,Remove action,Remove action

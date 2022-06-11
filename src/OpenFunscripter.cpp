@@ -1254,7 +1254,7 @@ void OpenFunscripter::registerBindings()
 
     // VIDEO CONTROL
     {
-        KeybindingGroup group("Video player", Tr::VIDEOPLAYER_BINDING_GROUP);
+        KeybindingGroup group("Videoplayer", Tr::VIDEOPLAYER_BINDING_GROUP);
         // PLAY / PAUSE
         auto& toggle_play = group.bindings.emplace_back(
             "toggle_play",
