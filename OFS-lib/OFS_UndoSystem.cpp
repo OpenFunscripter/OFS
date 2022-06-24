@@ -57,40 +57,39 @@ const char* UndoSystem::UndoContext::Description() const noexcept
 
 void UndoSystem::ShowUndoRedoHistory(bool* open) noexcept
 {
-	if (*open) {
-		OFS_PROFILE(__FUNCTION__);
-		ImGui::SetNextWindowSizeConstraints(ImVec2(200, 100), ImVec2(200, 200));
-		ImGui::Begin(TR_ID(UndoSystem::WindowId, Tr::UNDO_REDO_HISTORY), open, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
-		ImGui::TextDisabled(TR(REDO_STACK));
+	if (!*open) return;
+	OFS_PROFILE(__FUNCTION__);
+	ImGui::SetNextWindowSizeConstraints(ImVec2(200, 100), ImVec2(200, 200));
+	ImGui::Begin(TR_ID(UndoSystem::WindowId, Tr::UNDO_REDO_HISTORY), open, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::TextDisabled(TR(REDO_STACK));
 
-		for (auto it = RedoStack.begin(), end = RedoStack.end(); it != end; ++it) {
-			int count = 1;
-			auto copy_it = it;
-			while (++copy_it != end 
-				&& copy_it->Type == it->Type 
-				&& copy_it->IsMulti() == it->IsMulti()) {
-				++count;
-			}
-			it = copy_it - 1;
+	for (auto it = RedoStack.begin(), end = RedoStack.end(); it != end; ++it) {
+		int count = 1;
+		auto copy_it = it;
+		while (++copy_it != end 
+			&& copy_it->Type == it->Type 
+			&& copy_it->IsMulti() == it->IsMulti()) {
+			++count;
+		}
+		it = copy_it - 1;
 
-			ImGui::BulletText("%s (%d)", it->Description(), count);
-		}
-		ImGui::Separator();
-		ImGui::TextDisabled(TR(UNDO_STACK));
-		for (auto it = UndoStack.rbegin(), end = UndoStack.rend(); it != end; ++it) {
-			int count = 1;
-			auto copy_it = it;
-			while (++copy_it != end 
-				&& copy_it->Type == it->Type 
-				&& copy_it->IsMulti() == it->IsMulti()) {
-				++count;
-			}
-			it = copy_it - 1;
-			
-			ImGui::BulletText("%s (%d)", it->Description(), count);
-		}
-		ImGui::End();
+		ImGui::BulletText("%s (%d)", it->Description(), count);
 	}
+	ImGui::Separator();
+	ImGui::TextDisabled(TR(UNDO_STACK));
+	for (auto it = UndoStack.rbegin(), end = UndoStack.rend(); it != end; ++it) {
+		int count = 1;
+		auto copy_it = it;
+		while (++copy_it != end 
+			&& copy_it->Type == it->Type 
+			&& copy_it->IsMulti() == it->IsMulti()) {
+			++count;
+		}
+		it = copy_it - 1;
+		
+		ImGui::BulletText("%s (%d)", it->Description(), count);
+	}
+	ImGui::End();
 }
 
 void UndoSystem::Snapshot(StateType type, const std::weak_ptr<Funscript> active, bool clearRedo) noexcept

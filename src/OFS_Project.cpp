@@ -139,7 +139,7 @@ void OFS_Project::Clear() noexcept
 
 void OFS_Project::LoadedSuccessful() noexcept
 {
-	FUN_ASSERT(!Loaded, "was already loaded");
+	if(Loaded) return;
 	Loaded = true;
 	Metadata.title = Util::PathFromString(LastPath)
 		.replace_extension("")
