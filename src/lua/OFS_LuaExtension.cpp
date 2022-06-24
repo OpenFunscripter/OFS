@@ -29,6 +29,15 @@ void OFS_LuaExtension::ShowWindow() noexcept
 		return;
 	}
 
+	if(OFS_LuaExtensions::DevMode) {
+		if(ImGui::Button(TR(RELOAD), ImVec2(-1.f, 0.f))) {
+			Load();
+			ImGui::End();
+			return;
+		}
+		ImGui::Separator();
+	}
+
 	auto gui = L.get<sol::function>(OFS_LuaExtensions::RenderGui);
 	auto res = gui();
 	if(res.status() != sol::call_status::ok) {
