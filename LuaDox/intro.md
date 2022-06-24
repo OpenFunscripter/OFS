@@ -7,12 +7,12 @@
 
 # Extension Structure
 
-Extension live in the `%appdata%/OFS_data/extensions/` directory.  
+Extension live in the `%appdata%/OFS2_data/extensions/` directory.  
 An extension must have it's own directory with a `main.lua` in it.  
 By default there is a `Core` extension which serves as a demo.
 
 ```
-OFS_data
+OFS2_data
 |-- extensions
    |-- Core
       |-- main.lua
@@ -44,7 +44,7 @@ A new optional function which can be defined is `scriptChange(scriptIdx)`.
 ```lua
 function scriptChange(scriptIdx) 
     -- is called when a funscript gets changed in some way
-    -- this can be used for validation ???
+    -- this can be used for validation (or other creative ways?)
     local s = ofs.Script(scriptIdx)
 end
 ```
