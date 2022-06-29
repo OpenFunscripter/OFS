@@ -101,6 +101,10 @@ private:
 	void updateSelection(ScriptTimelineEvents::Mode mode, bool clear) noexcept;
 	void FfmpegAudioProcessingFinished(SDL_Event& ev) noexcept;
 
+	uint32_t visibleTimeUpdate = 0;
+	float nextVisisbleTime = 5.f;
+	float previousVisibleTime = 5.f;
+
 	float visibleTime = 5.f;
 	float startSelectionTime = -1.f;
 	
@@ -121,6 +125,8 @@ public:
 	inline void setStartSelection(float time) noexcept { startSelectionTime = time; }
 	inline float selectionStart() const noexcept { return startSelectionTime; }
 	void ShowScriptPositions(bool* open, float currentTime, float duration, float frameTime, const std::vector<std::shared_ptr<Funscript>>* scripts, int activeScriptIdx) noexcept;
+
+	void Update() noexcept;
 
 	void DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept;
 };

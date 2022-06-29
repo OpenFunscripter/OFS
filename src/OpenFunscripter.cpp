@@ -1671,7 +1671,8 @@ void OpenFunscripter::update() noexcept {
     ActiveFunscript()->update();
     ControllerInput::UpdateControllers(settings->data().buttonRepeatIntervalMs);
     scripting->update();
-
+    scriptTimeline.Update();
+    
     if (Status & OFS_Status::OFS_AutoBackup) {
         autoBackup();
     }

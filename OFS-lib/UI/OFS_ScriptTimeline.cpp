@@ -10,6 +10,7 @@
 
 #include <memory>
 #include <array>
+#include <cmath>
 
 #include "OFS_ImGui.h"
 #include "OFS_Shader.h"
@@ -236,9 +237,22 @@ void ScriptTimeline::mouseScroll(SDL_Event& ev) noexcept
 	auto& wheel = ev.wheel;
 	constexpr float scrollPercent = 0.10f;
 	if (PositionsItemHovered) {
-		visibleTime *= 1 + (scrollPercent * -wheel.y);
-		visibleTime = Util::Clamp(visibleTime, MIN_WINDOW_SIZE, MAX_WINDOW_SIZE);
+		previousVisibleTime = visibleTime;
+		nextVisisbleTime *= 1 + (scrollPercent * -wheel.y);
+		nextVisisbleTime = Util::Clamp(nextVisisbleTime, MIN_WINDOW_SIZE, MAX_WINDOW_SIZE);
+		visibleTimeUpdate = SDL_GetTicks();
 	}
+}
+
+inline static float easeOutExpo(float x) noexcept {
+	return x >= 1.f ? 1.f : 1.f - powf(2, -10 * x);
+}
+
+void ScriptTimeline::Update() noexcept
+{
+	auto timePassed = Util::Clamp((SDL_GetTicks() - visibleTimeUpdate) / 200.f, 0.f, 1.f);
+	timePassed = easeOutExpo(timePassed);
+	visibleTime = Util::Lerp(previousVisibleTime, nextVisisbleTime, timePassed);
 }
 
 void ScriptTimeline::videoLoaded(SDL_Event& ev) noexcept
