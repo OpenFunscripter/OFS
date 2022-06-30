@@ -19,6 +19,10 @@ function print(...) end
 -- @scope .
 function clamp(val, min, max) end
 
+--- Get the API version
+-- @treturn number Version
+function ofs.Version() end
+
 --- Get the extension directory path
 -- @treturn string Path
 function ofs.ExtensionDir() end

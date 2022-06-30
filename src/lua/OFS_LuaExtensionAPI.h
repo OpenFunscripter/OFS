@@ -13,6 +13,7 @@ class OFS_ExtensionAPI
     public: 
     static constexpr const char* DefaultNamespace = "ofs";
     static constexpr const char* PlayerNamespace = "player";
+    static constexpr uint32_t VersionAPI = 1;
 
     std::unique_ptr<OFS_ImGuiAPI> guiAPI;
     std::unique_ptr<OFS_ProcessAPI> procAPI;
