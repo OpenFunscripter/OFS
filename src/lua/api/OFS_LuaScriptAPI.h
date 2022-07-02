@@ -14,7 +14,8 @@ struct LuaFunscriptAction
     bool selected = false;
 
     LuaFunscriptAction(FunscriptAction action, bool selected) noexcept
-        : o(action) {}
+        : o(action), selected(selected) 
+    {}
     LuaFunscriptAction(lua_Number at, lua_Integer pos) noexcept
     {
         o.atS = std::max(0.0, at);
