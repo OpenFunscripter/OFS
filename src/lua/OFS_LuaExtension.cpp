@@ -38,7 +38,7 @@ void OFS_LuaExtension::ShowWindow() noexcept
 		ImGui::Separator();
 	}
 
-	auto gui = L.get<sol::function>(OFS_LuaExtensions::RenderGui);
+	auto gui = L.get<sol::protected_function>(OFS_LuaExtensions::RenderGui);
 	auto res = gui();
 	if(res.status() != sol::call_status::ok) {
 		auto err = sol::stack::get_traceback_or_errors(L.lua_state());
@@ -53,7 +53,7 @@ void OFS_LuaExtension::ShowWindow() noexcept
 void OFS_LuaExtension::Update() noexcept
 {
 	if(!Active) return;
-	auto update = L.get<sol::function>(OFS_LuaExtensions::UpdateFunction);
+	auto update = L.get<sol::protected_function>(OFS_LuaExtensions::UpdateFunction);
 	auto res = update(ImGui::GetIO().DeltaTime);
 	if(res.status() != sol::call_status::ok)
 	{
@@ -150,10 +150,10 @@ bool OFS_LuaExtension::Load() noexcept
 
 	try
 	{
-		auto res = L.script(extensionText);
+		auto res = L.safe_script(extensionText);
 		FUN_ASSERT(res.valid(), "what");
 
-		auto init = L.get<sol::function>(OFS_LuaExtensions::InitFunction);
+		auto init = L.get<sol::protected_function>(OFS_LuaExtensions::InitFunction);
 		res = init();
 		if(res.status() != sol::call_status::ok) {
 			auto err = sol::stack::get_traceback_or_errors(L.lua_state());
@@ -184,7 +184,7 @@ bool OFS_LuaExtension::Load() noexcept
 
 void OFS_LuaExtension::Execute(const std::string& func) noexcept
 {
-	sol::function bind = L[OFS_LuaExtension::BindingTable][func];
+	sol::protected_function bind = L[OFS_LuaExtension::BindingTable][func];
 	if(bind.valid()) {
 		auto res = bind();
 		if(res.status() != sol::call_status::ok) {
@@ -196,7 +196,7 @@ void OFS_LuaExtension::Execute(const std::string& func) noexcept
 
 void OFS_LuaExtension::ScriptChanged(uint32_t scriptIdx) noexcept
 {
-	sol::function change = L[OFS_LuaExtension::ScriptChangeFunction];
+	sol::protected_function change = L[OFS_LuaExtension::ScriptChangeFunction];
 	if(change.valid()) {
 		auto res = change(scriptIdx + 1);
 		if(res.status() != sol::call_status::ok) {
