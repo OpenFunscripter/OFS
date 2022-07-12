@@ -22,6 +22,8 @@ OFS_PlayerAPI::OFS_PlayerAPI(sol::state_view& L) noexcept
     player["IsPlaying"] = OFS_PlayerAPI::IsPlaying;
     player["CurrentVideo"] = OFS_PlayerAPI::CurrentVideo;
     player["FPS"] = OFS_PlayerAPI::FPS;
+
+    player["playbackSpeed"] = sol::property(OFS_PlayerAPI::getPlaybackSpeed, OFS_PlayerAPI::setPlaybackSpeed);
 }
 
 void OFS_PlayerAPI::TogglePlay() noexcept
@@ -70,4 +72,16 @@ lua_Number OFS_PlayerAPI::FPS() noexcept
 {
     auto app = OpenFunscripter::ptr;
     return app->player->getFps();
+}
+
+void OFS_PlayerAPI::setPlaybackSpeed(lua_Number speed) noexcept
+{
+    auto app = OpenFunscripter::ptr;
+    app->player->setSpeed(speed);
+}
+
+lua_Number OFS_PlayerAPI::getPlaybackSpeed() noexcept
+{
+    auto app = OpenFunscripter::ptr;
+    return app->player->getSpeed();
 }

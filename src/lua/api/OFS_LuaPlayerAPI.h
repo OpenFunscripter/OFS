@@ -14,6 +14,9 @@ class OFS_PlayerAPI
     static std::string CurrentVideo() noexcept;
     static lua_Number FPS() noexcept;
 
+    static void setPlaybackSpeed(lua_Number speed) noexcept;
+    static lua_Number getPlaybackSpeed() noexcept;
+
     public:
     OFS_PlayerAPI(sol::state_view& L) noexcept;
     ~OFS_PlayerAPI() noexcept;

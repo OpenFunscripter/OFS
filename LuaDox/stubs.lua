@@ -202,6 +202,13 @@ function player.CurrentVideo() end
 -- @treturn number FPS
 function player.FPS() end
 
+--- Control playback speed
+--
+-- The value is automatically clamped between 0.05 minimum speed and 3.0 maximum speed
+-- @meta read/write
+-- @type number
+playbackSpeed = 1.0
+
 --- Funscript returned by `ofs.Script()`
 -- @see funscript
 -- @display Funscript
