@@ -177,7 +177,7 @@ bool OFS_Settings::ShowPreferenceWindow() noexcept
 						OFS_Translator::ptr->LoadDefaults();
 					}
 					ImGui::SameLine();
-					if(ImGui::Button(TR_ID("OPEN_DIR_LANG", Tr::DIRECTORY)))
+					if(ImGui::Button(FMT("%s###DIRECTORY_TRANSLATION", ICON_FOLDER_OPEN)))
 					{
 						Util::OpenFileExplorer(Util::Prefpath(OFS_Translator::TranslationDir));
 					}

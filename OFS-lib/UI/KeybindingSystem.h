@@ -227,7 +227,7 @@ private:
 	void addPassiveBindingGroup(PassiveBindingGroup& group, bool& save) noexcept;
 	void passiveBindingTab(bool& save) noexcept;
 
-	void changeModals() noexcept;
+	void changeModals(bool& save) noexcept;
 public:
 	bool ShowWindow = false;
 

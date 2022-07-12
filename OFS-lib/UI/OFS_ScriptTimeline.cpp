@@ -250,7 +250,7 @@ inline static float easeOutExpo(float x) noexcept {
 
 void ScriptTimeline::Update() noexcept
 {
-	auto timePassed = Util::Clamp((SDL_GetTicks() - visibleTimeUpdate) / 200.f, 0.f, 1.f);
+	auto timePassed = Util::Clamp((SDL_GetTicks() - visibleTimeUpdate) / 150.f, 0.f, 1.f);
 	timePassed = easeOutExpo(timePassed);
 	visibleTime = Util::Lerp(previousVisibleTime, nextVisisbleTime, timePassed);
 }

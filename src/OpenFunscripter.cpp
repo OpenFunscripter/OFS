@@ -131,6 +131,8 @@ OpenFunscripter::~OpenFunscripter()
     LoadedProject.reset();
 
     settings->saveSettings();
+    keybinds.save();
+    
     player.reset();
     events.reset();
 }

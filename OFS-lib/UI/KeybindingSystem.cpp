@@ -662,7 +662,7 @@ bool KeybindingSystem::PassiveModifier(const char* name) noexcept
     return false;
 }
 
-void KeybindingSystem::changeModals() noexcept
+void KeybindingSystem::changeModals(bool& save) noexcept
 {
     if (ImGui::BeginPopupModal(TR_ID("CHANGE_KEY", Tr::CHANGE_KEY), 0, ImGuiWindowFlags_AlwaysAutoResize))
     {
@@ -673,7 +673,7 @@ void KeybindingSystem::changeModals() noexcept
             ImGui::Text(changeModalText.c_str());
         }
         if (!currentlyChanging) {
-            //save = true; // autosave
+            save = true; // autosave
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
@@ -682,7 +682,7 @@ void KeybindingSystem::changeModals() noexcept
     if (ImGui::BeginPopupModal(TR_ID("CHANGE_BUTTON", Tr::CHANGE_BUTTON))) {
         ImGui::TextUnformatted(TR(CHANGE_BUTTON_MSG));
         if (!currentlyChanging) {
-            //save = true; // autosave
+            save = true; // autosave
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
@@ -744,7 +744,7 @@ void KeybindingSystem::addBindingsGroup(KeybindingGroup& group, bool& save, bool
                 }
             }
             ImGui::NextColumn();
-            changeModals();
+            changeModals(save);
             ImGui::PopID();
         }
 
