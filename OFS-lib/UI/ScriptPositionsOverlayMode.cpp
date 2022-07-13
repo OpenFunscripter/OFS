@@ -181,6 +181,12 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
         }
     };
 
+    auto drawLine = [](const OverlayDrawingCtx& ctx, ImVec2 p1, ImVec2 p2, uint32_t color) noexcept
+    {
+        ctx.draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
+        ColoredLines.emplace_back(std::move(BaseOverlay::ColoredLine{ p1, p2, color }));
+    };
+
     if (SplineMode) {
         const FunscriptAction* prevAction = nullptr;
         for (; startIt != endIt; startIt++) {
@@ -213,8 +219,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
                 // calculate speed relative to maximum speed
                 ImColor speedColor;
                 getActionLineColor(&speedColor, speedGradient, action, *prevAction);
-                ctx.draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
-                ColoredLines.emplace_back(std::move(BaseOverlay::ColoredLine{ p1, p2, ImGui::ColorConvertFloat4ToU32(speedColor) }));
+                drawLine(ctx, p1, p2, ImGui::ColorConvertFloat4ToU32(speedColor));
             }
 
             prevAction = &action;

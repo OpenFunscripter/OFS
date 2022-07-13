@@ -29,6 +29,27 @@ public:
 		return glm::catmullRom(v0, v1, v2, v3, time).x;
 	}
 
+	static inline float catmul_rom_spline_alt(const FunscriptArray& actions, int32_t i, float time) noexcept
+	{
+		OFS_PROFILE(__FUNCTION__);
+		int i0 = glm::clamp<int>(i - 1, 0, actions.size() - 1);
+		int i1 = glm::clamp<int>(i, 0, actions.size() - 1);
+		int i2 = glm::clamp<int>(i + 1, 0, actions.size() - 1);
+		int i3 = glm::clamp<int>(i + 2, 0, actions.size() - 1);
+
+		if(actions[i1].pos == actions[i2].pos) return actions[i1].pos / 100.f;
+
+		glm::vec1 v0(actions[i0].pos / 100.f);
+		glm::vec1 v1(actions[i1].pos / 100.f);
+		glm::vec1 v2(actions[i2].pos / 100.f);
+		glm::vec1 v3(actions[i3].pos / 100.f);
+		
+		time -= actions[i1].atS;
+		time /= actions[i2].atS - actions[i1].atS;
+
+		return glm::catmullRom(v0, v1, v2, v3, time).x;
+	}
+
 	inline float Sample(const FunscriptArray& actions, float time) noexcept 
 	{
 		OFS_PROFILE(__FUNCTION__);
@@ -38,12 +59,12 @@ public:
 
 		if (actions[cacheIdx].atS <= time && actions[cacheIdx + 1].atS >= time) {
 			// cache hit!
-			return catmull_rom_spline(actions, cacheIdx, time);
+			return catmul_rom_spline_alt(actions, cacheIdx, time);
 		}
 		else if (cacheIdx + 2 < actions.size() && actions[cacheIdx+1].atS <= time && actions[cacheIdx+2].atS >= time) {
 			// sort of a cache hit
 			cacheIdx += 1;
-			return catmull_rom_spline(actions, cacheIdx, time);
+			return catmul_rom_spline_alt(actions, cacheIdx, time);
 		}
 		else {
 			// cache miss
@@ -59,7 +80,7 @@ public:
 			it--;
 			// cache index
 			cacheIdx = std::distance(actions.begin(), it);
-			return catmull_rom_spline(actions, cacheIdx, time);
+			return catmul_rom_spline_alt(actions, cacheIdx, time);
 		}
 
 		return 0.f;
