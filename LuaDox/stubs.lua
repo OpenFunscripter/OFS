@@ -95,6 +95,14 @@ function ofs.Button(txt) end
 --   end
 function ofs.Input(txt, value, stepSize) end
 
+--- Create an input field
+-- @tparam string txt
+-- @tparam string|number value
+-- @tparam number|nil stepSize only applies to numeric inputs,
+-- @treturn number value
+-- @treturn bool valueChanged
+function ofs.InputInt(txt, value, stepSize) end
+
 --- Create a numeric drag input
 -- @tparam string txt
 -- @tparam number value
@@ -102,6 +110,14 @@ function ofs.Input(txt, value, stepSize) end
 -- @treturn number value
 -- @treturn bool valueChanged
 function ofs.Drag(txt, value, stepSize) end
+
+--- Create a numeric integer drag input
+-- @tparam string txt
+-- @tparam number value
+-- @tparam number|nil stepSize
+-- @treturn number value
+-- @treturn bool valueChanged
+function ofs.DragInt(txt, value, stepSize) end
 
 --- Create a numeric slider
 -- @tparam string txt
@@ -111,6 +127,16 @@ function ofs.Drag(txt, value, stepSize) end
 -- @treturn number value
 -- @treturn bool valueChanged
 function ofs.Slider(txt, value, min, max) end
+
+
+--- Create a numeric integer slider
+-- @tparam string txt
+-- @tparam number value
+-- @tparam number min 
+-- @tparam number max
+-- @treturn number value
+-- @treturn bool valueChanged
+function ofs.SliderInt(txt, value, min, max) end
 
 --- Create a checkbox
 -- @tparam string txt

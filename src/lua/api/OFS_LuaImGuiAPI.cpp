@@ -9,26 +9,34 @@ OFS_ImGuiAPI::OFS_ImGuiAPI(sol::usertype<class OFS_ExtensionAPI>& ofs) noexcept
     ofs.set_function("Input", 
         sol::overload(
             OFS_ImGuiAPI::InputText,
-            OFS_ImGuiAPI::InputIntWithoutStepSize,
-            OFS_ImGuiAPI::InputInt,
             OFS_ImGuiAPI::InputNumberWithoutStepSize,
             OFS_ImGuiAPI::InputNumber
         )
     );
+
+    ofs.set_function("InputInt", 
+        sol::overload(
+            OFS_ImGuiAPI::InputInt,
+            OFS_ImGuiAPI::InputIntWithoutStepSize
+        )
+    );
+
     ofs.set_function("Drag",
         sol::overload(
-            OFS_ImGuiAPI::DragIntWithoutStepSize,
-            OFS_ImGuiAPI::DragInt,
             OFS_ImGuiAPI::DragNumberWithoutStepSize,
             OFS_ImGuiAPI::DragNumber
         )
     );
-    ofs.set_function("Slider",
+    ofs.set_function("DragInt",
         sol::overload(
-            OFS_ImGuiAPI::SliderInt,
-            OFS_ImGuiAPI::SliderNumber
+            OFS_ImGuiAPI::DragIntWithoutStepSize,
+            OFS_ImGuiAPI::DragInt
         )
     );
+
+    ofs["Slider"] = OFS_ImGuiAPI::SliderNumber;
+    ofs["SliderInt"] = OFS_ImGuiAPI::SliderInt;
+
     ofs["Checkbox"] = OFS_ImGuiAPI::Checkbox;
     ofs["Combo"] = OFS_ImGuiAPI::Combo;
     ofs["SameLine"] = OFS_ImGuiAPI::SameLine;
