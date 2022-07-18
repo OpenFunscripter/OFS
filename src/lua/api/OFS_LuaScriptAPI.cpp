@@ -200,7 +200,7 @@ std::vector<lua_Integer> LuaFunscript::SelectedIndices() const noexcept
     std::vector<lua_Integer> selectedIndices;
     for(uint32_t i=0, size=actions.size(); i < size; i += 1) {
         if(actions[i].selected) {
-            selectedIndices.emplace_back(i);
+            selectedIndices.emplace_back(i+1);
         }
     }
     return selectedIndices;
