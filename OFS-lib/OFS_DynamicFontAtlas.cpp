@@ -27,31 +27,32 @@ OFS_DynFontAtlas::OFS_DynFontAtlas() noexcept
 	auto& io = ImGui::GetIO();
 	builder.AddRanges(io.Fonts->GetGlyphRangesDefault());
 
-	builder.AddText(ICON_FOLDER_OPEN );
-	builder.AddText(ICON_VOLUME_UP );
-	builder.AddText(ICON_VOLUME_OFF );
-	builder.AddText(ICON_LONG_ARROW_UP );
-	builder.AddText(ICON_LONG_ARROW_DOWN );
-	builder.AddText(ICON_LONG_ARROW_RIGHT );
-	builder.AddText(ICON_ARROW_RIGHT );
-	builder.AddText(ICON_PLAY );
-	builder.AddText(ICON_PAUSE );
-	builder.AddText(ICON_GAMEPAD );
-	builder.AddText(ICON_HAND_RIGHT );
-	builder.AddText(ICON_BACKWARD );
-	builder.AddText(ICON_FORWARD );
-	builder.AddText(ICON_STEP_BACKWARD );
-	builder.AddText(ICON_STEP_FORWARD );
-	builder.AddText(ICON_GITHUB );
-	builder.AddText(ICON_SHARE );
-	builder.AddText(ICON_EXCLAMATION );
-	builder.AddText(ICON_REFRESH );
-	builder.AddText(ICON_TRASH );
-	builder.AddText(ICON_RANDOM );
-	builder.AddText(ICON_WARNING_SIGN );
-	builder.AddText(ICON_LINK );
-	builder.AddText(ICON_UNLINK );
-	builder.AddText(ICON_COPY );
+	builder.AddText(ICON_FOLDER_OPEN);
+	builder.AddText(ICON_VOLUME_UP);
+	builder.AddText(ICON_VOLUME_OFF);
+	builder.AddText(ICON_LONG_ARROW_UP);
+	builder.AddText(ICON_LONG_ARROW_DOWN);
+	builder.AddText(ICON_LONG_ARROW_RIGHT);
+	builder.AddText(ICON_ARROW_RIGHT);
+	builder.AddText(ICON_PLAY);
+	builder.AddText(ICON_PAUSE);
+	builder.AddText(ICON_GAMEPAD);
+	builder.AddText(ICON_HAND_RIGHT);
+	builder.AddText(ICON_BACKWARD);
+	builder.AddText(ICON_FORWARD);
+	builder.AddText(ICON_STEP_BACKWARD);
+	builder.AddText(ICON_STEP_FORWARD);
+	builder.AddText(ICON_GITHUB);
+	builder.AddText(ICON_SHARE);
+	builder.AddText(ICON_EXCLAMATION);
+	builder.AddText(ICON_REFRESH);
+	builder.AddText(ICON_TRASH);
+	builder.AddText(ICON_RANDOM);
+	builder.AddText(ICON_WARNING_SIGN);
+	builder.AddText(ICON_LINK);
+	builder.AddText(ICON_UNLINK);
+	builder.AddText(ICON_COPY);
+	builder.AddText(ICON_LEAF);
 
 	for(auto defaultStr : OFS_DefaultStrings::Default)
 	{

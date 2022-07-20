@@ -46,6 +46,8 @@ private:
 #endif
 	bool DebugMetrics = false;
 	bool ShowAbout = false;
+	bool IdleMode = false;
+	uint32_t IdleTimer = 0;
 	
 	FunscriptArray CopiedSelection;
 	std::chrono::steady_clock::time_point lastBackup;
@@ -53,7 +55,8 @@ private:
 	char tmpBuf[2][32];
 	int32_t ActiveFunscriptIdx = 0;
 
-	void registerBindings();
+	void setIdle(bool idle) noexcept;
+    void registerBindings();
 
 	void update() noexcept;
 	void newFrame() noexcept;

@@ -1550,38 +1550,45 @@ void OpenFunscripter::processEvents() noexcept
     while (SDL_PollEvent(&event)) {
         ImGui_ImplSDL2_ProcessEvent(&event);
         switch (event.type) {
-        case SDL_QUIT:
-        {
-            if (!IsExiting) {
-                exitApp();
-                IsExiting = true;
-            }
-            break;
-        }
-        case SDL_WINDOWEVENT:
-        {
-            if (event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window)) {
+            case SDL_QUIT:
+            {
                 if (!IsExiting) {
                     exitApp();
                     IsExiting = true;
                 }
+                break;
             }
-            break;
-        }
-        case SDL_TEXTINPUT: 
-        {
-            OFS_DynFontAtlas::AddText(event.text.text);
-            break;
-        }
-#if 0
-        case SDL_KEYDOWN:
-        {
-            if (event.key.keysym.sym == SDLK_ESCAPE) {
-                exitApp(true);
+            case SDL_WINDOWEVENT:
+            {
+                if (event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window)) {
+                    if (!IsExiting) {
+                        exitApp();
+                        IsExiting = true;
+                    }
+                }
+                break;
             }
-            break;
+            case SDL_TEXTINPUT: 
+            {
+                OFS_DynFontAtlas::AddText(event.text.text);
+                break;
+            }
         }
-#endif
+        switch(event.type) {
+            case SDL_CONTROLLERAXISMOTION:
+                if(std::abs(event.caxis.value) < 2000) break;
+            case SDL_MOUSEBUTTONUP:
+            case SDL_MOUSEBUTTONDOWN:
+            case SDL_MOUSEMOTION:
+            case SDL_MOUSEWHEEL:
+            case SDL_TEXTINPUT:
+            case SDL_KEYDOWN:
+            case SDL_KEYUP:
+            case SDL_CONTROLLERBUTTONUP:
+            case SDL_CONTROLLERBUTTONDOWN:
+                IdleTimer = SDL_GetTicks();
+                setIdle(false);
+                break;
         }
         events->Propagate(event);
     }
@@ -1759,6 +1766,13 @@ void OpenFunscripter::exitApp(bool force) noexcept
     else {
         Status |= OFS_Status::OFS_ShouldExit;
     }
+}
+
+void OpenFunscripter::setIdle(bool idle) noexcept
+{
+    if(idle == IdleMode) return;
+    if(idle && !player->isPaused()) return; // can't idle while player is playing
+    IdleMode = idle;
 }
 
 void OpenFunscripter::step() noexcept {
@@ -1947,22 +1961,30 @@ int OpenFunscripter::run() noexcept
     newFrame();
     setupDefaultLayout(false);
     render();
+
     const uint64_t PerfFreq = SDL_GetPerformanceFrequency();
     while (!(Status & OFS_Status::OFS_ShouldExit)) {
-        const uint64_t minFrameTime = (float)PerfFreq / (float)settings->data().framerateLimit;
+        const float minFrameTime = (float)PerfFreq / (float)settings->data().framerateLimit;
+
         uint64_t FrameStart = SDL_GetPerformanceCounter();
         step();
         uint64_t FrameEnd = SDL_GetPerformanceCounter();
         
+        float frameLimit = IdleMode ? 3.f : (float)settings->data().framerateLimit;
+        int32_t sleepMs = ((minFrameTime - (float)(FrameEnd - FrameStart)) / minFrameTime) * (1000.f / frameLimit);
+        if(!IdleMode) sleepMs -= 1;
+        if (sleepMs > 0) SDL_Delay(sleepMs); 
+
         if (!settings->data().vsync) {
-            int32_t sleepMs = ((float)(minFrameTime - (FrameEnd - FrameStart)) / (float)minFrameTime) * (1000.f / (float)settings->data().framerateLimit);
-            sleepMs -= 1;
-            if (sleepMs > 0 && sleepMs < 32) { SDL_Delay(sleepMs); }
             FrameEnd = SDL_GetPerformanceCounter();
             while ((FrameEnd - FrameStart) < minFrameTime) {
                 OFS_PAUSE_INTRIN();
                 FrameEnd = SDL_GetPerformanceCounter();
             }
+        }
+
+        if(SDL_GetTicks() - IdleTimer > 3000) {
+            setIdle(true);
         }
     }
 	return 0;
@@ -2112,12 +2134,14 @@ void OpenFunscripter::updateTitle() noexcept
         title = Util::Format("OpenFunscripter %s@%s - \"%s\"", 
             OFS_LATEST_GIT_TAG, 
             OFS_LATEST_GIT_HASH, 
-            LoadedProject->LastPath.c_str());
+            LoadedProject->LastPath.c_str()
+        );
     }
     else {
         title = Util::Format("OpenFunscripter %s@%s", 
             OFS_LATEST_GIT_TAG, 
-            OFS_LATEST_GIT_HASH);
+            OFS_LATEST_GIT_HASH
+        );
     }
     SDL_SetWindowTitle(window, title);
 }
@@ -3014,6 +3038,10 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
         if (ControllerInput::AnythingConnected()) {
             bool navmodeActive = ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_NavEnableGamepad;
             ImGui::Text(ICON_GAMEPAD " " ICON_LONG_ARROW_RIGHT " %s", (navmodeActive) ? TR(NAVIGATION) : TR(SCRIPTING));
+        }
+        ImGui::Spacing();
+        if(IdleMode) {
+            ImGui::TextUnformatted(ICON_LEAF);
         }
         if (player->isLoaded() && unsavedEdits) {
             const float timeUnit = saveDuration.count() / 60.f;

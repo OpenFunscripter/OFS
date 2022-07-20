@@ -47,6 +47,8 @@
 #define ICON_LINK "\xef\x83\x81"
 #define ICON_UNLINK "\xef\x84\xa7"
 #define ICON_COPY "\xef\x83\x85"
+#define ICON_LEAF "\xef\x81\xac"
+// when adding new ones they need to get added in OFS_DynamicFontAtlas
 
 #if defined(WIN32)
 #define FUN_DEBUG_BREAK() __debugbreak()
