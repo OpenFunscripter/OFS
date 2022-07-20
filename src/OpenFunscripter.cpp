@@ -21,7 +21,7 @@
 #include "SDL.h"
 #include "ImGuizmo.h"
 #include "asap.h"
-#include "glad/gl.h"
+#include "OFS_GL.h"
 
 // FIX: Add type checking to the deserialization. It does crash if a field type doesn't match.
 // TODO: Use ImGui tables API in keybinding UI
@@ -149,7 +149,7 @@ bool OpenFunscripter::setup(int argc, char* argv[])
     settings = std::make_unique<OFS_Settings>(Util::Prefpath("config.json"));
     
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
-        LOGF_ERROR("Error: %s\n", SDL_GetError());
+        LOG_ERROR(SDL_GetError());
         return false;
     }
     if(!OFS_MpvLoader::Load()) {
