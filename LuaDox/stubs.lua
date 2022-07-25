@@ -293,7 +293,7 @@ function Funscript:selectedIndices() end
 -- @tparam number actionIdx
 -- @treturn nil
 -- @example
---   for action, idx in ipairs(script.actions) do
+--   for idx, action in ipairs(script.actions) do
 --     if action.pos > 50 then
 --       script:markForRemoval(idx)
 --     end
