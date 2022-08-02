@@ -137,13 +137,11 @@ bool OFS_LuaExtension::Load() noexcept
 #ifndef NDEBUG
 	L.set_exception_handler([](lua_State* L, auto optEx, std::string_view msg)
 	{
-		__debugbreak();
 		return 0;
 	});
 
 	L.set_panic([](lua_State* L)
 	{
-		__debugbreak();
 		return 0;
 	});
 #endif
