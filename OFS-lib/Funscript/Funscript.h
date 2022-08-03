@@ -135,7 +135,10 @@ private:
 		OFS_PROFILE(__FUNCTION__);
 		if (data.Actions.empty()) return nullptr;
 		auto it = data.Actions.find(action);
-		return it != data.Actions.end() ? it : nullptr;
+		if(it != data.Actions.end() && it->pos == action.pos) {
+			return it;
+		}
+		return nullptr;
 	}
 
 	public:

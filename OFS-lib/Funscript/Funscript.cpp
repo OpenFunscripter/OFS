@@ -218,8 +218,8 @@ void Funscript::checkForInvalidatedActions() noexcept
 			auto found = getAction(selected);
 			return !found;
 		});
-	if (it != data.selection.end()) {
 		
+	if (it != data.selection.end()) {
 		data.selection.erase(it, data.selection.end());
 		NotifySelectionChanged();
 	}
