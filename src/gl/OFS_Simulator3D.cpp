@@ -331,7 +331,7 @@ void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::ve
         directionMtx = glm::rotate(directionMtx, globalPitch, glm::vec3(1.f, 0.f, 0.f));
 
         directionMtx = glm::rotate(directionMtx, glm::radians(roll), glm::vec3(0.f, 0.f, -1.f));
-        directionMtx = glm::rotate(directionMtx, glm::radians(pitch), glm::vec3(1.f, 0.f, 0.f));
+        directionMtx = glm::rotate(directionMtx, glm::radians(pitch), glm::vec3(-1.f, 0.f, 0.f));
         directionMtx = glm::rotate(directionMtx, glm::radians(yaw), glm::vec3(0.f, 1.f, 0.f));
         direction = glm::vec3(directionMtx[1][0], directionMtx[1][1], directionMtx[1][2]);
         direction = glm::normalize(direction);
