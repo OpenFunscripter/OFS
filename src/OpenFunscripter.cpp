@@ -2537,8 +2537,10 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 for (auto it = recentFiles.rbegin(); it != recentFiles.rend(); it++) {
                     auto& recent = *it;
                     if (ImGui::MenuItem(recent.name.c_str())) {
-                        if (!recent.projectPath.empty())
+                        if (!recent.projectPath.empty()) {
                             openFile(recent.projectPath, true);
+                            break;
+                        }
                     }
                 }
                 ImGui::EndMenu();
