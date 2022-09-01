@@ -75,7 +75,7 @@ struct OFS_ScriptSettings {
 	static VideoplayerWindow::OFS_VideoPlayerSettings* player;
 
 	struct TempoModeSettings {
-		int bpm = 100;
+		float bpm = 100.f;
 		float beatOffsetSeconds = 0.f;
 		int measureIndex = 0;
 		
@@ -85,6 +85,9 @@ struct OFS_ScriptSettings {
 			s.ext(*this, bitsery::ext::Growable{},
 				[](S& s, TempoModeSettings& o) {
 					s.value4b(o.bpm);
+					if(o.bpm <= 0.f || std::isnan(o.bpm)) {
+						o.bpm = 100.f;
+					}
 					s.value4b(o.beatOffsetSeconds);
 					s.value4b(o.measureIndex);
 				});

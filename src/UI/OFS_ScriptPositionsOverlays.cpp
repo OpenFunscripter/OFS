@@ -84,8 +84,8 @@ void TempoOverlay::DrawSettings() noexcept
     BaseOverlay::DrawSettings();
     auto app = OpenFunscripter::ptr;
     auto& tempo = app->LoadedProject->Settings.tempoSettings;
-    if (ImGui::InputInt(TR(BPM), &tempo.bpm, 1, 100)) {
-        tempo.bpm = std::max(1, tempo.bpm);
+    if (ImGui::InputFloat(TR(BPM), &tempo.bpm, 1.f, 100.f)) {
+        tempo.bpm = std::max(1.f, tempo.bpm);
     }
 
     ImGui::DragFloat(TR(OFFSET), &tempo.beatOffsetSeconds, 0.001f, -10.f, 10.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
