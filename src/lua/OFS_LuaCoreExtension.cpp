@@ -35,12 +35,12 @@ function gui()
     Jitter.Position, changedPos = ofs.Drag("Position", Jitter.Position)   
 
     -- prevent negative or 0
-    Jitter.TimeMs = math.max(Jitter.TimeMs, 1)
-    Jitter.Position = math.max(Jitter.Position, 1)
+    Jitter.TimeMs = math.max(Jitter.TimeMs, 0)
+    Jitter.Position = math.max(Jitter.Position, 0)
 
-    if changedPos or changedTime then
+    if ofs.Button("Apply jitter") or changedPos or changedTime then
         ofs.Undo() -- ofs.Undo() only undoes changes by Lua scripts never anything else
-        jitter()
+        binding.jitter()
     end
 
     ofs.Separator()
@@ -193,7 +193,7 @@ function binding.jitter()
 
             -- A more sophisticated function would check the next and the previous action
             -- to ensure that the new time is still in between them.
-            action.at = action.at + time_jitter_value
+            action.at = action.at + time_jitter_value/1000.0
             action.pos = action.pos + pos_jitter_value
         end
     end
