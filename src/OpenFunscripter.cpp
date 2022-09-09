@@ -1626,14 +1626,12 @@ void OpenFunscripter::ScriptTimelineActionClicked(SDL_Event& ev) noexcept
 void OpenFunscripter::DragNDrop(SDL_Event& ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if (!LoadedProject->HasUnsavedEdits()) {
-        if (closeProject(false)) {
-            openFile(ev.drop.file, true);
-        }
-    } else {
-        Util::MessageBoxAlert(TR(PROJECT_HAS_UNSAVED_EDITS), 
-            TR(UNSAVED_EDITS_MSG));
-    }
+
+    std::string dragNDropFile = ev.drop.file;
+    closeWithoutSavingDialog([this, dragNDropFile](){
+        openFile(dragNDropFile, true);
+    });
+
     SDL_free(ev.drop.file);
 }
 
