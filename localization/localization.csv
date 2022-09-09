@@ -400,7 +400,7 @@ SAVE_TEMPLATE_TOOLTIP,Saves all current values as defaults for later.,Saves all 
 GIT_COMMIT,Commit,Commit
 INTERVAL,Interval,Interval
 CLOSE_WITHOUT_SAVING,Close without saving?,Close without saving?
-CLOSE_WITHOUT_SAVING_MSG,The current project has unsaved changes do you want to close it without saving?,The current project has unsaved changes do you want to close it without saving?
+CLOSE_WITHOUT_SAVING_MSG,Do you want to save the project?,The current project has unsaved changes do you want to close it without saving?
 CONFIGURATION,Configuration,Configuration
 RESET,Reset,Reset
 MOVE,Move,Move

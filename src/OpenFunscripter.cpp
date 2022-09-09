@@ -2510,9 +2510,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 closeWithoutSavingDialog(std::move(openProjectDialog));
             }
             if (LoadedProject->Loaded && ImGui::MenuItem(TR(CLOSE_PROJECT), NULL, false, LoadedProject->Loaded)) {
-                closeWithoutSavingDialog([&]() {
-                    closeProject(true);
-                });
+                closeWithoutSavingDialog([](){});
             }
             ImGui::Separator();
             if (ImGui::MenuItem(TR(IMPORT_VIDEO_SCRIPT), 0, false)) {
