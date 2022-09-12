@@ -119,7 +119,6 @@ bool OFS_LuaExtension::Load() noexcept
 
 	auto ofs = L.new_usertype<OFS_ExtensionAPI>("ofs");
 	ofs["Version"] = []() noexcept { return OFS_ExtensionAPI::VersionAPI; };
-	ofs["ExtensionDir"] = [this]() noexcept { return this->Directory.c_str(); };
 	ofs["ScriptCount"] = []() noexcept { return OpenFunscripter::ptr->LoadedFunscripts().size(); };
 	ofs["ScriptName"] = [](lua_Integer idx) noexcept -> const char* {
 		auto app = OpenFunscripter::ptr;
@@ -131,7 +130,9 @@ bool OFS_LuaExtension::Load() noexcept
 	};
 
 	api = std::make_unique<OFS_ExtensionAPI>(ofs);
-	
+
+	// FIXME: if the extension gets relocated this breaks horribly
+	ofs["ExtensionDir"] = [this]() noexcept { return this->Directory.c_str(); };
 	L[OFS_LuaExtensions::GlobalExtensionPtr] = this;
 
 #ifndef NDEBUG
