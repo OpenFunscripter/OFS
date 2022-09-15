@@ -228,6 +228,14 @@ function player.CurrentVideo() end
 -- @treturn number FPS
 function player.FPS() end
 
+--- Get the width of the video
+-- @treturn number Pixels
+function player.Width() end
+
+--- Get the height of the video
+-- @treturn number Pixels
+function player.Height() end
+
 --- Control playback speed
 --
 -- The value is automatically clamped between 0.05 minimum speed and 3.0 maximum speed
