@@ -196,19 +196,34 @@ public:
 };
 
 template<typename OnCloseAction>
-inline void OpenFunscripter::closeWithoutSavingDialog(OnCloseAction&& action) noexcept
+inline void OpenFunscripter::closeWithoutSavingDialog(OnCloseAction&& onProjectCloseHandler) noexcept
 {
 	if (LoadedProject->HasUnsavedEdits()) {
-		Util::YesNoCancelDialog(TR(CLOSE_WITHOUT_SAVING),
+		Util::YesNoCancelDialog(TR(PROJECT_HAS_UNSAVED_EDITS),
 			TR(CLOSE_WITHOUT_SAVING_MSG),
-			[this, action](Util::YesNoCancel result) {
-				if (result == Util::YesNoCancel::Yes) {
+			[this, onProjectCloseHandler](Util::YesNoCancel result) {
+				if (result == Util::YesNoCancel::Yes) 
+				{
+					LoadedProject->Save(true);
 					closeProject(true);
-					action();
+					onProjectCloseHandler();
 				}
+				else if(result == Util::YesNoCancel::No) 
+				{
+					/* don't save */
+					closeProject(true);
+					onProjectCloseHandler();
+				}
+				// else 
+				// {
+				// 	/* do nothing */
+				// }
 			});
 	}
-	else {
-		action();
+	else 
+	{
+		// the project has no edits and can be closed
+		closeProject(true);
+		onProjectCloseHandler();
 	}
 }

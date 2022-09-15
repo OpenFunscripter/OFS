@@ -1626,14 +1626,12 @@ void OpenFunscripter::ScriptTimelineActionClicked(SDL_Event& ev) noexcept
 void OpenFunscripter::DragNDrop(SDL_Event& ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if (!LoadedProject->HasUnsavedEdits()) {
-        if (closeProject(false)) {
-            openFile(ev.drop.file, true);
-        }
-    } else {
-        Util::MessageBoxAlert(TR(PROJECT_HAS_UNSAVED_EDITS), 
-            TR(UNSAVED_EDITS_MSG));
-    }
+
+    std::string dragNDropFile = ev.drop.file;
+    closeWithoutSavingDialog([this, dragNDropFile](){
+        openFile(dragNDropFile, true);
+    });
+
     SDL_free(ev.drop.file);
 }
 
@@ -2510,9 +2508,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 closeWithoutSavingDialog(std::move(openProjectDialog));
             }
             if (LoadedProject->Loaded && ImGui::MenuItem(TR(CLOSE_PROJECT), NULL, false, LoadedProject->Loaded)) {
-                closeWithoutSavingDialog([&]() {
-                    closeProject(true);
-                });
+                closeWithoutSavingDialog([](){});
             }
             ImGui::Separator();
             if (ImGui::MenuItem(TR(IMPORT_VIDEO_SCRIPT), 0, false)) {

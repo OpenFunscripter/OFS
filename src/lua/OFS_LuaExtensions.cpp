@@ -18,6 +18,7 @@ inline static void ShowExtensionLogWindow(bool* open) noexcept
 OFS_LuaExtensions::OFS_LuaExtensions() noexcept
 {
 	load(Util::Prefpath("extension.json"));
+	Extensions.reserve(100); // NOTE: this is mitigate a relocation bug
 	UpdateExtensionList();
 	
 	OFS_CoreExtension::setup();
