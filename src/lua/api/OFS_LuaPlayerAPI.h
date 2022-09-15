@@ -16,6 +16,8 @@ class OFS_PlayerAPI
 
     static void setPlaybackSpeed(lua_Number speed) noexcept;
     static lua_Number getPlaybackSpeed() noexcept;
+    static lua_Number VideoWidth() noexcept;
+    static lua_Number VideoHeight() noexcept;
 
     public:
     OFS_PlayerAPI(sol::state_view& L) noexcept;
