@@ -2534,7 +2534,10 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     auto& recent = *it;
                     if (ImGui::MenuItem(recent.name.c_str())) {
                         if (!recent.projectPath.empty()) {
-                            openFile(recent.projectPath, true);
+                            closeWithoutSavingDialog([this, clickedFile = recent.projectPath]() 
+                            {
+                                openFile(clickedFile, true);
+                            });
                             break;
                         }
                     }
