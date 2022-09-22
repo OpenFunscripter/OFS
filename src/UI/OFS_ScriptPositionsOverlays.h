@@ -65,11 +65,14 @@ public:
 
 
 class FrameOverlay : public BaseOverlay {
-
+private:
+	float framerateOverride = 0.f;
+	bool enableFramerateOverride = false;
 public:
 	FrameOverlay(class ScriptTimeline* timeline)
 		: BaseOverlay(timeline) {}
 	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept override;
+	virtual void DrawSettings() noexcept override;
 	virtual void nextFrame() noexcept override;
 	virtual void previousFrame() noexcept override;
 

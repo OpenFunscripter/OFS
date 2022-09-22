@@ -4,7 +4,7 @@
 void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept
 {
     auto app = OpenFunscripter::ptr;
-    auto frameTime = app->player->getFrameTime();
+    auto frameTime = enableFramerateOverride ? (1.f / framerateOverride) : app->player->getFrameTime();
 
     float visibleFrames = ctx.visibleTime / frameTime;
     constexpr float maxVisibleFrames = 400.f;
@@ -61,22 +61,58 @@ void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
 
 void FrameOverlay::nextFrame() noexcept
 {
-    OpenFunscripter::ptr->player->nextFrame();
+    auto app = OpenFunscripter::ptr;
+    if(enableFramerateOverride)
+    {
+        app->player->seekRelative(1.f / framerateOverride);
+    }
+    else
+    {
+        app->player->nextFrame();
+    }    
 }
 
 void FrameOverlay::previousFrame() noexcept
 {
-    OpenFunscripter::ptr->player->previousFrame();
+    auto app = OpenFunscripter::ptr;
+    if(enableFramerateOverride)
+    {
+        app->player->seekRelative(-(1.f / framerateOverride));
+    }
+    else
+    {
+        app->player->previousFrame();
+    }
 }
 
 float FrameOverlay::steppingIntervalBackward(float fromTime) noexcept
 {
-    return -timeline->frameTime;
+    return enableFramerateOverride ? -(1.f / framerateOverride) : -timeline->frameTime;
 }
 
 float FrameOverlay::steppingIntervalForward(float fromTime) noexcept
 {
-    return timeline->frameTime;
+    return enableFramerateOverride ? (1.f / framerateOverride) : timeline->frameTime;
+}
+
+void FrameOverlay::DrawSettings() noexcept
+{
+    if(ImGui::Checkbox(TR_ID("FPS_OVERRIDE_ENABLE", Tr::FPS_OVERRIDE), &enableFramerateOverride))
+    {
+        framerateOverride = OpenFunscripter::ptr->player->getFps();
+    }
+    if(enableFramerateOverride)
+    {
+        if(ImGui::InputFloat(TR_ID("FPS_OVERRIDE", Tr::FPS_OVERRIDE), &framerateOverride, 1.f, 10.f))
+        {
+            framerateOverride = Util::Clamp(framerateOverride, 1.f, 150.f);
+            // snap to new framerate
+            auto app = OpenFunscripter::ptr;
+            float newPosition = std::round(app->player->getCurrentPositionSeconds() / (1.0 / (double)framerateOverride))
+                * (1.0 / (double)framerateOverride);
+            app->player->setPositionExact(newPosition, true);
+        }
+    }
 }
 
 void TempoOverlay::DrawSettings() noexcept

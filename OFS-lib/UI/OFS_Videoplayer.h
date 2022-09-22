@@ -230,7 +230,7 @@ public:
 		setPositionPercent(relPos, pausesVideo);
 	}
 	void setPositionPercent(float relPos, bool pausesVideo) noexcept;
-	void seekRelative(float ms) noexcept;
+	void seekRelative(float time) noexcept;
 	
 	void setPaused(bool paused) noexcept;
 	void nextFrame() noexcept;
