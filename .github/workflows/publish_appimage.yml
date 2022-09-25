@@ -17,10 +17,6 @@ jobs:
         submodules: 'true'
         fetch-depth: 0
 
-    - name: EASTL special treatment
-      run: |
-        cd lib/EASTL
-        git submodule update --init
     - name: Install Dependencies
       run: |
         sudo apt-get update

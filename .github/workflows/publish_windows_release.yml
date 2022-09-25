@@ -22,11 +22,6 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ github.token }}
       
-    - name: EASTL special treatment
-      run: |
-        cd lib/EASTL
-        git submodule update --init
-
     - name: Create Build Environment
       run: cmake -E make_directory ${{runner.workspace}}/build
 
@@ -87,11 +82,6 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ github.token }}
       
-    - name: EASTL special treatment
-      run: |
-        cd lib/EASTL
-        git submodule update --init
-
     - name: Create Build Environment
       run: cmake -E make_directory ${{runner.workspace}}/build
 

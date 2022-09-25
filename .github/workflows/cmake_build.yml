@@ -17,11 +17,6 @@ jobs:
         submodules: 'true'
         fetch-depth: 0
     
-    - name: EASTL special treatment
-      run: |
-        cd lib/EASTL
-        git submodule update --init
-
     - name: Install Dependencies
       run: |
         brew install llvm mpv
@@ -48,11 +43,6 @@ jobs:
       with:
         submodules: 'true'
         fetch-depth: 0
-
-    - name: EASTL special treatment
-      run: |
-        cd lib/EASTL
-        git submodule update --init
 
     - name: Install Dependencies
       run: |
@@ -83,11 +73,6 @@ jobs:
         submodules: 'true'
         fetch-depth: 0
     
-    - name: EASTL special treatment
-      run: |
-        cd lib/EASTL
-        git submodule update --init
-
     - name: Create Build Environment
       run: cmake -E make_directory ${{runner.workspace}}/build
 

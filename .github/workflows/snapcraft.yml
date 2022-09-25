@@ -25,11 +25,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-      - name: EASTL special treatment
-        run: |
-          cd lib/EASTL
-          git submodule update --init
-
       - name: Install Snapcraft
         uses: samuelmeuli/action-snapcraft@v1
         with:
