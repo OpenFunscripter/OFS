@@ -80,11 +80,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	glm
 	ImGuizmo
 	bitsery
-
-	EASTL
-	EAStdC
-	#EAAssert
-	#EAThread
+	EASTL_target
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)

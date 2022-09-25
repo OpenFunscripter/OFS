@@ -22,9 +22,6 @@
 [submodule "lib/tracy"]
 	path = lib/tracy
 	url = https://github.com/wolfpld/tracy.git
-[submodule "lib/EASTL"]
-	path = lib/EASTL
-	url = https://github.com/electronicarts/EASTL.git
 [submodule "lib/sol2"]
 	path = lib/sol2
 	url = https://github.com/ThePhD/sol2.git
