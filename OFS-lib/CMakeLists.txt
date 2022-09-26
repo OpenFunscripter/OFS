@@ -35,8 +35,6 @@ set(OFS_LIB_SOURCES
 	"OFS_UndoSystem.cpp"
 	"OFS_ControllerInput.cpp"
 
-	"OFS_Allocator.cpp"
-
 	"OFS_Serialization.cpp"
 	"OFS_Util.cpp"
 	"OFS_Threadpool.cpp"
