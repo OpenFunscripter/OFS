@@ -119,7 +119,7 @@ public:
 		auto& actions = Script->Actions();
 		if (!actions.empty()) {
 			auto startIt = actions.upper_bound(FunscriptAction(currentTime, 0));
-			if (startIt-1 >= actions.begin()) {
+			if (startIt != actions.begin()) {
 				currentIndex = std::distance(actions.begin(), startIt-1);
 				startAction = *(startIt-1);
 				nextAction = *(startIt);

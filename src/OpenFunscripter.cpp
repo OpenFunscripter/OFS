@@ -1962,13 +1962,14 @@ int OpenFunscripter::run() noexcept
 
     const uint64_t PerfFreq = SDL_GetPerformanceFrequency();
     while (!(Status & OFS_Status::OFS_ShouldExit)) {
-        const float minFrameTime = (float)PerfFreq / (float)settings->data().framerateLimit;
 
         uint64_t FrameStart = SDL_GetPerformanceCounter();
         step();
         uint64_t FrameEnd = SDL_GetPerformanceCounter();
         
-        float frameLimit = IdleMode ? 3.f : (float)settings->data().framerateLimit;
+        float frameLimit = IdleMode ? 10.f : (float)settings->data().framerateLimit;
+        const float minFrameTime = (float)PerfFreq / frameLimit;
+
         int32_t sleepMs = ((minFrameTime - (float)(FrameEnd - FrameStart)) / minFrameTime) * (1000.f / frameLimit);
         if(!IdleMode) sleepMs -= 1;
         if (sleepMs > 0) SDL_Delay(sleepMs); 
