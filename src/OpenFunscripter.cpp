@@ -1896,7 +1896,7 @@ void OpenFunscripter::step() noexcept {
 
             if (settings->data().show_action_editor) {
                 ImGui::Begin(TR_ID(ActionEditorWindowId, Tr::ACTION_EDITOR), &settings->data().show_action_editor);
-                OFS_PROFILE(ActionEditorId);
+                OFS_PROFILE(ActionEditorWindowId);
 
                 ImGui::Columns(1, 0, false);
                 if (ImGui::Button("100", ImVec2(-1, 0))) {

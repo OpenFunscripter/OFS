@@ -12,34 +12,19 @@
 
 #include "OFS_Profiling.h"
 
-#include "EASTL/vector.h"
-#include "EASTL/vector_set.h"
+
+#include "OFS_VectorSet.h"
+
 namespace bitsery {
     namespace traits {
-        // eastl::vector
+        // vector_set
         template<typename T, typename Allocator>
-        struct ContainerTraits<eastl::vector<T, Allocator>>
-            :public StdContainer<eastl::vector<T, Allocator>, true, true> {};
-
-        // this is true for std::vector but not for eastl::vector
-        //bool vector is not contiguous, do not copy it directly to buffer
-        //template<typename Allocator>
-        //struct ContainerTraits<eastl::vector<bool, Allocator>>
-        //    :public StdContainer<eastl::vector<bool, Allocator>, true, false> {};
+        struct ContainerTraits<vector_set<T, Allocator>>
+            :public StdContainer<vector_set<T, Allocator>, true, true> {};
 
         template<typename T, typename Allocator>
-        struct BufferAdapterTraits<eastl::vector<T, Allocator>>
-            :public StdContainerForBufferAdapter<eastl::vector<T, Allocator>> {};
-
-
-        // eastl::vector_set
-        template<typename T, typename Allocator>
-        struct ContainerTraits<eastl::vector_set<T, Allocator>>
-            :public StdContainer<eastl::vector_set<T, Allocator>, true, true> {};
-
-        template<typename T, typename Allocator>
-        struct BufferAdapterTraits<eastl::vector_set<T, Allocator>>
-            :public StdContainerForBufferAdapter<eastl::vector_set<T, Allocator>> {};
+        struct BufferAdapterTraits<vector_set<T, Allocator>>
+            :public StdContainerForBufferAdapter<vector_set<T, Allocator>> {};
     }
 }
 

@@ -1,8 +1,8 @@
 #pragma once
 #include <vector>
 #include <memory>
+#include <optional>
 
-#include "EASTL/optional.h"
 #include "FunscriptUndoSystem.h"
 
 enum StateType : int32_t {
@@ -50,7 +50,7 @@ class UndoSystem
 private:
 	struct UndoContext {
 		int32_t Type;
-		eastl::optional<std::weak_ptr<const class Funscript>> Script;
+		std::optional<std::weak_ptr<const class Funscript>> Script;
 		UndoContext() noexcept : Type(-1) {}
 		UndoContext(StateType type) noexcept : Type((int32_t)type) {}
 		UndoContext(const std::weak_ptr<class Funscript>& ptr, StateType type) noexcept
@@ -60,16 +60,16 @@ private:
 		const char* Description() const noexcept;
 		inline bool IsMulti() const noexcept { return !Script.has_value(); }
 	};
-	eastl::ring_buffer<UndoContext> UndoStack;
-	eastl::ring_buffer<UndoContext> RedoStack;
+	std::vector<UndoContext> UndoStack;
+	std::vector<UndoContext> RedoStack;
 	void ClearRedo() noexcept;
 public:
 	std::vector<std::shared_ptr<class Funscript>>* LoadedScripts = nullptr;
 
 	UndoSystem(std::vector<std::shared_ptr<class Funscript>>* scripts) noexcept {
 		LoadedScripts = scripts;
-		UndoStack.reserve(OFS::MaxScriptStateInMemory);
-		RedoStack.reserve(OFS::MaxScriptStateInMemory);
+		RedoStack.reserve(100);
+		UndoStack.reserve(1000);
 	}
 
 	static constexpr const char* WindowId = "###UNDO_REDO_HISTORY";

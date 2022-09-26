@@ -9,6 +9,7 @@
 #include "OpenFunscripter.h"
 
 #include "subprocess.h"
+#include "stb_sprintf.h"
 
 ScriptSimulator::SimulatorSettings* OFS_Project::ProjSettings::Simulator = nullptr;
 
@@ -378,7 +379,7 @@ void OFS_Project::ExportClips(const std::string& outputDirectory) noexcept
 
 		bTaskData->Progress = 0;
 		bTaskData->MaxProgress = bookmarks.size();
-		eastl::string formatBuffer;
+		char formatBuffer[1024];
 
 		int i = 0;
 		while (i < bookmarks.size())
@@ -419,20 +420,22 @@ void OFS_Project::ExportClips(const std::string& outputDirectory) noexcept
 				stbsp_snprintf(startTimeChar, sizeof(startTimeChar), "%f", startTime);
 				stbsp_snprintf(endTimeChar, sizeof(endTimeChar), "%f", endTime);
 
-				auto videoOutputPath = outputPath / formatBuffer.sprintf("%s_%s.mp4", bookmarkName.c_str(), app->LoadedFunscripts()[0]->Title.c_str()).c_str();
+				stbsp_snprintf(formatBuffer, sizeof(formatBuffer), "%s_%s.mp4", bookmarkName.c_str(), app->LoadedFunscripts()[0]->Title.c_str());
+				auto videoOutputPath = outputPath / formatBuffer;
 				auto videoOutputString = videoOutputPath.u8string();
 
 				// Slice Funscripts
 				auto newScript = Funscript();
 				newScript.LocalMetadata = app->LoadedProject->Metadata;
 				for (auto& script : app->LoadedFunscripts()) {
-					std::filesystem::path scriptOutputPath = outputPath / formatBuffer.sprintf("%s_%s.funscript", bookmarkName.c_str(), script->Title.c_str()).c_str();
+					stbsp_snprintf(formatBuffer, sizeof(formatBuffer), "%s_%s.funscript", bookmarkName.c_str(), script->Title.c_str());
+					std::filesystem::path scriptOutputPath = outputPath / formatBuffer;
 					auto scriptOutputString = scriptOutputPath.u8string();
 
 					auto scriptSlice = script->GetSelection(startTime, endTime);
 					newScript.SetActions(FunscriptArray());
 					newScript.UpdatePath(scriptOutputString);
-					newScript.AddActionRange(scriptSlice, false);
+					newScript.AddMultipleActions(scriptSlice);
 					newScript.AddAction(FunscriptAction(startTime, script->GetPositionAtTime(startTime)));
 					newScript.AddAction(FunscriptAction(endTime, script->GetPositionAtTime(endTime)));
 					newScript.SelectAll();

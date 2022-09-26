@@ -1,15 +1,8 @@
 #pragma once
 
 #include "Funscript.h"
-#include "EASTL/bonus/ring_buffer.h"
+#include <vector>
 
-namespace OFS {
-	constexpr int32_t MaxScriptStateInMemory = 1000;
-}
-
-// in a previous iteration
-// this looked a lot more sophisticated
-// while this is not memory efficient this turns out to be incredibly robust and flexible
 class ScriptState {
 private:
 	Funscript::FunscriptData data;
@@ -24,7 +17,6 @@ public:
 		: type(type), data(data) {}
 };
 
-// this is part of the funscript class
 class FunscriptUndoSystem
 {
 	friend class UndoSystem;
@@ -32,8 +24,8 @@ class FunscriptUndoSystem
 	Funscript* script = nullptr;
 	void SnapshotRedo(int32_t type) noexcept;
 	
-	eastl::ring_buffer<ScriptState> UndoStack;
-	eastl::ring_buffer<ScriptState> RedoStack;
+	std::vector<ScriptState> UndoStack;
+	std::vector<ScriptState> RedoStack;
 
 	void Snapshot(int32_t type, bool clearRedo = true) noexcept;
 	bool Undo() noexcept;
@@ -42,8 +34,8 @@ class FunscriptUndoSystem
 public:
 	FunscriptUndoSystem(Funscript* script) : script(script) {
 		FUN_ASSERT(script != nullptr, "no script");
-		UndoStack.reserve(OFS::MaxScriptStateInMemory);
-		RedoStack.reserve(OFS::MaxScriptStateInMemory);
+		UndoStack.reserve(1000);
+		RedoStack.reserve(100);
 	}
 
 	inline bool MatchUndoTop(int32_t type) const noexcept { return !UndoEmpty() && UndoStack.back().type == type; }

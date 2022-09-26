@@ -7,16 +7,16 @@ void FunscriptUndoSystem::ClearRedo() noexcept
 
 void FunscriptUndoSystem::SnapshotRedo(int32_t type) noexcept
 {
-	RedoStack.push_back() = std::move(ScriptState(type, script->Data()));
+	RedoStack.emplace_back(std::move(ScriptState(type, script->Data())));
 }
 
 void FunscriptUndoSystem::Snapshot(int32_t type, bool clearRedo) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	UndoStack.push_back() = std::move(ScriptState(type, script->Data()));
+	UndoStack.emplace_back(std::move(ScriptState(type, script->Data())));
 
 	// redo gets cleared after every snapshot
-	if (clearRedo && !RedoStack.empty())
+	if (clearRedo)
 		ClearRedo();
 }
 

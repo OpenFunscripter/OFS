@@ -22,3 +22,4 @@ localization/localization_ja_missing.csv
 localization/localization_bak2.csv
 localization/.~lock.localization.csv#
 LuaDox/html
+emscripten

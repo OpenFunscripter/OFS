@@ -90,8 +90,8 @@ void LuaFunscript::Commit(sol::this_state L) noexcept
             FunscriptArray selection;
             commit.reserve(actions.size());
             for(auto action : actions) {
-                auto res = commit.emplace(action.o);
-                if(!res.second) {
+                auto succ = commit.emplace(action.o);
+                if(!succ) {
                     luaL_error(L.lua_state(), "Tried adding multiple actions with the same timestamp.");
                     return;
                 }
@@ -101,7 +101,7 @@ void LuaFunscript::Commit(sol::this_state L) noexcept
             }
             app->undoSystem->Snapshot(StateType::CUSTOM_LUA, script);
             ref->SetActions(commit);
-            ref->SetSelection(selection, true);
+            ref->SetSelection(selection);
         }
     }, nullptr)
     ->Wait();

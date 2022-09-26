@@ -24,7 +24,10 @@
 
 #include "tinyfiledialogs.h"
 
-#include "EAStdC/EAString.h"
+#include <iostream>
+#include <string>
+#include <locale>
+#include <codecvt>
 
 char Util::FormatBuffer[4096];
 
@@ -404,13 +407,17 @@ std::string Util::Resource(const std::string& path) noexcept
 
 std::wstring Util::Utf8ToUtf16(const std::string& str) noexcept
 {
-	using namespace EA::StdC;
-	auto strLen = StrlenUTF8Decoded(str.c_str());
-	std::wstring wideStr; 
-	wideStr.resize(strLen + 1); // for '\0'
-	auto end = Strlcpy(wideStr.data(), str.c_str(), wideStr.size(), str.size());
-	wideStr.resize(strLen);
-	return wideStr;
+	try
+	{
+		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+		std::wstring wstr = converter.from_bytes(str);
+		return wstr;
+	}
+	catch(const std::exception& ex)
+	{
+		LOGF_ERROR("Failed to convert to UTF-16.\n%s", str.c_str());
+		return std::wstring();
+	}
 }
 
 std::filesystem::path Util::PathFromString(const std::string& str) noexcept

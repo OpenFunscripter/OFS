@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <set>
 
 Funscript::Funscript() 
 {
@@ -63,8 +64,7 @@ void Funscript::startSaveThread(const std::string& path, FunscriptArray&& action
 		data->jsonObj["inverted"] = false;
 		data->jsonObj["range"] = 100; // I think this is mostly ignored anyway
 
-		eastl::vector_set<int64_t> timestamps;
-		timestamps.reserve(data->actions.size());
+		std::set<int64_t> timestamps;
 
 		auto& actions = data->jsonObj["actions"];
 		for (auto action : data->actions) {
@@ -143,42 +143,17 @@ float Funscript::GetPositionAtTime(float time) noexcept
 	return data.Actions.back().pos;
 }
 
-void Funscript::AddActionRange(const FunscriptArray& range, bool checkDuplicates) noexcept
+void Funscript::AddMultipleActions(const FunscriptArray& actions) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	if (checkDuplicates) {
-		data.Actions.insert(range.begin(), range.end());
+	for(auto& action : actions)
+	{
+		data.Actions.emplace(action);
 	}
-	else {
-		for (auto action : range) {
-			data.Actions.emplace_back_unsorted(action);
-		}
-	}
-
 	sortActions(data.Actions);
 	NotifyActionsChanged(true);
 }
 
-void Funscript::EditActionUnsafe(FunscriptAction* edit, FunscriptAction action) noexcept
-{
-	if (edit >= data.Actions.begin() && edit < data.Actions.end()) {
-		FunscriptAction* before = edit > data.Actions.begin() ? edit - 1 : edit;
-		FunscriptAction* after = edit + 1 != data.Actions.end() ? edit + 1 : edit;
-
-		if (before->atS < action.atS && after->atS > action.atS) {
-			*edit = action;
-		}
-		else {
-			FunscriptAction copyDeleted = *edit;
-			data.Actions.erase(edit);
-			auto succ = data.Actions.emplace(action);
-			if (!succ.second) {
-				data.Actions.emplace(copyDeleted);
-			}
-		}
-		NotifyActionsChanged(true);
-	}
-}
 
 bool Funscript::EditAction(FunscriptAction oldAction, FunscriptAction newAction) noexcept
 {
@@ -493,7 +468,7 @@ void Funscript::SelectMidActions() noexcept
 	data.selection = selectionCopy;
 	SelectBottomActions();
 	auto bottomPoints = data.selection;
-
+	
 	selectionCopy.erase(std::remove_if(selectionCopy.begin(), selectionCopy.end(),
 		[&topPoints, &bottomPoints](auto val) {
 			return std::any_of(topPoints.begin(), topPoints.end(), [val](auto a) { return a == val; })
@@ -528,11 +503,11 @@ FunscriptArray Funscript::GetSelection(float fromTime, float toTime) noexcept
 	FunscriptArray selection;
 	if (!data.Actions.empty()) {
 		auto start = data.Actions.lower_bound(FunscriptAction(fromTime, 0));
-		auto end = data.Actions.upper_bound(FunscriptAction(toTime, 0)) + 1;
+		auto end = data.Actions.upper_bound(FunscriptAction(toTime, 0));
 		for (; start != end; ++start) {
 			auto action = *start;
 			if (action.atS >= fromTime && action.atS <= toTime) {
-				selection.emplace(action);
+				selection.emplace_back_unsorted(action);
 			}
 		}
 	}
@@ -646,7 +621,8 @@ void Funscript::MoveSelectionTime(float timeOffset, float frameTime) noexcept
 			FunscriptAction newAction = *move;
 			newAction.atS += timeOffset;
 			newSelection.emplace(newAction);
-			EditActionUnsafe(move, newAction);
+			RemoveAction(*move, false);
+			AddAction(newAction);
 		}
 	}
 	ClearSelection();
@@ -685,21 +661,14 @@ void Funscript::MoveSelectionPosition(int32_t pos_offset) noexcept
 	NotifyActionsChanged(true);
 }
 
-void Funscript::SetSelection(const FunscriptArray& actionsToSelect, bool unsafe) noexcept
+void Funscript::SetSelection(const FunscriptArray& actionsToSelect) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	ClearSelection();
-	if (!unsafe) {
-		data.selection.insert(actionsToSelect.begin(), actionsToSelect.end());
+	for(auto& action : actionsToSelect) {
+		data.selection.emplace(action);
 	}
-	else {
-		for (auto action : actionsToSelect)	{
-			auto end = data.Actions.end();
-			if (data.Actions.find(action) != end) {
-				data.selection.insert(action);
-			}
-		}
-	}
+	NotifySelectionChanged();
 }
 
 bool Funscript::IsSelected(FunscriptAction action) noexcept

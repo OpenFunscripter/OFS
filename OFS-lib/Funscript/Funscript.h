@@ -16,8 +16,6 @@
 #include "FunscriptSpline.h"
 #include "OFS_Profiling.h"
 
-#include "EASTL/sort.h"
-
 class FunscriptUndoSystem;
 
 class FunscriptEvents
@@ -99,7 +97,7 @@ public:
 	{
 		s.ext(*this, bitsery::ext::Growable{},
 			[](S& s, Funscript& o) {
-				s.container(o.data.Actions, o.data.Actions.kMaxSize);
+				s.container(o.data.Actions, std::numeric_limits<uint32_t>::max());
 				s.text1b(o.CurrentPath, o.CurrentPath.max_size());
 				s.text1b(o.Title, o.Title.max_size());
 
@@ -135,8 +133,8 @@ private:
 		OFS_PROFILE(__FUNCTION__);
 		if (data.Actions.empty()) return nullptr;
 		auto it = data.Actions.find(action);
-		if(it != data.Actions.end() && it->pos == action.pos) {
-			return it;
+		if(it != data.Actions.end()) {
+			return &*it;
 		}
 		return nullptr;
 	}
@@ -182,7 +180,7 @@ private:
 		OFS_PROFILE(__FUNCTION__);
 		if (data.Actions.empty()) return nullptr;
 		auto it = data.Actions.upper_bound(FunscriptAction(time, 0));
-		return it != data.Actions.end() ? it : nullptr;
+		return it != data.Actions.end() ? &*it : nullptr;
 	}
 
 	inline FunscriptAction* getPreviousActionBehind(float time) noexcept
@@ -190,7 +188,10 @@ private:
 		OFS_PROFILE(__FUNCTION__);
 		if (data.Actions.empty()) return nullptr;
 		auto it = data.Actions.lower_bound(FunscriptAction(time, 0));
-		return it-1 >= data.Actions.begin() ? it - 1 : nullptr;
+		if(it != data.Actions.begin() && it != data.Actions.end()) {
+			return &*(--it);
+		}
+		return nullptr;
 	}
 
 	void moveAllActionsTime(float timeOffset);
@@ -198,7 +199,7 @@ private:
 	inline void sortSelection() noexcept { sortActions(data.selection); }
 	inline void sortActions(FunscriptArray& actions) noexcept {
 		OFS_PROFILE(__FUNCTION__);
-		eastl::sort(actions.begin(), actions.end());
+		std::sort(actions.begin(), actions.end());
 	}
 	inline void addAction(FunscriptArray& actions, FunscriptAction newAction) noexcept {
 		OFS_PROFILE(__FUNCTION__);
@@ -225,10 +226,6 @@ public:
 			unsavedEdits = true;
 			editTime = std::chrono::system_clock::now();
 		}
-
-#ifndef NDEBUG
-		data.Actions.set_capacity(data.Actions.size()); // force threading issues
-#endif
 	}
 
 	std::unique_ptr<FunscriptUndoSystem> undoSystem;
@@ -269,9 +266,9 @@ public:
 	float GetPositionAtTime(float time) noexcept;
 	
 	inline void AddAction(FunscriptAction newAction) noexcept { addAction(data.Actions, newAction); }
-	void AddActionRange(const FunscriptArray& range, bool checkDuplicates = true) noexcept;
+	void AddMultipleActions(const FunscriptArray& actions) noexcept;
 
-	void EditActionUnsafe(FunscriptAction* edit, FunscriptAction action) noexcept;
+	//void EditActionUnsafe(FunscriptAction* edit, FunscriptAction action) noexcept;
 	bool EditAction(FunscriptAction oldAction, FunscriptAction newAction) noexcept;
 	void AddEditAction(FunscriptAction action, float frameTime) noexcept;
 	void RemoveAction(FunscriptAction action, bool checkInvalidSelection = true) noexcept;
@@ -308,7 +305,7 @@ public:
 	inline void ClearSelection() noexcept { data.selection.clear(); }
 	inline const FunscriptAction* GetClosestActionSelection(float time) noexcept { return getActionAtTime(data.selection, time, std::numeric_limits<int32_t>::max()); }
 	
-	void SetSelection(const FunscriptArray& action_to_select, bool unsafe) noexcept;
+	void SetSelection(const FunscriptArray& actions) noexcept;
 	bool IsSelected(FunscriptAction action) noexcept;
 
 	void EqualizeSelection() noexcept;

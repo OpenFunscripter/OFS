@@ -5,8 +5,7 @@
 #include "OFS_Reflection.h"
 
 #include <array>
-
-#include "EASTL/string.h"
+#include <sstream>
 
 class TCodeChannel {
 public:
@@ -120,7 +119,8 @@ public:
 
 	std::array<TCodeChannel, static_cast<size_t>(TChannel::TotalCount)> channels;
 
-	eastl::string commandBuffer;
+	std::stringstream commandBuffer;
+	std::string tmpCommand;
 
 	TCodeChannels() noexcept
 	{
@@ -149,18 +149,19 @@ public:
 	inline const char* GetCommand() noexcept {
 		OFS_PROFILE(__FUNCTION__);
 		bool gotCmd = false;
-		commandBuffer.clear();
+		commandBuffer = std::stringstream(std::string());
 		for (auto& c : channels) {
 			auto cmd = c.getCommand();
 			if (cmd != nullptr) {
 				gotCmd = true;
-				commandBuffer.append(cmd);
-				commandBuffer.append(1, ' ');
+				commandBuffer << cmd;
+				commandBuffer << ' ';
 			}
 		}
 		if (gotCmd) { 
-			commandBuffer.append(1, '\n');
-			return commandBuffer.c_str();
+			commandBuffer << '\n';
+			tmpCommand = commandBuffer.str();
+			return tmpCommand.c_str();
 		}
 		
 		return nullptr;
@@ -170,18 +171,19 @@ public:
 	{
 		OFS_PROFILE(__FUNCTION__);
 		bool gotCmd = false;
-		commandBuffer.clear();
+		commandBuffer = std::stringstream(std::string());
 		for (auto& c : channels) {
 			auto cmd = c.getCommandSpeed(speed);
 			if (cmd != nullptr) {
 				gotCmd = true;
-				commandBuffer.append(cmd);
-				commandBuffer.append(1, ' ');
+				commandBuffer << cmd;
+				commandBuffer << ' ';
 			}
 		}
 		if (gotCmd) {
-			commandBuffer.append(1, '\n');
-			return commandBuffer.c_str();
+			commandBuffer << '\n';
+			tmpCommand = commandBuffer.str();
+			return tmpCommand.c_str();
 		}
 
 		return nullptr;

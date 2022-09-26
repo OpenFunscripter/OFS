@@ -6,8 +6,6 @@
 
 #include <memory>
 
-#include "EASTL/vector_map.h"
-
 class OFS_LuaExtension
 {
 	private:

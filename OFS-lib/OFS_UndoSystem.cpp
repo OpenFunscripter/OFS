@@ -95,8 +95,8 @@ void UndoSystem::ShowUndoRedoHistory(bool* open) noexcept
 void UndoSystem::Snapshot(StateType type, const std::weak_ptr<Funscript> active, bool clearRedo) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	UndoStack.push_back() = active.expired() ? UndoContext(type) : UndoContext(active, type);
-	if (clearRedo && !RedoStack.empty())
+	UndoStack.push_back(active.expired() ? UndoContext(type) : UndoContext(active, type));
+	if (clearRedo)
 		ClearRedo();
 
 	if (UndoStack.back().IsMulti()) {
@@ -138,7 +138,7 @@ bool UndoSystem::Undo() noexcept
 		}
 	}
 
-	RedoStack.push_back() = std::move(UndoStack.back());
+	RedoStack.emplace_back(std::move(UndoStack.back()));
 	UndoStack.pop_back();
 	return undidSomething;
 }
@@ -169,7 +169,7 @@ bool UndoSystem::Redo() noexcept
 		}
 	}
 
-	UndoStack.push_back() = std::move(RedoStack.back());
+	UndoStack.emplace_back(std::move(RedoStack.back()));
 	RedoStack.pop_back();
 	return redidSomething;
 }

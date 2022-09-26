@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <limits>
 
-#include "EASTL/vector_set.h"
+#include "OFS_VectorSet.h"
 
 struct FunscriptAction
 {
@@ -80,4 +80,5 @@ struct ActionLess
 	}
 };
 
-using FunscriptArray = eastl::vector_set<FunscriptAction, ActionLess>;
+
+using FunscriptArray = vector_set<FunscriptAction, ActionLess>;

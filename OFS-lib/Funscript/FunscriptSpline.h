@@ -4,7 +4,6 @@
 #include <vector>
 #include "glm/gtx/spline.hpp"
 
-#include "EASTL/vector_set.h"
 
 class FunscriptSpline
 {

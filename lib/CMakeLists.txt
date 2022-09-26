@@ -22,28 +22,6 @@ add_subdirectory("glm")
 #target_include_directories(bitsery INTERFACE "bitsery/include")
 add_subdirectory("bitsery/")
 
-# =============
-# === EASTL ===
-# =============
-set(EASTL_ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}/EASTL_lib")
-add_library(EASTL_target INTERFACE)
-target_include_directories(EASTL_target INTERFACE ${EASTL_ROOT_DIR}/include)
-target_include_directories(EASTL_target INTERFACE ${EASTL_ROOT_DIR}/test/packages/EAAssert/include)
-#target_include_directories(EASTL_target INTERFACE ${EASTL_ROOT_DIR}/test/packages/EABase/include/Common)
-#target_include_directories(EASTL_target INTERFACE ${EASTL_ROOT_DIR}/test/packages/EAMain/include)
-target_include_directories(EASTL_target INTERFACE ${EASTL_ROOT_DIR}/test/packages/EAStdC/include)
-#target_include_directories(EASTL_target INTERFACE ${EASTL_ROOT_DIR}/test/packages/EATest/include)
-target_include_directories(EASTL_target INTERFACE ${EASTL_ROOT_DIR}/test/packages/EAThread/include)
-set(EASTL_BUILD_BENCHMARK OFF CACHE BOOL "" FORCE)
-set(EASTL_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/EASTL_lib/scripts/CMake/")
-add_subdirectory("EASTL_lib/")
-add_subdirectory("EASTL_lib/test/packages/EAStdC")
-add_subdirectory("EASTL_lib/test/packages/EAAssert")
-add_subdirectory("EASTL_lib/test/packages/EAThread")
-target_link_libraries(EASTL_target INTERFACE EASTL EAAssert EAStdC EAThread)
-
-
 # ====================
 # == libserialport ===
 # ====================

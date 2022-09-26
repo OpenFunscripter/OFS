@@ -2,7 +2,7 @@
 #include "OFS_Util.h"
 #include "OFS_LuaExtensions.h"
 
-#include "EASTL/string.h"
+#include <sstream>
 
 constexpr const char* LuaDefaultFunctions = R"(
 binding = {}
@@ -13,24 +13,24 @@ end
 
 static int LuaPrint(sol::variadic_args va) noexcept
 {
-	eastl::string logMsg;
-	logMsg.reserve(256);
+	std::stringstream logMsg;
 
 	OFS_LuaExtension* ext = sol::state_view(va.lua_state())[OFS_LuaExtensions::GlobalExtensionPtr];
-	logMsg.append_sprintf("[%s]: ", ext->Name.c_str());
+	logMsg << '[' << ext->Name << "]: ";
 	for(auto arg : va) {
 		auto str = lua_tostring(va.lua_state(), arg.stack_index());
 		if(str) {
-			logMsg.append(str);
-			logMsg.append(1, ' ');
+			logMsg << str;
+			logMsg << ' '; 
 		}
 		else {
 			luaL_error(va.lua_state(), "Type can't be turned into a string.");
 			return 0;
 		}
 	}
-	logMsg.append(1, '\n');
-	OFS_LuaExtensions::ExtensionLogBuffer.AddLog(logMsg.c_str());
+	logMsg << '\n';
+	auto finalMsg = logMsg.str();
+	OFS_LuaExtensions::ExtensionLogBuffer.AddLog(finalMsg.c_str());
 	return 0;
 }
 

@@ -6,7 +6,7 @@
 #include "imgui_stdlib.h"
 #include "OFS_Lua.h"
 
-#include "EASTL/stack.h"
+#include <vector>
 #include <sstream>
 
 #include "SDL_thread.h"
@@ -178,17 +178,17 @@ inline static float PointLineDistance(FunscriptAction pt, FunscriptAction lineSt
 
 static auto DouglasPeucker(const FunscriptArray& points, int startIndex, int lastIndex, float epsilon) noexcept {
     OFS_PROFILE(__FUNCTION__);
-    eastl::stack<std::pair<int, int>> stk;
-    stk.push(std::make_pair(startIndex, lastIndex));
+    std::vector<std::pair<int, int>> stk;
+    stk.push_back(std::make_pair(startIndex, lastIndex));
     
     int globalStartIndex = startIndex;
-    auto bitArray = eastl::vector<bool>();
+    auto bitArray = std::vector<bool>();
     bitArray.resize(lastIndex - startIndex + 1, true);
 
     while (!stk.empty()) {
-        startIndex = stk.top().first;
-        lastIndex = stk.top().second;
-        stk.pop();
+        startIndex = stk.back().first;
+        lastIndex = stk.back().second;
+        stk.pop_back();
 
         float dmax = 0.f;
         int index = startIndex;
@@ -205,8 +205,8 @@ static auto DouglasPeucker(const FunscriptArray& points, int startIndex, int las
         }
 
         if (dmax > epsilon) {
-            stk.push(std::make_pair(startIndex, index));
-            stk.push(std::make_pair(index, lastIndex));
+            stk.push_back(std::make_pair(startIndex, index));
+            stk.push_back(std::make_pair(index, lastIndex));
         }
         else {
             for (int i = startIndex + 1; i < lastIndex; ++i) {
@@ -266,7 +266,7 @@ void RamerDouglasPeucker::DrawUI() noexcept
             newActions.reserve(selection.size());
             float scaledEpsilon = epsilon * averageDistance;
             DouglasPeucker(selection, scaledEpsilon, newActions);
-            ctx().AddActionRange(newActions, false);
+            ctx().AddMultipleActions(newActions);
         }
     }
     else {
