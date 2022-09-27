@@ -498,7 +498,11 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 		if (ImGui::BeginPopupContextItem(script.Title.c_str()))
 		{
 			if (ImGui::BeginMenu(TR_ID("SCRIPTS", Tr::SCRIPTS))) {
-				for (auto&& script : *Scripts) {
+				for (auto& script : *Scripts) {
+					if(script->Title.empty()) {
+						ImGui::TextDisabled(TR(NONE));
+						continue;
+					}
 					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, drawingCtx.drawnScriptCount == 1 && script->Enabled);
 					if (ImGui::Checkbox(script->Title.c_str(), &script->Enabled) && !script->Enabled) {
 						if (script.get() == activeScript) {
