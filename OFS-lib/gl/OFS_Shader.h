@@ -20,8 +20,7 @@ private:
 	int32_t AspectLoc = 0;
 	int32_t VideoAspectLoc = 0;
 
-	static constexpr const char* vtxShader = R"(
-			#version 300 es
+	static constexpr const char* vtxShader = R"(#version 300 es
 			precision highp float;
 
 			uniform mat4 ProjMtx;
@@ -39,8 +38,7 @@ private:
 
 	// this shader handles SBS + top/bottom 180 & top/bottom 360
 	// SBS 360 is untested
-	static constexpr const char* fragShader = R"(
-			#version 300 es
+	static constexpr const char* fragShader = R"(#version 300 es
 			precision highp float;
 
 			uniform sampler2D Texture;
@@ -119,8 +117,7 @@ private:
 	int32_t AudioSamplingOffset = 0;
 	int32_t ColorLoc = 0;
 
-	static constexpr const char* vtx_shader = R"(
-			#version 300 es
+	static constexpr const char* vtx_shader = R"(#version 300 es
 			precision highp float;
 
 			uniform mat4 ProjMtx;
@@ -136,8 +133,7 @@ private:
 			}
 	)";
 
-	static constexpr const char* frag_shader = R"(
-			#version 300 es
+	static constexpr const char* frag_shader = R"(#version 300 es
 			precision highp float;
 
 			uniform vec3 Color;
@@ -222,8 +218,7 @@ private:
 	int32_t ViewPosLoc = 0;
 	int32_t ObjectColorLoc = 0;
 
-	static constexpr const char* vtxShader = R"(
-		#version 300 es
+	static constexpr const char* vtxShader = R"(#version 300 es
 		precision highp float;
 
 		layout (location = 0) in vec3 aPos;
@@ -244,8 +239,7 @@ private:
 		}
 	)";
 	
-	static constexpr const char* fragShader = R"(
-		#version 300 es
+	static constexpr const char* fragShader = R"(#version 300 es
 		precision highp float;
 
 		out vec4 FragColor;
