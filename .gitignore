@@ -23,3 +23,4 @@ localization/localization_bak2.csv
 localization/.~lock.localization.csv#
 LuaDox/html
 emscripten
+lib/glad2_ogl_3_3

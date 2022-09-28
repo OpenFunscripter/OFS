@@ -53,7 +53,7 @@ std::array<const char*, 4> OpenFunscripter::SupportedAudioExtensions{
 };
 
 OpenFunscripter* OpenFunscripter::ptr = nullptr;
-constexpr const char* GlslVersion = "#version 330";
+constexpr const char* GlslVersion = "#version 300 es";
 
 static ImGuiID MainDockspaceID;
 constexpr const char* StatisticsWindowId = "###STATISTICS";
@@ -163,9 +163,9 @@ bool OpenFunscripter::setup(int argc, char* argv[])
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0 /*| SDL_GL_CONTEXT_DEBUG_FLAG*/);
 #endif
 
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 
     // antialiasing
     // this caused problems in my linux testing
@@ -196,7 +196,7 @@ bool OpenFunscripter::setup(int argc, char* argv[])
     SDL_GL_MakeCurrent(window, glContext);
     SDL_GL_SetSwapInterval(settings->data().vsync);
 
-    if (!gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress)) {
+    if (!gladLoadGLES2((GLADloadfunc)SDL_GL_GetProcAddress)) {
         LOG_ERROR("Failed to load glad.");
         return false;
     }

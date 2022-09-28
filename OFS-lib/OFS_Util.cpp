@@ -1,5 +1,5 @@
 #include "OFS_Util.h"
-
+#include "OFS_GL.h"
 #include "EventSystem.h"
 
 #include <filesystem>
@@ -17,7 +17,6 @@
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
-#include "glad/gl.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"

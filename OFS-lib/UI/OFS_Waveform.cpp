@@ -105,11 +105,11 @@ bool OFS_Waveform::GenerateAndLoadFlac(const std::string& ffmpegPath, const std:
 void OFS_WaveformLOD::Init() noexcept
 {
 	glGenTextures(1, &WaveformTex);
-	glBindTexture(GL_TEXTURE_1D, WaveformTex);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_2D, WaveformTex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	WaveShader = std::make_unique<WaveformShader>();
 }
 
@@ -201,6 +201,6 @@ void OFS_WaveformLOD::Upload() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_1D, WaveformTex);
-	glTexImage1D(GL_TEXTURE_1D, 0, GL_R32F, WaveformLineBuffer.size(), 0, GL_RED, GL_FLOAT, WaveformLineBuffer.data());
+	glBindTexture(GL_TEXTURE_2D, WaveformTex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, WaveformLineBuffer.size(), 1, 0, GL_RED, GL_FLOAT, WaveformLineBuffer.data());
 }

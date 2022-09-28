@@ -5,7 +5,7 @@
 #include <vector>
 #include <cstdint>
 
-#include "glad/gl.h"
+#include "OFS_GL.h"
 
 #include "SDL_atomic.h"
 #include "SDL_mutex.h"

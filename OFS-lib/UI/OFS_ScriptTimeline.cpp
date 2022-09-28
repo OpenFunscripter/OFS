@@ -14,7 +14,7 @@
 
 #include "OFS_ImGui.h"
 #include "OFS_Shader.h"
-#include "glad/gl.h"
+#include "OFS_GL.h"
 
 #include "KeybindingSystem.h"
 #include "SDL_events.h"
@@ -626,7 +626,8 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 				ScriptTimeline* ctx = (ScriptTimeline*)cmd->UserCallbackData;
 				
 				glActiveTexture(GL_TEXTURE1);
-				glBindTexture(GL_TEXTURE_1D, ctx->Wave.WaveformTex);
+				glBindTexture(GL_TEXTURE_2D, ctx->Wave.WaveformTex);
+				glActiveTexture(GL_TEXTURE0);
 				ctx->Wave.WaveShader->use();
 				auto draw_data = ctx->Wave.WaveformViewport->DrawData;
 				float L = draw_data->DisplayPos.x;

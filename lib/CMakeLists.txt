@@ -7,7 +7,7 @@ find_package(OpenGL REQUIRED)
 # ========
 # = GLAD =
 # ========
-add_library(glad2 STATIC "glad2/src/gl.c")
+add_library(glad2 STATIC "glad2/src/gles2.c")
 target_include_directories(glad2 PUBLIC "glad2/include/")
 
 # ==========
@@ -114,11 +114,6 @@ set (LUA_HEADERS
 add_library(lua STATIC ${LUA_SOURCES} ${LUA_HEADERS})
 target_include_directories(lua PUBLIC "lua/")
 
-#add_library(LuaJIT INTERFACE)
-#target_include_directories(LuaJIT INTERFACE "LuaJIT/src")
-#target_link_libraries(LuaJIT INTERFACE 
-#	"${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT/src/lua51.lib"
-#)
 
 # =========
 # = IMGUI =
