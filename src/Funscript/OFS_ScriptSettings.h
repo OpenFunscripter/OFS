@@ -7,7 +7,7 @@
 
 #include "OFS_Reflection.h"
 #include "OFS_Util.h"
-#include "OFS_Videoplayer.h"
+#include "OFS_VideoplayerWindow.h"
 
 
 struct OFS_ScriptSettings {
@@ -72,7 +72,7 @@ struct OFS_ScriptSettings {
 	std::string version = "OFS " OFS_LATEST_GIT_TAG "@" OFS_LATEST_GIT_HASH;
 	std::vector<Bookmark> Bookmarks;
 	float lastPlayerPosition = 0.f;
-	static VideoplayerWindow::OFS_VideoPlayerSettings* player;
+	static OFS_VideoplayerWindow::OFS_VideoPlayerSettings* player;
 
 	struct TempoModeSettings {
 		float bpm = 100.f;

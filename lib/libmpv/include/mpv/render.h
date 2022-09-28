@@ -370,9 +370,11 @@ typedef enum mpv_render_param_type {
      *      address 0), the "0" component contains uninitialized garbage (often
      *      the value 0, but not necessarily; the bad naming is inherited from
      *      FFmpeg)
+     *      Pixel alignment size: 4 bytes
      *  "rgb24"
      *      3 bytes per pixel RGB. This is strongly discouraged because it is
      *      very slow.
+     *      Pixel alignment size: 1 bytes
      *  other
      *      The API may accept other pixel formats, using mpv internal format
      *      names, as long as it's internally marked as RGB, has exactly 1
@@ -390,7 +392,15 @@ typedef enum mpv_render_param_type {
      * target surface. It must be a multiple of the pixel size, and have space
      * for the surface width as specified by MPV_RENDER_PARAM_SW_SIZE.
      *
-     * It should be a multiple of 64 to facilitate fast SIMD operation.
+     * Both stride and pointer value should be a multiple of 64 to facilitate
+     * fast SIMD operation. Lower alignment might trigger slower code paths,
+     * and in the worst case, will copy the entire target frame. If mpv is built
+     * with zimg (and zimg is not disabled), the performance impact might be
+     * less.
+     * In either cases, the pointer and stride must be aligned at least to the
+     * pixel alignment size. Otherwise, crashes and undefined behavior is
+     * possible on platforms which do not support unaligned accesses (either
+     * through normal memory access or aligned SIMD memory access instructions).
      */
     MPV_RENDER_PARAM_SW_STRIDE = 19,
     /*
@@ -407,6 +417,8 @@ typedef enum mpv_render_param_type {
      * will do it anyway). It is assumed that even the padding after the last
      * line (starting at bytepos(w, h) until (pointer + stride * h)) is
      * writable.
+     *
+     * See MPV_RENDER_PARAM_SW_STRIDE for alignment requirements.
      */
     MPV_RENDER_PARAM_SW_POINTER = 20,
 } mpv_render_param_type;
@@ -562,8 +574,8 @@ typedef struct mpv_render_frame_info {
  *      MPV_ERROR_INVALID_PARAMETER: at least one of the provided parameters was
  *                                   not valid.
  */
-int mpv_render_context_create(mpv_render_context **res, mpv_handle *mpv,
-                              mpv_render_param *params);
+MPV_EXPORT int mpv_render_context_create(mpv_render_context **res, mpv_handle *mpv,
+                                         mpv_render_param *params);
 
 /**
  * Attempt to change a single parameter. Not all backends and parameter types
@@ -575,8 +587,8 @@ int mpv_render_context_create(mpv_render_context **res, mpv_handle *mpv,
  *         success, otherwise an error code depending on the parameter type
  *         and situation.
  */
-int mpv_render_context_set_parameter(mpv_render_context *ctx,
-                                     mpv_render_param param);
+MPV_EXPORT int mpv_render_context_set_parameter(mpv_render_context *ctx,
+                                                mpv_render_param param);
 
 /**
  * Retrieve information from the render context. This is NOT a counterpart to
@@ -597,8 +609,8 @@ int mpv_render_context_set_parameter(mpv_render_context *ctx,
  *         and situation. MPV_ERROR_NOT_IMPLEMENTED is used for unknown
  *         param.type, or if retrieving it is not supported.
  */
-int mpv_render_context_get_info(mpv_render_context *ctx,
-                                mpv_render_param param);
+MPV_EXPORT int mpv_render_context_get_info(mpv_render_context *ctx,
+                                           mpv_render_param param);
 
 typedef void (*mpv_render_update_fn)(void *cb_ctx);
 
@@ -618,9 +630,9 @@ typedef void (*mpv_render_update_fn)(void *cb_ctx);
  *                 redrawn
  * @param callback_ctx opaque argument to the callback
  */
-void mpv_render_context_set_update_callback(mpv_render_context *ctx,
-                                            mpv_render_update_fn callback,
-                                            void *callback_ctx);
+MPV_EXPORT void mpv_render_context_set_update_callback(mpv_render_context *ctx,
+                                                       mpv_render_update_fn callback,
+                                                       void *callback_ctx);
 
 /**
  * The API user is supposed to call this when the update callback was invoked
@@ -645,7 +657,7 @@ void mpv_render_context_set_update_callback(mpv_render_context *ctx,
  *         to the API user are set, or if the return value is 0, nothing needs
  *         to be done.
  */
-uint64_t mpv_render_context_update(mpv_render_context *ctx);
+MPV_EXPORT uint64_t mpv_render_context_update(mpv_render_context *ctx);
 
 /**
  * Flags returned by mpv_render_context_update(). Each value represents a bit
@@ -693,7 +705,7 @@ typedef enum mpv_render_update_flag {
  *               happens with unknown parameters.
  * @return error code
  */
-int mpv_render_context_render(mpv_render_context *ctx, mpv_render_param *params);
+MPV_EXPORT int mpv_render_context_render(mpv_render_context *ctx, mpv_render_param *params);
 
 /**
  * Tell the renderer that a frame was flipped at the given time. This is
@@ -706,7 +718,7 @@ int mpv_render_context_render(mpv_render_context *ctx, mpv_render_param *params)
  *
  * @param ctx a valid render context
  */
-void mpv_render_context_report_swap(mpv_render_context *ctx);
+MPV_EXPORT void mpv_render_context_report_swap(mpv_render_context *ctx);
 
 /**
  * Destroy the mpv renderer state.
@@ -717,7 +729,7 @@ void mpv_render_context_report_swap(mpv_render_context *ctx);
  * @param ctx a valid render context. After this function returns, this is not
  *            a valid pointer anymore. NULL is also allowed and does nothing.
  */
-void mpv_render_context_free(mpv_render_context *ctx);
+MPV_EXPORT void mpv_render_context_free(mpv_render_context *ctx);
 
 #ifdef __cplusplus
 }

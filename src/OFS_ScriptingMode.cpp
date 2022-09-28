@@ -17,7 +17,7 @@ ScripingModeBaseImpl::ScripingModeBaseImpl()
 void ScripingModeBaseImpl::addEditAction(FunscriptAction action) noexcept
 {
     auto app = OpenFunscripter::ptr;
-    ctx().AddEditAction(action, app->player->getFrameTime());
+    ctx().AddEditAction(action, app->player->FrameTime());
 }
 
 inline Funscript& ScripingModeBaseImpl::ctx() {
@@ -177,7 +177,7 @@ void ScriptingMode::redo() noexcept
 void ScriptingMode::addEditAction(FunscriptAction action) noexcept
 {
     auto app = OpenFunscripter::ptr;
-    if (!app->player->isPaused()) {
+    if (!app->player->IsPaused()) {
         // apply offset
         action.atS += app->settings->data().action_insert_delay_ms / 1000.f;
     }
@@ -244,7 +244,7 @@ void AlternatingImpl::DrawModeSettings() noexcept
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
     if (contextSensitive) {
-        auto behind = ctx().GetPreviousActionBehind(std::round(app->player->getCurrentPositionSecondsInterp()) - 0.001f);
+        auto behind = ctx().GetPreviousActionBehind(std::round(app->player->CurrentTimeInterp()) - 0.001f);
         if (behind) {
             ImGui::TextDisabled("%s: %s", TR(NEXT_POINT), behind->pos <= 50 ? TR(TOP) : TR(BOTTOM));
         }
@@ -331,9 +331,10 @@ inline void RecordingImpl::singleAxisRecording() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
-    uint32_t frameEstimate = app->player->getCurrentFrameEstimate();
-    app->scriptTimeline.RecordingBuffer[frameEstimate]
-        = std::make_pair(FunscriptAction(app->player->getCurrentPositionSecondsInterp(), currentPosY), FunscriptAction());
+    // FIXME
+    //uint32_t frameEstimate = app->player->getCurrentFrameEstimate();
+    //app->scriptTimeline.RecordingBuffer[frameEstimate]
+    //    = std::make_pair(FunscriptAction(app->player->CurrentTimeInterp(), currentPosY), FunscriptAction());
     app->simulator.positionOverride = currentPosY;
 }
 
@@ -341,10 +342,11 @@ inline void RecordingImpl::twoAxisRecording() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
-    uint32_t frameEstimate = app->player->getCurrentFrameEstimate();
-    float atS = app->player->getCurrentPositionSecondsInterp();
-    app->scriptTimeline.RecordingBuffer[frameEstimate]
-        = std::make_pair(FunscriptAction(atS, currentPosX), FunscriptAction(atS, 100 - currentPosY));
+    // FIXME
+    //uint32_t frameEstimate = app->player->getCurrentFrameEstimate();
+    //float atS = app->player->CurrentTimeInterp();
+    //app->scriptTimeline.RecordingBuffer[frameEstimate]
+    //    = std::make_pair(FunscriptAction(atS, currentPosX), FunscriptAction(atS, 100 - currentPosY));
     app->sim3D->RollOverride = currentPosX;
     app->sim3D->PitchOverride = 100 - currentPosY;
 }
@@ -557,7 +559,7 @@ void RecordingImpl::DrawModeSettings() noexcept
 
 
     ImGui::Spacing();
-    bool playing = !app->player->isPaused();
+    bool playing = !app->player->IsPaused();
     if (automaticRecording && playing && recordingActive != playing) {
         autoBackupTmp = app->Status & OFS_Status::OFS_AutoBackup;
         app->Status &= ~(OFS_Status::OFS_AutoBackup);
@@ -596,8 +598,9 @@ void RecordingImpl::update() noexcept
         recordingJustStarted = false;
         recordingActive = true;
         app->scriptTimeline.RecordingBuffer.clear();
-        app->scriptTimeline.RecordingBuffer.resize(app->player->getTotalNumFrames(),
-            std::make_pair(FunscriptAction(), FunscriptAction()));
+        // FIXME
+        //app->scriptTimeline.RecordingBuffer.resize(app->player->getTotalNumFrames(),
+        //    std::make_pair(FunscriptAction(), FunscriptAction()));
     }
     else if (recordingJustStopped) {
         recordingJustStopped = false;

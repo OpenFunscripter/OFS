@@ -31,61 +31,61 @@ OFS_PlayerAPI::OFS_PlayerAPI(sol::state_view& L) noexcept
 void OFS_PlayerAPI::TogglePlay() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    app->player->togglePlay();    
+    app->player->TogglePlay();    
 }
 
 void OFS_PlayerAPI::Play(bool shouldPlay) noexcept
 {
     auto app = OpenFunscripter::ptr;
-    app->player->setPaused(!shouldPlay);
+    app->player->SetPaused(!shouldPlay);
 }
 
 void OFS_PlayerAPI::Seek(lua_Number time) noexcept
 {
     auto app = OpenFunscripter::ptr;
-    app->player->setPositionExact(time);
+    app->player->SetPositionExact(time);
 }
 
 lua_Number OFS_PlayerAPI::CurrentTime() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    return app->player->getCurrentPositionSecondsInterp();
+    return app->player->CurrentTimeInterp();
 }
 
 lua_Number OFS_PlayerAPI::Duration() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    return app->player->getDuration();
+    return app->player->Duration();
 }
 
 bool OFS_PlayerAPI::IsPlaying() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    return !app->player->isPaused();
+    return !app->player->IsPaused();
 }
 
 std::string OFS_PlayerAPI::CurrentVideo() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    return app->player->getVideoPath();
+    return app->player->VideoPath();
 }
 
 lua_Number OFS_PlayerAPI::FPS() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    return app->player->getFps();
+    return app->player->Fps();
 }
 
 void OFS_PlayerAPI::setPlaybackSpeed(lua_Number speed) noexcept
 {
     auto app = OpenFunscripter::ptr;
-    app->player->setSpeed(speed);
+    app->player->SetSpeed(speed);
 }
 
 lua_Number OFS_PlayerAPI::getPlaybackSpeed() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    return app->player->getSpeed();
+    return app->player->CurrentSpeed();
 }
 
 lua_Number OFS_PlayerAPI::VideoWidth() noexcept

@@ -135,7 +135,7 @@ void OFS_Project::Clear() noexcept
 	ProjectSettings = OFS_Project::ProjSettings();
 	Metadata = OpenFunscripter::ptr->settings->data().defaultMetadata;
 	FUN_ASSERT(OFS_ScriptSettings::player != nullptr, "player not set");
-	*OFS_ScriptSettings::player = VideoplayerWindow::OFS_VideoPlayerSettings();
+	*OFS_ScriptSettings::player = OFS_VideoplayerWindow::OFS_VideoPlayerSettings();
 }
 
 void OFS_Project::LoadedSuccessful() noexcept
@@ -200,8 +200,8 @@ void OFS_Project::Save(const std::string& path, bool clearUnsavedChanges) noexce
 		.filename()
 		.u8string();
 	OFS_DynFontAtlas::AddText(Metadata.title.c_str());
-	Metadata.duration = app->player->getDuration();
-	Settings.lastPlayerPosition = app->player->getCurrentPositionSeconds();
+	Metadata.duration = app->player->Duration();
+	Settings.lastPlayerPosition = app->player->CurrentTime();
 
 	size_t writtenSize = 0;
 	{
@@ -402,11 +402,11 @@ void OFS_Project::ExportClips(const std::string& outputDirectory) noexcept
 			{
 				if (i == bookmarks.size() - 1)
 				{
-					endTime = app->player->getDuration();
+					endTime = app->player->Duration();
 				}
 				else
 				{
-					endTime = bookmarks[i + 1].atS - app->player->getFrameTime();
+					endTime = bookmarks[i + 1].atS - app->player->FrameTime();
 				}
 			}
 

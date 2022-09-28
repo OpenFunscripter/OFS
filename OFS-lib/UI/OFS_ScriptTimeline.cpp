@@ -3,7 +3,7 @@
 #include "imgui_stdlib.h"
 #include "OFS_Profiling.h"
 #include "OFS_UndoSystem.h"
-#include "OFS_Videoplayer.h"
+#include "OFS_VideoplayerWindow.h"
 
 #include "SDL.h"
 #include "stb_sprintf.h"
@@ -63,7 +63,7 @@ void ScriptTimeline::setup(UndoSystem* undoSystem)
 	EventSystem::ev().Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouseDrag));
 	EventSystem::ev().Subscribe(SDL_MOUSEBUTTONUP, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouseReleased));
 	EventSystem::ev().Subscribe(ScriptTimelineEvents::FfmpegAudioProcessingFinished, EVENT_SYSTEM_BIND(this, &ScriptTimeline::FfmpegAudioProcessingFinished));
-	EventSystem::ev().Subscribe(VideoEvents::MpvVideoLoaded, EVENT_SYSTEM_BIND(this, &ScriptTimeline::videoLoaded));
+	EventSystem::ev().Subscribe(VideoEvents::VideoLoaded, EVENT_SYSTEM_BIND(this, &ScriptTimeline::videoLoaded));
 
 	Wave.Init();
 }

@@ -4,7 +4,7 @@
 void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept
 {
     auto app = OpenFunscripter::ptr;
-    auto frameTime = enableFramerateOverride ? (1.f / framerateOverride) : app->player->getFrameTime();
+    auto frameTime = enableFramerateOverride ? (1.f / framerateOverride) : app->player->FrameTime();
 
     float visibleFrames = ctx.visibleTime / frameTime;
     constexpr float maxVisibleFrames = 400.f;
@@ -26,7 +26,7 @@ void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
 
     // time dividers
     constexpr float maxVisibleTimeDividers = 150.f;
-    const float timeIntervalMs = std::round(app->player->getFps() * 0.1f) * frameTime;
+    const float timeIntervalMs = std::round(app->player->Fps() * 0.1f) * frameTime;
     const float visibleTimeIntervals = ctx.visibleTime / timeIntervalMs;
     if (visibleTimeIntervals <= (maxVisibleTimeDividers * 0.8f)) {
         float offset = -std::fmod(ctx.offsetTime, timeIntervalMs);
@@ -49,7 +49,7 @@ void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
  
     // out of sync line
     if (BaseOverlay::SyncLineEnable) {
-        float realFrameTime = app->player->getRealCurrentPositionSeconds() - ctx.offsetTime;
+        float realFrameTime = app->player->CurrentTime() - ctx.offsetTime;
         ctx.draw_list->AddLine(
             ctx.canvas_pos + ImVec2((realFrameTime / ctx.visibleTime) * ctx.canvas_size.x, 0.f),
             ctx.canvas_pos + ImVec2((realFrameTime / ctx.visibleTime) * ctx.canvas_size.x, ctx.canvas_size.y),
@@ -64,11 +64,11 @@ void FrameOverlay::nextFrame() noexcept
     auto app = OpenFunscripter::ptr;
     if(enableFramerateOverride)
     {
-        app->player->seekRelative(1.f / framerateOverride);
+        app->player->SeekRelative(1.f / framerateOverride);
     }
     else
     {
-        app->player->nextFrame();
+        app->player->NextFrame();
     }    
 }
 
@@ -77,11 +77,11 @@ void FrameOverlay::previousFrame() noexcept
     auto app = OpenFunscripter::ptr;
     if(enableFramerateOverride)
     {
-        app->player->seekRelative(-(1.f / framerateOverride));
+        app->player->SeekRelative(-(1.f / framerateOverride));
     }
     else
     {
-        app->player->previousFrame();
+        app->player->PreviousFrame();
     }
 }
 
@@ -99,7 +99,7 @@ void FrameOverlay::DrawSettings() noexcept
 {
     if(ImGui::Checkbox(TR_ID("FPS_OVERRIDE_ENABLE", Tr::FPS_OVERRIDE), &enableFramerateOverride))
     {
-        framerateOverride = OpenFunscripter::ptr->player->getFps();
+        framerateOverride = OpenFunscripter::ptr->player->Fps();
     }
     if(enableFramerateOverride)
     {
@@ -108,9 +108,9 @@ void FrameOverlay::DrawSettings() noexcept
             framerateOverride = Util::Clamp(framerateOverride, 1.f, 150.f);
             // snap to new framerate
             auto app = OpenFunscripter::ptr;
-            float newPosition = std::round(app->player->getCurrentPositionSeconds() / (1.0 / (double)framerateOverride))
+            float newPosition = std::round(app->player->CurrentTime() / (1.0 / (double)framerateOverride))
                 * (1.0 / (double)framerateOverride);
-            app->player->setPositionExact(newPosition, true);
+            app->player->SetPositionExact(newPosition, true);
         }
     }
 }
@@ -233,10 +233,10 @@ void TempoOverlay::nextFrame() noexcept
     auto& tempo = app->LoadedProject->Settings.tempoSettings;
 
     float beatTime = (60.f / tempo.bpm) * beatMultiples[tempo.measureIndex];
-    float currentTime = app->player->getCurrentPositionSecondsInterp();
+    float currentTime = app->player->CurrentTimeInterp();
     float newPosition = GetNextPosition(beatTime, currentTime, tempo.beatOffsetSeconds);
 
-    app->player->setPositionExact(newPosition);
+    app->player->SetPositionExact(newPosition);
 }
 
 void TempoOverlay::previousFrame() noexcept
@@ -245,10 +245,10 @@ void TempoOverlay::previousFrame() noexcept
     auto& tempo = app->LoadedProject->Settings.tempoSettings;
 
     float beatTime = (60.f/ tempo.bpm) * beatMultiples[tempo.measureIndex];
-    float currentTime = app->player->getCurrentPositionSecondsInterp();
+    float currentTime = app->player->CurrentTimeInterp();
     float newPosition = GetPreviousPosition(beatTime, currentTime, tempo.beatOffsetSeconds);
 
-    app->player->setPositionExact(newPosition);
+    app->player->SetPositionExact(newPosition);
 }
 
 float TempoOverlay::steppingIntervalForward(float fromTime) noexcept

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "OFS_Videoplayer.h"
 #include "GradientBar.h"
 #include "OFS_Videopreview.h"
 #include "FunscriptHeatmap.h"
@@ -8,7 +7,7 @@
 #include <functional>
 
 // ImDrawList* draw_list, const ImRect& frame_bb, bool item_hovered
-using TimelineCustomDrawFunc = std::function<void(ImDrawList*, const ImRect&, bool)>;
+using TimelineCustomDrawFunc = std::function<void(ImDrawList*, const struct ImRect&, bool)>;
 
 class OFS_VideoplayerControls
 {
@@ -23,25 +22,24 @@ private:
 	
 	static constexpr int32_t PreviewUpdateMs = 1000;
 	uint32_t lastPreviewUpdate = 0;
+	class OFS_Videoplayer* player = nullptr;
 
 	void VideoLoaded(SDL_Event& ev) noexcept;
+	bool DrawTimelineWidget(const char* label, float* position, TimelineCustomDrawFunc&& customDraw) noexcept;
 public:
 	static constexpr const char* ControlId = "###CONTROLS";
 	static constexpr const char* TimeId = "###TIME";
-	VideoplayerWindow* player = nullptr;
 	HeatmapGradient Heatmap;
 	std::unique_ptr<VideoPreview> videoPreview;
 
 	OFS_VideoplayerControls() noexcept {}
-	void setup() noexcept;
+	void Init(class OFS_Videoplayer* player) noexcept;
 	inline void Destroy() noexcept { videoPreview.reset(); }
 
 	inline void UpdateHeatmap(float totalDuration, const FunscriptArray& actions) noexcept
 	{
 		Heatmap.Update(totalDuration, actions);
 	}
-
-	bool DrawTimelineWidget(const char* label, float* position, TimelineCustomDrawFunc&& customDraw) noexcept;
 
 	void DrawTimeline(bool* open, TimelineCustomDrawFunc&& customDraw = [](ImDrawList*, const ImRect&, bool) {}) noexcept;
 	void DrawControls(bool* open) noexcept;

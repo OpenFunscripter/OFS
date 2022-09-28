@@ -3,7 +3,6 @@
 #include "KeybindingSystem.h"
 #include "OFS_Settings.h"
 #include "OFS_ScriptTimeline.h"
-#include "OFS_Videoplayer.h"
 #include "OFS_UndoSystem.h"
 #include "EventSystem.h"
 #include "OFS_ScriptSimulator.h"
@@ -20,6 +19,9 @@
 #include "OFS_DynamicFontAtlas.h"
 #include "OFS_LuaExtensions.h"
 #include "OFS_Localization.h"
+
+#include "OFS_Videoplayer.h"
+#include "OFS_VideoplayerWindow.h"
 
 #include <memory>
 #include <chrono>
@@ -142,8 +144,10 @@ public:
 	ScriptSimulator simulator;
 	OFS_BlockingTask blockingTask;
 	
+	std::unique_ptr<OFS_Videoplayer> player; 
+	std::unique_ptr<OFS_VideoplayerWindow> playerWindow;
+
 	std::unique_ptr<TCodePlayer> tcode;
-	std::unique_ptr<VideoplayerWindow> player;
 	std::unique_ptr<SpecialFunctionsWindow> specialFunctions;
 	std::unique_ptr<ScriptingMode> scripting;
 	std::unique_ptr<EventSystem> events;

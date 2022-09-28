@@ -37,7 +37,7 @@ bool OFS_MpvLoader::Load() noexcept
     if(mpvHandle) return true;
     const char* lib = nullptr;
     #if defined(WIN32)
-    lib = "mpv-1.dll";
+    lib = "mpv-2.dll";
     #elif defined(__APPLE__)
     lib = "libmpv.dylib";
     #else // linux

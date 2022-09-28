@@ -2,7 +2,7 @@
 
 #include "OFS_Util.h"
 
-VideoplayerWindow::OFS_VideoPlayerSettings* OFS_ScriptSettings::player = nullptr;
+OFS_VideoplayerWindow::OFS_VideoPlayerSettings* OFS_ScriptSettings::player = nullptr;
 
 void OFS_ScriptSettings::AddBookmark(Bookmark&& bookmark) noexcept
 {

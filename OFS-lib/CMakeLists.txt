@@ -9,16 +9,19 @@ set(OFS_LIB_SOURCES
 
 	"UI/GradientBar.cpp"
 	"UI/OFS_ImGui.cpp"
-	"UI/OFS_Videoplayer.cpp"
 	"UI/KeybindingSystem.cpp"
 	"UI/OFS_VideoplayerControls.cpp"
 	"UI/OFS_Videopreview.cpp"
 	"UI/OFS_BlockingTask.cpp"
-
+	
 	"UI/OFS_ScriptTimeline.cpp"
 	"UI/ScriptPositionsOverlayMode.cpp"
-
+	
 	"UI/OFS_Waveform.cpp"
+	
+	"videoplayer/OFS_VideoplayerEvents.cpp"
+	"videoplayer/OFS_VideoplayerWindow.cpp"
+	"videoplayer/impl/OFS_MpvVideoplayer.cpp"
 
 	"imgui_impl/imgui_impl_opengl3.cpp"
 	"imgui_impl/imgui_impl_sdl.cpp" 
@@ -57,6 +60,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	"${PROJECT_SOURCE_DIR}/"
 	"${PROJECT_SOURCE_DIR}/player/"
 	"${PROJECT_SOURCE_DIR}/localization/"
+	"${PROJECT_SOURCE_DIR}/videoplayer/"
 	"${CMAKE_CURRENT_BINARY_DIR}"
 )
 
