@@ -53,7 +53,6 @@ public:
 	static constexpr const char* WindowId = "###VIDEOPLAYER";
 	ImDrawCallback OnRenderCallback = nullptr;
 
-	// FIXME: player related settings don't work anymore
 	struct OFS_VideoPlayerSettings {
 		ImVec2 currentVrRotation = ImVec2(0.5f, -0.5f);
 		ImVec2 currentTranslation = ImVec2(0.0f, 0.0f);
@@ -64,24 +63,7 @@ public:
 		VideoMode activeMode = VideoMode::FULL;
 		float vrZoom = 0.2f;
 		float zoomFactor = 1.f;
-		float volume = 0.5f;
-		float playbackSpeed = 1.f;
 		bool LockedPosition = false;
-
-		template <class Archive>
-		inline void reflect(Archive& ar) {
-			OFS_REFLECT(activeMode, ar);
-			activeMode = (VideoMode)Util::Clamp<int32_t>(activeMode, VideoMode::FULL, VideoMode::TOTAL_NUM_MODES - 1);
-			OFS_REFLECT(volume, ar);
-			OFS_REFLECT(playbackSpeed, ar);
-			OFS_REFLECT(vrZoom, ar);
-			OFS_REFLECT(currentVrRotation, ar);
-			OFS_REFLECT(prevVrRotation, ar);
-			OFS_REFLECT(currentTranslation, ar);
-			OFS_REFLECT(prevTranslation, ar);
-			OFS_REFLECT(videoPos, ar);
-			OFS_REFLECT(LockedPosition, ar);
-		}
 
 		template<typename S>
 		void serialize(S& s)
@@ -97,8 +79,6 @@ public:
 					o.activeMode = (VideoMode)Util::Clamp<int32_t>(o.activeMode, VideoMode::FULL, VideoMode::TOTAL_NUM_MODES - 1);
 					s.value4b(o.vrZoom);
 					s.value4b(o.zoomFactor);
-					s.value4b(o.volume);
-					s.value4b(o.playbackSpeed);
 					s.value1b(o.LockedPosition);
 				});
 		}
@@ -109,12 +89,10 @@ public:
 	bool Init(OFS_Videoplayer* player) noexcept;
 	void DrawVideoPlayer(bool* open, bool* drawVideo) noexcept;
 
-	inline void resetTranslationAndZoom() noexcept {
+	inline void ResetTranslationAndZoom() noexcept {
 		if (settings.LockedPosition) return;
 		settings.zoomFactor = 1.f;
 		settings.prevTranslation = ImVec2(0.f, 0.f);
 		settings.currentTranslation = ImVec2(0.f, 0.f); 
 	}
-
-	//inline void syncWithRealTime() noexcept { MpvData.percentPos = MpvData.realPercentPos; }
 };

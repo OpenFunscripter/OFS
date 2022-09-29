@@ -228,7 +228,7 @@ void OFS_VideoplayerWindow::DrawVideoPlayer(bool* open, bool* drawVideo) noexcep
 	
 		// recenter
 		if (videoHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Middle)) {
-			resetTranslationAndZoom();
+			ResetTranslationAndZoom();
 		}
 	}
 	else

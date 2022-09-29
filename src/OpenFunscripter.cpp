@@ -262,11 +262,11 @@ bool OpenFunscripter::setup(int argc, char* argv[])
 
     if (argc > 1) {
         const char* path = argv[1];
-        openFile(path, false);
+        openFile(path);
     } else if (!settings->data().recentFiles.empty()) {
         auto& project = settings->data().recentFiles.back().projectPath;
         if (!project.empty()) {
-            openProject(project, false);           
+            openProject(project);           
         }
     }
 
@@ -1638,7 +1638,7 @@ void OpenFunscripter::DragNDrop(SDL_Event& ev) noexcept
 
     std::string dragNDropFile = ev.drop.file;
     closeWithoutSavingDialog([this, dragNDropFile](){
-        openFile(dragNDropFile, true);
+        openFile(dragNDropFile);
     });
 
     SDL_free(ev.drop.file);
@@ -2036,17 +2036,17 @@ void OpenFunscripter::Redo() noexcept
     if(undoSystem->Redo()) scripting->redo();
 }
 
-bool OpenFunscripter::openFile(const std::string& file, bool withFailDialog) noexcept
+bool OpenFunscripter::openFile(const std::string& file) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     if (!Util::FileExists(file)) {
-        if (withFailDialog) Util::MessageBoxAlert(TR(FILE_NOT_FOUND), std::string(TR(COULDNT_FIND_FILE)) + "\n" + file);
+        Util::MessageBoxAlert(TR(FILE_NOT_FOUND), std::string(TR(COULDNT_FIND_FILE)) + "\n" + file);
         return false;
     }
 
     auto filePath = Util::PathFromString(file);
     if (filePath.extension().u8string() == OFS_Project::Extension) {
-        return openProject(filePath.u8string(), withFailDialog);
+        return openProject(filePath.u8string());
     }
     else {
         return importFile(filePath.u8string());
@@ -2067,19 +2067,17 @@ bool OpenFunscripter::importFile(const std::string& file) noexcept
     return true;
 }
 
-bool OpenFunscripter::openProject(const std::string& file, bool withFailDialog) noexcept
+bool OpenFunscripter::openProject(const std::string& file) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     if (!Util::FileExists(file)) {
-        if(withFailDialog) Util::MessageBoxAlert(TR(FILE_NOT_FOUND), std::string(TR(COULDNT_FIND_FILE)) + "\n" + file);
+        Util::MessageBoxAlert(TR(FILE_NOT_FOUND), std::string(TR(COULDNT_FIND_FILE)) + "\n" + file);
         return false;
     }
 
     if ((!closeProject(false) || !LoadedProject->Load(file))) {
-        if (withFailDialog) {
-            Util::MessageBoxAlert(TR(FAILED_TO_LOAD),
-                FMT("%s\n%s", TR(FAILED_TO_LOAD_MSG), LoadedProject->LoadingError.c_str()));
-        }
+        Util::MessageBoxAlert(TR(FAILED_TO_LOAD),
+            FMT("%s\n%s", TR(FAILED_TO_LOAD_MSG), LoadedProject->LoadingError.c_str()));
         closeProject(false);
         return false;
     }
@@ -2510,7 +2508,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                                     return;
                                 }
                                 else if (Util::FileExists(file)) {
-                                    openProject(file, true);
+                                    openProject(file);
                                 }
                             }
                         }, false, { "*" OFS_PROJECT_EXT }, "Project (" OFS_PROJECT_EXT ")");
@@ -2546,7 +2544,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         if (!recent.projectPath.empty()) {
                             closeWithoutSavingDialog([this, clickedFile = recent.projectPath]() 
                             {
-                                openFile(clickedFile, true);
+                                openFile(clickedFile);
                             });
                             break;
                         }
@@ -2917,7 +2915,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::Separator();
 
             if (ImGui::MenuItem(TR(DRAW_VIDEO), NULL, &settings->data().draw_video)) { settings->saveSettings(); }
-            if (ImGui::MenuItem(TR(RESET_VIDEO_POS), NULL)) { playerWindow->resetTranslationAndZoom(); }
+            if (ImGui::MenuItem(TR(RESET_VIDEO_POS), NULL)) { playerWindow->ResetTranslationAndZoom(); }
 
             auto videoModeToString = [](VideoMode mode) -> const char*
             {

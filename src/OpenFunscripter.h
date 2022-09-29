@@ -113,9 +113,9 @@ private:
 
 	void saveActiveScriptAs();
 
-	bool openFile(const std::string& file, bool withFailDialog) noexcept;
+	bool openFile(const std::string& file) noexcept;
 	bool importFile(const std::string& file) noexcept;
-	bool openProject(const std::string& file, bool withFailDialog) noexcept;
+	bool openProject(const std::string& file) noexcept;
 	void initProject() noexcept;
 	
 	void SetFullscreen(bool fullscreen);

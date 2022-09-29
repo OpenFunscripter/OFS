@@ -13,7 +13,8 @@
 enum OFS_Project_Version : int32_t
 {
 	One = 1,
-	FloatingPointTimestamps = 2
+	FloatingPointTimestamps = 2,
+	PlayerSettingsChange = 3,
 };
 
 class OFS_Project
@@ -86,13 +87,20 @@ public:
 	{
 		s.ext(*this, bitsery::ext::Growable{},
 			[](S& s, OFS_Project& o) {
-				auto CurrentVersion = OFS_Project_Version::FloatingPointTimestamps;
+				auto CurrentVersion = OFS_Project_Version::PlayerSettingsChange;
 				s.value4b(CurrentVersion);
-				if (CurrentVersion != OFS_Project_Version::FloatingPointTimestamps) {
-					o.LoadingError = "Project not compatible.\n"
+				switch(CurrentVersion)
+				{
+					case One:
+					o.LoadingError = "Project not compatible.\n";
 						"Last compatible version was 1.2.0.";
+					case FloatingPointTimestamps:
+					o.LoadingError = "Project not compatible.\n"
+						"Last compatible version was 2.0.0.";
 					o.Valid = false;
-					return;
+						return;
+					case PlayerSettingsChange:
+						break;
 				}
 				s.text1b(o.MediaPath, o.MediaPath.max_size());
 			    s.object(o.Settings);
