@@ -291,7 +291,7 @@ void OFS_VideoplayerControls::DrawControls(bool* open) noexcept
             player->Mute();
         }
         else {
-            player->UnMute();
+            player->Unmute();
         }
     }
     ImGui::SetColumnWidth(0, ImGui::GetItemRectSize().x + 10);

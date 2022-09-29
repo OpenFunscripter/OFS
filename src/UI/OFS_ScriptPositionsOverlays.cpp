@@ -49,7 +49,7 @@ void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
  
     // out of sync line
     if (BaseOverlay::SyncLineEnable) {
-        float realFrameTime = app->player->CurrentTime() - ctx.offsetTime;
+        float realFrameTime = app->player->CurrentPlayerTime() - ctx.offsetTime;
         ctx.draw_list->AddLine(
             ctx.canvas_pos + ImVec2((realFrameTime / ctx.visibleTime) * ctx.canvas_size.x, 0.f),
             ctx.canvas_pos + ImVec2((realFrameTime / ctx.visibleTime) * ctx.canvas_size.x, ctx.canvas_size.y),

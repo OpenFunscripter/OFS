@@ -73,10 +73,10 @@ public:
 class RecordingImpl : public ScripingModeBaseImpl
 {
 private:
-	float right_x = 0.f, right_y = 0.f;
-	float left_x = 0.f, left_y = 0.f;
-	float right_trigger = 0.f;
-	float left_trigger = 0.f;
+	float rightX = 0.f, rightY = 0.f;
+	float leftX = 0.f, leftY = 0.f;
+	float rightTrigger = 0.f;
+	float leftTrigger = 0.f;
 
 	float valueX = 0.f;
 	float valueY = 0.f;
@@ -90,18 +90,13 @@ private:
 
 	bool twoAxesMode = false;
 
-	bool autoBackupTmp = false;
-	float epsilon = 0.f;
 
 	bool recordingActive = false;
-	bool recordingJustStopped = false;
-	bool recordingJustStarted = false;
+	std::shared_ptr<Funscript> recordingAxisX;
+	std::shared_ptr<Funscript> recordingAxisY;
 
 	void singleAxisRecording() noexcept;
 	void twoAxisRecording() noexcept;
-
-	void finishSingleAxisRecording() noexcept;
-	void finishTwoAxisRecording() noexcept;
 public:
 	// Attention: don't change order
 	enum RecordingMode : int32_t {

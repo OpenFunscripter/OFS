@@ -55,11 +55,14 @@ struct MpvPlayerContext
     mpv_handle* mpv = nullptr;
     mpv_render_context* mpvGL = nullptr;
     uint32_t framebuffer = 0;
-    uint32_t frameTexture = 0;
     MpvDataCache data = MpvDataCache();
     std::array<char, 32> tmpBuf;
     SDL_atomic_t renderUpdate = {0};
     SDL_atomic_t hasEvents = {0};
+
+    uint32_t* frameTexture = nullptr;
+    float* logicalPosition = nullptr;
+    OFS_Videoplayer::LoopEnum* loopState = nullptr;
 };
 
 #define CTX ((MpvPlayerContext*)ctx)
@@ -90,8 +93,8 @@ inline static void updateRenderTexture(MpvPlayerContext* ctx) noexcept
 		glGenFramebuffers(1, &ctx->framebuffer);
 		glBindFramebuffer(GL_FRAMEBUFFER, ctx->framebuffer);
 
-		glGenTextures(1, &ctx->frameTexture);
-		glBindTexture(GL_TEXTURE_2D, ctx->frameTexture);
+		glGenTextures(1, ctx->frameTexture);
+		glBindTexture(GL_TEXTURE_2D, *ctx->frameTexture);
 		
         int initialWidth = ctx->data.videoWidth > 0 ? ctx->data.videoWidth : 1920;
 		int initialHeight = ctx->data.videoHeight > 0 ? ctx->data.videoHeight : 1080;
@@ -103,7 +106,7 @@ inline static void updateRenderTexture(MpvPlayerContext* ctx) noexcept
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 		// Set "renderedTexture" as our colour attachement #0
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ctx->frameTexture, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *ctx->frameTexture, 0);
 
 		// Set the list of draw buffers.
 		GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
@@ -115,7 +118,7 @@ inline static void updateRenderTexture(MpvPlayerContext* ctx) noexcept
 	}
 	else if(ctx->data.videoHeight > 0 && ctx->data.videoWidth > 0) {
 		// update size of render texture based on video resolution
-		glBindTexture(GL_TEXTURE_2D, ctx->frameTexture);
+		glBindTexture(GL_TEXTURE_2D, *ctx->frameTexture);
 		glTexImage2D(GL_TEXTURE_2D, 0, OFS_InternalTexFormat, ctx->data.videoWidth, ctx->data.videoHeight, 0, OFS_TexFormat, GL_UNSIGNED_BYTE, 0);
 	}
 }
@@ -137,6 +140,9 @@ OFS_Videoplayer::~OFS_Videoplayer() noexcept
 OFS_Videoplayer::OFS_Videoplayer() noexcept
 {
     ctx = new MpvPlayerContext();
+    CTX->frameTexture = &this->frameTexture;
+    CTX->logicalPosition = &this->logicalPosition;
+    CTX->loopState = &this->LoopState;
 }
 
 bool OFS_Videoplayer::Init(bool hwAccel) noexcept
@@ -298,18 +304,9 @@ inline static void ProcessEvents(MpvPlayerContext* ctx) noexcept
                     {
                         auto newPercentPos = (*(double*)prop->data) / 100.0;
                         ctx->data.percentPos = newPercentPos;
-                        //if (!ctx->data.paused) {
-                            //lastVideoStep = ((ctx->data.realPercentPos - ctx->data.percentPos) * ctx->data.duration);
-                            //if (lastVideoStep > .0f) {
-                            //    smoothTime -= lastVideoStep;
-                            //}
-                            //else {
-                            //    // fix for looping correctly
-                            //    smoothTime = 0.f;
-                            //    lastVideoStep = 0.f;
-                            //}
-                            //ctx->data.percentPos = ctx->data.realPercentPos;
-                        //}
+                        if(!ctx->data.paused) {
+                            *ctx->logicalPosition = newPercentPos;
+                        }
                         break;
                     }
                     case MpvSpeed:
@@ -318,11 +315,9 @@ inline static void ProcessEvents(MpvPlayerContext* ctx) noexcept
                     case MpvPauseState:
                     {
                         bool paused = *(int64_t*)prop->data;
-                        //if (paused) {
-                        //    float actualTime = getRealCurrentPositionSeconds();
-                        //    float estimateTime = getCurrentPositionSecondsInterp();
-                        //    smoothTime += actualTime - estimateTime;
-                        //}
+                        if (paused) {
+                            *ctx->logicalPosition = ctx->data.percentPos;
+                        }
                         ctx->data.paused = paused;
                         notifyPaused(ctx->data.paused);
                         break;
@@ -335,16 +330,14 @@ inline static void ProcessEvents(MpvPlayerContext* ctx) noexcept
                     {
                         ctx->data.abLoopA = *(double*)prop->data;
                         showText(ctx, TR(LOOP_A_SET));
-                        // FIXME
-                        //LoopState = LoopEnum::A_set;
+                        *CTX->loopState = OFS_Videoplayer::LoopEnum::A_set;
                         break;
                     }
                     case MpvAbLoopB:
                     {
                         ctx->data.abLoopB = *(double*)prop->data;
                         showText(ctx, TR(LOOP_B_SET));
-                        // FIXME
-                        //LoopState = LoopEnum::B_set;
+                        *CTX->loopState = OFS_Videoplayer::LoopEnum::B_set;
                         break;
                     }
                 }
@@ -454,15 +447,9 @@ void OFS_Videoplayer::AddSpeed(float speed) noexcept
     SetSpeed(speed);
 }
 
-void OFS_Videoplayer::SetPositionExact(float timeSeconds, bool pausesVideo) noexcept
-{
-    timeSeconds = Util::Clamp<float>(timeSeconds, 0.f, Duration());
-    float relPos = ((float)timeSeconds) / Duration();
-    SetPositionPercent(relPos, pausesVideo);
-}
-
 void OFS_Videoplayer::SetPositionPercent(float percentPos, bool pausesVideo) noexcept
 {
+    logicalPosition = percentPos;
     CTX->data.percentPos = percentPos;
     stbsp_snprintf(CTX->tmpBuf.data(), CTX->tmpBuf.size(), "%.08f", (float)(percentPos * 100.0f));
     const char* cmd[]{ "seek", CTX->tmpBuf.data(), "absolute-percent+exact", NULL };
@@ -472,8 +459,17 @@ void OFS_Videoplayer::SetPositionPercent(float percentPos, bool pausesVideo) noe
     mpv_command_async(CTX->mpv, 0, cmd);
 }
 
+void OFS_Videoplayer::SetPositionExact(float timeSeconds, bool pausesVideo) noexcept
+{
+    // this updates logicalPosition in SetPositionPercent
+    timeSeconds = Util::Clamp<float>(timeSeconds, 0.f, Duration());
+    float relPos = ((float)timeSeconds) / Duration();
+    SetPositionPercent(relPos, pausesVideo);
+}
+
 void OFS_Videoplayer::SeekRelative(float timeSeconds) noexcept
 {
+    // this updates logicalPosition in SetPositionPercent
     auto seekTo = CurrentTimeInterp() + timeSeconds;
     seekTo = std::max(seekTo, 0.0);
     SetPositionExact(seekTo);
@@ -481,6 +477,7 @@ void OFS_Videoplayer::SeekRelative(float timeSeconds) noexcept
 
 void OFS_Videoplayer::SeekFrames(int32_t offset) noexcept
 {
+    // this updates logicalPosition in SetPositionPercent
     if (IsPaused()) {
         float relSeek = (FrameTime() * 1.000001f) * offset;
         CTX->data.percentPos += (relSeek / CTX->data.duration);
@@ -570,11 +567,6 @@ void OFS_Videoplayer::SaveFrameToImage(const std::string& directory) noexcept
 
 // ==================== Getter ==================== 
 
-uint32_t OFS_Videoplayer::FrameTexture() const noexcept
-{
-    return CTX->frameTexture;
-}
-
 uint16_t OFS_Videoplayer::VideoWidth() const noexcept
 {
     return CTX->data.videoWidth;
@@ -620,19 +612,15 @@ bool OFS_Videoplayer::VideoLoaded() const noexcept
     return CTX->data.videoLoaded;
 }
 
-float OFS_Videoplayer::CurrentPercentPosition() const noexcept
-{
-    return CTX->data.percentPos;
-}
-
-double OFS_Videoplayer::CurrentTime() const noexcept
-{
-    return CTX->data.percentPos * CTX->data.duration;
-}
-
 double OFS_Videoplayer::CurrentTimeInterp() const noexcept
 {
-    return CTX->data.percentPos * CTX->data.duration;
+    // no interpolation yet
+    return CurrentTime();
+}
+
+double OFS_Videoplayer::CurrentPlayerPosition() const noexcept
+{
+    return CTX->data.percentPos;
 }
 
 const char* OFS_Videoplayer::VideoPath() const noexcept

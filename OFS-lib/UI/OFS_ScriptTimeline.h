@@ -53,7 +53,6 @@ public:
 	ScriptTimelineEvents::SelectTime SelectTimeEventData = {0};
 
 	std::unique_ptr<BaseOverlay> overlay;
-	std::vector<std::pair<FunscriptAction, FunscriptAction>> RecordingBuffer;
 		
 	const char* videoPath = nullptr;
 	float frameTime = 16.66667;

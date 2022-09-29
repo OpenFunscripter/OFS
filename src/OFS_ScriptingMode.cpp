@@ -331,10 +331,7 @@ inline void RecordingImpl::singleAxisRecording() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
-    // FIXME
-    //uint32_t frameEstimate = app->player->getCurrentFrameEstimate();
-    //app->scriptTimeline.RecordingBuffer[frameEstimate]
-    //    = std::make_pair(FunscriptAction(app->player->CurrentTimeInterp(), currentPosY), FunscriptAction());
+    recordingAxisX->AddAction(FunscriptAction(app->player->CurrentTimeInterp(), currentPosY));
     app->simulator.positionOverride = currentPosY;
 }
 
@@ -342,74 +339,13 @@ inline void RecordingImpl::twoAxisRecording() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
-    // FIXME
-    //uint32_t frameEstimate = app->player->getCurrentFrameEstimate();
-    //float atS = app->player->CurrentTimeInterp();
-    //app->scriptTimeline.RecordingBuffer[frameEstimate]
-    //    = std::make_pair(FunscriptAction(atS, currentPosX), FunscriptAction(atS, 100 - currentPosY));
+
+    float atS = app->player->CurrentTimeInterp();
+    recordingAxisX->AddAction(FunscriptAction(atS, currentPosX));
+    recordingAxisY->AddAction(FunscriptAction(atS, currentPosY));
+
     app->sim3D->RollOverride = currentPosX;
     app->sim3D->PitchOverride = 100 - currentPosY;
-}
-
-inline void RecordingImpl::finishSingleAxisRecording() noexcept
-{
-    OFS_PROFILE(__FUNCTION__);
-    auto app = OpenFunscripter::ptr;
-    float offsetTime = app->settings->data().action_insert_delay_ms / 1000.f;
-    if (app->settings->data().mirror_mode) {
-        app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS);
-        for (auto&& script : app->LoadedFunscripts()) {
-            for (auto&& actionP : app->scriptTimeline.RecordingBuffer) {
-                auto& action = actionP.first;
-                if (action.pos >= 0) {
-                    action.atS += offsetTime;
-                    script->AddAction(action);
-                }
-            }
-        }
-    }
-    else {
-        app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, app->ActiveFunscript());
-        for (auto&& actionP : app->scriptTimeline.RecordingBuffer) {
-            auto& action = actionP.first;
-            if (action.pos >= 0) {
-                action.atS += offsetTime;
-                ctx().AddAction(action);
-            }
-        }
-    }
-    app->scriptTimeline.RecordingBuffer.clear();
-}
-
-inline void RecordingImpl::finishTwoAxisRecording() noexcept
-{
-    OFS_PROFILE(__FUNCTION__);
-    auto app = OpenFunscripter::ptr;
-    float offsetTime = app->settings->data().action_insert_delay_ms / 1000.f;
-    app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS);
-    int32_t rollIdx = app->sim3D->rollIndex;
-    int32_t pitchIdx = app->sim3D->pitchIndex;
-    if (rollIdx > 0 && rollIdx < app->LoadedFunscripts().size()) {
-        auto& script = app->LoadedFunscripts()[rollIdx];
-        for (auto&& actionP : app->scriptTimeline.RecordingBuffer) {
-            auto& actionX = actionP.first;
-            if (actionX.pos >= 0) {
-                actionX.atS += offsetTime;
-                script->AddAction(actionX);
-            }
-        }
-    }
-    if (pitchIdx > 0 && pitchIdx < app->LoadedFunscripts().size()) {
-        auto& script = app->LoadedFunscripts()[pitchIdx];
-        for (auto&& actionP : app->scriptTimeline.RecordingBuffer) {
-            auto& actionY = actionP.second;
-            if (actionY.pos >= 0) {
-                actionY.atS += offsetTime;
-                script->AddAction(actionY);
-            }
-        }
-    }
-    app->scriptTimeline.RecordingBuffer.clear();
 }
 
 // recording
@@ -444,38 +380,38 @@ void RecordingImpl::ControllerAxisMotion(SDL_Event& ev)
 
     switch (axis.axis) {
     case SDL_CONTROLLER_AXIS_LEFTX:
-        left_x = Util::Clamp(axis.value / range, -1.f, 1.f);
+        leftX = Util::Clamp(axis.value / range, -1.f, 1.f);
         break;
     case SDL_CONTROLLER_AXIS_LEFTY:
-        left_y = Util::Clamp(axis.value / range, -1.f, 1.f);
+        leftY = Util::Clamp(axis.value / range, -1.f, 1.f);
         break;
     case SDL_CONTROLLER_AXIS_RIGHTX:
-        right_x = Util::Clamp(axis.value / range, -1.f, 1.f);
+        rightX = Util::Clamp(axis.value / range, -1.f, 1.f);
         break;
     case SDL_CONTROLLER_AXIS_RIGHTY:
-        right_y = Util::Clamp(axis.value / range, -1.f, 1.f);
+        rightY = Util::Clamp(axis.value / range, -1.f, 1.f);
         break;
     case SDL_CONTROLLER_AXIS_TRIGGERLEFT:
-        left_trigger = Util::Clamp(axis.value / range, -1.f, 1.f);
+        leftTrigger = Util::Clamp(axis.value / range, -1.f, 1.f);
         break;
     case SDL_CONTROLLER_AXIS_TRIGGERRIGHT:
-        right_trigger = Util::Clamp(axis.value / range, -1.f, 1.f);
+        rightTrigger = Util::Clamp(axis.value / range, -1.f, 1.f);
         break;
     }
 
 
-    if (std::abs(right_x) > std::abs(left_x)) {
-        valueX = right_x;
+    if (std::abs(rightX) > std::abs(leftX)) {
+        valueX = rightX;
     }
     else {
-        valueX = left_x;
+        valueX = leftX;
     }
 
-    if (std::abs(right_y) > std::abs(left_y)) {
-        valueY = -right_y;
+    if (std::abs(rightY) > std::abs(leftY)) {
+        valueY = -rightY;
     }
     else {
-        valueY = -left_y;
+        valueY = -leftY;
     }
 }
 
@@ -561,17 +497,25 @@ void RecordingImpl::DrawModeSettings() noexcept
     ImGui::Spacing();
     bool playing = !app->player->IsPaused();
     if (automaticRecording && playing && recordingActive != playing) {
-        autoBackupTmp = app->Status & OFS_Status::OFS_AutoBackup;
-        app->Status &= ~(OFS_Status::OFS_AutoBackup);
-        recordingJustStarted = true;
+        if(!twoAxesMode)
+        {
+            recordingAxisX = app->ActiveFunscript();
+            app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, recordingAxisX);
+        }
+        else
+        {
+            int32_t rollIdx = app->sim3D->rollIndex;
+            int32_t pitchIdx = app->sim3D->pitchIndex;
+            recordingAxisX = app->LoadedFunscripts()[rollIdx];
+            recordingAxisY = app->LoadedFunscripts()[pitchIdx];
+            app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS);
+        }
+        recordingActive = true;
     }
     else if (!playing && recordingActive) {
+        recordingAxisX = nullptr;
+        recordingAxisY = nullptr;
         recordingActive = false;
-        
-        if (autoBackupTmp) {
-            app->Status |= OFS_Status::OFS_AutoBackup;
-        }
-        recordingJustStopped = true;
     }
 
     if (recordingActive && playing) {
@@ -594,20 +538,6 @@ void RecordingImpl::update() noexcept
         if (twoAxesMode) { twoAxisRecording(); }
         else { singleAxisRecording(); }
     }
-    else if (recordingJustStarted) {
-        recordingJustStarted = false;
-        recordingActive = true;
-        app->scriptTimeline.RecordingBuffer.clear();
-        // FIXME
-        //app->scriptTimeline.RecordingBuffer.resize(app->player->getTotalNumFrames(),
-        //    std::make_pair(FunscriptAction(), FunscriptAction()));
-    }
-    else if (recordingJustStopped) {
-        recordingJustStopped = false;
-        if (twoAxesMode) { finishTwoAxisRecording(); }
-        else { finishSingleAxisRecording(); }
-        automaticRecording = false;
-    }
 }
 
 void RecordingImpl::finish() noexcept
@@ -615,8 +545,8 @@ void RecordingImpl::finish() noexcept
     OFS_PROFILE(__FUNCTION__);
     // this fixes a bug when the mode gets changed during a recording
     if (recordingActive) {
+        recordingAxisX = nullptr;
+        recordingAxisY = nullptr;
         recordingActive = false;
-        recordingJustStopped = true;
-        update();
     }
 }

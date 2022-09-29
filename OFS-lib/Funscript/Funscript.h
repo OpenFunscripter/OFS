@@ -188,7 +188,7 @@ private:
 		OFS_PROFILE(__FUNCTION__);
 		if (data.Actions.empty()) return nullptr;
 		auto it = data.Actions.lower_bound(FunscriptAction(time, 0));
-		if(it != data.Actions.begin() && it != data.Actions.end()) {
+		if(it != data.Actions.begin()) {
 			return &*(--it);
 		}
 		return nullptr;

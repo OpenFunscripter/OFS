@@ -279,12 +279,12 @@ bool OpenFunscripter::setup(int argc, char* argv[])
     sim3D->setup();
 
     // callback that renders the simulator right after the video
-    //player->OnRenderCallback = [](const ImDrawList * parent_list, const ImDrawCmd * cmd) {
-    //    auto app = OpenFunscripter::ptr;
-    //    if (app->settings->data().show_simulator_3d) {
-    //        app->sim3D->renderSim();
-    //    }
-    //};
+    playerWindow->OnRenderCallback = [](const ImDrawList * parent_list, const ImDrawCmd * cmd) {
+        auto app = OpenFunscripter::ptr;
+        if (app->settings->data().show_simulator_3d) {
+            app->sim3D->renderSim();
+        }
+    };
 
     HeatmapGradient::Init();
     tcode = std::make_unique<TCodePlayer>();
@@ -524,7 +524,7 @@ void OpenFunscripter::registerBindings()
             "sync_timestamps",
             Tr::ACTION_SYNC_TIME_WITH_PLAYER,
             true,
-            [&](void*) { /*FIXME*/ /*player->syncWithRealTime();*/ }
+            [&](void*) { player->SyncWithPlayerTime(); }
         );
         sync_timestamp.key = Keybinding(
             SDLK_s,

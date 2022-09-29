@@ -410,53 +410,6 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 			borderThicknes
 		);
 
-		
-		// TODO: reimplement this as an overlay ???
-
-		// render recordings
-		const FunscriptAction* prevAction = nullptr;
-		auto& recording = RecordingBuffer;
-
-		auto pathStroke = [](auto draw_list, uint32_t col) noexcept {
-			OFS_PROFILE(__FUNCTION__);
-			// sort of a hack ...
-			// PathStroke sets  _Path.Size = 0
-			// so we reset it in order to draw the same path twice
-			// auto tmp = draw_list->_Path.Size;
-			// draw_list->PathStroke(IM_COL32(0, 0, 0, 255), false, 7.0f);
-			// draw_list->_Path.Size = tmp;
-			draw_list->PathStroke(col, false, 5.f);
-		};
-		auto pathRawSection =
-			[pathStroke](const OverlayDrawingCtx& ctx, const auto& rawActions, int32_t fromIndex, int32_t toIndex) noexcept {
-			OFS_PROFILE(__FUNCTION__);
-			for (int i = fromIndex; i <= toIndex; i++) {
-				auto& action = rawActions[i].first;
-				if (action.pos >= 0) {
-					auto point = getPointForAction(ctx, action);
-					ctx.draw_list->PathLineTo(point);
-				}
-			}
-			pathStroke(ctx.draw_list, IM_COL32(0, 255, 0, 180));
-
-			for (int i = fromIndex; i <= toIndex; i++) {
-				auto& action = rawActions[i].second;
-				if (action.pos >= 0) {
-					auto point = getPointForAction(ctx, action);
-					ctx.draw_list->PathLineTo(point);
-				}
-			}
-
-			pathStroke(ctx.draw_list, IM_COL32(255, 255, 0, 180));
-		};
-
-		if (scriptPtr.get() == activeScript && !recording.empty()) {
-			int32_t startIndex = Util::Clamp<int32_t>((offsetTime / frameTime), 0, recording.size() - 1);
-			int32_t endIndex = Util::Clamp<int32_t>((offsetTime + visibleTime) / frameTime, startIndex, recording.size() - 1);
-			pathRawSection(drawingCtx, recording, startIndex, endIndex);
-		}
-
-
 		// current position indicator -> |
 		draw_list->AddTriangleFilled(
 			drawingCtx.canvas_pos + ImVec2((drawingCtx.canvas_size.x/2.f) - ImGui::GetFontSize(), 0.f),
