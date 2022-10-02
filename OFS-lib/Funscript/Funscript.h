@@ -188,7 +188,7 @@ private:
 		OFS_PROFILE(__FUNCTION__);
 		if (data.Actions.empty()) return nullptr;
 		auto it = data.Actions.lower_bound(FunscriptAction(time, 0));
-		if(it != data.Actions.begin() && it != data.Actions.end()) {
+		if(it != data.Actions.begin()) {
 			return &*(--it);
 		}
 		return nullptr;
@@ -303,7 +303,7 @@ public:
 	inline bool HasSelection() const noexcept { return data.selection.size() > 0; }
 	inline int32_t SelectionSize() const noexcept { return data.selection.size(); }
 	inline void ClearSelection() noexcept { data.selection.clear(); }
-	inline const FunscriptAction* GetClosestActionSelection(float time) noexcept { return getActionAtTime(data.selection, time, std::numeric_limits<int32_t>::max()); }
+	inline const FunscriptAction* GetClosestActionSelection(float time) noexcept { return getActionAtTime(data.selection, time, std::numeric_limits<float>::max()); }
 	
 	void SetSelection(const FunscriptArray& actions) noexcept;
 	bool IsSelected(FunscriptAction action) noexcept;
