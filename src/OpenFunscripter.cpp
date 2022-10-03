@@ -2533,6 +2533,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 auto& recentFiles = settings->data().recentFiles;
                 for (auto it = recentFiles.rbegin(); it != recentFiles.rend(); it++) {
                     auto& recent = *it;
+                    OFS_DynFontAtlas::AddText(recent.name.c_str());
                     if (ImGui::MenuItem(recent.name.c_str())) {
                         if (!recent.projectPath.empty()) {
                             closeWithoutSavingDialog([this, clickedFile = recent.projectPath]() 
