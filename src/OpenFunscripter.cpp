@@ -97,8 +97,7 @@ bool OpenFunscripter::imguiSetup() noexcept
     OFS_DynFontAtlas::Init();
     OFS_Translator::Init();
     if(!settings->data().language_csv.empty()) {
-        if(OFS_Translator::ptr->LoadTranslation(settings->data().language_csv.c_str()))
-        {
+        if(OFS_Translator::ptr->LoadTranslation(settings->data().language_csv.c_str())) {
             OFS_DynFontAtlas::AddTranslationText();
         }
     }
@@ -286,6 +285,11 @@ bool OpenFunscripter::setup(int argc, char* argv[])
 #ifdef WIN32
     OFS_DownloadFfmpeg::FfmpegMissing = !Util::FileExists(Util::FfmpegPath().u8string());
 #endif
+
+    // Load potentially missing glyphs of recent files
+    for(auto& recentFile : settings->data().recentFiles) {
+        OFS_DynFontAtlas::AddText(recentFile.name.c_str());
+    }
 
     SDL_ShowWindow(window);
     return true;
