@@ -559,6 +559,16 @@ bool OFS_Videoplayer::VideoLoaded() const noexcept
     return CTX->data.videoLoaded;
 }
 
+float OFS_Videoplayer::CurrentPercentPosition() const noexcept
+{
+    return logicalPosition;
+}
+
+double OFS_Videoplayer::CurrentTime() const noexcept
+{
+    return logicalPosition * CTX->data.duration;
+}
+
 double OFS_Videoplayer::CurrentPlayerPosition() const noexcept
 {
     return CTX->data.percentPos;

@@ -70,9 +70,9 @@ class OFS_Videoplayer
     void PreviousFrame() noexcept;
 
     // Uses the logical position which may be different from CurrentPlayerPosition()
-    inline float CurrentPercentPosition() const noexcept { return logicalPosition; }
+    float CurrentPercentPosition() const noexcept;
     // Also uses the logical position
-    inline double CurrentTime() const noexcept { return CurrentPercentPosition() * Duration(); }
+    double CurrentTime() const noexcept;
 
     // The "actual" position reported by the player
     double CurrentPlayerPosition() const noexcept; 
