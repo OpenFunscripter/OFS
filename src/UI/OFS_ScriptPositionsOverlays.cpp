@@ -233,7 +233,7 @@ void TempoOverlay::nextFrame() noexcept
     auto& tempo = app->LoadedProject->Settings.tempoSettings;
 
     float beatTime = (60.f / tempo.bpm) * beatMultiples[tempo.measureIndex];
-    float currentTime = app->player->CurrentTimeInterp();
+    float currentTime = app->player->CurrentTime();
     float newPosition = GetNextPosition(beatTime, currentTime, tempo.beatOffsetSeconds);
 
     app->player->SetPositionExact(newPosition);
@@ -245,7 +245,7 @@ void TempoOverlay::previousFrame() noexcept
     auto& tempo = app->LoadedProject->Settings.tempoSettings;
 
     float beatTime = (60.f/ tempo.bpm) * beatMultiples[tempo.measureIndex];
-    float currentTime = app->player->CurrentTimeInterp();
+    float currentTime = app->player->CurrentTime();
     float newPosition = GetPreviousPosition(beatTime, currentTime, tempo.beatOffsetSeconds);
 
     app->player->SetPositionExact(newPosition);

@@ -49,7 +49,7 @@ void OFS_PlayerAPI::Seek(lua_Number time) noexcept
 lua_Number OFS_PlayerAPI::CurrentTime() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    return app->player->CurrentTimeInterp();
+    return app->player->CurrentTime();
 }
 
 lua_Number OFS_PlayerAPI::Duration() noexcept

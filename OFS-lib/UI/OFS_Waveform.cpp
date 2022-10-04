@@ -36,6 +36,7 @@ bool OFS_Waveform::LoadFlac(const std::string& output) noexcept
 			minSample = Util::Min(minSample, avgSample);
 			maxSample = Util::Max(maxSample, avgSample);
 			Samples.emplace_back(avgSample);
+			avgSample = 0.f;
 		}
 	}
 	drflac_close(flac);

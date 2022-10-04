@@ -3,6 +3,11 @@
 #include <cstdint>
 #include <string>
 
+#pragma once
+
+#include <cstdint>
+#include <string>
+
 class OFS_Videoplayer
 {
     private:
@@ -44,7 +49,7 @@ class OFS_Videoplayer
     void SeekFrames(int32_t offset) noexcept;
 
     void SetPaused(bool paused) noexcept;
-    void TogglePlay() noexcept;
+    void TogglePlay() noexcept { SetPaused(!IsPaused()); }
     void CycleSubtitles() noexcept;
     void CycleLoopAB() noexcept;
     void ClearLoop() noexcept;
@@ -73,11 +78,14 @@ class OFS_Videoplayer
     bool VideoLoaded() const noexcept;
     void NextFrame() noexcept;
     void PreviousFrame() noexcept;
-    
+
+    // Uses the logical position which may be different from CurrentPlayerPosition()
     inline float CurrentPercentPosition() const noexcept { return logicalPosition; }
+    // Also uses the logical position
     inline double CurrentTime() const noexcept { return CurrentPercentPosition() * Duration(); }
-    double CurrentTimeInterp() const noexcept; // interpolated time
-    double CurrentPlayerPosition() const noexcept; // the "actual" position reported by the player
+
+    // The "actual" position reported by the player
+    double CurrentPlayerPosition() const noexcept; 
     double CurrentPlayerTime() const noexcept { return CurrentPlayerPosition() * Duration(); }
 
     const char* VideoPath() const noexcept;

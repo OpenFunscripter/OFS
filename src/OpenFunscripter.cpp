@@ -595,7 +595,7 @@ void OpenFunscripter::registerBindings()
             Tr::ACTION_PREVIOUS_ACTION,
             false,
             [&](void*) {
-                auto action = ActiveFunscript()->GetPreviousActionBehind(player->CurrentTimeInterp() - 0.001f);
+                auto action = ActiveFunscript()->GetPreviousActionBehind(player->CurrentTime() - 0.001f);
                 if (action != nullptr) player->SetPositionExact(action->atS);
             }
         );
@@ -613,7 +613,7 @@ void OpenFunscripter::registerBindings()
             Tr::ACTION_NEXT_ACTION,
             false,
             [&](void*) {
-                auto action = ActiveFunscript()->GetNextActionAhead(player->CurrentTimeInterp() + 0.001f);
+                auto action = ActiveFunscript()->GetNextActionAhead(player->CurrentTime() + 0.001f);
                 if (action != nullptr) player->SetPositionExact(action->atS);
             }
         );
@@ -633,7 +633,7 @@ void OpenFunscripter::registerBindings()
             [&](void*) {
                 bool foundAction = false;
                 float closestTime = std::numeric_limits<float>::max();
-                float currentTime = player->CurrentTimeInterp();
+                float currentTime = player->CurrentTime();
 
                 for(int i=0; i < LoadedFunscripts().size(); i++) {
                     auto& script = LoadedFunscripts()[i];
@@ -662,7 +662,7 @@ void OpenFunscripter::registerBindings()
             [&](void*) {
                 bool foundAction = false;
                 float closestTime = std::numeric_limits<float>::max();
-                float currentTime = player->CurrentTimeInterp();
+                float currentTime = player->CurrentTime();
                 for (int i = 0; i < LoadedFunscripts().size(); i++) {
                     auto& script = LoadedFunscripts()[i];
                     auto action = script->GetNextActionAhead(currentTime + 0.001f);
@@ -853,7 +853,7 @@ void OpenFunscripter::registerBindings()
             "select_all_left",
             Tr::ACTION_SELECT_ALL_LEFT,
             true,
-            [&](void*) { ActiveFunscript()->SelectTime(0, player->CurrentTimeInterp()); }
+            [&](void*) { ActiveFunscript()->SelectTime(0, player->CurrentTime()); }
         );
         select_all_left.key = Keybinding(
             SDLK_LEFT,
@@ -864,7 +864,7 @@ void OpenFunscripter::registerBindings()
             "select_all_right",
             Tr::ACTION_SELECT_ALL_RIGHT,
             true,
-            [&](void*) { ActiveFunscript()->SelectTime(player->CurrentTimeInterp(), player->Duration()); }
+            [&](void*) { ActiveFunscript()->SelectTime(player->CurrentTime(), player->Duration()); }
         );
         select_all_right.key = Keybinding(
             SDLK_RIGHT,
@@ -957,7 +957,7 @@ void OpenFunscripter::registerBindings()
             app->ActiveFunscript()->MoveSelectionTime(time, app->player->FrameTime());
         }
         else {
-            auto closest = ptr->ActiveFunscript()->GetClosestAction(app->player->CurrentTimeInterp());
+            auto closest = ptr->ActiveFunscript()->GetClosestAction(app->player->CurrentTime());
             if (closest != nullptr) {
                 auto time = forward
                     ? app->scriptTimeline.overlay->steppingIntervalForward(closest->atS)
@@ -983,12 +983,12 @@ void OpenFunscripter::registerBindings()
 
             app->undoSystem->Snapshot(StateType::ACTIONS_MOVED, app->ActiveFunscript());
             app->ActiveFunscript()->MoveSelectionTime(time, app->player->FrameTime());
-            auto closest = ptr->ActiveFunscript()->GetClosestActionSelection(app->player->CurrentTimeInterp());
+            auto closest = ptr->ActiveFunscript()->GetClosestActionSelection(app->player->CurrentTime());
             if (closest != nullptr) { app->player->SetPositionExact(closest->atS); }
             else { app->player->SetPositionExact(app->ActiveFunscript()->Selection().front().atS); }
         }
         else {
-            auto closest = app->ActiveFunscript()->GetClosestAction(ptr->player->CurrentTimeInterp());
+            auto closest = app->ActiveFunscript()->GetClosestAction(ptr->player->CurrentTime());
             if (closest != nullptr) {
                 auto time = forward
                     ? app->scriptTimeline.overlay->steppingIntervalForward(closest->atS)
@@ -1021,7 +1021,7 @@ void OpenFunscripter::registerBindings()
                 }
                 else
                 {
-                    auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTimeInterp());
+                    auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
                     if (closest != nullptr) {
                         undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
                         ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->atS, Util::Clamp<int32_t>(closest->pos + 10, 0, 100)));
@@ -1042,7 +1042,7 @@ void OpenFunscripter::registerBindings()
                 }
                 else
                 {
-                    auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTimeInterp());
+                    auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
                     if (closest != nullptr) {
                         undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
                         ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->atS, Util::Clamp<int32_t>(closest->pos - 10, 0, 100)));
@@ -1064,7 +1064,7 @@ void OpenFunscripter::registerBindings()
                 }
                 else
                 {
-                    auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTimeInterp());
+                    auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
                     if (closest != nullptr) {
                         undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
                         ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->atS, Util::Clamp<int32_t>(closest->pos + 5, 0, 100)));
@@ -1085,7 +1085,7 @@ void OpenFunscripter::registerBindings()
                 }
                 else
                 {
-                    auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTimeInterp());
+                    auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
                     if (closest != nullptr) {
                         undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
                         ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->atS, Util::Clamp<int32_t>(closest->pos - 5, 0, 100)));
@@ -1158,7 +1158,7 @@ void OpenFunscripter::registerBindings()
                     ActiveFunscript()->MoveSelectionPosition(1);
                 }
                 else {
-                    auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTimeInterp());
+                    auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
                     if (closest != nullptr) {
                         FunscriptAction moved(closest->atS, closest->pos + 1);
                         if (moved.pos <= 100 && moved.pos >= 0) {
@@ -1183,7 +1183,7 @@ void OpenFunscripter::registerBindings()
                     ActiveFunscript()->MoveSelectionPosition(-1);
                 }
                 else {
-                    auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTimeInterp());
+                    auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
                     if (closest != nullptr) {
                         FunscriptAction moved(closest->atS, closest->pos - 1);
                         if (moved.pos <= 100 && moved.pos >= 0) {
@@ -1204,10 +1204,10 @@ void OpenFunscripter::registerBindings()
             Tr::ACTION_MOVE_TO_CURRENT_POSITION,
             true,
             [&](void*) {
-                auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTimeInterp());
+                auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
                 if (closest != nullptr) {
                     undoSystem->Snapshot(StateType::MOVE_ACTION_TO_CURRENT_POS, ActiveFunscript());
-                    ActiveFunscript()->EditAction(*closest, FunscriptAction(player->CurrentTimeInterp(), closest->pos));
+                    ActiveFunscript()->EditAction(*closest, FunscriptAction(player->CurrentTime(), closest->pos));
                 }
             }
         );
@@ -1425,10 +1425,10 @@ void OpenFunscripter::registerBindings()
             true,
             [&](void*) {
                 if (scriptTimeline.selectionStart() < 0) {
-                    scriptTimeline.setStartSelection(player->CurrentTimeInterp());
+                    scriptTimeline.setStartSelection(player->CurrentTime());
                 }
                 else {
-                    auto tmp = player->CurrentTimeInterp();
+                    auto tmp = player->CurrentTime();
                     auto [min, max] = std::minmax<float>(scriptTimeline.selectionStart(), tmp);
                     ActiveFunscript()->SelectTime(min, max);
                     scriptTimeline.setStartSelection(-1);
@@ -1679,7 +1679,7 @@ void OpenFunscripter::MpvPlayPauseChange(SDL_Event& ev) noexcept
     {
         std::vector<std::shared_ptr<const Funscript>> scripts;
         scripts.assign(LoadedFunscripts().begin(), LoadedFunscripts().end());
-        tcode->play(player->CurrentTimeInterp(), std::move(scripts));
+        tcode->play(player->CurrentTime(), std::move(scripts));
     }
 }
 
@@ -1697,7 +1697,7 @@ void OpenFunscripter::update() noexcept {
         autoBackup();
     }
 
-    tcode->sync(player->CurrentTimeInterp(), player->CurrentSpeed());
+    tcode->sync(player->CurrentTime(), player->CurrentSpeed());
 }
 
 void OpenFunscripter::autoBackup() noexcept
@@ -1806,7 +1806,7 @@ void OpenFunscripter::step() noexcept {
             }
             #endif
 
-            sim3D->ShowWindow(&settings->data().show_simulator_3d, player->CurrentTimeInterp(), BaseOverlay::SplineMode, LoadedProject->Funscripts);
+            sim3D->ShowWindow(&settings->data().show_simulator_3d, player->CurrentTime(), BaseOverlay::SplineMode, LoadedProject->Funscripts);
             ShowAboutWindow(&ShowAbout);
             specialFunctions->ShowFunctionsWindow(&settings->data().show_special_functions);
             undoSystem->ShowUndoRedoHistory(&settings->data().show_history);
@@ -1818,7 +1818,7 @@ void OpenFunscripter::step() noexcept {
             LoadedProject->ShowProjectWindow(&ShowProjectEditor);
 
             extensions->ShowExtensions();
-            tcode->DrawWindow(&settings->data().show_tcode, player->CurrentTimeInterp());
+            tcode->DrawWindow(&settings->data().show_tcode, player->CurrentTime());
 
             OFS_FileLogger::DrawLogWindow(&settings->data().show_debug_log);
 
@@ -1904,7 +1904,7 @@ void OpenFunscripter::step() noexcept {
 
             playerControls.DrawTimeline(NULL, drawBookmarks);
             
-            scriptTimeline.ShowScriptPositions(NULL, player->CurrentTimeInterp(), player->Duration(), player->FrameTime(), &LoadedFunscripts(), ActiveFunscriptIdx);
+            scriptTimeline.ShowScriptPositions(NULL, player->CurrentTime(), player->Duration(), player->FrameTime(), &LoadedFunscripts(), ActiveFunscriptIdx);
             ShowStatisticsWindow(&settings->data().show_statistics);
 
             if (settings->data().show_action_editor) {
@@ -1932,7 +1932,7 @@ void OpenFunscripter::step() noexcept {
 
                 if (player->IsPaused()) {
                     ImGui::Spacing();
-                    auto scriptAction = ActiveFunscript()->GetActionAtTime(player->CurrentTimeInterp(), player->FrameTime());
+                    auto scriptAction = ActiveFunscript()->GetActionAtTime(player->CurrentTime(), player->FrameTime());
                     if (!scriptAction) {
                         // create action
                         static int newActionPosition = 0;
@@ -2282,7 +2282,7 @@ void OpenFunscripter::removeAction() noexcept
     if (settings->data().mirror_mode && !ActiveFunscript()->HasSelection()) {
         undoSystem->Snapshot(StateType::REMOVE_ACTION);
         for (auto&& script : LoadedFunscripts()) {
-            auto action = script->GetClosestAction(player->CurrentTimeInterp());
+            auto action = script->GetClosestAction(player->CurrentTime());
             if (action != nullptr) {
                 script->RemoveAction(*action);
             }
@@ -2294,7 +2294,7 @@ void OpenFunscripter::removeAction() noexcept
             ActiveFunscript()->RemoveSelectedActions();
         }
         else {
-            auto action = ActiveFunscript()->GetClosestAction(player->CurrentTimeInterp());
+            auto action = ActiveFunscript()->GetClosestAction(player->CurrentTime());
             if (action != nullptr) {
                 removeAction(*action); // snapshoted in here
             }
@@ -2310,13 +2310,13 @@ void OpenFunscripter::addEditAction(int pos) noexcept
         undoSystem->Snapshot(StateType::ADD_EDIT_ACTIONS);
         for (int i = 0; i < LoadedFunscripts().size(); i++) {
             UpdateNewActiveScript(i);
-            scripting->addEditAction(FunscriptAction(player->CurrentTimeInterp(), pos));
+            scripting->addEditAction(FunscriptAction(player->CurrentTime(), pos));
         }
         UpdateNewActiveScript(currentActiveScriptIdx);
     }
     else {
         undoSystem->Snapshot(StateType::ADD_EDIT_ACTIONS, ActiveFunscript());
-        scripting->addEditAction(FunscriptAction(player->CurrentTimeInterp(), pos));
+        scripting->addEditAction(FunscriptAction(player->CurrentTime(), pos));
     }
 }
 
@@ -2348,7 +2348,7 @@ void OpenFunscripter::pasteSelection() noexcept
     undoSystem->Snapshot(StateType::PASTE_COPIED_ACTIONS, ActiveFunscript());
     // paste CopiedSelection relatively to position
     // NOTE: assumes CopiedSelection is ordered by time
-    float currentTime = player->CurrentTimeInterp();
+    float currentTime = player->CurrentTime();
     float offsetTime = currentTime - CopiedSelection.begin()->atS;
 
     ActiveFunscript()->RemoveActionsInInterval(
@@ -2383,7 +2383,7 @@ void OpenFunscripter::equalizeSelection() noexcept {
     if (!ActiveFunscript()->HasSelection()) {
         undoSystem->Snapshot(StateType::EQUALIZE_ACTIONS, ActiveFunscript());
         // this is a small hack
-        auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTimeInterp());
+        auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
         if (closest != nullptr) {
             auto behind = ActiveFunscript()->GetPreviousActionBehind(closest->atS);
             if (behind != nullptr) {
@@ -2408,7 +2408,7 @@ void OpenFunscripter::invertSelection() noexcept {
     OFS_PROFILE(__FUNCTION__);
     if (!ActiveFunscript()->HasSelection()) {
         // same hack as above 
-        auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTimeInterp());
+        auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
         if (closest != nullptr) {
             undoSystem->Snapshot(StateType::INVERT_ACTIONS, ActiveFunscript());
             ActiveFunscript()->SelectAction(*closest);
@@ -2424,7 +2424,7 @@ void OpenFunscripter::invertSelection() noexcept {
 
 void OpenFunscripter::isolateAction() noexcept {
     OFS_PROFILE(__FUNCTION__);
-    auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTimeInterp());
+    auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
     if (closest != nullptr) {
         undoSystem->Snapshot(StateType::ISOLATE_ACTION, ActiveFunscript());
         auto prev = ActiveFunscript()->GetPreviousActionBehind(closest->atS - 0.001f);
@@ -2442,11 +2442,11 @@ void OpenFunscripter::isolateAction() noexcept {
 
 void OpenFunscripter::repeatLastStroke() noexcept {
     OFS_PROFILE(__FUNCTION__);
-    auto stroke = ActiveFunscript()->GetLastStroke(player->CurrentTimeInterp());
+    auto stroke = ActiveFunscript()->GetLastStroke(player->CurrentTime());
     if (stroke.size() > 1) {
-        auto offsetTime = player->CurrentTimeInterp() - stroke.back().atS;
+        auto offsetTime = player->CurrentTime() - stroke.back().atS;
         undoSystem->Snapshot(StateType::REPEAT_STROKE, ActiveFunscript());
-        auto action = ActiveFunscript()->GetActionAtTime(player->CurrentTimeInterp(), player->FrameTime());
+        auto action = ActiveFunscript()->GetActionAtTime(player->CurrentTime(), player->FrameTime());
         // if we are on top of an action we ignore the first action of the last stroke
         if (action != nullptr) {
             for(int i=stroke.size()-2; i >= 0; i--) {
@@ -2763,28 +2763,28 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
 
             if (ImGui::BeginMenu(TR(SPECIAL))) {
                 if (ImGui::MenuItem(TR(SELECT_ALL_LEFT), BINDING_STRING("select_all_left"), false)) {
-                    ActiveFunscript()->SelectTime(0, player->CurrentTimeInterp());
+                    ActiveFunscript()->SelectTime(0, player->CurrentTime());
                 }
                 if (ImGui::MenuItem(TR(SELECT_ALL_RIGHT), BINDING_STRING("select_all_right"), false)) {
-                    ActiveFunscript()->SelectTime(player->CurrentTimeInterp(), player->Duration());
+                    ActiveFunscript()->SelectTime(player->CurrentTime(), player->Duration());
                 }
                 ImGui::Separator();
                 static int32_t selectionPoint = -1;
                 if (ImGui::MenuItem(TR(SET_SELECTION_START))) {
                     if (selectionPoint == -1) {
-                        selectionPoint = player->CurrentTimeInterp();
+                        selectionPoint = player->CurrentTime();
                     }
                     else {
-                        ActiveFunscript()->SelectTime(player->CurrentTimeInterp(), selectionPoint);
+                        ActiveFunscript()->SelectTime(player->CurrentTime(), selectionPoint);
                         selectionPoint = -1;
                     }
                 }
                 if (ImGui::MenuItem(TR(SET_SELECTION_END))) {
                     if (selectionPoint == -1) {
-                        selectionPoint = player->CurrentTimeInterp();
+                        selectionPoint = player->CurrentTime();
                     }
                     else {
-                        ActiveFunscript()->SelectTime(selectionPoint, player->CurrentTimeInterp());
+                        ActiveFunscript()->SelectTime(selectionPoint, player->CurrentTime());
                         selectionPoint = -1;
                     }
                 }
@@ -2826,7 +2826,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             OFS::Tooltip(TR(EXPORT_CLIPS_TOOLTIP));
             ImGui::Separator();
             static std::string bookmarkName;
-            float currentTime = player->CurrentTimeInterp();
+            float currentTime = player->CurrentTime();
             auto editBookmark = std::find_if(scriptSettings.Bookmarks.begin(), scriptSettings.Bookmarks.end(),
                 [=](auto& mark) {
                     constexpr float thresholdTime = 1.f;
@@ -2856,7 +2856,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
 
                 auto it = std::find_if(scriptSettings.Bookmarks.rbegin(), scriptSettings.Bookmarks.rend(),
                     [&](auto& mark) {
-                        return mark.atS < player->CurrentTimeInterp();
+                        return mark.atS < player->CurrentTime();
                     });
                 if (it != scriptSettings.Bookmarks.rend() && it->type != OFS_ScriptSettings::Bookmark::BookmarkType::END_MARKER) {
                     const char* item = Util::Format(TR(CREATE_INTERVAL_FOR_FMT), it->name.c_str());
@@ -3321,7 +3321,7 @@ void OpenFunscripter::ShowStatisticsWindow(bool* open) noexcept
     OFS_PROFILE(__FUNCTION__);
     ImGui::Begin(TR_ID(StatisticsWindowId, Tr::STATISTICS), open, ImGuiWindowFlags_None);
 
-    const float currentTime = player->CurrentTimeInterp();
+    const float currentTime = player->CurrentTime();
     const FunscriptAction* front = ActiveFunscript()->GetActionAtTime(currentTime, 0.001f);
     const FunscriptAction* behind = nullptr;
     if (front != nullptr) {

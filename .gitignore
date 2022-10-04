@@ -25,3 +25,4 @@ LuaDox/html
 emscripten
 lib/glad2_ogl_3_3
 lib/glad2_debug
+coi-serviceworker.min.js

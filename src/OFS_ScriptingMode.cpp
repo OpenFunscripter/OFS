@@ -244,7 +244,7 @@ void AlternatingImpl::DrawModeSettings() noexcept
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
     if (contextSensitive) {
-        auto behind = ctx().GetPreviousActionBehind(std::round(app->player->CurrentTimeInterp()) - 0.001f);
+        auto behind = ctx().GetPreviousActionBehind(std::round(app->player->CurrentTime()) - 0.001f);
         if (behind) {
             ImGui::TextDisabled("%s: %s", TR(NEXT_POINT), behind->pos <= 50 ? TR(TOP) : TR(BOTTOM));
         }
@@ -331,7 +331,7 @@ inline void RecordingImpl::singleAxisRecording() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
-    recordingAxisX->AddAction(FunscriptAction(app->player->CurrentTimeInterp(), currentPosY));
+    recordingAxisX->AddAction(FunscriptAction(app->player->CurrentTime(), currentPosY));
     app->simulator.positionOverride = currentPosY;
 }
 
@@ -340,7 +340,7 @@ inline void RecordingImpl::twoAxisRecording() noexcept
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
 
-    float atS = app->player->CurrentTimeInterp();
+    float atS = app->player->CurrentTime();
     recordingAxisX->AddAction(FunscriptAction(atS, currentPosX));
     recordingAxisY->AddAction(FunscriptAction(atS, currentPosY));
 

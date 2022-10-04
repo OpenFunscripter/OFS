@@ -470,7 +470,7 @@ void OFS_Videoplayer::SetPositionExact(float timeSeconds, bool pausesVideo) noex
 void OFS_Videoplayer::SeekRelative(float timeSeconds) noexcept
 {
     // this updates logicalPosition in SetPositionPercent
-    auto seekTo = CurrentTimeInterp() + timeSeconds;
+    auto seekTo = CurrentTime() + timeSeconds;
     seekTo = std::max(seekTo, 0.0);
     SetPositionExact(seekTo);
 }
@@ -491,13 +491,6 @@ void OFS_Videoplayer::SetPaused(bool paused) noexcept
     if (!paused && !VideoLoaded()) return;
     CTX->data.paused = paused;
     mpv_set_property_async(CTX->mpv, 0, "pause", MPV_FORMAT_FLAG, &CTX->data.paused);
-}
-
-void OFS_Videoplayer::TogglePlay() noexcept
-{
-    if (!VideoLoaded()) return;
-    const char* cmd[]{ "cycle", "pause", NULL };
-    mpv_command_async(CTX->mpv, 0, cmd);
 }
 
 void OFS_Videoplayer::CycleSubtitles() noexcept
@@ -610,12 +603,6 @@ float OFS_Videoplayer::Fps() const noexcept
 bool OFS_Videoplayer::VideoLoaded() const noexcept
 {
     return CTX->data.videoLoaded;
-}
-
-double OFS_Videoplayer::CurrentTimeInterp() const noexcept
-{
-    // no interpolation yet
-    return CurrentTime();
 }
 
 double OFS_Videoplayer::CurrentPlayerPosition() const noexcept

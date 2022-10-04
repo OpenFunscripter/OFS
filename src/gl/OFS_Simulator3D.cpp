@@ -248,7 +248,7 @@ void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::ve
                 auto app = OpenFunscripter::ptr;
                 float range = std::abs(max - min);
                 float pos = ((value + std::abs(min)) / range) * 100.f;
-                FunscriptAction action(app->player->CurrentTimeInterp(), pos);
+                FunscriptAction action(app->player->CurrentTime(), pos);
                 script->AddEditAction(action, app->player->FrameTime());
             };
 

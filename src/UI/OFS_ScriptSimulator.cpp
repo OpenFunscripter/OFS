@@ -81,7 +81,7 @@ void ScriptSimulator::MouseDown(SDL_Event& ev)
         if (MouseOnSimulator) {
             auto app = OpenFunscripter::ptr;
             app->undoSystem->Snapshot(StateType::ADD_EDIT_ACTION, app->ActiveFunscript());
-            app->scripting->addEditAction(FunscriptAction(app->player->CurrentTimeInterp(), 50 + (50 * mouseValue)));
+            app->scripting->addEditAction(FunscriptAction(app->player->CurrentTime(), 50 + (50 * mouseValue)));
         }
     }
 }
@@ -109,8 +109,8 @@ void ScriptSimulator::ShowSimulator(bool* open)
         }
         else {
             currentPos = BaseOverlay::SplineMode 
-                ? app->ActiveFunscript()->SplineClamped(app->player->CurrentTimeInterp()) 
-                : app->ActiveFunscript()->GetPositionAtTime(app->player->CurrentTimeInterp());
+                ? app->ActiveFunscript()->SplineClamped(app->player->CurrentTime()) 
+                : app->ActiveFunscript()->GetPositionAtTime(app->player->CurrentTime());
         }
 
         if (EnableVanilla) {

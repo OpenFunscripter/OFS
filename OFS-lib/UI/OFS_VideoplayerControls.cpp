@@ -108,7 +108,7 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
             const ImVec2 ImageDim = ImVec2(ImGui::GetFontSize()*7.f * (16.f / 9.f), ImGui::GetFontSize() * 7.f);
             ImGui::Image((void*)(intptr_t)videoPreview->renderTexture, ImageDim);
             float timeSeconds = player->Duration() * relTimelinePos;
-            float timeDelta = timeSeconds - player->CurrentTimeInterp();
+            float timeDelta = timeSeconds - player->CurrentTime();
             Util::FormatTime(tmp_buf[0], sizeof(tmp_buf[0]), timeSeconds, false);
             Util::FormatTime(tmp_buf[1], sizeof(tmp_buf[1]), (timeDelta > 0) ? timeDelta : -timeDelta, false);
             if (timeDelta > 0)
@@ -193,7 +193,7 @@ void OFS_VideoplayerControls::DrawTimeline(bool* open, TimelineCustomDrawFunc&& 
         // this doesn't need to be done every frame
         Util::FormatTime(tmp_buf[1], sizeof(tmp_buf[1]), player->Duration(), true);
 
-        double time_seconds = player->CurrentTimeInterp();
+        double time_seconds = player->CurrentTime();
         Util::FormatTime(tmp_buf[0], sizeof(tmp_buf[0]), time_seconds, true);
         ImGui::Text(" %s / %s (x%.03f)", tmp_buf[0], tmp_buf[1], actualPlaybackSpeed);
         ImGui::NextColumn();
