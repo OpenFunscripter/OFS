@@ -25,8 +25,6 @@ enum MpvPropertyGet : uint64_t {
     MpvFilePath,
     MpvHwDecoder,
     MpvFramesPerSecond,
-    MpvAbLoopA,
-    MpvAbLoopB,
 };
 
 struct MpvDataCache {
@@ -62,7 +60,6 @@ struct MpvPlayerContext
 
     uint32_t* frameTexture = nullptr;
     float* logicalPosition = nullptr;
-    OFS_Videoplayer::LoopEnum* loopState = nullptr;
 };
 
 #define CTX ((MpvPlayerContext*)ctx)
@@ -142,7 +139,6 @@ OFS_Videoplayer::OFS_Videoplayer() noexcept
     ctx = new MpvPlayerContext();
     CTX->frameTexture = &this->frameTexture;
     CTX->logicalPosition = &this->logicalPosition;
-    CTX->loopState = &this->LoopState;
 }
 
 bool OFS_Videoplayer::Init(bool hwAccel) noexcept
@@ -227,8 +223,6 @@ bool OFS_Videoplayer::Init(bool hwAccel) noexcept
 	mpv_observe_property(CTX->mpv, MpvFilePath, "path", MPV_FORMAT_STRING);
 	mpv_observe_property(CTX->mpv, MpvHwDecoder, "hwdec-current", MPV_FORMAT_STRING);
 	mpv_observe_property(CTX->mpv, MpvFramesPerSecond, "estimated-vf-fps", MPV_FORMAT_DOUBLE);
-	mpv_observe_property(CTX->mpv, MpvAbLoopA, "ab-loop-a", MPV_FORMAT_DOUBLE);
-	mpv_observe_property(CTX->mpv, MpvAbLoopB, "ab-loop-b", MPV_FORMAT_DOUBLE);
 
     return true;
 }
@@ -326,20 +320,6 @@ inline static void ProcessEvents(MpvPlayerContext* ctx) noexcept
                         ctx->data.filePath = *((const char**)(prop->data));
                         notifyVideoLoaded(ctx->data.filePath.c_str());
                         break;
-                    case MpvAbLoopA:
-                    {
-                        ctx->data.abLoopA = *(double*)prop->data;
-                        showText(ctx, TR(LOOP_A_SET));
-                        *CTX->loopState = OFS_Videoplayer::LoopEnum::A_set;
-                        break;
-                    }
-                    case MpvAbLoopB:
-                    {
-                        ctx->data.abLoopB = *(double*)prop->data;
-                        showText(ctx, TR(LOOP_B_SET));
-                        *CTX->loopState = OFS_Videoplayer::LoopEnum::B_set;
-                        break;
-                    }
                 }
                 continue;
             }
@@ -497,32 +477,6 @@ void OFS_Videoplayer::CycleSubtitles() noexcept
 {
     const char* cmd[]{ "cycle", "sub", NULL};
     mpv_command_async(CTX->mpv, 0, cmd);
-}
-
-void OFS_Videoplayer::CycleLoopAB() noexcept
-{
-    const char* cmd[]{ "ab-loop", NULL };
-    mpv_command_async(CTX->mpv, 0, cmd);
-    if (LoopState == LoopEnum::B_set) {
-        CTX->data.abLoopA = 0.f;
-        CTX->data.abLoopB = 0.f;
-        showText(CTX, TR(LOOP_CLEARED));
-        LoopState = LoopEnum::Clear;
-    }
-}
-
-void OFS_Videoplayer::ClearLoop() noexcept
-{
-    if (LoopState == LoopEnum::A_set)
-    {
-        // call twice
-        CycleLoopAB(); CycleLoopAB();
-    }
-    else if (LoopState == LoopEnum::B_set)
-    {
-        CycleLoopAB();
-    }
-    else { /*loop already clear*/ }
 }
 
 void OFS_Videoplayer::CloseVideo() noexcept

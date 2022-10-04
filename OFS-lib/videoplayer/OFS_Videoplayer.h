@@ -23,14 +23,6 @@ class OFS_Videoplayer
     public:
     OFS_Videoplayer() noexcept;
     ~OFS_Videoplayer() noexcept;
-
-    enum class LoopEnum : int8_t
-	{
-		A_set,
-		B_set,
-		Clear,
-	};
-	private: LoopEnum LoopState = LoopEnum::Clear;
     public:
 
 	static constexpr float MinPlaybackSpeed = 0.05f;
@@ -51,8 +43,6 @@ class OFS_Videoplayer
     void SetPaused(bool paused) noexcept;
     void TogglePlay() noexcept { SetPaused(!IsPaused()); }
     void CycleSubtitles() noexcept;
-    void CycleLoopAB() noexcept;
-    void ClearLoop() noexcept;
     void CloseVideo() noexcept;
     void SaveFrameToImage(const std::string& directory) noexcept;
     void NotifySwap() noexcept;
