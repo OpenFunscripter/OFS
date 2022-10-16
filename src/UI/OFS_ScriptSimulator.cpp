@@ -81,7 +81,7 @@ void ScriptSimulator::MouseDown(SDL_Event& ev)
         if (MouseOnSimulator) {
             auto app = OpenFunscripter::ptr;
             app->undoSystem->Snapshot(StateType::ADD_EDIT_ACTION, app->ActiveFunscript());
-            app->scripting->addEditAction(FunscriptAction(app->player->CurrentTime(), 50 + (50 * mouseValue)));
+            app->scripting->AddEditAction(FunscriptAction(app->player->CurrentTime(), 50 + (50 * mouseValue)));
         }
     }
 }
@@ -319,7 +319,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
 
         // INDICATORS
         if (simulator.EnableIndicators) {
-            auto previousAction = app->ActiveFunscript()->GetActionAtTime(app->player->CurrentTime(), app->player->FrameTime());
+            auto previousAction = app->ActiveFunscript()->GetActionAtTime(app->player->CurrentTime(), app->scripting->LogicalFrameTime());
             if (previousAction == nullptr) {
                 previousAction = app->ActiveFunscript()->GetPreviousActionBehind(app->player->CurrentTime());
             }

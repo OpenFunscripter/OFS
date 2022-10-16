@@ -1,12 +1,14 @@
 #pragma once
 #include "imgui.h"
+
 #include <vector>
 #include <memory>
-#include <tuple>
+#include <string>
 
 #include "OFS_Waveform.h"
 #include "OFS_Shader.h"
 #include "ScriptPositionsOverlayMode.h"
+#include "OFS_Videoplayer.h"
 
 #include "SDL_events.h"
 
@@ -52,11 +54,6 @@ public:
 	ScriptTimelineEvents::ActionClickedEventArgs ActionClickEventData;
 	ScriptTimelineEvents::SelectTime SelectTimeEventData = {0};
 
-	std::unique_ptr<BaseOverlay> overlay;
-		
-	const char* videoPath = nullptr;
-	float frameTime = 16.66667;
-	
 	const std::vector<std::shared_ptr<Funscript>>* Scripts = nullptr;
 	
 	int activeScriptIdx = 0;
@@ -69,6 +66,7 @@ public:
 
 	class UndoSystem* undoSystem = nullptr;
 private:
+
 	void mousePressed(SDL_Event& ev) noexcept;
 	void mouseReleased(SDL_Event& ev) noexcept;
 	void mouseDrag(SDL_Event& ev) noexcept;
@@ -78,21 +76,19 @@ private:
 
 	inline static ImVec2 getPointForAction(const OverlayDrawingCtx& ctx, FunscriptAction action) noexcept {
 		float relative_x = (float)(action.atS - ctx.offsetTime) / ctx.visibleTime;
-		float x = (ctx.canvas_size.x) * relative_x;
-		float y = (ctx.canvas_size.y) * (1 - (action.pos / 100.0));
-		x += ctx.canvas_pos.x;
-		y += ctx.canvas_pos.y;
+		float x = (ctx.canvasSize.x) * relative_x;
+		float y = (ctx.canvasSize.y) * (1 - (action.pos / 100.0));
+		x += ctx.canvasPos.x;
+		y += ctx.canvasPos.y;
 		return ImVec2(x, y);
 	}
 
-	inline FunscriptAction getActionForPoint(ImVec2 canvas_pos, ImVec2 canvas_size, const ImVec2& point, float frameTime) noexcept {
+	inline FunscriptAction getActionForPoint(ImVec2 canvas_pos, ImVec2 canvas_size, const ImVec2& point) noexcept {
 		ImVec2 localCoord;
 		localCoord = point - canvas_pos;
 		float relative_x = localCoord.x / canvas_size.x;
 		float relative_y = localCoord.y / canvas_size.y;
 		float atTime = offsetTime + (relative_x * visibleTime);
-		// fix frame alignment
-		//atTime =  std::max<float>(std::round(atTime / frameTime) * frameTime, 0.f);
 		float pos = Util::Clamp<float>(100.f - (relative_y * 100.f), 0.f, 100.f);
 		return FunscriptAction(atTime, pos);
 	}
@@ -100,6 +96,7 @@ private:
 	void updateSelection(ScriptTimelineEvents::Mode mode, bool clear) noexcept;
 	void FfmpegAudioProcessingFinished(SDL_Event& ev) noexcept;
 
+	std::string videoPath;
 	uint32_t visibleTimeUpdate = 0;
 	float nextVisisbleTime = 5.f;
 	float previousVisibleTime = 5.f;
@@ -111,7 +108,6 @@ private:
 	float ScaleAudio = 1.f;
 	
 	void handleSelectionScrolling() noexcept;
-
 public:
 	OFS_WaveformLOD Wave;
 	static constexpr const char* WindowId = "###POSITIONS";
@@ -123,7 +119,7 @@ public:
 	inline void ClearAudioWaveform() noexcept { ShowAudioWaveform = false; Wave.data.Clear(); }
 	inline void setStartSelection(float time) noexcept { startSelectionTime = time; }
 	inline float selectionStart() const noexcept { return startSelectionTime; }
-	void ShowScriptPositions(bool* open, float currentTime, float duration, float frameTime, const std::vector<std::shared_ptr<Funscript>>* scripts, int activeScriptIdx) noexcept;
+	void ShowScriptPositions(const OFS_Videoplayer* player, BaseOverlay* overlay, const std::vector<std::shared_ptr<Funscript>>* scripts, int activeScriptIdx) noexcept;
 
 	void Update() noexcept;
 

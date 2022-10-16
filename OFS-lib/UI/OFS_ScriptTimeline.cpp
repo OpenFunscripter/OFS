@@ -86,15 +86,15 @@ void ScriptTimeline::mousePressed(SDL_Event& ev) noexcept
 			EventSystem::PushEvent(ScriptTimelineEvents::SetTimePosition, (void*)(*(intptr_t*)&seekToTime));
 			return;
 		}
-		else if (button.button == SDL_BUTTON_LEFT && button.clicks == 1)	{
+		else if (button.button == SDL_BUTTON_LEFT && button.clicks == 1) {
 			// test if an action has been clicked
-			if (overlay->PointSize > 0.f) {
+			if (BaseOverlay::PointSize > 0.f) {
 				int index = 0;
-				for (auto& vert : overlay->ActionScreenCoordinates) {
-					const ImVec2 size(overlay->PointSize, overlay->PointSize);
+				for (auto& vert : BaseOverlay::ActionScreenCoordinates) {
+					const ImVec2 size(BaseOverlay::PointSize, BaseOverlay::PointSize);
 					ImRect rect(vert - size, vert + size);
 					if (rect.Contains(mousePos)) {
-						clickedAction = &overlay->ActionPositionWindow[index];
+						clickedAction = &BaseOverlay::ActionPositionWindow[index];
 						break;
 					}
 					index++;
@@ -126,8 +126,8 @@ void ScriptTimeline::mousePressed(SDL_Event& ev) noexcept
 			}
 			else {
 				// click a point into existence
-				auto action = getActionForPoint(activeCanvasPos, activeCanvasSize, mousePos, frameTime);
-				auto edit = activeScript->GetActionAtTime(action.atS, frameTime);
+				auto action = getActionForPoint(activeCanvasPos, activeCanvasSize, mousePos);
+				auto edit = activeScript->GetActionAtTime(action.atS, 0.001f);
 				undoSystem->Snapshot(StateType::ADD_ACTION, activeScript);
 				if (edit != nullptr) { activeScript->RemoveAction(*edit); }
 				activeScript->AddAction(action);
@@ -195,26 +195,8 @@ void ScriptTimeline::mouseDrag(SDL_Event& ev) noexcept
 		if (!activeScript->HasSelection()) { IsMoving = false; return; }
 		auto mousePos = ImGui::GetMousePos();
 		auto& toBeMoved = activeScript->Selection()[0];
-		auto newAction = getActionForPoint(activeCanvasPos, activeCanvasSize, mousePos, frameTime);
+		auto newAction = getActionForPoint(activeCanvasPos, activeCanvasSize, mousePos);
 		if (newAction.atS != toBeMoved.atS || newAction.pos != toBeMoved.pos) {
-			const FunscriptAction* nearbyAction = nullptr;
-			if ((newAction.atS - toBeMoved.atS) > 0.f) {
-				nearbyAction = activeScript->GetNextActionAhead(toBeMoved.atS);
-				if (nearbyAction != nullptr) {
-					if (std::abs(nearbyAction->atS - newAction.atS) < frameTime) {
-						return;
-					}
-				}
-			}
-			else if((newAction.atS - toBeMoved.atS) < 0.f) {
-				nearbyAction = activeScript->GetPreviousActionBehind(toBeMoved.atS);
-				if (nearbyAction != nullptr) {
-					if (std::abs(nearbyAction->atS - newAction.atS) < frameTime) {
-						return;
-					}
- 				}
-			}
-
 			activeScript->RemoveAction(toBeMoved);
 			activeScript->ClearSelection();
 			activeScript->AddAction(newAction);
@@ -257,7 +239,7 @@ void ScriptTimeline::Update() noexcept
 
 void ScriptTimeline::videoLoaded(SDL_Event& ev) noexcept
 {
-	videoPath = (const char*)ev.user.data1;
+	videoPath = *(std::string*)ev.user.data1;
 }
 
 void ScriptTimeline::handleSelectionScrolling() noexcept
@@ -279,18 +261,23 @@ void ScriptTimeline::handleSelectionScrolling() noexcept
 	}
 }
 
-void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float duration, float frameTime, const std::vector<std::shared_ptr<Funscript>>* scripts, int activeScriptIdx) noexcept
+void ScriptTimeline::ShowScriptPositions(
+	const OFS_Videoplayer* player,
+	BaseOverlay* overlay,
+	const std::vector<std::shared_ptr<Funscript>>* scripts,
+	int activeScriptIdx) noexcept
 {
-	if (open != nullptr && !*open) return;
 	OFS_PROFILE(__FUNCTION__);
 
 	FUN_ASSERT(scripts, "scripts is null");
 
 	this->Scripts = scripts;
 	this->activeScriptIdx = activeScriptIdx;
-	this->frameTime = frameTime;
 
 	const auto activeScript = (*Scripts)[activeScriptIdx].get();
+
+	float currentTime = player->CurrentTime();
+	float duration = player->Duration();
 
 	auto& style = ImGui::GetStyle();
 	offsetTime = currentTime - (visibleTime / 2.0);
@@ -302,9 +289,8 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 	drawingCtx.totalDuration = duration;
 	if (drawingCtx.totalDuration == 0.f) return;
 	
-	ImGui::Begin(TR_ID(WindowId, Tr::POSITIONS), open, ImGuiWindowFlags_None);
-	auto draw_list = ImGui::GetWindowDrawList();
-	drawingCtx.draw_list = draw_list;
+	ImGui::Begin(TR_ID(WindowId, Tr::POSITIONS));
+	drawingCtx.drawList = ImGui::GetWindowDrawList();
 	PositionsItemHovered = ImGui::IsWindowHovered();
 
 	drawingCtx.drawnScriptCount = 0;
@@ -324,53 +310,53 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 		if (!script.Enabled) { continue; }
 		
 		drawingCtx.scriptIdx = i;
-		drawingCtx.canvas_pos = ImGui::GetCursorScreenPos();
-		drawingCtx.canvas_size = ImVec2(availSize.x, availSize.y / (float)drawingCtx.drawnScriptCount);
+		drawingCtx.canvasPos = ImGui::GetCursorScreenPos();
+		drawingCtx.canvasSize = ImVec2(availSize.x, availSize.y / (float)drawingCtx.drawnScriptCount);
 		const ImGuiID itemID = ImGui::GetID(script.Title.empty() ? "empty script" : script.Title.c_str());
-		ImRect itemBB(drawingCtx.canvas_pos, drawingCtx.canvas_pos + drawingCtx.canvas_size);
+		ImRect itemBB(drawingCtx.canvasPos, drawingCtx.canvasPos + drawingCtx.canvasSize);
 		ImGui::ItemSize(itemBB);
 		if (!ImGui::ItemAdd(itemBB, itemID)) {
 			continue;
 		}
 
-		draw_list->PushClipRect(itemBB.Min - ImVec2(0.f, 1.f), itemBB.Max + ImVec2(0.f, 1.f));
+		drawingCtx.drawList->PushClipRect(itemBB.Min - ImVec2(0.f, 1.f), itemBB.Max + ImVec2(0.f, 1.f));
 
 		bool ItemIsHovered = ImGui::IsItemHovered();
 		if (ItemIsHovered) {
 			hovereScriptIdx = i;
-			hoveredCanvasPos = drawingCtx.canvas_pos;
-			hoveredCanvasSize = drawingCtx.canvas_size;
+			hoveredCanvasPos = drawingCtx.canvasPos;
+			hoveredCanvasSize = drawingCtx.canvasSize;
 		}
 
 		const bool IsActivated = scriptPtr.get() == activeScript && drawingCtx.drawnScriptCount > 1;
 		if (drawingCtx.drawnScriptCount == 1) {
-			activeCanvasPos = drawingCtx.canvas_pos;
-			activeCanvasSize = drawingCtx.canvas_size;
+			activeCanvasPos = drawingCtx.canvasPos;
+			activeCanvasSize = drawingCtx.canvasSize;
 		} else if (IsActivated) {
-			activeCanvasPos = drawingCtx.canvas_pos;
-			activeCanvasSize = drawingCtx.canvas_size;
+			activeCanvasPos = drawingCtx.canvasPos;
+			activeCanvasSize = drawingCtx.canvasSize;
 		}
 
 		if (IsActivated) {
-			draw_list->AddRectFilledMultiColor(
-				drawingCtx.canvas_pos, 
-				ImVec2(drawingCtx.canvas_pos.x + drawingCtx.canvas_size.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y),
+			drawingCtx.drawList->AddRectFilledMultiColor(
+				drawingCtx.canvasPos, 
+				ImVec2(drawingCtx.canvasPos.x + drawingCtx.canvasSize.x, drawingCtx.canvasPos.y + drawingCtx.canvasSize.y),
 				IM_COL32(1.2f*50, 0, 1.2f*50, 255), IM_COL32(1.2f*50, 0, 1.2f*50, 255),
 				IM_COL32(1.2f*20, 0, 1.2f*20, 255), IM_COL32(1.2f*20, 0, 1.2f*20, 255)
 			);
 		}
 		else {
-			draw_list->AddRectFilledMultiColor(drawingCtx.canvas_pos, 
-				ImVec2(drawingCtx.canvas_pos.x + drawingCtx.canvas_size.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y),
+			drawingCtx.drawList->AddRectFilledMultiColor(drawingCtx.canvasPos, 
+				ImVec2(drawingCtx.canvasPos.x + drawingCtx.canvasSize.x, drawingCtx.canvasPos.y + drawingCtx.canvasSize.y),
 				IM_COL32(0, 0, 50, 255), IM_COL32(0, 0, 50, 255),
 				IM_COL32(0, 0, 20, 255), IM_COL32(0, 0, 20, 255)
 			);
 		}
 
 		if (ItemIsHovered) {
-			draw_list->AddRectFilled(
-				drawingCtx.canvas_pos, 
-				ImVec2(drawingCtx.canvas_pos.x + drawingCtx.canvas_size.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y),
+			drawingCtx.drawList->AddRectFilled(
+				drawingCtx.canvasPos, 
+				ImVec2(drawingCtx.canvasPos.x + drawingCtx.canvasSize.x, drawingCtx.canvasPos.y + drawingCtx.canvasSize.y),
 				IM_COL32(255, 255, 255, 10)
 			);
 		}
@@ -402,24 +388,24 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 		constexpr float borderThicknes = 1.f;
 		uint32_t borderColor = IsActivated ? IM_COL32(0, 180, 0, 255) : IM_COL32(255, 255, 255, 255);
 		if (script.HasSelection()) { borderColor = ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_SliderGrabActive]); }
-		draw_list->AddRect(
-			drawingCtx.canvas_pos,
-			ImVec2(drawingCtx.canvas_pos.x + drawingCtx.canvas_size.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y),
+		drawingCtx.drawList->AddRect(
+			drawingCtx.canvasPos,
+			ImVec2(drawingCtx.canvasPos.x + drawingCtx.canvasSize.x, drawingCtx.canvasPos.y + drawingCtx.canvasSize.y),
 			borderColor,
 			0.f, ImDrawFlags_None,
 			borderThicknes
 		);
 
 		// current position indicator -> |
-		draw_list->AddTriangleFilled(
-			drawingCtx.canvas_pos + ImVec2((drawingCtx.canvas_size.x/2.f) - ImGui::GetFontSize(), 0.f),
-			drawingCtx.canvas_pos + ImVec2((drawingCtx.canvas_size.x/2.f) + ImGui::GetFontSize(), 0.f),
-			drawingCtx.canvas_pos + ImVec2((drawingCtx.canvas_size.x/2.f), ImGui::GetFontSize()/1.5f),
+		drawingCtx.drawList->AddTriangleFilled(
+			drawingCtx.canvasPos + ImVec2((drawingCtx.canvasSize.x/2.f) - ImGui::GetFontSize(), 0.f),
+			drawingCtx.canvasPos + ImVec2((drawingCtx.canvasSize.x/2.f) + ImGui::GetFontSize(), 0.f),
+			drawingCtx.canvasPos + ImVec2((drawingCtx.canvasSize.x/2.f), ImGui::GetFontSize()/1.5f),
 			IM_COL32(255, 255, 255, 255)
 		);
-		draw_list->AddLine(
-			drawingCtx.canvas_pos + ImVec2((drawingCtx.canvas_size.x/2.f)-0.5f, 0),
-			drawingCtx.canvas_pos + ImVec2((drawingCtx.canvas_size.x/2.f)-0.5f, drawingCtx.canvas_size.y-1.f),
+		drawingCtx.drawList->AddLine(
+			drawingCtx.canvasPos + ImVec2((drawingCtx.canvasSize.x/2.f)-0.5f, 0),
+			drawingCtx.canvasPos + ImVec2((drawingCtx.canvasSize.x/2.f)-0.5f, drawingCtx.canvasSize.y-1.f),
 			IM_COL32(255, 255, 255, 255),
 		4.0f);
 
@@ -428,22 +414,22 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 		constexpr auto selectColorBackground = IM_COL32(3, 252, 207, 100);
 		if (IsSelecting && (scriptPtr.get() == activeScript)) {
 			float relSel1 = (absSel1 - offsetTime) / visibleTime;
-			draw_list->AddRectFilled(drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * relSel1, 0), drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * relSel2, drawingCtx.canvas_size.y), selectColorBackground);
-			draw_list->AddLine(drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * relSel1, 0), drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * relSel1, drawingCtx.canvas_size.y), selectColor, 3.0f);
-			draw_list->AddLine(drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * relSel2, 0), drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * relSel2, drawingCtx.canvas_size.y), selectColor, 3.0f);
+			drawingCtx.drawList->AddRectFilled(drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel1, 0), drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel2, drawingCtx.canvasSize.y), selectColorBackground);
+			drawingCtx.drawList->AddLine(drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel1, 0), drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel1, drawingCtx.canvasSize.y), selectColor, 3.0f);
+			drawingCtx.drawList->AddLine(drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel2, 0), drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel2, drawingCtx.canvasSize.y), selectColor, 3.0f);
 		}
 
 		// TODO: refactor this
 		// selectionStart currently used for controller select
 		if (startSelectionTime >= 0.f) {
 			float startSelectRel = (startSelectionTime - offsetTime) / visibleTime;
-			draw_list->AddLine(
-				drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * startSelectRel, 0),
-				drawingCtx.canvas_pos + ImVec2(drawingCtx.canvas_size.x * startSelectRel, drawingCtx.canvas_size.y),
+			drawingCtx.drawList->AddLine(
+				drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * startSelectRel, 0),
+				drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * startSelectRel, drawingCtx.canvasSize.y),
 				selectColor, 3.0f
 			);
 		}
-		ImVec2 newCursor(drawingCtx.canvas_pos.x, drawingCtx.canvas_pos.y + drawingCtx.canvas_size.y + verticalSpacingBetweenScripts);
+		ImVec2 newCursor(drawingCtx.canvasPos.x, drawingCtx.canvasPos.y + drawingCtx.canvasSize.y + verticalSpacingBetweenScripts);
 		if (newCursor.y < (startCursor.y + availSize.y)) { ImGui::SetCursorScreenPos(newCursor); }
 
 
@@ -507,7 +493,7 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 					ImGui::SameLine();
 					OFS::Spinner("##AudioSpin", ImGui::GetFontSize() / 3.f, 4.f, ImGui::GetColorU32(ImGuiCol_TabActive));
 				}
-				else if(ImGui::MenuItem(TR(UPDATE_WAVEFORM), NULL, false, !Wave.data.BusyGenerating() && videoPath != nullptr)) {
+				else if(ImGui::MenuItem(TR(UPDATE_WAVEFORM), NULL, false, !Wave.data.BusyGenerating() && !videoPath.empty())) {
 					if (!Wave.data.BusyGenerating()) {
 						ShowAudioWaveform = false; // gets switched true after processing
 						auto handle = SDL_CreateThread(updateAudioWaveformThread, "OFS_GenWaveform", this);
@@ -519,34 +505,39 @@ void ScriptTimeline::ShowScriptPositions(bool* open, float currentTime, float du
 			ImGui::EndPopup();
 		}
 
-		draw_list->PopClipRect();
+		drawingCtx.drawList->PopClipRect();
 	}
 
 
 	// draw points on top of lines
+	auto applyEasing = [](float t) noexcept -> float {
+		return t * t; 
+	};
+
 	float opacity = 20.f / visibleTime;
-	opacity = opacity > 1.f ? 1.f : opacity * opacity;
-	overlay->PointSize = 7.f * opacity;
+	opacity = Util::Clamp(opacity, 0.f, 1.f);
+	BaseOverlay::PointSize = 7.f * opacity;
+	opacity = applyEasing(opacity);
+
 	if (opacity >= 0.25f) {
-		draw_list->PushClipRect(startCursor - ImVec2(0.f, 20.f),
+		drawingCtx.drawList->PushClipRect(startCursor - ImVec2(0.f, 20.f),
 			(startCursor + ImGui::GetWindowSize() - (style.FramePadding*2.f) - (style.ItemInnerSpacing * 2.f))
 			+ ImVec2(0.f, 20.f), true);
 		int opcacityInt = 255 * opacity;
-		for (auto&& p : overlay->ActionScreenCoordinates) {
-			draw_list->AddCircleFilled(p, overlay->PointSize, IM_COL32(0, 0, 0, opcacityInt), 8); // border
-			draw_list->AddCircleFilled(p, overlay->PointSize*0.7f, IM_COL32(255, 0, 0, opcacityInt), 8);
+		for (auto& p : BaseOverlay::ActionScreenCoordinates) {
+			drawingCtx.drawList->AddCircleFilled(p, BaseOverlay::PointSize, IM_COL32(0, 0, 0, opcacityInt), 4); // border
+			drawingCtx.drawList->AddCircleFilled(p, BaseOverlay::PointSize*0.7f, IM_COL32(255, 0, 0, opcacityInt), 4);
 		}
 
 		// draw selected points
-		for (auto&& p : overlay->SelectedActionScreenCoordinates) {
+		for (auto& p : BaseOverlay::SelectedActionScreenCoordinates) {
 			const auto selectedDots = IM_COL32(11, 252, 3, opcacityInt);
-			draw_list->AddCircleFilled(p, overlay->PointSize * 0.7f, selectedDots, 8);
+			drawingCtx.drawList->AddCircleFilled(p, BaseOverlay::PointSize * 0.7f, selectedDots, 4);
 		}
-		draw_list->PopClipRect();
+		drawingCtx.drawList->PopClipRect();
 	}
 	ImGui::End();
 }
-
 
 constexpr uint32_t HighRangeCol = IM_COL32(0xE3, 0x42, 0x34, 0xff);
 constexpr uint32_t MidRangeCol = IM_COL32(0xE8, 0xD7, 0x5A, 0xff);
@@ -556,18 +547,7 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 
-#if 0
-	if (!ShowAudioWaveform) {
-		Wave.data.LoadFlac(Util::Prefpath("tmp/audio.flac"));
-		EventSystem::PushEvent(ScriptTimelineEvents::FfmpegAudioProcessingFinished);
-	}
-#endif
-	auto& canvas_pos = ctx.canvas_pos;
-	auto& canvas_size = ctx.canvas_size;
-	const auto draw_list = ctx.draw_list;
 	if (ShowAudioWaveform && Wave.data.SampleCount() > 0) {
-		FUN_ASSERT(Wave.data.SampleCount() < 16777217, "switch to doubles"); 
-
 		Wave.WaveformViewport = ImGui::GetWindowViewport();
 		auto renderWaveform = [](ScriptTimeline* timeline, const OverlayDrawingCtx& ctx) noexcept
 		{
@@ -575,7 +555,7 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 			
 			timeline->Wave.Update(ctx);
 			
-			ctx.draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) noexcept {
+			ctx.drawList->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) noexcept {
 				ScriptTimeline* ctx = (ScriptTimeline*)cmd->UserCallbackData;
 				
 				glActiveTexture(GL_TEXTURE1);
@@ -601,9 +581,9 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 				ctx->Wave.WaveShader->Color(&ctx->Wave.WaveformColor.Value.x);
 			}, timeline);
 
-			ctx.draw_list->AddImage(0, ctx.canvas_pos, ctx.canvas_pos + ctx.canvas_size);
-			ctx.draw_list->AddCallback(ImDrawCallback_ResetRenderState, 0);
-			ctx.draw_list->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) noexcept { glActiveTexture(GL_TEXTURE0); }, 0);
+			ctx.drawList->AddImage(0, ctx.canvasPos, ctx.canvasPos + ctx.canvasSize);
+			ctx.drawList->AddCallback(ImDrawCallback_ResetRenderState, 0);
+			ctx.drawList->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) noexcept { glActiveTexture(GL_TEXTURE0); }, 0);
 		};
 
 		renderWaveform(this, ctx);

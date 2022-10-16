@@ -15,8 +15,9 @@ static char tmp_buf[2][32];
 void OFS_VideoplayerControls::VideoLoaded(SDL_Event& ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
+    FUN_ASSERT(ev.user.data1 != nullptr, "data was null");
     if (ev.user.data1 != nullptr) {
-        videoPreview->previewVideo((const char*)ev.user.data1, 0.f);
+        videoPreview->previewVideo(*(std::string*)ev.user.data1, 0.f);
     }
 }
 

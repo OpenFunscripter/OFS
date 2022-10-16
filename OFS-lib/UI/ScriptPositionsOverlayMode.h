@@ -13,12 +13,12 @@ struct OverlayDrawingCtx {
 	int32_t drawnScriptCount;
 	int32_t actionFromIdx;
 	int32_t actionToIdx;
-	ImDrawList* draw_list;
+	ImDrawList* drawList;
 	float visibleTime;
 	float offsetTime;
 	float totalDuration;
-	ImVec2 canvas_pos;
-	ImVec2 canvas_size;
+	ImVec2 canvasPos;
+	ImVec2 canvasSize;
 };
 
 class BaseOverlay {
@@ -51,11 +51,12 @@ public:
 
 	virtual void update() noexcept;
 	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept {}
-	virtual void nextFrame() noexcept {}
-	virtual void previousFrame() noexcept {}
 
-	virtual float steppingIntervalForward(float fromTime) noexcept = 0;
-	virtual float steppingIntervalBackward(float fromTime) noexcept = 0;
+	virtual void nextFrame(float realFrameTime) noexcept {}
+	virtual void previousFrame(float realFrameTime) noexcept {}
+	virtual float steppingIntervalForward(float realFrameTime, float fromTime) noexcept = 0;
+	virtual float steppingIntervalBackward(float realFrameTime, float fromTime) noexcept = 0;
+	virtual float logicalFrameTime(float realFrameTime) noexcept;
 
 	static void DrawActionLines(const OverlayDrawingCtx& ctx) noexcept;
 	static void DrawSecondsLabel(const OverlayDrawingCtx& ctx) noexcept;
@@ -67,8 +68,8 @@ class EmptyOverlay : public BaseOverlay {
 public:
 	EmptyOverlay(class ScriptTimeline* timeline) : BaseOverlay(timeline) {}
 	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept override;
-	virtual float steppingIntervalForward(float fromTime) noexcept override;
-	virtual float steppingIntervalBackward(float fromTime) noexcept override;
+	virtual float steppingIntervalForward(float realFrameTime, float fromTime) noexcept override;
+	virtual float steppingIntervalBackward(float realFrameTime, float fromTime) noexcept override;
 };
 
 

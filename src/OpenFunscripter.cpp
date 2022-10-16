@@ -245,15 +245,15 @@ bool OpenFunscripter::setup(int argc, char* argv[])
     scriptTimeline.setup(undoSystem.get());
 
     scripting = std::make_unique<ScriptingMode>();
-    scripting->setup();
+    scripting->Init();
     events->Subscribe(FunscriptEvents::FunscriptActionsChangedEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FunscriptChanged));
     events->Subscribe(SDL_DROPFILE, EVENT_SYSTEM_BIND(this, &OpenFunscripter::DragNDrop));
-    events->Subscribe(VideoEvents::VideoLoaded, EVENT_SYSTEM_BIND(this, &OpenFunscripter::MpvVideoLoaded));
+    events->Subscribe(VideoEvents::VideoLoaded, EVENT_SYSTEM_BIND(this, &OpenFunscripter::VideoLoaded));
     events->Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ControllerAxisPlaybackSpeed));
     events->Subscribe(ScriptTimelineEvents::FunscriptActionClicked, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActionClicked));
     events->Subscribe(ScriptTimelineEvents::SetTimePosition, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineDoubleClick));
     events->Subscribe(ScriptTimelineEvents::FunscriptSelectTime, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineSelectTime));
-    events->Subscribe(VideoEvents::PlayPauseChanged, EVENT_SYSTEM_BIND(this, &OpenFunscripter::MpvPlayPauseChange));
+    events->Subscribe(VideoEvents::PlayPauseChanged, EVENT_SYSTEM_BIND(this, &OpenFunscripter::PlayPauseChange));
     events->Subscribe(ScriptTimelineEvents::ActiveScriptChanged, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActiveScriptChanged));
 
     // hook up settings
@@ -949,22 +949,23 @@ void OpenFunscripter::registerBindings()
         auto app = OpenFunscripter::ptr;
         
         if (app->ActiveFunscript()->HasSelection()) {
+            
             auto time = forward
-                ? app->scriptTimeline.overlay->steppingIntervalForward(app->ActiveFunscript()->Selection().front().atS)
-                : app->scriptTimeline.overlay->steppingIntervalBackward(app->ActiveFunscript()->Selection().front().atS);
+                ? app->scripting->SteppingIntervalForward(app->ActiveFunscript()->Selection().front().atS)
+                : app->scripting->SteppingIntervalBackward(app->ActiveFunscript()->Selection().front().atS);
 
             app->undoSystem->Snapshot(StateType::ACTIONS_MOVED, app->ActiveFunscript());
-            app->ActiveFunscript()->MoveSelectionTime(time, app->player->FrameTime());
+            app->ActiveFunscript()->MoveSelectionTime(time, app->scripting->LogicalFrameTime());
         }
         else {
             auto closest = ptr->ActiveFunscript()->GetClosestAction(app->player->CurrentTime());
             if (closest != nullptr) {
                 auto time = forward
-                    ? app->scriptTimeline.overlay->steppingIntervalForward(closest->atS)
-                    : app->scriptTimeline.overlay->steppingIntervalBackward(closest->atS);
+                    ? app->scripting->SteppingIntervalForward(closest->atS)
+                    : app->scripting->SteppingIntervalBackward(closest->atS);
 
                 FunscriptAction moved(closest->atS + time, closest->pos);
-                auto closestInMoveRange = app->ActiveFunscript()->GetActionAtTime(moved.atS, app->player->FrameTime());
+                auto closestInMoveRange = app->ActiveFunscript()->GetActionAtTime(moved.atS, app->scripting->LogicalFrameTime());
                 if (closestInMoveRange == nullptr
                     || (forward && closestInMoveRange->atS < moved.atS)
                     || (!forward && closestInMoveRange->atS > moved.atS)) {
@@ -978,11 +979,11 @@ void OpenFunscripter::registerBindings()
         auto app = OpenFunscripter::ptr;
         if (app->ActiveFunscript()->HasSelection()) {
             auto time = forward
-                ? app->scriptTimeline.overlay->steppingIntervalForward(app->ActiveFunscript()->Selection().front().atS)
-                : app->scriptTimeline.overlay->steppingIntervalBackward(app->ActiveFunscript()->Selection().front().atS);
+                ? app->scripting->SteppingIntervalForward(app->ActiveFunscript()->Selection().front().atS)
+                : app->scripting->SteppingIntervalBackward(app->ActiveFunscript()->Selection().front().atS);
 
             app->undoSystem->Snapshot(StateType::ACTIONS_MOVED, app->ActiveFunscript());
-            app->ActiveFunscript()->MoveSelectionTime(time, app->player->FrameTime());
+            app->ActiveFunscript()->MoveSelectionTime(time, app->scripting->LogicalFrameTime());
             auto closest = ptr->ActiveFunscript()->GetClosestActionSelection(app->player->CurrentTime());
             if (closest != nullptr) { app->player->SetPositionExact(closest->atS); }
             else { app->player->SetPositionExact(app->ActiveFunscript()->Selection().front().atS); }
@@ -991,11 +992,11 @@ void OpenFunscripter::registerBindings()
             auto closest = app->ActiveFunscript()->GetClosestAction(ptr->player->CurrentTime());
             if (closest != nullptr) {
                 auto time = forward
-                    ? app->scriptTimeline.overlay->steppingIntervalForward(closest->atS)
-                    : app->scriptTimeline.overlay->steppingIntervalBackward(closest->atS);
+                    ? app->scripting->SteppingIntervalForward(closest->atS)
+                    : app->scripting->SteppingIntervalBackward(closest->atS);
 
                 FunscriptAction moved(closest->atS + time, closest->pos);
-                auto closestInMoveRange = app->ActiveFunscript()->GetActionAtTime(moved.atS, app->player->FrameTime());
+                auto closestInMoveRange = app->ActiveFunscript()->GetActionAtTime(moved.atS, app->scripting->LogicalFrameTime());
 
                 if (closestInMoveRange == nullptr 
                     || (forward && closestInMoveRange->atS < moved.atS) 
@@ -1404,13 +1405,14 @@ void OpenFunscripter::registerBindings()
             true,
             [&](void*) {
                 static ScriptingModeEnum prevMode = ScriptingModeEnum::RECORDING;
-                if (scripting->mode() != ScriptingModeEnum::RECORDING) {
-                    prevMode = scripting->mode();
-                    scripting->setMode(ScriptingModeEnum::RECORDING);
-                    ((RecordingImpl&)scripting->Impl()).setRecordingMode(RecordingImpl::RecordingMode::Controller);
+                if (scripting->ActiveMode() != ScriptingModeEnum::RECORDING) {
+                    prevMode = scripting->ActiveMode();
+                    scripting->SetMode(ScriptingModeEnum::RECORDING);
+                    ScriptingModeBase* mode = scripting->Mode().get();
+                    static_cast<RecordingMode*>(mode)->setRecordingMode(RecordingMode::RecordingType::Controller);
                 }
                 else {
-                    scripting->setMode(prevMode);
+                    scripting->SetMode(prevMode);
                 }
             }
         );
@@ -1648,15 +1650,17 @@ void OpenFunscripter::DragNDrop(SDL_Event& ev) noexcept
     SDL_free(ev.drop.file);
 }
 
-void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
+void OpenFunscripter::VideoLoaded(SDL_Event& ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     LoadedProject->Metadata.duration = player->Duration();
     player->SetPositionExact(LoadedProject->Settings.lastPlayerPosition);
 
     Status |= OFS_Status::OFS_GradientNeedsUpdate;
-    const char* VideoName = (const char*)ev.user.data1;
-    if (VideoName) {
+    
+    FUN_ASSERT(ev.user.data1 != nullptr, "data is null");
+    const std::string& VideoName = *(std::string*)ev.user.data1;
+    if(!VideoName.empty()) {
         scriptTimeline.ClearAudioWaveform();
     }
 
@@ -1668,7 +1672,7 @@ void OpenFunscripter::MpvVideoLoaded(SDL_Event& ev) noexcept
     }
 }
 
-void OpenFunscripter::MpvPlayPauseChange(SDL_Event& ev) noexcept
+void OpenFunscripter::PlayPauseChange(SDL_Event& ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     if ((intptr_t)ev.user.data1) // true == paused
@@ -1690,7 +1694,7 @@ void OpenFunscripter::update() noexcept {
     player->Update(delta);
     ActiveFunscript()->update();
     ControllerInput::UpdateControllers(settings->data().buttonRepeatIntervalMs);
-    scripting->update();
+    scripting->Update();
     scriptTimeline.Update();
     
     if (Status & OFS_Status::OFS_AutoBackup) {
@@ -1904,7 +1908,11 @@ void OpenFunscripter::step() noexcept {
 
             playerControls.DrawTimeline(NULL, drawBookmarks);
             
-            scriptTimeline.ShowScriptPositions(NULL, player->CurrentTime(), player->Duration(), player->FrameTime(), &LoadedFunscripts(), ActiveFunscriptIdx);
+            scriptTimeline.ShowScriptPositions(player.get(),
+                scripting->Overlay().get(),
+                &LoadedFunscripts(),
+                ActiveFunscriptIdx);
+
             ShowStatisticsWindow(&settings->data().show_statistics);
 
             if (settings->data().show_action_editor) {
@@ -1932,7 +1940,7 @@ void OpenFunscripter::step() noexcept {
 
                 if (player->IsPaused()) {
                     ImGui::Spacing();
-                    auto scriptAction = ActiveFunscript()->GetActionAtTime(player->CurrentTime(), player->FrameTime());
+                    auto scriptAction = ActiveFunscript()->GetActionAtTime(player->CurrentTime(), scripting->LogicalFrameTime());
                     if (!scriptAction) {
                         // create action
                         static int newActionPosition = 0;
@@ -2031,13 +2039,13 @@ void OpenFunscripter::SetCursorType(ImGuiMouseCursor id) noexcept
 void OpenFunscripter::Undo() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if(undoSystem->Undo()) scripting->undo();
+    if(undoSystem->Undo()) scripting->Undo();
 }
 
 void OpenFunscripter::Redo() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if(undoSystem->Redo()) scripting->redo();
+    if(undoSystem->Redo()) scripting->Redo();
 }
 
 bool OpenFunscripter::openFile(const std::string& file) noexcept
@@ -2310,13 +2318,13 @@ void OpenFunscripter::addEditAction(int pos) noexcept
         undoSystem->Snapshot(StateType::ADD_EDIT_ACTIONS);
         for (int i = 0; i < LoadedFunscripts().size(); i++) {
             UpdateNewActiveScript(i);
-            scripting->addEditAction(FunscriptAction(player->CurrentTime(), pos));
+            scripting->AddEditAction(FunscriptAction(player->CurrentTime(), pos));
         }
         UpdateNewActiveScript(currentActiveScriptIdx);
     }
     else {
         undoSystem->Snapshot(StateType::ADD_EDIT_ACTIONS, ActiveFunscript());
-        scripting->addEditAction(FunscriptAction(player->CurrentTime(), pos));
+        scripting->AddEditAction(FunscriptAction(player->CurrentTime(), pos));
     }
 }
 
@@ -2446,7 +2454,7 @@ void OpenFunscripter::repeatLastStroke() noexcept {
     if (stroke.size() > 1) {
         auto offsetTime = player->CurrentTime() - stroke.back().atS;
         undoSystem->Snapshot(StateType::REPEAT_STROKE, ActiveFunscript());
-        auto action = ActiveFunscript()->GetActionAtTime(player->CurrentTime(), player->FrameTime());
+        auto action = ActiveFunscript()->GetActionAtTime(player->CurrentTime(), scripting->LogicalFrameTime());
         // if we are on top of an action we ignore the first action of the last stroke
         if (action != nullptr) {
             for(int i=stroke.size()-2; i >= 0; i--) {

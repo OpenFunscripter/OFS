@@ -74,8 +74,8 @@ private:
 
 	void DragNDrop(SDL_Event& ev) noexcept;
 
-	void MpvVideoLoaded(SDL_Event& ev) noexcept;
-	void MpvPlayPauseChange(SDL_Event& ev) noexcept;
+	void VideoLoaded(SDL_Event& ev) noexcept;
+	void PlayPauseChange(SDL_Event& ev) noexcept;
 
 	void ControllerAxisPlaybackSpeed(SDL_Event& ev) noexcept;
 

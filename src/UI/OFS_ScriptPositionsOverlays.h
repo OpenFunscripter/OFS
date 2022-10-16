@@ -56,26 +56,27 @@ public:
 		: BaseOverlay(timeline) {}
 	virtual void DrawSettings() noexcept override;
 	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept override;
-	virtual void nextFrame() noexcept override;
-	virtual void previousFrame() noexcept override;
+	virtual void nextFrame(float realFrameTime) noexcept override;
+	virtual void previousFrame(float realFrameTime) noexcept override;
 
-	virtual float steppingIntervalForward(float fromMs) noexcept override;
-	virtual float steppingIntervalBackward(float fromMs) noexcept override;
+	virtual float steppingIntervalForward(float realFrameTime, float fromTime) noexcept override;
+	virtual float steppingIntervalBackward(float realFrameTime, float fromTime) noexcept override;
 };
 
 
 class FrameOverlay : public BaseOverlay {
 private:
-	float framerateOverride = 0.f;
-	bool enableFramerateOverride = false;
+	float fpsOverride = 0.f;
+	bool enableFpsOverride = false;
 public:
 	FrameOverlay(class ScriptTimeline* timeline)
 		: BaseOverlay(timeline) {}
 	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept override;
 	virtual void DrawSettings() noexcept override;
-	virtual void nextFrame() noexcept override;
-	virtual void previousFrame() noexcept override;
+	virtual void nextFrame(float realFrameTime) noexcept override;
+	virtual void previousFrame(float realFrameTime) noexcept override;
 
-	virtual float steppingIntervalForward(float fromMs) noexcept override;
-	virtual float steppingIntervalBackward(float fromMs) noexcept override;
+	virtual float logicalFrameTime(float realFrameTime) noexcept override;
+	virtual float steppingIntervalForward(float realFrameTime, float fromTime) noexcept override;
+	virtual float steppingIntervalBackward(float realFrameTime, float fromTime) noexcept override;
 };

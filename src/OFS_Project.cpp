@@ -382,38 +382,32 @@ void OFS_Project::ExportClips(const std::string& outputDirectory) noexcept
 		char formatBuffer[1024];
 
 		int i = 0;
-		while (i < bookmarks.size())
-		{
+		while (i < bookmarks.size()) {
 			split = true;
 			auto& bookmarkName = bookmarks[i].name;
 			auto startTime = bookmarks[i].atS;
 			float endTime;
 			
 
-			if (bookmarks[i].type == OFS_ScriptSettings::Bookmark::BookmarkType::END_MARKER)
-			{
+			if (bookmarks[i].type == OFS_ScriptSettings::Bookmark::BookmarkType::END_MARKER) {
 				split = false;
 			}
 			else if (bookmarks[i].type == OFS_ScriptSettings::Bookmark::BookmarkType::START_MARKER) {
 				endTime = bookmarks[i + 1].atS;
 				i++;
 			}
-			else if (bookmarks[i].type == OFS_ScriptSettings::Bookmark::BookmarkType::REGULAR)
-			{
-				if (i == bookmarks.size() - 1)
-				{
+			else if (bookmarks[i].type == OFS_ScriptSettings::Bookmark::BookmarkType::REGULAR) {
+				if (i == bookmarks.size() - 1) {
 					endTime = app->player->Duration();
 				}
-				else
-				{
+				else {
 					endTime = bookmarks[i + 1].atS - app->player->FrameTime();
 				}
 			}
 
 			bTaskData->Progress = i;
 
-			if (split)
-			{
+			if (split) {
 				char startTimeChar[16];
 				char endTimeChar[16];
 

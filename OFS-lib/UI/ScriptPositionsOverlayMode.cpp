@@ -55,6 +55,11 @@ void BaseOverlay::DrawSettings() noexcept
 
 }
 
+float BaseOverlay::logicalFrameTime(float realFrameTime) noexcept
+{
+    return realFrameTime;
+}
+
 void EmptyOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
@@ -62,14 +67,14 @@ void EmptyOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
     BaseOverlay::DrawActionLines(ctx);
 }
 
-float EmptyOverlay::steppingIntervalForward(float fromTime) noexcept
+float EmptyOverlay::steppingIntervalForward(float realFrameTime, float fromTime) noexcept
 {
-    return timeline->frameTime;
+    return realFrameTime;
 }
 
-float EmptyOverlay::steppingIntervalBackward(float fromTime) noexcept
+float EmptyOverlay::steppingIntervalBackward(float realFrameTime, float fromTime) noexcept
 {
-    return -timeline->frameTime;
+    return -realFrameTime;
 }
 
 static void getActionLineColor(ImColor* speedColor, ImGradient& speedGradient, FunscriptAction action, FunscriptAction prevAction) noexcept
@@ -96,32 +101,32 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
 
     auto getPointForAction = [](const OverlayDrawingCtx& ctx, FunscriptAction action) {
         float relative_x = (float)(action.atS - ctx.offsetTime) / ctx.visibleTime;
-        float x = (ctx.canvas_size.x) * relative_x;
-        float y = (ctx.canvas_size.y) * (1 - (action.pos / 100.f));
-        x += ctx.canvas_pos.x;
-        y += ctx.canvas_pos.y;
+        float x = (ctx.canvasSize.x) * relative_x;
+        float y = (ctx.canvasSize.y) * (1 - (action.pos / 100.f));
+        x += ctx.canvasPos.x;
+        y += ctx.canvasPos.y;
         return ImVec2(x, y);
     };
 
     auto drawSpline = [getPointForAction](const OverlayDrawingCtx& ctx, FunscriptAction startAction, FunscriptAction endAction, uint32_t color, float width, bool background = true)
     {
         constexpr float SamplesPerTwothousandPixels = 150.f;
-        const float MaximumSamples = SamplesPerTwothousandPixels * (ctx.canvas_size.x / 2000.f);
+        const float MaximumSamples = SamplesPerTwothousandPixels * (ctx.canvasSize.x / 2000.f);
 
         auto getPointForTimePos = [](const OverlayDrawingCtx& ctx, float time, float pos) noexcept {
             float relative_x = (float)(time - ctx.offsetTime) / ctx.visibleTime;
-            float x = (ctx.canvas_size.x) * relative_x;
-            float y = (ctx.canvas_size.y) * (1 - (pos / 100.f));
-            x += ctx.canvas_pos.x;
-            y += ctx.canvas_pos.y;
+            float x = (ctx.canvasSize.x) * relative_x;
+            float y = (ctx.canvasSize.y) * (1 - (pos / 100.f));
+            x += ctx.canvasPos.x;
+            y += ctx.canvasPos.y;
             return ImVec2(x, y);
         };
         auto putPoint = [getPointForTimePos](auto& ctx, float time) noexcept {
             float pos = Util::Clamp<float>(ctx.script->Spline(time) * 100.f, 0.f, 100.f);
-            ctx.draw_list->PathLineTo(getPointForTimePos(ctx, time, pos));
+            ctx.drawList->PathLineTo(getPointForTimePos(ctx, time, pos));
         };
 
-        ctx.draw_list->PathClear();
+        ctx.drawList->PathClear();
         float visibleDuration;
         float currentTime;
         float endTime;
@@ -160,9 +165,9 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
             auto p1 = getPointForAction(ctx, startAction);
             auto p2 = getPointForAction(ctx, endAction);
             if (background) {
-                ctx.draw_list->PathLineTo(p1);
-                ctx.draw_list->PathLineTo(p2);
-                ctx.draw_list->PathStroke(IM_COL32_BLACK, false, 7.f);
+                ctx.drawList->PathLineTo(p1);
+                ctx.drawList->PathLineTo(p2);
+                ctx.drawList->PathStroke(IM_COL32_BLACK, false, 7.f);
             }
             ColoredLines.emplace_back(std::move(BaseOverlay::ColoredLine{ p1, p2, color }));
         }
@@ -174,16 +179,16 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
                 currentTime += timeStep;
             }
             putPoint(ctx, endAction.atS);
-            auto tmpSize = ctx.draw_list->_Path.Size;
-            ctx.draw_list->PathStroke(IM_COL32_BLACK, false, 7.f);
-            ctx.draw_list->_Path.Size = tmpSize;
-            ctx.draw_list->PathStroke(color, false, width);
+            auto tmpSize = ctx.drawList->_Path.Size;
+            ctx.drawList->PathStroke(IM_COL32_BLACK, false, 7.f);
+            ctx.drawList->_Path.Size = tmpSize;
+            ctx.drawList->PathStroke(color, false, width);
         }
     };
 
     auto drawLine = [](const OverlayDrawingCtx& ctx, ImVec2 p1, ImVec2 p2, uint32_t color) noexcept
     {
-        ctx.draw_list->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
+        ctx.drawList->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
         ColoredLines.emplace_back(std::move(BaseOverlay::ColoredLine{ p1, p2, color }));
     };
 
@@ -274,7 +279,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
 
     // this is so that the black background line gets rendered first
     for (auto&& line : ColoredLines) {
-        ctx.draw_list->AddLine(line.p1, line.p2, line.color, 3.f);
+        ctx.drawList->AddLine(line.p1, line.p2, line.color, 3.f);
     }
 }
 
@@ -285,9 +290,9 @@ void BaseOverlay::DrawSecondsLabel(const OverlayDrawingCtx& ctx) noexcept
         OFS_PROFILE(__FUNCTION__);
         auto tmp = FMT("%.2f %s", ctx.visibleTime, TR(TIMELINE_SECONDS));
         auto textSize = ImGui::CalcTextSize(tmp);
-        ctx.draw_list->AddText(
-            ctx.canvas_pos + ImVec2(style.FramePadding.x, ctx.canvas_size.y - textSize.y - style.FramePadding.y),
-            ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]),
+        ctx.drawList->AddText(
+            ctx.canvasPos + ImVec2(style.FramePadding.x, ctx.canvasSize.y - textSize.y - style.FramePadding.y),
+            ImGui::GetColorU32(ImGuiCol_Text),
             tmp
         );
     }
@@ -300,9 +305,9 @@ void BaseOverlay::DrawHeightLines(const OverlayDrawingCtx& ctx) noexcept
     for (int i = 0; i < 9; i++) {
         auto color = (i == 4) ? IM_COL32(150, 150, 150, 255) : IM_COL32(80, 80, 80, 255);
         auto thickness = (i == 4) ? 2.f : 1.0f;
-        ctx.draw_list->AddLine(
-            ctx.canvas_pos + ImVec2(0.0, (ctx.canvas_size.y / 10.f) * (i + 1)),
-            ctx.canvas_pos + ImVec2(ctx.canvas_size.x, (ctx.canvas_size.y / 10.f) * (i + 1)),
+        ctx.drawList->AddLine(
+            ctx.canvasPos + ImVec2(0.0, (ctx.canvasSize.y / 10.f) * (i + 1)),
+            ctx.canvasPos + ImVec2(ctx.canvasSize.x, (ctx.canvasSize.y / 10.f) * (i + 1)),
             color,
             thickness
         );
@@ -315,9 +320,9 @@ void BaseOverlay::DrawScriptLabel(const OverlayDrawingCtx& ctx) noexcept
     auto& style = ImGui::GetStyle();
     auto& title = ctx.script->Title;
     auto textSize = ImGui::CalcTextSize(title.c_str());
-    ctx.draw_list->AddText(
-        ctx.canvas_pos + ctx.canvas_size - style.FramePadding - textSize,
-        ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]),
+    ctx.drawList->AddText(
+        ctx.canvasPos + ctx.canvasSize - style.FramePadding - textSize,
+        ImGui::GetColorU32(ImGuiCol_Text),
         title.c_str()
     );
 }

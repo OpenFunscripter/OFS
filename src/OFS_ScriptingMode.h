@@ -19,30 +19,30 @@ enum ScriptingModeEnum : int32_t {
 	COUNT
 };
 
-class ScripingModeBaseImpl 
+class ScriptingModeBase 
 {
 protected:
 	Funscript& ctx() noexcept;
 public:
-	ScripingModeBaseImpl() noexcept;
-	virtual ~ScripingModeBaseImpl() noexcept {}
+	ScriptingModeBase() noexcept;
+	virtual ~ScriptingModeBase() noexcept {}
 	virtual void DrawModeSettings() noexcept = 0;
-	virtual void addEditAction(FunscriptAction action) noexcept;
+	virtual void AddEditAction(FunscriptAction action) noexcept;
 
-	virtual void undo() noexcept {};
-	virtual void redo() noexcept {};
+	virtual void Undo() noexcept {};
+	virtual void Redo() noexcept {};
 
-	virtual void finish() noexcept {}; // called when the mode changes
-	virtual void update() noexcept {}; // called everyframe
+	virtual void Update() noexcept {}; // called everyframe
+	virtual void Finish() noexcept {}; // called when the mode changes
 };
 
-class DefaultModeImpl : public ScripingModeBaseImpl
+class DefaultMode : public ScriptingModeBase
 {
 public:
 	virtual void DrawModeSettings() noexcept override {}
 };
 
-class DynamicInjectionImpl : public ScripingModeBaseImpl
+class DynamicInjectionMode : public ScriptingModeBase
 {
 protected:
 	static constexpr float MaxSpeed = 500.f;
@@ -52,10 +52,10 @@ protected:
 	int topBottomDirection = 1; // 1 for top and -1 for bottom injection
 public:
 	virtual void DrawModeSettings() noexcept override;
-	virtual void addEditAction(FunscriptAction action) noexcept override;
+	virtual void AddEditAction(FunscriptAction action) noexcept override;
 };
 
-class AlternatingImpl : public ScripingModeBaseImpl
+class AlternatingMode : public ScriptingModeBase
 {
 	int32_t fixedBottom = 0;
 	int32_t fixedTop = 100;
@@ -64,13 +64,13 @@ class AlternatingImpl : public ScripingModeBaseImpl
 	bool nextPosition = false;
 public:
 	virtual void DrawModeSettings() noexcept override;
-	virtual void addEditAction(FunscriptAction action) noexcept override;
+	virtual void AddEditAction(FunscriptAction action) noexcept override;
 
-	virtual void undo() noexcept override;
-	virtual void redo() noexcept override;
+	virtual void Undo() noexcept override;
+	virtual void Redo() noexcept override;
 };
 
-class RecordingImpl : public ScripingModeBaseImpl
+class RecordingMode : public ScriptingModeBase
 {
 private:
 	float rightX = 0.f, rightY = 0.f;
@@ -99,42 +99,53 @@ private:
 	void twoAxisRecording() noexcept;
 public:
 	// Attention: don't change order
-	enum RecordingMode : int32_t {
+	enum RecordingType : int32_t {
 		Mouse,
 		Controller,
 	};
-	RecordingMode activeMode = RecordingMode::Mouse;
-	RecordingImpl() noexcept;
-	~RecordingImpl() noexcept;
+	RecordingType activeType = RecordingType::Mouse;
+	RecordingMode() noexcept;
+	~RecordingMode() noexcept;
 
 	void ControllerAxisMotion(SDL_Event& ev) noexcept;
-	void setRecordingMode(RecordingMode mode) noexcept { activeMode = mode; }
+	void setRecordingMode(RecordingType type) noexcept { activeType = type; }
 	virtual void DrawModeSettings() noexcept override;
-	virtual void update() noexcept override;
-	virtual void finish() noexcept override;
+	virtual void Update() noexcept override;
+	virtual void Finish() noexcept override;
 };
 
 class ScriptingMode {
-	std::array<std::unique_ptr<ScripingModeBaseImpl>, ScriptingModeEnum::COUNT> modes;
-	ScripingModeBaseImpl* impl = nullptr;
-	std::unique_ptr<BaseOverlay> overlay;
-	
+private:
 	ScriptingModeEnum activeMode;
 	ScriptingOverlayModes activeOverlay;
+
+	std::array<std::unique_ptr<ScriptingModeBase>, ScriptingModeEnum::COUNT> modes;
+	std::unique_ptr<BaseOverlay> overlayImpl = nullptr;
 public:
-	inline ScriptingModeEnum mode() const noexcept { return activeMode; }
-	inline ScripingModeBaseImpl& Impl() noexcept { return *impl; }
+	inline ScriptingModeEnum ActiveMode() const noexcept { return activeMode; }
+	inline std::unique_ptr<BaseOverlay>& Overlay() noexcept { return overlayImpl; }
+	inline std::unique_ptr<ScriptingModeBase>& Mode() noexcept { 
+		FUN_ASSERT(activeMode >= ScriptingModeEnum::DEFAULT_MODE && activeMode < ScriptingModeEnum::COUNT, "invalid mode");
+		return modes[static_cast<int>(activeMode)]; 
+	}
 
 	static constexpr const char* WindowId = "###SCRIPTING_MODE";
-	void setup();
+	void Init() noexcept;
 	void DrawScriptingMode(bool* open) noexcept;
-	void setMode(ScriptingModeEnum mode) noexcept;
-	void setOverlay(ScriptingOverlayModes mode) noexcept;
+	void DrawOverlaySettings() noexcept;
+
+	void SetMode(ScriptingModeEnum mode) noexcept;
+	void SetOverlay(ScriptingOverlayModes mode) noexcept;
 	
-	void undo() noexcept;
-	void redo() noexcept;
-	void addEditAction(FunscriptAction action) noexcept;
+	void Undo() noexcept;
+	void Redo() noexcept;
+	void AddEditAction(FunscriptAction action) noexcept;
 	void NextFrame() noexcept;
 	void PreviousFrame() noexcept;
-	void update() noexcept;
+
+	float LogicalFrameTime() noexcept; // may not be the actual frame time
+	float SteppingIntervalForward(float fromTime) noexcept;
+	float SteppingIntervalBackward(float fromTime) noexcept;
+
+	void Update() noexcept;
 };

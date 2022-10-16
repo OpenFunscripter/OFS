@@ -4,8 +4,8 @@
 void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept
 {
     auto app = OpenFunscripter::ptr;
-    auto frameTime = enableFramerateOverride ? (1.f / framerateOverride) : app->player->FrameTime();
-
+    float fps = enableFpsOverride ? fpsOverride : app->player->Fps();
+    float frameTime = enableFpsOverride ? (1.f / fpsOverride) : app->scripting->LogicalFrameTime();
     float visibleFrames = ctx.visibleTime / frameTime;
     constexpr float maxVisibleFrames = 400.f;
    
@@ -15,9 +15,9 @@ void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
         const int lineCount = visibleFrames + 2;
         int alpha = 255 * (1.f - (visibleFrames / maxVisibleFrames));
         for (int i = 0; i < lineCount; i++) {
-            ctx.draw_list->AddLine(
-                ctx.canvas_pos + ImVec2(((offset + (i * frameTime)) / ctx.visibleTime) * ctx.canvas_size.x, 0.f),
-                ctx.canvas_pos + ImVec2(((offset + (i * frameTime)) / ctx.visibleTime) * ctx.canvas_size.x, ctx.canvas_size.y),
+            ctx.drawList->AddLine(
+                ctx.canvasPos + ImVec2(((offset + (i * frameTime)) / ctx.visibleTime) * ctx.canvasSize.x, 0.f),
+                ctx.canvasPos + ImVec2(((offset + (i * frameTime)) / ctx.visibleTime) * ctx.canvasSize.x, ctx.canvasSize.y),
                 IM_COL32(80, 80, 80, alpha),
                 1.f
             );
@@ -26,16 +26,16 @@ void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
 
     // time dividers
     constexpr float maxVisibleTimeDividers = 150.f;
-    const float timeIntervalMs = std::round(app->player->Fps() * 0.1f) * frameTime;
+    const float timeIntervalMs = std::round(fps * 0.1f) * frameTime;
     const float visibleTimeIntervals = ctx.visibleTime / timeIntervalMs;
     if (visibleTimeIntervals <= (maxVisibleTimeDividers * 0.8f)) {
         float offset = -std::fmod(ctx.offsetTime, timeIntervalMs);
         const int lineCount = visibleTimeIntervals + 2;
         int alpha = 255 * (1.f - (visibleTimeIntervals / maxVisibleTimeDividers));
         for (int i = 0; i < lineCount; i++) {
-            ctx.draw_list->AddLine(
-                ctx.canvas_pos + ImVec2(((offset + (i * timeIntervalMs)) / ctx.visibleTime) * ctx.canvas_size.x, 0.f),
-                ctx.canvas_pos + ImVec2(((offset + (i * timeIntervalMs)) / ctx.visibleTime) * ctx.canvas_size.x, ctx.canvas_size.y),
+            ctx.drawList->AddLine(
+                ctx.canvasPos + ImVec2(((offset + (i * timeIntervalMs)) / ctx.visibleTime) * ctx.canvasSize.x, 0.f),
+                ctx.canvasPos + ImVec2(((offset + (i * timeIntervalMs)) / ctx.visibleTime) * ctx.canvasSize.x, ctx.canvasSize.y),
                 IM_COL32(80, 80, 80, alpha),
                 3.f
             );
@@ -50,66 +50,66 @@ void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
     // out of sync line
     if (BaseOverlay::SyncLineEnable) {
         float realFrameTime = app->player->CurrentPlayerTime() - ctx.offsetTime;
-        ctx.draw_list->AddLine(
-            ctx.canvas_pos + ImVec2((realFrameTime / ctx.visibleTime) * ctx.canvas_size.x, 0.f),
-            ctx.canvas_pos + ImVec2((realFrameTime / ctx.visibleTime) * ctx.canvas_size.x, ctx.canvas_size.y),
+        ctx.drawList->AddLine(
+            ctx.canvasPos + ImVec2((realFrameTime / ctx.visibleTime) * ctx.canvasSize.x, 0.f),
+            ctx.canvasPos + ImVec2((realFrameTime / ctx.visibleTime) * ctx.canvasSize.x, ctx.canvasSize.y),
             IM_COL32(255, 0, 0, 255),
             1.f
         );
     }
 }
 
-void FrameOverlay::nextFrame() noexcept
+void FrameOverlay::nextFrame(float realFrameTime) noexcept
 {
     auto app = OpenFunscripter::ptr;
-    if(enableFramerateOverride)
-    {
-        app->player->SeekRelative(1.f / framerateOverride);
+    if(enableFpsOverride) {
+        app->player->SeekRelative(1.f / fpsOverride);
     }
-    else
-    {
+    else {
         app->player->NextFrame();
     }    
 }
 
-void FrameOverlay::previousFrame() noexcept
+void FrameOverlay::previousFrame(float realFrameTime) noexcept
 {
     auto app = OpenFunscripter::ptr;
-    if(enableFramerateOverride)
-    {
-        app->player->SeekRelative(-(1.f / framerateOverride));
+    if(enableFpsOverride) {
+        app->player->SeekRelative(-(1.f / fpsOverride));
     }
-    else
-    {
+    else {
         app->player->PreviousFrame();
     }
 }
 
-float FrameOverlay::steppingIntervalBackward(float fromTime) noexcept
+float FrameOverlay::steppingIntervalBackward(float realFrameTime, float fromTime) noexcept
 {
-    return enableFramerateOverride ? -(1.f / framerateOverride) : -timeline->frameTime;
+    return enableFpsOverride ? -(1.f / fpsOverride) : -realFrameTime;
 }
 
-float FrameOverlay::steppingIntervalForward(float fromTime) noexcept
+float FrameOverlay::steppingIntervalForward(float realFrameTime, float fromTime) noexcept
 {
-    return enableFramerateOverride ? (1.f / framerateOverride) : timeline->frameTime;
+    return enableFpsOverride ? (1.f / fpsOverride) : realFrameTime;
+}
+
+float FrameOverlay::logicalFrameTime(float realFrameTime) noexcept
+{
+    return enableFpsOverride ? (1.f / fpsOverride) : realFrameTime;
 }
 
 void FrameOverlay::DrawSettings() noexcept
 {
-    if(ImGui::Checkbox(TR_ID("FPS_OVERRIDE_ENABLE", Tr::FPS_OVERRIDE), &enableFramerateOverride))
+    if(ImGui::Checkbox(TR_ID("FPS_OVERRIDE_ENABLE", Tr::FPS_OVERRIDE), &enableFpsOverride))
     {
-        framerateOverride = OpenFunscripter::ptr->player->Fps();
+        fpsOverride = OpenFunscripter::ptr->player->Fps();
     }
-    if(enableFramerateOverride)
-    {
-        if(ImGui::InputFloat(TR_ID("FPS_OVERRIDE", Tr::FPS_OVERRIDE), &framerateOverride, 1.f, 10.f))
+    if(enableFpsOverride) {
+        if(ImGui::InputFloat(TR_ID("FPS_OVERRIDE", Tr::FPS_OVERRIDE), &fpsOverride, 1.f, 10.f))
         {
-            framerateOverride = Util::Clamp(framerateOverride, 1.f, 150.f);
+            fpsOverride = Util::Clamp(fpsOverride, 1.f, 150.f);
             // snap to new framerate
             auto app = OpenFunscripter::ptr;
-            float newPosition = std::round(app->player->CurrentTime() / (1.0 / (double)framerateOverride))
-                * (1.0 / (double)framerateOverride);
+            float newPosition = std::round(app->player->CurrentTime() / (1.0 / (double)fpsOverride))
+                * (1.0 / (double)fpsOverride);
             app->player->SetPositionExact(newPosition, true);
         }
     }
@@ -175,9 +175,9 @@ void TempoOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
         const int32_t thing = (int32_t)(1.f / ((beatMultiples[tempo.measureIndex] / 4.f)));
         const bool isWholeMeasure = beatIdx % thing == 0;
 
-        ctx.draw_list->AddLine(
-            ctx.canvas_pos + ImVec2(((offset + (i * beatTime)) / ctx.visibleTime) * ctx.canvas_size.x, 0.f),
-            ctx.canvas_pos + ImVec2(((offset + (i * beatTime)) / ctx.visibleTime) * ctx.canvas_size.x, ctx.canvas_size.y),
+        ctx.drawList->AddLine(
+            ctx.canvasPos + ImVec2(((offset + (i * beatTime)) / ctx.visibleTime) * ctx.canvasSize.x, 0.f),
+            ctx.canvasPos + ImVec2(((offset + (i * beatTime)) / ctx.visibleTime) * ctx.canvasSize.x, ctx.canvasSize.y),
             isWholeMeasure ? beatMultipleColor[tempo.measureIndex] : IM_COL32(255, 255, 255, 153),
             isWholeMeasure ? 5.f : 3.f
         );
@@ -185,8 +185,8 @@ void TempoOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
         if (isWholeMeasure) {
             stbsp_snprintf(tmp, sizeof(tmp), "%d", thing == 0 ? beatIdx : beatIdx / thing);
             const float textOffsetX = app->settings->data().default_font_size / 2.f;
-            ctx.draw_list->AddText(OFS_DynFontAtlas::DefaultFont2, app->settings->data().default_font_size * 2.f,
-                ctx.canvas_pos + ImVec2((((offset + (i * beatTime)) / ctx.visibleTime) * ctx.canvas_size.x) + textOffsetX, 0.f),
+            ctx.drawList->AddText(OFS_DynFontAtlas::DefaultFont2, app->settings->data().default_font_size * 2.f,
+                ctx.canvasPos + ImVec2((((offset + (i * beatTime)) / ctx.visibleTime) * ctx.canvasSize.x) + textOffsetX, 0.f),
                 ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]),
                 tmp
             );
@@ -227,7 +227,7 @@ static float GetPreviousPosition(float beatTime, float currentTime, float beatOf
     return newPosition;
 }
 
-void TempoOverlay::nextFrame() noexcept
+void TempoOverlay::nextFrame(float realFrameTime) noexcept
 {
     auto app = OpenFunscripter::ptr;
     auto& tempo = app->LoadedProject->Settings.tempoSettings;
@@ -239,7 +239,7 @@ void TempoOverlay::nextFrame() noexcept
     app->player->SetPositionExact(newPosition);
 }
 
-void TempoOverlay::previousFrame() noexcept
+void TempoOverlay::previousFrame(float realFrameTime) noexcept
 {
     auto app = OpenFunscripter::ptr;
     auto& tempo = app->LoadedProject->Settings.tempoSettings;
@@ -251,7 +251,7 @@ void TempoOverlay::previousFrame() noexcept
     app->player->SetPositionExact(newPosition);
 }
 
-float TempoOverlay::steppingIntervalForward(float fromTime) noexcept
+float TempoOverlay::steppingIntervalForward(float realFrameTime, float fromTime) noexcept
 {
     auto app = OpenFunscripter::ptr;
     auto& tempo = app->LoadedProject->Settings.tempoSettings;
@@ -259,7 +259,7 @@ float TempoOverlay::steppingIntervalForward(float fromTime) noexcept
     return GetNextPosition(beatTime, fromTime, tempo.beatOffsetSeconds) - fromTime;
 }
 
-float TempoOverlay::steppingIntervalBackward(float fromTime) noexcept
+float TempoOverlay::steppingIntervalBackward(float realFrameTime, float fromTime) noexcept
 {
     auto app = OpenFunscripter::ptr;
     auto& tempo = app->LoadedProject->Settings.tempoSettings;

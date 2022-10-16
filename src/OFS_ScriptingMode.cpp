@@ -10,31 +10,31 @@
 #include "OFS_ImGui.h"
 #include "OFS_Simulator3D.h"
 
-ScripingModeBaseImpl::ScripingModeBaseImpl() noexcept
+ScriptingModeBase::ScriptingModeBase() noexcept
 {
 }
 
-void ScripingModeBaseImpl::addEditAction(FunscriptAction action) noexcept
+void ScriptingModeBase::AddEditAction(FunscriptAction action) noexcept
 {
     auto app = OpenFunscripter::ptr;
-    ctx().AddEditAction(action, app->player->FrameTime());
+    ctx().AddEditAction(action, app->scripting->LogicalFrameTime());
 }
 
-inline Funscript& ScripingModeBaseImpl::ctx() noexcept
+inline Funscript& ScriptingModeBase::ctx() noexcept
 {
     auto app = OpenFunscripter::ptr;
     return *app->ActiveFunscript().get();
 }
 
-void ScriptingMode::setup()
+void ScriptingMode::Init() noexcept
 {
-    modes[ScriptingModeEnum::DEFAULT_MODE] = std::make_unique<DefaultModeImpl>();
-    modes[ScriptingModeEnum::ALTERNATING] = std::make_unique<AlternatingImpl>();
-    modes[ScriptingModeEnum::RECORDING] = std::make_unique<RecordingImpl>();
-    modes[ScriptingModeEnum::DYNAMIC_INJECTION] = std::make_unique<DynamicInjectionImpl>();
+    modes[ScriptingModeEnum::DEFAULT_MODE] = std::make_unique<DefaultMode>();
+    modes[ScriptingModeEnum::ALTERNATING] = std::make_unique<AlternatingMode>();
+    modes[ScriptingModeEnum::RECORDING] = std::make_unique<RecordingMode>();
+    modes[ScriptingModeEnum::DYNAMIC_INJECTION] = std::make_unique<DynamicInjectionMode>();
 
-    setMode(ScriptingModeEnum::DEFAULT_MODE);
-    setOverlay(ScriptingOverlayModes::FRAME);
+    SetMode(ScriptingModeEnum::DEFAULT_MODE);
+    SetOverlay(ScriptingOverlayModes::FRAME);
 }
 
 inline static const char* ScriptingModeToString(ScriptingModeEnum mode) noexcept
@@ -70,26 +70,22 @@ void ScriptingMode::DrawScriptingMode(bool* open) noexcept
 
     if(ImGui::BeginCombo("##Mode", ScriptingModeToString(activeMode), ImGuiComboFlags_None))
     {
-        if(ImGui::Selectable(TR_ID("DEFAULT", Tr::DEFAULT_MODE), activeMode == ScriptingModeEnum::DEFAULT_MODE))
-        {
-            setMode(ScriptingModeEnum::DEFAULT_MODE);
+        if(ImGui::Selectable(TR_ID("DEFAULT", Tr::DEFAULT_MODE), activeMode == ScriptingModeEnum::DEFAULT_MODE)) {
+            SetMode(ScriptingModeEnum::DEFAULT_MODE);
         }
-        if(ImGui::Selectable(TR_ID("ALTERNATING", Tr::ALTERNATING_MODE), activeMode == ScriptingModeEnum::ALTERNATING))
-        {
-            setMode(ScriptingModeEnum::ALTERNATING);
+        if(ImGui::Selectable(TR_ID("ALTERNATING", Tr::ALTERNATING_MODE), activeMode == ScriptingModeEnum::ALTERNATING)) {
+            SetMode(ScriptingModeEnum::ALTERNATING);
         }
-        if(ImGui::Selectable(TR_ID("DYNAMIC_INJECTION", Tr::DYNAMIC_INJECTION_MODE), activeMode == ScriptingModeEnum::DYNAMIC_INJECTION))
-        {
-            setMode(ScriptingModeEnum::DYNAMIC_INJECTION);
+        if(ImGui::Selectable(TR_ID("DYNAMIC_INJECTION", Tr::DYNAMIC_INJECTION_MODE), activeMode == ScriptingModeEnum::DYNAMIC_INJECTION)) {
+            SetMode(ScriptingModeEnum::DYNAMIC_INJECTION);
         }
-        if(ImGui::Selectable(TR_ID("RECORDING", Tr::RECORDING_MODE), activeMode == ScriptingModeEnum::RECORDING))
-        {
-            setMode(ScriptingModeEnum::RECORDING);
+        if(ImGui::Selectable(TR_ID("RECORDING", Tr::RECORDING_MODE), activeMode == ScriptingModeEnum::RECORDING)) {
+            SetMode(ScriptingModeEnum::RECORDING);
         }
         ImGui::EndCombo();
     }
     OFS::Tooltip(TR(SCRIPTING_MODE));
-    impl->DrawModeSettings();
+    Mode()->DrawModeSettings();
 
     ImGui::Spacing();
     ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal);
@@ -97,23 +93,20 @@ void ScriptingMode::DrawScriptingMode(bool* open) noexcept
 
     if(ImGui::BeginCombo("##OverlayMode", OverlayModeToString(activeOverlay), ImGuiComboFlags_None))
     {
-        if(ImGui::Selectable(TR_ID("FRAME_OVERLAY", Tr::FRAME_OVERLAY), activeOverlay == ScriptingOverlayModes::FRAME))
-        {
-            setOverlay(ScriptingOverlayModes::FRAME);
+        if(ImGui::Selectable(TR_ID("FRAME_OVERLAY", Tr::FRAME_OVERLAY), activeOverlay == ScriptingOverlayModes::FRAME)) {
+            SetOverlay(ScriptingOverlayModes::FRAME);
         }
-        if(ImGui::Selectable(TR_ID("TEMPO_OVERLAY", Tr::TEMPO_OVERLAY), activeOverlay == ScriptingOverlayModes::TEMPO))
-        {
-            setOverlay(ScriptingOverlayModes::TEMPO);
+        if(ImGui::Selectable(TR_ID("TEMPO_OVERLAY", Tr::TEMPO_OVERLAY), activeOverlay == ScriptingOverlayModes::TEMPO)) {
+            SetOverlay(ScriptingOverlayModes::TEMPO);
         }
-        if(ImGui::Selectable(TR_ID("EMPTY_OVERLAY", Tr::EMPTY_OVERLAY), activeOverlay == ScriptingOverlayModes::EMPTY))
-        {
-            setOverlay(ScriptingOverlayModes::EMPTY);
+        if(ImGui::Selectable(TR_ID("EMPTY_OVERLAY", Tr::EMPTY_OVERLAY), activeOverlay == ScriptingOverlayModes::EMPTY)) {
+            SetOverlay(ScriptingOverlayModes::EMPTY);
         }
         ImGui::EndCombo();
     }
 
     OFS::Tooltip(TR(SCRIPTING_OVERLAY));
-    app->scriptTimeline.overlay->DrawSettings();
+    DrawOverlaySettings();
     ImGui::PopItemWidth();
 
     ImGui::Spacing();
@@ -131,19 +124,23 @@ void ScriptingMode::DrawScriptingMode(bool* open) noexcept
 	ImGui::End();
 }
 
-void ScriptingMode::setMode(ScriptingModeEnum mode) noexcept
+void ScriptingMode::DrawOverlaySettings() noexcept
 {
-    if (impl) { impl->finish(); }
+    overlayImpl->DrawSettings();
+}
+
+void ScriptingMode::SetMode(ScriptingModeEnum mode) noexcept
+{
+    Mode()->Finish();
     if (mode >= ScriptingModeEnum::DEFAULT_MODE && mode < ScriptingModeEnum::COUNT) {
         activeMode = mode;
     }
     else {
         activeMode = ScriptingModeEnum::DEFAULT_MODE;
     }
-    impl = modes[activeMode].get();
 }
 
-void ScriptingMode::setOverlay(ScriptingOverlayModes mode) noexcept
+void ScriptingMode::SetOverlay(ScriptingOverlayModes mode) noexcept
 {
     activeOverlay = mode;
     auto app = OpenFunscripter::ptr;
@@ -151,60 +148,82 @@ void ScriptingMode::setOverlay(ScriptingOverlayModes mode) noexcept
     switch (mode)
     {
     case ScriptingOverlayModes::FRAME:
-        app->scriptTimeline.overlay = std::make_unique<FrameOverlay>(timeline);
+        overlayImpl = std::make_unique<FrameOverlay>(timeline);
         break;
     case ScriptingOverlayModes::TEMPO:
-        app->scriptTimeline.overlay = std::make_unique<TempoOverlay>(timeline);
+        overlayImpl = std::make_unique<TempoOverlay>(timeline);
         break;
     case ScriptingOverlayModes::EMPTY:
-        app->scriptTimeline.overlay = std::make_unique<EmptyOverlay>(timeline);
+        overlayImpl = std::make_unique<EmptyOverlay>(timeline);
         break;
     default:
         break;
     }
 }
 
-void ScriptingMode::undo() noexcept
+void ScriptingMode::Undo() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    impl->undo();
+    Mode()->Undo();
 }
 
-void ScriptingMode::redo() noexcept
+void ScriptingMode::Redo() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    impl->redo();
+    Mode()->Redo();
 }
 
-void ScriptingMode::addEditAction(FunscriptAction action) noexcept
+void ScriptingMode::AddEditAction(FunscriptAction action) noexcept
 {
     auto app = OpenFunscripter::ptr;
     if (!app->player->IsPaused()) {
         // apply offset
         action.atS += app->settings->data().action_insert_delay_ms / 1000.f;
     }
-	impl->addEditAction(action);
+	Mode()->AddEditAction(action);
 }
 
 void ScriptingMode::NextFrame() noexcept
 {
-    OpenFunscripter::ptr->scriptTimeline.overlay->nextFrame();
+    float frameTime = LogicalFrameTime();
+    overlayImpl->nextFrame(frameTime);
 }
 
 void ScriptingMode::PreviousFrame() noexcept
 {
-    OpenFunscripter::ptr->scriptTimeline.overlay->previousFrame();
+    float frameTime = LogicalFrameTime();
+    overlayImpl->previousFrame(frameTime);
 }
 
-void ScriptingMode::update() noexcept
+float ScriptingMode::SteppingIntervalForward(float fromTime) noexcept
+{
+    float frameTime = LogicalFrameTime();
+    return overlayImpl->steppingIntervalForward(frameTime, fromTime);
+}
+
+float ScriptingMode::SteppingIntervalBackward(float fromTime) noexcept
+{
+
+    float frameTime = LogicalFrameTime();
+    return overlayImpl->steppingIntervalBackward(frameTime, fromTime);
+}
+
+float ScriptingMode::LogicalFrameTime() noexcept
+{
+    auto app = OpenFunscripter::ptr;
+    float realFrameTime = app->player->FrameTime();
+    return overlayImpl->logicalFrameTime(realFrameTime);
+}
+
+void ScriptingMode::Update() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    impl->update();
-    OpenFunscripter::ptr->scriptTimeline.overlay->update();
+    Mode()->Update();
+    overlayImpl->update();
 }
 
 // dynamic top injection
-void DynamicInjectionImpl::DrawModeSettings() noexcept
+void DynamicInjectionMode::DrawModeSettings() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     ImGui::SliderFloat("##Target speed (units/s)", &targetSpeed, MinSpeed, MaxSpeed, "%.3f", ImGuiSliderFlags_AlwaysClamp);
@@ -227,7 +246,7 @@ void DynamicInjectionImpl::DrawModeSettings() noexcept
 }
 
 // dynamic injection
-void DynamicInjectionImpl::addEditAction(FunscriptAction action) noexcept
+void DynamicInjectionMode::AddEditAction(FunscriptAction action) noexcept
 {
     auto previous = ctx().GetPreviousActionBehind(action.atS);
     if (previous != nullptr) {
@@ -235,13 +254,13 @@ void DynamicInjectionImpl::addEditAction(FunscriptAction action) noexcept
         auto inject_duration = injectAt - previous->atS;
 
         int32_t injectPos = Util::Clamp<int32_t>(previous->pos + (topBottomDirection * inject_duration * targetSpeed), 0, 100);
-        ScripingModeBaseImpl::addEditAction(FunscriptAction(injectAt, injectPos));
+        ScriptingModeBase::AddEditAction(FunscriptAction(injectAt, injectPos));
     }
-    ScripingModeBaseImpl::addEditAction(action);
+    ScriptingModeBase::AddEditAction(action);
 }
 
 // alternating
-void AlternatingImpl::DrawModeSettings() noexcept
+void AlternatingMode::DrawModeSettings() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
@@ -292,7 +311,7 @@ void AlternatingImpl::DrawModeSettings() noexcept
     }
 }
 
-void AlternatingImpl::addEditAction(FunscriptAction action) noexcept
+void AlternatingMode::AddEditAction(FunscriptAction action) noexcept
 {
     if (contextSensitive) {
         auto behind = ctx().GetPreviousActionBehind(action.atS - 0.001f);
@@ -313,23 +332,23 @@ void AlternatingImpl::addEditAction(FunscriptAction action) noexcept
             action.pos = nextPosition ? 100 - action.pos : action.pos;
         }
     }
-    ScripingModeBaseImpl::addEditAction(action);
+    ScriptingModeBase::AddEditAction(action);
     if (!contextSensitive) {
         nextPosition = !nextPosition;
     }
 }
 
-void AlternatingImpl::undo() noexcept
+void AlternatingMode::Undo() noexcept
 {
     nextPosition = !nextPosition;
 }
 
-void AlternatingImpl::redo() noexcept
+void AlternatingMode::Redo() noexcept
 {
     nextPosition = !nextPosition;
 }
 
-inline void RecordingImpl::singleAxisRecording() noexcept
+inline void RecordingMode::singleAxisRecording() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
@@ -337,7 +356,7 @@ inline void RecordingImpl::singleAxisRecording() noexcept
     app->simulator.positionOverride = currentPosY;
 }
 
-inline void RecordingImpl::twoAxisRecording() noexcept
+inline void RecordingMode::twoAxisRecording() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
@@ -351,22 +370,22 @@ inline void RecordingImpl::twoAxisRecording() noexcept
 }
 
 // recording
-RecordingImpl::RecordingImpl() noexcept
+RecordingMode::RecordingMode() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    app->events->Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerAxisMotion)); 
+    app->events->Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &RecordingMode::ControllerAxisMotion)); 
 }
 
-RecordingImpl::~RecordingImpl() noexcept
+RecordingMode::~RecordingMode() noexcept
 {
     auto app = OpenFunscripter::ptr;
     app->events->Unsubscribe(SDL_CONTROLLERAXISMOTION, this);
 }
 
-void RecordingImpl::ControllerAxisMotion(SDL_Event& ev) noexcept
+void RecordingMode::ControllerAxisMotion(SDL_Event& ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if (activeMode != RecordingMode::Controller) return;
+    if (activeType != RecordingType::Controller) return;
     auto& axis = ev.caxis;
     const float range = (float)std::numeric_limits<int16_t>::max() - ControllerDeadzone;
 
@@ -417,36 +436,34 @@ void RecordingImpl::ControllerAxisMotion(SDL_Event& ev) noexcept
     }
 }
 
-inline static const char* RecordingModeToString(RecordingImpl::RecordingMode mode) noexcept
+inline static const char* RecordingModeToString(RecordingMode::RecordingType mode) noexcept
 {
     switch(mode)
     {
-        case RecordingImpl::RecordingMode::Controller: return TR(CONTROLLER);
-        case RecordingImpl::RecordingMode::Mouse: return TR(MOUSE);
+        case RecordingMode::RecordingType::Controller: return TR(CONTROLLER);
+        case RecordingMode::RecordingType::Mouse: return TR(MOUSE);
     }
     return "";
 }
 
-void RecordingImpl::DrawModeSettings() noexcept
+void RecordingMode::DrawModeSettings() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
 
-    if(ImGui::BeginCombo(TR_ID("MODE", Tr::MODE), RecordingModeToString(activeMode), ImGuiComboFlags_None))
+    if(ImGui::BeginCombo(TR_ID("MODE", Tr::MODE), RecordingModeToString(activeType), ImGuiComboFlags_None))
     {
-        if(ImGui::Selectable(TR(MOUSE), activeMode == RecordingMode::Mouse))
-        {
-            activeMode = RecordingMode::Mouse;
+        if(ImGui::Selectable(TR(MOUSE), activeType == RecordingType::Mouse)) {
+            activeType = RecordingType::Mouse;
         }
-        if(ImGui::Selectable(TR(CONTROLLER), activeMode == RecordingMode::Controller))
-        {
-            activeMode = RecordingMode::Controller;
+        if(ImGui::Selectable(TR(CONTROLLER), activeType == RecordingType::Controller)) {
+            activeType = RecordingType::Controller;
         }
         ImGui::EndCombo();
     }
 
-    switch (activeMode) {
-        case RecordingMode::Controller:
+    switch (activeType) {
+        case RecordingType::Controller:
         {
             ImGui::TextUnformatted(TR(CONTROLLER_DEADZONE));
             ImGui::SliderInt(TR(DEADZONE), &ControllerDeadzone, 0, std::numeric_limits<int16_t>::max());
@@ -466,7 +483,7 @@ void RecordingImpl::DrawModeSettings() noexcept
             }
             break;
         }
-        case RecordingMode::Mouse:
+        case RecordingType::Mouse:
         {
             twoAxesMode = false;
             valueY = app->simulator.getMouseValue();
@@ -532,7 +549,7 @@ void RecordingImpl::DrawModeSettings() noexcept
     }   
 }
 
-void RecordingImpl::update() noexcept
+void RecordingMode::Update() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
@@ -542,7 +559,7 @@ void RecordingImpl::update() noexcept
     }
 }
 
-void RecordingImpl::finish() noexcept
+void RecordingMode::Finish() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     // this fixes a bug when the mode gets changed during a recording

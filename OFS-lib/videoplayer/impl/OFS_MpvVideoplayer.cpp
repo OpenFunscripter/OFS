@@ -62,7 +62,7 @@ struct MpvPlayerContext
     float* logicalPosition = nullptr;
 };
 
-#define CTX ((MpvPlayerContext*)ctx)
+#define CTX static_cast<MpvPlayerContext*>(ctx)
 
 static void OnMpvEvents(void* ctx) noexcept
 {
@@ -74,9 +74,9 @@ static void OnMpvRenderUpdate(void* ctx) noexcept
     SDL_AtomicIncRef(&CTX->renderUpdate);
 }
 
-inline static void notifyVideoLoaded(const char* path) noexcept
+inline static void notifyVideoLoaded(MpvPlayerContext* ctx) noexcept
 {
-    EventSystem::PushEvent(VideoEvents::VideoLoaded, (void*)path);
+    EventSystem::PushEvent(VideoEvents::VideoLoaded, (void*)&CTX->data.filePath);
 }
 
 inline static void notifyPaused(bool paused) noexcept
@@ -289,7 +289,7 @@ inline static void ProcessEvents(MpvPlayerContext* ctx) noexcept
                         break;
                     case MpvDuration:
                         ctx->data.duration = *(double*)prop->data;
-                        notifyVideoLoaded(ctx->data.filePath.c_str());
+                        notifyVideoLoaded(ctx);
                         break;
                     case MpvTotalFrames:
                         ctx->data.totalNumFrames = *(int64_t*)prop->data;
@@ -318,7 +318,7 @@ inline static void ProcessEvents(MpvPlayerContext* ctx) noexcept
                     }
                     case MpvFilePath:
                         ctx->data.filePath = *((const char**)(prop->data));
-                        notifyVideoLoaded(ctx->data.filePath.c_str());
+                        notifyVideoLoaded(ctx);
                         break;
                 }
                 continue;

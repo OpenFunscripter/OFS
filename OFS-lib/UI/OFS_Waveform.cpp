@@ -128,7 +128,7 @@ void OFS_WaveformLOD::Update(const OverlayDrawingCtx& ctx) noexcept
 
 	float visibleSampleCountF = endIndexF - startIndexF;
 
-	const float desiredSamples = ctx.canvas_size.x/3.f;
+	const float desiredSamples = ctx.canvasSize.x/3.f;
 	const float everyNth = SDL_ceilf(visibleSampleCountF / desiredSamples);
 
 	auto& lineBuf = WaveformLineBuffer;		
@@ -136,7 +136,7 @@ void OFS_WaveformLOD::Update(const OverlayDrawingCtx& ctx) noexcept
 		int32_t scrollBy = (startIndexF/everyNth) - lastMultiple;
 
 		if(lastVisibleDuration == ctx.visibleTime
-		&& lastCanvasX == ctx.canvas_size.x
+		&& lastCanvasX == ctx.canvasSize.x
 		&& scrollBy > 0 && scrollBy < lineBuf.size()) {
 			OFS_PROFILE("WaveformScrolling");
 			std::memcpy(lineBuf.data(), lineBuf.data() + scrollBy, sizeof(float) * (lineBuf.size() - scrollBy));
@@ -177,7 +177,7 @@ void OFS_WaveformLOD::Update(const OverlayDrawingCtx& ctx) noexcept
 
 		
 		lastMultiple = SDL_floorf(startIndexF / everyNth);
-		lastCanvasX = ctx.canvas_size.x;
+		lastCanvasX = ctx.canvasSize.x;
 		lastVisibleDuration = ctx.visibleTime;
 		Upload();
 	}
