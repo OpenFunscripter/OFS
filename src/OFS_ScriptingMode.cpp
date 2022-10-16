@@ -10,7 +10,7 @@
 #include "OFS_ImGui.h"
 #include "OFS_Simulator3D.h"
 
-ScripingModeBaseImpl::ScripingModeBaseImpl()
+ScripingModeBaseImpl::ScripingModeBaseImpl() noexcept
 {
 }
 
@@ -20,8 +20,10 @@ void ScripingModeBaseImpl::addEditAction(FunscriptAction action) noexcept
     ctx().AddEditAction(action, app->player->FrameTime());
 }
 
-inline Funscript& ScripingModeBaseImpl::ctx() {
-    return OpenFunscripter::script();
+inline Funscript& ScripingModeBaseImpl::ctx() noexcept
+{
+    auto app = OpenFunscripter::ptr;
+    return *app->ActiveFunscript().get();
 }
 
 void ScriptingMode::setup()
@@ -349,19 +351,19 @@ inline void RecordingImpl::twoAxisRecording() noexcept
 }
 
 // recording
-RecordingImpl::RecordingImpl()
+RecordingImpl::RecordingImpl() noexcept
 {
     auto app = OpenFunscripter::ptr;
     app->events->Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &RecordingImpl::ControllerAxisMotion)); 
 }
 
-RecordingImpl::~RecordingImpl()
+RecordingImpl::~RecordingImpl() noexcept
 {
     auto app = OpenFunscripter::ptr;
     app->events->Unsubscribe(SDL_CONTROLLERAXISMOTION, this);
 }
 
-void RecordingImpl::ControllerAxisMotion(SDL_Event& ev)
+void RecordingImpl::ControllerAxisMotion(SDL_Event& ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     if (activeMode != RecordingMode::Controller) return;

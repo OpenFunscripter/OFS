@@ -83,7 +83,8 @@ void SpecialFunctionsWindow::ShowFunctionsWindow(bool* open) noexcept
 
 inline Funscript& FunctionBase::ctx() noexcept
 {
-	return OpenFunscripter::script();
+    auto app = OpenFunscripter::ptr;
+	return *app->ActiveFunscript().get();
 }
 
 // range extender
@@ -102,7 +103,8 @@ FunctionRangeExtender::~FunctionRangeExtender() noexcept
 void FunctionRangeExtender::SelectionChanged(SDL_Event& ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if (!OpenFunscripter::script().Selection().empty()) {
+    auto app = OpenFunscripter::ptr;
+    if (!app->ActiveFunscript()->Selection().empty()) {
         rangeExtend = 0;
         createUndoState = true;
     }
@@ -112,7 +114,7 @@ void FunctionRangeExtender::DrawUI() noexcept
 {
     auto app = OpenFunscripter::ptr;
     auto& undoSystem = app->ActiveFunscript()->undoSystem;
-    if (app->script().SelectionSize() > 4 || (undoSystem->MatchUndoTop(StateType::RANGE_EXTEND))) {
+    if (app->ActiveFunscript()->SelectionSize() > 4 || (undoSystem->MatchUndoTop(StateType::RANGE_EXTEND))) {
         if (ImGui::SliderInt(TR(RANGE), &rangeExtend, -50, 100)) {
             rangeExtend = Util::Clamp<int32_t>(rangeExtend, -50, 100);
             if (createUndoState || 
@@ -147,7 +149,8 @@ RamerDouglasPeucker::~RamerDouglasPeucker() noexcept
 void RamerDouglasPeucker::SelectionChanged(SDL_Event& ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if (!OpenFunscripter::script().Selection().empty()) {
+    auto app = OpenFunscripter::ptr;
+    if (!app->ActiveFunscript()->Selection().empty()) {
         epsilon = 0.f;
         createUndoState = true;
     }
@@ -235,11 +238,11 @@ void RamerDouglasPeucker::DrawUI() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
-    if (app->script().SelectionSize() > 4 || (app->script().undoSystem->MatchUndoTop(StateType::SIMPLIFY))) {
+    if (app->ActiveFunscript()->SelectionSize() > 4 || (app->ActiveFunscript()->undoSystem->MatchUndoTop(StateType::SIMPLIFY))) {
         if (ImGui::DragFloat(TR(EPSILON), &epsilon, 0.001f, 0.f, 0.f, "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
             epsilon = std::max(epsilon, 0.f);
             if (createUndoState ||
-                !app->script().undoSystem->MatchUndoTop(StateType::SIMPLIFY)) {
+                !app->ActiveFunscript()->undoSystem->MatchUndoTop(StateType::SIMPLIFY)) {
                 // calculate average distance in selection
                 int count = 0;
                 for (int i = 0, size = ctx().Selection().size(); i < size - 1; ++i) {

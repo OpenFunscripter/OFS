@@ -186,7 +186,6 @@ public:
 	void UpdateNewActiveScript(int32_t activeIndex) noexcept;
 	inline int32_t ActiveFunscriptIndex() const { return ActiveFunscriptIdx; }
 
-	static inline Funscript& script() noexcept { return *OpenFunscripter::ptr->ActiveFunscript(); }
 	static void SetCursorType(ImGuiMouseCursor id) noexcept;
 
 	inline const FunscriptArray& FunscriptClipboard() const { return CopiedSelection; }

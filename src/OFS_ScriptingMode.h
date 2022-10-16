@@ -22,10 +22,10 @@ enum ScriptingModeEnum : int32_t {
 class ScripingModeBaseImpl 
 {
 protected:
-	Funscript& ctx();
+	Funscript& ctx() noexcept;
 public:
-	ScripingModeBaseImpl();
-	virtual ~ScripingModeBaseImpl() {}
+	ScripingModeBaseImpl() noexcept;
+	virtual ~ScripingModeBaseImpl() noexcept {}
 	virtual void DrawModeSettings() noexcept = 0;
 	virtual void addEditAction(FunscriptAction action) noexcept;
 
@@ -104,25 +104,26 @@ public:
 		Controller,
 	};
 	RecordingMode activeMode = RecordingMode::Mouse;
-	RecordingImpl();
-	~RecordingImpl();
+	RecordingImpl() noexcept;
+	~RecordingImpl() noexcept;
 
-	void ControllerAxisMotion(SDL_Event& ev);
+	void ControllerAxisMotion(SDL_Event& ev) noexcept;
 	void setRecordingMode(RecordingMode mode) noexcept { activeMode = mode; }
 	virtual void DrawModeSettings() noexcept override;
 	virtual void update() noexcept override;
 	virtual void finish() noexcept override;
 };
 
-class OpenFunscripter;
 class ScriptingMode {
 	std::array<std::unique_ptr<ScripingModeBaseImpl>, ScriptingModeEnum::COUNT> modes;
 	ScripingModeBaseImpl* impl = nullptr;
+	std::unique_ptr<BaseOverlay> overlay;
+	
 	ScriptingModeEnum activeMode;
 	ScriptingOverlayModes activeOverlay;
 public:
-	inline ScriptingModeEnum mode() const { return activeMode; }
-	inline ScripingModeBaseImpl& Impl() { return *impl; }
+	inline ScriptingModeEnum mode() const noexcept { return activeMode; }
+	inline ScripingModeBaseImpl& Impl() noexcept { return *impl; }
 
 	static constexpr const char* WindowId = "###SCRIPTING_MODE";
 	void setup();
