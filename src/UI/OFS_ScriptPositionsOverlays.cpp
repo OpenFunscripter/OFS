@@ -83,12 +83,12 @@ void FrameOverlay::previousFrame(float realFrameTime) noexcept
 
 float FrameOverlay::steppingIntervalBackward(float realFrameTime, float fromTime) noexcept
 {
-    return enableFpsOverride ? -(1.f / fpsOverride) : -realFrameTime;
+    return -logicalFrameTime(realFrameTime);
 }
 
 float FrameOverlay::steppingIntervalForward(float realFrameTime, float fromTime) noexcept
 {
-    return enableFpsOverride ? (1.f / fpsOverride) : realFrameTime;
+    return logicalFrameTime(realFrameTime);
 }
 
 float FrameOverlay::logicalFrameTime(float realFrameTime) noexcept

@@ -185,26 +185,29 @@ void ScriptingMode::AddEditAction(FunscriptAction action) noexcept
 
 void ScriptingMode::NextFrame() noexcept
 {
-    float frameTime = LogicalFrameTime();
+    auto app = OpenFunscripter::ptr;
+    float frameTime = app->player->FrameTime();
     overlayImpl->nextFrame(frameTime);
 }
 
 void ScriptingMode::PreviousFrame() noexcept
 {
-    float frameTime = LogicalFrameTime();
+    auto app = OpenFunscripter::ptr;
+    float frameTime = app->player->FrameTime();
     overlayImpl->previousFrame(frameTime);
 }
 
 float ScriptingMode::SteppingIntervalForward(float fromTime) noexcept
 {
-    float frameTime = LogicalFrameTime();
+    auto app = OpenFunscripter::ptr;
+    float frameTime = app->player->FrameTime();
     return overlayImpl->steppingIntervalForward(frameTime, fromTime);
 }
 
 float ScriptingMode::SteppingIntervalBackward(float fromTime) noexcept
 {
-
-    float frameTime = LogicalFrameTime();
+    auto app = OpenFunscripter::ptr;
+    float frameTime = app->player->FrameTime();
     return overlayImpl->steppingIntervalBackward(frameTime, fromTime);
 }
 
