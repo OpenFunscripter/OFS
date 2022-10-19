@@ -32,6 +32,8 @@ public:
 
 	struct ProjSettings
 	{
+		// this timer tracks how long the project has been 'actively' worked on in seconds
+		float activeTimer = 0.f;
 		// when this is true
 		// the user gets nudged to enter metadata
 		bool NudgeMetadata = true;
@@ -45,6 +47,7 @@ public:
 					s.boolValue(o.NudgeMetadata);
 					FUN_ASSERT(o.Simulator, "Simulator not hooked up.");
 					s.object(*o.Simulator);
+					s.value4b(o.activeTimer);
 				});
 		}
 	} ProjectSettings;
