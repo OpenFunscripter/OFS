@@ -80,10 +80,11 @@ public:
 	void ExportFunscripts() noexcept;
 
 	void ExportClips(const std::string& outputDirectory) noexcept;
-
 	bool HasUnsavedEdits() noexcept;
 
 	void ShowProjectWindow(bool* open) noexcept;
+
+	void Update(float delta, bool idleMode) noexcept;
 
 	template<typename S>
 	void serialize(S& s)

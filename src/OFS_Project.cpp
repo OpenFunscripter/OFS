@@ -539,3 +539,10 @@ void OFS_Project::ShowProjectWindow(bool* open) noexcept
 		ImGui::EndPopup();
 	}
 }
+
+void OFS_Project::Update(float delta, bool idleMode) noexcept
+{
+	if(!idleMode) {
+		ProjectSettings.activeTimer += delta;
+	}
+}

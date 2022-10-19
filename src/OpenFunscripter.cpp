@@ -1689,7 +1689,7 @@ void OpenFunscripter::PlayPauseChange(SDL_Event& ev) noexcept
 
 void OpenFunscripter::update() noexcept {
     OFS_PROFILE(__FUNCTION__);
-    float& delta = ImGui::GetIO().DeltaTime;
+    const float delta = ImGui::GetIO().DeltaTime;
     extensions->Update(delta);
     player->Update(delta);
     ActiveFunscript()->update();
@@ -1697,6 +1697,10 @@ void OpenFunscripter::update() noexcept {
     scripting->Update();
     scriptTimeline.Update();
     
+    if(LoadedProject->Valid) {
+        LoadedProject->Update(delta, IdleMode);
+    }
+
     if (Status & OFS_Status::OFS_AutoBackup) {
         autoBackup();
     }
@@ -1987,11 +1991,6 @@ int OpenFunscripter::run() noexcept
         uint64_t FrameStart = SDL_GetPerformanceCounter();
         step();
         uint64_t FrameEnd = SDL_GetPerformanceCounter();
-
-        if(LoadedProject->Valid && !IdleMode) {
-            LoadedProject->ProjectSettings.activeTimer += 
-                (FrameEnd - FrameStart) / (float)PerfFreq;
-        }
         
         float frameLimit = IdleMode ? 10.f : (float)settings->data().framerateLimit;
         const float minFrameTime = (float)PerfFreq / frameLimit;
