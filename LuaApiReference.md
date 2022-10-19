@@ -1,7 +1,8 @@
-# Extension API Reference
 
-**THIS IS NOW OLD VERSION AND ONLY APPLIES TO VERSION 1.4.4**
-**A NEW DOCUMENTATION CAN BE FOUND HERE https://github.com/OpenFunscripter/API**
+# **THIS IS NOW DEPRECATED AND ONLY APPLIES TO VERSION 1.4.4**  
+**A new documentation can be found here https://github.com/OpenFunscripter/API**
+
+# Extension API Reference
 
 Here I'm trying to document all the API calls of the new Extension API.
 
