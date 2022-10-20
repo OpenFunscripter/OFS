@@ -58,12 +58,10 @@ class OFS_LuaExtensions
         void ScriptChanged(uint32_t scriptIdx) noexcept;
         
         void AddBinding(const std::string& extId, const std::string& uniqueId, const std::string& name) noexcept;
-
-        template<typename Archive>
-        void reflect(Archive& ar)
-        {
-            OFS_REFLECT(Extensions, ar);
-            OFS_REFLECT(DevMode, ar);
-            OFS_REFLECT(ShowLogs, ar);
-        }
 };
+
+REFL_TYPE(OFS_LuaExtensions)
+    REFL_FIELD(Extensions)
+    REFL_FIELD(DevMode)
+    REFL_FIELD(ShowLogs)
+REFL_END

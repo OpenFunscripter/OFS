@@ -70,12 +70,12 @@ void Simulator3D::reset() noexcept
     viewPos = glm::vec3(0.f, 0.f, 0.f);
     view = glm::translate(view, viewPos);
 
-    translation = glm::mat4(1.f);
-    translation = glm::translate(translation, glm::vec3(0.f, 0.f, -simDistance));
+    settings.Translation = glm::mat4(1.f);
+    settings.Translation = glm::translate(settings.Translation.Value, glm::vec3(0.f, 0.f, -simDistance));
 
     lightPos = glm::vec3(0.f, 0.f, 0.f);
 
-    Zoom = 3.f;
+    settings.Zoom = 3.f;
     ImGuizmo::SetOrthographic(true);
 }
 
@@ -84,14 +84,14 @@ void Simulator3D::load(const std::string& path) noexcept
     bool succ;
     nlohmann::json json = Util::LoadJson(path.c_str(), &succ);
     if (succ) {
-        OFS::serializer::load(this, &json);
+        OFS::Serializer::Deserialize(settings, json);
     }
 }
 
 void Simulator3D::save(const std::string& path) noexcept
 {
     nlohmann::json json;
-    OFS::serializer::save(this, &json);
+    OFS::Serializer::Serialize(settings, json);
     Util::WriteJson(json, path.c_str(), true);
 }
 
@@ -132,9 +132,11 @@ void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::ve
     const int32_t loadedScriptsCount = scripts.size();
     auto viewport = ImGui::GetMainViewport();
     
+    const auto& Zoom = settings.Zoom;
+
     float ratio = viewport->Size.x / viewport->Size.y;
     projection = glm::ortho(-Zoom*ratio, Zoom*ratio, -Zoom, Zoom, 0.1f, 100.f);
-    
+
     ImGui::Begin(TR_ID("SIMULATOR_3D", Tr::SIMULATOR_3D), open, ImGuiWindowFlags_None);
 
     if (Editing == IsEditing::No) {
@@ -200,7 +202,7 @@ void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::ve
                     glm::value_ptr(projection),
                     ImGuizmo::OPERATION::TRANSLATE,
                     ImGuizmo::MODE::WORLD,
-                    glm::value_ptr(translation), NULL, NULL)) {
+                    glm::value_ptr(settings.Translation.Value), NULL, NULL)) {
                     auto g = ImGui::GetCurrentContext();
                     auto window = ImGui::GetCurrentWindow();
                     g->HoveredWindow = window;
@@ -208,7 +210,7 @@ void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::ve
                 }
             }
 
-            ImGui::SliderFloat(TR(DISTANCE), &Zoom, 0.1f, MaxZoom);
+            ImGui::SliderFloat(TR(DISTANCE), &settings.Zoom, 0.1f, MaxZoom);
             ImGui::SliderAngle(TR(GLOBAL_YAW), &globalYaw, -180.f, 180.f);
             ImGui::SliderAngle(TR(GLOBAL_PITCH), &globalPitch, -90.f, 90.f);
 
@@ -323,9 +325,8 @@ void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::ve
     }
     ImGui::End();
 
-    // TODO: use more efficient way of doing getting this vector...
     {
-        glm::mat4 directionMtx = translation;
+        glm::mat4 directionMtx = settings.Translation;
 
         directionMtx = glm::rotate(directionMtx, globalYaw, glm::vec3(0.f, 1.f, 0.f));
         directionMtx = glm::rotate(directionMtx, globalPitch, glm::vec3(1.f, 0.f, 0.f));
@@ -344,7 +345,7 @@ void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::ve
         glm::quat orientation;
         glm::vec3 skew;
         glm::vec4 perspec;
-        glm::decompose(translation, scale, orientation, position, skew, perspec);
+        glm::decompose(settings.Translation.Value, scale, orientation, position, skew, perspec);
     }
     
     constexpr float antiZBufferFight = 0.005f;

@@ -11,7 +11,6 @@ class OFS_LuaExtension
 	private:
 		sol::state L;
 		std::unique_ptr<OFS_ExtensionAPI> api = nullptr;
-		bool Active = false;
     public:
 		static constexpr const char* MainFile = "main.lua";
 		static constexpr const char* BindingTable = "binding";
@@ -21,36 +20,18 @@ class OFS_LuaExtension
 		std::string NameId;
 		std::string Directory;
 		std::string Error;
-
+		bool Active = false;
 		bool WindowOpen = false;
 
-		inline bool IsActive() const noexcept { return Active; } 
 		inline bool HasError() const noexcept { return !Error.empty(); }
-
-		template<class Archive>
-		void reflect(Archive& ar)
-		{
-			OFS_REFLECT(Name, ar);
-			OFS_REFLECT(NameId, ar);
-			OFS_REFLECT(Directory, ar);
-			OFS_REFLECT(Active, ar);
-			OFS_REFLECT(WindowOpen, ar);
-			//Hash = Util::Hash(Directory.c_str(), Directory.size());
-		}
-
 		bool Load() noexcept;
 		
-		void AddError(const char* str) noexcept
-		{
+		void AddError(const char* str) noexcept {
 			LOG_ERROR(str);
 			if(!Error.empty()) Error += '\n';
 			Error += str;
 		}
-
-		void ClearError() noexcept
-		{
-			Error = std::string();
-		}
+		void ClearError() noexcept { Error = std::string(); }
 
 		void ShowWindow() noexcept;
 		void Update() noexcept;
@@ -60,3 +41,11 @@ class OFS_LuaExtension
 
 		void Execute(const std::string& function) noexcept;
 };
+
+REFL_TYPE(OFS_LuaExtension)
+	REFL_FIELD(Name)
+	REFL_FIELD(NameId)
+	REFL_FIELD(Directory)
+	REFL_FIELD(Active)
+	REFL_FIELD(WindowOpen)
+REFL_END

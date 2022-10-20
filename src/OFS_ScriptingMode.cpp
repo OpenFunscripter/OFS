@@ -112,14 +112,14 @@ void ScriptingMode::DrawScriptingMode(bool* open) noexcept
     ImGui::Spacing();
     ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal);
     ImGui::Spacing();
-    ImGui::DragInt(TR(OFFSET_MS), &app->settings->data().action_insert_delay_ms);
+    ImGui::DragInt(TR(OFFSET_MS), &app->settings->data().actionInsertDelayMs);
     OFS::Tooltip(TR(OFFSET_TOOLTIP));
     if (app->LoadedFunscripts().size() > 1) {
-        ImGui::Checkbox(TR(MIRROR_MODE), &app->settings->data().mirror_mode);
+        ImGui::Checkbox(TR(MIRROR_MODE), &app->settings->data().mirrorMode);
         OFS::Tooltip(TR(MIRROR_MODE_TOOLTIP));
     }
     else {
-        app->settings->data().mirror_mode = false;
+        app->settings->data().mirrorMode = false;
     }
 	ImGui::End();
 }
@@ -178,7 +178,7 @@ void ScriptingMode::AddEditAction(FunscriptAction action) noexcept
     auto app = OpenFunscripter::ptr;
     if (!app->player->IsPaused()) {
         // apply offset
-        action.atS += app->settings->data().action_insert_delay_ms / 1000.f;
+        action.atS += app->settings->data().actionInsertDelayMs / 1000.f;
     }
 	Mode()->AddEditAction(action);
 }

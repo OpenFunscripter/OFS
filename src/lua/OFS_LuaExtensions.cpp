@@ -40,7 +40,7 @@ OFS_LuaExtensions::~OFS_LuaExtensions() noexcept
 bool OFS_LuaExtensions::Init() noexcept
 {
 	for (auto& ext : Extensions) {
-		if (ext.IsActive()) ext.Load();
+		if (ext.Active) ext.Load();
 	}
 	return true;
 }
@@ -51,7 +51,7 @@ void OFS_LuaExtensions::load(const std::string& path) noexcept
 	bool suc;
 	auto json = Util::LoadJson(path, &suc);
 	if (suc) {
-		OFS::serializer::load(this, &json);
+		OFS::Serializer::Deserialize(*this, json);
 		removeNonExisting();		
 	}
 }
@@ -61,7 +61,7 @@ void OFS_LuaExtensions::HandleBinding(Binding* b) noexcept
 	auto it = Bindings.find(b->identifier);
 	if(it != Bindings.end()) {
 		for(auto& ext : Extensions) {
-			if(!ext.IsActive()) continue;
+			if(!ext.Active) continue;
 			if(ext.NameId == it->second.ExtensionId) {
 				ext.Execute(it->second.Name);
 				break;
@@ -72,9 +72,8 @@ void OFS_LuaExtensions::HandleBinding(Binding* b) noexcept
 
 void OFS_LuaExtensions::ScriptChanged(uint32_t scriptIdx) noexcept
 {
-	for(auto& ext : Extensions)
-	{
-		if(!ext.IsActive()) continue;
+	for(auto& ext : Extensions)	{
+		if(!ext.Active) continue;
 		ext.ScriptChanged(scriptIdx);
 	}
 }
@@ -82,7 +81,7 @@ void OFS_LuaExtensions::ScriptChanged(uint32_t scriptIdx) noexcept
 void OFS_LuaExtensions::save() noexcept
 {
 	nlohmann::json json;
-	OFS::serializer::save(this, &json);
+	OFS::Serializer::Serialize(*this, json);
 	Util::WriteJson(json, LastConfigPath, true);
 }
 
@@ -140,7 +139,7 @@ void OFS_LuaExtensions::ShowExtensions() noexcept
 void OFS_LuaExtensions::ReloadEnabledExtensions() noexcept
 {
     for(auto& ext : Extensions) {
-		if(ext.IsActive()) {
+		if(ext.Active) {
 			ext.Load();
 		}
 	}

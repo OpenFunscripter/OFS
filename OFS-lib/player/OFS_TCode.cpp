@@ -57,7 +57,7 @@ void TCodePlayer::loadSettings(const std::string& path) noexcept
     bool succ;
     auto json = Util::LoadJson(path, &succ);
     if (succ) {
-        OFS::serializer::load(this, &json["tcode_player"]);
+        OFS::Serializer::Deserialize(*this, json["tcode_player"]);
     }
     loadPath = path;
 }
@@ -65,7 +65,7 @@ void TCodePlayer::loadSettings(const std::string& path) noexcept
 void TCodePlayer::save() noexcept
 {
     nlohmann::json json;
-    OFS::serializer::save(this, &json["tcode_player"]);
+    OFS::Serializer::Serialize(*this, json["tcode_player"]);
     Util::WriteJson(json, loadPath, true);
 }
 
@@ -189,7 +189,7 @@ void TCodePlayer::DrawWindow(bool* open, float currentTime) noexcept
         if (!c.Enabled) continue;
         auto& p = prod.producers[i];
         ImGui::PushID(i);
-        if (OFS::BoundedSliderInt(c.Id, &c.NextTCodeValue, TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue, c.limits[0], c.limits[1], "%d", ImGuiSliderFlags_AlwaysClamp));
+        if (OFS::BoundedSliderInt(c.Id.data(), &c.NextTCodeValue, TCodeChannel::MinChannelValue, TCodeChannel::MaxChannelValue, c.limits[0], c.limits[1], "%d", ImGuiSliderFlags_AlwaysClamp));
         if (ImGui::BeginPopupContextItem())
         {
             ImGui::MenuItem(TR(INVERT), NULL, &c.Invert);

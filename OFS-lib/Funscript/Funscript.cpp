@@ -30,14 +30,14 @@ void Funscript::loadMetadata() noexcept
 	OFS_PROFILE(__FUNCTION__);
 	if (Json.contains("metadata")) {
 		auto& meta = Json["metadata"];
-		OFS::serializer::load(&LocalMetadata, &meta);
+		OFS::Serializer::Deserialize(LocalMetadata, meta);
 	}
 }
 
 void Funscript::saveMetadata() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	OFS::serializer::save(&LocalMetadata, &Json["metadata"]);
+	OFS::Serializer::Serialize(LocalMetadata, Json["metadata"]);
 }
 
 void Funscript::startSaveThread(const std::string& path, FunscriptArray&& actions, nlohmann::json&& json) noexcept
@@ -725,26 +725,3 @@ void FunscriptEvents::RegisterEvents() noexcept
 	FunscriptSelectionChangedEvent = SDL_RegisterEvents(1);
 }
 
-bool Funscript::Metadata::loadFromFunscript(const std::string& path) noexcept
-{
-	OFS_PROFILE(__FUNCTION__);
-	bool succ;
-	auto json = Util::LoadJson(path, &succ);
-	if (succ && json.contains("metadata")) {
-		OFS::serializer::load(this, &json["metadata"]);
-	}
-	return succ;
-}
-
-bool Funscript::Metadata::writeToFunscript(const std::string& path) noexcept
-{
-	OFS_PROFILE(__FUNCTION__);
-	bool succ;
-	auto json = Util::LoadJson(path, &succ);
-	if (succ) {
-		json["metadata"] = nlohmann::json::object();
-		OFS::serializer::save(this, &json["metadata"]);
-		Util::WriteJson(json, path, false);
-	}
-	return succ;
-}

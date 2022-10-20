@@ -14,120 +14,119 @@
 
 #include "OFS_ScriptPositionsOverlays.h"
 
-enum class OFS_Theme : uint32_t
+enum class OFS_Theme : int32_t
 {
-	dark,
-	light
+	Dark,
+	Light
 };
 constexpr const char* CurrentSettingsVersion = "1";
+
+struct RecentFile 
+{
+	std::string name;
+	std::string projectPath;
+};
+
+struct ScripterSettingsData 
+{
+	std::string configVersion = CurrentSettingsVersion;
+	std::string lastPath;
+	std::string fontOverride;
+	std::string languageCsv;
+
+	int32_t defaultFontSize = 18;
+	int32_t fastStepAmount = 6;
+	int32_t currentTheme = static_cast<int32_t>(OFS_Theme::Dark);
+
+	bool alwaysShowBookmarkLabels = false;
+	bool drawVideo = true;
+	bool showSimulator = true;
+	bool showSimulator3d = false;
+	bool showStatistics = true;
+	bool showHistory = true;
+	bool showSpecialFunctions = false;
+	bool showActionEditor = false;
+	bool forceHwDecoding = false;
+	bool mirrorMode = false;
+	bool showTCode = false;
+	bool showDebugLog = false;
+	bool showMetaOnNew = true;
+
+	int32_t	vsync = 0;
+	int32_t framerateLimit = 150;
+
+	int32_t actionInsertDelayMs = 0;
+
+	int32_t currentSpecialFunction = 0; // SpecialFunctions::RANGE_EXTENDER;
+
+	int32_t buttonRepeatIntervalMs = 100;
+
+	struct HeatmapSettings {
+		int32_t defaultWidth = 2000;
+		int32_t defaultHeight = 50;
+		std::string defaultPath = "./";
+	} heatmapSettings;
+
+	Funscript::Metadata defaultMetadata;
+	ScriptSimulator::SimulatorSettings defaultSimulatorConfig;
+
+	std::vector<RecentFile> recentFiles;
+};
+
+REFL_TYPE(RecentFile)
+	REFL_FIELD(name)
+	REFL_FIELD(projectPath)
+REFL_END
+
+REFL_TYPE(ScripterSettingsData::HeatmapSettings)
+	REFL_FIELD(defaultWidth)
+	REFL_FIELD(defaultHeight)
+	REFL_FIELD(defaultPath)
+REFL_END
+
+REFL_TYPE(ScripterSettingsData)
+	REFL_FIELD(configVersion)
+	REFL_FIELD(lastPath)
+	REFL_FIELD(alwaysShowBookmarkLabels)
+	REFL_FIELD(currentTheme)
+	REFL_FIELD(drawVideo)
+	REFL_FIELD(showSimulator)
+	REFL_FIELD(showSimulator3d)
+	REFL_FIELD(showStatistics)
+	REFL_FIELD(showHistory)
+	REFL_FIELD(showSpecialFunctions)
+	REFL_FIELD(showActionEditor)
+	REFL_FIELD(defaultFontSize)
+	REFL_FIELD(fastStepAmount)
+	REFL_FIELD(forceHwDecoding)
+	REFL_FIELD(recentFiles)
+	REFL_FIELD(heatmapSettings)
+	REFL_FIELD(mirrorMode)
+	REFL_FIELD(actionInsertDelayMs)
+	REFL_FIELD(currentSpecialFunction)
+	REFL_FIELD(vsync)
+	REFL_FIELD(framerateLimit)
+	REFL_FIELD(buttonRepeatIntervalMs)
+	REFL_FIELD(fontOverride)
+	REFL_FIELD(showTCode)
+	REFL_FIELD(defaultMetadata)
+	REFL_FIELD(showDebugLog)
+	REFL_FIELD(showMetaOnNew)
+	REFL_FIELD(defaultSimulatorConfig)
+	REFL_FIELD(languageCsv)
+	
+	// FIXME
+	// REFL_FIELD(BaseOverlay::ShowMaxSpeedHighlight)
+	// REFL_FIELD(BaseOverlay::SplineMode)
+	// REFL_FIELD(BaseOverlay::SyncLineEnable)
+	// REFL_FIELD(BaseOverlay::MaxSpeedColor)
+	// REFL_FIELD(BaseOverlay::MaxSpeedPerSecond)
+REFL_END
+
 class OFS_Settings
 {
-public:
-	struct RecentFile {
-		std::string name;
-		std::string projectPath;
-		template <class Archive>
-		inline void reflect(Archive& ar) {
-			OFS_REFLECT(name, ar);
-			OFS_REFLECT(projectPath, ar);
-		}
-	};
 private:
-	struct ScripterSettingsData {
-		std::string config_version = CurrentSettingsVersion;
-		std::string last_path;
-		std::string font_override;
-		std::string language_csv;
-
-		int32_t default_font_size = 18;
-		int32_t fast_step_amount = 6;
-		OFS_Theme current_theme = OFS_Theme::dark;
-
-		bool always_show_bookmark_labels = false;
-		bool draw_video= true;
-		bool show_simulator = true;
-		bool show_simulator_3d = false;
-		bool show_statistics = true;
-		bool show_history = true;
-		bool show_special_functions = false;
-		bool show_action_editor = false;
-		bool force_hw_decoding = false;
-		bool mirror_mode = false;
-		bool show_tcode = false;
-		bool show_debug_log = false;
-		bool show_meta_on_new = true;
-
-		int32_t	vsync = 0;
-		int32_t framerateLimit = 150;
-
-		int32_t action_insert_delay_ms = 0;
-
-		int32_t currentSpecialFunction = 0; // SpecialFunctions::RANGE_EXTENDER;
-
-		int32_t buttonRepeatIntervalMs = 100;
-
-		struct HeatmapSettings {
-			int32_t defaultWidth = 2000;
-			int32_t defaultHeight = 50;
-			std::string defaultPath = "./";
-			template <class Archive>
-			inline void reflect(Archive& ar) {
-				OFS_REFLECT(defaultWidth, ar);
-				OFS_REFLECT(defaultHeight, ar);
-				OFS_REFLECT(defaultPath, ar);
-			}
-		} heatmapSettings;
-
-		Funscript::Metadata defaultMetadata;
-		ScriptSimulator::SimulatorSettings defaultSimulatorConfig;
-
-		std::vector<RecentFile> recentFiles;
-		template <class Archive>
-		inline void reflect(Archive& ar)
-		{
-			OFS_REFLECT(config_version, ar);
-			// checks configuration version and cancels if it doesn't match
-			if (config_version != CurrentSettingsVersion) { 
-				LOGF_WARN("Settings version: \"%s\" didn't match \"%s\". Settings are reset.", config_version.c_str(), CurrentSettingsVersion);
-				config_version = CurrentSettingsVersion;
-				return; 
-			}
-			OFS_REFLECT(last_path, ar);
-			OFS_REFLECT(always_show_bookmark_labels, ar);
-			OFS_REFLECT_PTR_NAMED("theme", (uint32_t*)&current_theme, ar);
-			OFS_REFLECT(draw_video, ar);
-			OFS_REFLECT(show_simulator, ar);
-			OFS_REFLECT(show_simulator_3d, ar);
-			OFS_REFLECT(show_statistics, ar);
-			OFS_REFLECT(show_history, ar);
-			OFS_REFLECT(show_special_functions, ar);
-			OFS_REFLECT(show_action_editor, ar);
-			OFS_REFLECT(default_font_size, ar);
-			OFS_REFLECT(fast_step_amount, ar);
-			OFS_REFLECT(force_hw_decoding, ar);
-			OFS_REFLECT(recentFiles, ar);
-			OFS_REFLECT(heatmapSettings, ar);
-			OFS_REFLECT(mirror_mode, ar);
-			OFS_REFLECT(action_insert_delay_ms, ar);
-			OFS_REFLECT(currentSpecialFunction, ar);
-			OFS_REFLECT(vsync, ar);
-			OFS_REFLECT(framerateLimit, ar);
-			OFS_REFLECT(buttonRepeatIntervalMs, ar);
-			OFS_REFLECT(font_override, ar);
-			OFS_REFLECT(show_tcode, ar);
-			OFS_REFLECT(defaultMetadata, ar);
-			OFS_REFLECT(show_debug_log, ar);
-			OFS_REFLECT(show_meta_on_new, ar);
-			OFS_REFLECT_NAMED("SplineMode", BaseOverlay::SplineMode, ar);
-			OFS_REFLECT_NAMED("SyncLineEnable", BaseOverlay::SyncLineEnable, ar);
-			OFS_REFLECT(defaultSimulatorConfig, ar);
-			OFS_REFLECT(language_csv, ar);
-
-			OFS_REFLECT_NAMED("MaxSpeedHightlightEnabled", BaseOverlay::ShowMaxSpeedHighlight, ar);
-			OFS_REFLECT_NAMED("MaxSpeedHightlightColor", BaseOverlay::MaxSpeedColor, ar);
-			OFS_REFLECT_NAMED("MaxSpeedPerSecond", BaseOverlay::MaxSpeedPerSecond, ar);
-		}
-	} scripterSettings;
+	ScripterSettingsData scripterSettings;
 
 	std::string config_path;
 
@@ -137,8 +136,8 @@ private:
 
 	std::vector<std::string> translationFiles;
 
-	void save_config();
-	void load_config();
+	void saveConfig() noexcept;
+	void loadConfig() noexcept;
 public:
 	OFS_Settings(const std::string& config) noexcept;
 	ScripterSettingsData& data() noexcept { return scripterSettings; }

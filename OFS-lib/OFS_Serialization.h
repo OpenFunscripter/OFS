@@ -5,237 +5,200 @@
 #include "OFS_Util.h"
 
 #include <array>
-
-namespace BlackMagic {
-
-	template <typename T, typename A>
-	struct has_reflect {
-		template <typename Obj, typename ar>
-		static constexpr decltype(std::declval<Obj>().template reflect<ar>(std::declval<ar&>()), bool()) test_get(int) { return true; }
-
-		template <typename Obj, typename ar>
-		static constexpr bool test_get(...) { return false; }
-
-		static constexpr bool value = test_get<T, A>(int());
-	};
-
-	template <typename T, typename A>
-	struct has_reflect_function {
-		template <typename Obj, typename ar>
-		static constexpr decltype(std::declval<reflect_function<Obj, ar>>().reflect(std::declval<Obj&>(), std::declval<ar&>()), bool()) test_get(int) { return true; }
-
-		template <typename Obj, typename ar>
-		static constexpr bool test_get(...) { return false; }
-
-		static constexpr bool value = test_get<T, A>(int());
-	};
-}
+#include <iostream>
 
 namespace OFS
 {
-
-	class archiver {
-	public:
-		nlohmann::json* ctx;
-		archiver(nlohmann::json* node) : ctx(node) {}
-		template<typename T>
-		inline archiver& operator<<(reflect_member<T>& pair);
-		
-		template<typename T>
-		inline archiver& operator<<(reflect_member<std::vector<T>>& pair);
-
-		template<typename T, size_t arraySize>
-		inline archiver& operator<<(reflect_member<std::array<T, arraySize>>& pair);
-	};
-
-
-	class unpacker {
-	public:
-		nlohmann::json* ctx;
-		unpacker(nlohmann::json* node) : ctx(node) {}
-
-		template<typename T>
-		inline unpacker& operator<<(reflect_member<T>& pair);
-
-		template<typename T>
-		inline unpacker& operator<<(reflect_member<std::vector<T>>& pair);
-
-		template<typename T, size_t arraySize>
-		inline unpacker& operator<<(reflect_member<std::array<T, arraySize>>& pair);
-	};
-
-
-	class serializer {
-	public:
-		template<typename T, typename ar = OFS::unpacker>
-		inline static void load(T* obj, nlohmann::json* json) {
-			ar deserializer(json);
-			obj->reflect(deserializer);
-		}
-
-		template<typename T, typename ar = OFS::archiver>
-		inline static void save(T* obj, nlohmann::json* json) {
-			ar archive(json);
-			obj->reflect(archive);
-		}
-	};
-
-
-	// IMPLEMENTATION archiver
-	//==================================================================
 	template<typename T>
-	inline archiver& archiver::operator<<(reflect_member<T>& pair)
-	{
-		auto* node = &(*ctx)[pair.name];
-		if constexpr (BlackMagic::has_reflect<T, archiver>::value) {
-			archiver ar(node);
-			pair.value->template reflect<archiver>(ar);
-			(*ctx)[pair.name] = *ar.ctx;
-		}
-		else if constexpr (BlackMagic::has_reflect_function<T, archiver>::value) {
-			archiver ar(node);
-			reflect_function<T, archiver>().reflect(*pair.value, ar);
-			(*ctx)[pair.name] = *ar.ctx;
-		}
-		else {
-			(*ctx)[pair.name] = *pair.value;
-		}
-		return *this;
-	}
-
-	template<typename T>
-	inline archiver& archiver::operator<<(reflect_member<std::vector<T>>& pair) {
-		auto* node = &(*ctx)[pair.name];
-		*node = nlohmann::json::array();
-		for (auto& item : *pair.value) {
-			nlohmann::json itemJson;
-			if constexpr (BlackMagic::has_reflect<T, archiver>::value) {
-				archiver ar(&itemJson);
-				item.template reflect<archiver>(ar);
-				(*node).push_back(itemJson);
-			}
-			else if constexpr (BlackMagic::has_reflect_function<T, archiver>::value) {
-				archiver ar(&itemJson);
-				reflect_function<T, archiver>().reflect(item, ar);
-				(*node).push_back(itemJson);
-			}
-			else {
-				(*node) = *pair.value;
-				break;
-			}
-		}
-		return *this;
-	}
-
-
-	template<typename T, size_t arraySize>
-	inline archiver& archiver::operator<<(reflect_member<std::array<T, arraySize>>& pair) {
-		auto* node = &(*ctx)[pair.name];
-		*node = nlohmann::json::array();
-		for (auto& item : *pair.value) {
-			nlohmann::json itemJson;
-			if constexpr (BlackMagic::has_reflect<T, archiver>::value) {
-				archiver ar(&itemJson);
-				item.template reflect<archiver>(ar);
-				(*node).push_back(itemJson);
-			}
-			else if constexpr (BlackMagic::has_reflect_function<T, archiver>::value) {
-				archiver ar(&itemJson);
-				reflect_function<T, archiver>().reflect(item, ar);
-				(*node).push_back(itemJson);
-			}
-			else {
-				for (auto&& item : *pair.value)
-				{
-					(*node).push_back(item);
-				}
-				break;
-			}
-		}
-		return *this;
-	}
-
-
-	// IMPLEMENTATION unpacker
-	//==================================================================
-	template<typename T>
-	inline unpacker& unpacker::operator<<(reflect_member<T>& pair)
-	{
-		auto* node = &(*ctx)[pair.name];
-		if constexpr (BlackMagic::has_reflect<T, unpacker>::value) {
-			unpacker des(node);
-			pair.value->template reflect<unpacker>(des);
-		}
-		else if constexpr (BlackMagic::has_reflect_function<T, unpacker>::value) {
-			unpacker des(node);
-			reflect_function<T, unpacker>().reflect(*pair.value, des);
-		}
-		else {
-			if (node->is_null()) {
-				LOGF_WARN("Failed to reflect \"%s\"", pair.name);
-			}
-			else {
-				*pair.value = node->template get<T>();
-			}
-		}
-		return *this;
-	}
-
-	template<typename T>
-	inline unpacker& unpacker::operator<<(reflect_member<std::vector<T>>& pair) {
-		auto* node = &(*ctx)[pair.name];
-		if (node->is_array()) {
-			for (auto& item : *node) {
-				if constexpr (BlackMagic::has_reflect<T, unpacker>::value) {
-					unpacker des(&item);
-					T unpacked;
-					unpacked.template reflect<unpacker>(des);
-					pair.value->emplace_back(std::move(unpacked));
-				}
-				else if constexpr (BlackMagic::has_reflect_function<T, unpacker>::value) {
-					unpacker des(&item);
-					T unpacked;
-					reflect_function<T, unpacker>().reflect(unpacked, des);
-					pair.value->emplace_back(std::move(unpacked));
+	struct is_json_compatible : std::false_type {};
+	template<>
+	struct is_json_compatible<std::string> : std::true_type {};
+	template<>
+	struct is_json_compatible<float> : std::true_type {};
+	template<>
+	struct is_json_compatible<int64_t> : std::true_type {};
+	template<>
+	struct is_json_compatible<int32_t> : std::true_type {};
+	template<>
+	struct is_json_compatible<uint16_t> : std::true_type {};
+	template<>
+	struct is_json_compatible<bool> : std::true_type {};
+	template<>
+	struct is_json_compatible<char> : std::true_type {};
+	
+	class Serializer {
+	private:
+		template<typename FieldDescriptor, typename ObjectType>
+		inline static auto& GetFieldRef(FieldDescriptor desc, ObjectType& obj) noexcept
+		{
+			if constexpr (refl::descriptor::is_field(desc)) {
+				if constexpr(refl::descriptor::is_static(desc)) {
+					return desc();
 				}
 				else {
-					if (node->is_null()) {
-						LOGF_WARN("Failed to reflect \"%s\"", pair.name);
-					}
-					else {
-						pair.value->emplace_back(std::move(item.template get<T>()));
-					}
+					return desc(obj);
 				}
 			}
+			else if constexpr(refl::descriptor::is_property(desc)) {
+				auto& mutableGetterResult = desc(obj);
+				return mutableGetterResult;
+			}
 		}
-		return *this;
-	}
 
-	template<typename T, size_t arraySize>
-	inline unpacker& unpacker::operator<<(reflect_member<std::array<T, arraySize>>& pair) {
-		auto* node = &(*ctx)[pair.name];
-		if (node->is_array()) {
-			int32_t index = 0;
-			for (auto& item : *node) {
-				if constexpr (BlackMagic::has_reflect<T, unpacker>::value) {
-					unpacker des(&item);
-					(*pair.value)[index].template reflect<unpacker>(des);
-				}
-				else if constexpr (BlackMagic::has_reflect_function<T, unpacker>::value) {
-					unpacker des(&item);
-					reflect_function<T, unpacker>().relfect((*pair.value)[index], des);
+		template<typename FieldDescriptor, typename ObjectType>
+		inline static auto& GetConstFieldRef(FieldDescriptor desc, const ObjectType& obj) noexcept
+		{
+			if constexpr (refl::descriptor::is_field(desc)) {
+				if constexpr(refl::descriptor::is_static(desc)) {
+					return desc();
 				}
 				else {
-					if (node->is_null()) {
-						LOGF_WARN("Failed to reflect \"%s\"", pair.name);
-					}
-					else {
-						(*pair.value)[index] = item.template get<T>();
-					}
+					return desc(obj);
 				}
-				index++;
+			}
+			else if constexpr(refl::descriptor::is_property(desc)) {
+				auto& getterResult = desc(obj);
+				return getterResult;
 			}
 		}
-		return *this;
-	}
+
+		template<typename ObjectType>
+		inline static bool deserializeObject(ObjectType& objectRef, const nlohmann::json& objectJson) noexcept
+		{
+			static_assert(!OFS::is_json_compatible<ObjectType>::value);
+
+			bool successful = true;
+			for_each(refl::reflect(objectRef).members, [&](auto member) noexcept
+			{
+				auto& memberRef = GetFieldRef(member, objectRef);
+				using MemberType = std::remove_reference<decltype(memberRef)>::type;
+
+				// Check if the json object contains the key,
+				// if not a warning is logged but the deserialization continues.
+				if(objectJson.contains(get_display_name(member))) {
+					auto& currentJson = objectJson[get_display_name(member)];
+					bool succ = OFS::Serializer::Deserialize(memberRef, currentJson);
+					if(!succ) successful = false;
+				}
+				else {
+					LOGF_WARN("The field \"%s\" was not found.", get_display_name(member));
+				}
+			});
+
+			return successful;
+		}
+
+		template<typename ItemType>
+		inline static bool deserializeContainerItems(std::vector<ItemType>& obj, const nlohmann::json& jsonArray) noexcept
+		{
+			for(auto& jsonItem : jsonArray) {
+				auto& item = obj.emplace_back();
+				bool succ = OFS::Serializer::Deserialize(item, jsonItem);
+				if(!succ) return false;
+			}
+			return true;
+		}
+
+		template<typename ItemType, size_t Size>
+		inline static bool deserializeContainerItems(std::array<ItemType, Size>& obj, const nlohmann::json& jsonArray) noexcept
+		{
+			size_t idx = 0;
+			for(auto& jsonItem : jsonArray) {
+				auto& item = obj[idx++];
+				bool succ = OFS::Serializer::Deserialize(item, jsonItem);
+				if(!succ) return false;
+			}
+			return true;
+		}
+	public:
+		template<typename T>
+		inline static bool Deserialize(T& obj, const nlohmann::json& json) noexcept
+		{
+			static_assert(!std::is_const_v<T>);
+			using Type = std::remove_volatile<T>::type;
+
+			// Handle json primitive types numbers, strings & booleans
+			if constexpr (OFS::is_json_compatible<Type>::value) {
+				obj = std::move(json.get<Type>());
+				return true;
+			}
+			// Handle objects
+			else if constexpr (!OFS::is_json_compatible<Type>::value && !refl::trait::is_container_v<Type>) {
+				bool succ = deserializeObject(obj, json);
+				return succ;
+			}
+			// Handle arrays
+			else if constexpr (refl::trait::is_container_v<Type>) {
+				bool succ = deserializeContainerItems(obj, json);
+				return succ;
+			}
+			else 
+			{ static_assert(false); }
+			return false;
+		}
+
+	private:
+		template<typename ObjectType>
+		inline static bool serializeObject(const ObjectType& objectRef, nlohmann::json& objectJson) noexcept
+		{
+			bool successful = true;
+			for_each(refl::reflect(objectRef).members, [&](auto member) noexcept
+			{
+				auto& memberRef = GetConstFieldRef(member, objectRef);
+				using MemberType = std::remove_const<std::remove_reference<decltype(memberRef)>::type>::type;
+				auto& currentJson = objectJson[get_display_name(member)];
+				bool succ = OFS::Serializer::Serialize(memberRef, currentJson);
+				if(!succ) successful = false;
+			});
+			return successful;
+		}
+
+		template<typename ItemType>
+		inline static bool serializeContainerItems(const std::vector<ItemType>& container, nlohmann::json& jsonArray) noexcept
+		{
+			for(auto& item : container) {
+				auto& jsonItem = jsonArray.emplace_back();
+				bool succ = OFS::Serializer::Serialize(item, jsonItem);
+				if(!succ) return false;
+			}
+			return true;
+		}
+
+		template<typename ItemType, size_t Size>
+		inline static bool serializeContainerItems(const std::array<ItemType, Size>& container, nlohmann::json& jsonArray) noexcept
+		{
+			for(auto& item : container) {
+				auto& jsonItem = jsonArray.emplace_back();
+				bool succ = OFS::Serializer::Serialize(item, jsonItem);
+				if(!succ) return false;
+			}
+			return true;
+		}
+
+	public:
+		template<typename T>
+		inline static bool Serialize(const T& obj, nlohmann::json& json) {
+			using Type = std::remove_volatile<T>::type;
+
+			// Handle json primitive types numbers, strings & booleans
+			if constexpr (OFS::is_json_compatible<Type>::value) {
+				json = obj;
+				return true;
+			}
+			// Handle objects
+			else if constexpr (!OFS::is_json_compatible<Type>::value && !refl::trait::is_container_v<Type>) {
+				bool succ = serializeObject(obj, json);
+				return succ;
+			}
+			// Handle arrays
+			else if constexpr (refl::trait::is_container_v<Type>) {
+				auto jsonArray = nlohmann::json::array();
+				bool succ = serializeContainerItems(obj, jsonArray);
+				json = std::move(jsonArray);
+				return succ;
+			}
+			else { static_assert(false); }
+			return false;
+		}
+	};
 }

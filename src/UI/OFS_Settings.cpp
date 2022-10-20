@@ -21,26 +21,28 @@ OFS_Settings::OFS_Settings(const std::string& config) noexcept
 		}
 	}
 
-	if (!configObj[ConfigStr].is_object())
+	if (!configObj[ConfigStr].is_object()) {
 		configObj[ConfigStr] = nlohmann::json::object();
-	else
-		load_config();
+	}
+	else {
+		loadConfig();
+	}
 }
 
-void OFS_Settings::save_config()
+void OFS_Settings::saveConfig() noexcept
 {
 	Util::WriteJson(configObj, config_path, true);
 }
 
-void OFS_Settings::load_config()
+void OFS_Settings::loadConfig() noexcept
 {
-	OFS::serializer::load(&scripterSettings, &config());
+	OFS::Serializer::Deserialize(scripterSettings, config());
 }
 
 void OFS_Settings::saveSettings()
 {
-	OFS::serializer::save(&scripterSettings, &config());
-	save_config();
+	OFS::Serializer::Serialize(scripterSettings, config());
+	saveConfig();
 }
 
 static void copyTranslationHelper() noexcept
@@ -83,15 +85,15 @@ bool OFS_Settings::ShowPreferenceWindow() noexcept
 			{
 				if (ImGui::BeginTabItem(TR(APPLICATION)))
 				{
-					if (ImGui::RadioButton(TR(DARK_MODE), (int*)&scripterSettings.current_theme,
-						(uint8_t)OFS_Theme::dark)) {
-						SetTheme(scripterSettings.current_theme);
+					if (ImGui::RadioButton(TR(DARK_MODE), (int*)&scripterSettings.currentTheme,
+						static_cast<int32_t>(OFS_Theme::Dark))) {
+						SetTheme((OFS_Theme)scripterSettings.currentTheme);
 						save = true;
 					}
 					ImGui::SameLine();
-					if (ImGui::RadioButton(TR(LIGHT_MODE), (int*)&scripterSettings.current_theme,
-						(uint8_t)OFS_Theme::light)) {
-						SetTheme(scripterSettings.current_theme);
+					if (ImGui::RadioButton(TR(LIGHT_MODE), (int*)&scripterSettings.currentTheme,
+						static_cast<int32_t>(OFS_Theme::Light))) {
+						SetTheme((OFS_Theme)scripterSettings.currentTheme);
 						save = true;
 					}
 					
@@ -111,49 +113,49 @@ bool OFS_Settings::ShowPreferenceWindow() noexcept
 					}
 					OFS::Tooltip(TR(VSYNC_TOOLTIP));
 					ImGui::Separator();
-					ImGui::InputText(TR(FONT), scripterSettings.font_override.empty() ? (char*)TR(DEFAULT_FONT) : (char*)scripterSettings.font_override.c_str(),
-						scripterSettings.font_override.size(), ImGuiInputTextFlags_ReadOnly);
+					ImGui::InputText(TR(FONT), scripterSettings.fontOverride.empty() ? (char*)TR(DEFAULT_FONT) : (char*)scripterSettings.fontOverride.c_str(),
+						scripterSettings.fontOverride.size(), ImGuiInputTextFlags_ReadOnly);
 					ImGui::SameLine();
 					if (ImGui::Button(TR(CHANGE))) {
 						Util::OpenFileDialog(TR(CHOOSE_FONT), "",
 							[&](auto& result) {
 								if (result.files.size() > 0) {
-									scripterSettings.font_override = result.files.back();
-									OpenFunscripter::ptr->LoadOverrideFont(scripterSettings.font_override);
+									scripterSettings.fontOverride = result.files.back();
+									OpenFunscripter::ptr->LoadOverrideFont(scripterSettings.fontOverride);
 									save = true;
 								}
 							}, false, { "*.ttf", "*.otf" }, "Fonts (*.ttf, *.otf)");
 					}
 					ImGui::SameLine();
 					if (ImGui::Button(TR(CLEAR))) {
-						scripterSettings.font_override = "";
+						scripterSettings.fontOverride = "";
 						EventSystem::SingleShot([](void* ctx) {
 							// fonts can't be updated during a frame
 							// this updates the font during event processing
 							// which is not during the frame
 							auto app = OpenFunscripter::ptr;
-							app->LoadOverrideFont(app->settings->data().font_override);
+							app->LoadOverrideFont(app->settings->data().fontOverride);
 							}, nullptr);
 					}
 
-					if (ImGui::InputInt(TR(FONT_SIZE), (int*)&scripterSettings.default_font_size, 1, 1)) {
-						scripterSettings.default_font_size = Util::Clamp(scripterSettings.default_font_size, 8, 64);
+					if (ImGui::InputInt(TR(FONT_SIZE), (int*)&scripterSettings.defaultFontSize, 1, 1)) {
+						scripterSettings.defaultFontSize = Util::Clamp(scripterSettings.defaultFontSize, 8, 64);
 						EventSystem::SingleShot([](void* ctx) {
 							// fonts can't be updated during a frame
 							// this updates the font during event processing
 							// which is not during the frame
 							auto app = OpenFunscripter::ptr;
-							app->LoadOverrideFont(app->settings->data().font_override);
+							app->LoadOverrideFont(app->settings->data().fontOverride);
 							}, nullptr);
 						save = true;
 					}
-					if(ImGui::BeginCombo(TR_ID("LANGUAGE", Tr::LANGUAGE), data().language_csv.empty() ? "English" : data().language_csv.c_str()))
+					if(ImGui::BeginCombo(TR_ID("LANGUAGE", Tr::LANGUAGE), data().languageCsv.empty() ? "English" : data().languageCsv.c_str()))
 					{
 						for(auto& file : translationFiles) {
-							if(ImGui::Selectable(file.c_str(), file == data().language_csv)) {
+							if(ImGui::Selectable(file.c_str(), file == data().languageCsv)) {
 								if(OFS_Translator::ptr->LoadTranslation(file.c_str()))
 								{
-									data().language_csv = file;
+									data().languageCsv = file;
 									OFS_DynFontAtlas::AddTranslationText();
 								}
 							}
@@ -173,7 +175,7 @@ bool OFS_Settings::ShowPreferenceWindow() noexcept
 					}
 					ImGui::SameLine();
 					if(ImGui::Button(TR(RESET))) {
-						data().language_csv = std::string();
+						data().languageCsv = std::string();
 						OFS_Translator::ptr->LoadDefaults();
 					}
 					ImGui::SameLine();
@@ -184,7 +186,7 @@ bool OFS_Settings::ShowPreferenceWindow() noexcept
 					ImGui::EndTabItem();
 				}
 				if (ImGui::BeginTabItem(TR(VIDEOPLAYER))) {
-					if (ImGui::Checkbox(TR(FORCE_HW_DECODING), &scripterSettings.force_hw_decoding)) {
+					if (ImGui::Checkbox(TR(FORCE_HW_DECODING), &scripterSettings.forceHwDecoding)) {
 						save = true;
 					}
 					OFS::Tooltip(TR(FORCE_HW_DECODING_TOOLTIP));
@@ -206,13 +208,13 @@ bool OFS_Settings::ShowPreferenceWindow() noexcept
 					ImGui::EndDisabled();
 					
 					ImGui::Separator();
-					if (ImGui::InputInt(TR(FAST_FRAME_STEP), &scripterSettings.fast_step_amount, 1, 1)) {
+					if (ImGui::InputInt(TR(FAST_FRAME_STEP), &scripterSettings.fastStepAmount, 1, 1)) {
 						save = true;
-						scripterSettings.fast_step_amount = Util::Clamp<int32_t>(scripterSettings.fast_step_amount, 2, 30);
+						scripterSettings.fastStepAmount = Util::Clamp<int32_t>(scripterSettings.fastStepAmount, 2, 30);
 					}
 					OFS::Tooltip(TR(FAST_FRAME_STEP_TOOLTIP));
 					ImGui::Separator();
-					if (ImGui::Checkbox(TR(SHOW_METADATA_DIALOG_ON_NEW_PROJECT), &scripterSettings.show_meta_on_new)) {
+					if (ImGui::Checkbox(TR(SHOW_METADATA_DIALOG_ON_NEW_PROJECT), &scripterSettings.showMetaOnNew)) {
 						save = true;
 					}
 					ImGui::EndTabItem();
@@ -232,12 +234,12 @@ void OFS_Settings::SetTheme(OFS_Theme theme) noexcept
 	auto& io = ImGui::GetIO();
 
 	switch (theme) {
-		case OFS_Theme::dark:
+		case OFS_Theme::Dark:
 		{
 			ImGui::StyleColorsDark(&style);
 			break;
 		}
-		case OFS_Theme::light:
+		case OFS_Theme::Light:
 		{
 			ImGui::StyleColorsLight(&style);
 			break;

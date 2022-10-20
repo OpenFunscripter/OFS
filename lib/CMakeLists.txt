@@ -198,3 +198,9 @@ target_compile_features(ImGuizmo PRIVATE cxx_std_17)
 set(SOL2_LUA_VERSION "5.4" CACHE BOOL "" FORCE)
 set(SOL2_BUILD_LUA OFF CACHE BOOL "" FORCE)
 add_subdirectory("sol2/")
+
+# ============
+# = refl-cpp =
+# ============
+add_library(refl-cpp INTERFACE)
+target_include_directories(refl-cpp INTERFACE "refl-cpp/include/")

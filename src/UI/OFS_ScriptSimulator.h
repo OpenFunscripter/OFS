@@ -44,29 +44,6 @@ public:
 		bool EnableHeightLines = true;
 		bool LockedPosition = false;
 
-		template <class Archive>
-		inline void reflect(Archive& ar)
-		{
-			OFS_REFLECT(P1, ar);
-			OFS_REFLECT(P2, ar);
-			OFS_REFLECT(Width, ar);
-			OFS_REFLECT(BorderWidth, ar);
-			OFS_REFLECT(LineWidth, ar);
-			OFS_REFLECT(ExtraLineWidth, ar);
-			OFS_REFLECT(Text, ar);
-			OFS_REFLECT(Front, ar);
-			OFS_REFLECT(Back, ar);
-			OFS_REFLECT(Border, ar);
-			OFS_REFLECT(ExtraLines, ar);
-			OFS_REFLECT(Indicator, ar);
-			OFS_REFLECT(GlobalOpacity, ar);
-			OFS_REFLECT(EnableIndicators, ar);
-			OFS_REFLECT(EnablePosition, ar);
-			OFS_REFLECT(EnableHeightLines, ar);
-			OFS_REFLECT(ExtraLinesCount, ar);
-			OFS_REFLECT(LockedPosition, ar);
-		}
-
 		template<typename S>
 		void serialize(S& s) {
 			s.ext(*this, bitsery::ext::Growable{},
@@ -110,3 +87,24 @@ public:
 	void CenterSimulator();
 	void ShowSimulator(bool* open);
 };
+
+REFL_TYPE(ScriptSimulator::SimulatorSettings)
+	REFL_FIELD(P1)
+	REFL_FIELD(P2)
+	REFL_FIELD(Width)
+	REFL_FIELD(BorderWidth)
+	REFL_FIELD(LineWidth)
+	REFL_FIELD(ExtraLineWidth)
+	REFL_FIELD(Text)
+	REFL_FIELD(Front)
+	REFL_FIELD(Back)
+	REFL_FIELD(Border)
+	REFL_FIELD(ExtraLines)
+	REFL_FIELD(Indicator)
+	REFL_FIELD(GlobalOpacity)
+	REFL_FIELD(EnableIndicators)
+	REFL_FIELD(EnablePosition)
+	REFL_FIELD(EnableHeightLines)
+	REFL_FIELD(ExtraLinesCount)
+	REFL_FIELD(LockedPosition)
+REFL_END

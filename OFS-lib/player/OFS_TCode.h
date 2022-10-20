@@ -32,13 +32,10 @@ public:
 	void stop() noexcept;
 	void sync(float currentTime, float speed) noexcept;
 	void reset() noexcept;
-
-	template <class Archive>
-	inline void reflect(Archive& ar) {
-		OFS_REFLECT(tcode, ar);
-		OFS_REFLECT(tickrate, ar);
-		OFS_REFLECT(delay, ar);
-		OFS_REFLECT_NAMED("SplineMode", TCodeChannel::SplineMode, ar);
-		OFS_REFLECT_NAMED("RemapToFullRange", TCodeChannel::RemapToFullRange, ar);
-	}
 };
+
+REFL_TYPE(TCodePlayer)
+	REFL_FIELD(tickrate)
+	REFL_FIELD(delay)
+	REFL_FIELD(tcode)
+REFL_END

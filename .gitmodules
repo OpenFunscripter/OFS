@@ -25,3 +25,6 @@
 [submodule "lib/sol2"]
 	path = lib/sol2
 	url = https://github.com/ThePhD/sol2.git
+[submodule "lib/refl-cpp"]
+	path = lib/refl-cpp
+	url = https://github.com/veselink1/refl-cpp.git

@@ -86,18 +86,18 @@ bool OpenFunscripter::imguiSetup() noexcept
     static auto imguiIniPath = Util::Prefpath("imgui.ini");
     io.IniFilename = imguiIniPath.c_str();
     
-    settings->SetTheme(settings->data().current_theme);
+    settings->SetTheme((OFS_Theme)settings->data().currentTheme);
 
     // Setup Platform/Renderer bindings
     ImGui_ImplSDL2_InitForOpenGL(window, glContext);
     LOGF_DEBUG("init imgui with glsl: %s", GlslVersion);
     ImGui_ImplOpenGL3_Init(GlslVersion);
 
-    OFS_DynFontAtlas::FontOverride = settings->data().font_override;
+    OFS_DynFontAtlas::FontOverride = settings->data().fontOverride;
     OFS_DynFontAtlas::Init();
     OFS_Translator::Init();
-    if(!settings->data().language_csv.empty()) {
-        if(OFS_Translator::ptr->LoadTranslation(settings->data().language_csv.c_str())) {
+    if(!settings->data().languageCsv.empty()) {
+        if(OFS_Translator::ptr->LoadTranslation(settings->data().languageCsv.c_str())) {
             OFS_DynFontAtlas::AddTranslationText();
         }
     }
@@ -220,7 +220,7 @@ bool OpenFunscripter::setup(int argc, char* argv[])
     LoadedProject = std::make_unique<OFS_Project>();
     
     player = std::make_unique<OFS_Videoplayer>();
-    if(!player->Init(settings->data().force_hw_decoding)) {
+    if(!player->Init(settings->data().forceHwDecoding)) {
         LOG_ERROR("Failed to initialize videoplayer.");
         return false;
     }
@@ -280,7 +280,7 @@ bool OpenFunscripter::setup(int argc, char* argv[])
     // callback that renders the simulator right after the video
     playerWindow->OnRenderCallback = [](const ImDrawList * parent_list, const ImDrawCmd * cmd) {
         auto app = OpenFunscripter::ptr;
-        if (app->settings->data().show_simulator_3d) {
+        if (app->settings->data().showSimulator3d) {
             app->sim3D->renderSim();
         }
     };
@@ -575,10 +575,8 @@ void OpenFunscripter::registerBindings()
             true,
             [&](void*)
             {
-                if(!settings->data().language_csv.empty())
-                {
-                    if(OFS_Translator::ptr->LoadTranslation(settings->data().language_csv.c_str()))
-                    {
+                if(!settings->data().languageCsv.empty()) {
+                    if(OFS_Translator::ptr->LoadTranslation(settings->data().languageCsv.c_str())) {
                         OFS_DynFontAtlas::AddTranslationText();
                     }
                 }
@@ -728,7 +726,7 @@ void OpenFunscripter::registerBindings()
             Tr::ACTION_FAST_STEP,
             false,
             [&](void*) {
-                int32_t frameStep = settings->data().fast_step_amount;
+                int32_t frameStep = settings->data().fastStepAmount;
                 player->SeekFrames(frameStep);
             }
         );
@@ -742,7 +740,7 @@ void OpenFunscripter::registerBindings()
             Tr::ACTION_FAST_BACKSTEP,
             false,
             [&](void*) {
-                int32_t frameStep = settings->data().fast_step_amount;
+                int32_t frameStep = settings->data().fastStepAmount;
                 player->SeekFrames(-frameStep);
             }
         );
@@ -896,7 +894,7 @@ void OpenFunscripter::registerBindings()
             "toggle_mirror_mode",
             Tr::ACTION_TOGGLE_MIRROR_MODE,
             true,
-            [&](void*) { if (LoadedFunscripts().size() > 1) { settings->data().mirror_mode = !settings->data().mirror_mode; }}
+            [&](void*) { if (LoadedFunscripts().size() > 1) { settings->data().mirrorMode = !settings->data().mirrorMode; }}
         );
         toggle_mirror_mode.key = Keybinding(
             SDLK_PRINTSCREEN,
@@ -1530,7 +1528,7 @@ void OpenFunscripter::newFrame() noexcept
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame();
     if(OFS_DynFontAtlas::NeedsRebuild()) {
-		OFS_DynFontAtlas::RebuildFont(settings->data().default_font_size);
+		OFS_DynFontAtlas::RebuildFont(settings->data().defaultFontSize);
 	}
     ImGui::NewFrame();
     ImGuizmo::BeginFrame();
@@ -1810,11 +1808,11 @@ void OpenFunscripter::step() noexcept {
             }
             #endif
 
-            sim3D->ShowWindow(&settings->data().show_simulator_3d, player->CurrentTime(), BaseOverlay::SplineMode, LoadedProject->Funscripts);
+            sim3D->ShowWindow(&settings->data().showSimulator3d, player->CurrentTime(), BaseOverlay::SplineMode, LoadedProject->Funscripts);
             ShowAboutWindow(&ShowAbout);
-            specialFunctions->ShowFunctionsWindow(&settings->data().show_special_functions);
-            undoSystem->ShowUndoRedoHistory(&settings->data().show_history);
-            simulator.ShowSimulator(&settings->data().show_simulator);
+            specialFunctions->ShowFunctionsWindow(&settings->data().showSpecialFunctions);
+            undoSystem->ShowUndoRedoHistory(&settings->data().showHistory);
+            simulator.ShowSimulator(&settings->data().showSimulator);
             if (ShowMetadataEditorWindow(&ShowMetadataEditor)) { 
                 LoadedProject->Save(true);
             }
@@ -1822,9 +1820,9 @@ void OpenFunscripter::step() noexcept {
             LoadedProject->ShowProjectWindow(&ShowProjectEditor);
 
             extensions->ShowExtensions();
-            tcode->DrawWindow(&settings->data().show_tcode, player->CurrentTime());
+            tcode->DrawWindow(&settings->data().showTCode, player->CurrentTime());
 
-            OFS_FileLogger::DrawLogWindow(&settings->data().show_debug_log);
+            OFS_FileLogger::DrawLogWindow(&settings->data().showDebugLog);
 
             if (keybinds.ShowBindingWindow()) {
                 keybinds.save();
@@ -1846,7 +1844,7 @@ void OpenFunscripter::step() noexcept {
                 OFS_PROFILE("DrawBookmarks");
 
                 auto& style = ImGui::GetStyle();
-                bool show_text = item_hovered || settings->data().always_show_bookmark_labels;
+                bool show_text = item_hovered || settings->data().alwaysShowBookmarkLabels;
 
                 // bookmarks
                 auto& scriptSettings = LoadedProject->Settings;
@@ -1913,10 +1911,10 @@ void OpenFunscripter::step() noexcept {
                 &LoadedFunscripts(),
                 ActiveFunscriptIdx);
 
-            ShowStatisticsWindow(&settings->data().show_statistics);
+            ShowStatisticsWindow(&settings->data().showStatistics);
 
-            if (settings->data().show_action_editor) {
-                ImGui::Begin(TR_ID(ActionEditorWindowId, Tr::ACTION_EDITOR), &settings->data().show_action_editor);
+            if (settings->data().showActionEditor) {
+                ImGui::Begin(TR_ID(ActionEditorWindowId, Tr::ACTION_EDITOR), &settings->data().showActionEditor);
                 OFS_PROFILE(ActionEditorWindowId);
 
                 ImGui::Columns(1, 0, false);
@@ -1963,7 +1961,7 @@ void OpenFunscripter::step() noexcept {
                 ImGui::ShowMetricsWindow(&DebugMetrics);
             }
 
-            playerWindow->DrawVideoPlayer(NULL, &settings->data().draw_video);
+            playerWindow->DrawVideoPlayer(NULL, &settings->data().drawVideo);
         }
 
         render();
@@ -2094,7 +2092,7 @@ bool OpenFunscripter::openProject(const std::string& file) noexcept
         return false;
     }
     initProject();
-    auto recentFile = OFS_Settings::RecentFile{ LoadedProject->Metadata.title, LoadedProject->LastPath };
+    auto recentFile = RecentFile{ LoadedProject->Metadata.title, LoadedProject->LastPath };
     settings->addRecentFile(recentFile);
     return true;
 }
@@ -2104,7 +2102,7 @@ void OpenFunscripter::initProject() noexcept
     OFS_PROFILE(__FUNCTION__);
     if (LoadedProject->Loaded) {
         if (LoadedProject->ProjectSettings.NudgeMetadata) {
-            ShowMetadataEditor = settings->data().show_meta_on_new;
+            ShowMetadataEditor = settings->data().showMetaOnNew;
             LoadedProject->ProjectSettings.NudgeMetadata = false;
         }
 
@@ -2132,7 +2130,7 @@ void OpenFunscripter::initProject() noexcept
     auto lastPath = Util::PathFromString(LoadedProject->LastPath);
     lastPath.replace_filename("");
     lastPath /= "";
-    settings->data().last_path = lastPath.u8string();
+    settings->data().lastPath = lastPath.u8string();
     settings->saveSettings();
 
     lastBackup = std::chrono::steady_clock::now();
@@ -2168,7 +2166,7 @@ void OpenFunscripter::saveProject() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     LoadedProject->Save(true);
-    auto recentFile = OFS_Settings::RecentFile{ LoadedProject->Metadata.title, LoadedProject->LastPath };
+    auto recentFile = RecentFile{ LoadedProject->Metadata.title, LoadedProject->LastPath };
     settings->addRecentFile(recentFile);
 }
 
@@ -2183,7 +2181,7 @@ void OpenFunscripter::exportClips() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     LoadedProject->Save(true);
-    Util::OpenDirectoryDialog(TR(CHOOSE_OUTPUT_DIR), settings->data().last_path,
+    Util::OpenDirectoryDialog(TR(CHOOSE_OUTPUT_DIR), settings->data().lastPath,
         [&](auto& result) {
             if (result.files.size() > 0) {
                 LoadedProject->ExportClips(result.files[0]);
@@ -2287,7 +2285,7 @@ void OpenFunscripter::removeAction(FunscriptAction action) noexcept
 void OpenFunscripter::removeAction() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if (settings->data().mirror_mode && !ActiveFunscript()->HasSelection()) {
+    if (settings->data().mirrorMode && !ActiveFunscript()->HasSelection()) {
         undoSystem->Snapshot(StateType::REMOVE_ACTION);
         for (auto&& script : LoadedFunscripts()) {
             auto action = script->GetClosestAction(player->CurrentTime());
@@ -2313,7 +2311,7 @@ void OpenFunscripter::removeAction() noexcept
 void OpenFunscripter::addEditAction(int pos) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if (settings->data().mirror_mode) {
+    if (settings->data().mirrorMode) {
         int32_t currentActiveScriptIdx = ActiveFunscriptIndex();
         undoSystem->Snapshot(StateType::ADD_EDIT_ACTIONS);
         for (int i = 0; i < LoadedFunscripts().size(); i++) {
@@ -2483,7 +2481,7 @@ void OpenFunscripter::saveActiveScriptAs() {
                 LoadedProject->ExportFunscript(result.files[0], ActiveFunscriptIdx);
                 std::filesystem::path dir = Util::PathFromString(result.files[0]);
                 dir.remove_filename();
-                settings->data().last_path = dir.u8string();
+                settings->data().lastPath = dir.u8string();
             }
         }, {"Funscript", "*.funscript"});
 }
@@ -2510,7 +2508,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
         if (ImGui::BeginMenu(TR_ID("FILE", Tr::FILE))) {
             if (ImGui::MenuItem(FMT(ICON_FOLDER_OPEN " %s", TR(OPEN_PROJECT)))) {
                 auto openProjectDialog = [&]() {
-                    Util::OpenFileDialog(TR(OPEN_PROJECT), settings->data().last_path,
+                    Util::OpenFileDialog(TR(OPEN_PROJECT), settings->data().lastPath,
                         [&](auto& result) {
                             if (result.files.size() > 0) {
                                 auto& file = result.files[0];
@@ -2533,7 +2531,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::Separator();
             if (ImGui::MenuItem(TR(IMPORT_VIDEO_SCRIPT), 0, false)) {
                 auto importNewItemDialog = [&]() {
-                    Util::OpenFileDialog(TR(IMPORT_VIDEO_SCRIPT), settings->data().last_path,
+                    Util::OpenFileDialog(TR(IMPORT_VIDEO_SCRIPT), settings->data().lastPath,
                         [&](auto& result) {
                             if (result.files.size() > 0) {
                                 auto& file = result.files[0];
@@ -2580,20 +2578,20 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 }
                 if (ImGui::MenuItem(FMT(ICON_SHARE " %s", TR(EXPORT_ALL)))) {
                     if (LoadedFunscripts().size() == 1) {
-                        auto savePath = Util::PathFromString(settings->data().last_path) / (ActiveFunscript()->Title + ".funscript");
+                        auto savePath = Util::PathFromString(settings->data().lastPath) / (ActiveFunscript()->Title + ".funscript");
                         Util::SaveFileDialog(TR(EXPORT_MENU), savePath.u8string(),
                             [&](auto& result) {
                                 if (result.files.size() > 0) {
                                     LoadedProject->ExportFunscript(result.files[0], ActiveFunscriptIdx);
                                     std::filesystem::path dir = Util::PathFromString(result.files[0]);
                                     dir.remove_filename();
-                                    settings->data().last_path = dir.u8string();
+                                    settings->data().lastPath = dir.u8string();
                                 }
                             }, { "Funscript", "*.funscript" });
                     }
                     else if(LoadedFunscripts().size() > 1)
                     {
-                        Util::OpenDirectoryDialog(TR(EXPORT_MENU), settings->data().last_path,
+                        Util::OpenDirectoryDialog(TR(EXPORT_MENU), settings->data().lastPath,
                             [&](auto& result) {
                                 if (result.files.size() > 0) {
                                     LoadedProject->ExportFunscripts(result.files[0]);
@@ -2617,8 +2615,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             }
             ImGui::EndMenu();
         }
-        if (ImGui::BeginMenu(TR_ID("PROJECT", Tr::PROJECT), LoadedProject->Loaded))
-        {
+        if (ImGui::BeginMenu(TR_ID("PROJECT", Tr::PROJECT), LoadedProject->Loaded)) {
             if(ImGui::MenuItem(TR(CONFIGURE), NULL, &ShowProjectEditor)) {}
             ImGui::Separator();
             if (ImGui::MenuItem(TR(PICK_DIFFERENT_MEDIA))) {
@@ -2658,7 +2655,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     ImGui::EndMenu();
                 }
                 if (ImGui::MenuItem(TR(ADD_NEW))) {
-                    Util::SaveFileDialog(TR(ADD_NEW_FUNSCRIPT), settings->data().last_path,
+                    Util::SaveFileDialog(TR(ADD_NEW_FUNSCRIPT), settings->data().lastPath,
                         [fileAlreadyLoaded](auto& result) noexcept {
                             if (result.files.size() > 0) {
                                 auto app = OpenFunscripter::ptr;
@@ -2669,7 +2666,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         }, { "Funscript", "*.funscript" });
                 }
                 if (ImGui::MenuItem(TR(ADD_EXISTING))) {
-                    Util::OpenFileDialog(TR(ADD_EXISTING_FUNSCRIPTS), settings->data().last_path,
+                    Util::OpenFileDialog(TR(ADD_EXISTING_FUNSCRIPTS), settings->data().lastPath,
                         [fileAlreadyLoaded](auto& result) noexcept {
                             if (result.files.size() > 0) {
                                 for (auto&& scriptPath : result.files) {
@@ -2899,7 +2896,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 LastPositionTime = -1.f;
             }
 
-            if (ImGui::Checkbox(TR(ALWAYS_SHOW_LABELS), &settings->data().always_show_bookmark_labels)) {
+            if (ImGui::Checkbox(TR(ALWAYS_SHOW_LABELS), &settings->data().alwaysShowBookmarkLabels)) {
                 settings->saveSettings();
             }
 
@@ -2915,19 +2912,27 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem("Reset layout")) { setupDefaultLayout(true); }
             ImGui::Separator();
 #endif
-            if (ImGui::MenuItem(TR(STATISTICS), NULL, &settings->data().show_statistics)) {}
-            if (ImGui::MenuItem(TR(UNDO_REDO_HISTORY), NULL, &settings->data().show_history)) {}
-            if (ImGui::MenuItem(TR(SIMULATOR), NULL, &settings->data().show_simulator)) { settings->saveSettings(); }
-            if (ImGui::MenuItem(TR(SIMULATOR_3D), NULL, &settings->data().show_simulator_3d)) { settings->saveSettings(); }
+            if (ImGui::MenuItem(TR(STATISTICS), NULL, &settings->data().showStatistics)) {}
+            if (ImGui::MenuItem(TR(UNDO_REDO_HISTORY), NULL, &settings->data().showHistory)) {}
+            if (ImGui::MenuItem(TR(SIMULATOR), NULL, &settings->data().showSimulator)) { 
+                settings->saveSettings(); 
+            }
+            if (ImGui::MenuItem(TR(SIMULATOR_3D), NULL, &settings->data().showSimulator3d)) { 
+                settings->saveSettings(); 
+            }
             if (ImGui::MenuItem(TR(METADATA), NULL, &ShowMetadataEditor)) {}
-            if (ImGui::MenuItem(TR(ACTION_EDITOR), NULL, &settings->data().show_action_editor)) {}
-            if (ImGui::MenuItem(TR(SPECIAL_FUNCTIONS), NULL, &settings->data().show_special_functions)) {}
-            if (ImGui::MenuItem(TR(T_CODE), NULL, &settings->data().show_tcode)) {}
+            if (ImGui::MenuItem(TR(ACTION_EDITOR), NULL, &settings->data().showActionEditor)) {}
+            if (ImGui::MenuItem(TR(SPECIAL_FUNCTIONS), NULL, &settings->data().showSpecialFunctions)) {}
+            if (ImGui::MenuItem(TR(T_CODE), NULL, &settings->data().showTCode)) {}
 
             ImGui::Separator();
 
-            if (ImGui::MenuItem(TR(DRAW_VIDEO), NULL, &settings->data().draw_video)) { settings->saveSettings(); }
-            if (ImGui::MenuItem(TR(RESET_VIDEO_POS), NULL)) { playerWindow->ResetTranslationAndZoom(); }
+            if (ImGui::MenuItem(TR(DRAW_VIDEO), NULL, &settings->data().drawVideo)) { 
+                settings->saveSettings(); 
+            }
+            if (ImGui::MenuItem(TR(RESET_VIDEO_POS), NULL)) { 
+                playerWindow->ResetTranslationAndZoom(); 
+            }
 
             auto videoModeToString = [](VideoMode mode) -> const char*
             {
@@ -2976,7 +2981,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::Separator();
             if (ImGui::BeginMenu(TR(DEBUG))) {
                 if (ImGui::MenuItem(TR(METRICS), NULL, &DebugMetrics)) {}
-                if (ImGui::MenuItem(TR(LOG_OUTPUT), NULL, &settings->data().show_debug_log)) {}
+                if (ImGui::MenuItem(TR(LOG_OUTPUT), NULL, &settings->data().showDebugLog)) {}
 #ifndef NDEBUG
                 if (ImGui::MenuItem("ImGui Demo", NULL, &DebugDemo)) {}
 #endif
@@ -3032,14 +3037,14 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::Separator();
             for (auto& ext : extensions->Extensions) {
                 if(ImGui::BeginMenu(ext.NameId.c_str())) {
-                    bool isActive = ext.IsActive();
+                    bool isActive = ext.Active;
                     if(ImGui::MenuItem(TR(ENABLED), NULL, &isActive)) {
                         ext.Toggle();
                         if(ext.HasError()) {
                             Util::MessageBoxAlert(TR(UNKNOWN_ERROR), ext.Error);
                         }
                     }
-                    if(ImGui::MenuItem(Util::Format(TR(SHOW_WINDOW), ext.NameId.c_str()), NULL, &ext.WindowOpen, ext.IsActive())) {}
+                    if(ImGui::MenuItem(Util::Format(TR(SHOW_WINDOW), ext.NameId.c_str()), NULL, &ext.WindowOpen, ext.Active)) {}
                     if(ImGui::MenuItem(Util::Format(TR(OPEN_DIRECTORY), ext.NameId.c_str()), NULL)) {
                         Util::OpenFileExplorer(ext.Directory);            
                     }

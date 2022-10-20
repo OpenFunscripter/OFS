@@ -48,24 +48,6 @@ public:
 		std::string notes;
 		int64_t duration = 0;
 
-		template <class Archive>
-		inline void reflect(Archive& ar) {
-			OFS_REFLECT(type, ar);
-			OFS_REFLECT(title, ar);
-			OFS_REFLECT(creator, ar);
-			OFS_REFLECT(script_url, ar);
-			OFS_REFLECT(video_url, ar);
-			OFS_REFLECT(tags, ar);
-			OFS_REFLECT(performers, ar);
-			OFS_REFLECT(license, ar);
-			OFS_REFLECT(duration, ar);
-			OFS_REFLECT(description, ar);
-			OFS_REFLECT(notes, ar);
-		}
-
-		bool loadFromFunscript(const std::string& path) noexcept;
-		bool writeToFunscript(const std::string& path) noexcept;
-
 		template<typename S>
 		void serialize(S& s)
 		{
@@ -380,3 +362,18 @@ inline void Funscript::save(const std::string& path, bool override_location)
 	auto copyActions = data.Actions;
 	startSaveThread(path, std::move(copyActions), std::move(Json));
 }
+
+REFL_TYPE(Funscript::Metadata)
+	REFL_FIELD(type)
+	REFL_FIELD(title)
+	REFL_FIELD(creator)
+	REFL_FIELD(script_url)
+	REFL_FIELD(video_url)
+	REFL_FIELD(tags)
+	REFL_FIELD(performers)
+	REFL_FIELD(description)
+	REFL_FIELD(license)
+	REFL_FIELD(notes)
+	REFL_FIELD(duration)
+REFL_END
+

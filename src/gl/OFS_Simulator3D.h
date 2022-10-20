@@ -10,6 +10,12 @@
 #include <vector>
 #include <cstdint>
 
+struct Simulator3dSettings
+{
+	Serializable<glm::mat4> Translation;
+	float Zoom = 3.f;
+};
+
 class Simulator3D
 {
 private:
@@ -30,7 +36,7 @@ private:
 	bool TranslateEnabled = false;
 
 	static constexpr float MaxZoom = 10.f;
-	float Zoom = 3.f;
+	Simulator3dSettings settings;
 
 	float rollRange = 60.f;
 	float pitchRange = 90.f;
@@ -38,8 +44,7 @@ private:
 
     glm::mat4 projection;
 	glm::mat4 view;
-
-	glm::mat4 translation;
+	
 	glm::mat4 boxModel;
 	glm::mat4 containerModel;
 
@@ -81,11 +86,9 @@ public:
 
 	void ShowWindow(bool* open, float currentTime, bool easing, std::vector<std::shared_ptr<class Funscript>>& scripts) noexcept;
 	void renderSim() noexcept;
-
-
-	template <class Archive>
-	inline void reflect(Archive& ar) {
-		OFS_REFLECT(translation, ar);
-		OFS_REFLECT(Zoom, ar);
-	}
 };
+
+REFL_TYPE(Simulator3dSettings)
+	REFL_FIELD(Translation)
+	REFL_FIELD(Zoom)
+REFL_END

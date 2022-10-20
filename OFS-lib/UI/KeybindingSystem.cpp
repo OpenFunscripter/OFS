@@ -41,7 +41,7 @@ static const std::array<Tr, SDL_CONTROLLER_BUTTON_MAX> gameButtonTr {
     Tr::CONTROLLER_BUTTON_DPAD_RIGHT,
 };
 
-static constexpr std::array<uint16_t, 3> possibleModifiers{
+static constexpr std::array<uint16_t, 3> possibleModifiers {
     KMOD_SHIFT,
     KMOD_CTRL,
     KMOD_ALT
@@ -84,7 +84,7 @@ void KeybindingSystem::handleBindingModification(SDL_Event& ev, uint16_t modstat
         else {
             currentlyChanging->key.key = SDLK_UNKNOWN;
             currentlyChanging->key.modifiers = 0;
-            currentlyChanging->key.key_str = "";
+            currentlyChanging->key.keyStr = "";
         }
         currentlyChanging = nullptr;
         return;
@@ -138,8 +138,8 @@ breaking_out_of_nested_loop_lol:
 
     addKeyString(SDL_GetKeyName(key.keysym.sym));
     currentlyChanging->key.key = key.keysym.sym;
-    currentlyChanging->key.key_str = changeModalText;
-    bindingStrings[currentlyChanging->identifier] = currentlyChanging->key.key_str;
+    currentlyChanging->key.keyStr = changeModalText;
+    bindingStrings[currentlyChanging->identifier] = currentlyChanging->key.keyStr;
 
 
     currentlyChanging->key.modifiers = modstate;
@@ -175,7 +175,7 @@ bool KeybindingSystem::load(const std::string& path) noexcept
     auto json = Util::LoadJson(path, &succ);
     if (succ) {
         Keybindings bindings;
-        OFS::serializer::load(&bindings, &json["keybindings"]);
+        OFS::Serializer::Deserialize(bindings, json["keybindings"]);
         setBindings(bindings);
     }
     return succ;
@@ -184,7 +184,7 @@ bool KeybindingSystem::load(const std::string& path) noexcept
 void KeybindingSystem::save() noexcept
 {
     nlohmann::json json;
-    OFS::serializer::save(&ActiveBindings, &json["keybindings"]);
+    OFS::Serializer::Serialize(ActiveBindings, json["keybindings"]);
     Util::WriteJson(json, keybindingPath, true);
 }
 
@@ -425,8 +425,8 @@ void KeybindingSystem::setBindings(const Keybindings& bindings) noexcept
                     it->ignoreRepeats = keybind.ignoreRepeats;
                     it->key.key = keybind.key.key;
                     it->key.modifiers = keybind.key.modifiers;
-                    it->key.key_str = loadKeyString(keybind.key.key, keybind.key.modifiers);
-                    bindingStrings[it->identifier] = it->key.key_str;
+                    it->key.keyStr = loadKeyString(keybind.key.key, keybind.key.modifiers);
+                    bindingStrings[it->identifier] = it->key.keyStr;
 
                     // controller
                     it->controller.button = keybind.controller.button;
@@ -451,11 +451,11 @@ void KeybindingSystem::setBindings(const Keybindings& bindings) noexcept
                     // override defaults
                     it->key.key = keybind.key.key;
                     it->key.modifiers = keybind.key.modifiers;
-                    it->key.key_str = loadKeyString(keybind.key.key, keybind.key.modifiers);
+                    it->key.keyStr = loadKeyString(keybind.key.key, keybind.key.modifiers);
                     it->active = keybind.active;
 
                     passiveBindings[it->identifier] = *it;
-                    bindingStrings[it->identifier] = it->key.key_str;
+                    bindingStrings[it->identifier] = it->key.keyStr;
                 }
             }
         }
@@ -468,8 +468,8 @@ void KeybindingSystem::registerBinding(KeybindingGroup&& group) noexcept
 {
     ActiveBindings.groups.emplace_back(std::move(group));
     for (auto& binding : ActiveBindings.groups.back().bindings) {
-        binding.key.key_str = loadKeyString(binding.key.key, binding.key.modifiers);
-        bindingStrings[binding.identifier] = binding.key.key_str;
+        binding.key.keyStr = loadKeyString(binding.key.key, binding.key.modifiers);
+        bindingStrings[binding.identifier] = binding.key.keyStr;
     }
 }
 
@@ -477,8 +477,8 @@ void KeybindingSystem::registerPassiveBindingGroup(PassiveBindingGroup&& pgroup)
 {
     auto& pair = ActiveBindings.passiveGroups.emplace_back(std::move(pgroup));
     for (auto& binding : pair.bindings) {
-        binding.key.key_str = loadKeyString(binding.key.key, binding.key.modifiers);
-        bindingStrings[binding.identifier] = binding.key.key_str;
+        binding.key.keyStr = loadKeyString(binding.key.key, binding.key.modifiers);
+        bindingStrings[binding.identifier] = binding.key.keyStr;
         passiveBindings.insert(std::move(std::make_pair(binding.identifier, binding)));
     }
 }
@@ -489,7 +489,7 @@ void KeybindingSystem::addDynamicBinding(Binding&& binding) noexcept
         [&](auto& b) {
             return b.identifier == binding.identifier;
     });
-    binding.key.key_str = loadKeyString(binding.key.key, binding.key.modifiers);
+    binding.key.keyStr = loadKeyString(binding.key.key, binding.key.modifiers);
     if (it == ActiveBindings.DynamicBindings.bindings.end()) {
         ActiveBindings.DynamicBindings.bindings.emplace_back(std::move(binding));
     }
@@ -527,7 +527,7 @@ void KeybindingSystem::addPassiveBindingGroup(PassiveBindingGroup& group, bool& 
         for (auto& binding : group.bindings) {
             ImGui::PushID(binding.identifier.c_str());
             ImGui::TextUnformatted(TRD(binding.displayName)); ImGui::NextColumn();
-            if (ImGui::Button(!binding.key.key_str.empty() ? binding.key.key_str.c_str() : TR(KEY_NOT_SET), ImVec2(-1.f, 0.f))) {
+            if (ImGui::Button(!binding.key.keyStr.empty() ? binding.key.keyStr.c_str() : TR(KEY_NOT_SET), ImVec2(-1.f, 0.f))) {
                 changingController = false;
                 currentlyChangingPassive = &binding;
                 passiveChangingTempModifiers = binding.key.modifiers;
@@ -552,8 +552,8 @@ void KeybindingSystem::addPassiveBindingGroup(PassiveBindingGroup& group, bool& 
                 if (currentTime >= PassiveChangingTimeMs) {
                     if (passiveChangingTempModifiers != currentlyChangingPassive->key.modifiers) {
                         currentlyChangingPassive->key.key = 0;
-                        currentlyChangingPassive->key.key_str = changeModalText;
-                        bindingStrings[currentlyChangingPassive->identifier] = currentlyChangingPassive->key.key_str;
+                        currentlyChangingPassive->key.keyStr = changeModalText;
+                        bindingStrings[currentlyChangingPassive->identifier] = currentlyChangingPassive->key.keyStr;
                         currentlyChangingPassive->key.modifiers = GetModifierState(passiveChangingTempModifiers);
                         passiveBindings[currentlyChangingPassive->identifier] = *currentlyChangingPassive;
                     }
@@ -722,7 +722,7 @@ void KeybindingSystem::addBindingsGroup(KeybindingGroup& group, bool& save, bool
             ImGui::PushID(binding.identifier.c_str());
             ImGui::TextUnformatted(binding.name());
             ImGui::NextColumn();
-            if (ImGui::Button(!binding.key.key_str.empty() ? binding.key.key_str.c_str() : TR(KEY_NOT_SET), ImVec2(-1.f, 0.f))) {
+            if (ImGui::Button(!binding.key.keyStr.empty() ? binding.key.keyStr.c_str() : TR(KEY_NOT_SET), ImVec2(-1.f, 0.f))) {
                 changingController = false;
                 currentlyChanging = &binding;
                 changeModalText = std::string();

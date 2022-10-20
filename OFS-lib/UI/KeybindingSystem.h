@@ -25,7 +25,7 @@ using DynamicBindingHandler = std::function<void(class Binding*)>;
 
 struct Keybinding
 {
-	std::string key_str;
+	std::string keyStr;
 	SDL_Keycode key;
 	Uint16 modifiers;
 
@@ -36,14 +36,13 @@ struct Keybinding
 	Keybinding(SDL_Keycode key, Uint16 mod) noexcept
 		: key(key), modifiers(mod)
 	{}
-
-	template <class Archive>
-	inline void reflect(Archive& ar) {
-		OFS_REFLECT(key_str, ar);
-		OFS_REFLECT(key, ar);
-		OFS_REFLECT(modifiers, ar);
-	}
 };
+
+REFL_TYPE(Keybinding)
+	REFL_FIELD(keyStr)
+	REFL_FIELD(key)
+	REFL_FIELD(modifiers)
+REFL_END
 
 struct ControllerBinding {
 	int32_t button = -1;
@@ -53,13 +52,12 @@ struct ControllerBinding {
 		: button(-1), navmode(false) {}
 	ControllerBinding(int32_t button, bool navmode) noexcept
 		: button(button), navmode(navmode) {}
-
-	template<class Archive>
-	inline void reflect(Archive& ar) {
-		OFS_REFLECT(button, ar);
-		OFS_REFLECT(navmode, ar);
-	}
 };
+
+REFL_TYPE(ControllerBinding)
+	REFL_FIELD(button)
+	REFL_FIELD(navmode)
+REFL_END
 
 struct Binding {
 	std::string identifier;
@@ -81,16 +79,6 @@ struct Binding {
 	Binding(const std::string& id, const std::string dynamicName, bool ignoreRepeats, BindingAction action) noexcept
 		: identifier(id), dynamicName(dynamicName), ignoreRepeats(ignoreRepeats), action(action), displayName(Tr::INVALID_TR) {}
 
-	template<class Archive>
-	inline void reflect(Archive& ar) {
-		OFS_REFLECT(identifier, ar);
-		OFS_REFLECT(key, ar);
-		OFS_REFLECT(controller, ar);
-		OFS_REFLECT(ignoreRepeats, ar);
-		OFS_REFLECT(dynamicHandlerId, ar);
-		OFS_REFLECT(dynamicName, ar);
-	}
-
 	inline void execute() noexcept {
 		if (action != nullptr) {
 			action(userdata == nullptr ? this : userdata);
@@ -108,6 +96,15 @@ struct Binding {
 	}
 };
 
+REFL_TYPE(Binding)
+	REFL_FIELD(identifier)
+	REFL_FIELD(key)
+	REFL_FIELD(controller)
+	REFL_FIELD(ignoreRepeats)
+	REFL_FIELD(dynamicHandlerId)
+	REFL_FIELD(dynamicName)
+REFL_END
+
 struct KeybindingGroup {
 	std::string name;
 	Tr displayName;
@@ -119,13 +116,12 @@ struct KeybindingGroup {
 	KeybindingGroup(const char* name_id, Tr displayName) noexcept
 		: name(name_id), displayName(displayName)
 	{}
-
-	template<class Archive>
-	inline void reflect(Archive& ar) {
-		OFS_REFLECT(name, ar);
-		OFS_REFLECT(bindings, ar);
-	}
 };
+
+REFL_TYPE(KeybindingGroup)
+	REFL_FIELD(name)
+	REFL_FIELD(bindings)
+REFL_END
 
 
 struct PassiveBinding
@@ -139,14 +135,13 @@ struct PassiveBinding
 
 	PassiveBinding(const std::string& id, Tr displayName, bool active = true) noexcept
 		: identifier(id), displayName(displayName), active(active) {}
-
-	template<class Archive>
-	inline void reflect(Archive& ar) {
-		OFS_REFLECT(identifier, ar);
-		OFS_REFLECT(key, ar);
-		OFS_REFLECT(active, ar);
-	}
 };
+
+REFL_TYPE(PassiveBinding)
+	REFL_FIELD(identifier)
+	REFL_FIELD(key)
+	REFL_FIELD(active)
+REFL_END
 
 struct PassiveBindingGroup
 {
@@ -168,27 +163,26 @@ struct PassiveBindingGroup
 	}
 };
 
+REFL_TYPE(PassiveBindingGroup)
+	REFL_FIELD(name)
+	REFL_FIELD(bindings)
+REFL_END
+
 constexpr const char* CurrentKeybindingsVersion = "2";
 struct Keybindings {
-	std::string config_version = CurrentKeybindingsVersion;
+	std::string configVersion = CurrentKeybindingsVersion;
 	std::vector<KeybindingGroup> groups;
 	std::vector<PassiveBindingGroup> passiveGroups;
 
 	KeybindingGroup DynamicBindings{ "Dynamic", Tr::DYNAMIC_BINDING_GROUP };
-
-	template<class Archive>
-	inline void reflect(Archive& ar) {
-		OFS_REFLECT(config_version, ar);
-		if (config_version != CurrentKeybindingsVersion) {
-			LOGF_WARN("Keybindings version \"%s\" didn't match \"%s\". Bindings are reset.", config_version.c_str(), CurrentKeybindingsVersion);
-			config_version = CurrentKeybindingsVersion;
-			return;
-		}
-		OFS_REFLECT(groups, ar);
-		OFS_REFLECT(passiveGroups, ar);
-		OFS_REFLECT(DynamicBindings, ar);
-	}
 };
+
+REFL_TYPE(Keybindings)
+	REFL_FIELD(configVersion)
+	REFL_FIELD(groups)
+	REFL_FIELD(passiveGroups)
+	REFL_FIELD(DynamicBindings)
+REFL_END
 
 class KeybindingSystem 
 {

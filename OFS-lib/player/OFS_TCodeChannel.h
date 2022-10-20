@@ -10,7 +10,7 @@
 class TCodeChannel {
 public:
 	// 2 characters + 0 terminator
-	char Id[3] = "\0";
+	std::array<char, 3> Id = {'\0', '\0', '\0'};
 	int32_t LastTCodeValue = -1;
 	int32_t NextTCodeValue = -1;
 
@@ -28,10 +28,10 @@ public:
 	bool Invert = false;
 
 	inline void SetId(const char id[3]) noexcept {
-		strcpy(Id, id);
+		strcpy(Id.data(), id);
 	}
 
-	TCodeChannel() { reset(); }
+	TCodeChannel() noexcept { reset(); }
 
 	inline int32_t GetPos(float relative) noexcept
 	{
@@ -82,18 +82,20 @@ public:
 		LastTCodeValue = 499;
 		NextTCodeValue = 500;
 	}
-
-	template <class Archive>
-	inline void reflect(Archive& ar) {
-		std::string id = Id;
-		OFS_REFLECT(id, ar);
-		OFS_REFLECT_PTR_NAMED("minimum", &limits[0], ar);
-		OFS_REFLECT_PTR_NAMED("maximum", &limits[1], ar);
-		OFS_REFLECT(Rebalance, ar);
-		OFS_REFLECT(Invert, ar);
-		OFS_REFLECT(Enabled, ar);
-	}
 };
+
+REFL_TYPE(TCodeChannel)
+	REFL_FIELD(Id)
+	REFL_FIELD(limits)
+	REFL_FIELD(Rebalance)
+	REFL_FIELD(Invert)
+	REFL_FIELD(Enabled)
+	
+	// FIXME: these variables are static and should be moved upward into the TCodePlayer
+	// right now they're serialized 9 times redundantly for each channel
+	REFL_FIELD(SplineMode)
+	REFL_FIELD(RemapToFullRange)
+REFL_END
 
 
 enum class TChannel : int32_t {
@@ -193,9 +195,8 @@ public:
 		OFS_PROFILE(__FUNCTION__);
 		for (auto& c : channels) c.reset();
 	}
-
-	template <class Archive>
-	inline void reflect(Archive& ar) {
-		OFS_REFLECT(channels, ar);
-	}
 };
+
+REFL_TYPE(TCodeChannels)
+	REFL_FIELD(channels)
+REFL_END
