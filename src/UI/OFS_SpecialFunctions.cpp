@@ -179,7 +179,7 @@ inline static float PointLineDistance(FunscriptAction pt, FunscriptAction lineSt
     return sqrtf(ax * ax + ay * ay);
 }
 
-static auto DouglasPeucker(const FunscriptArray& points, int startIndex, int lastIndex, float epsilon) noexcept {
+static std::vector<bool> DouglasPeucker(const FunscriptArray& points, int startIndex, int lastIndex, float epsilon) noexcept {
     OFS_PROFILE(__FUNCTION__);
     std::vector<std::pair<int, int>> stk;
     stk.push_back(std::make_pair(startIndex, lastIndex));
@@ -218,7 +218,7 @@ static auto DouglasPeucker(const FunscriptArray& points, int startIndex, int las
         }
     }
 
-    return std::move(bitArray);
+    return bitArray;
 }
 
 static void DouglasPeucker(const FunscriptArray& points, float epsilon, FunscriptArray& newActions) noexcept {

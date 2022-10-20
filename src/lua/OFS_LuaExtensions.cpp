@@ -48,9 +48,10 @@ bool OFS_LuaExtensions::Init() noexcept
 void OFS_LuaExtensions::load(const std::string& path) noexcept
 {
 	LastConfigPath = path;
-	bool suc;
-	auto json = Util::LoadJson(path, &suc);
-	if (suc) {
+	bool succ;
+	auto jsonText = Util::ReadFileString(path.c_str());
+	auto json = Util::ParseJson(jsonText, &succ);
+	if (succ) {
 		OFS::Serializer::Deserialize(*this, json);
 		removeNonExisting();		
 	}
@@ -82,7 +83,8 @@ void OFS_LuaExtensions::save() noexcept
 {
 	nlohmann::json json;
 	OFS::Serializer::Serialize(*this, json);
-	Util::WriteJson(json, LastConfigPath, true);
+	auto jsonText = Util::SerializeJson(json, true);
+	Util::WriteFile(LastConfigPath.c_str(), jsonText.data(), jsonText.size());
 }
 
 void OFS_LuaExtensions::removeNonExisting() noexcept

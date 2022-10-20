@@ -82,7 +82,8 @@ void Simulator3D::reset() noexcept
 void Simulator3D::load(const std::string& path) noexcept
 {
     bool succ;
-    nlohmann::json json = Util::LoadJson(path.c_str(), &succ);
+    auto jsonText = Util::ReadFileString(path.c_str());
+    auto json = Util::ParseJson(jsonText, &succ);
     if (succ) {
         OFS::Serializer::Deserialize(settings, json);
     }
@@ -92,7 +93,8 @@ void Simulator3D::save(const std::string& path) noexcept
 {
     nlohmann::json json;
     OFS::Serializer::Serialize(settings, json);
-    Util::WriteJson(json, path.c_str(), true);
+    auto jsonText = Util::SerializeJson(json, true);
+    Util::WriteFile(path.c_str(), jsonText.data(), jsonText.size());
 }
 
 Simulator3D::~Simulator3D()

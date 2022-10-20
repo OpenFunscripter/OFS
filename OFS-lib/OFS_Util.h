@@ -117,29 +117,6 @@ public:
 		return startVal + ((endVal - startVal) * t);
 	}
 
-	inline static auto LoadJson(const std::string& file, bool* success) noexcept { return LoadJson(file.c_str(), success, file.size()); }
-	inline static nlohmann::json LoadJson(const char* file, bool* success, int32_t path_len = 0) noexcept {
-		auto handle = OpenFile(file, "rb", path_len == 0 ? strlen(file) : path_len);
-		nlohmann::json j;
-		if (handle != nullptr) {
-			size_t size = handle->size(handle);
-			std::string buffer;
-			buffer.resize(size + 1);
-			SDL_RWread(handle, buffer.data(), sizeof(char), size);
-			buffer[size] = '\0';
-			if (size > 0) {
-				j = nlohmann::json::parse(buffer, nullptr, false, true);
-				*success = !j.is_discarded();
-			}
-			SDL_RWclose(handle);
-		}
-		else {
-			*success = false;
-		}
-		
-		return j;
-	}
-
 #ifdef WIN32
 	inline static std::string WindowsMaxPath(const char* path, int32_t pathLen) noexcept
 	{
@@ -147,7 +124,7 @@ public:
 		buffer.reserve(strlen("\\\\?\\") + pathLen);
 		buffer.append("\\\\?\\");
 		buffer.append(path, pathLen);
-		return std::move(buffer);
+		return buffer;
 	}
 #endif
 
@@ -168,23 +145,9 @@ public:
 		return handle;
 	}
 
-	inline static size_t AppendToFile(const char* path, const char* buffer, size_t size, bool newLine) noexcept
-	{
-		size_t written = 0;
-		auto file = OpenFile(path, "a", strlen(path));
-		if (file) {
-			written = SDL_RWwrite(file, buffer, sizeof(char), size);
-			if (newLine) {
-				SDL_RWwrite(file, "\n", 1, 1);
-			}
-			SDL_RWclose(file);
-		}
-		return written;
-	}
-
 	inline static size_t ReadFile(const char* path, std::vector<uint8_t>& buffer) noexcept
 	{
-		auto file = OpenFile(path, "r", strlen(path));
+		auto file = OpenFile(path, "rb", strlen(path));
 		if (file) {
 			buffer.clear();
 			buffer.resize(SDL_RWsize(file));
@@ -195,30 +158,68 @@ public:
 		return 0;
 	}
 
-	inline static size_t WriteFile(const char* path, uint8_t* buffer, size_t size) noexcept
+	inline static std::string ReadFileString(const char* path) noexcept
+	{
+		std::string str;
+		auto file = OpenFile(path, "rb", strlen(path));
+		if (file) {
+			str.resize(SDL_RWsize(file));
+			SDL_RWread(file, str.data(), 1, str.size());
+			SDL_RWclose(file);
+		}
+		return str;
+	}
+
+	inline static size_t WriteFile(const char* path, const void* buffer, size_t size) noexcept
 	{
 		auto file = OpenFile(path, "wb", strlen(path));
 		if (file) {
-			auto written = SDL_RWwrite(file, buffer, sizeof(uint8_t), size);
+			auto written = SDL_RWwrite(file, buffer, 1, size);
 			SDL_RWclose(file);
 			return written;
 		}
 		return 0;
 	}
 
-	inline static void WriteJson(const nlohmann::json& json, const std::string& file, bool pretty = false) noexcept {
-		return WriteJson(json, file.c_str(), pretty, file.size());
+	inline static nlohmann::json ParseJson(const std::string& jsonText, bool* success) noexcept 
+	{
+		nlohmann::json json;
+		*success = false;
+		if (!jsonText.empty()) {
+			json = nlohmann::json::parse(jsonText, nullptr, false, true);
+			*success = !json.is_discarded();
+		}
+		return json;
 	}
-	inline static void WriteJson(const nlohmann::json& json, const char* file, bool pretty = false, int32_t path_len = 0) noexcept {
-		auto handle = OpenFile(file, "wb", path_len == 0 ? strlen(file) : path_len);
-		if (handle != nullptr) {
-			auto jsonText = json.dump((pretty) ? 4 : -1, ' ');
-			SDL_RWwrite(handle, jsonText.data(), sizeof(char), jsonText.size());
-			SDL_RWclose(handle);
+
+	inline static nlohmann::json ParseCBOR(const std::vector<uint8_t>& data, bool* success) noexcept
+	{
+		auto json = nlohmann::json::from_cbor(data);
+		*success = !json.is_discarded();
+		return json;
+	}
+
+	inline static std::string SerializeJson(const nlohmann::json& json, bool pretty = false) noexcept
+	{
+		auto jsonText = json.dump(pretty ? 4 : -1, ' ');
+		return jsonText;
+	}
+
+	inline static std::vector<uint8_t> SerializeCBOR(const nlohmann::json& json) noexcept
+	{
+		auto data = nlohmann::json::to_cbor(json);
+		return data;
+	}
+
+	inline static nlohmann::json LoadCBOR(const std::vector<uint8_t>& data, bool* success) noexcept
+	{
+		nlohmann::json json;
+		*success = false;
+		if(!data.empty()) {
+			json = nlohmann::json::from_cbor(data);
+			*success = !json.is_discarded();
 		}
-		else {
-			LOGF_ERROR("Failed to save: \"%s\"\n%s", file, SDL_GetError());
-		}
+		return json;
 	}
 
 	static inline size_t FormatTime(char* buffer, size_t buf_size, float time_seconds, bool with_ms) noexcept {

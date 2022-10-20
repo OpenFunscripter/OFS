@@ -84,10 +84,12 @@ void Funscript::startSaveThread(const std::string& path, FunscriptArray&& action
 	}
 
 #ifdef NDEBUG
-		Util::WriteJson(data->jsonObj, data->path.c_str());
+		auto jsonText = Util::SerializeJson(data->jsonObj);
 #else
-		Util::WriteJson(data->jsonObj, data->path.c_str(), true);
+		auto jsonText = Util::SerializeJson(data->jsonObj, true);
 #endif
+		Util::WriteFile(data->path.c_str(), jsonText.data(), jsonText.size());
+
 		SDL_UnlockMutex(data->mutex);
 		delete data;
 		return 0;
@@ -275,7 +277,7 @@ std::vector<FunscriptAction> Funscript::GetLastStroke(float time) noexcept
 		prevPos = it->pos;
 		if (it == data.Actions.begin()) break;
 	}
-	return std::move(stroke);
+	return stroke;
 }
 
 void Funscript::SetActions(const FunscriptArray& override_with) noexcept

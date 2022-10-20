@@ -307,13 +307,16 @@ inline bool Funscript::open(const std::string& file)
 {
 	OFS_PROFILE(__FUNCTION__);
 	UpdatePath(file);
-	scriptOpened = true;
+	scriptOpened = false;
 
 	{
 		nlohmann::json json;
-		json = Util::LoadJson(file, &scriptOpened);
+		auto jsonText = Util::ReadFileString(file.c_str());
+		if(!jsonText.empty()) {
+			json = Util::ParseJson(jsonText, &scriptOpened);
+		}
 
-		if (!scriptOpened || !json.is_object() && json["actions"].is_array()) {
+		if (!scriptOpened || !json.is_object() || !json["actions"].is_array()) {
 			LOGF_ERROR("Failed to parse funscript. \"%s\"", file.c_str());
 			return false;
 		}

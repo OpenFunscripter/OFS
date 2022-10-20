@@ -16,6 +16,8 @@ namespace OFS
 	template<>
 	struct is_json_compatible<float> : std::true_type {};
 	template<>
+	struct is_json_compatible<size_t> : std::true_type {};
+	template<>
 	struct is_json_compatible<int64_t> : std::true_type {};
 	template<>
 	struct is_json_compatible<int32_t> : std::true_type {};

@@ -14,10 +14,11 @@ OFS_Settings::OFS_Settings(const std::string& config) noexcept
 {
 	bool success = false;
 	if (Util::FileExists(config)) {
-		configObj = Util::LoadJson(config, &success);
+		auto jsonText = Util::ReadFileString(config.c_str());
+		configObj = Util::ParseJson(jsonText, &success);
 		if (!success) {
 			LOGF_ERROR("Failed to parse config @ \"%s\"", config.c_str());
-			configObj.clear();
+			configObj = nlohmann::json();
 		}
 	}
 
@@ -31,7 +32,8 @@ OFS_Settings::OFS_Settings(const std::string& config) noexcept
 
 void OFS_Settings::saveConfig() noexcept
 {
-	Util::WriteJson(configObj, config_path, true);
+	auto jsonText = Util::SerializeJson(configObj, true);
+	Util::WriteFile(config_path.c_str(), jsonText.data(), jsonText.size());
 }
 
 void OFS_Settings::loadConfig() noexcept
