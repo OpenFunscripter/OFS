@@ -513,7 +513,11 @@ void OFS_Project::ShowProjectWindow(bool* open) noexcept
 		
 		ImGui::Text("%s: %s", TR(MEDIA), MediaPath.c_str()); 
 		OFS::Tooltip(MediaPath.c_str());
+		
+		Util::FormatTime(Util::FormatBuffer, sizeof(Util::FormatBuffer), ProjectSettings.activeTimer, true);
+		ImGui::Text("%s: %s", TR(TIME_SPENT), Util::FormatBuffer);
 		ImGui::Separator();
+
 		ImGui::Spacing();
 		ImGui::TextDisabled(TR(SCRIPTS));
 		for (auto& script : Funscripts) {
@@ -533,5 +537,12 @@ void OFS_Project::ShowProjectWindow(bool* open) noexcept
 		}
 		ImGui::PopID();
 		ImGui::EndPopup();
+	}
+}
+
+void OFS_Project::Update(float delta, bool idleMode) noexcept
+{
+	if(!idleMode) {
+		ProjectSettings.activeTimer += delta;
 	}
 }

@@ -1687,7 +1687,7 @@ void OpenFunscripter::PlayPauseChange(SDL_Event& ev) noexcept
 
 void OpenFunscripter::update() noexcept {
     OFS_PROFILE(__FUNCTION__);
-    float& delta = ImGui::GetIO().DeltaTime;
+    const float delta = ImGui::GetIO().DeltaTime;
     extensions->Update(delta);
     player->Update(delta);
     ActiveFunscript()->update();
@@ -1695,6 +1695,10 @@ void OpenFunscripter::update() noexcept {
     scripting->Update();
     scriptTimeline.Update();
     
+    if(LoadedProject->Valid) {
+        LoadedProject->Update(delta, IdleMode);
+    }
+
     if (Status & OFS_Status::OFS_AutoBackup) {
         autoBackup();
     }
