@@ -118,8 +118,17 @@ bool OpenFunscripter::imguiSetup() noexcept
     return true;
 }
 
+static void SaveState() noexcept
+{
+    auto stateJson = OFS_StateManager::Get()->SerializeAll();
+    auto stateBin = Util::SerializeCBOR(stateJson);
+    auto statePath = Util::Prefpath("state.ofs");
+    Util::WriteFile(statePath.c_str(), stateBin.data(), stateBin.size());
+}
+
 OpenFunscripter::~OpenFunscripter()
 {
+    SaveState();
     tcode->save();
 
     // needs a certain destruction order
@@ -137,14 +146,29 @@ OpenFunscripter::~OpenFunscripter()
     events.reset();
 }
 
-bool OpenFunscripter::setup(int argc, char* argv[])
+bool OpenFunscripter::setup(int argc, char* argv[]) noexcept
 {
     OFS_FileLogger::Init();
     Util::InMainThread();
-    FUN_ASSERT(ptr == nullptr, "there can only be one instance");
+    FUN_ASSERT(!ptr, "there can only be one instance");
     ptr = this;
+
     auto prefPath = Util::Prefpath("");
     Util::CreateDirectories(prefPath);
+
+    OFS_StateManager::Init();
+    {
+        auto stateMgr = OFS_StateManager::Get();
+        std::vector<uint8_t> fileData;
+        auto statePath = Util::Prefpath("state.ofs");
+        if(Util::ReadFile(statePath.c_str(), fileData) > 0) {
+            bool succ;
+            auto cbor = Util::ParseCBOR(fileData, &succ);
+            if(succ) {
+                stateMgr->DeserializeAll(cbor);
+            }
+        }
+    }
 
     settings = std::make_unique<OFS_Settings>(Util::Prefpath("config.json"));
     
@@ -275,7 +299,7 @@ bool OpenFunscripter::setup(int argc, char* argv[])
     simulator.setup();
 
     sim3D = std::make_unique<Simulator3D>();
-    sim3D->setup();
+    sim3D->Init();
 
     // callback that renders the simulator right after the video
     playerWindow->OnRenderCallback = [](const ImDrawList * parent_list, const ImDrawCmd * cmd) {

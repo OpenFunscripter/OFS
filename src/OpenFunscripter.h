@@ -1,7 +1,7 @@
 #pragma once
 #include "OFS_ScriptingMode.h"
 #include "KeybindingSystem.h"
-#include "OFS_Settings.h"
+#include "OFS_Preferences.h"
 #include "OFS_ScriptTimeline.h"
 #include "OFS_UndoSystem.h"
 #include "EventSystem.h"
@@ -19,6 +19,7 @@
 #include "OFS_DynamicFontAtlas.h"
 #include "OFS_LuaExtensions.h"
 #include "OFS_Localization.h"
+#include "OFS_StateManager.h"
 
 #include "OFS_Videoplayer.h"
 #include "OFS_VideoplayerWindow.h"
@@ -103,7 +104,6 @@ private:
 	bool closeProject(bool closeWithUnsavedChanges) noexcept;
 	void pickDifferentMedia() noexcept;
 
-
 	void saveHeatmap(const char* path, int width, int height);
 	void updateTitle() noexcept;
 
@@ -161,7 +161,7 @@ public:
 	std::unique_ptr<OFS_Project> LoadedProject;
 	std::unique_ptr<OFS_AsyncIO> IO;
 
-	bool setup(int argc, char* argv[]);
+	bool setup(int argc, char* argv[]) noexcept;
 	int run() noexcept;
 	void step() noexcept;
 	void shutdown() noexcept;

@@ -1,7 +1,6 @@
 #pragma once
 #include "glm/mat4x4.hpp"
 #include "glm/vec3.hpp"
-#include "OFS_Reflection.h"
 
 #include "imgui.h"
 
@@ -9,15 +8,12 @@
 #include <memory>
 #include <vector>
 #include <cstdint>
-
-struct Simulator3dSettings
-{
-	Serializable<glm::mat4> Translation;
-	float Zoom = 3.f;
-};
+#include <any>
 
 class Simulator3D
 {
+public:
+	static constexpr const char* StateName = "Simulator3D";
 private:
 	enum IsEditing : uint8_t
 	{
@@ -36,7 +32,7 @@ private:
 	bool TranslateEnabled = false;
 
 	static constexpr float MaxZoom = 10.f;
-	Simulator3dSettings settings;
+	uint32_t stateHandle = 0xFFFF'FFFF;
 
 	float rollRange = 60.f;
 	float pitchRange = 90.f;
@@ -60,7 +56,6 @@ public:
 	int32_t pitchIndex = 2;
 	int32_t twistIndex = 3;
 private:
-
 	ImColor boxColor = IM_COL32(245, 164, 66, (int)(0.8f * 255));
 	ImColor containerColor = IM_COL32(66, 135, 245, (int)(0.6f * 255));
 	ImColor twistBoxColor = IM_COL32(255, 0, 0, 150);
@@ -73,22 +68,13 @@ private:
 	float globalYaw = 0.f;
 	float globalPitch = 0.f;
 
-	void reset() noexcept;
-
-	void load(const std::string& path) noexcept;
-	void save(const std::string& path) noexcept;
+	void Reset(bool ignoreState = false) noexcept;
 public:
 	int32_t RollOverride = -1;
 	int32_t PitchOverride = -1;
 
-	~Simulator3D();
-	void setup() noexcept;
-
+	void Init() noexcept;
 	void ShowWindow(bool* open, float currentTime, bool easing, std::vector<std::shared_ptr<class Funscript>>& scripts) noexcept;
 	void renderSim() noexcept;
 };
 
-REFL_TYPE(Simulator3dSettings)
-	REFL_FIELD(Translation)
-	REFL_FIELD(Zoom)
-REFL_END

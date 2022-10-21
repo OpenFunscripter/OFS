@@ -15,6 +15,9 @@
 #include "OpenFunscripter.h"
 #include "OFS_Shader.h"
 
+#include "OFS_Reflection.h"
+#include "OFS_StateHandle.h"
+
 // cube pos + normals
 constexpr float vertices[] = {
     -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -64,47 +67,27 @@ constexpr float simLength = 2.f;
 constexpr float simDistance = 5.f;
 constexpr float simCubeSize = 0.5f;
 
-void Simulator3D::reset() noexcept
+struct Simulator3dState
 {
-    view = glm::mat4(1.f);
-    viewPos = glm::vec3(0.f, 0.f, 0.f);
-    view = glm::translate(view, viewPos);
+	Serializable<glm::mat4> Translation;
+	float Distance = 3.f;
+};
 
-    settings.Translation = glm::mat4(1.f);
-    settings.Translation = glm::translate(settings.Translation.Value, glm::vec3(0.f, 0.f, -simDistance));
+REFL_TYPE(Simulator3dState)
+	REFL_FIELD(Translation)
+	REFL_FIELD(Distance)
+REFL_END
 
-    lightPos = glm::vec3(0.f, 0.f, 0.f);
+OFS_REGISTER_STATE(Simulator3dState);
 
-    settings.Zoom = 3.f;
-    ImGuizmo::SetOrthographic(true);
+static inline auto& State(uint32_t stateHandle) noexcept
+{
+    return OFS_StateHandle<Simulator3dState>(stateHandle).Get();
 }
 
-void Simulator3D::load(const std::string& path) noexcept
+void Simulator3D::Init() noexcept
 {
-    bool succ;
-    auto jsonText = Util::ReadFileString(path.c_str());
-    auto json = Util::ParseJson(jsonText, &succ);
-    if (succ) {
-        OFS::Serializer::Deserialize(settings, json);
-    }
-}
-
-void Simulator3D::save(const std::string& path) noexcept
-{
-    nlohmann::json json;
-    OFS::Serializer::Serialize(settings, json);
-    auto jsonText = Util::SerializeJson(json, true);
-    Util::WriteFile(path.c_str(), jsonText.data(), jsonText.size());
-}
-
-Simulator3D::~Simulator3D()
-{
-    auto path = Util::Prefpath("sim3d.json");
-    save(path);
-}
-
-void Simulator3D::setup() noexcept
-{
+    stateHandle = OFS_StateHandle<Simulator3dState>::Register(Simulator3D::StateName);
 	lightShader = std::make_unique<LightingShader>();
 
     glGenVertexArrays(1, &cubeVAO);
@@ -122,9 +105,24 @@ void Simulator3D::setup() noexcept
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    reset();
-    auto path = Util::Prefpath("sim3d.json");
-    load(path);
+    Reset(true);
+}
+
+void Simulator3D::Reset(bool ignoreState) noexcept
+{
+    view = glm::mat4(1.f);
+    viewPos = glm::vec3(0.f, 0.f, 0.f);
+    view = glm::translate(view, viewPos);
+
+    if(!ignoreState) {
+        auto& state = State(stateHandle);
+        state.Translation = glm::mat4(1.f);
+        state.Translation = glm::translate(state.Translation.Value, glm::vec3(0.f, 0.f, -simDistance));
+        state.Distance = 3.f;
+    }
+
+    lightPos = glm::vec3(0.f, 0.f, 0.f);
+    ImGuizmo::SetOrthographic(true);
 }
 
 void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::vector<std::shared_ptr<Funscript>>& scripts) noexcept
@@ -134,10 +132,10 @@ void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::ve
     const int32_t loadedScriptsCount = scripts.size();
     auto viewport = ImGui::GetMainViewport();
     
-    const auto& Zoom = settings.Zoom;
+    auto& state = State(stateHandle);
 
     float ratio = viewport->Size.x / viewport->Size.y;
-    projection = glm::ortho(-Zoom*ratio, Zoom*ratio, -Zoom, Zoom, 0.1f, 100.f);
+    projection = glm::ortho(-state.Distance*ratio, state.Distance*ratio, -state.Distance, state.Distance, 0.1f, 100.f);
 
     ImGui::Begin(TR_ID("SIMULATOR_3D", Tr::SIMULATOR_3D), open, ImGuiWindowFlags_None);
 
@@ -188,7 +186,7 @@ void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::ve
     {
         if (ImGui::BeginTabItem(TR(CONFIGURATION))) {
             if (ImGui::Button(TR(RESET), ImVec2(-1.f, 0.f))) {
-                reset();
+                Reset();
             }
 
             if (ImGui::Button(TR(MOVE), ImVec2(-1.f, 0.f))) { TranslateEnabled = !TranslateEnabled; }
@@ -197,14 +195,15 @@ void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::ve
 
 
             if (TranslateEnabled) {
-                auto draw_list = ImGui::GetForegroundDrawList(viewport);
-                ImGuizmo::SetDrawlist(draw_list);
+                auto drawList = ImGui::GetForegroundDrawList(viewport);
+                ImGuizmo::SetDrawlist(drawList);
                 ImGuizmo::SetRect(viewport->Pos.x, viewport->Pos.y, viewport->Size.x, viewport->Size.y);
+
                 if (ImGuizmo::Manipulate(glm::value_ptr(view),
                     glm::value_ptr(projection),
                     ImGuizmo::OPERATION::TRANSLATE,
                     ImGuizmo::MODE::WORLD,
-                    glm::value_ptr(settings.Translation.Value), NULL, NULL)) {
+                    glm::value_ptr(state.Translation.Value), NULL, NULL)) {
                     auto g = ImGui::GetCurrentContext();
                     auto window = ImGui::GetCurrentWindow();
                     g->HoveredWindow = window;
@@ -212,7 +211,7 @@ void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::ve
                 }
             }
 
-            ImGui::SliderFloat(TR(DISTANCE), &settings.Zoom, 0.1f, MaxZoom);
+            ImGui::SliderFloat(TR(DISTANCE), &state.Distance, 0.1f, MaxZoom);
             ImGui::SliderAngle(TR(GLOBAL_YAW), &globalYaw, -180.f, 180.f);
             ImGui::SliderAngle(TR(GLOBAL_PITCH), &globalPitch, -90.f, 90.f);
 
@@ -328,7 +327,7 @@ void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::ve
     ImGui::End();
 
     {
-        glm::mat4 directionMtx = settings.Translation;
+        glm::mat4 directionMtx = state.Translation;
 
         directionMtx = glm::rotate(directionMtx, globalYaw, glm::vec3(0.f, 1.f, 0.f));
         directionMtx = glm::rotate(directionMtx, globalPitch, glm::vec3(1.f, 0.f, 0.f));
@@ -347,7 +346,7 @@ void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::ve
         glm::quat orientation;
         glm::vec3 skew;
         glm::vec4 perspec;
-        glm::decompose(settings.Translation.Value, scale, orientation, position, skew, perspec);
+        glm::decompose(state.Translation.Value, scale, orientation, position, skew, perspec);
     }
     
     constexpr float antiZBufferFight = 0.005f;

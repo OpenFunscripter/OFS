@@ -8,7 +8,7 @@ set(OPEN_FUNSCRIPTER_SOURCES
   
   "Funscript/OFS_ScriptSettings.cpp"
   
-  "UI/OFS_Settings.cpp"
+  "UI/OFS_Preferences.cpp"
   "UI/OFS_ScriptSimulator.cpp"
   "UI/OFS_SpecialFunctions.cpp"
   "UI/OFS_ScriptPositionsOverlays.cpp"

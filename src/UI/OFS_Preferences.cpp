@@ -1,4 +1,4 @@
-#include "OFS_Settings.h"
+#include "OFS_Preferences.h"
 #include "OFS_Util.h"
 #include "OpenFunscripter.h"
 #include "OFS_Localization.h"

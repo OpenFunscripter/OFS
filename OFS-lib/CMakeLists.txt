@@ -23,6 +23,8 @@ set(OFS_LIB_SOURCES
 	"videoplayer/OFS_VideoplayerWindow.cpp"
 	"videoplayer/impl/OFS_MpvVideoplayer.cpp"
 
+	"state/OFS_StateManager.cpp"
+
 	"imgui_impl/imgui_impl_opengl3.cpp"
 	"imgui_impl/imgui_impl_sdl.cpp" 
 
@@ -61,6 +63,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	"${PROJECT_SOURCE_DIR}/player/"
 	"${PROJECT_SOURCE_DIR}/localization/"
 	"${PROJECT_SOURCE_DIR}/videoplayer/"
+	"${PROJECT_SOURCE_DIR}/state/"
 	"${CMAKE_CURRENT_BINARY_DIR}"
 )
 
