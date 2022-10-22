@@ -1823,7 +1823,6 @@ void OpenFunscripter::step() noexcept {
             blockingTask.ShowBlockingTask();
 
             auto& ofsState = OpenFunscripterState::State(stateHandle);
-            OFS_StateManager::Get()->ShowDebugUI();
 
             #ifdef WIN32
             if(OFS_DownloadFfmpeg::FfmpegMissing) {

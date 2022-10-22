@@ -147,7 +147,7 @@ namespace OFS
 			for_each(refl::reflect(objectRef).members, [&](auto member) noexcept
 			{
 				auto& memberRef = GetConstFieldRef(member, objectRef);
-				using MemberType = typename std::remove_const<std::remove_reference<decltype(memberRef)>::type>::type;
+				using MemberType = typename std::remove_const<typename std::remove_reference<decltype(memberRef)>::type>::type;
 				auto& currentJson = objectJson[get_display_name(member)];
 				bool succ = OFS::Serializer::Serialize(memberRef, currentJson);
 				if(!succ) successful = false;
