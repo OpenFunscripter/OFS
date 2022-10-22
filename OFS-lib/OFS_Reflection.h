@@ -30,6 +30,9 @@ struct Serializable<glm::mat4>
     glm::mat4 Value;
     inline Serializable() noexcept {}
     inline Serializable(glm::mat4& m) : Value(m) {}
+
+    auto& operator=(const glm::mat4& m) noexcept { Value = m; return *this; }
+
     inline operator glm::mat4() const { return Value; }
 
     inline glm::vec4& Row0() noexcept { return Value[0]; }

@@ -73,6 +73,7 @@ endif()
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
 	"JSON_NOEXCEPTION"
+	"_CRT_SECURE_NO_WARNINGS"
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE 

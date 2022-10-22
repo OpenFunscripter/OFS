@@ -30,7 +30,7 @@ nlohmann::json OFS_StateManager::SerializeAll() noexcept
 
             bool succ = md->Serialize(state.State, subObj["State"]);
             if(!succ) {
-                LOGF_ERROR("Failed to serialize \"%s\" state. Type: %s", state.Name, state.TypeName);
+                LOGF_ERROR("Failed to serialize \"%s\" state. Type: %s", state.Name.c_str(), state.TypeName.c_str());
             }
         }
     }

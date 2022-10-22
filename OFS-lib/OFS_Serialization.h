@@ -9,6 +9,11 @@
 
 namespace OFS
 {
+	template<bool Value, typename T>
+	struct bool_value { 
+		static constexpr bool value = Value; 
+	};
+
 	template<typename T>
 	struct is_json_compatible : std::false_type {};
 	template<>
@@ -134,8 +139,9 @@ namespace OFS
 				bool succ = deserializeContainerItems(obj, json);
 				return succ;
 			}
-			else 
-			{ static_assert(false); }
+			else { 
+				static_assert(bool_value<false, Type>::value, "Not implemented."); 
+			}
 			return false;
 		}
 
@@ -199,7 +205,10 @@ namespace OFS
 				json = std::move(jsonArray);
 				return succ;
 			}
-			else { static_assert(false); }
+			else { 
+				static_assert(bool_value<false, Type>::value, "Not implemented."); 
+
+			}
 			return false;
 		}
 	};

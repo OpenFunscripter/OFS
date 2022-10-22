@@ -18,7 +18,7 @@ class OFS_StateHandle
     T& Get() noexcept {
         OFS_PROFILE(__FUNCTION__);
         auto mgr = OFS_StateManager::Get();
-        return mgr->Get<T>(Id);
+        return mgr->template Get<T>(Id);
     }
 
     static uint32_t Register(const char* name) noexcept

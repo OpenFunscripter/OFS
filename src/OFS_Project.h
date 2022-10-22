@@ -96,7 +96,7 @@ public:
 				switch(CurrentVersion)
 				{
 					case One:
-					o.LoadingError = "Project not compatible.\n";
+					o.LoadingError = "Project not compatible.\n"
 						"Last compatible version was 1.2.0.";
 					case FloatingPointTimestamps:
 					o.LoadingError = "Project not compatible.\n"
