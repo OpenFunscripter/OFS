@@ -1,5 +1,6 @@
 #pragma once
 #include "OFS_Util.h"
+#include "OFS_Serialization.h"
 
 #include <string>
 #include <vector>
@@ -109,6 +110,7 @@ struct OFS_State
 {
     std::string Name;
     std::string TypeName;
+    const OFS_StateMetadata* Metadata = nullptr;
     std::any State;
 };
 
@@ -132,10 +134,14 @@ class OFS_StateManager
                 return item.Name == name;
             });
         if(it == State.end()) {
-            LOGF_DEBUG("Registering new state \"%s\"", name);
+            LOGF_DEBUG("Registering new state \"%s\". Type: %s", name, type.name.c_str());
+
+            auto metadata = OFS_StateRegistry::Get().Find(type.name.c_str());
+            FUN_ASSERT(metadata, "State wasn't registered using OFS_REGISTER_STATE macro");
+
             uint32_t Id = State.size();
             State.emplace_back(
-                std::move(OFS_State{name, type.name.c_str(), T()})
+                std::move(OFS_State{name, type.name.c_str(), metadata, std::move(std::make_any<T>())})
             );
             return Id;   
         }

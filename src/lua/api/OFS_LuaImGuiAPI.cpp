@@ -108,7 +108,6 @@ std::tuple<lua_Integer, bool> OFS_ImGuiAPI::DragInt(const char* txt, lua_Integer
 
 std::tuple<std::string, bool> OFS_ImGuiAPI::InputText(const char* txt, std::string current) noexcept
 {
-    // FIXME: this function is a causing a std::string heap allocation everytime it's called (when size > 15)
     bool valueChanged = ImGui::InputText(txt, &current);
     return std::make_tuple(current, valueChanged);
 }

@@ -126,7 +126,6 @@ bool OFS_Translator::MergeIntoOne(const char* inputPath1, const char* inputPath2
     );
     
     std::array<const char*, static_cast<int>(Tr::MAX_STRING_COUNT)> lut;
-    // FIXME: iterating a hashtable
     for(auto& mapping : OFS_DefaultStrings::KeyMapping) {
         lut[static_cast<int>(mapping.second)] = mapping.first.c_str();
     }

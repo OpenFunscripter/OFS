@@ -20,6 +20,7 @@
 #include "OFS_LuaExtensions.h"
 #include "OFS_Localization.h"
 #include "OFS_StateManager.h"
+#include "OFS_FunscriptMetadataEditor.h"
 
 #include "OFS_Videoplayer.h"
 #include "OFS_VideoplayerWindow.h"
@@ -38,10 +39,13 @@ enum OFS_Status : uint8_t
 };
 
 class OpenFunscripter {
+public:
+	static constexpr auto StateName = "OpenFunscripter";
 private:
 	SDL_Window* window;
 	SDL_GLContext glContext;
-
+	
+	uint32_t stateHandle = 0xFFFF'FFFF;
 	bool ShowMetadataEditor = false;
 	bool ShowProjectEditor = false;
 #ifndef NDEBUG
@@ -136,7 +140,7 @@ public:
 	static std::array<const char*, 4> SupportedAudioExtensions;
 	uint8_t Status = OFS_Status::OFS_AutoBackup;
 
-	~OpenFunscripter();
+	~OpenFunscripter() noexcept;
 
 	KeybindingSystem keybinds;
 	ScriptTimeline scriptTimeline;
@@ -152,9 +156,10 @@ public:
 	std::unique_ptr<ScriptingMode> scripting;
 	std::unique_ptr<EventSystem> events;
 	std::unique_ptr<ControllerInput> controllerInput;
-	std::unique_ptr<OFS_Settings> settings;
+	std::unique_ptr<OFS_Preferences> preferences;
 	std::unique_ptr<UndoSystem> undoSystem;
 	std::unique_ptr<OFS_LuaExtensions> extensions;
+	std::unique_ptr<OFS_FunscriptMetadataEditor> metadataEditor;
 
 	std::unique_ptr<Simulator3D> sim3D;
 

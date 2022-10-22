@@ -184,8 +184,9 @@ void TempoOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
 
         if (isWholeMeasure) {
             stbsp_snprintf(tmp, sizeof(tmp), "%d", thing == 0 ? beatIdx : beatIdx / thing);
-            const float textOffsetX = app->settings->data().defaultFontSize / 2.f;
-            ctx.drawList->AddText(OFS_DynFontAtlas::DefaultFont2, app->settings->data().defaultFontSize * 2.f,
+            const auto& prefState = PreferenceState::State(app->preferences->StateHandle());
+            const float textOffsetX = prefState.defaultFontSize / 2.f;
+            ctx.drawList->AddText(OFS_DynFontAtlas::DefaultFont2, prefState.defaultFontSize * 2.f,
                 ctx.canvasPos + ImVec2((((offset + (i * beatTime)) / ctx.visibleTime) * ctx.canvasSize.x) + textOffsetX, 0.f),
                 ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]),
                 tmp

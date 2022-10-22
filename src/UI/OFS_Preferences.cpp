@@ -2,49 +2,21 @@
 #include "OFS_Util.h"
 #include "OpenFunscripter.h"
 #include "OFS_Localization.h"
-
-#include "OFS_Serialization.h"
 #include "OFS_ImGui.h"
 
 #include "imgui.h"
 #include "imgui_stdlib.h"
 
-OFS_Settings::OFS_Settings(const std::string& config) noexcept
-	: config_path(config)
-{
-	bool success = false;
-	if (Util::FileExists(config)) {
-		auto jsonText = Util::ReadFileString(config.c_str());
-		configObj = Util::ParseJson(jsonText, &success);
-		if (!success) {
-			LOGF_ERROR("Failed to parse config @ \"%s\"", config.c_str());
-			configObj = nlohmann::json();
-		}
-	}
+#include "OFS_Reflection.h"
+#include "OFS_StateHandle.h"
 
-	if (!configObj[ConfigStr].is_object()) {
-		configObj[ConfigStr] = nlohmann::json::object();
-	}
-	else {
-		loadConfig();
-	}
-}
+OFS_REGISTER_STATE(PreferenceState);
 
-void OFS_Settings::saveConfig() noexcept
+OFS_Preferences::OFS_Preferences() noexcept
 {
-	auto jsonText = Util::SerializeJson(configObj, true);
-	Util::WriteFile(config_path.c_str(), jsonText.data(), jsonText.size());
-}
-
-void OFS_Settings::loadConfig() noexcept
-{
-	OFS::Serializer::Deserialize(scripterSettings, config());
-}
-
-void OFS_Settings::saveSettings()
-{
-	OFS::Serializer::Serialize(scripterSettings, config());
-	saveConfig();
+	prefStateHandle = OFS_StateHandle<PreferenceState>::Register(OFS_Preferences::StateName);
+	auto& state = PreferenceState::State(prefStateHandle);
+    OFS_DynFontAtlas::FontOverride = state.fontOverride;
 }
 
 static void copyTranslationHelper() noexcept
@@ -74,7 +46,7 @@ static void copyTranslationHelper() noexcept
 	}
 }
 
-bool OFS_Settings::ShowPreferenceWindow() noexcept
+bool OFS_Preferences::ShowPreferenceWindow() noexcept
 {
 	bool save = false;
 	if (ShowWindow)
@@ -82,82 +54,84 @@ bool OFS_Settings::ShowPreferenceWindow() noexcept
 	if (ImGui::BeginPopupModal(TR_ID("PREFERENCES", Tr::PREFERENCES), &ShowWindow, ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		OFS_PROFILE(__FUNCTION__);
+		auto& state = PreferenceState::State(prefStateHandle);
+
 		if (ImGui::BeginChild("prefTabChild", ImVec2(600.f, 360.f))) {
 			if (ImGui::BeginTabBar("##PreferenceTabs"))
 			{
 				if (ImGui::BeginTabItem(TR(APPLICATION)))
 				{
-					if (ImGui::RadioButton(TR(DARK_MODE), (int*)&scripterSettings.currentTheme,
+					if (ImGui::RadioButton(TR(DARK_MODE), (int*)&state.currentTheme,
 						static_cast<int32_t>(OFS_Theme::Dark))) {
-						SetTheme((OFS_Theme)scripterSettings.currentTheme);
+						SetTheme((OFS_Theme)state.currentTheme);
 						save = true;
 					}
 					ImGui::SameLine();
-					if (ImGui::RadioButton(TR(LIGHT_MODE), (int*)&scripterSettings.currentTheme,
+					if (ImGui::RadioButton(TR(LIGHT_MODE), (int*)&state.currentTheme,
 						static_cast<int32_t>(OFS_Theme::Light))) {
-						SetTheme((OFS_Theme)scripterSettings.currentTheme);
+						SetTheme((OFS_Theme)state.currentTheme);
 						save = true;
 					}
 					
 					ImGui::Separator();
 
 					ImGui::TextWrapped(TR(PREFERENCES_TXT));
-					if (ImGui::InputInt(TR(FRAME_LIMIT), &scripterSettings.framerateLimit, 1, 10)) {
-						scripterSettings.framerateLimit = Util::Clamp(scripterSettings.framerateLimit, 60, 300);
+					if (ImGui::InputInt(TR(FRAME_LIMIT), &state.framerateLimit, 1, 10)) {
+						state.framerateLimit = Util::Clamp(state.framerateLimit, 60, 300);
 						save = true;
 					}
 					OFS::Tooltip(TR(FRAME_LIMIT_TOOLTIP));
 					ImGui::SameLine();
-					if (ImGui::Checkbox(TR(VSYNC), (bool*)&scripterSettings.vsync)) {
-						scripterSettings.vsync = Util::Clamp(scripterSettings.vsync, 0, 1); // just in case...
-						SDL_GL_SetSwapInterval(scripterSettings.vsync);
+					if (ImGui::Checkbox(TR(VSYNC), (bool*)&state.vsync)) {
+						state.vsync = Util::Clamp(state.vsync, 0, 1); // just in case...
+						SDL_GL_SetSwapInterval(state.vsync);
 						save = true;
 					}
 					OFS::Tooltip(TR(VSYNC_TOOLTIP));
 					ImGui::Separator();
-					ImGui::InputText(TR(FONT), scripterSettings.fontOverride.empty() ? (char*)TR(DEFAULT_FONT) : (char*)scripterSettings.fontOverride.c_str(),
-						scripterSettings.fontOverride.size(), ImGuiInputTextFlags_ReadOnly);
+					ImGui::InputText(TR(FONT), state.fontOverride.empty() ? (char*)TR(DEFAULT_FONT) : (char*)state.fontOverride.c_str(),
+						state.fontOverride.size(), ImGuiInputTextFlags_ReadOnly);
 					ImGui::SameLine();
 					if (ImGui::Button(TR(CHANGE))) {
 						Util::OpenFileDialog(TR(CHOOSE_FONT), "",
 							[&](auto& result) {
 								if (result.files.size() > 0) {
-									scripterSettings.fontOverride = result.files.back();
-									OpenFunscripter::ptr->LoadOverrideFont(scripterSettings.fontOverride);
+									state.fontOverride = result.files.back();
+									OpenFunscripter::ptr->LoadOverrideFont(state.fontOverride);
 									save = true;
 								}
 							}, false, { "*.ttf", "*.otf" }, "Fonts (*.ttf, *.otf)");
 					}
 					ImGui::SameLine();
 					if (ImGui::Button(TR(CLEAR))) {
-						scripterSettings.fontOverride = "";
+						state.fontOverride = "";
 						EventSystem::SingleShot([](void* ctx) {
 							// fonts can't be updated during a frame
 							// this updates the font during event processing
 							// which is not during the frame
 							auto app = OpenFunscripter::ptr;
-							app->LoadOverrideFont(app->settings->data().fontOverride);
+							app->LoadOverrideFont("");
 							}, nullptr);
 					}
 
-					if (ImGui::InputInt(TR(FONT_SIZE), (int*)&scripterSettings.defaultFontSize, 1, 1)) {
-						scripterSettings.defaultFontSize = Util::Clamp(scripterSettings.defaultFontSize, 8, 64);
+					if (ImGui::InputInt(TR(FONT_SIZE), (int*)&state.defaultFontSize, 1, 1)) {
+						state.defaultFontSize = Util::Clamp(state.defaultFontSize, 8, 64);
 						EventSystem::SingleShot([](void* ctx) {
 							// fonts can't be updated during a frame
 							// this updates the font during event processing
 							// which is not during the frame
+							auto& state = PreferenceState::State((intptr_t)ctx);
 							auto app = OpenFunscripter::ptr;
-							app->LoadOverrideFont(app->settings->data().fontOverride);
-							}, nullptr);
+							app->LoadOverrideFont(state.fontOverride);
+							}, (void*)(intptr_t)prefStateHandle);
 						save = true;
 					}
-					if(ImGui::BeginCombo(TR_ID("LANGUAGE", Tr::LANGUAGE), data().languageCsv.empty() ? "English" : data().languageCsv.c_str()))
+					if(ImGui::BeginCombo(TR_ID("LANGUAGE", Tr::LANGUAGE), state.languageCsv.empty() ? "English" : state.languageCsv.c_str()))
 					{
 						for(auto& file : translationFiles) {
-							if(ImGui::Selectable(file.c_str(), file == data().languageCsv)) {
-								if(OFS_Translator::ptr->LoadTranslation(file.c_str()))
-								{
-									data().languageCsv = file;
+							if(ImGui::Selectable(file.c_str(), file == state.languageCsv)) {
+								if(OFS_Translator::ptr->LoadTranslation(file.c_str())) {
+									state.languageCsv = file;
 									OFS_DynFontAtlas::AddTranslationText();
 								}
 							}
@@ -177,7 +151,7 @@ bool OFS_Settings::ShowPreferenceWindow() noexcept
 					}
 					ImGui::SameLine();
 					if(ImGui::Button(TR(RESET))) {
-						data().languageCsv = std::string();
+						state.languageCsv = std::string();
 						OFS_Translator::ptr->LoadDefaults();
 					}
 					ImGui::SameLine();
@@ -188,7 +162,7 @@ bool OFS_Settings::ShowPreferenceWindow() noexcept
 					ImGui::EndTabItem();
 				}
 				if (ImGui::BeginTabItem(TR(VIDEOPLAYER))) {
-					if (ImGui::Checkbox(TR(FORCE_HW_DECODING), &scripterSettings.forceHwDecoding)) {
+					if (ImGui::Checkbox(TR(FORCE_HW_DECODING), &state.forceHwDecoding)) {
 						save = true;
 					}
 					OFS::Tooltip(TR(FORCE_HW_DECODING_TOOLTIP));
@@ -210,13 +184,13 @@ bool OFS_Settings::ShowPreferenceWindow() noexcept
 					ImGui::EndDisabled();
 					
 					ImGui::Separator();
-					if (ImGui::InputInt(TR(FAST_FRAME_STEP), &scripterSettings.fastStepAmount, 1, 1)) {
+					if (ImGui::InputInt(TR(FAST_FRAME_STEP), &state.fastStepAmount, 1, 1)) {
 						save = true;
-						scripterSettings.fastStepAmount = Util::Clamp<int32_t>(scripterSettings.fastStepAmount, 2, 30);
+						state.fastStepAmount = Util::Clamp<int32_t>(state.fastStepAmount, 2, 30);
 					}
 					OFS::Tooltip(TR(FAST_FRAME_STEP_TOOLTIP));
 					ImGui::Separator();
-					if (ImGui::Checkbox(TR(SHOW_METADATA_DIALOG_ON_NEW_PROJECT), &scripterSettings.showMetaOnNew)) {
+					if (ImGui::Checkbox(TR(SHOW_METADATA_DIALOG_ON_NEW_PROJECT), &state.showMetaOnNew)) {
 						save = true;
 					}
 					ImGui::EndTabItem();
@@ -230,26 +204,23 @@ bool OFS_Settings::ShowPreferenceWindow() noexcept
 	return save;
 }
 
-void OFS_Settings::SetTheme(OFS_Theme theme) noexcept
+void OFS_Preferences::SetTheme(OFS_Theme theme) noexcept
 {
 	auto& style = ImGui::GetStyle();
 	auto& io = ImGui::GetIO();
 
 	switch (theme) {
-		case OFS_Theme::Dark:
-		{
+		case OFS_Theme::Dark: {
 			ImGui::StyleColorsDark(&style);
 			break;
 		}
-		case OFS_Theme::Light:
-		{
+		case OFS_Theme::Light: {
 			ImGui::StyleColorsLight(&style);
 			break;
 		}
 	}
 
-	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-	{
+	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
 		//style.WindowRounding = 0.0f;
 		style.WindowRounding = 6.f;
 		style.Colors[ImGuiCol_WindowBg].w = 1.f;

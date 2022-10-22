@@ -3,6 +3,7 @@ project(OpenFunscripter)
 set(OPEN_FUNSCRIPTER_SOURCES
   "main.cpp"
   "OpenFunscripter.cpp"
+  "OpenFunscripterState.cpp"
   "OFS_ScriptingMode.cpp"
   "OFS_Project.cpp"
   
@@ -13,6 +14,7 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "UI/OFS_SpecialFunctions.cpp"
   "UI/OFS_ScriptPositionsOverlays.cpp"
   "UI/OFS_DownloadFfmpeg.cpp"
+  "UI/OFS_FunscriptMetadataEditor.cpp"
 
   "event/OFS_Events.cpp"
 

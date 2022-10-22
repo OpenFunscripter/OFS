@@ -10,9 +10,21 @@
 #include "OFS_ImGui.h"
 #include "OFS_Simulator3D.h"
 
-ScriptingModeBase::ScriptingModeBase() noexcept
+struct ScriptingModeState
 {
-}
+    int32_t actionInsertDelayMs = 0;
+
+    inline static ScriptingModeState& State(uint32_t stateHandle) noexcept
+    {
+        return OFS_StateHandle<ScriptingModeState>(stateHandle).Get();
+    }
+};
+
+REFL_TYPE(ScriptingModeState)
+    REFL_FIELD(actionInsertDelayMs)
+REFL_END
+
+OFS_REGISTER_STATE(ScriptingModeState);
 
 void ScriptingModeBase::AddEditAction(FunscriptAction action) noexcept
 {
@@ -28,11 +40,12 @@ inline Funscript& ScriptingModeBase::ctx() noexcept
 
 void ScriptingMode::Init() noexcept
 {
+    stateHandle = OFS_StateHandle<ScriptingModeState>::Register(ScriptingMode::StateName);
+
     modes[ScriptingModeEnum::DEFAULT_MODE] = std::make_unique<DefaultMode>();
     modes[ScriptingModeEnum::ALTERNATING] = std::make_unique<AlternatingMode>();
     modes[ScriptingModeEnum::RECORDING] = std::make_unique<RecordingMode>();
     modes[ScriptingModeEnum::DYNAMIC_INJECTION] = std::make_unique<DynamicInjectionMode>();
-
     SetMode(ScriptingModeEnum::DEFAULT_MODE);
     SetOverlay(ScriptingOverlayModes::FRAME);
 }
@@ -64,6 +77,7 @@ inline static const char* OverlayModeToString(ScriptingOverlayModes mode) noexce
 void ScriptingMode::DrawScriptingMode(bool* open) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
+    auto& state = ScriptingModeState::State(stateHandle);
     auto app = OpenFunscripter::ptr;
 	ImGui::Begin(TR_ID(WindowId, Tr::MODE), open);
     ImGui::PushItemWidth(-1);
@@ -112,15 +126,8 @@ void ScriptingMode::DrawScriptingMode(bool* open) noexcept
     ImGui::Spacing();
     ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal);
     ImGui::Spacing();
-    ImGui::DragInt(TR(OFFSET_MS), &app->settings->data().actionInsertDelayMs);
+    ImGui::DragInt(TR(OFFSET_MS), &state.actionInsertDelayMs);
     OFS::Tooltip(TR(OFFSET_TOOLTIP));
-    if (app->LoadedFunscripts().size() > 1) {
-        ImGui::Checkbox(TR(MIRROR_MODE), &app->settings->data().mirrorMode);
-        OFS::Tooltip(TR(MIRROR_MODE_TOOLTIP));
-    }
-    else {
-        app->settings->data().mirrorMode = false;
-    }
 	ImGui::End();
 }
 
@@ -178,7 +185,8 @@ void ScriptingMode::AddEditAction(FunscriptAction action) noexcept
     auto app = OpenFunscripter::ptr;
     if (!app->player->IsPaused()) {
         // apply offset
-        action.atS += app->settings->data().actionInsertDelayMs / 1000.f;
+        auto& state = ScriptingModeState::State(stateHandle);
+        action.atS += state.actionInsertDelayMs / 1000.f;
     }
 	Mode()->AddEditAction(action);
 }

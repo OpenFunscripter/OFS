@@ -21,7 +21,7 @@ nlohmann::json OFS_StateManager::SerializeAll() noexcept
 {
     nlohmann::json obj;
     for(auto& state : State) {
-        auto md = OFS_StateRegistry::Get().Find(state.TypeName);
+        auto md = state.Metadata;
         FUN_ASSERT(md, "metadata was null");
 
         if(md) {
@@ -53,7 +53,7 @@ bool OFS_StateManager::DeserializeAll(const nlohmann::json& state) noexcept
         state.Name = stateItem.key();
         state.TypeName = stateValue["TypeName"];
 
-        auto md = OFS_StateRegistry::Get().Find(state.TypeName);
+        auto md = state.Metadata;
         if(!md) {
             LOGF_ERROR("Didn't find state metadata for \"%s\"", state.TypeName.c_str());
             continue;

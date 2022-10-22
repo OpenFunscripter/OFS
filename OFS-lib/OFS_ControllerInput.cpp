@@ -9,12 +9,16 @@ std::array<int64_t, SDL_CONTROLLER_BUTTON_MAX> ButtonsHeldDown = {-1};
 std::array<ControllerInput, 4> ControllerInput::Controllers;
 int32_t ControllerInput::activeControllers = 0;
 
-void ControllerInput::OpenController(int device)
+uint32_t ControllerInput::stateHandle = 0xFFFF'FFFF;
+
+OFS_REGISTER_STATE(ControllerInputState);
+
+void ControllerInput::OpenController(int device) noexcept
 {
 	gamepad = SDL_GameControllerOpen(device);
 	SDL_Joystick* j = SDL_GameControllerGetJoystick(gamepad);
 	instance_id = SDL_JoystickInstanceID(j);
-	is_connected = true;
+	isConnected = true;
 	LOGF_INFO("Controller \"%s\" connected!", SDL_GameControllerName(gamepad));
 	if (SDL_JoystickIsHaptic(j)) {
 		haptic = SDL_HapticOpenFromJoystick(j);
@@ -34,10 +38,10 @@ void ControllerInput::OpenController(int device)
 	}
 }
 
-void ControllerInput::CloseController()
+void ControllerInput::CloseController() noexcept
 {
-	if (is_connected) {
-		is_connected = false;
+	if (isConnected) {
+		isConnected = false;
 		if (haptic) {
 			SDL_HapticClose(haptic);
 			haptic = 0;
@@ -47,11 +51,10 @@ void ControllerInput::CloseController()
 	}
 }
 
-int ControllerInput::GetControllerIndex(SDL_JoystickID instance)
+int ControllerInput::GetControllerIndex(SDL_JoystickID instance) noexcept
 {
-	for (int i = 0; i < Controllers.size(); ++i)
-	{
-		if (Controllers[i].is_connected && Controllers[i].instance_id == instance) {
+	for (int i = 0; i < Controllers.size(); i += 1) {
+		if (Controllers[i].isConnected && Controllers[i].instance_id == instance) {
 			return i;
 		}
 	}
@@ -61,7 +64,7 @@ int ControllerInput::GetControllerIndex(SDL_JoystickID instance)
 void ControllerInput::ControllerButtonDown(SDL_Event& ev) const noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	constexpr int64_t RepeatDelayMs = 300;
+	constexpr int32_t RepeatDelayMs = 300;
 	auto& cbutton = ev.cbutton;
 	ButtonsHeldDown[cbutton.button] = (int64_t)SDL_GetTicks() + RepeatDelayMs;
 }
@@ -79,7 +82,7 @@ void ControllerInput::ControllerDeviceAdded(SDL_Event& ev) noexcept
 	if (ev.cdevice.which < Controllers.size()) {
 		ControllerInput& jc = Controllers[ev.cdevice.which];
 		jc.OpenController(ev.cdevice.which);
-		activeControllers++;
+		activeControllers += 1;
 	}
 }
 
@@ -90,11 +93,13 @@ void ControllerInput::ControllerDeviceRemoved(SDL_Event& ev) noexcept
 	if (cIndex < 0) return; // unknown controller?
 	ControllerInput& jc = Controllers[cIndex];
 	jc.CloseController();
-	activeControllers--;
+	activeControllers -= 1;
 }
 
-void ControllerInput::setup(EventSystem& events)
+void ControllerInput::Init(EventSystem& events) noexcept
 {
+	FUN_ASSERT(ControllerInput::stateHandle == 0xFFFF'FFFF, "state already initialized");
+	stateHandle = OFS_StateHandle<ControllerInputState>::Register(ControllerInput::StateName);
 	SDL_JoystickEventState(SDL_ENABLE);
 	SDL_GameControllerEventState(SDL_ENABLE);
 	events.Subscribe(SDL_CONTROLLERDEVICEADDED, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerDeviceAdded));
@@ -103,10 +108,10 @@ void ControllerInput::setup(EventSystem& events)
 	events.Subscribe(SDL_CONTROLLERBUTTONUP, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerButtonUp));
 }
 
-void ControllerInput::update(int32_t buttonRepeatIntervalMs) noexcept
+void ControllerInput::Update(uint32_t buttonRepeatIntervalMs) noexcept
 {
 	int buttonEnumVal = 0;
-	for (auto&& button : ButtonsHeldDown) {
+	for (auto& button : ButtonsHeldDown) {
 		if (button > 0 && ((int64_t)SDL_GetTicks() - button) >= buttonRepeatIntervalMs) {
 			SDL_Event ev;
 			ev.type = KeybindingEvents::ControllerButtonRepeat;
@@ -114,6 +119,16 @@ void ControllerInput::update(int32_t buttonRepeatIntervalMs) noexcept
 			SDL_PushEvent(&ev);
 			button = SDL_GetTicks();
 		}
-		buttonEnumVal++;
+		buttonEnumVal += 1;
+	}
+}
+
+void ControllerInput::UpdateControllers() noexcept
+{
+	auto& state = ControllerInputState::State(ControllerInput::StateHandle());
+	for (auto& controller : Controllers) {
+		if (controller.Connected()) {
+			controller.Update(state.buttonRepeatIntervalMs);
+		}
 	}
 }

@@ -13,7 +13,7 @@
 class Simulator3D
 {
 public:
-	static constexpr const char* StateName = "Simulator3D";
+	static constexpr auto StateName = "Simulator3D";
 private:
 	enum IsEditing : uint8_t
 	{

@@ -7,20 +7,39 @@
 #include "SDL_haptic.h"
 #include <array>
 
-// lifted from https://gist.github.com/urkle/6701236
-// and rewritten for my purposes
+#include "OFS_Reflection.h"
+#include "OFS_StateHandle.h"
+
+struct ControllerInputState
+{
+	int32_t buttonRepeatIntervalMs = 100;
+
+	inline static ControllerInputState& State(uint32_t stateHandle) noexcept {
+		return OFS_StateHandle<ControllerInputState>(stateHandle).Get();
+	}
+};
+
+REFL_TYPE(ControllerInputState)
+	REFL_FIELD(buttonRepeatIntervalMs)
+REFL_END
 
 class ControllerInput {
+public:
+	static constexpr auto StateName = "ControllerInput";
+	inline static uint32_t StateHandle() noexcept { return ControllerInput::stateHandle; }
 private:
 	SDL_GameController* gamepad;
 	SDL_Haptic* haptic;
 	SDL_JoystickID instance_id;
-	bool is_connected = false;
-	void OpenController(int device);
-	void CloseController();
+	bool isConnected = false;
+
+	static uint32_t stateHandle;
+
+	void OpenController(int device) noexcept;
+	void CloseController() noexcept;
 
 	static int32_t activeControllers;
-	static int GetControllerIndex(SDL_JoystickID instance);
+	static int GetControllerIndex(SDL_JoystickID instance) noexcept;
 
 	void ControllerButtonDown(SDL_Event& ev) const noexcept;
 	void ControllerButtonUp(SDL_Event& ev) const noexcept;
@@ -29,17 +48,12 @@ private:
 public:
 	static std::array<ControllerInput, 4> Controllers;
 
-	void setup(EventSystem& events);
-	void update(int32_t buttonRepeatIntervalMs) noexcept;
+	void Init(EventSystem& events) noexcept;
+	void Update(uint32_t buttonRepeatIntervalMs) noexcept;
 
-	inline static void UpdateControllers(int32_t buttonRepeatIntervalMs) {
-		for (auto&& controller : Controllers) {
-			if (controller.connected()) {
-				controller.update(buttonRepeatIntervalMs);
-			}
-		}
-	}
+	static void UpdateControllers() noexcept;
+
 	inline const char* GetName() const noexcept { return SDL_GameControllerName(gamepad); }
-	inline bool connected() const noexcept { return is_connected; }
+	inline bool Connected() const noexcept { return isConnected; }
 	static inline bool AnythingConnected() noexcept { return activeControllers > 0; }
 };

@@ -16,7 +16,9 @@
 
 SpecialFunctionsWindow::SpecialFunctionsWindow() noexcept
 {
-    SetFunction((SpecialFunctions)OpenFunscripter::ptr->settings->data().currentSpecialFunction);
+    // FIXME
+    //SetFunction((SpecialFunctions)OpenFunscripter::ptr->settings->data().currentSpecialFunction);
+    SetFunction(SpecialFunctions::RAMER_DOUGLAS_PEUCKER);
 }
 
 void SpecialFunctionsWindow::SetFunction(SpecialFunctions functionEnum) noexcept
@@ -34,7 +36,8 @@ void SpecialFunctionsWindow::SetFunction(SpecialFunctions functionEnum) noexcept
         break;
 	default:
         function = new FunctionRangeExtender();
-        OpenFunscripter::ptr->settings->data().currentSpecialFunction = SpecialFunctions::RANGE_EXTENDER;
+        // FIXME
+        //OpenFunscripter::ptr->settings->data().currentSpecialFunction = SpecialFunctions::RANGE_EXTENDER;
 		break;
 	}
 }
@@ -57,23 +60,22 @@ void SpecialFunctionsWindow::ShowFunctionsWindow(bool* open) noexcept
         return "";
     };
 
-    if(ImGui::BeginCombo("##Functions", functionToString((SpecialFunctions)app->settings->data().currentSpecialFunction), ImGuiComboFlags_None))
-    {
-        auto& func = (SpecialFunctions&)app->settings->data().currentSpecialFunction;
-        if(ImGui::Selectable(TR(FUNCTIONS_SIMPLIFY), func == SpecialFunctions::RAMER_DOUGLAS_PEUCKER))
-        {
-            func = SpecialFunctions::RAMER_DOUGLAS_PEUCKER;
-            SetFunction(func);
-        }
-
-        if(ImGui::Selectable(TR(FUNCTIONS_RANGE_EXTENDER), func == SpecialFunctions::RANGE_EXTENDER))
-        {
-            func = SpecialFunctions::RANGE_EXTENDER;
-            SetFunction(func);
-        }
-
-        ImGui::EndCombo();
-    }
+    // FIXME
+    //if(ImGui::BeginCombo("##Functions", functionToString((SpecialFunctions)app->settings->data().currentSpecialFunction), ImGuiComboFlags_None))
+    //{
+    //    auto& func = (SpecialFunctions&)app->settings->data().currentSpecialFunction;
+    //    if(ImGui::Selectable(TR(FUNCTIONS_SIMPLIFY), func == SpecialFunctions::RAMER_DOUGLAS_PEUCKER))
+    //    {
+    //        func = SpecialFunctions::RAMER_DOUGLAS_PEUCKER;
+    //        SetFunction(func);
+    //    }
+    //    if(ImGui::Selectable(TR(FUNCTIONS_RANGE_EXTENDER), func == SpecialFunctions::RANGE_EXTENDER))
+    //    {
+    //        func = SpecialFunctions::RANGE_EXTENDER;
+    //        SetFunction(func);
+    //    }
+    //    ImGui::EndCombo();
+    //}
 
 	ImGui::Spacing();
 	function->DrawUI();

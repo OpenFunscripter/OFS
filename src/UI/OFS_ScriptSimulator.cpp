@@ -150,7 +150,8 @@ void ScriptSimulator::ShowSimulator(bool* open)
 
         ImGui::Columns(2, 0, false);
         if (ImGui::Button(TR(LOAD_CONFIG), ImVec2(-1.f, 0.f))) {
-            simulator = app->settings->data().defaultSimulatorConfig;
+            // FIXME
+            //simulator = app->settings->data().defaultSimulatorConfig;
         }
         ImGui::NextColumn();
         if (ImGui::Button(TR(SAVE_CONFIG), ImVec2(-1.f, 0.f))) { 
@@ -159,7 +160,8 @@ void ScriptSimulator::ShowSimulator(bool* open)
                 [this](Util::YesNoCancel result) {
                     if(result == Util::YesNoCancel::Yes) {
                         auto app = OpenFunscripter::ptr;
-                        app->settings->data().defaultSimulatorConfig = simulator;
+                        // FIXME
+                        //app->settings->data().defaultSimulatorConfig = simulator;
                     }
                 }
             );

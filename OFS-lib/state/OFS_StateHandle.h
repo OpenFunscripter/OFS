@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include "OFS_StateManager.h"
+#include "OFS_Profiling.h"
 
 template<typename T>
 class OFS_StateHandle
@@ -15,6 +16,7 @@ class OFS_StateHandle
         : Id(id) {}
 
     T& Get() noexcept {
+        OFS_PROFILE(__FUNCTION__);
         auto mgr = OFS_StateManager::Get();
         return mgr->Get<T>(Id);
     }

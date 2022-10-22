@@ -24,7 +24,7 @@ class ScriptingModeBase
 protected:
 	Funscript& ctx() noexcept;
 public:
-	ScriptingModeBase() noexcept;
+	ScriptingModeBase() noexcept {}
 	virtual ~ScriptingModeBase() noexcept {}
 	virtual void DrawModeSettings() noexcept = 0;
 	virtual void AddEditAction(FunscriptAction action) noexcept;
@@ -115,12 +115,14 @@ public:
 };
 
 class ScriptingMode {
+public:
+	static constexpr auto StateName = "ScriptingMode";
 private:
 	ScriptingModeEnum activeMode;
 	ScriptingOverlayModes activeOverlay;
-
 	std::array<std::unique_ptr<ScriptingModeBase>, ScriptingModeEnum::COUNT> modes;
 	std::unique_ptr<BaseOverlay> overlayImpl = nullptr;
+	uint32_t stateHandle = 0xFFFF'FFFF;
 public:
 	inline ScriptingModeEnum ActiveMode() const noexcept { return activeMode; }
 	inline std::unique_ptr<BaseOverlay>& Overlay() noexcept { return overlayImpl; }

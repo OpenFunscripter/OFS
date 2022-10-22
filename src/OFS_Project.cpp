@@ -133,7 +133,10 @@ void OFS_Project::Clear() noexcept
 	Funscripts.emplace_back(std::move(std::make_shared<Funscript>()));
 	Settings = OFS_ScriptSettings();
 	ProjectSettings = OFS_Project::ProjSettings();
-	Metadata = OpenFunscripter::ptr->settings->data().defaultMetadata;
+	
+	auto metadataHandle = OpenFunscripter::ptr->metadataEditor->StateHandle();
+	Metadata = FunscriptMetadataState::State(metadataHandle).defaultMetadata;
+
 	FUN_ASSERT(OFS_ScriptSettings::player != nullptr, "player not set");
 	*OFS_ScriptSettings::player = OFS_VideoplayerWindow::OFS_VideoPlayerSettings();
 }
