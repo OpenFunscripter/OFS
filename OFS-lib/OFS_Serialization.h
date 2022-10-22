@@ -73,7 +73,7 @@ namespace OFS
 			for_each(refl::reflect(objectRef).members, [&](auto member) noexcept
 			{
 				auto& memberRef = GetFieldRef(member, objectRef);
-				using MemberType = std::remove_reference<decltype(memberRef)>::type;
+				using MemberType = typename std::remove_reference<decltype(memberRef)>::type;
 
 				// Check if the json object contains the key,
 				// if not a warning is logged but the deserialization continues.
@@ -117,7 +117,7 @@ namespace OFS
 		inline static bool Deserialize(T& obj, const nlohmann::json& json) noexcept
 		{
 			static_assert(!std::is_const_v<T>);
-			using Type = std::remove_volatile<T>::type;
+			using Type = typename std::remove_volatile<T>::type;
 
 			// Handle json primitive types numbers, strings & booleans
 			if constexpr (OFS::is_json_compatible<Type>::value) {
@@ -147,7 +147,7 @@ namespace OFS
 			for_each(refl::reflect(objectRef).members, [&](auto member) noexcept
 			{
 				auto& memberRef = GetConstFieldRef(member, objectRef);
-				using MemberType = std::remove_const<std::remove_reference<decltype(memberRef)>::type>::type;
+				using MemberType = typename std::remove_const<std::remove_reference<decltype(memberRef)>::type>::type;
 				auto& currentJson = objectJson[get_display_name(member)];
 				bool succ = OFS::Serializer::Serialize(memberRef, currentJson);
 				if(!succ) successful = false;
@@ -180,7 +180,7 @@ namespace OFS
 	public:
 		template<typename T>
 		inline static bool Serialize(const T& obj, nlohmann::json& json) {
-			using Type = std::remove_volatile<T>::type;
+			using Type = typename std::remove_volatile<T>::type;
 
 			// Handle json primitive types numbers, strings & booleans
 			if constexpr (OFS::is_json_compatible<Type>::value) {
