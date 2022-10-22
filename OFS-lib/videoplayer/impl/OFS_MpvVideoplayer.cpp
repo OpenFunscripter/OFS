@@ -130,7 +130,7 @@ OFS_Videoplayer::~OFS_Videoplayer() noexcept
 {
     mpv_render_context_free(CTX->mpvGL);
 	mpv_destroy(CTX->mpv);
-    delete ctx;
+    delete CTX;
     ctx = nullptr;
 }
 
