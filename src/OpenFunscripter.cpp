@@ -10,7 +10,8 @@
 #include "OFS_MpvLoader.h"
 #include "OFS_Localization.h"
 
-#include "OpenFunscripterState.h"
+#include "state/OpenFunscripterState.h"
+#include "state/states/ControllerState.h"
 
 #include <filesystem>
 

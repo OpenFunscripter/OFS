@@ -6,7 +6,7 @@
 #include "imgui.h"
 #include "imgui_stdlib.h"
 
-OFS_REGISTER_STATE(FunscriptMetadataState);
+#include "state/MetadataEditorState.h"
 
 OFS_FunscriptMetadataEditor::OFS_FunscriptMetadataEditor() noexcept
 {

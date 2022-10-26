@@ -11,6 +11,8 @@
 #include "subprocess.h"
 #include "stb_sprintf.h"
 
+#include "state/MetadataEditorState.h"
+
 ScriptSimulator::SimulatorSettings* OFS_Project::ProjSettings::Simulator = nullptr;
 
 bool OFS_Project::FindMedia(const std::string& funscriptPath) noexcept

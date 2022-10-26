@@ -103,8 +103,7 @@ class OFS_StateRegistry
     OFS_StateRegistry() noexcept {}
 };
 
-#define OFS_REGISTER_STATE(StateTypeName)\
-static int _global_dummy_ ## StateTypeName = (OFS_StateRegistry::Get().RegisterState<StateTypeName>(), 0)
+#define OFS_REGISTER_STATE(StateTypeName) OFS_StateRegistry::Get().RegisterState<StateTypeName>()
 
 struct OFS_State
 {

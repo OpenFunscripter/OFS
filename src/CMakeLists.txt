@@ -3,7 +3,6 @@ project(OpenFunscripter)
 set(OPEN_FUNSCRIPTER_SOURCES
   "main.cpp"
   "OpenFunscripter.cpp"
-  "OpenFunscripterState.cpp"
   "OFS_ScriptingMode.cpp"
   "OFS_Project.cpp"
   
@@ -20,6 +19,8 @@ set(OPEN_FUNSCRIPTER_SOURCES
 
   "gl/OFS_Simulator3D.cpp"
   "gl/OFS_GPU.cpp"
+
+  "state/OpenFunscripterState.cpp"
 
   "lua/OFS_LuaExtensions.cpp"
   "lua/OFS_LuaExtension.cpp"

@@ -6,20 +6,6 @@
 
 #include "Funscript.h"
 
-struct FunscriptMetadataState
-{
-    Funscript::Metadata defaultMetadata;
-
-    static inline FunscriptMetadataState& State(uint32_t stateHandle) noexcept
-    {
-        return OFS_StateHandle<FunscriptMetadataState>(stateHandle).Get();
-    }
-};
-
-REFL_TYPE(FunscriptMetadataState)
-    REFL_FIELD(defaultMetadata)
-REFL_END
-
 class OFS_FunscriptMetadataEditor
 {
 public:

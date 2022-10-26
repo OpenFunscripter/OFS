@@ -10,8 +10,6 @@
 #include "OFS_Reflection.h"
 #include "OFS_StateHandle.h"
 
-OFS_REGISTER_STATE(PreferenceState);
-
 OFS_Preferences::OFS_Preferences() noexcept
 {
 	prefStateHandle = OFS_StateHandle<PreferenceState>::Register(OFS_Preferences::StateName);

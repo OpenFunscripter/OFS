@@ -10,21 +10,9 @@
 #include "OFS_ImGui.h"
 #include "OFS_Simulator3D.h"
 
-struct ScriptingModeState
-{
-    int32_t actionInsertDelayMs = 0;
 
-    inline static ScriptingModeState& State(uint32_t stateHandle) noexcept
-    {
-        return OFS_StateHandle<ScriptingModeState>(stateHandle).Get();
-    }
-};
+#include "state/ScriptModeState.h"
 
-REFL_TYPE(ScriptingModeState)
-    REFL_FIELD(actionInsertDelayMs)
-REFL_END
-
-OFS_REGISTER_STATE(ScriptingModeState);
 
 void ScriptingModeBase::AddEditAction(FunscriptAction action) noexcept
 {

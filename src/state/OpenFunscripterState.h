@@ -17,7 +17,7 @@ REFL_TYPE(RecentFile)
 	REFL_FIELD(projectPath)
 REFL_END
 
-struct OpenFunscripterState
+struct OpenFunscripterState 
 {
 	std::vector<RecentFile> recentFiles;
     std::string lastPath;
@@ -46,6 +46,8 @@ struct OpenFunscripterState
     }
 
     void addRecentFile(const RecentFile& recentFile) noexcept;
+
+    static void RegisterAll() noexcept;
 };
 
 REFL_TYPE(OpenFunscripterState::HeatmapSettings)

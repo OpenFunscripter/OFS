@@ -7,22 +7,6 @@
 #include "SDL_haptic.h"
 #include <array>
 
-#include "OFS_Reflection.h"
-#include "OFS_StateHandle.h"
-
-struct ControllerInputState
-{
-	int32_t buttonRepeatIntervalMs = 100;
-
-	inline static ControllerInputState& State(uint32_t stateHandle) noexcept {
-		return OFS_StateHandle<ControllerInputState>(stateHandle).Get();
-	}
-};
-
-REFL_TYPE(ControllerInputState)
-	REFL_FIELD(buttonRepeatIntervalMs)
-REFL_END
-
 class ControllerInput {
 public:
 	static constexpr auto StateName = "ControllerInput";

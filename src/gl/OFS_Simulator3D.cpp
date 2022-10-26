@@ -15,8 +15,7 @@
 #include "OpenFunscripter.h"
 #include "OFS_Shader.h"
 
-#include "OFS_Reflection.h"
-#include "OFS_StateHandle.h"
+#include "state/Simulator3dState.h"
 
 // cube pos + normals
 constexpr float vertices[] = {
@@ -67,24 +66,6 @@ constexpr float simLength = 2.f;
 constexpr float simDistance = 5.f;
 constexpr float simCubeSize = 0.5f;
 
-struct Simulator3dState
-{
-	Serializable<glm::mat4> Translation;
-	float Distance = 3.f;
-};
-
-REFL_TYPE(Simulator3dState)
-	REFL_FIELD(Translation)
-	REFL_FIELD(Distance)
-REFL_END
-
-OFS_REGISTER_STATE(Simulator3dState);
-
-static inline auto& State(uint32_t stateHandle) noexcept
-{
-    return OFS_StateHandle<Simulator3dState>(stateHandle).Get();
-}
-
 void Simulator3D::Init() noexcept
 {
     stateHandle = OFS_StateHandle<Simulator3dState>::Register(Simulator3D::StateName);
@@ -115,7 +96,7 @@ void Simulator3D::Reset(bool ignoreState) noexcept
     view = glm::translate(view, viewPos);
 
     if(!ignoreState) {
-        auto& state = State(stateHandle);
+        auto& state = Simulator3dState::State(stateHandle);
         state.Translation = glm::mat4(1.f);
         state.Translation = glm::translate(state.Translation.Value, glm::vec3(0.f, 0.f, -simDistance));
         state.Distance = 3.f;
@@ -132,7 +113,7 @@ void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::ve
     const int32_t loadedScriptsCount = scripts.size();
     auto viewport = ImGui::GetMainViewport();
     
-    auto& state = State(stateHandle);
+    auto& state = Simulator3dState::State(stateHandle);
 
     float ratio = viewport->Size.x / viewport->Size.y;
     projection = glm::ortho(-state.Distance*ratio, state.Distance*ratio, -state.Distance, state.Distance, 0.1f, 100.f);

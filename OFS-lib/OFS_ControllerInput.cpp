@@ -5,13 +5,13 @@
 
 #include "SDL.h"
 
+#include "state/states/ControllerState.h"
+
 std::array<int64_t, SDL_CONTROLLER_BUTTON_MAX> ButtonsHeldDown = {-1};
 std::array<ControllerInput, 4> ControllerInput::Controllers;
 int32_t ControllerInput::activeControllers = 0;
 
 uint32_t ControllerInput::stateHandle = 0xFFFF'FFFF;
-
-OFS_REGISTER_STATE(ControllerInputState);
 
 void ControllerInput::OpenController(int device) noexcept
 {

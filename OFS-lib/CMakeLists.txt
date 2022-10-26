@@ -24,6 +24,7 @@ set(OFS_LIB_SOURCES
 	"videoplayer/impl/OFS_MpvVideoplayer.cpp"
 
 	"state/OFS_StateManager.cpp"
+	"state/OFS_LibState.cpp"
 
 	"imgui_impl/imgui_impl_opengl3.cpp"
 	"imgui_impl/imgui_impl_sdl.cpp" 
