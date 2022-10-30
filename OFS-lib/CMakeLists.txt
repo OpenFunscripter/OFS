@@ -33,14 +33,11 @@ set(OFS_LIB_SOURCES
 	"player/OFS_TCodeChannel.cpp"
 	"player/OFS_TCodeProducer.cpp"
 
-	"OFS_AsyncIO.cpp"
-
 	"OFS_UndoSystem.cpp"
 	"OFS_ControllerInput.cpp"
 
 	"OFS_Serialization.cpp"
 	"OFS_Util.cpp"
-	"OFS_Threadpool.cpp"
 	"OFS_FileLogging.cpp"
 	"OFS_DynamicFontAtlas.cpp"
 	"OFS_MpvLoader.cpp"

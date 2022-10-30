@@ -115,12 +115,10 @@ void OFS_Project::LoadScripts(const std::string& funscriptPath) noexcept
 
 OFS_Project::OFS_Project() noexcept
 {
-	ProjectMut = SDL_CreateMutex();
 }
 
 OFS_Project::~OFS_Project() noexcept
 {
-	SDL_DestroyMutex(ProjectMut);
 }
 
 void OFS_Project::Clear() noexcept
@@ -205,24 +203,11 @@ void OFS_Project::Save(const std::string& path, bool clearUnsavedChanges) noexce
 
 	size_t writtenSize = 0;
 	{
-		SDL_LockMutex(ProjectMut);
 		ProjectBuffer.clear();
 		writtenSize = OFS_Binary::Serialize(ProjectBuffer, *this);
 	}
 	
-	OFS_AsyncIO::Write write;
-	write.Path = path;
-	write.Buffer = ProjectBuffer.data();
-	write.Size = writtenSize;
-	write.Userdata = (void*)ProjectMut;
-	write.Callback = [](auto& w)
-	{
-		EventSystem::SingleShot([](void* mutex) {
-			 //mutex gets unlocked back on the main thread via event
-			SDL_UnlockMutex((SDL_mutex*)mutex);
-		}, w.Userdata);
-	};
-	app->IO->PushWrite(std::move(write));
+	Util::WriteFile(path.c_str(), ProjectBuffer.data(), writtenSize);
 
 	// this resets HasUnsavedEdits()
 	if (clearUnsavedChanges) {

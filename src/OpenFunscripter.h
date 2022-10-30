@@ -13,7 +13,6 @@
 #include "OFS_VideoplayerControls.h"
 #include "OFS_TCode.h"
 #include "OFS_Project.h"
-#include "OFS_AsyncIO.h"
 #include "OFS_Simulator3D.h"
 #include "OFS_BlockingTask.h"
 #include "OFS_DynamicFontAtlas.h"
@@ -159,12 +158,11 @@ public:
 	std::unique_ptr<Simulator3D> sim3D;
 
 	std::unique_ptr<OFS_Project> LoadedProject;
-	std::unique_ptr<OFS_AsyncIO> IO;
 
-	bool setup(int argc, char* argv[]);
-	int run() noexcept;
-	void step() noexcept;
-	void shutdown() noexcept;
+	bool Init(int argc, char* argv[]);
+	int Run() noexcept;
+	void Step() noexcept;
+	void Shutdown() noexcept;
 
 	inline const std::vector<std::shared_ptr<Funscript>>& LoadedFunscripts() const noexcept
 	{

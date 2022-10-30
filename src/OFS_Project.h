@@ -58,7 +58,6 @@ public:
 	std::vector<std::shared_ptr<Funscript>> Funscripts;
 	std::string MediaPath;
 
-	SDL_mutex* ProjectMut = nullptr;
 	ByteBuffer ProjectBuffer;
 
 	OFS_Project() noexcept;
