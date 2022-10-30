@@ -29,6 +29,8 @@ namespace OFS
 	template<>
 	struct is_json_compatible<uint16_t> : std::true_type {};
 	template<>
+	struct is_json_compatible<uint8_t> : std::true_type {};
+	template<>
 	struct is_json_compatible<bool> : std::true_type {};
 	template<>
 	struct is_json_compatible<char> : std::true_type {};
@@ -84,8 +86,19 @@ namespace OFS
 				// if not a warning is logged but the deserialization continues.
 				if(objectJson.contains(get_display_name(member))) {
 					auto& currentJson = objectJson[get_display_name(member)];
-					bool succ = OFS::Serializer::Deserialize(memberRef, currentJson);
-					if(!succ) successful = false;
+
+					// Deserialize enum values by using the underlying type
+					if constexpr(refl::descriptor::has_attribute<serializeEnum>(member)) {
+						using EnumType = typename std::underlying_type<MemberType>::type;
+						auto enumValue = static_cast<EnumType>(memberRef);
+						bool succ = OFS::Serializer::Deserialize(enumValue, currentJson);
+						memberRef = static_cast<MemberType>(enumValue);
+						if(!succ) successful = false;
+					}
+					else {
+						bool succ = OFS::Serializer::Deserialize(memberRef, currentJson);
+						if(!succ) successful = false;
+					}
 				}
 				else {
 					LOGF_WARN("The field \"%s\" was not found.", get_display_name(member));
@@ -98,6 +111,13 @@ namespace OFS
 		template<typename ItemType>
 		inline static bool deserializeContainerItems(std::vector<ItemType>& obj, const nlohmann::json& jsonArray) noexcept
 		{
+			if constexpr(std::is_same_v<ItemType, uint8_t>) {
+				if(jsonArray.is_binary()) {
+					obj = jsonArray.get_binary();
+					return true;
+				}
+			}
+
 			for(auto& jsonItem : jsonArray) {
 				auto& item = obj.emplace_back();
 				bool succ = OFS::Serializer::Deserialize(item, jsonItem);
@@ -155,8 +175,18 @@ namespace OFS
 				auto& memberRef = GetConstFieldRef(member, objectRef);
 				using MemberType = typename std::remove_const<typename std::remove_reference<decltype(memberRef)>::type>::type;
 				auto& currentJson = objectJson[get_display_name(member)];
-				bool succ = OFS::Serializer::Serialize(memberRef, currentJson);
-				if(!succ) successful = false;
+
+				// Serialize enum values by using the underlying type
+				if constexpr(refl::descriptor::has_attribute<serializeEnum>(member)) {
+					using EnumType = typename std::underlying_type<MemberType>::type;
+					auto enumValue = static_cast<EnumType>(memberRef);
+					bool succ = OFS::Serializer::Serialize(enumValue, currentJson);
+					if(!succ) successful = false;
+				}
+				else {
+					bool succ = OFS::Serializer::Serialize(memberRef, currentJson);
+					if(!succ) successful = false;
+				}
 			});
 			return successful;
 		}
@@ -164,10 +194,16 @@ namespace OFS
 		template<typename ItemType>
 		inline static bool serializeContainerItems(const std::vector<ItemType>& container, nlohmann::json& jsonArray) noexcept
 		{
-			for(auto& item : container) {
-				auto& jsonItem = jsonArray.emplace_back();
-				bool succ = OFS::Serializer::Serialize(item, jsonItem);
-				if(!succ) return false;
+			if constexpr(std::is_same_v<ItemType, uint8_t>) {
+				nlohmann::json::binary_t binData{container};
+				jsonArray = std::move(binData);
+			}
+			else {
+				for(auto& item : container) {
+					auto& jsonItem = jsonArray.emplace_back();
+					bool succ = OFS::Serializer::Serialize(item, jsonItem);
+					if(!succ) return false;
+				}
 			}
 			return true;
 		}
@@ -207,7 +243,6 @@ namespace OFS
 			}
 			else { 
 				static_assert(bool_value<false, Type>::value, "Not implemented."); 
-
 			}
 			return false;
 		}

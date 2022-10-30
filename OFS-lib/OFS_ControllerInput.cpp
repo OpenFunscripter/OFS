@@ -99,7 +99,7 @@ void ControllerInput::ControllerDeviceRemoved(SDL_Event& ev) noexcept
 void ControllerInput::Init(EventSystem& events) noexcept
 {
 	FUN_ASSERT(ControllerInput::stateHandle == 0xFFFF'FFFF, "state already initialized");
-	stateHandle = OFS_StateHandle<ControllerInputState>::Register(ControllerInput::StateName);
+	stateHandle = OFS_AppState<ControllerInputState>::Register(ControllerInput::StateName);
 	SDL_JoystickEventState(SDL_ENABLE);
 	SDL_GameControllerEventState(SDL_ENABLE);
 	events.Subscribe(SDL_CONTROLLERDEVICEADDED, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerDeviceAdded));

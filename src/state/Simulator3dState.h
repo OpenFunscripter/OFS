@@ -9,7 +9,7 @@ struct Simulator3dState
 
     static inline auto& State(uint32_t stateHandle) noexcept
     {
-        return OFS_StateHandle<Simulator3dState>(stateHandle).Get();
+        return OFS_AppState<Simulator3dState>(stateHandle).Get();
     }
 };
 

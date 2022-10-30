@@ -8,7 +8,7 @@ struct FunscriptMetadataState
 
     static inline FunscriptMetadataState& State(uint32_t stateHandle) noexcept
     {
-        return OFS_StateHandle<FunscriptMetadataState>(stateHandle).Get();
+        return OFS_AppState<FunscriptMetadataState>(stateHandle).Get();
     }
 };
 

@@ -28,7 +28,7 @@ inline Funscript& ScriptingModeBase::ctx() noexcept
 
 void ScriptingMode::Init() noexcept
 {
-    stateHandle = OFS_StateHandle<ScriptingModeState>::Register(ScriptingMode::StateName);
+    stateHandle = OFS_AppState<ScriptingModeState>::Register(ScriptingMode::StateName);
 
     modes[ScriptingModeEnum::DEFAULT_MODE] = std::make_unique<DefaultMode>();
     modes[ScriptingModeEnum::ALTERNATING] = std::make_unique<AlternatingMode>();

@@ -7,7 +7,7 @@ struct ScriptingModeState
 
     inline static ScriptingModeState& State(uint32_t stateHandle) noexcept
     {
-        return OFS_StateHandle<ScriptingModeState>(stateHandle).Get();
+        return OFS_AppState<ScriptingModeState>(stateHandle).Get();
     }
 };
 

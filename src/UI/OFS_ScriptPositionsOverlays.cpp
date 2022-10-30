@@ -1,6 +1,8 @@
 #include "OFS_ScriptPositionsOverlays.h"
 #include "OpenFunscripter.h"
 
+#include "state/ProjectState.h"
+
 void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept
 {
     auto app = OpenFunscripter::ptr;
@@ -115,11 +117,16 @@ void FrameOverlay::DrawSettings() noexcept
     }
 }
 
+TempoOverlay::TempoOverlay(ScriptTimeline* timeline) noexcept
+    : BaseOverlay(timeline)
+{
+    stateHandle = OFS_ProjectState<TempoOverlayState>::Register(TempoOverlayState::StateName);
+}
+
 void TempoOverlay::DrawSettings() noexcept
 {
     BaseOverlay::DrawSettings();
-    auto app = OpenFunscripter::ptr;
-    auto& tempo = app->LoadedProject->Settings.tempoSettings;
+    auto& tempo = TempoOverlayState::State(stateHandle);
     if (ImGui::InputFloat(TR(BPM), &tempo.bpm, 1.f, 100.f)) {
         tempo.bpm = std::max(1.f, tempo.bpm);
     }
@@ -144,7 +151,7 @@ void TempoOverlay::DrawSettings() noexcept
 void TempoOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept
 {
     auto app = OpenFunscripter::ptr;
-    auto& tempo = app->LoadedProject->Settings.tempoSettings;
+    auto& tempo = TempoOverlayState::State(stateHandle);
     BaseOverlay::DrawHeightLines(ctx);
     timeline->DrawAudioWaveform(ctx);
     BaseOverlay::DrawActionLines(ctx);
@@ -231,7 +238,7 @@ static float GetPreviousPosition(float beatTime, float currentTime, float beatOf
 void TempoOverlay::nextFrame(float realFrameTime) noexcept
 {
     auto app = OpenFunscripter::ptr;
-    auto& tempo = app->LoadedProject->Settings.tempoSettings;
+    auto& tempo = TempoOverlayState::State(stateHandle);
 
     float beatTime = (60.f / tempo.bpm) * beatMultiples[tempo.measureIndex];
     float currentTime = app->player->CurrentTime();
@@ -243,7 +250,7 @@ void TempoOverlay::nextFrame(float realFrameTime) noexcept
 void TempoOverlay::previousFrame(float realFrameTime) noexcept
 {
     auto app = OpenFunscripter::ptr;
-    auto& tempo = app->LoadedProject->Settings.tempoSettings;
+    auto& tempo = TempoOverlayState::State(stateHandle);
 
     float beatTime = (60.f/ tempo.bpm) * beatMultiples[tempo.measureIndex];
     float currentTime = app->player->CurrentTime();
@@ -254,16 +261,14 @@ void TempoOverlay::previousFrame(float realFrameTime) noexcept
 
 float TempoOverlay::steppingIntervalForward(float realFrameTime, float fromTime) noexcept
 {
-    auto app = OpenFunscripter::ptr;
-    auto& tempo = app->LoadedProject->Settings.tempoSettings;
+    auto& tempo = TempoOverlayState::State(stateHandle);
     float beatTime = (60.f / tempo.bpm) * beatMultiples[tempo.measureIndex];
     return GetNextPosition(beatTime, fromTime, tempo.beatOffsetSeconds) - fromTime;
 }
 
 float TempoOverlay::steppingIntervalBackward(float realFrameTime, float fromTime) noexcept
 {
-    auto app = OpenFunscripter::ptr;
-    auto& tempo = app->LoadedProject->Settings.tempoSettings;
+    auto& tempo = TempoOverlayState::State(stateHandle);
     float beatTime = (60.f / tempo.bpm) * beatMultiples[tempo.measureIndex];
     return GetPreviousPosition(beatTime, fromTime, tempo.beatOffsetSeconds) - fromTime;
 }

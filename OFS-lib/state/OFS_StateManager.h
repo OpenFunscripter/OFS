@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <any>
+#include <map>
 
 class OFS_StateMetadata
 {
@@ -115,9 +116,53 @@ struct OFS_State
 
 class OFS_StateManager
 {
+    public:
+    using StateHandleMap = std::map<std::string, uint32_t>;
     private:
-    std::vector<OFS_State> State;
+    std::vector<OFS_State> ApplicationState;
+    std::vector<OFS_State> ProjectState;
+
+    StateHandleMap ApplicationHandleMap;
+    StateHandleMap ProjectHandleMap;
+
     static OFS_StateManager* instance;
+
+    template<typename T>
+    inline static uint32_t registerState(const char* name, std::vector<OFS_State>& stateCollection, StateHandleMap& handleMap) noexcept
+    {
+        constexpr auto type = refl::reflect<T>();
+        auto it = handleMap.find(name);
+        if(it == handleMap.end()) {
+            LOGF_DEBUG("Registering new state \"%s\". Type: %s", name, type.name.c_str());
+
+            auto metadata = OFS_StateRegistry::Get().Find(type.name.c_str());
+            FUN_ASSERT(metadata, "State wasn't registered using OFS_REGISTER_STATE macro");
+
+            uint32_t Id = stateCollection.size();
+            stateCollection.emplace_back(
+                std::move(OFS_State{name, type.name.c_str(), metadata, std::move(std::make_any<T>())})
+            );
+
+            auto sanityCheck = handleMap.insert(std::make_pair(std::string(name), Id));
+            FUN_ASSERT(sanityCheck.second, "Why did this fail?");
+
+            return Id;   
+        }
+        else {
+            FUN_ASSERT(stateCollection[it->second].Name == name, "Something went wrong");
+            LOGF_DEBUG("Loading existing state \"%s\"", name);
+            return it->second;
+        }
+    }
+
+    template<typename T>
+    inline static T& getState(uint32_t id, std::vector<OFS_State>& stateCollection) noexcept
+    {
+        FUN_ASSERT(id < stateCollection.size(), "out of bounds");
+        auto& item = stateCollection[id];
+        auto& value = std::any_cast<T&>(item.State);
+        return value;
+    }
 
     public:
     static void Init() noexcept;
@@ -125,40 +170,32 @@ class OFS_StateManager
     inline static OFS_StateManager* Get() noexcept { return instance; }
 
     template<typename T>
-    uint32_t Register(const char* name) noexcept
+    inline uint32_t RegisterApp(const char* name) noexcept
     {
-        constexpr auto type = refl::reflect<T>();
-        auto it = std::find_if(State.begin(), State.end(),
-            [name](auto& item) noexcept {
-                return item.Name == name;
-            });
-        if(it == State.end()) {
-            LOGF_DEBUG("Registering new state \"%s\". Type: %s", name, type.name.c_str());
-
-            auto metadata = OFS_StateRegistry::Get().Find(type.name.c_str());
-            FUN_ASSERT(metadata, "State wasn't registered using OFS_REGISTER_STATE macro");
-
-            uint32_t Id = State.size();
-            State.emplace_back(
-                std::move(OFS_State{name, type.name.c_str(), metadata, std::move(std::make_any<T>())})
-            );
-            return Id;   
-        }
-        else {
-            LOGF_DEBUG("Loading existing state \"%s\"", name);
-            uint32_t existingId = std::distance(State.begin(), it);
-            return existingId;
-        }
+        return registerState<T>(name, ApplicationState, ApplicationHandleMap);
     }
 
     template<typename T>
-    T& Get(uint32_t id) noexcept
+    inline uint32_t RegisterProject(const char* name) noexcept
     {
-        auto& item = State[id];
-        auto& value = std::any_cast<T&>(item.State);
-        return value;
+        return registerState<T>(name, ProjectState, ProjectHandleMap);
     }
 
-    nlohmann::json SerializeAll() noexcept;
-    bool DeserializeAll(const nlohmann::json& state) noexcept;
+    template<typename T>
+    inline T& GetApp(uint32_t id) noexcept
+    {
+        return getState<T>(id, ApplicationState);
+    }
+
+    template<typename T>
+    inline T& GetProject(uint32_t id) noexcept
+    {
+        return getState<T>(id, ProjectState);
+    }
+
+    nlohmann::json SerializeAppAll() noexcept;
+    bool DeserializeAppAll(const nlohmann::json& state) noexcept;
+
+    nlohmann::json SerializeProjectAll() noexcept;
+    bool DeserializeProjectAll(const nlohmann::json& project) noexcept;
 };

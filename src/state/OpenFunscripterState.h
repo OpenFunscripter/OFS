@@ -42,7 +42,7 @@ struct OpenFunscripterState
 
     inline static OpenFunscripterState& State(uint32_t stateHandle) noexcept
     {
-        return OFS_StateHandle<OpenFunscripterState>(stateHandle).Get();
+        return OFS_AppState<OpenFunscripterState>(stateHandle).Get();
     }
 
     void addRecentFile(const RecentFile& recentFile) noexcept;

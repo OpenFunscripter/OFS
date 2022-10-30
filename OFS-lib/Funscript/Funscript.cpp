@@ -190,14 +190,14 @@ void Funscript::AddEditAction(FunscriptAction action, float frameTime) noexcept
 void Funscript::checkForInvalidatedActions() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	auto it = std::remove_if(data.selection.begin(), data.selection.end(), 
+	auto it = std::remove_if(data.Selection.begin(), data.Selection.end(), 
 		[this](auto selected) {
 			auto found = getAction(selected);
 			return !found;
 		});
 		
-	if (it != data.selection.end()) {
-		data.selection.erase(it, data.selection.end());
+	if (it != data.Selection.end()) {
+		data.Selection.erase(it, data.Selection.end());
 		NotifySelectionChanged();
 	}
 }
@@ -380,8 +380,8 @@ void Funscript::RangeExtendSelection(int32_t rangeExtend) noexcept
 	rangeExtendSelection.reserve(SelectionSize());
 	int selectionOffset = 0;
 	for (auto&& act : data.Actions) {
-		for (int i = selectionOffset; i < data.selection.size(); i++) {
-			if (data.selection[i] == act) {
+		for (int i = selectionOffset; i < data.Selection.size(); i++) {
+			if (data.Selection[i] == act) {
 				rangeExtendSelection.push_back(&act);
 				selectionOffset = i;
 				break;
@@ -396,28 +396,28 @@ void Funscript::RangeExtendSelection(int32_t rangeExtend) noexcept
 bool Funscript::ToggleSelection(FunscriptAction action) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	auto it = data.selection.find(action);
-	bool is_selected = it != data.selection.end();
-	if (is_selected) {
-		data.selection.erase(it);
+	auto it = data.Selection.find(action);
+	bool isSelected = it != data.Selection.end();
+	if (isSelected) {
+		data.Selection.erase(it);
 	}
 	else {
-		data.selection.emplace(action);
+		data.Selection.emplace(action);
 	}
 	NotifySelectionChanged();
-	return !is_selected;
+	return !isSelected;
 }
 
 void Funscript::SetSelected(FunscriptAction action, bool selected) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	auto it = data.selection.find(action); 
-	bool is_selected = it != data.selection.end();
-	if(is_selected && !selected) {
-		data.selection.erase(it);
+	auto it = data.Selection.find(action); 
+	bool isSelected = it != data.Selection.end();
+	if(isSelected && !selected) {
+		data.Selection.erase(it);
 	}
-	else if(!is_selected && selected) {
-		data.selection.emplace(action);
+	else if(!isSelected && selected) {
+		data.Selection.emplace(action);
 	}
 	NotifySelectionChanged();
 }
@@ -425,12 +425,12 @@ void Funscript::SetSelected(FunscriptAction action, bool selected) noexcept
 void Funscript::SelectTopActions() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	if (data.selection.size() < 3) return;
+	if (data.Selection.size() < 3) return;
 	std::vector<FunscriptAction> deselect;
-	for (int i = 1; i < data.selection.size() - 1; i++) {
-		auto& prev = data.selection[i - 1];
-		auto& current = data.selection[i];
-		auto& next = data.selection[i + 1];
+	for (int i = 1; i < data.Selection.size() - 1; i++) {
+		auto& prev = data.Selection[i - 1];
+		auto& current = data.Selection[i];
+		auto& next = data.Selection[i + 1];
 
 		auto& min1 = prev.pos < current.pos ? prev : current;
 		auto& min2 = min1.pos < next.pos ? min1 : next;
@@ -444,12 +444,12 @@ void Funscript::SelectTopActions() noexcept
 void Funscript::SelectBottomActions() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	if (data.selection.size() < 3) return;
+	if (data.Selection.size() < 3) return;
 	std::vector<FunscriptAction> deselect;
-	for (int i = 1; i < data.selection.size() - 1; i++) {
-		auto& prev = data.selection[i - 1];
-		auto& current = data.selection[i];
-		auto& next = data.selection[i + 1];
+	for (int i = 1; i < data.Selection.size() - 1; i++) {
+		auto& prev = data.Selection[i - 1];
+		auto& current = data.Selection[i];
+		auto& next = data.Selection[i + 1];
 
 		auto& max1 = prev.pos > current.pos ? prev : current;
 		auto& max2 = max1.pos > next.pos ? max1 : next;
@@ -463,20 +463,20 @@ void Funscript::SelectBottomActions() noexcept
 void Funscript::SelectMidActions() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	if (data.selection.size() < 3) return;
-	auto selectionCopy = data.selection;
+	if (data.Selection.size() < 3) return;
+	auto selectionCopy = data.Selection;
 	SelectTopActions();
-	auto topPoints = data.selection;
-	data.selection = selectionCopy;
+	auto topPoints = data.Selection;
+	data.Selection = selectionCopy;
 	SelectBottomActions();
-	auto bottomPoints = data.selection;
+	auto bottomPoints = data.Selection;
 	
 	selectionCopy.erase(std::remove_if(selectionCopy.begin(), selectionCopy.end(),
 		[&topPoints, &bottomPoints](auto val) {
 			return std::any_of(topPoints.begin(), topPoints.end(), [val](auto a) { return a == val; })
 				|| std::any_of(bottomPoints.begin(), bottomPoints.end(), [val](auto a) { return a == val; });
 		}), selectionCopy.end());
-	data.selection = selectionCopy;
+	data.Selection = selectionCopy;
 	sortSelection();
 	NotifySelectionChanged();
 }
@@ -542,20 +542,20 @@ void Funscript::SelectAll() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	ClearSelection();
-	data.selection.assign(data.Actions.begin(), data.Actions.end());
+	data.Selection.assign(data.Actions.begin(), data.Actions.end());
 	NotifySelectionChanged();
 }
 
 void Funscript::RemoveSelectedActions() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	if (data.selection.size() == data.Actions.size()) {
+	if (data.Selection.size() == data.Actions.size()) {
 		// assume data.selection == data.Actions
 		// aslong as we don't fuck up the selection this is safe 
 		data.Actions.clear();
 	}
 	else {
-		RemoveActions(data.selection);
+		RemoveActions(data.Selection);
 	}
 
 	ClearSelection();
@@ -590,14 +590,14 @@ void Funscript::MoveSelectionTime(float timeOffset, float frameTime) noexcept
 	if (!HasSelection()) return;
 
 	// faster path when everything is selected
-	if (data.selection.size() == data.Actions.size()) {
+	if (data.Selection.size() == data.Actions.size()) {
 		moveAllActionsTime(timeOffset);
 		SelectAll();
 		return;
 	}
 
-	auto prev = GetPreviousActionBehind(data.selection.front().atS);
-	auto next = GetNextActionAhead(data.selection.back().atS);
+	auto prev = GetPreviousActionBehind(data.Selection.front().atS);
+	auto next = GetNextActionAhead(data.Selection.back().atS);
 
 	auto min_bound = 0.f;
 	auto max_bound = std::numeric_limits<float>::max();
@@ -605,19 +605,19 @@ void Funscript::MoveSelectionTime(float timeOffset, float frameTime) noexcept
 	if (timeOffset > 0) {
 		if (next != nullptr) {
 			max_bound = next->atS - frameTime;
-			timeOffset = std::min(timeOffset, max_bound - data.selection.back().atS);
+			timeOffset = std::min(timeOffset, max_bound - data.Selection.back().atS);
 		}
 	}
 	else {
 		if (prev != nullptr) {
 			min_bound = prev->atS + frameTime;
-			timeOffset = std::max(timeOffset, min_bound - data.selection.front().atS);
+			timeOffset = std::max(timeOffset, min_bound - data.Selection.front().atS);
 		}
 	}
 
 	FunscriptArray newSelection;
-	newSelection.reserve(data.selection.size());
-	for (auto selected : data.selection) {
+	newSelection.reserve(data.Selection.size());
+	for (auto selected : data.Selection) {
 		auto move = getAction(selected);
 		if (move) {
 			FunscriptAction newAction = *move;
@@ -628,7 +628,7 @@ void Funscript::MoveSelectionTime(float timeOffset, float frameTime) noexcept
 		}
 	}
 	ClearSelection();
-	data.selection = std::move(newSelection);
+	data.Selection = std::move(newSelection);
 	NotifyActionsChanged(true);
 }
 
@@ -639,7 +639,7 @@ void Funscript::MoveSelectionPosition(int32_t pos_offset) noexcept
 	std::vector<FunscriptAction*> moving;
 	
 	// faster path when everything is selected
-	if (data.selection.size() == data.Actions.size()) {
+	if (data.Selection.size() == data.Actions.size()) {
 		for (auto& action : data.Actions)
 			moving.push_back(&action);
 		moveActionsPosition(moving, pos_offset);
@@ -647,7 +647,7 @@ void Funscript::MoveSelectionPosition(int32_t pos_offset) noexcept
 		return;
 	}
 
-	for (auto& find : data.selection) {
+	for (auto& find : data.Selection) {
 		auto m = getAction(find);
 		if (m != nullptr)
 			moving.push_back(m);
@@ -657,7 +657,7 @@ void Funscript::MoveSelectionPosition(int32_t pos_offset) noexcept
 	for (auto move : moving) {
 		move->pos += pos_offset;
 		move->pos = Util::Clamp<int16_t>(move->pos, 0, 100);
-		data.selection.emplace_back_unsorted(*move);
+		data.Selection.emplace_back_unsorted(*move);
 	}
 	sortSelection();
 	NotifyActionsChanged(true);
@@ -668,7 +668,7 @@ void Funscript::SetSelection(const FunscriptArray& actionsToSelect) noexcept
 	OFS_PROFILE(__FUNCTION__);
 	ClearSelection();
 	for(auto& action : actionsToSelect) {
-		data.selection.emplace(action);
+		data.Selection.emplace(action);
 	}
 	NotifySelectionChanged();
 }
@@ -676,21 +676,21 @@ void Funscript::SetSelection(const FunscriptArray& actionsToSelect) noexcept
 bool Funscript::IsSelected(FunscriptAction action) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	auto it = data.selection.find(action);
-	return it != data.selection.end();
+	auto it = data.Selection.find(action);
+	return it != data.Selection.end();
 }
 
 void Funscript::EqualizeSelection() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	if (data.selection.size() < 3) return;
+	if (data.Selection.size() < 3) return;
 	sortSelection(); // might be unnecessary
-	auto first = data.selection.front();
-	auto last = data.selection.back();
+	auto first = data.Selection.front();
+	auto last = data.Selection.back();
 	float duration = last.atS - first.atS;
-	float stepTime = duration / (float)(data.selection.size()-1);
+	float stepTime = duration / (float)(data.Selection.size()-1);
 		
-	auto copySelection = data.selection;
+	auto copySelection = data.Selection;
 	RemoveSelectedActions(); // clears selection
 
 	for (int i = 1; i < copySelection.size()-1; i++) {
@@ -701,21 +701,20 @@ void Funscript::EqualizeSelection() noexcept
 	for (auto& action : copySelection)
 		AddAction(action);
 
-	data.selection = std::move(copySelection);
+	data.Selection = std::move(copySelection);
 }
 
 void Funscript::InvertSelection() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	if (data.selection.size() == 0) return;
-	auto copySelection = data.selection;
+	if (data.Selection.empty()) return;
+	auto copySelection = data.Selection;
 	RemoveSelectedActions();
-	for (auto& act : copySelection)
-	{
+	for (auto& act : copySelection)	{
 		act.pos = std::abs(act.pos - 100);
 		AddAction(act);
 	}
-	data.selection = copySelection;
+	data.Selection = copySelection;
 }
 
 int32_t FunscriptEvents::FunscriptActionsChangedEvent = 0;

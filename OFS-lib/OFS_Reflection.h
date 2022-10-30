@@ -8,13 +8,9 @@
 
 #include "refl.hpp"
 
-REFL_TYPE(glm::vec4)
-    REFL_FIELD(x)
-    REFL_FIELD(y)
-    REFL_FIELD(z)
-    REFL_FIELD(w)
-REFL_END
-
+struct serializeEnum : refl::attr::usage::field, refl::attr::usage::function
+{
+};
 
 template<typename Wrapped>
 struct Serializable { /* Can be specialized like below */ };
@@ -44,6 +40,13 @@ struct Serializable<glm::mat4>
     inline const glm::vec4& Row2() const noexcept { return Value[2]; }
     inline const glm::vec4& Row3() const noexcept { return Value[3]; }
 };
+
+REFL_TYPE(glm::vec4)
+    REFL_FIELD(x)
+    REFL_FIELD(y)
+    REFL_FIELD(z)
+    REFL_FIELD(w)
+REFL_END
 
 REFL_TYPE(Serializable<glm::mat4>)
     REFL_FUNC(Row0, property{"Row0"})

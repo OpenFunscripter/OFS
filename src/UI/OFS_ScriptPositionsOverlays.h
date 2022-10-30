@@ -12,6 +12,8 @@ enum ScriptingOverlayModes : int32_t {
 };
 
 
+class ScriptTimeline;
+
 class TempoOverlay : public BaseOverlay {
 private:
 	static constexpr std::array<float, 10> beatMultiples{
@@ -51,9 +53,9 @@ private:
 		Tr::TEMPO_48TH_MEASURES,
 		Tr::TEMPO_64TH_MEASURES,
 	};
+	uint32_t stateHandle = 0xFFFF'FFFF;
 public:
-	TempoOverlay(class ScriptTimeline* timeline)
-		: BaseOverlay(timeline) {}
+	TempoOverlay(ScriptTimeline* timeline) noexcept;
 	virtual void DrawSettings() noexcept override;
 	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept override;
 	virtual void nextFrame(float realFrameTime) noexcept override;
@@ -69,7 +71,7 @@ private:
 	float fpsOverride = 0.f;
 	bool enableFpsOverride = false;
 public:
-	FrameOverlay(class ScriptTimeline* timeline)
+	FrameOverlay(ScriptTimeline* timeline)
 		: BaseOverlay(timeline) {}
 	virtual void DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexcept override;
 	virtual void DrawSettings() noexcept override;

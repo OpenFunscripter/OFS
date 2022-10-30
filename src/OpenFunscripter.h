@@ -159,7 +159,6 @@ public:
 	std::unique_ptr<UndoSystem> undoSystem;
 	std::unique_ptr<OFS_LuaExtensions> extensions;
 	std::unique_ptr<OFS_FunscriptMetadataEditor> metadataEditor;
-
 	std::unique_ptr<Simulator3D> sim3D;
 
 	std::unique_ptr<OFS_Project> LoadedProject;
@@ -174,7 +173,7 @@ public:
 		return LoadedProject->Funscripts;
 	}
 
-	inline bool ScriptLoaded() const { return LoadedFunscripts().size() > 0; }
+	inline bool ScriptLoaded() const noexcept { return !LoadedFunscripts().empty(); }
 	inline std::shared_ptr<Funscript>& ActiveFunscript() noexcept {
 		FUN_ASSERT(ScriptLoaded(), "No script loaded");
 		return LoadedProject->Funscripts[ActiveFunscriptIdx]; 

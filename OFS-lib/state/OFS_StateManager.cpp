@@ -17,10 +17,11 @@ void OFS_StateManager::Shutdown() noexcept
     }
 }
 
-nlohmann::json OFS_StateManager::SerializeAll() noexcept
+
+inline static nlohmann::json SerializeStateCollection(const std::vector<OFS_State>& stateCollection) noexcept
 {
     nlohmann::json obj;
-    for(auto& state : State) {
+    for(auto& state : stateCollection) {
         auto md = state.Metadata;
         FUN_ASSERT(md, "metadata was null");
 
@@ -37,7 +38,7 @@ nlohmann::json OFS_StateManager::SerializeAll() noexcept
     return obj;
 }
 
-bool OFS_StateManager::DeserializeAll(const nlohmann::json& state) noexcept
+inline static bool DeserializeStateCollection(const nlohmann::json& state, std::vector<OFS_State>& stateCollection, OFS_StateManager::StateHandleMap& handleMap) noexcept
 {
     for(auto& stateItem : state.items()) {
         auto& stateValue = stateItem.value();
@@ -53,15 +54,50 @@ bool OFS_StateManager::DeserializeAll(const nlohmann::json& state) noexcept
         state.Name = stateItem.key();
         state.TypeName = stateValue["TypeName"];
 
-        auto md = state.Metadata;
+        auto md = OFS_StateRegistry::Get().Find(state.TypeName);
         if(!md) {
             LOGF_ERROR("Didn't find state metadata for \"%s\"", state.TypeName.c_str());
             continue;
         }
+        state.Metadata = md;
         state.State = md->Create();
         if(md->Deserialize(state.State, stateValue["State"])) {
-            State.emplace_back(std::move(state));
+            auto handleIt = handleMap.find(state.Name);
+            if(handleIt != handleMap.end()) {
+                uint32_t handle = handleIt->second;
+                if(stateCollection.size() < handle + 1) {
+                    stateCollection.resize(handle + 1);
+                }
+                stateCollection[handle] = std::move(state);
+            }
+            else {
+                uint32_t handle = stateCollection.size();
+                handleMap.insert(std::make_pair(state.Name, handle));
+                stateCollection.emplace_back(std::move(state));
+            }
         }
     }
     return true;
+}
+
+nlohmann::json OFS_StateManager::SerializeAppAll() noexcept
+{
+    return SerializeStateCollection(ApplicationState);
+}
+
+bool OFS_StateManager::DeserializeAppAll(const nlohmann::json& state) noexcept
+{
+    ApplicationState.clear();
+    return DeserializeStateCollection(state, ApplicationState, ApplicationHandleMap);
+}
+
+nlohmann::json OFS_StateManager::SerializeProjectAll() noexcept
+{
+    return SerializeStateCollection(ProjectState);
+}
+
+bool OFS_StateManager::DeserializeProjectAll(const nlohmann::json& project) noexcept
+{
+    ProjectState.clear();
+    return DeserializeStateCollection(project, ProjectState, ProjectHandleMap);
 }

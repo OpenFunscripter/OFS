@@ -32,7 +32,7 @@ class Funscript
 public:
 	struct FunscriptData {
 		FunscriptArray Actions;
-		FunscriptArray selection;
+		FunscriptArray Selection;
 	};
 
 	struct Metadata {
@@ -178,7 +178,7 @@ private:
 
 	void moveAllActionsTime(float timeOffset);
 	void moveActionsPosition(std::vector<FunscriptAction*> moving, int32_t posOffset);
-	inline void sortSelection() noexcept { sortActions(data.selection); }
+	inline void sortSelection() noexcept { sortActions(data.Selection); }
 	inline void sortActions(FunscriptArray& actions) noexcept {
 		OFS_PROFILE(__FUNCTION__);
 		std::sort(actions.begin(), actions.end());
@@ -236,7 +236,7 @@ public:
 	void save(const std::string& path, bool override_location = true);
 	
 	const FunscriptData& Data() const noexcept { return data; }
-	const auto& Selection() const noexcept { return data.selection; }
+	const auto& Selection() const noexcept { return data.Selection; }
 	const auto& Actions() const noexcept { return data.Actions; }
 
 	inline const FunscriptAction* GetAction(FunscriptAction action) noexcept { return getAction(action); }
@@ -282,10 +282,10 @@ public:
 	void RemoveSelectedActions() noexcept;
 	void MoveSelectionTime(float time_offset, float frameTime) noexcept;
 	void MoveSelectionPosition(int32_t pos_offset) noexcept;
-	inline bool HasSelection() const noexcept { return data.selection.size() > 0; }
-	inline int32_t SelectionSize() const noexcept { return data.selection.size(); }
-	inline void ClearSelection() noexcept { data.selection.clear(); }
-	inline const FunscriptAction* GetClosestActionSelection(float time) noexcept { return getActionAtTime(data.selection, time, std::numeric_limits<float>::max()); }
+	inline bool HasSelection() const noexcept { return !data.Selection.empty(); }
+	inline uint32_t SelectionSize() const noexcept { return data.Selection.size(); }
+	inline void ClearSelection() noexcept { data.Selection.clear(); }
+	inline const FunscriptAction* GetClosestActionSelection(float time) noexcept { return getActionAtTime(data.Selection, time, std::numeric_limits<float>::max()); }
 	
 	void SetSelection(const FunscriptArray& actions) noexcept;
 	bool IsSelected(FunscriptAction action) noexcept;

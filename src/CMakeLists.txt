@@ -5,9 +5,7 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "OpenFunscripter.cpp"
   "OFS_ScriptingMode.cpp"
   "OFS_Project.cpp"
-  
-  "Funscript/OFS_ScriptSettings.cpp"
-  
+    
   "UI/OFS_Preferences.cpp"
   "UI/OFS_ScriptSimulator.cpp"
   "UI/OFS_SpecialFunctions.cpp"
@@ -21,6 +19,7 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "gl/OFS_GPU.cpp"
 
   "state/OpenFunscripterState.cpp"
+  "state/ProjectBookmarkState.cpp"
 
   "lua/OFS_LuaExtensions.cpp"
   "lua/OFS_LuaExtension.cpp"

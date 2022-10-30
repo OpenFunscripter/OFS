@@ -25,7 +25,7 @@ struct PreferenceState
 	bool showMetaOnNew = true;
 
 	static inline PreferenceState& State(uint32_t stateHandle) noexcept {
-		return OFS_StateHandle<PreferenceState>(stateHandle).Get();
+		return OFS_AppState<PreferenceState>(stateHandle).Get();
 	}
 };
 
