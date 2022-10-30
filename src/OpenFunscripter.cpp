@@ -140,7 +140,7 @@ OpenFunscripter::~OpenFunscripter() noexcept
     events.reset();
 }
 
-bool OpenFunscripter::setup(int argc, char* argv[]) noexcept
+bool OpenFunscripter::Init(int argc, char* argv[])
 {
     OFS_FileLogger::Init();
     Util::InMainThread();
@@ -239,8 +239,6 @@ bool OpenFunscripter::setup(int argc, char* argv[]) noexcept
     KeybindingEvents::RegisterEvents();
     ScriptTimelineEvents::RegisterEvents();
 
-    IO = std::make_unique<OFS_AsyncIO>();
-    IO->Init();
     LoadedProject = std::make_unique<OFS_Project>();
     
     player = std::make_unique<OFS_Videoplayer>();
@@ -1810,7 +1808,7 @@ void OpenFunscripter::setIdle(bool idle) noexcept
     IdleMode = idle;
 }
 
-void OpenFunscripter::step() noexcept {
+void OpenFunscripter::Step() noexcept {
     OFS_BEGINPROFILING();
     {
         OFS_PROFILE(__FUNCTION__);
@@ -2002,7 +2000,7 @@ void OpenFunscripter::step() noexcept {
     player->NotifySwap();
 }
 
-int OpenFunscripter::run() noexcept
+int OpenFunscripter::Run() noexcept
 {
     newFrame();
     setupDefaultLayout(false);
@@ -2012,7 +2010,7 @@ int OpenFunscripter::run() noexcept
     while (!(Status & OFS_Status::OFS_ShouldExit)) {
 
         uint64_t FrameStart = SDL_GetPerformanceCounter();
-        step();
+        Step();
         uint64_t FrameEnd = SDL_GetPerformanceCounter();
         
         const auto& prefState = PreferenceState::State(preferences->StateHandle());
@@ -2038,12 +2036,11 @@ int OpenFunscripter::run() noexcept
 	return 0;
 }
 
-void OpenFunscripter::shutdown() noexcept
+void OpenFunscripter::Shutdown() noexcept
 {
     OFS_DynFontAtlas::Shutdown();
     OFS_Translator::Shutdown();
     
-    IO->Shutdown();
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
