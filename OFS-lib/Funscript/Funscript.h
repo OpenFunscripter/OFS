@@ -47,29 +47,6 @@ public:
 		std::string license;
 		std::string notes;
 		int64_t duration = 0;
-
-		template<typename S>
-		void serialize(S& s)
-		{
-			s.ext(*this, bitsery::ext::Growable{},
-				[](S& s, Metadata& o) {
-					s.container(o.tags, o.tags.max_size(), [](S& s, std::string& tag) {
-						s.text1b(tag, tag.max_size());
-						});
-					s.container(o.performers, o.performers.max_size(), [](S& s, std::string& performer) {
-						s.text1b(performer, performer.max_size());
-						});
-					s.text1b(o.type, o.type.max_size());
-					s.text1b(o.title, o.title.max_size());
-					s.text1b(o.creator, o.creator.max_size());
-					s.text1b(o.script_url, o.script_url.max_size());
-					s.text1b(o.video_url, o.video_url.max_size());
-					s.text1b(o.description, o.description.max_size());
-					s.text1b(o.license, o.license.max_size());
-					s.text1b(o.notes, o.notes.max_size());
-					s.value8b(o.duration);
-				});
-		}
 	};
 	// this is used when loading from json or serializing to json
 	Funscript::Metadata LocalMetadata;
