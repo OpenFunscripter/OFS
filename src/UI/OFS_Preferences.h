@@ -16,13 +16,6 @@
 
 #include "state/PreferenceState.h"
 
-// FIXME
-// REFL_FIELD(BaseOverlay::ShowMaxSpeedHighlight)
-// REFL_FIELD(BaseOverlay::SplineMode)
-// REFL_FIELD(BaseOverlay::SyncLineEnable)
-// REFL_FIELD(BaseOverlay::MaxSpeedColor)
-// REFL_FIELD(BaseOverlay::MaxSpeedPerSecond)
-
 class OFS_Preferences
 {
 private:

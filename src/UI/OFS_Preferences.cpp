@@ -9,6 +9,7 @@
 
 #include "OFS_Reflection.h"
 #include "OFS_StateHandle.h"
+#include "state/states/BaseOverlayState.h"
 
 OFS_Preferences::OFS_Preferences() noexcept
 {
@@ -168,14 +169,15 @@ bool OFS_Preferences::ShowPreferenceWindow() noexcept
 				}
 				if (ImGui::BeginTabItem(TR(SCRIPTING)))
 				{
-					if(ImGui::Checkbox(TR_ID("HighlightEnable", Tr::ENABLE_MAX_SPEED_HIGHLIGHT), &BaseOverlay::ShowMaxSpeedHighlight)) {
+					auto& overlayState = BaseOverlay::State();
+					if(ImGui::Checkbox(TR_ID("HighlightEnable", Tr::ENABLE_MAX_SPEED_HIGHLIGHT), &overlayState.ShowMaxSpeedHighlight)) {
 						save = true;
 					}
-					ImGui::BeginDisabled(!BaseOverlay::ShowMaxSpeedHighlight);
-					if(ImGui::InputFloat(TR(HIGHLIGHT_TRESHOLD), &BaseOverlay::MaxSpeedPerSecond)) {
+					ImGui::BeginDisabled(!overlayState.ShowMaxSpeedHighlight);
+					if(ImGui::InputFloat(TR(HIGHLIGHT_TRESHOLD), &overlayState.MaxSpeedPerSecond)) {
 						save = true;
 					}
-					ImGui::ColorEdit3(TR_ID("HighlightColor", Tr::COLOR), &BaseOverlay::MaxSpeedColor.Value.x, ImGuiColorEditFlags_None);
+					ImGui::ColorEdit3(TR_ID("HighlightColor", Tr::COLOR), &overlayState.MaxSpeedColor.Value.x, ImGuiColorEditFlags_None);
 					if(ImGui::IsItemDeactivatedAfterEdit()) {
 						save = true;
 					}

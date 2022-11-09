@@ -109,7 +109,7 @@ void ScriptSimulator::CenterSimulator()
     state.P2 = state.P1 + ImVec2(0.f, default_len);
 }
 
-void ScriptSimulator::ShowSimulator(bool* open) 
+void ScriptSimulator::ShowSimulator(bool* open, bool splineMode) 
 {
     if (*open) {
         OFS_PROFILE(__FUNCTION__);
@@ -121,7 +121,7 @@ void ScriptSimulator::ShowSimulator(bool* open)
             positionOverride = -1.f;
         }
         else {
-            currentPos = BaseOverlay::SplineMode 
+            currentPos = splineMode 
                 ? app->ActiveFunscript()->SplineClamped(app->player->CurrentTime()) 
                 : app->ActiveFunscript()->GetPositionAtTime(app->player->CurrentTime());
         }

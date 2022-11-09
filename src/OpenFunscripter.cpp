@@ -13,6 +13,7 @@
 #include "state/OpenFunscripterState.h"
 #include "state/states/ControllerState.h"
 #include "state/states/VideoplayerWindowState.h"
+#include "state/states/BaseOverlayState.h"
 
 #include <filesystem>
 
@@ -262,7 +263,7 @@ bool OpenFunscripter::Init(int argc, char* argv[])
     registerBindings(); // needs to happen before setBindings
     keybinds.load(Util::Prefpath("keybinds.json"));
 
-    scriptTimeline.setup(undoSystem.get());
+    scriptTimeline.Init(undoSystem.get());
 
     scripting = std::make_unique<ScriptingMode>();
     scripting->Init();
@@ -1828,12 +1829,13 @@ void OpenFunscripter::Step() noexcept {
             }
             #endif
 
-            sim3D->ShowWindow(&ofsState.showSimulator3d, player->CurrentTime(), BaseOverlay::SplineMode, LoadedProject->Funscripts);
+            auto& overlayState = BaseOverlay::State();
+            sim3D->ShowWindow(&ofsState.showSimulator3d, player->CurrentTime(), overlayState.SplineMode, LoadedProject->Funscripts);
             ShowAboutWindow(&ShowAbout);
 
             specialFunctions->ShowFunctionsWindow(&ofsState.showSpecialFunctions);
             undoSystem->ShowUndoRedoHistory(&ofsState.showHistory);
-            simulator.ShowSimulator(&ofsState.showSimulator);
+            simulator.ShowSimulator(&ofsState.showSimulator, overlayState.SplineMode);
             
             if(ShowMetadataEditor) {
                 auto& projectState = LoadedProject->State();

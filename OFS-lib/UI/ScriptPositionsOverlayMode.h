@@ -7,6 +7,8 @@
 #include "imgui_internal.h"
 #include "GradientBar.h"
 
+#include "state/states/BaseOverlayState.h"
+
 struct OverlayDrawingCtx {
 	Funscript* script;
 	int32_t scriptIdx;
@@ -24,7 +26,13 @@ struct OverlayDrawingCtx {
 class BaseOverlay {
 protected:
 	class ScriptTimeline* timeline;
+	static uint32_t StateHandle;
 public:
+	inline static BaseOverlayState& State() noexcept
+	{
+		return BaseOverlayState::State(StateHandle);
+	}
+
 	struct ColoredLine {
 		ImVec2 p1;
 		ImVec2 p2;
@@ -36,14 +44,8 @@ public:
 	static std::vector<ImVec2> ActionScreenCoordinates;
 	static float PointSize;
 	
-	static bool ShowMaxSpeedHighlight;
-	static float MaxSpeedPerSecond;
-	static ImColor MaxSpeedColor;
-
 	static ImGradient speedGradient;
-	static bool SplineMode;
 	static bool ShowActions;
-	static bool SyncLineEnable;
 
 	BaseOverlay(class ScriptTimeline* timeline) noexcept;
 	virtual ~BaseOverlay() noexcept {}

@@ -16,6 +16,8 @@
 #include "OFS_Shader.h"
 #include "OFS_GL.h"
 
+#include "state/states/BaseOverlayState.h"
+
 #include "KeybindingSystem.h"
 #include "SDL_events.h"
 
@@ -55,8 +57,10 @@ void ScriptTimeline::FfmpegAudioProcessingFinished(SDL_Event& ev) noexcept
 	LOG_INFO("Audio processing complete.");
 }
 
-void ScriptTimeline::setup(UndoSystem* undoSystem)
+void ScriptTimeline::Init(UndoSystem* undoSystem)
 {
+	overlayStateHandle = BaseOverlayState::RegisterStatic();
+
 	this->undoSystem = undoSystem;
 	EventSystem::ev().Subscribe(SDL_MOUSEBUTTONDOWN, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mousePressed));
 	EventSystem::ev().Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouseScroll));
@@ -459,9 +463,10 @@ void ScriptTimeline::ShowScriptPositions(
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu(TR_ID("RENDERING", Tr::RENDERING))) {
+				auto& overlayState = BaseOverlayState::State(overlayStateHandle);
 				ImGui::MenuItem(TR(SHOW_ACTIONS), 0, &BaseOverlay::ShowActions);
-				ImGui::MenuItem(TR(SPLINE_MODE), 0, &BaseOverlay::SplineMode);
-				ImGui::MenuItem(TR(SHOW_VIDEO_POSITION), 0, &BaseOverlay::SyncLineEnable);
+				ImGui::MenuItem(TR(SPLINE_MODE), 0, &overlayState.SplineMode);
+				ImGui::MenuItem(TR(SHOW_VIDEO_POSITION), 0, &overlayState.SyncLineEnable);
 				OFS::Tooltip(TR(SHOW_VIDEO_POSITION_TOOLTIP));
 				ImGui::EndMenu();
 			}

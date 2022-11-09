@@ -26,6 +26,6 @@ public:
 
 	void Init();
 	void CenterSimulator();
-	void ShowSimulator(bool* open);
+	void ShowSimulator(bool* open, bool splineMode);
 };
 

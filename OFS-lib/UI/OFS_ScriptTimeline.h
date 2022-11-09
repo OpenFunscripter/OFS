@@ -51,6 +51,8 @@ public:
 	float absSel1 = 0.f; // absolute selection start
 	float relSel2 = 0.f; // relative selection end
 
+	uint32_t overlayStateHandle = 0xFFFF'FFFF;
+
 	ScriptTimelineEvents::ActionClickedEventArgs ActionClickEventData;
 	ScriptTimelineEvents::SelectTime SelectTimeEventData = {0};
 
@@ -114,7 +116,7 @@ public:
 
 	static constexpr float MAX_WINDOW_SIZE = 300.f;
 	static constexpr float MIN_WINDOW_SIZE = 1.f;
-	void setup(UndoSystem* undo);
+	void Init(UndoSystem* undo);
 
 	inline void ClearAudioWaveform() noexcept { ShowAudioWaveform = false; Wave.data.Clear(); }
 	inline void setStartSelection(float time) noexcept { startSelectionTime = time; }

@@ -50,7 +50,8 @@ void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
     BaseOverlay::DrawScriptLabel(ctx);
  
     // out of sync line
-    if (BaseOverlay::SyncLineEnable) {
+    auto& state = BaseOverlay::State();
+    if (state.SyncLineEnable) {
         float realFrameTime = app->player->CurrentPlayerTime() - ctx.offsetTime;
         ctx.drawList->AddLine(
             ctx.canvasPos + ImVec2((realFrameTime / ctx.visibleTime) * ctx.canvasSize.x, 0.f),
