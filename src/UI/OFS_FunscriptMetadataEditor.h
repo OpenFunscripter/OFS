@@ -9,7 +9,6 @@
 class OFS_FunscriptMetadataEditor
 {
 public:
-    static constexpr auto StateName = "FunscriptMetadata";
     inline uint32_t StateHandle() const noexcept { return stateHandle; }
 
     OFS_FunscriptMetadataEditor() noexcept;

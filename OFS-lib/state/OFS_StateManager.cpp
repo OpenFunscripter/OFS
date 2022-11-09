@@ -64,7 +64,7 @@ inline static bool DeserializeStateCollection(const nlohmann::json& state, std::
         if(md->Deserialize(state.State, stateValue["State"])) {
             auto handleIt = handleMap.find(state.Name);
             if(handleIt != handleMap.end()) {
-                uint32_t handle = handleIt->second;
+                uint32_t handle = handleIt->second.second;
                 if(stateCollection.size() < handle + 1) {
                     stateCollection.resize(handle + 1);
                 }
@@ -72,11 +72,31 @@ inline static bool DeserializeStateCollection(const nlohmann::json& state, std::
             }
             else {
                 uint32_t handle = stateCollection.size();
-                handleMap.insert(std::make_pair(state.Name, handle));
+                handleMap.insert(std::make_pair(state.Name, std::make_pair(md->Name(), handle)));
                 stateCollection.emplace_back(std::move(state));
             }
         }
     }
+
+    // Ideally this does nothing because every item has a value.
+    for(auto& state : handleMap)
+    {
+        uint32_t handle = state.second.second;
+        if(stateCollection.size() < handle + 1) {
+            stateCollection.resize(handle + 1);
+        }
+        if(!stateCollection[handle].State.has_value()) {
+            // Default initialize
+            auto md = OFS_StateRegistry::Get().Find(state.second.first);
+            FUN_ASSERT(md, "Metadata not found this must not happen in this context.");
+            auto& stateItem = stateCollection[handle];
+            stateItem.Name = state.first;
+            stateItem.State = md->Create();
+            stateItem.Metadata = md;
+            stateItem.TypeName = md->Name();
+        }
+    }
+
     return true;
 }
 

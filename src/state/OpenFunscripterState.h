@@ -19,6 +19,8 @@ REFL_END
 
 struct OpenFunscripterState 
 {
+	static constexpr auto StateName = "OpenFunscripter";
+
 	std::vector<RecentFile> recentFiles;
     std::string lastPath;
 

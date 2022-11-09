@@ -116,8 +116,8 @@ struct OFS_State
 
 class OFS_StateManager
 {
-    public:
-    using StateHandleMap = std::map<std::string, uint32_t>;
+    public:                        // StateName -> Pair(TypeName, Handle)
+    using StateHandleMap = std::map<std::string, std::pair<std::string, uint32_t>>;
     private:
     std::vector<OFS_State> ApplicationState;
     std::vector<OFS_State> ProjectState;
@@ -143,15 +143,15 @@ class OFS_StateManager
                 std::move(OFS_State{name, type.name.c_str(), metadata, std::move(std::make_any<T>())})
             );
 
-            auto sanityCheck = handleMap.insert(std::make_pair(std::string(name), Id));
+            auto sanityCheck = handleMap.insert(std::make_pair(std::string(name), std::make_pair(type.name, Id)));
             FUN_ASSERT(sanityCheck.second, "Why did this fail?");
 
             return Id;   
         }
         else {
-            FUN_ASSERT(stateCollection[it->second].Name == name, "Something went wrong");
+            FUN_ASSERT(stateCollection[it->second.second].Name == name, "Something went wrong");
             LOGF_DEBUG("Loading existing state \"%s\"", name);
-            return it->second;
+            return it->second.second;
         }
     }
 

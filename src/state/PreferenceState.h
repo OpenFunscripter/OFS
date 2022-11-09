@@ -10,6 +10,8 @@ enum class OFS_Theme : int32_t
 
 struct PreferenceState 
 {
+	static constexpr auto StateName = "Preferences";
+
 	std::string languageCsv;
 	std::string fontOverride;
 

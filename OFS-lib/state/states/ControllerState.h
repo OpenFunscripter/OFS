@@ -4,6 +4,7 @@
 
 struct ControllerInputState
 {
+	static constexpr auto StateName = "ControllerInput";
 	int32_t buttonRepeatIntervalMs = 100;
 
 	inline static ControllerInputState& State(uint32_t stateHandle) noexcept {

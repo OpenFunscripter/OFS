@@ -4,6 +4,8 @@
 
 struct FunscriptMetadataState
 {
+    static constexpr auto StateName = "FunscriptMetadata";
+
     Funscript::Metadata defaultMetadata;
 
     static inline FunscriptMetadataState& State(uint32_t stateHandle) noexcept

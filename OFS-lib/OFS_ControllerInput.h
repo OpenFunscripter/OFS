@@ -9,7 +9,6 @@
 
 class ControllerInput {
 public:
-	static constexpr auto StateName = "ControllerInput";
 	inline static uint32_t StateHandle() noexcept { return ControllerInput::stateHandle; }
 private:
 	SDL_GameController* gamepad;

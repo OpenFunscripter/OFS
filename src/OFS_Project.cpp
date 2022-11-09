@@ -82,7 +82,8 @@ void OFS_Project::Save(const std::string& path, bool clearUnsavedChanges) noexce
 	{
 		auto& projectState = State();
 		projectState.binaryFunscriptData.clear();
-		OFS_Binary::Serialize(projectState.binaryFunscriptData, *this);
+		auto size = OFS_Binary::Serialize(projectState.binaryFunscriptData, *this);
+		projectState.binaryFunscriptData.resize(size);
 	}
 	auto projectState = OFS_StateManager::Get()->SerializeProjectAll();
 

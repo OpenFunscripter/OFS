@@ -35,6 +35,10 @@ namespace OFS
 	template<>
 	struct is_json_compatible<char> : std::true_type {};
 	
+	// Enabling this breaks json support because nlohmann::json does not support
+	// full round trip for nlohmann::json::binary_t when using the json serializer
+	static constexpr bool EnableBinaryOptimization = false;
+
 	class Serializer {
 	private:
 		template<typename FieldDescriptor, typename ObjectType>
@@ -111,7 +115,7 @@ namespace OFS
 		template<typename ItemType>
 		inline static bool deserializeContainerItems(std::vector<ItemType>& obj, const nlohmann::json& jsonArray) noexcept
 		{
-			if constexpr(std::is_same_v<ItemType, uint8_t>) {
+			if constexpr(EnableBinaryOptimization && std::is_same_v<ItemType, uint8_t>) {
 				if(jsonArray.is_binary()) {
 					obj = jsonArray.get_binary();
 					return true;
@@ -194,7 +198,7 @@ namespace OFS
 		template<typename ItemType>
 		inline static bool serializeContainerItems(const std::vector<ItemType>& container, nlohmann::json& jsonArray) noexcept
 		{
-			if constexpr(std::is_same_v<ItemType, uint8_t>) {
+			if constexpr(EnableBinaryOptimization && std::is_same_v<ItemType, uint8_t>) {
 				nlohmann::json::binary_t binData{container};
 				jsonArray = std::move(binData);
 			}

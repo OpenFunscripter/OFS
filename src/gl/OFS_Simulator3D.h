@@ -12,8 +12,6 @@
 
 class Simulator3D
 {
-public:
-	static constexpr auto StateName = "Simulator3D";
 private:
 	enum IsEditing : uint8_t
 	{

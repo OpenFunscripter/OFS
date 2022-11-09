@@ -68,7 +68,7 @@ constexpr float simCubeSize = 0.5f;
 
 void Simulator3D::Init() noexcept
 {
-    stateHandle = OFS_AppState<Simulator3dState>::Register(Simulator3D::StateName);
+    stateHandle = OFS_AppState<Simulator3dState>::Register(Simulator3dState::StateName);
 	lightShader = std::make_unique<LightingShader>();
 
     glGenVertexArrays(1, &cubeVAO);

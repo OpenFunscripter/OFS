@@ -3,6 +3,8 @@
 
 struct ScriptingModeState
 {
+	static constexpr auto StateName = "ScriptingMode";
+
     int32_t actionInsertDelayMs = 0;
 
     inline static ScriptingModeState& State(uint32_t stateHandle) noexcept

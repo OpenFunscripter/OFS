@@ -115,8 +115,6 @@ public:
 };
 
 class ScriptingMode {
-public:
-	static constexpr auto StateName = "ScriptingMode";
 private:
 	ScriptingModeEnum activeMode;
 	ScriptingOverlayModes activeOverlay;

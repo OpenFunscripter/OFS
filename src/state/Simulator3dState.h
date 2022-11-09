@@ -4,6 +4,8 @@
 
 struct Simulator3dState
 {
+	static constexpr auto StateName = "Simulator3D";
+
 	Serializable<glm::mat4> Translation;
 	float Distance = 3.f;
 

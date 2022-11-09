@@ -12,6 +12,7 @@
 
 #include "state/OpenFunscripterState.h"
 #include "state/states/ControllerState.h"
+#include "state/states/VideoplayerWindowState.h"
 
 #include <filesystem>
 
@@ -164,7 +165,7 @@ bool OpenFunscripter::Init(int argc, char* argv[])
         }
     }
 
-    stateHandle = OFS_AppState<OpenFunscripterState>::Register(OpenFunscripter::StateName);
+    stateHandle = OFS_AppState<OpenFunscripterState>::Register(OpenFunscripterState::StateName);
     const auto& ofsState = OpenFunscripterState::State(stateHandle);
 
     preferences = std::make_unique<OFS_Preferences>();
@@ -254,10 +255,7 @@ bool OpenFunscripter::Init(int argc, char* argv[])
         return false;
     }
 
-    // FIXME
-    //OFS_ScriptSettings::player = &playerWindow->settings;
     playerControls.Init(player.get());
-
     undoSystem = std::make_unique<UndoSystem>(&LoadedProject->Funscripts);
 
     keybinds.setup(*events);
@@ -278,13 +276,10 @@ bool OpenFunscripter::Init(int argc, char* argv[])
     events->Subscribe(VideoEvents::PlayPauseChanged, EVENT_SYSTEM_BIND(this, &OpenFunscripter::PlayPauseChange));
     events->Subscribe(ScriptTimelineEvents::ActiveScriptChanged, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActiveScriptChanged));
 
-    // FIXME
-    //OFS_Project::ProjSettings::Simulator = &simulator.simulator;
-
     specialFunctions = std::make_unique<SpecialFunctionsWindow>();
     controllerInput = std::make_unique<ControllerInput>();
     controllerInput->Init(*events);
-    simulator.setup();
+    simulator.Init();
 
     sim3D = std::make_unique<Simulator3D>();
     sim3D->Init();
@@ -2958,46 +2953,47 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 playerWindow->ResetTranslationAndZoom(); 
             }
 
-            auto videoModeToString = [](VideoMode mode) -> const char*
+            auto videoModeToString = [](VideoMode mode) noexcept -> const char*
             {
                 switch (mode)
                 {
-                    case VideoMode::FULL: return TR(VIDEO_MODE_FULL);
-                    case VideoMode::LEFT_PANE: return TR(VIDEO_MODE_LEFT_PANE);
-                    case VideoMode::RIGHT_PANE: return TR(VIDEO_MODE_RIGHT_PANE);
-                    case VideoMode::TOP_PANE: return TR(VIDEO_MODE_TOP_PANE);
-                    case VideoMode::BOTTOM_PANE: return TR(VIDEO_MODE_BOTTOM_PANE);
-                    case VideoMode::VR_MODE: return TR(VIDEO_MODE_VR);
+                    case VideoMode::Full: return TR(VIDEO_MODE_FULL);
+                    case VideoMode::LeftPane: return TR(VIDEO_MODE_LEFT_PANE);
+                    case VideoMode::RightPane: return TR(VIDEO_MODE_RIGHT_PANE);
+                    case VideoMode::TopPane: return TR(VIDEO_MODE_TOP_PANE);
+                    case VideoMode::BottomPane: return TR(VIDEO_MODE_BOTTOM_PANE);
+                    case VideoMode::VrMode: return TR(VIDEO_MODE_VR);
                 }
                 return "";
             };
 
-            if(ImGui::BeginCombo(TR(VIDEO_MODE), videoModeToString(playerWindow->settings.activeMode)))
+            auto& videoWindow = VideoPlayerWindowState::State(playerWindow->StateHandle());
+            if(ImGui::BeginCombo(TR(VIDEO_MODE), videoModeToString(videoWindow.activeMode)))
             {
-                auto& mode = playerWindow->settings.activeMode;
-                if(ImGui::Selectable(TR(VIDEO_MODE_FULL), mode == VideoMode::FULL))
+                auto& mode = videoWindow.activeMode;
+                if(ImGui::Selectable(TR(VIDEO_MODE_FULL), mode == VideoMode::Full))
                 {
-                    mode = VideoMode::FULL;
+                    mode = VideoMode::Full;
                 }
-                if(ImGui::Selectable(TR(VIDEO_MODE_LEFT_PANE), mode == VideoMode::LEFT_PANE))
+                if(ImGui::Selectable(TR(VIDEO_MODE_LEFT_PANE), mode == VideoMode::LeftPane))
                 {
-                    mode = VideoMode::LEFT_PANE;
+                    mode = VideoMode::LeftPane;
                 }
-                if(ImGui::Selectable(TR(VIDEO_MODE_RIGHT_PANE), mode == VideoMode::RIGHT_PANE))
+                if(ImGui::Selectable(TR(VIDEO_MODE_RIGHT_PANE), mode == VideoMode::RightPane))
                 {
-                    mode = VideoMode::RIGHT_PANE;
+                    mode = VideoMode::RightPane;
                 }
-                if(ImGui::Selectable(TR(VIDEO_MODE_TOP_PANE), mode == VideoMode::TOP_PANE))
+                if(ImGui::Selectable(TR(VIDEO_MODE_TOP_PANE), mode == VideoMode::TopPane))
                 {
-                    mode = VideoMode::TOP_PANE;
+                    mode = VideoMode::TopPane;
                 }
-                if(ImGui::Selectable(TR(VIDEO_MODE_BOTTOM_PANE), mode == VideoMode::BOTTOM_PANE))
+                if(ImGui::Selectable(TR(VIDEO_MODE_BOTTOM_PANE), mode == VideoMode::BottomPane))
                 {
-                    mode = VideoMode::BOTTOM_PANE;
+                    mode = VideoMode::BottomPane;
                 }
-                if(ImGui::Selectable(TR(VIDEO_MODE_VR), mode == VideoMode::VR_MODE))
+                if(ImGui::Selectable(TR(VIDEO_MODE_VR), mode == VideoMode::VrMode))
                 {
-                    mode = VideoMode::VR_MODE;
+                    mode = VideoMode::VrMode;
                 }
                 ImGui::EndCombo();
             }

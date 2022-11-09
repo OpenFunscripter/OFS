@@ -29,7 +29,6 @@ private:
 	uint32_t prefStateHandle = 0xFFFF'FFFF;
 	std::vector<std::string> translationFiles;
 public:
-	static constexpr auto StateName = "Preferences";
 	inline uint32_t StateHandle() const noexcept { return prefStateHandle; }
 public:
 	bool ShowWindow = false;

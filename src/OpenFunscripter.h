@@ -38,8 +38,6 @@ enum OFS_Status : uint8_t
 };
 
 class OpenFunscripter {
-public:
-	static constexpr auto StateName = "OpenFunscripter";
 private:
 	SDL_Window* window;
 	SDL_GLContext glContext;
