@@ -2660,7 +2660,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     {
                         std::string newScriptPath;
                         {
-                            auto root = Util::PathFromString(RootFunscript()->Path());
+                            auto root = Util::PathFromString(LoadedFunscripts()[0]->Path());
                             root.replace_extension(Util::Format(".%s.funscript", axisExt));
                             newScriptPath = root.u8string();
                         }
