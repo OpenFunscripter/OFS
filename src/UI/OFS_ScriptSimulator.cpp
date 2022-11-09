@@ -165,8 +165,8 @@ void ScriptSimulator::ShowSimulator(bool* open, bool splineMode)
 
         ImGui::Columns(2, 0, false);
         if (ImGui::Button(TR(LOAD_CONFIG), ImVec2(-1.f, 0.f))) {
-            auto& default = SimulatorDefaultConfigState::StaticStateSlow();
-            state = default.defaultState;
+            auto& dState = SimulatorDefaultConfigState::StaticStateSlow();
+            state = dState.defaultState;
         }
         ImGui::NextColumn();
         if (ImGui::Button(TR(SAVE_CONFIG), ImVec2(-1.f, 0.f))) { 
@@ -174,9 +174,9 @@ void ScriptSimulator::ShowSimulator(bool* open, bool splineMode)
                 TR(SAVE_SIMULATOR_CONFIG_MSG), 
                 [this](Util::YesNoCancel result) {
                     if(result == Util::YesNoCancel::Yes) {
-                        auto& default = SimulatorDefaultConfigState::StaticStateSlow();
+                        auto& dState = SimulatorDefaultConfigState::StaticStateSlow();
                         auto& state = SimulatorState::State(stateHandle);
-                        default.defaultState = state;
+                        dState.defaultState = state;
                     }
                 }
             );
