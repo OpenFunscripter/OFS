@@ -9,6 +9,8 @@
 #include <vector>
 #include <sstream>
 
+#include "state/SpecialFunctionsState.h"
+
 #include "SDL_thread.h"
 #include "SDL_atomic.h"
 
@@ -16,30 +18,31 @@
 
 SpecialFunctionsWindow::SpecialFunctionsWindow() noexcept
 {
-    // FIXME
-    //SetFunction((SpecialFunctions)OpenFunscripter::ptr->settings->data().currentSpecialFunction);
-    SetFunction(SpecialFunctions::RAMER_DOUGLAS_PEUCKER);
+    stateHandle = OFS_AppState<SpecialFunctionState>::Register(SpecialFunctionState::StateName);
+    auto& state = SpecialFunctionState::State(stateHandle);
+    SetFunction(state.selectedFunction);
 }
 
-void SpecialFunctionsWindow::SetFunction(SpecialFunctions functionEnum) noexcept
+void SpecialFunctionsWindow::SetFunction(SpecialFunctionType functionEnum) noexcept
 {
     if (function != nullptr) {
         delete function; function = nullptr;
     }
+    auto& state = SpecialFunctionState::State(stateHandle);
 
 	switch (functionEnum) {
-	case SpecialFunctions::RANGE_EXTENDER:
-		function = new FunctionRangeExtender();
-		break;
-    case SpecialFunctions::RAMER_DOUGLAS_PEUCKER:
-        function = new RamerDouglasPeucker();
-        break;
-	default:
-        function = new FunctionRangeExtender();
-        // FIXME
-        //OpenFunscripter::ptr->settings->data().currentSpecialFunction = SpecialFunctions::RANGE_EXTENDER;
-		break;
+        case SpecialFunctionType::RangeExtender:
+            function = new FunctionRangeExtender();
+            break;
+        case SpecialFunctionType::RamerDouglasPeucker:
+            function = new RamerDouglasPeucker();
+            break;
+        default:
+            function = new FunctionRangeExtender();
+            functionEnum = SpecialFunctionType::RangeExtender;
+            break;
 	}
+    state.selectedFunction = functionEnum;
 }
 
 void SpecialFunctionsWindow::ShowFunctionsWindow(bool* open) noexcept
@@ -50,32 +53,29 @@ void SpecialFunctionsWindow::ShowFunctionsWindow(bool* open) noexcept
 	ImGui::Begin(TR_ID(WindowId, Tr::SPECIAL_FUNCTIONS), open, ImGuiWindowFlags_None);
 	ImGui::SetNextItemWidth(-1.f);
 
-    auto functionToString = [](SpecialFunctions func) -> const char*
+    auto functionToString = [](SpecialFunctionType func) noexcept -> const char*
     {
         switch(func)
         {
-            case SpecialFunctions::RAMER_DOUGLAS_PEUCKER: return TR(FUNCTIONS_SIMPLIFY);
-            case SpecialFunctions::RANGE_EXTENDER: return TR(FUNCTIONS_RANGE_EXTENDER);
+            case SpecialFunctionType::RangeExtender: return TR(FUNCTIONS_RANGE_EXTENDER);
+            case SpecialFunctionType::RamerDouglasPeucker: return TR(FUNCTIONS_SIMPLIFY);
         }
         return "";
     };
 
-    // FIXME
-    //if(ImGui::BeginCombo("##Functions", functionToString((SpecialFunctions)app->settings->data().currentSpecialFunction), ImGuiComboFlags_None))
-    //{
-    //    auto& func = (SpecialFunctions&)app->settings->data().currentSpecialFunction;
-    //    if(ImGui::Selectable(TR(FUNCTIONS_SIMPLIFY), func == SpecialFunctions::RAMER_DOUGLAS_PEUCKER))
-    //    {
-    //        func = SpecialFunctions::RAMER_DOUGLAS_PEUCKER;
-    //        SetFunction(func);
-    //    }
-    //    if(ImGui::Selectable(TR(FUNCTIONS_RANGE_EXTENDER), func == SpecialFunctions::RANGE_EXTENDER))
-    //    {
-    //        func = SpecialFunctions::RANGE_EXTENDER;
-    //        SetFunction(func);
-    //    }
-    //    ImGui::EndCombo();
-    //}
+    auto& state = SpecialFunctionState::State(stateHandle);
+    if(ImGui::BeginCombo("##Functions", functionToString(state.selectedFunction), ImGuiComboFlags_None))
+    {
+        if(ImGui::Selectable(TR(FUNCTIONS_SIMPLIFY), state.selectedFunction == SpecialFunctionType::RamerDouglasPeucker))
+        {
+            SetFunction(SpecialFunctionType::RamerDouglasPeucker);
+        }
+        if(ImGui::Selectable(TR(FUNCTIONS_RANGE_EXTENDER), state.selectedFunction == SpecialFunctionType::RangeExtender))
+        {
+            SetFunction(SpecialFunctionType::RangeExtender);
+        }
+        ImGui::EndCombo();
+    }
 
 	ImGui::Spacing();
 	function->DrawUI();

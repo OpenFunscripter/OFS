@@ -2237,6 +2237,7 @@ bool OpenFunscripter::closeProject(bool closeWithUnsavedChanges) noexcept
     else {
         ActiveFunscriptIdx = 0;
         // FIXME: ideally project shouldn't have a clear method
+        // FIXME: The UndoSystem currently holds a pointer to the funscript vector
         // LoadedProject->Clear(); 
         player->CloseVideo();
         playerControls.videoPreview->closeVideo();

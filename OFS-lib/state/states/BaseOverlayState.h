@@ -9,8 +9,8 @@ struct BaseOverlayState
     ImColor MaxSpeedColor = ImColor(0, 0, 255, 255);
     float MaxSpeedPerSecond = 400.f;
     bool ShowMaxSpeedHighlight = false;
-	bool SyncLineEnable = false;
-	bool SplineMode = false;
+    bool SyncLineEnable = false;
+    bool SplineMode = false;
 
     inline static uint32_t RegisterStatic() noexcept
     {

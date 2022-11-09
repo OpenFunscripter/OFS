@@ -3,13 +3,7 @@
 #include <memory>
 #include "Funscript.h"
 
-// ATTENTION: no reordering
-enum SpecialFunctions : int32_t
-{
-	RANGE_EXTENDER,
-	RAMER_DOUGLAS_PEUCKER, // simplification
-	TOTAL_FUNCTIONS_COUNT
-};
+#include "state/SpecialFunctionsState.h"
 
 class FunctionBase {
 protected:
@@ -43,10 +37,12 @@ public:
 };
 
 class SpecialFunctionsWindow {
+private:
 	FunctionBase* function = nullptr;
+	uint32_t stateHandle = 0xFFFF'FFFF;
 public:
 	static constexpr const char* WindowId = "###SPECIAL_FUNCTIONS";
 	SpecialFunctionsWindow() noexcept;
-	void SetFunction(SpecialFunctions functionEnum) noexcept;
+	void SetFunction(SpecialFunctionType function) noexcept;
 	void ShowFunctionsWindow(bool* open) noexcept;
 };
