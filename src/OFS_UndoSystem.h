@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 #include <memory>
-#include <optional>
 
 #include "FunscriptUndoSystem.h"
 
@@ -44,40 +43,36 @@ enum StateType : int32_t {
     TOTAL_UNDOSTATE_TYPES
 };
 
+using UndoContextScripts = std::vector<std::weak_ptr<const class Funscript>>;
+
 // this manages undo/redo accross the whole app
 class UndoSystem {
 private:
     struct UndoContext {
         int32_t Type;
-        std::optional<std::weak_ptr<const class Funscript>> Script;
-        UndoContext() noexcept : Type(-1) {}
-        UndoContext(StateType type) noexcept : Type((int32_t)type) {}
-        UndoContext(const std::weak_ptr<class Funscript>& ptr, StateType type) noexcept
-        : Script(ptr), Type((int32_t)type)
+        UndoContextScripts Scripts;
+        UndoContext(UndoContextScripts&& scripts, StateType type) noexcept
+        : Scripts(std::move(scripts)), Type((int32_t)type)
         {}
 
         const char* Description() const noexcept;
-        inline bool IsMulti() const noexcept { return !Script.has_value(); }
     };
+
     std::vector<UndoContext> UndoStack;
     std::vector<UndoContext> RedoStack;
     void ClearRedo() noexcept;
 
 public:
-    std::vector<std::shared_ptr<class Funscript>>* LoadedScripts = nullptr;
-
-    UndoSystem(std::vector<std::shared_ptr<class Funscript>>* scripts) noexcept
-    {
-        LoadedScripts = scripts;
-        RedoStack.reserve(100);
-        UndoStack.reserve(1000);
-    }
-
+    UndoSystem() noexcept;
     static constexpr const char* WindowId = "###UNDO_REDO_HISTORY";
     void ShowUndoRedoHistory(bool* open) noexcept;
 
+    void Snapshot(StateType type, std::weak_ptr<const class Funscript> scriptToSnapshot, bool clearRedo = true) noexcept
+    {
+        Snapshot(type, std::move(UndoContextScripts{ scriptToSnapshot }), clearRedo);
+    }
     void Snapshot(StateType type,
-        const std::weak_ptr<class Funscript> active = std::weak_ptr<class Funscript>(),
+        UndoContextScripts&& scriptsToSnapshot,
         bool clearRedo = true) noexcept;
     bool Undo() noexcept;
     bool Redo() noexcept;

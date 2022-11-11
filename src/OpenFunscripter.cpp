@@ -238,7 +238,7 @@ bool OpenFunscripter::Init(int argc, char* argv[])
     }
 
     playerControls.Init(player.get());
-    undoSystem = std::make_unique<UndoSystem>(&LoadedProject->Funscripts);
+    undoSystem = std::make_unique<UndoSystem>();
 
     keybinds.setup(*events);
     registerBindings(); // needs to happen before setBindings
@@ -1493,7 +1493,9 @@ void OpenFunscripter::ScriptTimelineActionCreated(SDL_Event& ev) noexcept
 void OpenFunscripter::ScriptTimelineActionMoveStarted(SDL_Event& ev) noexcept
 {
     // FIXME: this needs a script
-    undoSystem->Snapshot(StateType::ACTIONS_MOVED);
+    UndoContextScripts scripts;
+    scripts.assign(LoadedFunscripts().begin(), LoadedFunscripts().end());
+    undoSystem->Snapshot(StateType::ACTIONS_MOVED, std::move(scripts));
 }
 
 void OpenFunscripter::ScriptTimelineActionMoved(SDL_Event& ev) noexcept

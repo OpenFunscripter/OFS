@@ -516,7 +516,7 @@ void RecordingMode::DrawModeSettings() noexcept
             int32_t pitchIdx = app->sim3D->pitchIndex;
             recordingAxisX = app->LoadedFunscripts()[rollIdx];
             recordingAxisY = app->LoadedFunscripts()[pitchIdx];
-            app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS);
+            app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, { recordingAxisX, recordingAxisY });
         }
         recordingActive = true;
     }

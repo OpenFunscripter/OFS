@@ -283,7 +283,21 @@ void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::ve
 
             if (ImGui::Button(TR(INSERT_CURRENT_POSITION), ImVec2(-1.f, 0.f)) || editOccured) {
                 auto app = OpenFunscripter::ptr;
-                app->undoSystem->Snapshot(StateType::ADD_EDIT_ACTION);
+
+                // FIXME: this sucks
+                UndoContextScripts scriptsToSnapshot;
+                if (rollIndex >= 0 && rollIndex < loadedScriptsCount) {
+                    scriptsToSnapshot.emplace_back(scripts[rollIndex]);
+                }
+                if (pitchIndex >= 0 && pitchIndex < loadedScriptsCount) {
+                    scriptsToSnapshot.emplace_back(scripts[pitchIndex]);
+                }
+                if (twistIndex >= 0 && twistIndex < loadedScriptsCount) {
+                    scriptsToSnapshot.emplace_back(scripts[twistIndex]);
+                }
+
+                app->undoSystem->Snapshot(StateType::ADD_EDIT_ACTION, std::move(scriptsToSnapshot));
+
                 if (rollIndex >= 0 && rollIndex < loadedScriptsCount) {
                     addEditAction(scripts[rollIndex], roll, -(rollRange / 2.f), (rollRange / 2.f));
                 }

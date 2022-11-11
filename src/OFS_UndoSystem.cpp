@@ -55,6 +55,12 @@ const char* UndoSystem::UndoContext::Description() const noexcept
     return TRD(stateTranslations[typeIdx]);
 }
 
+UndoSystem::UndoSystem() noexcept
+{
+    RedoStack.reserve(100);
+    UndoStack.reserve(1000);
+}
+
 void UndoSystem::ShowUndoRedoHistory(bool* open) noexcept
 {
     if (!*open) return;
@@ -65,13 +71,12 @@ void UndoSystem::ShowUndoRedoHistory(bool* open) noexcept
 
     for (auto it = RedoStack.begin(), end = RedoStack.end(); it != end; ++it) {
         int count = 1;
-        auto copy_it = it;
-        while (++copy_it != end
-            && copy_it->Type == it->Type
-            && copy_it->IsMulti() == it->IsMulti()) {
+        auto copyIt = it;
+        while (++copyIt != end
+            && copyIt->Type == it->Type) {
             ++count;
         }
-        it = copy_it - 1;
+        it = copyIt - 1;
 
         ImGui::BulletText("%s (%d)", it->Description(), count);
     }
@@ -79,36 +84,32 @@ void UndoSystem::ShowUndoRedoHistory(bool* open) noexcept
     ImGui::TextDisabled(TR(UNDO_STACK));
     for (auto it = UndoStack.rbegin(), end = UndoStack.rend(); it != end; ++it) {
         int count = 1;
-        auto copy_it = it;
-        while (++copy_it != end
-            && copy_it->Type == it->Type
-            && copy_it->IsMulti() == it->IsMulti()) {
+        auto copyIt = it;
+        while (++copyIt != end
+            && copyIt->Type == it->Type) {
             ++count;
         }
-        it = copy_it - 1;
+        it = copyIt - 1;
 
         ImGui::BulletText("%s (%d)", it->Description(), count);
     }
     ImGui::End();
 }
 
-void UndoSystem::Snapshot(StateType type, const std::weak_ptr<Funscript> active, bool clearRedo) noexcept
+void UndoSystem::Snapshot(StateType type, UndoContextScripts&& scriptsToSnapshot, bool clearRedo) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    UndoStack.push_back(active.expired() ? UndoContext(type) : UndoContext(active, type));
+    auto context = UndoStack.emplace_back(std::move(scriptsToSnapshot), type);
     if (clearRedo)
         ClearRedo();
 
-    if (UndoStack.back().IsMulti()) {
-        LOG_DEBUG("multi snapshot");
-        for (auto&& script : *LoadedScripts) {
+    for (auto& weak : context.Scripts) {
+        if (auto script = weak.lock()) {
             script->undoSystem->Snapshot(type, clearRedo);
         }
-    }
-    else {
-        LOG_DEBUG("single snapshot");
-        auto script = active.lock();
-        script->undoSystem->Snapshot(type, clearRedo);
+        else {
+            FUN_ASSERT(false, "Stale weak_ptr.");
+        }
     }
 }
 
@@ -117,29 +118,19 @@ bool UndoSystem::Undo() noexcept
     if (UndoStack.empty()) return false;
     OFS_PROFILE(__FUNCTION__);
     bool undidSomething = false;
-    if (UndoStack.back().IsMulti()) {
-        LOG_DEBUG("multi undo");
-        for (auto&& script : *LoadedScripts) {
+
+    auto context = std::move(UndoStack.back());
+    UndoStack.pop_back();
+    for (auto& weak : context.Scripts) {
+        if (auto script = weak.lock()) {
             undidSomething = script->undoSystem->Undo() || undidSomething;
         }
-    }
-    else {
-        LOG_DEBUG("single undo");
-        auto script = UndoStack.back().Script.value().lock();
-        if (script) {
-            undidSomething = script->undoSystem->Undo();
-        }
         else {
-            // the script for this scriptstate doesn't exist anymore
-            // it probably was removed by the user
-            // so in order to undo something we call Undo again
-            UndoStack.pop_back();
-            return Undo();
+            FUN_ASSERT(false, "Stale undo.");
         }
     }
 
-    RedoStack.emplace_back(std::move(UndoStack.back()));
-    UndoStack.pop_back();
+    RedoStack.emplace_back(std::move(context));
     return undidSomething;
 }
 
@@ -148,29 +139,20 @@ bool UndoSystem::Redo() noexcept
     if (RedoStack.empty()) return false;
     OFS_PROFILE(__FUNCTION__);
     bool redidSomething = false;
-    if (RedoStack.back().IsMulti()) {
-        LOG_DEBUG("multi undo");
-        for (auto&& script : *LoadedScripts) {
+
+    auto context = std::move(RedoStack.back());
+    RedoStack.pop_back();
+    for (auto& weak : context.Scripts) {
+        if (auto script = weak.lock()) {
             redidSomething = script->undoSystem->Redo() || redidSomething;
         }
-    }
-    else {
-        LOG_DEBUG("single redo");
-        auto script = RedoStack.back().Script.value().lock();
-        if (script) {
-            redidSomething = script->undoSystem->Redo();
-        }
         else {
-            // the script for this scriptstate doesn't exist anymore
-            // it probably was removed by the user
-            // so in order to redo something we call Redo again
-            RedoStack.pop_back();
-            return Redo();
+            FUN_ASSERT(false, "Stale redo.");
         }
     }
 
-    UndoStack.emplace_back(std::move(RedoStack.back()));
-    RedoStack.pop_back();
+
+    UndoStack.emplace_back(std::move(context));
     return redidSomething;
 }
 
