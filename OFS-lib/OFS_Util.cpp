@@ -101,11 +101,11 @@ bool Util::LoadTextureFromBuffer(const char* buffer, size_t buffsize, unsigned i
 inline static int WindowsShellExecute(const wchar_t* op, const wchar_t* program, const wchar_t* params) noexcept
 {
     // https://docs.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-shellexecutew
-    //If the function succeeds, it returns a value greater than 32.
-    //If the function fails, it returns an error value that indicates the cause of the failure.
-    //The return value is cast as an HINSTANCE for backward compatibility with 16-bit Windows applications.
-    //It is not a true HINSTANCE, however.
-    //It can be cast only to an INT_PTR and compared to either 32 or the following error codes below.
+    // If the function succeeds, it returns a value greater than 32.
+    // If the function fails, it returns an error value that indicates the cause of the failure.
+    // The return value is cast as an HINSTANCE for backward compatibility with 16-bit Windows applications.
+    // It is not a true HINSTANCE, however.
+    // It can be cast only to an INT_PTR and compared to either 32 or the following error codes below.
     auto val = (INT_PTR)ShellExecuteW(NULL, op, program, params, NULL, SW_SHOWNORMAL);
     return val > 32;
 }

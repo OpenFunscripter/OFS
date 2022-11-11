@@ -34,7 +34,9 @@ struct OFS_LogThread {
     {
         ShouldExit = true;
         SDL_CondSignal(WaitFlush);
-        while (!Exited) { SDL_Delay(1); }
+        while (!Exited) {
+            SDL_Delay(1);
+        }
         SDL_DestroyCond(WaitFlush);
     }
 };

@@ -26,6 +26,16 @@ int32_t ScriptTimelineEvents::FunscriptActionMoved = 0;
 int32_t ScriptTimelineEvents::FunscriptActionMoveStarted = 0;
 int32_t ScriptTimelineEvents::FunscriptActionCreated = 0;
 
+inline static FunscriptAction getActionForPoint(const OverlayDrawingCtx& ctx, ImVec2 point) noexcept
+{
+	auto localCoord = point - ctx.canvasPos;
+	float relativeX = localCoord.x / ctx.canvasSize.x;
+	float relativeY = localCoord.y / ctx.canvasSize.y;
+	float atTime = ctx.offsetTime + (relativeX * ctx.visibleTime);
+	float pos = Util::Clamp<float>(100.f - (relativeY * 100.f), 0.f, 100.f);
+	return FunscriptAction(atTime, pos);
+}
+
 void ScriptTimelineEvents::RegisterEvents() noexcept
 {
 	FfmpegAudioProcessingFinished = SDL_RegisterEvents(1);
@@ -38,16 +48,24 @@ void ScriptTimelineEvents::RegisterEvents() noexcept
 	FunscriptActionCreated = SDL_RegisterEvents(1);
 }
 
-void ScriptTimeline::updateSelection(bool clear) noexcept
+void ScriptTimeline::updateSelection(const OverlayDrawingCtx& ctx, bool clear) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	float relSel1 = (absSel1 - offsetTime) / visibleTime;
+	float relSel1 = (absSel1 - ctx.offsetTime) / visibleTime;
 	float min = std::min(relSel1, relSel2);
 	float max = std::max(relSel1, relSel2);
 
-	SelectTimeEventData.startTime = offsetTime + (visibleTime * min);
-	SelectTimeEventData.endTime = offsetTime + (visibleTime * max);
+	SelectTimeEventData.startTime = ctx.offsetTime + (visibleTime * min);
+	SelectTimeEventData.endTime = ctx.offsetTime + (visibleTime * max);
 	SelectTimeEventData.clear = clear;
+
+	float selectionInterval = SelectTimeEventData.endTime - SelectTimeEventData.startTime;
+
+	// Tiny selections are ignored this is a bit arbitrary.
+	// It's supposed to prevent accidentally clearing the selection.
+	if(selectionInterval <= 0.008f) // 80ms
+		return;
+	
 
 	EventSystem::PushEvent(ScriptTimelineEvents::FunscriptSelectTime, &SelectTimeEventData);
 }
@@ -77,7 +95,7 @@ void ScriptTimeline::mouseScroll(SDL_Event& ev) noexcept
 	if (PositionsItemHovered) {
 		previousVisibleTime = visibleTime;
 		nextVisisbleTime *= 1 + (scrollPercent * -wheel.y);
-		nextVisisbleTime = Util::Clamp(nextVisisbleTime, MIN_WINDOW_SIZE, MAX_WINDOW_SIZE);
+		nextVisisbleTime = Util::Clamp(nextVisisbleTime, MinVisibleTime, MaxVisibleTime);
 		visibleTimeUpdate = SDL_GetTicks();
 	}
 }
@@ -98,12 +116,12 @@ void ScriptTimeline::videoLoaded(SDL_Event& ev) noexcept
 	videoPath = *(std::string*)ev.user.data1;
 }
 
-void ScriptTimeline::handleSelectionScrolling() noexcept
+void ScriptTimeline::handleSelectionScrolling(const OverlayDrawingCtx& ctx) noexcept
 {
 	constexpr float seekBorderMargin = 0.03f;
 	constexpr float scrollSpeed = 80.f;
 	if(relSel2 < seekBorderMargin || relSel2 > (1.f - seekBorderMargin)) {
-		float seekToTime = offsetTime + (visibleTime / 2.f);
+		float seekToTime = ctx.offsetTime + (visibleTime / 2.f);
 		seekToTime = Util::Max(0.f, seekToTime);
 		float relSeek = (relSel2 < seekBorderMargin) 
 			? -(seekBorderMargin - relSel2) 
@@ -117,27 +135,24 @@ void ScriptTimeline::handleSelectionScrolling() noexcept
 	}
 }
 
-void ScriptTimeline::handleTimelineHover(const OverlayDrawingCtx& ctx) noexcept
+void ScriptTimeline::handleTimelineHover(OverlayDrawingCtx& ctx) noexcept
 {
-	if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+	if(ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 	{
-		auto mousePos = ImGui::GetMousePos();
-		float relX = (mousePos.x - activeCanvasPos.x) / activeCanvasSize.x;
-		float seekToTime = offsetTime + (visibleTime * relX);
-		EventSystem::PushEvent(ScriptTimelineEvents::SetTimePosition, (void*)(*(intptr_t*)&seekToTime));
-	}
-	else if(ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-	{
-		if (hovereScriptIdx != activeScriptIdx) {
-			EventSystem::PushEvent(ScriptTimelineEvents::ActiveScriptChanged, (void*)(intptr_t)hovereScriptIdx);
-			activeScriptIdx = hovereScriptIdx;
-			activeCanvasPos = hoveredCanvasPos;
-			activeCanvasSize = hoveredCanvasSize;
+		if (ctx.hoveredScriptIdx != ctx.activeScriptIdx) {
+			EventSystem::PushEvent(ScriptTimelineEvents::ActiveScriptChanged, (void*)(intptr_t)ctx.hoveredScriptIdx);
+			ctx.activeScriptIdx = ctx.hoveredScriptIdx;
 		}
 	}
 	else if(ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
 	{
 		ctx.script->ClearSelection();
+	}
+	else if(IsSelecting)
+	{
+		// Update selection
+		relSel2 = (ImGui::GetMousePos().x - ctx.canvasPos.x) / ctx.canvasSize.x;
+		relSel2 = Util::Clamp(relSel2, 0.f, 1.f);
 	}
 }
 
@@ -173,11 +188,29 @@ void ScriptTimeline::handleActionClicks(const OverlayDrawingCtx& ctx) noexcept
 		}
 	}
 
-	if(moveOrAddPointModifer && !pointWasClicked)
+	if(!pointWasClicked)
 	{
-		auto newAction = getActionForPoint(ctx, mousePos);
-		ActionCreatedEventData = newAction;
-		EventSystem::PushEvent(ScriptTimelineEvents::FunscriptActionCreated, &ActionCreatedEventData);
+		if(moveOrAddPointModifer)
+		{
+			auto newAction = getActionForPoint(ctx, mousePos);
+			ActionCreatedEventData = newAction;
+			EventSystem::PushEvent(ScriptTimelineEvents::FunscriptActionCreated, &ActionCreatedEventData);
+		}
+		else if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+		{
+			auto mousePos = ImGui::GetMousePos();
+			float relX = (mousePos.x - ctx.canvasPos.x) / ctx.canvasSize.x;
+			float seekToTime = ctx.offsetTime + (visibleTime * relX);
+			EventSystem::PushEvent(ScriptTimelineEvents::SetTimePosition, (void*)(*(intptr_t*)&seekToTime));
+		}
+		else 
+		{
+			// Begin selection
+			IsSelecting = true;
+			float relSel1 = (mousePos.x - ctx.canvasPos.x) / ctx.canvasSize.x;
+			relSel2 = relSel1;
+			absSel1 = ctx.offsetTime + (visibleTime * relSel1);
+		}
 	}
 }
 
@@ -189,20 +222,16 @@ void ScriptTimeline::ShowScriptPositions(
 {
 	OFS_PROFILE(__FUNCTION__);
 
-	const auto activeScript = scripts[activeScriptIdx].get();
-
-	float currentTime = player->CurrentTime();
-	float duration = player->Duration();
-
 	auto& style = ImGui::GetStyle();
-	offsetTime = currentTime - (visibleTime / 2.0);
-	if(IsSelecting) handleSelectionScrolling();
-	
 	OverlayDrawingCtx drawingCtx;
-	drawingCtx.offsetTime = offsetTime;
+	drawingCtx.offsetTime = player->CurrentTime() - (visibleTime / 2.0);
+	drawingCtx.activeScriptIdx = activeScriptIdx;
 	drawingCtx.visibleTime = visibleTime;
-	drawingCtx.totalDuration = duration;
+	drawingCtx.totalDuration = player->Duration();
+	
 	if (drawingCtx.totalDuration == 0.f) return;
+
+	if(IsSelecting) handleSelectionScrolling(drawingCtx);
 	
 	ImGui::Begin(TR_ID(WindowId, Tr::POSITIONS));
 	drawingCtx.drawList = ImGui::GetWindowDrawList();
@@ -210,7 +239,7 @@ void ScriptTimeline::ShowScriptPositions(
 
 	drawingCtx.drawnScriptCount = 0;
 	for (auto&& script : scripts) {
-		if (script->Enabled) { drawingCtx.drawnScriptCount++; }
+		if (script->Enabled) { drawingCtx.drawnScriptCount += 1; }
 	}
 
 	const float verticalSpacingBetweenScripts = style.ItemSpacing.y*2.f;
@@ -221,7 +250,7 @@ void ScriptTimeline::ShowScriptPositions(
 	for(int i=0; i < scripts.size(); i += 1) 
 	{
 		auto script = scripts[i].get();
-		if (!script->Enabled) { continue; }
+		if (!script->Enabled) continue;
 		
 		drawingCtx.scriptIdx = i;
 		drawingCtx.canvasPos = ImGui::GetCursorScreenPos();
@@ -237,19 +266,10 @@ void ScriptTimeline::ShowScriptPositions(
 
 		bool ItemIsHovered = ImGui::IsItemHovered();
 		if (ItemIsHovered) {
-			hovereScriptIdx = i;
-			hoveredCanvasPos = drawingCtx.canvasPos;
-			hoveredCanvasSize = drawingCtx.canvasSize;
+			drawingCtx.hoveredScriptIdx = i;
 		}
 
-		const bool IsActivated = script == activeScript && drawingCtx.drawnScriptCount > 1;
-		if (drawingCtx.drawnScriptCount == 1) {
-			activeCanvasPos = drawingCtx.canvasPos;
-			activeCanvasSize = drawingCtx.canvasSize;
-		} else if (IsActivated) {
-			activeCanvasPos = drawingCtx.canvasPos;
-			activeCanvasSize = drawingCtx.canvasSize;
-		}
+		const bool IsActivated = i == activeScriptIdx && drawingCtx.drawnScriptCount > 1;
 
 		if (IsActivated) {
 			drawingCtx.drawList->AddRectFilledMultiColor(
@@ -275,33 +295,29 @@ void ScriptTimeline::ShowScriptPositions(
 			);
 		}
 
-		// FIXME: use the binary search here
-		auto startIt = std::find_if(script->Actions().begin(), script->Actions().end(),
-		    [this](auto act) { return act.atS >= offsetTime; });
+		auto startIt = script->Actions().lower_bound(FunscriptAction(drawingCtx.offsetTime, 0));
 		if (startIt != script->Actions().begin()) {
 		    startIt -= 1;
 		}
 
-		auto endIt = std::find_if(startIt, script->Actions().end(),
-		    [this](auto act) { return act.atS >= offsetTime + visibleTime; });
+		auto endIt = script->Actions().lower_bound(FunscriptAction(drawingCtx.offsetTime + visibleTime, 0));
 		if (endIt != script->Actions().end()) {
 		    endIt += 1;
 		}
+
 		drawingCtx.actionFromIdx = std::distance(script->Actions().begin(), startIt);
 		drawingCtx.actionToIdx = std::distance(script->Actions().begin(), endIt);
 		drawingCtx.script = script;
 
 		if(script->HasSelection())
 		{
-			auto startIt = std::find_if(script->Selection().begin(), script->Selection().end(),
-				[&](auto act) { return act.atS >= drawingCtx.offsetTime; });
-				if (startIt != script->Selection().begin())
-					startIt -= 1;
+			auto startIt = script->Selection().lower_bound(FunscriptAction(drawingCtx.offsetTime, 0));
+			if (startIt != script->Selection().begin())
+				startIt -= 1;
 
-			auto endIt = std::find_if(startIt, script->Selection().end(),
-				[&](auto act) { return act.atS >= drawingCtx.offsetTime + drawingCtx.visibleTime; });
-				if (endIt != script->Selection().end())
-					endIt += 1;
+			auto endIt = script->Selection().lower_bound(FunscriptAction(drawingCtx.offsetTime + drawingCtx.visibleTime, 0));
+			if (endIt != script->Selection().end())
+				endIt += 1;
 
 			drawingCtx.selectionFromIdx = std::distance(script->Selection().begin(), startIt);
 			drawingCtx.selectionToIdx = std::distance(script->Selection().begin(), endIt);
@@ -350,8 +366,8 @@ void ScriptTimeline::ShowScriptPositions(
 		// selection box
 		constexpr auto selectColor = IM_COL32(3, 252, 207, 255);
 		constexpr auto selectColorBackground = IM_COL32(3, 252, 207, 100);
-		if (IsSelecting && IsActivated) {
-			float relSel1 = (absSel1 - offsetTime) / visibleTime;
+		if (IsSelecting && (i == activeScriptIdx)) {
+			float relSel1 = (absSel1 - drawingCtx.offsetTime) / visibleTime;
 			drawingCtx.drawList->AddRectFilled(drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel1, 0), drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel2, drawingCtx.canvasSize.y), selectColorBackground);
 			drawingCtx.drawList->AddLine(drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel1, 0), drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel1, drawingCtx.canvasSize.y), selectColor, 3.0f);
 			drawingCtx.drawList->AddLine(drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel2, 0), drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel2, drawingCtx.canvasSize.y), selectColor, 3.0f);
@@ -360,7 +376,7 @@ void ScriptTimeline::ShowScriptPositions(
 		// TODO: refactor this
 		// selectionStart currently used for controller select
 		if (startSelectionTime >= 0.f) {
-			float startSelectRel = (startSelectionTime - offsetTime) / visibleTime;
+			float startSelectRel = (startSelectionTime - drawingCtx.offsetTime) / visibleTime;
 			drawingCtx.drawList->AddLine(
 				drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * startSelectRel, 0),
 				drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * startSelectRel, drawingCtx.canvasSize.y),
@@ -390,6 +406,12 @@ void ScriptTimeline::ShowScriptPositions(
 				IsMoving = false;
 			}
 		}
+		else if(IsSelecting && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+		{
+			IsSelecting = false;
+			bool clearSelection = !(SDL_GetModState() & KMOD_CTRL);
+			updateSelection(drawingCtx, clearSelection);
+		}
 		else if(!IsMoving && ItemIsHovered)
 		{
 			handleTimelineHover(drawingCtx);
@@ -410,7 +432,7 @@ void ScriptTimeline::ShowScriptPositions(
 					}
 					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, drawingCtx.drawnScriptCount == 1 && script->Enabled);
 					if (ImGui::Checkbox(script->Title.c_str(), &script->Enabled) && !script->Enabled) {
-						if (script.get() == activeScript) {
+						if (i == activeScriptIdx) {
 							// find a enabled script which can be set active
 							for (int i = 0; i < scripts.size(); i++) {
 								if (scripts[i]->Enabled) {									

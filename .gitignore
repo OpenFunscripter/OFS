@@ -28,3 +28,4 @@ lib/glad2_debug
 coi-serviceworker.min.js
 .vscode/c_cpp_properties.json
 lib/opencv
+clang-fmt.txt

@@ -41,45 +41,27 @@ public:
 class ScriptTimeline
 {
 public:
-	float offsetTime;
-	bool IsSelecting = false;
-	bool IsMoving = false;
-	bool PositionsItemHovered = false;
-	
+	uint32_t overlayStateHandle = 0xFFFF'FFFF;
 	float absSel1 = 0.f; // absolute selection start
 	float relSel2 = 0.f; // relative selection end
 
-	uint32_t overlayStateHandle = 0xFFFF'FFFF;
+	bool IsSelecting = false;
+	bool IsMoving = false;
+	bool PositionsItemHovered = false;
 
 	ScriptTimelineEvents::ActionClickedEventArgs ActionClickEventData;
 	ScriptTimelineEvents::ActionMovedEventArgs ActionMovedEventData;
 	ScriptTimelineEvents::SelectTime SelectTimeEventData = {0};
 	ScriptTimelineEvents::ActionCreatedEventArgs ActionCreatedEventData;
-
-	int activeScriptIdx = 0;
-	ImVec2 activeCanvasPos;
-	ImVec2 activeCanvasSize;
-
-	int hovereScriptIdx = 0;
-	ImVec2 hoveredCanvasPos;
-	ImVec2 hoveredCanvasSize;
 private:
 	void mouseScroll(SDL_Event& ev) noexcept;
 	void videoLoaded(SDL_Event& ev) noexcept;
 
-	void handleTimelineHover(const OverlayDrawingCtx& ctx) noexcept;
+	void handleSelectionScrolling(const OverlayDrawingCtx& ctx) noexcept;
+	void handleTimelineHover(OverlayDrawingCtx& ctx) noexcept;
 	void handleActionClicks(const OverlayDrawingCtx& ctx) noexcept;
 
-	inline static FunscriptAction getActionForPoint(const OverlayDrawingCtx& ctx, const ImVec2& point) noexcept {
-		auto localCoord = point - ctx.canvasPos;
-		float relativeX = localCoord.x / ctx.canvasSize.x;
-		float relativeY = localCoord.y / ctx.canvasSize.y;
-		float atTime = ctx.offsetTime + (relativeX * ctx.visibleTime);
-		float pos = Util::Clamp<float>(100.f - (relativeY * 100.f), 0.f, 100.f);
-		return FunscriptAction(atTime, pos);
-	}
-
-	void updateSelection(bool clear) noexcept;
+	void updateSelection(const OverlayDrawingCtx& ctx, bool clear) noexcept;
 	void FfmpegAudioProcessingFinished(SDL_Event& ev) noexcept;
 
 	std::string videoPath;
@@ -92,14 +74,12 @@ private:
 	
 	bool ShowAudioWaveform = false;
 	float ScaleAudio = 1.f;
-	
-	void handleSelectionScrolling() noexcept;
 public:
 	OFS_WaveformLOD Wave;
 	static constexpr const char* WindowId = "###POSITIONS";
 
-	static constexpr float MAX_WINDOW_SIZE = 300.f;
-	static constexpr float MIN_WINDOW_SIZE = 1.f;
+	static constexpr float MaxVisibleTime = 300.f;
+	static constexpr float MinVisibleTime = 1.f;
 
 	void Init();
 	inline void ClearAudioWaveform() noexcept { ShowAudioWaveform = false; Wave.data.Clear(); }

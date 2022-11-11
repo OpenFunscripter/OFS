@@ -17,8 +17,8 @@ struct Serializable { /* Can be specialized like below */
 
 template<>
 struct Serializable<glm::mat4> {
-    /* 
-        glm::mat4 can't be serialized by default because the data is private and only accessible 
+    /*
+        glm::mat4 can't be serialized by default because the data is private and only accessible
         via the operator[] function.
         This wrapper adds const & mutable getter functions to allow serialization.
     */

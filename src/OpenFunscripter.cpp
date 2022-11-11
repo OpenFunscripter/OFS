@@ -55,8 +55,8 @@ bool OpenFunscripter::imguiSetup() noexcept
     }
 
     ImGuiIO& io = ImGui::GetIO();
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable Docking
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable Multi-Viewport / Platform Windows
     io.ConfigWindowsMoveFromTitleBarOnly = true;
@@ -377,7 +377,7 @@ void OpenFunscripter::registerBindings()
             SDL_CONTROLLER_BUTTON_B,
             false);
 
-        //ADD ACTIONS
+        // ADD ACTIONS
         auto& action_0 = group.bindings.emplace_back(
             "action 0",
             Tr::ACTION_ACTION_0,
@@ -893,7 +893,9 @@ void OpenFunscripter::registerBindings()
             app->undoSystem->Snapshot(StateType::ACTIONS_MOVED, app->ActiveFunscript());
             app->ActiveFunscript()->MoveSelectionTime(time, app->scripting->LogicalFrameTime());
             auto closest = ptr->ActiveFunscript()->GetClosestActionSelection(app->player->CurrentTime());
-            if (closest != nullptr) { app->player->SetPositionExact(closest->atS); }
+            if (closest != nullptr) {
+                app->player->SetPositionExact(closest->atS);
+            }
             else {
                 app->player->SetPositionExact(app->ActiveFunscript()->Selection().front().atS);
             }
@@ -1317,34 +1319,34 @@ void OpenFunscripter::registerBindings()
             0,
             KMOD_SHIFT);
 
-        //auto& select_top_points_modifier = group.bindings.emplace_back(
-        //    "select_top_points_modifier",
-        //    "Select top points",
-        //    false
+        // auto& select_top_points_modifier = group.bindings.emplace_back(
+        //     "select_top_points_modifier",
+        //     "Select top points",
+        //     false
         //);
-        //select_top_points_modifier.key = Keybinding(
-        //    0,
-        //    KMOD_ALT
-        //);
-        //
-        //auto& select_bottom_points_modifier = group.bindings.emplace_back(
-        //    "select_bottom_points_modifier",
-        //    "Select bottom points",
-        //    false
-        //);
-        //select_bottom_points_modifier.key = Keybinding(
-        //    0,
-        //    KMOD_ALT
+        // select_top_points_modifier.key = Keybinding(
+        //     0,
+        //     KMOD_ALT
         //);
         //
-        //auto& select_middle_points_modifier = group.bindings.emplace_back(
-        //    "select_middle_points_modifier",
-        //    "Select middle points",
-        //    false
+        // auto& select_bottom_points_modifier = group.bindings.emplace_back(
+        //     "select_bottom_points_modifier",
+        //     "Select bottom points",
+        //     false
         //);
-        //select_middle_points_modifier.key = Keybinding(
-        //    0,
-        //    KMOD_ALT
+        // select_bottom_points_modifier.key = Keybinding(
+        //     0,
+        //     KMOD_ALT
+        //);
+        //
+        // auto& select_middle_points_modifier = group.bindings.emplace_back(
+        //     "select_middle_points_modifier",
+        //     "Select middle points",
+        //     false
+        //);
+        // select_middle_points_modifier.key = Keybinding(
+        //     0,
+        //     KMOD_ALT
         //);
 
         keybinds.registerPassiveBindingGroup(std::move(group));
@@ -1580,9 +1582,13 @@ void OpenFunscripter::update() noexcept
 
 void OpenFunscripter::autoBackup() noexcept
 {
-    if (!LoadedProject->IsValid()) { return; }
+    if (!LoadedProject->IsValid()) {
+        return;
+    }
     std::chrono::duration<float> timeSinceBackup = std::chrono::steady_clock::now() - lastBackup;
-    if (timeSinceBackup.count() < AutoBackupIntervalSeconds) { return; }
+    if (timeSinceBackup.count() < AutoBackupIntervalSeconds) {
+        return;
+    }
     OFS_PROFILE(__FUNCTION__);
     lastBackup = std::chrono::steady_clock::now();
 
@@ -1964,51 +1970,51 @@ bool OpenFunscripter::openFile(const std::string& file) noexcept
     }
 
 
-    //auto filePath = Util::PathFromString(file);
-    //if (filePath.extension().u8string() == OFS_Project::Extension) {
-    //    return openProject(filePath.u8string());
-    //}
-    //else {
-    //    return importFile(filePath.u8string());
-    //}
+    // auto filePath = Util::PathFromString(file);
+    // if (filePath.extension().u8string() == OFS_Project::Extension) {
+    //     return openProject(filePath.u8string());
+    // }
+    // else {
+    //     return importFile(filePath.u8string());
+    // }
     return false;
 }
 
-//bool OpenFunscripter::importFile(const std::string& file) noexcept
+// bool OpenFunscripter::importFile(const std::string& file) noexcept
 //{
-//    OFS_PROFILE(__FUNCTION__);
-//    if (!closeProject(false) || !LoadedProject->Import(file))
-//    {
-//        auto msg = TR(OFS_FAILED_TO_IMPORT);
-//        Util::MessageBoxAlert(TR(OFS_FAILED_TO_IMPORT_MSG), msg);
-//        closeProject(false);
-//        return false;
-//    }
-//    initProject();
-//    return true;
-//}
+//     OFS_PROFILE(__FUNCTION__);
+//     if (!closeProject(false) || !LoadedProject->Import(file))
+//     {
+//         auto msg = TR(OFS_FAILED_TO_IMPORT);
+//         Util::MessageBoxAlert(TR(OFS_FAILED_TO_IMPORT_MSG), msg);
+//         closeProject(false);
+//         return false;
+//     }
+//     initProject();
+//     return true;
+// }
 
-//bool OpenFunscripter::openProject(const std::string& file) noexcept
+// bool OpenFunscripter::openProject(const std::string& file) noexcept
 //{
-//    OFS_PROFILE(__FUNCTION__);
-//    if (!Util::FileExists(file)) {
-//        Util::MessageBoxAlert(TR(FILE_NOT_FOUND), std::string(TR(COULDNT_FIND_FILE)) + "\n" + file);
-//        return false;
-//    }
+//     OFS_PROFILE(__FUNCTION__);
+//     if (!Util::FileExists(file)) {
+//         Util::MessageBoxAlert(TR(FILE_NOT_FOUND), std::string(TR(COULDNT_FIND_FILE)) + "\n" + file);
+//         return false;
+//     }
 //
-//    if ((!closeProject(false) || !LoadedProject->Load(file))) {
-//        Util::MessageBoxAlert(TR(FAILED_TO_LOAD),
-//            FMT("%s\n%s", TR(FAILED_TO_LOAD_MSG), "FIXME" /*LoadedProject->LoadingError.c_str()*/));
-//        closeProject(false);
-//        return false;
-//    }
-//    initProject();
-//    auto& ofsState = OpenFunscripterState::State(stateHandle);
-//    auto& projectState = LoadedProject->State();
-//    auto recentFile = RecentFile{ Util::PathFromString(LoadedProject->Path()).filename().u8string(), LoadedProject->Path() };
-//    ofsState.addRecentFile(recentFile);
-//    return true;
-//}
+//     if ((!closeProject(false) || !LoadedProject->Load(file))) {
+//         Util::MessageBoxAlert(TR(FAILED_TO_LOAD),
+//             FMT("%s\n%s", TR(FAILED_TO_LOAD_MSG), "FIXME" /*LoadedProject->LoadingError.c_str()*/));
+//         closeProject(false);
+//         return false;
+//     }
+//     initProject();
+//     auto& ofsState = OpenFunscripterState::State(stateHandle);
+//     auto& projectState = LoadedProject->State();
+//     auto recentFile = RecentFile{ Util::PathFromString(LoadedProject->Path()).filename().u8string(), LoadedProject->Path() };
+//     ofsState.addRecentFile(recentFile);
+//     return true;
+// }
 
 void OpenFunscripter::initProject() noexcept
 {
@@ -2024,21 +2030,21 @@ void OpenFunscripter::initProject() noexcept
         if (Util::FileExists(projectState.mediaPath)) {
             player->OpenVideo(projectState.mediaPath);
         }
-        //else {
-        //    auto mediaName = Util::PathFromString(projectState.mediaPath).filename();
-        //    auto projectDir = Util::PathFromString(LoadedProject->Path()).parent_path();
-        //    auto testPath = (projectDir / mediaName).u8string();
-        //    if (Util::FileExists(testPath)) {
-        //        projectState.mediaPath = testPath;
-        //        LoadedProject->Save(true);
-        //        player->OpenVideo(testPath);
-        //    }
-        //    else {
-        //        Util::MessageBoxAlert(TR(FAILED_TO_FIND_VIDEO),
-        //            TR(FAILED_TO_FIND_VIDEO_MSG));
-        //        pickDifferentMedia();
-        //    }
-        //}
+        // else {
+        //     auto mediaName = Util::PathFromString(projectState.mediaPath).filename();
+        //     auto projectDir = Util::PathFromString(LoadedProject->Path()).parent_path();
+        //     auto testPath = (projectDir / mediaName).u8string();
+        //     if (Util::FileExists(testPath)) {
+        //         projectState.mediaPath = testPath;
+        //         LoadedProject->Save(true);
+        //         player->OpenVideo(testPath);
+        //     }
+        //     else {
+        //         Util::MessageBoxAlert(TR(FAILED_TO_FIND_VIDEO),
+        //             TR(FAILED_TO_FIND_VIDEO_MSG));
+        //         pickDifferentMedia();
+        //     }
+        // }
     }
     updateTitle();
 
@@ -2093,7 +2099,7 @@ void OpenFunscripter::quickExport() noexcept
     OFS_PROFILE(__FUNCTION__);
     LoadedProject->Save(true);
     // FIXME
-    //LoadedProject->ExportFunscripts();
+    // LoadedProject->ExportFunscripts();
 }
 
 void OpenFunscripter::exportClips() noexcept
@@ -2105,7 +2111,7 @@ void OpenFunscripter::exportClips() noexcept
         [&](auto& result) {
             if (result.files.size() > 0) {
                 // FIXME
-                //LoadedProject->ExportClips(result.files[0]);
+                // LoadedProject->ExportClips(result.files[0]);
             }
         });
 }
@@ -2167,7 +2173,9 @@ void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
 
     // not sure if this is always false, on every platform
     const bool mustLock = SDL_MUSTLOCK(surface);
-    if (mustLock) { SDL_LockSurface(surface); }
+    if (mustLock) {
+        SDL_LockSurface(surface);
+    }
 
     SDL_Rect rect = { 0 };
     rect.h = height;
@@ -2200,7 +2208,9 @@ void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
 
     Util::SavePNG(path, surface->pixels, surface->w, surface->h, 4, true);
 
-    if (mustLock) { SDL_UnlockSurface(surface); }
+    if (mustLock) {
+        SDL_UnlockSurface(surface);
+    }
     SDL_FreeSurface(surface);
 }
 
@@ -2394,7 +2404,7 @@ void OpenFunscripter::saveActiveScriptAs()
         [this](auto& result) {
             if (result.files.size() > 0) {
                 // FIXME
-                //LoadedProject->ExportFunscript(result.files[0], ActiveFunscriptIdx);
+                // LoadedProject->ExportFunscript(result.files[0], ActiveFunscriptIdx);
                 std::filesystem::path dir = Util::PathFromString(result.files[0]);
                 dir.remove_filename();
                 auto& ofsState = OpenFunscripterState::State(stateHandle);
@@ -2477,7 +2487,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                             [this](auto& result) {
                                 if (result.files.size() > 0) {
                                     // FIXME
-                                    //LoadedProject->ExportFunscript(result.files[0], ActiveFunscriptIdx);
+                                    // LoadedProject->ExportFunscript(result.files[0], ActiveFunscriptIdx);
                                     std::filesystem::path dir = Util::PathFromString(result.files[0]);
                                     dir.remove_filename();
                                     auto& ofsState = OpenFunscripterState::State(stateHandle);
@@ -2491,7 +2501,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                             [this](auto& result) {
                                 if (result.files.size() > 0) {
                                     // FIXME
-                                    //LoadedProject->ExportFunscripts(result.files[0]);
+                                    // LoadedProject->ExportFunscripts(result.files[0]);
                                 }
                             });
                     }
@@ -2538,7 +2548,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
 
                         if (!fileAlreadyLoaded(newScriptPath)) {
                             // FIXME
-                            //LoadedProject->AddFunscript(newScriptPath);
+                            // LoadedProject->AddFunscript(newScriptPath);
                         }
                     }
                 };
@@ -2556,7 +2566,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                                 auto app = OpenFunscripter::ptr;
                                 if (!fileAlreadyLoaded(result.files[0])) {
                                     // FIXME
-                                    //app->LoadedProject->AddFunscript(result.files[0]);
+                                    // app->LoadedProject->AddFunscript(result.files[0]);
                                 }
                             }
                         },
@@ -2571,7 +2581,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                                     auto app = OpenFunscripter::ptr;
                                     if (!fileAlreadyLoaded(scriptPath)) {
                                         // FIXME
-                                        //app->LoadedProject->AddFunscript(scriptPath);
+                                        // app->LoadedProject->AddFunscript(scriptPath);
                                     }
                                 }
                             }
@@ -2593,8 +2603,10 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         [this, unloadIndex](Util::YesNoCancel result) {
                             if (result == Util::YesNoCancel::Yes) {
                                 // FIXME
-                                //LoadedProject->RemoveFunscript(unloadIndex);
-                                if (ActiveFunscriptIdx > 0) { ActiveFunscriptIdx--; }
+                                // LoadedProject->RemoveFunscript(unloadIndex);
+                                if (ActiveFunscriptIdx > 0) {
+                                    ActiveFunscriptIdx--;
+                                }
                                 UpdateNewActiveScript(ActiveFunscriptIdx);
                             }
                         });
@@ -2810,7 +2822,9 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
         if (ImGui::BeginMenu(TR_ID("VIEW_MENU", Tr::VIEW_MENU))) {
 #ifndef NDEBUG
             // this breaks the layout after restarting for some reason
-            if (ImGui::MenuItem("Reset layout")) { setupDefaultLayout(true); }
+            if (ImGui::MenuItem("Reset layout")) {
+                setupDefaultLayout(true);
+            }
             ImGui::Separator();
 #endif
             if (ImGui::MenuItem(TR(STATISTICS), NULL, &ofsState.showStatistics)) {}
@@ -2900,9 +2914,9 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         if (controller.Connected()) {
                             padStrings.push_back(controller.GetName());
                         }
-                        //else {
-                        //    padStrings.push_back("--");
-                        //}
+                        // else {
+                        //     padStrings.push_back("--");
+                        // }
                     }
                     ImGui::Combo("##ActiveControllers", &selectedController, padStrings.data(), (int32_t)padStrings.size());
                     ImGui::EndMenu();
@@ -3111,8 +3125,12 @@ void OpenFunscripter::ControllerAxisPlaybackSpeed(SDL_Event& ev) noexcept
         return;
     }
 
-    if (caxis.value < 0) { return; }
-    if (Status & OFS_Status::OFS_GamepadSetPlaybackSpeed) { return; }
+    if (caxis.value < 0) {
+        return;
+    }
+    if (Status & OFS_Status::OFS_GamepadSetPlaybackSpeed) {
+        return;
+    }
     auto app = OpenFunscripter::ptr;
     if (caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT) {
         float speed = 1.f - (caxis.value / (float)std::numeric_limits<int16_t>::max());

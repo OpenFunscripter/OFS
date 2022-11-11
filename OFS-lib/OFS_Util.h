@@ -91,7 +91,8 @@ public:
     template<typename T>
     inline static T Clamp(T v, T mn, T mx) noexcept
     {
-        return (v < mn) ? mn : (v > mx) ? mx : v;
+        return (v < mn) ? mn : (v > mx) ? mx
+                                        : v;
     }
 
     template<typename T>

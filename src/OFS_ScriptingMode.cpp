@@ -310,11 +310,11 @@ void AlternatingMode::AddEditAction(FunscriptAction action) noexcept
     if (contextSensitive) {
         auto behind = ctx().GetPreviousActionBehind(action.atS - 0.001f);
         if (behind && behind->pos <= 50 && action.pos <= 50) {
-            //Top
+            // Top
             action.pos = 100 - action.pos;
         }
         else if (behind && behind->pos > 50 && action.pos > 50) {
-            //Bottom
+            // Bottom
             action.pos = 100 - action.pos;
         }
     }
@@ -543,7 +543,9 @@ void RecordingMode::Update() noexcept
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
     if (recordingActive) {
-        if (twoAxesMode) { twoAxisRecording(); }
+        if (twoAxesMode) {
+            twoAxisRecording();
+        }
         else {
             singleAxisRecording();
         }

@@ -28,6 +28,9 @@ struct OverlayDrawingCtx {
 	float visibleTime;
 	float offsetTime;
 	float totalDuration;
+
+	int32_t hoveredScriptIdx;
+	int32_t activeScriptIdx;
 };
 
 class BaseOverlay {
