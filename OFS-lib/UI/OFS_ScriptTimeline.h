@@ -14,31 +14,29 @@
 
 class ScriptTimelineEvents {
 public:
-	using ActionClickedEventArgs = std::tuple<SDL_Event, FunscriptAction>;
-	static int32_t FfmpegAudioProcessingFinished;
+	using ActionClickedEventArgs = FunscriptAction;
 	static int32_t FunscriptActionClicked;
+	
+	using ActionMovedEventArgs = std::tuple<FunscriptAction, std::weak_ptr<Funscript>>;
+	static int32_t FunscriptActionMoved;
+	static int32_t FunscriptActionMoveStarted;
+
+	using ActionCreatedEventArgs = FunscriptAction;
+	static int32_t FunscriptActionCreated;
+
+	static int32_t FfmpegAudioProcessingFinished;
 	static int32_t SetTimePosition;
 	static int32_t ActiveScriptChanged;
-
-	enum class Mode : int32_t
-	{
-		All,
-		Bottom,
-		Middle,
-		Top
-	};
 
 	struct SelectTime {
 		float startTime;
 		float endTime;
-		ScriptTimelineEvents::Mode mode = Mode::All;
 		bool clear;
 	};
 	static int32_t FunscriptSelectTime;
 
 	static void RegisterEvents() noexcept;
 };
-
 
 class ScriptTimeline
 {
@@ -54,10 +52,10 @@ public:
 	uint32_t overlayStateHandle = 0xFFFF'FFFF;
 
 	ScriptTimelineEvents::ActionClickedEventArgs ActionClickEventData;
+	ScriptTimelineEvents::ActionMovedEventArgs ActionMovedEventData;
 	ScriptTimelineEvents::SelectTime SelectTimeEventData = {0};
+	ScriptTimelineEvents::ActionCreatedEventArgs ActionCreatedEventData;
 
-	const std::vector<std::shared_ptr<Funscript>>* Scripts = nullptr;
-	
 	int activeScriptIdx = 0;
 	ImVec2 activeCanvasPos;
 	ImVec2 activeCanvasSize;
@@ -65,37 +63,23 @@ public:
 	int hovereScriptIdx = 0;
 	ImVec2 hoveredCanvasPos;
 	ImVec2 hoveredCanvasSize;
-
-	class UndoSystem* undoSystem = nullptr;
 private:
-
-	void mousePressed(SDL_Event& ev) noexcept;
-	void mouseReleased(SDL_Event& ev) noexcept;
-	void mouseDrag(SDL_Event& ev) noexcept;
 	void mouseScroll(SDL_Event& ev) noexcept;
-
 	void videoLoaded(SDL_Event& ev) noexcept;
 
-	inline static ImVec2 getPointForAction(const OverlayDrawingCtx& ctx, FunscriptAction action) noexcept {
-		float relative_x = (float)(action.atS - ctx.offsetTime) / ctx.visibleTime;
-		float x = (ctx.canvasSize.x) * relative_x;
-		float y = (ctx.canvasSize.y) * (1 - (action.pos / 100.0));
-		x += ctx.canvasPos.x;
-		y += ctx.canvasPos.y;
-		return ImVec2(x, y);
-	}
+	void handleTimelineHover(const OverlayDrawingCtx& ctx) noexcept;
+	void handleActionClicks(const OverlayDrawingCtx& ctx) noexcept;
 
-	inline FunscriptAction getActionForPoint(ImVec2 canvas_pos, ImVec2 canvas_size, const ImVec2& point) noexcept {
-		ImVec2 localCoord;
-		localCoord = point - canvas_pos;
-		float relative_x = localCoord.x / canvas_size.x;
-		float relative_y = localCoord.y / canvas_size.y;
-		float atTime = offsetTime + (relative_x * visibleTime);
-		float pos = Util::Clamp<float>(100.f - (relative_y * 100.f), 0.f, 100.f);
+	inline static FunscriptAction getActionForPoint(const OverlayDrawingCtx& ctx, const ImVec2& point) noexcept {
+		auto localCoord = point - ctx.canvasPos;
+		float relativeX = localCoord.x / ctx.canvasSize.x;
+		float relativeY = localCoord.y / ctx.canvasSize.y;
+		float atTime = ctx.offsetTime + (relativeX * ctx.visibleTime);
+		float pos = Util::Clamp<float>(100.f - (relativeY * 100.f), 0.f, 100.f);
 		return FunscriptAction(atTime, pos);
 	}
 
-	void updateSelection(ScriptTimelineEvents::Mode mode, bool clear) noexcept;
+	void updateSelection(bool clear) noexcept;
 	void FfmpegAudioProcessingFinished(SDL_Event& ev) noexcept;
 
 	std::string videoPath;
@@ -116,12 +100,12 @@ public:
 
 	static constexpr float MAX_WINDOW_SIZE = 300.f;
 	static constexpr float MIN_WINDOW_SIZE = 1.f;
-	void Init(UndoSystem* undo);
 
+	void Init();
 	inline void ClearAudioWaveform() noexcept { ShowAudioWaveform = false; Wave.data.Clear(); }
 	inline void setStartSelection(float time) noexcept { startSelectionTime = time; }
 	inline float selectionStart() const noexcept { return startSelectionTime; }
-	void ShowScriptPositions(const OFS_Videoplayer* player, BaseOverlay* overlay, const std::vector<std::shared_ptr<Funscript>>* scripts, int activeScriptIdx) noexcept;
+	void ShowScriptPositions(const OFS_Videoplayer* player, BaseOverlay* overlay, const std::vector<std::shared_ptr<Funscript>>& scripts, int activeScriptIdx) noexcept;
 
 	void Update() noexcept;
 

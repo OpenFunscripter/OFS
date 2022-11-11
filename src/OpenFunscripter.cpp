@@ -34,24 +34,6 @@
 // TODO: make speed coloring configurable
 // TODO: OFS_ScriptTimeline selections cause alot of unnecessary overdraw
 
-// the video player supports a lot more than these
-// these are the ones looked for when importing funscripts
-std::array<const char*, 6> OpenFunscripter::SupportedVideoExtensions {
-    ".mp4",
-    ".mkv",
-    ".webm",
-    ".wmv",
-    ".avi",
-    ".m4v",
-};
-
-std::array<const char*, 4> OpenFunscripter::SupportedAudioExtensions{
-    ".mp3",
-    ".ogg",
-    ".flac",
-    ".wav",
-};
-
 OpenFunscripter* OpenFunscripter::ptr = nullptr;
 constexpr const char* GlslVersion = "#version 300 es";
 
@@ -263,7 +245,7 @@ bool OpenFunscripter::Init(int argc, char* argv[])
     registerBindings(); // needs to happen before setBindings
     keybinds.load(Util::Prefpath("keybinds.json"));
 
-    scriptTimeline.Init(undoSystem.get());
+    scriptTimeline.Init();
 
     scripting = std::make_unique<ScriptingMode>();
     scripting->Init();
@@ -271,7 +253,10 @@ bool OpenFunscripter::Init(int argc, char* argv[])
     events->Subscribe(SDL_DROPFILE, EVENT_SYSTEM_BIND(this, &OpenFunscripter::DragNDrop));
     events->Subscribe(VideoEvents::VideoLoaded, EVENT_SYSTEM_BIND(this, &OpenFunscripter::VideoLoaded));
     events->Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ControllerAxisPlaybackSpeed));
+    events->Subscribe(ScriptTimelineEvents::FunscriptActionMoved, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActionMoved));
+    events->Subscribe(ScriptTimelineEvents::FunscriptActionMoveStarted, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActionMoveStarted));
     events->Subscribe(ScriptTimelineEvents::FunscriptActionClicked, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActionClicked));
+    events->Subscribe(ScriptTimelineEvents::FunscriptActionCreated, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActionCreated));
     events->Subscribe(ScriptTimelineEvents::SetTimePosition, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineDoubleClick));
     events->Subscribe(ScriptTimelineEvents::FunscriptSelectTime, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineSelectTime));
     events->Subscribe(VideoEvents::PlayPauseChanged, EVENT_SYSTEM_BIND(this, &OpenFunscripter::PlayPauseChange));
@@ -313,7 +298,7 @@ bool OpenFunscripter::Init(int argc, char* argv[])
     else if (!ofsState.recentFiles.empty()) {
         auto& project = ofsState.recentFiles.back().projectPath;
         if (!project.empty()) {
-            openProject(project);           
+            openFile(project);           
         }
     }
 
@@ -1638,14 +1623,41 @@ void OpenFunscripter::FunscriptChanged(SDL_Event& ev) noexcept
 
 void OpenFunscripter::ScriptTimelineActionClicked(SDL_Event& ev) noexcept
 {
-    auto& [btn_ev, action] = *((ScriptTimelineEvents::ActionClickedEventArgs*)ev.user.data1);
-    auto& button = btn_ev.button; // turns out I don't need this...
+    auto action = *((ScriptTimelineEvents::ActionClickedEventArgs*)ev.user.data1);
 
     if (SDL_GetModState() & KMOD_CTRL) {
         ActiveFunscript()->SelectAction(action);
     }
     else {
         player->SetPositionExact(action.atS);
+    }
+}
+
+void OpenFunscripter::ScriptTimelineActionCreated(SDL_Event& ev) noexcept
+{
+    // FIXME: this shouldn't assume the active script
+    auto newAction = *(ScriptTimelineEvents::ActionCreatedEventArgs*)ev.user.data1;
+    undoSystem->Snapshot(StateType::ADD_ACTION, ActiveFunscript());
+    ActiveFunscript()->AddAction(newAction);
+}
+
+void OpenFunscripter::ScriptTimelineActionMoveStarted(SDL_Event& ev) noexcept
+{
+    // FIXME: this needs a script
+    undoSystem->Snapshot(StateType::ACTIONS_MOVED);
+}
+
+void OpenFunscripter::ScriptTimelineActionMoved(SDL_Event& ev) noexcept
+{
+    auto [newAction, weak] = *(ScriptTimelineEvents::ActionMovedEventArgs*)ev.user.data1;
+    if(auto script = weak.lock())
+    {
+        if(script->SelectionSize() == 1) 
+        {
+            script->RemoveSelectedActions(); 
+            script->AddAction(newAction);
+            script->SelectAction(newAction);
+        }
     }
 }
 
@@ -1751,7 +1763,7 @@ void OpenFunscripter::autoBackup() noexcept
 
     std::error_code ec;
     auto iterator = std::filesystem::directory_iterator(backupDir, ec);
-    for (auto it = std::filesystem::begin(iterator); it != std::filesystem::end(iterator); it++) {
+    for (auto it = std::filesystem::begin(iterator); it != std::filesystem::end(iterator); ++it) {
         if (it->path().has_extension()) {
             if (it->path().extension() == ".backup") {
                 LOGF_INFO("Removing \"%s\"", it->path().u8string().c_str());
@@ -1936,7 +1948,7 @@ void OpenFunscripter::Step() noexcept {
             
             scriptTimeline.ShowScriptPositions(player.get(),
                 scripting->Overlay().get(),
-                &LoadedFunscripts(),
+                LoadedFunscripts(),
                 ActiveFunscriptIdx);
 
             ShowStatisticsWindow(&ofsState.showStatistics);
@@ -2083,49 +2095,80 @@ bool OpenFunscripter::openFile(const std::string& file) noexcept
     }
 
     auto filePath = Util::PathFromString(file);
-    if (filePath.extension().u8string() == OFS_Project::Extension) {
-        return openProject(filePath.u8string());
-    }
-    else {
-        return importFile(filePath.u8string());
-    }
-}
+    auto fileExtension = filePath.extension().u8string();
 
-bool OpenFunscripter::importFile(const std::string& file) noexcept
-{
-    OFS_PROFILE(__FUNCTION__);
-    if (!closeProject(false) || !LoadedProject->Import(file))
+    if(fileExtension == OFS_Project::Extension)
     {
-        auto msg = TR(OFS_FAILED_TO_IMPORT);
-        Util::MessageBoxAlert(TR(OFS_FAILED_TO_IMPORT_MSG), msg);
-        closeProject(false);
-        return false;
+        // It's a project
+        if(LoadedProject->Load(file))
+        {
+            initProject();
+            auto& ofsState = OpenFunscripterState::State(stateHandle);
+            auto& projectState = LoadedProject->State();
+            auto recentFile = RecentFile{ Util::PathFromString(LoadedProject->Path()).filename().u8string(), LoadedProject->Path() };
+            ofsState.addRecentFile(recentFile);
+            return true;
+        }
     }
-    initProject();
-    return true;
+    else if(fileExtension == Funscript::Extension)
+    {
+        // It's a funscript it should be imported into a new project
+
+    }
+    else 
+    {
+        // Assume it's some kind of media file
+        // This is really awkward if it's not.
+        // I don't have confirming this other then checking
+        // a predefined set of media extensions.
+    }
+    
+
+    //auto filePath = Util::PathFromString(file);
+    //if (filePath.extension().u8string() == OFS_Project::Extension) {
+    //    return openProject(filePath.u8string());
+    //}
+    //else {
+    //    return importFile(filePath.u8string());
+    //}
+    return false;
 }
 
-bool OpenFunscripter::openProject(const std::string& file) noexcept
-{
-    OFS_PROFILE(__FUNCTION__);
-    if (!Util::FileExists(file)) {
-        Util::MessageBoxAlert(TR(FILE_NOT_FOUND), std::string(TR(COULDNT_FIND_FILE)) + "\n" + file);
-        return false;
-    }
+//bool OpenFunscripter::importFile(const std::string& file) noexcept
+//{
+//    OFS_PROFILE(__FUNCTION__);
+//    if (!closeProject(false) || !LoadedProject->Import(file))
+//    {
+//        auto msg = TR(OFS_FAILED_TO_IMPORT);
+//        Util::MessageBoxAlert(TR(OFS_FAILED_TO_IMPORT_MSG), msg);
+//        closeProject(false);
+//        return false;
+//    }
+//    initProject();
+//    return true;
+//}
 
-    if ((!closeProject(false) || !LoadedProject->Load(file))) {
-        Util::MessageBoxAlert(TR(FAILED_TO_LOAD),
-            FMT("%s\n%s", TR(FAILED_TO_LOAD_MSG), "FIXME" /*LoadedProject->LoadingError.c_str()*/));
-        closeProject(false);
-        return false;
-    }
-    initProject();
-    auto& ofsState = OpenFunscripterState::State(stateHandle);
-    auto& projectState = LoadedProject->State();
-    auto recentFile = RecentFile{ Util::PathFromString(LoadedProject->Path()).filename().u8string(), LoadedProject->Path() };
-    ofsState.addRecentFile(recentFile);
-    return true;
-}
+//bool OpenFunscripter::openProject(const std::string& file) noexcept
+//{
+//    OFS_PROFILE(__FUNCTION__);
+//    if (!Util::FileExists(file)) {
+//        Util::MessageBoxAlert(TR(FILE_NOT_FOUND), std::string(TR(COULDNT_FIND_FILE)) + "\n" + file);
+//        return false;
+//    }
+//
+//    if ((!closeProject(false) || !LoadedProject->Load(file))) {
+//        Util::MessageBoxAlert(TR(FAILED_TO_LOAD),
+//            FMT("%s\n%s", TR(FAILED_TO_LOAD_MSG), "FIXME" /*LoadedProject->LoadingError.c_str()*/));
+//        closeProject(false);
+//        return false;
+//    }
+//    initProject();
+//    auto& ofsState = OpenFunscripterState::State(stateHandle);
+//    auto& projectState = LoadedProject->State();
+//    auto recentFile = RecentFile{ Util::PathFromString(LoadedProject->Path()).filename().u8string(), LoadedProject->Path() };
+//    ofsState.addRecentFile(recentFile);
+//    return true;
+//}
 
 void OpenFunscripter::initProject() noexcept
 {
@@ -2141,21 +2184,21 @@ void OpenFunscripter::initProject() noexcept
         if (Util::FileExists(projectState.mediaPath)) {
             player->OpenVideo(projectState.mediaPath);
         }
-        else {
-            auto mediaName = Util::PathFromString(projectState.mediaPath).filename();
-            auto projectDir = Util::PathFromString(LoadedProject->Path()).parent_path();
-            auto testPath = (projectDir / mediaName).u8string();
-            if (Util::FileExists(testPath)) {
-                projectState.mediaPath = testPath;
-                LoadedProject->Save(true);
-                player->OpenVideo(testPath);
-            }
-            else {
-                Util::MessageBoxAlert(TR(FAILED_TO_FIND_VIDEO),
-                    TR(FAILED_TO_FIND_VIDEO_MSG));
-                pickDifferentMedia();
-            }
-        }
+        //else {
+        //    auto mediaName = Util::PathFromString(projectState.mediaPath).filename();
+        //    auto projectDir = Util::PathFromString(LoadedProject->Path()).parent_path();
+        //    auto testPath = (projectDir / mediaName).u8string();
+        //    if (Util::FileExists(testPath)) {
+        //        projectState.mediaPath = testPath;
+        //        LoadedProject->Save(true);
+        //        player->OpenVideo(testPath);
+        //    }
+        //    else {
+        //        Util::MessageBoxAlert(TR(FAILED_TO_FIND_VIDEO),
+        //            TR(FAILED_TO_FIND_VIDEO_MSG));
+        //        pickDifferentMedia();
+        //    }
+        //}
     }
     updateTitle();
 
@@ -2198,9 +2241,11 @@ void OpenFunscripter::updateTitle() noexcept
 void OpenFunscripter::saveProject() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    LoadedProject->Save(true);
-    auto& ofsState = OpenFunscripterState::State(stateHandle);
     auto& projectState = LoadedProject->State();
+    projectState.lastPlayerPosition = player->CurrentTime();
+    LoadedProject->Save(true);
+    
+    auto& ofsState = OpenFunscripterState::State(stateHandle);
     auto recentFile = RecentFile{ Util::PathFromString(LoadedProject->Path()).filename().u8string(), LoadedProject->Path() };
     ofsState.addRecentFile(recentFile);
 }
@@ -2530,49 +2575,26 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
         auto region = ImGui::GetContentRegionAvail();
         auto& ofsState = OpenFunscripterState::State(stateHandle);
         if (ImGui::BeginMenu(TR_ID("FILE", Tr::FILE))) {
-            if (ImGui::MenuItem(FMT(ICON_FOLDER_OPEN " %s", TR(OPEN_PROJECT)))) {
-                auto openProjectDialog = [&]() {
-                    Util::OpenFileDialog(TR(OPEN_PROJECT), ofsState.lastPath,
-                        [&](auto& result) {
-                            if (result.files.size() > 0) {
-                                auto& file = result.files[0];
-                                auto path = Util::PathFromString(file);
-                                if (path.extension().u8string() != OFS_Project::Extension) {
-                                    Util::MessageBoxAlert(TR(WRONG_FILE), TR(WRONG_FILE_MSG));
-                                    return;
-                                }
-                                else if (Util::FileExists(file)) {
-                                    openProject(file);
-                                }
-                            }
-                        }, false, { "*" OFS_PROJECT_EXT }, "Project (" OFS_PROJECT_EXT ")");
-                };
-                closeWithoutSavingDialog(std::move(openProjectDialog));
+            if (ImGui::MenuItem("Open..."))
+            {
+                Util::OpenFileDialog("Open...", ofsState.lastPath,
+                    [this](auto& result) {
+                        if (result.files.size() > 0) {
+                            auto& file = result.files[0];
+                            openFile(file);
+                        }
+                    }, false, { "*" OFS_PROJECT_EXT }, "Project (" OFS_PROJECT_EXT ")");
             }
             if (LoadedProject->IsValid() && ImGui::MenuItem(TR(CLOSE_PROJECT), NULL, false, LoadedProject->IsValid())) {
                 closeWithoutSavingDialog([](){});
             }
             ImGui::Separator();
-            if (ImGui::MenuItem(TR(IMPORT_VIDEO_SCRIPT), 0, false)) {
-                auto importNewItemDialog = [&]() {
-                    Util::OpenFileDialog(TR(IMPORT_VIDEO_SCRIPT), ofsState.lastPath,
-                        [&](auto& result) {
-                            if (result.files.size() > 0) {
-                                auto& file = result.files[0];
-                                if (Util::FileExists(file)) {
-                                    importFile(file);
-                                }
-                            }
-                        }, false);
-                };
-                closeWithoutSavingDialog(std::move(importNewItemDialog));
-            }
             if (ImGui::BeginMenu(TR_ID("RECENT_FILES", Tr::RECENT_FILES))) {
                 if (ofsState.recentFiles.empty()) {
                     ImGui::TextDisabled("%s", TR(NO_RECENT_FILES));
                 }
                 auto& recentFiles = ofsState.recentFiles;
-                for (auto it = recentFiles.rbegin(); it != recentFiles.rend(); it++) {
+                for (auto it = recentFiles.rbegin(); it != recentFiles.rend(); ++it) {
                     auto& recent = *it;
                     if (ImGui::MenuItem(recent.name.c_str())) {
                         if (!recent.projectPath.empty()) {
@@ -3274,25 +3296,7 @@ void OpenFunscripter::ScriptTimelineSelectTime(SDL_Event& ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     auto& time =*(ScriptTimelineEvents::SelectTime*)ev.user.data1;
-    switch (time.mode)
-    {
-    default:        
-    case ScriptTimelineEvents::Mode::All:
-        ActiveFunscript()->SelectTime(time.startTime, time.endTime, time.clear);
-        break;
-    //case ScriptTimelineEvents::Mode::Top:
-    //    undoSystem->Snapshot(StateType::TOP_POINTS_ONLY, ActiveFunscript());
-    //    ActiveFunscript()->SelectTopActions(time.start_ms, time.end_ms, time.clear);
-    //    break;
-    //case ScriptTimelineEvents::Mode::Bottom:
-    //    undoSystem->Snapshot(StateType::BOTTOM_POINTS_ONLY, ActiveFunscript());
-    //    ActiveFunscript()->SelectBottomActions(time.start_ms, time.end_ms, time.clear);
-    //    break;
-    //case ScriptTimelineEvents::Mode::Middle:
-    //    undoSystem->Snapshot(StateType::MID_POINTS_ONLY, ActiveFunscript());
-    //    ActiveFunscript()->SelectMidActions(time.start_ms, time.end_ms, time.clear);
-    //    break;
-    }
+    ActiveFunscript()->SelectTime(time.startTime, time.endTime, time.clear);
 }
 
 void OpenFunscripter::ScriptTimelineActiveScriptChanged(SDL_Event& ev) noexcept

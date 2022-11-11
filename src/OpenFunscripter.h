@@ -81,6 +81,9 @@ private:
 
 	void ControllerAxisPlaybackSpeed(SDL_Event& ev) noexcept;
 
+	void ScriptTimelineActionCreated(SDL_Event& ev) noexcept;
+	void ScriptTimelineActionMoveStarted(SDL_Event& ev) noexcept;
+	void ScriptTimelineActionMoved(SDL_Event& ev) noexcept;
 	void ScriptTimelineActionClicked(SDL_Event& ev) noexcept;
 	void ScriptTimelineDoubleClick(SDL_Event& ev) noexcept;
 	void ScriptTimelineSelectTime(SDL_Event& ev) noexcept;
@@ -102,7 +105,6 @@ private:
 	void saveProject() noexcept;
 	void quickExport() noexcept;
 	void exportClips() noexcept;
-	bool closeProject(bool closeWithUnsavedChanges) noexcept;
 	void pickDifferentMedia() noexcept;
 
 	void saveHeatmap(const char* path, int width, int height);
@@ -115,10 +117,9 @@ private:
 	void saveActiveScriptAs();
 
 	bool openFile(const std::string& file) noexcept;
-	bool importFile(const std::string& file) noexcept;
-	bool openProject(const std::string& file) noexcept;
 	void initProject() noexcept;
-	
+	bool closeProject(bool closeWithUnsavedChanges) noexcept;
+
 	void SetFullscreen(bool fullscreen);
 	void setupDefaultLayout(bool force) noexcept;
 
@@ -133,8 +134,6 @@ private:
 	bool ShowMetadataEditorWindow(bool* open) noexcept;
 public:
 	static OpenFunscripter* ptr;
-	static std::array<const char*, 6> SupportedVideoExtensions;
-	static std::array<const char*, 4> SupportedAudioExtensions;
 	uint8_t Status = OFS_Status::OFS_AutoBackup;
 
 	~OpenFunscripter() noexcept;

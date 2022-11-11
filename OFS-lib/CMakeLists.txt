@@ -36,7 +36,6 @@ set(OFS_LIB_SOURCES
 	"player/OFS_TCodeChannel.cpp"
 	"player/OFS_TCodeProducer.cpp"
 
-	"OFS_UndoSystem.cpp"
 	"OFS_ControllerInput.cpp"
 
 	"OFS_Serialization.cpp"

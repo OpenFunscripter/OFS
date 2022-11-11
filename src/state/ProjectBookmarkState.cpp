@@ -40,7 +40,7 @@ void ProjectBookmarkState::AddBookmark(Bookmark&& bookmark) noexcept
 			}
 		}
 		else {
-			if (it + 1 != Bookmarks.end() && it->type != BookmarkType::EndMarker) it++;
+			if (it + 1 != Bookmarks.end() && it->type != BookmarkType::EndMarker) ++it;
 			if (it->type == BookmarkType::EndMarker) {
 				auto name_copy = it->name;
 				name_copy.erase(name_copy.end() - sizeof(Bookmark::endMarker) + 1, name_copy.end());

@@ -5,7 +5,9 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "OpenFunscripter.cpp"
   "OFS_ScriptingMode.cpp"
   "OFS_Project.cpp"
-    
+  
+  "OFS_UndoSystem.cpp"
+
   "UI/OFS_Preferences.cpp"
   "UI/OFS_ScriptSimulator.cpp"
   "UI/OFS_SpecialFunctions.cpp"

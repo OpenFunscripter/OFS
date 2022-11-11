@@ -11,22 +11,33 @@
 
 struct OverlayDrawingCtx {
 	Funscript* script;
+
 	int32_t scriptIdx;
 	int32_t drawnScriptCount;
+
 	int32_t actionFromIdx;
 	int32_t actionToIdx;
+
+	int32_t selectionFromIdx;
+	int32_t selectionToIdx;
+
 	ImDrawList* drawList;
+
+	ImVec2 canvasPos;
+	ImVec2 canvasSize;
 	float visibleTime;
 	float offsetTime;
 	float totalDuration;
-	ImVec2 canvasPos;
-	ImVec2 canvasSize;
 };
 
 class BaseOverlay {
 protected:
 	class ScriptTimeline* timeline;
 	static uint32_t StateHandle;
+
+	static void drawActionLinesSpline(const OverlayDrawingCtx& ctx, const BaseOverlayState& state) noexcept;
+	static void drawActionLinesLinear(const OverlayDrawingCtx& ctx, const BaseOverlayState& state) noexcept;
+
 public:
 	inline static BaseOverlayState& State() noexcept
 	{
@@ -39,13 +50,10 @@ public:
 		uint32_t color;
 	};
 	static std::vector<ColoredLine> ColoredLines;
-	static std::vector<FunscriptAction> ActionPositionWindow;
-	static std::vector<ImVec2> SelectedActionScreenCoordinates;
-	static std::vector<ImVec2> ActionScreenCoordinates;
 	static float PointSize;
 	
 	static ImGradient speedGradient;
-	static bool ShowActions;
+	static bool ShowLines;
 
 	BaseOverlay(class ScriptTimeline* timeline) noexcept;
 	virtual ~BaseOverlay() noexcept {}
@@ -61,9 +69,12 @@ public:
 	virtual float logicalFrameTime(float realFrameTime) noexcept;
 
 	static void DrawActionLines(const OverlayDrawingCtx& ctx) noexcept;
+	static void DrawActionPoints(const OverlayDrawingCtx& ctx) noexcept;
 	static void DrawSecondsLabel(const OverlayDrawingCtx& ctx) noexcept;
 	static void DrawHeightLines(const OverlayDrawingCtx& ctx) noexcept;
 	static void DrawScriptLabel(const OverlayDrawingCtx& ctx) noexcept;
+
+	static ImVec2 GetPointForAction(const OverlayDrawingCtx& ctx, FunscriptAction action) noexcept;
 };
 
 class EmptyOverlay : public BaseOverlay {

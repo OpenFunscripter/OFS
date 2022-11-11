@@ -10,13 +10,14 @@
 
 ImGradient BaseOverlay::speedGradient;
 std::vector<BaseOverlay::ColoredLine> BaseOverlay::ColoredLines;
-std::vector<ImVec2> BaseOverlay::SelectedActionScreenCoordinates;
-std::vector<ImVec2> BaseOverlay::ActionScreenCoordinates;
-std::vector<FunscriptAction> BaseOverlay::ActionPositionWindow;
-float BaseOverlay::PointSize = 7.f;
+
+constexpr float MaxPointSize = 8.f;
+float BaseOverlay::PointSize = MaxPointSize;
 
 uint32_t BaseOverlay::StateHandle = 0xFFFF'FFFF;
-bool BaseOverlay::ShowActions = true;
+bool BaseOverlay::ShowLines = true;
+
+static constexpr auto SelectedLineColor = IM_COL32(3, 194, 252, 255);
 
 BaseOverlay::BaseOverlay(ScriptTimeline* timeline) noexcept
 {
@@ -44,9 +45,6 @@ BaseOverlay::BaseOverlay(ScriptTimeline* timeline) noexcept
 void BaseOverlay::update() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    ActionScreenCoordinates.clear();
-    ActionPositionWindow.clear();
-    SelectedActionScreenCoordinates.clear();
 }
 
 void BaseOverlay::DrawSettings() noexcept
@@ -64,6 +62,7 @@ void EmptyOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
     OFS_PROFILE(__FUNCTION__);
     timeline->DrawAudioWaveform(ctx);
     BaseOverlay::DrawActionLines(ctx);
+    BaseOverlay::DrawActionPoints(ctx);
 }
 
 float EmptyOverlay::steppingIntervalForward(float realFrameTime, float fromTime) noexcept
@@ -76,7 +75,7 @@ float EmptyOverlay::steppingIntervalBackward(float realFrameTime, float fromTime
     return -realFrameTime;
 }
 
-static void getActionLineColor(
+inline static void getActionLineColor(
     ImColor* speedColor, 
     const ImGradient& speedGradient,
     FunscriptAction action,
@@ -93,27 +92,19 @@ static void getActionLineColor(
     speedColor->Value.w = 1.f;
 }
 
-void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
+ImVec2 BaseOverlay::GetPointForAction(const OverlayDrawingCtx& ctx, FunscriptAction action) noexcept
 {
-    if (!BaseOverlay::ShowActions) return;
-    OFS_PROFILE(__FUNCTION__);
-    auto& script = *ctx.script;
-    auto& state = BaseOverlayState::State(StateHandle);
+    float relative_x = (float)(action.atS - ctx.offsetTime) / ctx.visibleTime;
+    float x = (ctx.canvasSize.x) * relative_x;
+    float y = (ctx.canvasSize.y) * (1 - (action.pos / 100.f));
+    x += ctx.canvasPos.x;
+    y += ctx.canvasPos.y;
+    return ImVec2(x, y);
+};
 
-    auto startIt = script.Actions().begin() + ctx.actionFromIdx;
-    auto endIt = script.Actions().begin() + ctx.actionToIdx;
-    ColoredLines.clear();
-
-    auto getPointForAction = [](const OverlayDrawingCtx& ctx, FunscriptAction action) {
-        float relative_x = (float)(action.atS - ctx.offsetTime) / ctx.visibleTime;
-        float x = (ctx.canvasSize.x) * relative_x;
-        float y = (ctx.canvasSize.y) * (1 - (action.pos / 100.f));
-        x += ctx.canvasPos.x;
-        y += ctx.canvasPos.y;
-        return ImVec2(x, y);
-    };
-
-    auto drawSpline = [getPointForAction](const OverlayDrawingCtx& ctx, FunscriptAction startAction, FunscriptAction endAction, uint32_t color, float width, bool background = true)
+void BaseOverlay::drawActionLinesSpline(const OverlayDrawingCtx& ctx, const BaseOverlayState& state) noexcept
+{
+    auto drawSpline = [](const OverlayDrawingCtx& ctx, FunscriptAction startAction, FunscriptAction endAction, uint32_t color, float width, bool background = true) noexcept
     {
         constexpr float SamplesPerTwothousandPixels = 150.f;
         const float MaximumSamples = SamplesPerTwothousandPixels * (ctx.canvasSize.x / 2000.f);
@@ -167,8 +158,8 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
         const float timeStep = visibleDuration / SampleCount;
         
         if (SampleCount < 3.f) {
-            auto p1 = getPointForAction(ctx, startAction);
-            auto p2 = getPointForAction(ctx, endAction);
+            auto p1 = BaseOverlay::GetPointForAction(ctx, startAction);
+            auto p2 = BaseOverlay::GetPointForAction(ctx, endAction);
             if (background) {
                 ctx.drawList->PathLineTo(p1);
                 ctx.drawList->PathLineTo(p2);
@@ -191,22 +182,17 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
         }
     };
 
-    auto drawLine = [](const OverlayDrawingCtx& ctx, ImVec2 p1, ImVec2 p2, uint32_t color) noexcept
+    auto& script = *ctx.script;
     {
-        ctx.drawList->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
-        ColoredLines.emplace_back(std::move(BaseOverlay::ColoredLine{ p1, p2, color }));
-    };
+        auto startIt = script.Actions().begin() + ctx.actionFromIdx;
+        auto endIt = script.Actions().begin() + ctx.actionToIdx;
 
-    if (state.SplineMode) {
         const FunscriptAction* prevAction = nullptr;
-        for (; startIt != endIt; startIt++) {
+        for (; startIt != endIt; ++startIt) {
             auto& action = *startIt;
-            auto p1 = getPointForAction(ctx, action);
-            ActionScreenCoordinates.emplace_back(p1);
-            ActionPositionWindow.emplace_back(action);
+            auto p1 = BaseOverlay::GetPointForAction(ctx, action);
 
             if (prevAction != nullptr) {
-                // calculate speed relative to maximum speed
                 ImColor speedColor;
                 getActionLineColor(&speedColor, speedGradient, action, *prevAction, state);
                 drawSpline(ctx, *prevAction, action, ImGui::ColorConvertFloat4ToU32(speedColor), 3.f);
@@ -214,19 +200,48 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
             prevAction = &action;
         }
     }
-    else {
+
+    if(script.HasSelection())
+    {
+        auto startIt = script.Selection().begin() + ctx.selectionFromIdx;
+        auto endIt = script.Selection().begin() + ctx.selectionToIdx;
         const FunscriptAction* prevAction = nullptr;
-        for (; startIt != endIt; startIt++) {
+        for (; startIt != endIt; ++startIt) {
+            auto&& action = *startIt;
+            auto point = BaseOverlay::GetPointForAction(ctx, action);
+
+            if (prevAction != nullptr) {
+                // draw highlight line
+                drawSpline(ctx, *prevAction, action, SelectedLineColor, 3.f, false);
+            }
+
+            prevAction = &action;
+        }
+    }
+}
+
+void BaseOverlay::drawActionLinesLinear(const OverlayDrawingCtx& ctx, const BaseOverlayState& state) noexcept
+{
+    auto drawLine = [](const OverlayDrawingCtx& ctx, ImVec2 p1, ImVec2 p2, uint32_t color) noexcept
+    {
+        ctx.drawList->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 7.0f); // border
+        ColoredLines.emplace_back(std::move(BaseOverlay::ColoredLine{ p1, p2, color }));
+    };
+
+    auto& script = *ctx.script;
+    {
+        auto startIt = script.Actions().begin() + ctx.actionFromIdx;
+        auto endIt = script.Actions().begin() + ctx.actionToIdx;
+
+        const FunscriptAction* prevAction = nullptr;
+        for (; startIt != endIt; ++startIt) {
             auto& action = *startIt;
 
-            auto p1 = getPointForAction(ctx, action);
-            ActionScreenCoordinates.emplace_back(p1);
-            ActionPositionWindow.emplace_back(action);
+            auto p1 = BaseOverlay::GetPointForAction(ctx, action);
 
             if (prevAction != nullptr) {
                 // draw line
-                auto p2 = getPointForAction(ctx, *prevAction);
-                // calculate speed relative to maximum speed
+                auto p2 = BaseOverlay::GetPointForAction(ctx, *prevAction);
                 ImColor speedColor;
                 getActionLineColor(&speedColor, speedGradient, action, *prevAction, state);
                 drawLine(ctx, p1, p2, ImGui::ColorConvertFloat4ToU32(speedColor));
@@ -234,57 +249,103 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
 
             prevAction = &action;
         }
-
     }
 
-    if (script.HasSelection()) {
-        auto startIt = std::find_if(script.Selection().begin(), script.Selection().end(),
-            [&](auto act) { return act.atS >= ctx.offsetTime; });
-        if (startIt != script.Selection().begin())
-            startIt -= 1;
+    if(script.HasSelection())
+    {
+        auto startIt = script.Selection().begin() + ctx.selectionFromIdx;
+        auto endIt = script.Selection().begin() + ctx.selectionToIdx;
+        const FunscriptAction* prevAction = nullptr;
+        for (; startIt != endIt; ++startIt) {
+            auto&& action = *startIt;
+            auto point = BaseOverlay::GetPointForAction(ctx, action);
 
-        auto endIt = std::find_if(startIt, script.Selection().end(),
-            [&](auto act) { return act.atS >= ctx.offsetTime + ctx.visibleTime; });
-        if (endIt != script.Selection().end())
-            endIt += 1;
-
-        constexpr auto selectedLines = IM_COL32(3, 194, 252, 255);
-        if (state.SplineMode) {
-            const FunscriptAction* prev_action = nullptr;
-            for (; startIt != endIt; startIt++) {
-                auto&& action = *startIt;
-                auto point = getPointForAction(ctx, action);
-
-                if (prev_action != nullptr) {
-                    // draw highlight line
-                    drawSpline(ctx, *prev_action, action, selectedLines, 3.f, false);
-                }
-
-                SelectedActionScreenCoordinates.emplace_back(point);
-                prev_action = &action;
+            if (prevAction != nullptr) {
+                // draw highlight line
+                ColoredLines.emplace_back(
+                    std::move(
+                        BaseOverlay::ColoredLine{ 
+                            BaseOverlay::GetPointForAction(ctx, *prevAction),
+                            point,
+                            SelectedLineColor
+                        })
+                );
             }
-        }
-        else {
-            const FunscriptAction* prev_action = nullptr;
-            for (; startIt != endIt; startIt++) {
-                auto&& action = *startIt;
-                auto point = getPointForAction(ctx, action);
 
-                if (prev_action != nullptr) {
-                    // draw highlight line
-                    //ctx.draw_list->AddLine(getPointForAction(ctx, *prev_action), point, selectedLines, 3.0f);
-                    ColoredLines.emplace_back(std::move(BaseOverlay::ColoredLine{ getPointForAction(ctx, *prev_action), point, selectedLines }));
-                }
-
-                SelectedActionScreenCoordinates.emplace_back(point);
-                prev_action = &action;
-            }
+            prevAction = &action;
         }
+    }
+}
+
+void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
+{
+    if (!BaseOverlay::ShowLines) return;
+    OFS_PROFILE(__FUNCTION__);
+    auto& script = *ctx.script;
+    auto& state = BaseOverlayState::State(StateHandle);
+
+    auto startIt = script.Actions().begin() + ctx.actionFromIdx;
+    auto endIt = script.Actions().begin() + ctx.actionToIdx;
+    ColoredLines.clear();
+    
+    if(state.SplineMode)
+    {
+        drawActionLinesSpline(ctx, state);
+    }
+    else 
+    {
+        drawActionLinesLinear(ctx, state);
     }
 
     // this is so that the black background line gets rendered first
     for (auto&& line : ColoredLines) {
         ctx.drawList->AddLine(line.p1, line.p2, line.color, 3.f);
+    }
+}
+
+void BaseOverlay::DrawActionPoints(const OverlayDrawingCtx& ctx) noexcept
+{
+    OFS_PROFILE(__FUNCTION__);
+	auto applyEasing = [](float t) noexcept -> float {
+		return t * t; 
+	};
+
+    float opacity = 1.f;
+
+    if(BaseOverlay::ShowLines) 
+    {
+        opacity = 20.f / ctx.visibleTime;
+        opacity = Util::Clamp(opacity, 0.f, 1.f);
+        BaseOverlay::PointSize = MaxPointSize * opacity;
+        opacity = applyEasing(opacity);
+    }
+
+    if(opacity >= 0.25f) 
+    {
+        auto& script = *ctx.script;
+        int opcacityInt = 255 * opacity;
+        {
+            auto startIt = script.Actions().begin() + ctx.actionFromIdx;
+            auto endIt = script.Actions().begin() + ctx.actionToIdx;
+            for (; startIt != endIt; ++startIt) 
+            {
+                auto p = BaseOverlay::GetPointForAction(ctx, *startIt);
+                ctx.drawList->AddCircleFilled(p, BaseOverlay::PointSize, IM_COL32(0, 0, 0, opcacityInt), 4); // border
+                ctx.drawList->AddCircleFilled(p, BaseOverlay::PointSize*0.7f, IM_COL32(255, 0, 0, opcacityInt), 4);
+            }
+        }
+
+        if(script.HasSelection())
+        {
+            auto startIt = script.Selection().begin() + ctx.selectionFromIdx;
+            auto endIt = script.Selection().begin() + ctx.selectionToIdx;
+            for (; startIt != endIt; ++startIt) 
+            {
+                auto p = BaseOverlay::GetPointForAction(ctx, *startIt);
+                const auto selectedDots = IM_COL32(11, 252, 3, opcacityInt);
+			    ctx.drawList->AddCircleFilled(p, BaseOverlay::PointSize * 0.7f, selectedDots, 4);
+            }
+        }
     }
 }
 
@@ -307,7 +368,7 @@ void BaseOverlay::DrawHeightLines(const OverlayDrawingCtx& ctx) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     // height indicators
-    for (int i = 0; i < 9; i++) {
+    for (int i = 0; i < 9; i += 1) {
         auto color = (i == 4) ? IM_COL32(150, 150, 150, 255) : IM_COL32(80, 80, 80, 255);
         auto thickness = (i == 4) ? 2.f : 1.0f;
         ctx.drawList->AddLine(

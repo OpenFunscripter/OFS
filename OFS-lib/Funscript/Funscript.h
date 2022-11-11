@@ -30,6 +30,8 @@ public:
 class Funscript
 {
 public:
+    static constexpr auto Extension = ".funscript";
+	
 	struct FunscriptData {
 		FunscriptArray Actions;
 		FunscriptArray Selection;

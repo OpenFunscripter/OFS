@@ -2,6 +2,24 @@
 #include "OFS_Localization.h"
 #include "OFS_ImGui.h"
 
+static std::array<const char*, 6> VideoExtensions 
+{
+    ".mp4",
+    ".mkv",
+    ".webm",
+    ".wmv",
+    ".avi",
+    ".m4v",
+};
+
+static std::array<const char*, 4> AudioExtensions 
+{
+    ".mp3",
+    ".ogg",
+    ".flac",
+    ".wav",
+};
+
 OFS_Project::OFS_Project() noexcept
 {
     stateHandle = OFS_ProjectState<ProjectState>::Register(ProjectState::StateName);
@@ -91,7 +109,7 @@ void OFS_Project::Save(const std::string& path, bool clearUnsavedChanges) noexce
 	auto projectBin = Util::SerializeCBOR(projectState);
 	Util::WriteFile(path.c_str(), projectBin.data(), projectBin.size());
 	#else
-	auto projectJson = Util::SerializeJson(projectState, true);
+	auto projectJson = Util::SerializeJson(projectState, false);
 	Util::WriteFile(path.c_str(), projectJson.data(), projectJson.size());
 	#endif
 	if(clearUnsavedChanges) {

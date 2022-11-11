@@ -46,6 +46,7 @@ void FrameOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
     BaseOverlay::DrawHeightLines(ctx);
     timeline->DrawAudioWaveform(ctx);
     BaseOverlay::DrawActionLines(ctx);
+    BaseOverlay::DrawActionPoints(ctx);
     BaseOverlay::DrawSecondsLabel(ctx);
     BaseOverlay::DrawScriptLabel(ctx);
  
@@ -156,6 +157,7 @@ void TempoOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
     BaseOverlay::DrawHeightLines(ctx);
     timeline->DrawAudioWaveform(ctx);
     BaseOverlay::DrawActionLines(ctx);
+    BaseOverlay::DrawActionPoints(ctx);
     BaseOverlay::DrawSecondsLabel(ctx);
     BaseOverlay::DrawScriptLabel(ctx);
 
