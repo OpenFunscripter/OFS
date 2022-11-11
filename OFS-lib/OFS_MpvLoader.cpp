@@ -7,9 +7,9 @@
 static void* mpvHandle = nullptr;
 
 mpv_create_FUNC OFS_MpvLoader::mpv_create_REAL = NULL;
-mpv_wait_event_FUNC OFS_MpvLoader::mpv_wait_event_REAL  = NULL;
-mpv_observe_property_FUNC OFS_MpvLoader::mpv_observe_property_REAL  = NULL;
-mpv_render_context_update_FUNC OFS_MpvLoader::mpv_render_context_update_REAL  = NULL;
+mpv_wait_event_FUNC OFS_MpvLoader::mpv_wait_event_REAL = NULL;
+mpv_observe_property_FUNC OFS_MpvLoader::mpv_observe_property_REAL = NULL;
+mpv_render_context_update_FUNC OFS_MpvLoader::mpv_render_context_update_REAL = NULL;
 mpv_render_context_render_FUNC OFS_MpvLoader::mpv_render_context_render_REAL = NULL;
 mpv_set_option_string_FUNC OFS_MpvLoader::mpv_set_option_string_REAL = NULL;
 mpv_set_property_string_FUNC OFS_MpvLoader::mpv_set_property_string_REAL = NULL;
@@ -24,33 +24,34 @@ mpv_render_context_free_FUNC OFS_MpvLoader::mpv_render_context_free_REAL = NULL;
 mpv_destroy_FUNC OFS_MpvLoader::mpv_destroy_REAL = NULL;
 mpv_render_context_report_swap_FUNC OFS_MpvLoader::mpv_render_context_report_swap_REAL = NULL;
 
-#define LOAD_FUNCTION(name) name##_REAL = (name##_FUNC)SDL_LoadFunction(mpvHandle, #name);\
-if(!name##_REAL) {\
-    LOGF_ERROR("Failed to load \"%s\"", #name);\
-    LOG_ERROR(SDL_GetError());\
-    return false;\
-}\
-static_assert(std::is_same<decltype(&name), name##_FUNC>::value, "Function pointer signature doesn't match libmpv function signature.")
+#define LOAD_FUNCTION(name) \
+    name##_REAL = (name##_FUNC)SDL_LoadFunction(mpvHandle, #name); \
+    if (!name##_REAL) { \
+        LOGF_ERROR("Failed to load \"%s\"", #name); \
+        LOG_ERROR(SDL_GetError()); \
+        return false; \
+    } \
+    static_assert(std::is_same<decltype(&name), name##_FUNC>::value, "Function pointer signature doesn't match libmpv function signature.")
 
 bool OFS_MpvLoader::Load() noexcept
 {
-    if(mpvHandle) return true;
+    if (mpvHandle) return true;
     const char* lib = nullptr;
-    #if defined(WIN32)
+#if defined(WIN32)
     lib = "mpv-2.dll";
-    #elif defined(__APPLE__)
+#elif defined(__APPLE__)
     lib = "libmpv.dylib";
-    #else // linux
+#else // linux
     lib = "libmpv.so.1";
-    #endif
+#endif
 
     mpvHandle = SDL_LoadObject(lib);
-    if(!mpvHandle) {
+    if (!mpvHandle) {
         LOGF_ERROR("Failed to load \"%s\"", lib);
         LOGF_ERROR("%s", SDL_GetError());
         return false;
     }
-    
+
     LOAD_FUNCTION(mpv_create);
     LOAD_FUNCTION(mpv_wait_event);
     LOAD_FUNCTION(mpv_observe_property);
@@ -76,7 +77,7 @@ bool OFS_MpvLoader::Load() noexcept
 
 void OFS_MpvLoader::Unload() noexcept
 {
-    if(!mpvHandle) return;
+    if (!mpvHandle) return;
     SDL_UnloadObject(mpvHandle);
     mpvHandle = nullptr;
     SET_NULL(mpv_create);

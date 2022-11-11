@@ -1,0 +1,25 @@
+BasedOnStyle: WebKit
+AlignEscapedNewlines: DontAlign
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: true
+AllowShortLoopsOnASingleLine: true
+BinPackParameters: false
+BraceWrapping:
+  AfterFunction: true
+  BeforeCatch: true
+  BeforeElse: true
+  SplitEmptyFunction: false
+BreakBeforeBinaryOperators: NonAssignment
+BreakBeforeBraces: Custom
+BreakConstructorInitializers: BeforeColon
+ConstructorInitializerIndentWidth: 0
+DerivePointerAlignment: true
+IndentCaseLabels: true
+IndentGotoLabels: false
+MaxEmptyLinesToKeep: 2
+NamespaceIndentation: All
+SortIncludes: false
+SpaceAfterTemplateKeyword: false
+SpaceBeforeCpp11BracedList: false
+SpaceBeforeInheritanceColon: false
+SpaceInEmptyBlock: false

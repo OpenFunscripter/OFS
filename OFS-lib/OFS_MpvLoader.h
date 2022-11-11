@@ -14,9 +14,9 @@
 extern "C" {
 #endif
 
-typedef mpv_handle* (*mpv_create_FUNC)();
+typedef mpv_handle *(*mpv_create_FUNC)();
 typedef int (*mpv_initialize_FUNC)(mpv_handle *ctx);
-typedef mpv_event* (*mpv_wait_event_FUNC)(mpv_handle *ctx, double timeout);
+typedef mpv_event *(*mpv_wait_event_FUNC)(mpv_handle *ctx, double timeout);
 typedef int (*mpv_observe_property_FUNC)(mpv_handle *mpv, uint64_t reply_userdata, const char *name, mpv_format format);
 typedef uint64_t (*mpv_render_context_update_FUNC)(mpv_render_context *ctx);
 typedef int (*mpv_render_context_render_FUNC)(mpv_render_context *ctx, mpv_render_param *params);
@@ -33,8 +33,7 @@ typedef void (*mpv_detach_destroy_FUNC)(mpv_handle *ctx);
 typedef void (*mpv_destroy_FUNC)(mpv_handle *ctx);
 typedef void (*mpv_render_context_report_swap_FUNC)(mpv_render_context *ctx);
 
-struct OFS_MpvLoader
-{
+struct OFS_MpvLoader {
     static mpv_create_FUNC mpv_create_REAL;
     static mpv_initialize_FUNC mpv_initialize_REAL;
     static mpv_wait_event_FUNC mpv_wait_event_REAL;

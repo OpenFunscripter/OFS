@@ -9,16 +9,15 @@
 
 #define OFS_PROJECT_EXT ".ofsp"
 
-class OFS_Project
-{
-    private:
+class OFS_Project {
+private:
     uint32_t stateHandle = 0xFFFF'FFFF;
     uint32_t bookmarkStateHandle = 0xFFFF'FFFF;
 
     std::string lastPath;
     bool valid = false;
 
-    public:
+public:
     static constexpr auto Extension = OFS_PROJECT_EXT;
 
     OFS_Project() noexcept;
@@ -46,15 +45,14 @@ class OFS_Project
 
 
     template<typename S>
-	void serialize(S& s)
-	{
+    void serialize(S& s)
+    {
         s.ext(*this, bitsery::ext::Growable{},
-			[](S& s, OFS_Project& o) {
-                s.container(o.Funscripts, 100, 
-					[](S& s, std::shared_ptr<Funscript>& script) {
-					    s.ext(script, bitsery::ext::StdSmartPtr{});
-                    }
-                );
+            [](S& s, OFS_Project& o) {
+                s.container(o.Funscripts, 100,
+                    [](S& s, std::shared_ptr<Funscript>& script) {
+                        s.ext(script, bitsery::ext::StdSmartPtr{});
+                    });
             });
     }
 };
