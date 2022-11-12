@@ -15,7 +15,16 @@ private:
     uint32_t bookmarkStateHandle = 0xFFFF'FFFF;
 
     std::string lastPath;
+
+    std::string notValidError;
     bool valid = false;
+
+    void addError(const std::string& error) noexcept
+    {
+        valid = false;
+        notValidError += "\n";
+        notValidError += error;
+    }
 
 public:
     static constexpr auto Extension = OFS_PROJECT_EXT;
@@ -31,7 +40,11 @@ public:
     void Save(bool clearUnsavedChanges) noexcept { Save(lastPath, clearUnsavedChanges); }
     void Save(const std::string& path, bool clearUnsavedChanges) noexcept;
 
-    bool Import(const std::string& path) noexcept;
+    bool ImportFromFunscript(const std::string& path) noexcept;
+    bool ImportFromMedia(const std::string& path) noexcept;
+
+    bool AddFunscript(const std::string& path) noexcept;
+    void RemoveFunscript(int32_t idx) noexcept;
 
     void Update(float delta, bool idleMode) noexcept;
     void ShowProjectWindow(bool* open) noexcept;
@@ -40,9 +53,17 @@ public:
 
     inline const std::string& Path() const noexcept { return lastPath; }
     inline bool IsValid() const noexcept { return valid; }
-    inline ProjectState& State() noexcept { return ProjectState::State(stateHandle); }
+    inline const std::string& NotValidError() const noexcept { return notValidError; }
+    inline ProjectState& State() const noexcept { return ProjectState::State(stateHandle); }
     inline ProjectBookmarkState& Bookmarks() noexcept { return ProjectBookmarkState::State(bookmarkStateHandle); }
 
+    void ExportFunscripts() noexcept;
+    void ExportFunscript(const std::string& outputPath, int32_t idx) noexcept;
+
+    std::string MakePathAbsolute(const std::string& relPath) const noexcept;
+    std::string MakePathRelative(const std::string& absPath) const noexcept;
+
+    std::string MediaPath() const noexcept;
 
     template<typename S>
     void serialize(S& s)

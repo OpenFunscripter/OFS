@@ -199,7 +199,7 @@ inline void OpenFunscripter::closeWithoutSavingDialog(OnCloseAction&& onProjectC
     if (LoadedProject->HasUnsavedEdits()) {
         Util::YesNoCancelDialog(TR(PROJECT_HAS_UNSAVED_EDITS),
             TR(CLOSE_WITHOUT_SAVING_MSG),
-            [this, onProjectCloseHandler](Util::YesNoCancel result) {
+            [this, onProjectCloseHandler = std::move(onProjectCloseHandler)](Util::YesNoCancel result) mutable {
                 if (result == Util::YesNoCancel::Yes) {
                     LoadedProject->Save(true);
                     closeProject(true);
@@ -210,10 +210,7 @@ inline void OpenFunscripter::closeWithoutSavingDialog(OnCloseAction&& onProjectC
                     closeProject(true);
                     onProjectCloseHandler();
                 }
-                // else
-                // {
-                // 	/* do nothing */
-                // }
+                /* do nothing on cancel */
             });
     }
     else {

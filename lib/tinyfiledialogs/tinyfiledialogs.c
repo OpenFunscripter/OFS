@@ -3,7 +3,7 @@ The code is 100% compatible C C++
 (just comment out << extern "C" >> in the header file) */
 
 /*_________
- /         \ tinyfiledialogs.c v3.8.7 [Feb 25, 2021] zlib licence
+ /         \ tinyfiledialogs.c v3.9.0 [Nov 3, 2022] zlib licence
  |tiny file| Unique code file created [November 9, 2014]
  | dialogs | Copyright (c) 2014 - 2021 Guillaume Vareille http://ysengrin.com
  \____  ___/ http://tinyfiledialogs.sourceforge.net
@@ -99,7 +99,7 @@ Thanks for contributions, bug corrections & thorough testing to:
 #endif
 #define LOW_MULTIPLE_FILES 32
 
-char tinyfd_version[8] = "3.8.7";
+char tinyfd_version[8] = "3.9.0";
 
 /******************************************************************************************************/
 /**************************************** UTF-8 on Windows ********************************************/
@@ -171,7 +171,7 @@ char tinyfd_needs[] = "\
 \n   applescript or kdialog or yad or Xdialog\
 \nor zenity (or matedialog or shellementary or qarma)\
 \nor python (2 or 3) + tkinter + python-dbus (optional)\
-\nor dialog (opens console if needed)\
+\nor dialog (opens console if needed) ** Disabled by default **/\
 \nor xterm + bash (opens console for basic input)\
 \nor existing console for basic input";
 #endif
@@ -577,6 +577,24 @@ static int sizeMbcs(wchar_t const * aMbcsString)
 }
 
 
+wchar_t* tinyfd_mbcsTo16(char const* aMbcsString)
+{
+    static wchar_t* lMbcsString = NULL;
+    int lSize;
+
+    free(lMbcsString);
+    if (!aMbcsString) { lMbcsString = NULL; return NULL; }
+    lSize = sizeUtf16FromMbcs(aMbcsString);
+    if (lSize)
+    {
+        lMbcsString = (wchar_t*)malloc(lSize * sizeof(wchar_t));
+        lSize = MultiByteToWideChar(CP_ACP, 0, aMbcsString, -1, lMbcsString, lSize);
+    }
+    else wcscpy(lMbcsString, L"");
+    return lMbcsString;
+}
+
+
 wchar_t * tinyfd_utf8to16(char const * aUtf8string)
 {
 	static wchar_t * lUtf16string = NULL;
@@ -585,15 +603,19 @@ wchar_t * tinyfd_utf8to16(char const * aUtf8string)
 	free(lUtf16string);
 	if (!aUtf8string) {lUtf16string = NULL; return NULL;}
 	lSize = sizeUtf16From8(aUtf8string);
-	lUtf16string = (wchar_t *)malloc(lSize * sizeof(wchar_t));
-	lSize = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS,
-		aUtf8string, -1, lUtf16string, lSize);
-	if (lSize == 0)
-	{
-		free(lUtf16string);
-		lUtf16string = NULL;
-	}
-	return lUtf16string;
+    if (lSize)
+    {
+        lUtf16string = (wchar_t*)malloc(lSize * sizeof(wchar_t));
+        lSize = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS,
+            aUtf8string, -1, lUtf16string, lSize);
+        return lUtf16string;
+    }
+    else
+    {
+        /* let's try mbcs anyway */
+        lUtf16string = NULL;
+        return tinyfd_mbcsTo16(aUtf8string);
+    }
 }
 
 
@@ -605,14 +627,12 @@ char * tinyfd_utf16toMbcs(wchar_t const * aUtf16string)
 	free(lMbcsString);
 	if (!aUtf16string) { lMbcsString = NULL; return NULL; }
 	lSize = sizeMbcs(aUtf16string);
-	lMbcsString = (char *)malloc(lSize);
-	lSize = WideCharToMultiByte(CP_ACP, 0,
-		aUtf16string, -1, lMbcsString, lSize, NULL, NULL);
-	if (lSize == 0)
-	{
-		free(lMbcsString);
-		lMbcsString = NULL;
-	}
+    if (lSize)
+    {
+        lMbcsString = (char*)malloc(lSize);
+        lSize = WideCharToMultiByte(CP_ACP, 0, aUtf16string, -1, lMbcsString, lSize, NULL, NULL);
+    }
+    else strcpy(lMbcsString, "");
 	return lMbcsString;
 }
 
@@ -624,25 +644,6 @@ char * tinyfd_utf8toMbcs(char const * aUtf8string)
 	return tinyfd_utf16toMbcs(lUtf16string);
 }
 
-wchar_t * tinyfd_mbcsTo16(char const * aMbcsString)
-{
-	static wchar_t * lMbcsString = NULL;
-	int lSize;
-
-	free(lMbcsString);
-	if (!aMbcsString) { lMbcsString = NULL; return NULL; }
-	lSize = sizeUtf16FromMbcs(aMbcsString);
-	lMbcsString = (wchar_t *)malloc(lSize * sizeof(wchar_t));
-	lSize = MultiByteToWideChar(CP_ACP, 0,
-		aMbcsString, -1, lMbcsString, lSize);
-	if (lSize == 0)
-	{
-		free(lMbcsString);
-		lMbcsString = NULL;
-	}
-	return lMbcsString;
-}
-
 
 char * tinyfd_utf16to8(wchar_t const * aUtf16string)
 {
@@ -652,14 +653,12 @@ char * tinyfd_utf16to8(wchar_t const * aUtf16string)
 	free(lUtf8string);
 	if (!aUtf16string) { lUtf8string = NULL; return NULL; }
 	lSize = sizeUtf8(aUtf16string);
-	lUtf8string = (char *)malloc(lSize);
-	lSize = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS,
-		aUtf16string, -1, lUtf8string, lSize, NULL, NULL);
-	if (lSize == 0)
-	{
-		free(lUtf8string);
-		lUtf8string = NULL;
-	}
+    if (lSize)
+    {
+        lUtf8string = (char*)malloc(lSize);
+        lSize = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, aUtf16string, -1, lUtf8string, lSize, NULL, NULL);
+    }
+    else strcpy(lUtf8string, "");
 	return lUtf8string;
 }
 
@@ -675,7 +674,7 @@ char * tinyfd_mbcsTo8(char const * aMbcsString)
 void tinyfd_beep(void)
 {
     if (windowsVersion() > 5) Beep(440, 300);
-    else MessageBeep(-1);
+    else MessageBeep(MB_OK);
 }
 
 
@@ -1012,9 +1011,12 @@ static char * ensureFilesExist(char * aDestination,
 static int __stdcall EnumThreadWndProc(HWND hwnd, LPARAM lParam)
 {
         wchar_t lTitleName[MAX_PATH];
+        wchar_t const* lDialogTitle = (wchar_t const *) lParam;
+
         GetWindowTextW(hwnd, lTitleName, MAX_PATH);
         /* wprintf(L"lTitleName %ls \n", lTitleName);  */
-        if (wcscmp(L"tinyfiledialogsTopWindow", lTitleName) == 0)
+
+        if (wcscmp(lDialogTitle, lTitleName) == 0)
         {
                 SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
                 return 0;
@@ -1045,8 +1047,7 @@ static void hiddenConsoleW(wchar_t const * aString, wchar_t const * aDialogTitle
         WaitForInputIdle(ProcessInfo.hProcess, INFINITE);
         if (aInFront)
         {
-                while (EnumWindows(EnumThreadWndProc, (LPARAM)NULL)) {}
-                SetWindowTextW(GetForegroundWindow(), aDialogTitle);
+                while (EnumWindows(EnumThreadWndProc, (LPARAM)aDialogTitle)) {}
         }
         WaitForSingleObject(ProcessInfo.hProcess, INFINITE);
         CloseHandle(ProcessInfo.hThread);
@@ -1105,15 +1106,15 @@ int tinyfd_messageBoxW(
         else if (aDialogType && !wcscmp(L"yesnocancel", aDialogType))
         {
             aCode += MB_YESNOCANCEL;
-            if (aDefaultButton == 0)
-            {
-                aCode += MB_DEFBUTTON2;
-            }
-            else if (aDefaultButton == 1)
+            if (aDefaultButton == 1)
             {
                 aCode += MB_DEFBUTTON1;
             }
             else if (aDefaultButton == 2)
+            {
+                aCode += MB_DEFBUTTON2;
+            }
+            else
             {
                 aCode += MB_DEFBUTTON3;
             }
@@ -1127,18 +1128,11 @@ int tinyfd_messageBoxW(
 
         lBoxReturnValue = MessageBoxW(GetForegroundWindow(), aMessage, aTitle, aCode);
 
-        if (((aDialogType && !wcscmp(L"yesnocancel", aDialogType))
-            && (lBoxReturnValue == IDCANCEL)))
+        if ( (lBoxReturnValue == IDNO) && (aDialogType && !wcscmp(L"yesnocancel", aDialogType)) )
         {
             return 2;
         }
-
-        if (((aDialogType
-            && wcscmp(L"yesnocancel", aDialogType)
-            && wcscmp(L"okcancel", aDialogType)
-            && wcscmp(L"yesno", aDialogType)))
-            || (lBoxReturnValue == IDOK)
-            || (lBoxReturnValue == IDYES))
+        else if ( (lBoxReturnValue == IDOK) || (lBoxReturnValue == IDYES) )
         {
             return 1;
         }
@@ -1279,7 +1273,10 @@ wchar_t * tinyfd_inputBoxW(
 					replaceWchar(lBuff, L'\n', L' ');
 					wcscat(lDialogString, lBuff);
                 }
-                wcscat(lDialogString, L"\",\"tinyfiledialogsTopWindow\",\"");
+                wcscat(lDialogString, L"\",\"");
+                if (aTitle) wcscat(lDialogString, aTitle);
+                wcscat(lDialogString, L"\",\"");
+
                 if (aDefaultInput && wcslen(aDefaultInput))
                 {
 					wcscpy(lBuff, aDefaultInput);
@@ -1295,8 +1292,7 @@ wchar_t * tinyfd_inputBoxW(
 <html>\n\
 <head>\n\
 <title>");
-
-                wcscat(lDialogString, L"tinyfiledialogsTopWindow");
+                if (aTitle) wcscat(lDialogString, aTitle);
                 wcscat(lDialogString, L"</title>\n\
 <HTA:APPLICATION\n\
 ID = 'tinyfdHTA'\n\
@@ -1973,7 +1969,7 @@ static int notifyWinGui(
 		if (tinyfd_winUtf8) lTmpWChar = tinyfd_utf8to16(aMessage);
 		else lTmpWChar = tinyfd_mbcsTo16(aMessage);
 		lMessage = (wchar_t *) malloc((wcslen(lTmpWChar) + 1)* sizeof(wchar_t));
-      if (lMessage) wcscpy(lMessage, lTmpWChar);
+        if (lMessage) wcscpy(lMessage, lTmpWChar);
 	}
 	if (aIconType)
 	{
@@ -3064,8 +3060,8 @@ char * tinyfd_openFileDialog(
 	char const * aSingleFilterDescription, /* NULL or "image files" */
     int aAllowMultipleSelects ) /* 0 or 1 */
 {
-	char lString[MAX_PATH_OR_CMD];
-	char lBuff[MAX_PATH_OR_CMD];
+    static char lBuff[MAX_PATH_OR_CMD];
+    char lString[MAX_PATH_OR_CMD];
 	char * p;
 	char * lPointerInputBox;
 	int i;
@@ -4432,19 +4428,17 @@ int tinyfd_messageBox(
                 {
                     strcat( lDialogString , "info" ) ;
                 }
-                if ( aTitle && strlen(aTitle) )
-                {
-                        strcat(lDialogString, " --title=\"") ;
-                        strcat(lDialogString, aTitle) ;
-                        strcat(lDialogString, "\"") ;
-                }
-                if ( aMessage && strlen(aMessage) )
-                {
-                  if (strcmp("yesnocancel", aDialogType)) strcat(lDialogString, " --no-wrap");
-                  strcat(lDialogString, " --text=\"") ;
-                  strcat(lDialogString, aMessage) ;
-                  strcat(lDialogString, "\"") ;
-                }
+
+                strcat(lDialogString, " --title=\"");
+                if ( aTitle && strlen(aTitle) ) strcat(lDialogString, aTitle) ;
+                strcat(lDialogString, "\"");
+
+                if (strcmp("yesnocancel", aDialogType)) strcat(lDialogString, " --no-wrap");
+
+                strcat(lDialogString, " --text=\"") ;
+                if (aMessage && strlen(aMessage)) strcat(lDialogString, aMessage) ;
+                strcat(lDialogString, "\"") ;
+
                 if ( (tfd_zenity3Present() >= 3) || (!tfd_zenityPresent() && (tfd_shellementaryPresent() || tfd_qarmaPresent()) ) )
                 {
                         strcat( lDialogString , " --icon-name=dialog-" ) ;
@@ -5517,18 +5511,14 @@ char * tinyfd_inputBox(
                 }
                 strcat( lDialogString ," --entry" ) ;
 
-                if ( aTitle && strlen(aTitle) )
-                {
-                        strcat(lDialogString, " --title=\"") ;
-                        strcat(lDialogString, aTitle) ;
-                        strcat(lDialogString, "\"") ;
-                }
-                if ( aMessage && strlen(aMessage) )
-                {
-                        strcat(lDialogString, " --text=\"") ;
-                        strcat(lDialogString, aMessage) ;
-                        strcat(lDialogString, "\"") ;
-                }
+                strcat(lDialogString, " --title=\"") ;
+                if (aTitle && strlen(aTitle)) strcat(lDialogString, aTitle) ;
+                strcat(lDialogString, "\"") ;
+
+                strcat(lDialogString, " --text=\"") ;
+                if (aMessage && strlen(aMessage)) strcat(lDialogString, aMessage) ;
+                strcat(lDialogString, "\"") ;
+
                 if ( aDefaultInput && strlen(aDefaultInput) )
                 {
                         strcat(lDialogString, " --entry-text=\"") ;
@@ -6104,12 +6094,10 @@ char * tinyfd_saveFileDialog(
                 }
                 strcat(lDialogString, " --file-selection --save --confirm-overwrite" ) ;
 
-                if ( aTitle && strlen(aTitle) )
-                {
-                        strcat(lDialogString, " --title=\"") ;
-                        strcat(lDialogString, aTitle) ;
-                        strcat(lDialogString, "\"") ;
-                }
+                strcat(lDialogString, " --title=\"") ;
+                if (aTitle && strlen(aTitle)) strcat(lDialogString, aTitle) ;
+                strcat(lDialogString, "\"") ;
+
                 if ( aDefaultPathAndFile && strlen(aDefaultPathAndFile) )
                 {
                         strcat(lDialogString, " --filename=\"") ;
@@ -6623,12 +6611,11 @@ char * tinyfd_openFileDialog(
                 {
                         strcat( lDialogString , " --multiple" ) ;
                 }
-                if ( aTitle && strlen(aTitle) )
-                {
-                        strcat(lDialogString, " --title=\"") ;
-                        strcat(lDialogString, aTitle) ;
-                        strcat(lDialogString, "\"") ;
-                }
+                
+                strcat(lDialogString, " --title=\"") ;
+                if (aTitle && strlen(aTitle)) strcat(lDialogString, aTitle) ;
+                strcat(lDialogString, "\"") ;
+
                 if ( aDefaultPathAndFile && strlen(aDefaultPathAndFile) )
                 {
                         strcat(lDialogString, " --filename=\"") ;
@@ -7074,12 +7061,10 @@ char * tinyfd_selectFolderDialog(
                 }
                 strcat( lDialogString , " --file-selection --directory" ) ;
 
-                if ( aTitle && strlen(aTitle) )
-                {
-                        strcat(lDialogString, " --title=\"") ;
-                        strcat(lDialogString, aTitle) ;
-                        strcat(lDialogString, "\"") ;
-                }
+                strcat(lDialogString, " --title=\"") ;
+                if (aTitle && strlen(aTitle)) strcat(lDialogString, aTitle) ;
+                strcat(lDialogString, "\"") ;
+
                 if ( aDefaultPath && strlen(aDefaultPath) )
                 {
                         strcat(lDialogString, " --filename=\"") ;
@@ -7406,12 +7391,10 @@ to set mycolor to choose color default color {");
                 strcat( lDialogString , " --color-selection --show-palette" ) ;
                 sprintf( lDialogString + strlen(lDialogString), " --color=%s" , lDefaultHexRGB ) ;
 
-                if ( aTitle && strlen(aTitle) )
-                {
-                        strcat(lDialogString, " --title=\"") ;
-                        strcat(lDialogString, aTitle) ;
-                        strcat(lDialogString, "\"") ;
-                }
+                strcat(lDialogString, " --title=\"") ;
+                if (aTitle && strlen(aTitle)) strcat(lDialogString, aTitle) ;
+                strcat(lDialogString, "\"") ;
+
                 if (tinyfd_silent) strcat( lDialogString , " 2>/dev/null ");
         }
         else if (tfd_yadPresent())

@@ -202,7 +202,7 @@ void Util::OpenFileDialog(const std::string& title, const std::string& path, Fil
                         dialogResult->files.emplace_back(std::string(result + last, index - last));
                         last = index + 1;
                     }
-                    index++;
+                    index += 1;
                 }
                 dialogResult->files.emplace_back(std::string(result + last, index - last));
             }
@@ -214,11 +214,8 @@ void Util::OpenFileDialog(const std::string& title, const std::string& path, Fil
         auto eventData = new EventSystem::SingleShotEventData;
         eventData->ctx = dialogResult;
         eventData->handler = std::move(data->handler);
+        EventSystem::PushEvent(EventSystem::SingleShotEvent, eventData);
 
-        SDL_Event ev{ 0 };
-        ev.type = EventSystem::SingleShotEvent;
-        ev.user.data1 = eventData;
-        SDL_PushEvent(&ev);
         delete data;
         return 0;
     };
@@ -341,13 +338,13 @@ void Util::YesNoCancelDialog(const std::string& title, const std::string& messag
         Util::YesNoCancel enumResult;
         switch (result) {
             case 0:
-                enumResult = Util::YesNoCancel::No;
+                enumResult = Util::YesNoCancel::Cancel;
                 break;
             case 1:
                 enumResult = Util::YesNoCancel::Yes;
                 break;
             case 2:
-                enumResult = Util::YesNoCancel::Cancel;
+                enumResult = Util::YesNoCancel::No;
                 break;
         }
         EventSystem::SingleShot(std::move(data->handler), (void*)(intptr_t)enumResult);

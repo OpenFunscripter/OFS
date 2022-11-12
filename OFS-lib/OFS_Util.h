@@ -462,6 +462,16 @@ public:
         static auto Main = SDL_ThreadID();
         return SDL_ThreadID() == Main;
     }
+
+    // https://stackoverflow.com/questions/56940199/how-to-capture-a-unique-ptr-in-a-stdfunction
+    template<class F>
+    auto static MakeSharedFunction(F&& f)
+    {
+        return
+            [pf = std::make_shared<std::decay_t<F>>(std::forward<F>(f))](auto&&... args) -> decltype(auto) {
+                return (*pf)(decltype(args)(args)...);
+            };
+    }
 };
 
 #define FMT(fmt, ...) Util::Format(fmt, __VA_ARGS__)

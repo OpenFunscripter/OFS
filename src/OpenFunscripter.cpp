@@ -1500,6 +1500,7 @@ void OpenFunscripter::ScriptTimelineActionMoveStarted(SDL_Event& ev) noexcept
 
 void OpenFunscripter::ScriptTimelineActionMoved(SDL_Event& ev) noexcept
 {
+    // FIXME: this event is actually useless only the move started event is required to take the snapshot
     auto [newAction, weak] = *(ScriptTimelineEvents::ActionMovedEventArgs*)ev.user.data1;
     if (auto script = weak.lock()) {
         if (script->SelectionSize() == 1) {
@@ -1707,7 +1708,6 @@ void OpenFunscripter::Step() noexcept
                 auto& projectState = LoadedProject->State();
                 projectState.metadata.duration = player->Duration();
                 if (metadataEditor->ShowMetadataEditor(&ShowMetadataEditor, projectState.metadata)) {
-                    LoadedProject->Save(true);
                 }
             }
 
@@ -1950,73 +1950,41 @@ bool OpenFunscripter::openFile(const std::string& file) noexcept
     auto filePath = Util::PathFromString(file);
     auto fileExtension = filePath.extension().u8string();
 
+    auto loadProject = std::make_unique<OFS_Project>();
+
     if (fileExtension == OFS_Project::Extension) {
         // It's a project
-        if (LoadedProject->Load(file)) {
-            initProject();
-            auto& ofsState = OpenFunscripterState::State(stateHandle);
-            auto& projectState = LoadedProject->State();
-            auto recentFile = RecentFile{ Util::PathFromString(LoadedProject->Path()).filename().u8string(), LoadedProject->Path() };
-            ofsState.addRecentFile(recentFile);
-            return true;
-        }
+        loadProject->Load(file);
     }
     else if (fileExtension == Funscript::Extension) {
         // It's a funscript it should be imported into a new project
+        loadProject->ImportFromFunscript(file);
     }
     else {
         // Assume it's some kind of media file
-        // This is really awkward if it's not.
-        // I don't have confirming this other then checking
-        // a predefined set of media extensions.
+        loadProject->ImportFromMedia(file);
     }
 
-
-    // auto filePath = Util::PathFromString(file);
-    // if (filePath.extension().u8string() == OFS_Project::Extension) {
-    //     return openProject(filePath.u8string());
-    // }
-    // else {
-    //     return importFile(filePath.u8string());
-    // }
+    if (loadProject->IsValid()) {
+        closeWithoutSavingDialog(Util::MakeSharedFunction(
+            [this, loadProject = std::move(loadProject)]() mutable noexcept {
+                LoadedProject = std::move(loadProject);
+                initProject();
+                auto& ofsState = OpenFunscripterState::State(stateHandle);
+                auto& projectState = LoadedProject->State();
+                auto recentFile = RecentFile{
+                    Util::PathFromString(LoadedProject->Path()).filename().u8string(),
+                    LoadedProject->Path()
+                };
+                ofsState.addRecentFile(recentFile);
+            }));
+        return true;
+    }
+    else {
+        Util::MessageBoxAlert("Failed to open file.", loadProject->NotValidError());
+    }
     return false;
 }
-
-// bool OpenFunscripter::importFile(const std::string& file) noexcept
-//{
-//     OFS_PROFILE(__FUNCTION__);
-//     if (!closeProject(false) || !LoadedProject->Import(file))
-//     {
-//         auto msg = TR(OFS_FAILED_TO_IMPORT);
-//         Util::MessageBoxAlert(TR(OFS_FAILED_TO_IMPORT_MSG), msg);
-//         closeProject(false);
-//         return false;
-//     }
-//     initProject();
-//     return true;
-// }
-
-// bool OpenFunscripter::openProject(const std::string& file) noexcept
-//{
-//     OFS_PROFILE(__FUNCTION__);
-//     if (!Util::FileExists(file)) {
-//         Util::MessageBoxAlert(TR(FILE_NOT_FOUND), std::string(TR(COULDNT_FIND_FILE)) + "\n" + file);
-//         return false;
-//     }
-//
-//     if ((!closeProject(false) || !LoadedProject->Load(file))) {
-//         Util::MessageBoxAlert(TR(FAILED_TO_LOAD),
-//             FMT("%s\n%s", TR(FAILED_TO_LOAD_MSG), "FIXME" /*LoadedProject->LoadingError.c_str()*/));
-//         closeProject(false);
-//         return false;
-//     }
-//     initProject();
-//     auto& ofsState = OpenFunscripterState::State(stateHandle);
-//     auto& projectState = LoadedProject->State();
-//     auto recentFile = RecentFile{ Util::PathFromString(LoadedProject->Path()).filename().u8string(), LoadedProject->Path() };
-//     ofsState.addRecentFile(recentFile);
-//     return true;
-// }
 
 void OpenFunscripter::initProject() noexcept
 {
@@ -2029,24 +1997,24 @@ void OpenFunscripter::initProject() noexcept
             projectState.nudgeMetadata = false;
         }
 
-        if (Util::FileExists(projectState.mediaPath)) {
-            player->OpenVideo(projectState.mediaPath);
+        if (Util::FileExists(LoadedProject->MediaPath())) {
+            player->OpenVideo(LoadedProject->MediaPath());
         }
-        // else {
-        //     auto mediaName = Util::PathFromString(projectState.mediaPath).filename();
-        //     auto projectDir = Util::PathFromString(LoadedProject->Path()).parent_path();
-        //     auto testPath = (projectDir / mediaName).u8string();
-        //     if (Util::FileExists(testPath)) {
-        //         projectState.mediaPath = testPath;
-        //         LoadedProject->Save(true);
-        //         player->OpenVideo(testPath);
-        //     }
-        //     else {
-        //         Util::MessageBoxAlert(TR(FAILED_TO_FIND_VIDEO),
-        //             TR(FAILED_TO_FIND_VIDEO_MSG));
-        //         pickDifferentMedia();
-        //     }
-        // }
+        // FIXME
+        //else {
+        //    auto mediaName = Util::PathFromString(projectState.mediaPath).filename();
+        //    auto projectDir = Util::PathFromString(LoadedProject->Path()).parent_path();
+        //    auto testPath = (projectDir / mediaName).u8string();
+        //    if (Util::FileExists(testPath)) {
+        //        projectState.mediaPath = testPath;
+        //        player->OpenVideo(testPath);
+        //    }
+        //    else {
+        //        Util::MessageBoxAlert(TR(FAILED_TO_FIND_VIDEO),
+        //            TR(FAILED_TO_FIND_VIDEO_MSG));
+        //        pickDifferentMedia();
+        //    }
+        //}
     }
     updateTitle();
 
@@ -2099,16 +2067,13 @@ void OpenFunscripter::saveProject() noexcept
 void OpenFunscripter::quickExport() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    LoadedProject->Save(true);
-    // FIXME
-    // LoadedProject->ExportFunscripts();
+    LoadedProject->ExportFunscripts();
 }
 
 void OpenFunscripter::exportClips() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     const auto& ofsState = OpenFunscripterState::State(stateHandle);
-    LoadedProject->Save(true);
     Util::OpenDirectoryDialog(TR(CHOOSE_OUTPUT_DIR), ofsState.lastPath,
         [&](auto& result) {
             if (result.files.size() > 0) {
@@ -2127,9 +2092,7 @@ bool OpenFunscripter::closeProject(bool closeWithUnsavedChanges) noexcept
     }
     else {
         ActiveFunscriptIdx = 0;
-        // FIXME: ideally project shouldn't have a clear method
-        // FIXME: The UndoSystem currently holds a pointer to the funscript vector
-        // LoadedProject->Clear();
+        LoadedProject = std::make_unique<OFS_Project>();
         player->CloseVideo();
         playerControls.videoPreview->closeVideo();
         updateTitle();
@@ -2142,13 +2105,12 @@ void OpenFunscripter::pickDifferentMedia() noexcept
     if (LoadedProject->IsValid()) {
         auto& projectState = LoadedProject->State();
         Util::OpenFileDialog(
-            TR(PICK_DIFFERENT_MEDIA), projectState.mediaPath,
+            TR(PICK_DIFFERENT_MEDIA), LoadedProject->MediaPath(),
             [this](auto& result) {
                 auto& projectState = LoadedProject->State();
                 if (!result.files.empty() && Util::FileExists(result.files[0])) {
-                    projectState.mediaPath = result.files[0];
-                    LoadedProject->Save(true);
-                    player->OpenVideo(projectState.mediaPath);
+                    projectState.relativeMediaPath = LoadedProject->MakePathRelative(result.files[0]);
+                    player->OpenVideo(LoadedProject->MediaPath());
                 }
             },
             false);
@@ -2405,8 +2367,7 @@ void OpenFunscripter::saveActiveScriptAs()
     Util::SaveFileDialog(TR(SAVE), path.u8string(),
         [this](auto& result) {
             if (result.files.size() > 0) {
-                // FIXME
-                // LoadedProject->ExportFunscript(result.files[0], ActiveFunscriptIdx);
+                LoadedProject->ExportFunscript(result.files[0], ActiveFunscriptIdx);
                 std::filesystem::path dir = Util::PathFromString(result.files[0]);
                 dir.remove_filename();
                 auto& ofsState = OpenFunscripterState::State(stateHandle);
@@ -2445,7 +2406,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                             openFile(file);
                         }
                     },
-                    false, { "*" OFS_PROJECT_EXT }, "Project (" OFS_PROJECT_EXT ")");
+                    false /*, { "*" OFS_PROJECT_EXT, "*.*" }, "Project (" OFS_PROJECT_EXT ")"*/);
             }
             if (LoadedProject->IsValid() && ImGui::MenuItem(TR(CLOSE_PROJECT), NULL, false, LoadedProject->IsValid())) {
                 closeWithoutSavingDialog([]() {});
@@ -2488,8 +2449,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         Util::SaveFileDialog(TR(EXPORT_MENU), savePath.u8string(),
                             [this](auto& result) {
                                 if (result.files.size() > 0) {
-                                    // FIXME
-                                    // LoadedProject->ExportFunscript(result.files[0], ActiveFunscriptIdx);
+                                    LoadedProject->ExportFunscript(result.files[0], ActiveFunscriptIdx);
                                     std::filesystem::path dir = Util::PathFromString(result.files[0]);
                                     dir.remove_filename();
                                     auto& ofsState = OpenFunscripterState::State(stateHandle);
@@ -2549,8 +2509,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         }
 
                         if (!fileAlreadyLoaded(newScriptPath)) {
-                            // FIXME
-                            // LoadedProject->AddFunscript(newScriptPath);
+                            LoadedProject->AddFunscript(newScriptPath);
                         }
                     }
                 };
@@ -2567,8 +2526,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                             if (result.files.size() > 0) {
                                 auto app = OpenFunscripter::ptr;
                                 if (!fileAlreadyLoaded(result.files[0])) {
-                                    // FIXME
-                                    // app->LoadedProject->AddFunscript(result.files[0]);
+                                    app->LoadedProject->AddFunscript(result.files[0]);
                                 }
                             }
                         },
@@ -2582,8 +2540,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                                 for (auto& scriptPath : result.files) {
                                     auto app = OpenFunscripter::ptr;
                                     if (!fileAlreadyLoaded(scriptPath)) {
-                                        // FIXME
-                                        // app->LoadedProject->AddFunscript(scriptPath);
+                                        app->LoadedProject->AddFunscript(scriptPath);
                                     }
                                 }
                             }
@@ -2604,8 +2561,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         TR(REMOVE_SCRIPT_CONFIRM_MSG),
                         [this, unloadIndex](Util::YesNoCancel result) {
                             if (result == Util::YesNoCancel::Yes) {
-                                // FIXME
-                                // LoadedProject->RemoveFunscript(unloadIndex);
+                                LoadedProject->RemoveFunscript(unloadIndex);
                                 if (ActiveFunscriptIdx > 0) {
                                     ActiveFunscriptIdx--;
                                 }

@@ -135,83 +135,93 @@ void ScriptTimeline::handleSelectionScrolling(const OverlayDrawingCtx& ctx) noex
 	}
 }
 
-void ScriptTimeline::handleTimelineHover(OverlayDrawingCtx& ctx) noexcept
+void ScriptTimeline::handleTimelineHover(const OverlayDrawingCtx& ctx) noexcept
 {
-	if(ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-	{
-		if (ctx.hoveredScriptIdx != ctx.activeScriptIdx) {
-			EventSystem::PushEvent(ScriptTimelineEvents::ActiveScriptChanged, (void*)(intptr_t)ctx.hoveredScriptIdx);
-			ctx.activeScriptIdx = ctx.hoveredScriptIdx;
-		}
-	}
-	else if(ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
-	{
-		ctx.script->ClearSelection();
-	}
-	else if(IsSelecting)
+	if(IsSelecting)
 	{
 		// Update selection
 		relSel2 = (ImGui::GetMousePos().x - ctx.canvasPos.x) / ctx.canvasSize.x;
 		relSel2 = Util::Clamp(relSel2, 0.f, 1.f);
 	}
+	else if(ImGui::IsMouseDragging(ImGuiMouseButton_Middle))
+	{
+		// middle mouse panning
+		auto delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Middle);
+		float timeDelta = (-delta.x / ctx.canvasSize.x) * ctx.visibleTime;
+		float seekToTime = (ctx.offsetTime + (ctx.visibleTime/2.f)) + timeDelta;
+		EventSystem::PushEvent(ScriptTimelineEvents::SetTimePosition, (void*)(*(intptr_t*)&seekToTime));
+		ImGui::ResetMouseDragDelta(ImGuiMouseButton_Middle);
+	}
 }
 
-void ScriptTimeline::handleActionClicks(const OverlayDrawingCtx& ctx) noexcept
+bool ScriptTimeline::handleTimelineClicks(const OverlayDrawingCtx& ctx) noexcept
 {
 	bool moveOrAddPointModifer = KeybindingSystem::PassiveModifier("move_or_add_point_modifier");
 	auto mousePos = ImGui::GetMousePos();
 	auto startIt = ctx.script->Actions().begin() + ctx.actionFromIdx;
 	auto endIt = ctx.script->Actions().begin() + ctx.actionToIdx;
 
-	bool pointWasClicked = false;
-	for (; startIt != endIt; ++startIt) 
+	auto leftMouseClicked = ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+	if(ctx.activeScriptIdx == ctx.scriptIdx && leftMouseClicked) 
 	{
-		auto point = BaseOverlay::GetPointForAction(ctx, *startIt);
-		const ImVec2 size(BaseOverlay::PointSize, BaseOverlay::PointSize);
-		ImRect rect(point - size, point + size);
-		bool pointClicked = rect.Contains(mousePos);
-		pointWasClicked |= pointClicked;
-		
-		if (!moveOrAddPointModifer && pointClicked) {
-			ActionClickEventData = *startIt;
-			EventSystem::PushEvent(ScriptTimelineEvents::FunscriptActionClicked, &ActionClickEventData);
-			break;
-		}
-		else if(moveOrAddPointModifer && !IsMoving && pointClicked)
+		for (; startIt != endIt; ++startIt) 
 		{
-			// Start dragging action
-			ctx.script->ClearSelection();
-			ctx.script->SetSelected(*startIt, true);
-			IsMoving = true;
-			EventSystem::PushEvent(ScriptTimelineEvents::FunscriptActionMoveStarted, &ActionMovedEventData);
-			break;
+			auto point = BaseOverlay::GetPointForAction(ctx, *startIt);
+			const ImVec2 size(BaseOverlay::PointSize, BaseOverlay::PointSize);
+			ImRect rect(point - size, point + size);
+			bool pointClicked = rect.Contains(mousePos);
+			
+			if (!moveOrAddPointModifer && pointClicked) {
+				ActionClickEventData = *startIt;
+				EventSystem::PushEvent(ScriptTimelineEvents::FunscriptActionClicked, &ActionClickEventData);
+				return true;
+			}
+			else if(moveOrAddPointModifer && IsMovingIdx < 0 && pointClicked)
+			{
+				// Start dragging action
+				ctx.script->ClearSelection();
+				ctx.script->SetSelected(*startIt, true);
+				IsMovingIdx = ctx.scriptIdx;
+				EventSystem::PushEvent(ScriptTimelineEvents::FunscriptActionMoveStarted, &ActionMovedEventData);
+				return true;
+			}
 		}
 	}
 
-	if(!pointWasClicked)
+	if(moveOrAddPointModifer && leftMouseClicked)
 	{
-		if(moveOrAddPointModifer)
-		{
-			auto newAction = getActionForPoint(ctx, mousePos);
-			ActionCreatedEventData = newAction;
-			EventSystem::PushEvent(ScriptTimelineEvents::FunscriptActionCreated, &ActionCreatedEventData);
-		}
-		else if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-		{
-			auto mousePos = ImGui::GetMousePos();
-			float relX = (mousePos.x - ctx.canvasPos.x) / ctx.canvasSize.x;
-			float seekToTime = ctx.offsetTime + (visibleTime * relX);
-			EventSystem::PushEvent(ScriptTimelineEvents::SetTimePosition, (void*)(*(intptr_t*)&seekToTime));
-		}
-		else 
-		{
-			// Begin selection
-			IsSelecting = true;
-			float relSel1 = (mousePos.x - ctx.canvasPos.x) / ctx.canvasSize.x;
-			relSel2 = relSel1;
-			absSel1 = ctx.offsetTime + (visibleTime * relSel1);
-		}
+		auto newAction = getActionForPoint(ctx, mousePos);
+		ActionCreatedEventData = newAction;
+		EventSystem::PushEvent(ScriptTimelineEvents::FunscriptActionCreated, &ActionCreatedEventData);
+		return true;
 	}
+	else if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+	{
+		auto mousePos = ImGui::GetMousePos();
+		float relX = (mousePos.x - ctx.canvasPos.x) / ctx.canvasSize.x;
+		float seekToTime = ctx.offsetTime + (visibleTime * relX);
+		EventSystem::PushEvent(ScriptTimelineEvents::SetTimePosition, (void*)(*(intptr_t*)&seekToTime));
+		return true;
+	}
+	else if(ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
+	{
+		ctx.script->ClearSelection();
+		return true;
+	}
+	else if (ctx.hoveredScriptIdx != ctx.activeScriptIdx && leftMouseClicked) {
+		EventSystem::PushEvent(ScriptTimelineEvents::ActiveScriptChanged, (void*)(intptr_t)ctx.hoveredScriptIdx);
+		return true;
+	}
+	else if(leftMouseClicked)
+	{
+		// Begin selection
+		IsSelecting = true;
+		float relSel1 = (mousePos.x - ctx.canvasPos.x) / ctx.canvasSize.x;
+		relSel2 = relSel1;
+		absSel1 = ctx.offsetTime + (visibleTime * relSel1);
+		return true;
+	}
+	return false;
 }
 
 void ScriptTimeline::ShowScriptPositions(
@@ -262,7 +272,7 @@ void ScriptTimeline::ShowScriptPositions(
 			continue;
 		}
 
-		drawingCtx.drawList->PushClipRect(itemBB.Min - ImVec2(0.f, 1.f), itemBB.Max + ImVec2(0.f, 1.f));
+		drawingCtx.drawList->PushClipRect(itemBB.Min - ImVec2(3.f, 3.f), itemBB.Max + ImVec2(3.f, 3.f));
 
 		bool ItemIsHovered = ImGui::IsItemHovered();
 		if (ItemIsHovered) {
@@ -328,6 +338,20 @@ void ScriptTimeline::ShowScriptPositions(
 			drawingCtx.selectionToIdx = 0;
 		}
 
+		// border
+		constexpr float borderThicknes = 1.f;
+		uint32_t borderColor = IsActivated ? IM_COL32(0, 180, 0, 255) : IM_COL32(255, 255, 255, 255);
+		if (script->HasSelection()) { 
+			borderColor = ImGui::GetColorU32(ImGuiCol_SliderGrabActive); 
+		}
+		drawingCtx.drawList->AddRect(
+			drawingCtx.canvasPos - ImVec2(2, 2),
+			ImVec2(drawingCtx.canvasPos.x + drawingCtx.canvasSize.x, drawingCtx.canvasPos.y + drawingCtx.canvasSize.y) + ImVec2(2, 2),
+			borderColor,
+			0.f, ImDrawFlags_None,
+			borderThicknes
+		);
+
 		// draws mode specific things in the timeline
 		// by default it draws the frame and time dividers
 		// DrawAudioWaveform called in scripting mode to control the draw order. spaghetti
@@ -335,20 +359,6 @@ void ScriptTimeline::ShowScriptPositions(
 			OFS_PROFILE("overlay->DrawScriptPositionContent(drawingCtx)");
 			overlay->DrawScriptPositionContent(drawingCtx);
 		}
-
-		// border
-		constexpr float borderThicknes = 1.f;
-		uint32_t borderColor = IsActivated ? IM_COL32(0, 180, 0, 255) : IM_COL32(255, 255, 255, 255);
-		if (script->HasSelection()) { 
-			borderColor = ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_SliderGrabActive]); 
-		}
-		drawingCtx.drawList->AddRect(
-			drawingCtx.canvasPos,
-			ImVec2(drawingCtx.canvasPos.x + drawingCtx.canvasSize.x, drawingCtx.canvasPos.y + drawingCtx.canvasSize.y),
-			borderColor,
-			0.f, ImDrawFlags_None,
-			borderThicknes
-		);
 
 		// current position indicator -> |
 		drawingCtx.drawList->AddTriangleFilled(
@@ -386,11 +396,8 @@ void ScriptTimeline::ShowScriptPositions(
 
 
 		// Handle action clicks
-		if(ItemIsHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-		{
-			handleActionClicks(drawingCtx);
-		}
-		else if(IsMoving)
+		if(ItemIsHovered && handleTimelineClicks(drawingCtx)) { /* click was handled */ }
+		else if(drawingCtx.scriptIdx == IsMovingIdx)
 		{
 			if(ImGui::IsMouseDragging(ImGuiMouseButton_Left, 0.f)) 
 			{
@@ -403,7 +410,7 @@ void ScriptTimeline::ShowScriptPositions(
 			else
 			{
 				// Stop dragging
-				IsMoving = false;
+				IsMovingIdx = -1;
 			}
 		}
 		else if(IsSelecting && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
@@ -412,7 +419,7 @@ void ScriptTimeline::ShowScriptPositions(
 			bool clearSelection = !(SDL_GetModState() & KMOD_CTRL);
 			updateSelection(drawingCtx, clearSelection);
 		}
-		else if(!IsMoving && ItemIsHovered)
+		else if(IsMovingIdx < 0 && ItemIsHovered)
 		{
 			handleTimelineHover(drawingCtx);
 		}

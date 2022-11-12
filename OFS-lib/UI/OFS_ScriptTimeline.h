@@ -46,8 +46,8 @@ public:
 	float relSel2 = 0.f; // relative selection end
 
 	bool IsSelecting = false;
-	bool IsMoving = false;
 	bool PositionsItemHovered = false;
+	int32_t IsMovingIdx = -1;
 
 	ScriptTimelineEvents::ActionClickedEventArgs ActionClickEventData;
 	ScriptTimelineEvents::ActionMovedEventArgs ActionMovedEventData;
@@ -58,8 +58,8 @@ private:
 	void videoLoaded(SDL_Event& ev) noexcept;
 
 	void handleSelectionScrolling(const OverlayDrawingCtx& ctx) noexcept;
-	void handleTimelineHover(OverlayDrawingCtx& ctx) noexcept;
-	void handleActionClicks(const OverlayDrawingCtx& ctx) noexcept;
+	void handleTimelineHover(const OverlayDrawingCtx& ctx) noexcept;
+	bool handleTimelineClicks(const OverlayDrawingCtx& ctx) noexcept;
 
 	void updateSelection(const OverlayDrawingCtx& ctx, bool clear) noexcept;
 	void FfmpegAudioProcessingFinished(SDL_Event& ev) noexcept;

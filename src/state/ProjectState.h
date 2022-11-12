@@ -36,7 +36,7 @@ struct ProjectState
     static constexpr auto StateName = "ProjectState";
 
     Funscript::Metadata metadata;
-    std::string mediaPath;
+    std::string relativeMediaPath;
     float activeTimer = 0.f;
     float lastPlayerPosition = 0.f;
     bool nudgeMetadata = true;
@@ -51,7 +51,7 @@ struct ProjectState
 
 REFL_TYPE(ProjectState)
     REFL_FIELD(metadata)
-    REFL_FIELD(mediaPath)
+    REFL_FIELD(relativeMediaPath)
     REFL_FIELD(activeTimer)
     REFL_FIELD(lastPlayerPosition)
     REFL_FIELD(nudgeMetadata)
