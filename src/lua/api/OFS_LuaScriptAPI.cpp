@@ -44,7 +44,7 @@ std::unique_ptr<LuaFunscript> OFS_ScriptAPI::Script(lua_Integer idx) noexcept
     if(idx < 0 || idx >= app->LoadedFunscripts().size()) {
         return nullptr;
     }
-    return std::make_unique<LuaFunscript>(app->LoadedFunscripts()[idx]);
+    return std::make_unique<LuaFunscript>(idx, app->LoadedFunscripts()[idx]);
 }
 
 std::unique_ptr<LuaFunscript> OFS_ScriptAPI::Clipboard() noexcept
@@ -64,8 +64,8 @@ bool OFS_ScriptAPI::Undo() noexcept
     return undo;
 }
 
-LuaFunscript::LuaFunscript(std::weak_ptr<Funscript> script) noexcept
-    : script(script)
+LuaFunscript::LuaFunscript(int32_t scriptIdx, std::weak_ptr<Funscript> script) noexcept
+    : script(script), scriptIdx(scriptIdx)
 {
     EventSystem::RunOnMain([&](void*) {
         this->TakeSnapshot();
@@ -109,9 +109,11 @@ void LuaFunscript::Commit(sol::this_state L) noexcept
 
 const char* LuaFunscript::Path() const noexcept
 {
-    auto ref = script.lock();
-    if(ref) {
-        return ref->Path().c_str();
+    auto app = OpenFunscripter::ptr;
+    if(scriptIdx > 0 && scriptIdx < app->LoadedFunscripts().size())
+    {
+        auto relPath = app->LoadedFunscripts()[scriptIdx]->RelativePath();
+        return app->LoadedProject->MakePathAbsolute(relPath).c_str();
     }
     return nullptr;
 }

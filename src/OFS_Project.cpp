@@ -170,15 +170,21 @@ bool OFS_Project::AddFunscript(const std::string& path) noexcept
 {
     bool loadedScript = false;
     auto script = std::make_shared<Funscript>();
-    if (script->open(path)) {
+    if (script->Open(path)) {
         // Add existing script to project
         script = Funscripts.emplace_back(std::move(script));
+        script->UpdateRelativePath(MakePathRelative(path));
+        if (Funscripts.size() == 1) {
+            // Initialize project metadata using the first funscript
+            auto& projectState = State();
+            projectState.metadata = script->LocalMetadata;
+        }
         loadedScript = true;
     }
     else {
         // Add empty script to project
         script = std::make_shared<Funscript>();
-        script->UpdatePath(path);
+        script->UpdateRelativePath(MakePathRelative(path));
         script = Funscripts.emplace_back(std::move(script));
     }
     OFS_DynFontAtlas::AddText(script->Title.c_str());
@@ -258,12 +264,12 @@ void OFS_Project::ShowProjectWindow(bool* open) noexcept
         for (auto& script : Funscripts) {
             if (ImGui::Button(script->Title.c_str(), ImVec2(-1.f, 0.f))) {
                 Util::SaveFileDialog(TR(CHANGE_DEFAULT_LOCATION),
-                    script->Path(),
+                    MakePathAbsolute(script->RelativePath()),
                     [&](auto result) {
                         if (!result.files.empty()) {
                             auto newPath = Util::PathFromString(result.files[0]);
                             if (newPath.extension().u8string() == ".funscript") {
-                                script->UpdatePath(newPath.u8string());
+                                script->UpdateRelativePath(MakePathRelative(newPath.u8string()));
                             }
                         }
                     });
@@ -279,10 +285,10 @@ void OFS_Project::ExportFunscripts() noexcept
 {
     auto& state = State();
     for (auto& script : Funscripts) {
-        FUN_ASSERT(!script->Path().empty(), "path is empty");
-        if (!script->Path().empty()) {
+        FUN_ASSERT(!script->RelativePath().empty(), "path is empty");
+        if (!script->RelativePath().empty()) {
             script->LocalMetadata = state.metadata;
-            script->save(script->Path());
+            script->Save(MakePathAbsolute(script->RelativePath()));
         }
     }
 }
@@ -292,25 +298,31 @@ void OFS_Project::ExportFunscript(const std::string& outputPath, int32_t idx) no
     FUN_ASSERT(idx >= 0 && idx < Funscripts.size(), "out of bounds");
     auto& state = State();
     Funscripts[idx]->LocalMetadata = state.metadata;
-    Funscripts[idx]->save(outputPath);
+    Funscripts[idx]->Save(outputPath);
+    Funscripts[idx]->UpdateRelativePath(MakePathRelative(outputPath));
 }
 
 std::string OFS_Project::MakePathAbsolute(const std::string& relPathStr) const noexcept
 {
     auto relPath = Util::PathFromString(relPathStr);
     FUN_ASSERT(relPath.is_relative(), "Path isn't relative");
-    if(relPath.is_absolute())
-    {
+    if (relPath.is_absolute()) {
         LOGF_ERROR("Path was already absolute. \"%s\"", relPathStr.c_str());
         return relPathStr;
     }
-    else 
-    {
+    else {
         auto projectDir = Util::PathFromString(lastPath);
-        projectDir.replace_filename("");
-        auto absPath = (projectDir / relPath).u8string();
-        LOGF_INFO("Convert relative path \"%s\" to absolute \"%s\"", relPath.u8string().c_str(), absPath.c_str());
-        return absPath;
+        projectDir.remove_filename();
+        std::error_code ec;
+        auto absPath = std::filesystem::absolute(projectDir / relPath, ec);
+        if (!ec) {
+            auto absPathStr = absPath.u8string();
+            LOGF_INFO("Convert relative path \"%s\" to absolute \"%s\"", relPath.u8string().c_str(), absPathStr.c_str());
+            return absPathStr;
+        }
+        FUN_ASSERT(false, "This must not happen.");
+        LOG_ERROR("Failed to convert path to absolute path.");
+        return "";
     }
 }
 

@@ -12,7 +12,7 @@
 #include <limits>
 #include <set>
 
-Funscript::Funscript() 
+Funscript::Funscript() noexcept
 {
 	NotifyActionsChanged(false);
 	saveMutex = SDL_CreateMutex();
@@ -20,7 +20,7 @@ Funscript::Funscript()
 	editTime = std::chrono::system_clock::now();
 }
 
-Funscript::~Funscript()
+Funscript::~Funscript() noexcept
 {
 	SDL_DestroyMutex(saveMutex);
 }
@@ -715,6 +715,68 @@ void Funscript::InvertSelection() noexcept
 		AddAction(act);
 	}
 	data.Selection = copySelection;
+}
+
+bool Funscript::Open(const std::string& file) noexcept
+{
+	OFS_PROFILE(__FUNCTION__);
+	scriptOpened = false;
+
+	{
+		nlohmann::json json;
+		auto jsonText = Util::ReadFileString(file.c_str());
+		if(!jsonText.empty()) {
+			json = Util::ParseJson(jsonText, &scriptOpened);
+		}
+
+		if (!scriptOpened || !json.is_object() || !json["actions"].is_array()) {
+			LOGF_ERROR("Failed to parse funscript. \"%s\"", file.c_str());
+			return false;
+		}
+
+		Json = std::move(json);
+	}
+	auto actions = Json["actions"];
+	data.Actions.clear();
+
+	for (auto& action : actions) {
+		float time = action["at"].get<double>() / 1000.0;
+		int32_t pos = action["pos"];
+		if (time >= 0.f) {
+			data.Actions.emplace(time, pos);
+		}
+	}
+
+	loadMetadata();
+
+	NotifyActionsChanged(false);
+
+	Json.erase("version");
+	Json.erase("inverted");
+	Json.erase("range");
+	Json.erase("OpenFunscripter");
+	Json.erase("metadata");
+	return true;
+}
+
+void Funscript::Save(const std::string& path) noexcept
+{
+	OFS_PROFILE(__FUNCTION__);
+	saveMetadata();
+
+	auto& actions = Json["actions"];
+	actions.clear();
+
+	// make sure actions are sorted
+	sortActions(data.Actions);
+
+	//if (override_location) {
+	//	CurrentPath = path;
+	//	unsavedEdits = false;
+	//}
+	unsavedEdits = false;
+	auto copyActions = data.Actions;
+	startSaveThread(path, std::move(copyActions), std::move(Json));
 }
 
 int32_t FunscriptEvents::FunscriptActionsChangedEvent = 0;

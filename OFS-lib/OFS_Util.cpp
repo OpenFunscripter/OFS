@@ -247,7 +247,7 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
         auto data = (SaveFileDialogThreadData*)ctx;
 
         auto dialogPath = Util::PathFromString(data->path);
-        dialogPath.replace_filename("");
+        dialogPath.remove_filename();
         std::error_code ec;
         if (!std::filesystem::exists(dialogPath, ec)) {
             data->path = "";

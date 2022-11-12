@@ -59,7 +59,7 @@ public:
 		s.ext(*this, bitsery::ext::Growable{},
 			[](S& s, Funscript& o) {
 				s.container(o.data.Actions, std::numeric_limits<uint32_t>::max());
-				s.text1b(o.CurrentPath, o.CurrentPath.max_size());
+				s.text1b(o.currentPathRelative, o.currentPathRelative.max_size());
 				s.text1b(o.Title, o.Title.max_size());
 
 				// this code can be deleted after a couple releases
@@ -176,10 +176,10 @@ private:
 	void saveMetadata() noexcept;
 
 	void startSaveThread(const std::string& path, FunscriptArray&& actions, nlohmann::json&& json) noexcept;	
-	std::string CurrentPath;
+	std::string currentPathRelative;
 public:
-	Funscript();
-	~Funscript();
+	Funscript() noexcept;
+	~Funscript() noexcept;
 
 	inline void NotifyActionsChanged(bool isEdit) noexcept {
 		funscriptChanged = true;
@@ -194,9 +194,9 @@ public:
 	std::string Title;
 	bool Enabled = true;
 
-	inline void UpdatePath(const std::string& path) noexcept {
-		CurrentPath = path;
-		Title = Util::PathFromString(CurrentPath)
+	inline void UpdateRelativePath(const std::string& path) noexcept {
+		currentPathRelative = path;
+		Title = Util::PathFromString(currentPathRelative)
 			.replace_extension("")
 			.filename()
 			.u8string();
@@ -204,15 +204,14 @@ public:
 
 	inline void SetSavedFromOutside() noexcept { unsavedEdits = false;	}
 
-	inline const std::string& Path() const noexcept { return CurrentPath; }
+	inline const std::string& RelativePath() const noexcept { return currentPathRelative; }
 
 	inline void rollback(FunscriptData&& data) noexcept { this->data = std::move(data); NotifyActionsChanged(true); }
 	inline void rollback(const FunscriptData& data) noexcept { this->data = data; NotifyActionsChanged(true); }
 	void update() noexcept;
 
-	bool open(const std::string& file);
-	void save() noexcept { save(CurrentPath, true); }
-	void save(const std::string& path, bool override_location = true);
+	bool Open(const std::string& file) noexcept;
+	void Save(const std::string& path) noexcept;
 	
 	const FunscriptData& Data() const noexcept { return data; }
 	const auto& Selection() const noexcept { return data.Selection; }
@@ -282,69 +281,6 @@ public:
 	}
 };
 
-inline bool Funscript::open(const std::string& file)
-{
-	OFS_PROFILE(__FUNCTION__);
-	UpdatePath(file);
-	scriptOpened = false;
-
-	{
-		nlohmann::json json;
-		auto jsonText = Util::ReadFileString(file.c_str());
-		if(!jsonText.empty()) {
-			json = Util::ParseJson(jsonText, &scriptOpened);
-		}
-
-		if (!scriptOpened || !json.is_object() || !json["actions"].is_array()) {
-			LOGF_ERROR("Failed to parse funscript. \"%s\"", file.c_str());
-			return false;
-		}
-
-		Json = std::move(json);
-	}
-	auto actions = Json["actions"];
-	data.Actions.clear();
-
-	for (auto& action : actions) {
-		float time = action["at"].get<double>() / 1000.0;
-		int32_t pos = action["pos"];
-		if (time >= 0.f) {
-			data.Actions.emplace(time, pos);
-		}
-	}
-
-	loadMetadata();
-
-	NotifyActionsChanged(false);
-
-	Json.erase("version");
-	Json.erase("inverted");
-	Json.erase("range");
-	Json.erase("OpenFunscripter");
-	Json.erase("metadata");
-	return true;
-}
-
-inline void Funscript::save(const std::string& path, bool override_location)
-{
-	OFS_PROFILE(__FUNCTION__);
-	saveMetadata();
-
-	auto& actions = Json["actions"];
-	actions.clear();
-
-	// make sure actions are sorted
-	sortActions(data.Actions);
-
-	if (override_location) {
-		CurrentPath = path;
-		unsavedEdits = false;
-	}
-
-	auto copyActions = data.Actions;
-	startSaveThread(path, std::move(copyActions), std::move(Json));
-}
-
 REFL_TYPE(Funscript::Metadata)
 	REFL_FIELD(type)
 	REFL_FIELD(title)
@@ -358,4 +294,3 @@ REFL_TYPE(Funscript::Metadata)
 	REFL_FIELD(notes)
 	REFL_FIELD(duration)
 REFL_END
-

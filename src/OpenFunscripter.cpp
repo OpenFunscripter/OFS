@@ -35,16 +35,16 @@
 // TODO: OFS_ScriptTimeline selections cause alot of unnecessary overdraw
 
 OpenFunscripter* OpenFunscripter::ptr = nullptr;
-constexpr const char* GlslVersion = "#version 300 es";
+static constexpr const char* GlslVersion = "#version 300 es";
 
 static ImGuiID MainDockspaceID;
-constexpr const char* StatisticsWindowId = "###STATISTICS";
-constexpr const char* ActionEditorWindowId = "###ACTION_EDITOR";
+static constexpr const char* StatisticsWindowId = "###STATISTICS";
+static constexpr const char* ActionEditorWindowId = "###ACTION_EDITOR";
 
-constexpr int DefaultWidth = 1920;
-constexpr int DefaultHeight = 1080;
+static constexpr int DefaultWidth = 1920;
+static constexpr int DefaultHeight = 1080;
 
-constexpr int AutoBackupIntervalSeconds = 60;
+static constexpr int AutoBackupIntervalSeconds = 60;
 
 bool OpenFunscripter::imguiSetup() noexcept
 {
@@ -2001,7 +2001,7 @@ void OpenFunscripter::initProject() noexcept
             player->OpenVideo(LoadedProject->MediaPath());
         }
         // FIXME
-        //else {
+        // else {
         //    auto mediaName = Util::PathFromString(projectState.mediaPath).filename();
         //    auto projectDir = Util::PathFromString(LoadedProject->Path()).parent_path();
         //    auto testPath = (projectDir / mediaName).u8string();
@@ -2019,7 +2019,7 @@ void OpenFunscripter::initProject() noexcept
     updateTitle();
 
     auto lastPath = Util::PathFromString(LoadedProject->Path());
-    lastPath.replace_filename("");
+    lastPath.remove_filename();
     lastPath /= "";
 
     auto& ofsState = OpenFunscripterState::State(stateHandle);
@@ -2362,13 +2362,12 @@ void OpenFunscripter::repeatLastStroke() noexcept
 
 void OpenFunscripter::saveActiveScriptAs()
 {
-    std::filesystem::path path = Util::PathFromString(ActiveFunscript()->Path());
-    path.make_preferred();
-    Util::SaveFileDialog(TR(SAVE), path.u8string(),
+    Util::SaveFileDialog(TR(SAVE),
+        LoadedProject->MakePathAbsolute(ActiveFunscript()->RelativePath()),
         [this](auto& result) {
             if (result.files.size() > 0) {
                 LoadedProject->ExportFunscript(result.files[0], ActiveFunscriptIdx);
-                std::filesystem::path dir = Util::PathFromString(result.files[0]);
+                auto dir = Util::PathFromString(result.files[0]);
                 dir.remove_filename();
                 auto& ofsState = OpenFunscripterState::State(stateHandle);
                 ofsState.lastPath = dir.u8string();
@@ -2397,9 +2396,9 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
         auto region = ImGui::GetContentRegionAvail();
         auto& ofsState = OpenFunscripterState::State(stateHandle);
         if (ImGui::BeginMenu(TR_ID("FILE", Tr::FILE))) {
-            if (ImGui::MenuItem("Open...")) {
+            if (ImGui::MenuItem(TR(GENERIC_OPEN))) {
                 Util::OpenFileDialog(
-                    "Open...", ofsState.lastPath,
+                    TR(GENERIC_OPEN), ofsState.lastPath,
                     [this](auto& result) {
                         if (result.files.size() > 0) {
                             auto& file = result.files[0];
@@ -2427,6 +2426,10 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                             break;
                         }
                     }
+                }
+                ImGui::Separator();
+                if (ImGui::MenuItem(TR(CLEAR_RECENT_FILES))) {
+                    ofsState.recentFiles.clear();
                 }
                 ImGui::EndMenu();
             }
@@ -2494,8 +2497,8 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 auto fileAlreadyLoaded = [](const std::string& path) noexcept -> bool {
                     auto app = OpenFunscripter::ptr;
                     auto it = std::find_if(app->LoadedFunscripts().begin(), app->LoadedFunscripts().end(),
-                        [file = Util::PathFromString(path)](auto& script) {
-                            return Util::PathFromString(script->Path()) == file;
+                        [filename = Util::PathFromString(path).filename().u8string()](auto& script) {
+                            return Util::PathFromString(script->RelativePath()).filename().u8string() == filename;
                         });
                     return it != app->LoadedFunscripts().end();
                 };
@@ -2503,7 +2506,8 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     if (ImGui::MenuItem(axisExt)) {
                         std::string newScriptPath;
                         {
-                            auto root = Util::PathFromString(LoadedFunscripts()[0]->Path());
+                            auto root = Util::PathFromString(
+                                LoadedProject->MakePathAbsolute(LoadedFunscripts()[0]->RelativePath()));
                             root.replace_extension(Util::Format(".%s.funscript", axisExt));
                             newScriptPath = root.u8string();
                         }
@@ -2605,7 +2609,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                             if (savePath.has_filename()) {
                                 auto& ofsState = OpenFunscripterState::State(stateHandle);
                                 saveHeatmap(result.files.front().c_str(), ofsState.heatmapSettings.defaultWidth, ofsState.heatmapSettings.defaultHeight);
-                                savePath.replace_filename("");
+                                savePath.remove_filename();
                                 ofsState.heatmapSettings.defaultPath = savePath.u8string();
                             }
                         }

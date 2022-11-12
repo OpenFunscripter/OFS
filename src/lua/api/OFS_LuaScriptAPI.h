@@ -53,11 +53,12 @@ using LuaFunscriptArray = std::vector<LuaFunscriptAction>;
 class LuaFunscript
 {
     private:
+        int32_t scriptIdx = -1;
         std::weak_ptr<Funscript> script;
         LuaFunscriptArray actions;
         std::set<uint32_t> markedIndices;
     public:
-        LuaFunscript(std::weak_ptr<Funscript> script) noexcept;
+        LuaFunscript(int32_t scriptIdx, std::weak_ptr<Funscript> script) noexcept;
         LuaFunscript(const FunscriptArray& actions) noexcept;
 
         inline void TakeSnapshot() noexcept
