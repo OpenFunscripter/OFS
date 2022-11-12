@@ -79,6 +79,25 @@ OFS_Project::~OFS_Project() noexcept
 {
 }
 
+void OFS_Project::loadNecessaryGlyphs() noexcept
+{
+    // This should be called after loading or importing.
+    auto& projectState = State();
+    auto& metadata = projectState.metadata;
+    OFS_DynFontAtlas::AddText(metadata.type);
+    OFS_DynFontAtlas::AddText(metadata.title);
+    OFS_DynFontAtlas::AddText(metadata.creator);
+    OFS_DynFontAtlas::AddText(metadata.script_url);
+    OFS_DynFontAtlas::AddText(metadata.video_url);
+    for (auto& tag : metadata.tags) OFS_DynFontAtlas::AddText(tag);
+    for (auto& performer : metadata.performers) OFS_DynFontAtlas::AddText(performer);
+    OFS_DynFontAtlas::AddText(metadata.description);
+    OFS_DynFontAtlas::AddText(metadata.license);
+    OFS_DynFontAtlas::AddText(metadata.notes);
+    for(auto& script : Funscripts) OFS_DynFontAtlas::AddText(script->Title().c_str());
+    OFS_DynFontAtlas::AddText(lastPath);
+}
+
 bool OFS_Project::Load(const std::string& path) noexcept
 {
     FUN_ASSERT(!valid, "Can't import if project is already loaded.");
@@ -105,8 +124,8 @@ bool OFS_Project::Load(const std::string& path) noexcept
     if (valid) {
         auto& projectState = State();
         OFS_Binary::Deserialize(projectState.binaryFunscriptData, *this);
-
         lastPath = path;
+        loadNecessaryGlyphs();
     }
 
     return valid;
@@ -122,6 +141,7 @@ bool OFS_Project::ImportFromFunscript(const std::string& file) noexcept
 
     if (Util::FileExists(file)) {
         Funscripts.clear();
+        // FIXME: it's missing the automatic multi-axis import
         if (!AddFunscript(file)) {
             addError("Failed to load funscript.");
             return valid;
@@ -131,6 +151,7 @@ bool OFS_Project::ImportFromFunscript(const std::string& file) noexcept
         if (FindMedia(file, &absMediaPath)) {
             projectState.relativeMediaPath = MakePathRelative(absMediaPath);
             valid = true;
+            loadNecessaryGlyphs();
         }
         else {
             addError("Failed to find media for funscript.");
@@ -162,8 +183,10 @@ bool OFS_Project::ImportFromMedia(const std::string& file) noexcept
         auto funscriptPathStr = funscriptPath.replace_extension(".funscript").u8string();
 
         Funscripts.clear();
+        // FIXME: it's missing the automatic multi-axis import
         AddFunscript(funscriptPathStr);
         valid = true;
+        loadNecessaryGlyphs();
     }
 
     return valid;
@@ -195,7 +218,6 @@ bool OFS_Project::AddFunscript(const std::string& path) noexcept
         script->UpdateRelativePath(MakePathRelative(path));
         script = Funscripts.emplace_back(std::move(script));
     }
-    OFS_DynFontAtlas::AddText(script->Title().c_str());
     return loadedScript;
 }
 

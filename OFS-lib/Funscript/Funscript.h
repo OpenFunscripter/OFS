@@ -11,9 +11,8 @@
 #include <chrono>
 
 #include "OFS_Util.h"
-#include "SDL_mutex.h"
-
 #include "FunscriptSpline.h"
+
 #include "OFS_Profiling.h"
 
 class FunscriptUndoSystem;

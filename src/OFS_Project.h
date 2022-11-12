@@ -25,7 +25,7 @@ private:
         notValidError += "\n";
         notValidError += error;
     }
-
+    void loadNecessaryGlyphs() noexcept;
 public:
     static constexpr auto Extension = OFS_PROJECT_EXT;
 
@@ -48,8 +48,8 @@ public:
 
     void Update(float delta, bool idleMode) noexcept;
     void ShowProjectWindow(bool* open) noexcept;
-
     bool HasUnsavedEdits() noexcept;
+
 
     inline const std::string& Path() const noexcept { return lastPath; }
     inline bool IsValid() const noexcept { return valid; }
@@ -63,7 +63,6 @@ public:
 
     std::string MakePathAbsolute(const std::string& relPath) const noexcept;
     std::string MakePathRelative(const std::string& absPath) const noexcept;
-
     std::string MediaPath() const noexcept;
 
     template<typename S>
