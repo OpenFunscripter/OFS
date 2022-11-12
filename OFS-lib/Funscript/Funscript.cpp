@@ -10,95 +10,40 @@
 
 #include <algorithm>
 #include <limits>
-#include <set>
 
 Funscript::Funscript() noexcept
 {
-	NotifyActionsChanged(false);
-	saveMutex = SDL_CreateMutex();
+	notifyActionsChanged(false);
 	undoSystem = std::make_unique<FunscriptUndoSystem>(this);
 	editTime = std::chrono::system_clock::now();
 }
 
 Funscript::~Funscript() noexcept
 {
-	SDL_DestroyMutex(saveMutex);
 }
 
-void Funscript::loadMetadata() noexcept
+void Funscript::loadMetadata(const nlohmann::json& metadataObj) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	if (Json.contains("metadata")) {
-		auto& meta = Json["metadata"];
-		OFS::Serializer::Deserialize(LocalMetadata, meta);
+	OFS::Serializer::Deserialize(LocalMetadata, metadataObj);
+}
+
+void Funscript::saveMetadata(nlohmann::json& outMetadataObj) noexcept
+{
+	OFS_PROFILE(__FUNCTION__);
+	OFS::Serializer::Serialize(LocalMetadata, outMetadataObj);
+}
+
+void Funscript::notifyActionsChanged(bool isEdit) noexcept
+{
+	funscriptChanged = true;
+	if (isEdit && !unsavedEdits) {
+		unsavedEdits = true;
+		editTime = std::chrono::system_clock::now();
 	}
 }
 
-void Funscript::saveMetadata() noexcept
-{
-	OFS_PROFILE(__FUNCTION__);
-	OFS::Serializer::Serialize(LocalMetadata, Json["metadata"]);
-}
-
-void Funscript::startSaveThread(const std::string& path, FunscriptArray&& actions, nlohmann::json&& json) noexcept
-{
-	OFS_PROFILE(__FUNCTION__);
-	struct SaveThreadData {
-		nlohmann::json jsonObj;
-		FunscriptArray actions;
-		std::string path;
-		SDL_mutex* mutex;
-	};
-	SaveThreadData* threadData = new SaveThreadData();
-	threadData->mutex = saveMutex;
-	threadData->path = path;
-	threadData->jsonObj = std::move(json); // give ownership to the thread
-	threadData->actions = std::move(actions);
-
-	auto thread = [](void* user) -> int {
-		SaveThreadData* data = static_cast<SaveThreadData*>(user);
-		SDL_LockMutex(data->mutex);
-
-		data->jsonObj["actions"] = nlohmann::json::array();
-		data->jsonObj["version"] = "1.0";
-		data->jsonObj["inverted"] = false;
-		data->jsonObj["range"] = 100; // I think this is mostly ignored anyway
-
-		std::set<int64_t> timestamps;
-
-		auto& actions = data->jsonObj["actions"];
-		for (auto action : data->actions) {
-			// a little validation just in case
-			if (action.atS < 0.f)
-				continue;
-				
-			int64_t ts = (int64_t)std::round(action.atS*1000.0);
-			// make sure timestamps are unique
-			if(timestamps.emplace(ts).second) { 
-				nlohmann::json actionObj = {
-					{ "at",  ts },
-					{ "pos", Util::Clamp<int32_t>(action.pos, 0, 100) }
-				};
-				actions.emplace_back(std::move(actionObj));
-			}
-	}
-
-#ifdef NDEBUG
-		auto jsonText = Util::SerializeJson(data->jsonObj);
-#else
-		auto jsonText = Util::SerializeJson(data->jsonObj, true);
-#endif
-		Util::WriteFile(data->path.c_str(), jsonText.data(), jsonText.size());
-
-		SDL_UnlockMutex(data->mutex);
-		delete data;
-		return 0;
-	};
-	auto handle = SDL_CreateThread(thread, "SaveScriptThread", threadData);
-	SDL_DetachThread(handle);
-}
-
-void Funscript::update() noexcept
+void Funscript::Update() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	if (funscriptChanged) {
@@ -153,7 +98,7 @@ void Funscript::AddMultipleActions(const FunscriptArray& actions) noexcept
 		data.Actions.emplace(action);
 	}
 	sortActions(data.Actions);
-	NotifyActionsChanged(true);
+	notifyActionsChanged(true);
 }
 
 
@@ -166,7 +111,7 @@ bool Funscript::EditAction(FunscriptAction oldAction, FunscriptAction newAction)
 		act->atS = newAction.atS;
 		act->pos = newAction.pos;
 		checkForInvalidatedActions();
-		NotifyActionsChanged(true);
+		notifyActionsChanged(true);
 		sortActions(data.Actions);
 		return true;
 	}
@@ -179,7 +124,7 @@ void Funscript::AddEditAction(FunscriptAction action, float frameTime) noexcept
 	auto close = getActionAtTime(data.Actions, action.atS, frameTime);
 	if (close != nullptr) {
 		*close = action;
-		NotifyActionsChanged(true);
+		notifyActionsChanged(true);
 		checkForInvalidatedActions();
 	}
 	else {
@@ -198,7 +143,7 @@ void Funscript::checkForInvalidatedActions() noexcept
 		
 	if (it != data.Selection.end()) {
 		data.Selection.erase(it, data.Selection.end());
-		NotifySelectionChanged();
+		notifySelectionChanged();
 	}
 }
 
@@ -208,7 +153,7 @@ void Funscript::RemoveAction(FunscriptAction action, bool checkInvalidSelection)
 	auto it = data.Actions.find(action);
 	if (it != data.Actions.end()) {
 		data.Actions.erase(it);
-		NotifyActionsChanged(true);
+		notifyActionsChanged(true);
 
 		if (checkInvalidSelection) { checkForInvalidatedActions(); }
 	}
@@ -226,7 +171,7 @@ void Funscript::RemoveActions(const FunscriptArray& removeActions) noexcept
 		});
 	data.Actions.erase(it, data.Actions.end());
 
-	NotifyActionsChanged(true);
+	notifyActionsChanged(true);
 	checkForInvalidatedActions();
 }
 
@@ -287,7 +232,7 @@ void Funscript::SetActions(const FunscriptArray& override_with) noexcept
 	//data.Actions.assign(override_with.begin(), override_with.end());
 	//sortActions(data.Actions);
 	data.Actions = override_with;
-	NotifyActionsChanged(true);
+	notifyActionsChanged(true);
 }
 
 void Funscript::RemoveActionsInInterval(float fromTime, float toTime) noexcept
@@ -300,7 +245,7 @@ void Funscript::RemoveActionsInInterval(float fromTime, float toTime) noexcept
 			}), data.Actions.end()
 	);
 	checkForInvalidatedActions();
-	NotifyActionsChanged(true);
+	notifyActionsChanged(true);
 }
 
 void Funscript::RangeExtendSelection(int32_t rangeExtend) noexcept
@@ -404,7 +349,7 @@ bool Funscript::ToggleSelection(FunscriptAction action) noexcept
 	else {
 		data.Selection.emplace(action);
 	}
-	NotifySelectionChanged();
+	notifySelectionChanged();
 	return !isSelected;
 }
 
@@ -419,7 +364,7 @@ void Funscript::SetSelected(FunscriptAction action, bool selected) noexcept
 	else if(!isSelected && selected) {
 		data.Selection.emplace(action);
 	}
-	NotifySelectionChanged();
+	notifySelectionChanged();
 }
 
 void Funscript::SelectTopActions() noexcept
@@ -438,7 +383,7 @@ void Funscript::SelectTopActions() noexcept
 		if (min1.atS != min2.atS) deselect.emplace_back(min2);
 	}
 	for (auto& act : deselect) SetSelected(act, false);
-	NotifySelectionChanged();
+	notifySelectionChanged();
 }
 
 void Funscript::SelectBottomActions() noexcept
@@ -457,7 +402,7 @@ void Funscript::SelectBottomActions() noexcept
 		if (max1.atS != max2.atS) deselect.emplace_back(max2);
 	}
 	for (auto& act : deselect) SetSelected(act, false);
-	NotifySelectionChanged();
+	notifySelectionChanged();
 }
 
 void Funscript::SelectMidActions() noexcept
@@ -478,7 +423,7 @@ void Funscript::SelectMidActions() noexcept
 		}), selectionCopy.end());
 	data.Selection = selectionCopy;
 	sortSelection();
-	NotifySelectionChanged();
+	notifySelectionChanged();
 }
 
 void Funscript::SelectTime(float fromTime, float toTime, bool clear) noexcept
@@ -497,7 +442,7 @@ void Funscript::SelectTime(float fromTime, float toTime, bool clear) noexcept
 
 	if (!clear)
 		sortSelection();
-	NotifySelectionChanged();
+	notifySelectionChanged();
 }
 
 FunscriptArray Funscript::GetSelection(float fromTime, float toTime) noexcept
@@ -525,7 +470,7 @@ void Funscript::SelectAction(FunscriptAction select) noexcept
 			// keep selection ordered for rendering purposes
 			sortSelection();
 		}
-		NotifySelectionChanged();
+		notifySelectionChanged();
 	}
 }
 
@@ -535,7 +480,7 @@ void Funscript::DeselectAction(FunscriptAction deselect) noexcept
 	auto action = GetAction(deselect);
 	if (action != nullptr)
 		SetSelected(*action, false);
-	NotifySelectionChanged();
+	notifySelectionChanged();
 }
 
 void Funscript::SelectAll() noexcept
@@ -543,7 +488,7 @@ void Funscript::SelectAll() noexcept
 	OFS_PROFILE(__FUNCTION__);
 	ClearSelection();
 	data.Selection.assign(data.Actions.begin(), data.Actions.end());
-	NotifySelectionChanged();
+	notifySelectionChanged();
 }
 
 void Funscript::RemoveSelectedActions() noexcept
@@ -559,8 +504,8 @@ void Funscript::RemoveSelectedActions() noexcept
 	}
 
 	ClearSelection();
-	NotifyActionsChanged(true);
-	NotifySelectionChanged();
+	notifyActionsChanged(true);
+	notifySelectionChanged();
 }
 
 void Funscript::moveAllActionsTime(float timeOffset)
@@ -570,7 +515,7 @@ void Funscript::moveAllActionsTime(float timeOffset)
 	for (auto& move : data.Actions) {
 		move.atS += timeOffset;
 	}
-	NotifyActionsChanged(true);
+	notifyActionsChanged(true);
 }
 
 void Funscript::moveActionsPosition(std::vector<FunscriptAction*> moving, int32_t posOffset)
@@ -581,7 +526,7 @@ void Funscript::moveActionsPosition(std::vector<FunscriptAction*> moving, int32_
 		move->pos += posOffset;
 		move->pos = Util::Clamp<int16_t>(move->pos, 0, 100);
 	}
-	NotifyActionsChanged(true);
+	notifyActionsChanged(true);
 }
 
 void Funscript::MoveSelectionTime(float timeOffset, float frameTime) noexcept
@@ -629,7 +574,7 @@ void Funscript::MoveSelectionTime(float timeOffset, float frameTime) noexcept
 	}
 	ClearSelection();
 	data.Selection = std::move(newSelection);
-	NotifyActionsChanged(true);
+	notifyActionsChanged(true);
 }
 
 void Funscript::MoveSelectionPosition(int32_t pos_offset) noexcept
@@ -660,7 +605,7 @@ void Funscript::MoveSelectionPosition(int32_t pos_offset) noexcept
 		data.Selection.emplace_back_unsorted(*move);
 	}
 	sortSelection();
-	NotifyActionsChanged(true);
+	notifyActionsChanged(true);
 }
 
 void Funscript::SetSelection(const FunscriptArray& actionsToSelect) noexcept
@@ -670,7 +615,7 @@ void Funscript::SetSelection(const FunscriptArray& actionsToSelect) noexcept
 	for(auto& action : actionsToSelect) {
 		data.Selection.emplace(action);
 	}
-	NotifySelectionChanged();
+	notifySelectionChanged();
 }
 
 bool Funscript::IsSelected(FunscriptAction action) noexcept
@@ -717,66 +662,93 @@ void Funscript::InvertSelection() noexcept
 	data.Selection = copySelection;
 }
 
-bool Funscript::Open(const std::string& file) noexcept
+void Funscript::UpdateRelativePath(const std::string& path) noexcept
+{
+	currentPathRelative = path;
+	title = Util::PathFromString(currentPathRelative)
+		.replace_extension("")
+		.filename()
+		.u8string();
+}
+
+bool Funscript::Deserialize(const nlohmann::json& json) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	scriptOpened = false;
 
-	{
-		nlohmann::json json;
-		auto jsonText = Util::ReadFileString(file.c_str());
-		if(!jsonText.empty()) {
-			json = Util::ParseJson(jsonText, &scriptOpened);
-		}
-
-		if (!scriptOpened || !json.is_object() || !json["actions"].is_array()) {
-			LOGF_ERROR("Failed to parse funscript. \"%s\"", file.c_str());
-			return false;
-		}
-
-		Json = std::move(json);
+	if (!scriptOpened || !json.is_object() || !json["actions"].is_array()) {
+		LOG_ERROR("Failed to load Funscript. No action array found.");
+		return false;
 	}
-	auto actions = Json["actions"];
+
+	auto& jsonActions = json["actions"];
 	data.Actions.clear();
 
-	for (auto& action : actions) {
+	for (auto& action : jsonActions) 
+	{
 		float time = action["at"].get<double>() / 1000.0;
 		int32_t pos = action["pos"];
 		if (time >= 0.f) {
-			data.Actions.emplace(time, pos);
+			data.Actions.emplace(time, Util::Clamp(pos, 0, 100));
 		}
 	}
 
-	loadMetadata();
+	if(json.contains("metadata"))
+	{
+		loadMetadata(json["metadata"]);
+	}
+	else
+	{
+		LocalMetadata = Funscript::Metadata();
+	}
 
-	NotifyActionsChanged(false);
-
-	Json.erase("version");
-	Json.erase("inverted");
-	Json.erase("range");
-	Json.erase("OpenFunscripter");
-	Json.erase("metadata");
+	notifyActionsChanged(false);
 	return true;
 }
 
-void Funscript::Save(const std::string& path) noexcept
+nlohmann::json Funscript::Serialize() noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	saveMetadata();
+	unsavedEdits = false;
 
-	auto& actions = Json["actions"];
-	actions.clear();
+	nlohmann::json jsonFunscript;
+	jsonFunscript["actions"] = nlohmann::json::array();
+	jsonFunscript["metadata"] = nlohmann::json::object();
+	jsonFunscript["version"] = "1.0";
+	jsonFunscript["inverted"] = false;
+	jsonFunscript["range"] = 100;
+
+	saveMetadata(jsonFunscript["metadata"]);
+
+	auto& jsonActions = jsonFunscript["actions"];
+	jsonActions.clear();
 
 	// make sure actions are sorted
 	sortActions(data.Actions);
 
-	//if (override_location) {
-	//	CurrentPath = path;
-	//	unsavedEdits = false;
-	//}
-	unsavedEdits = false;
-	auto copyActions = data.Actions;
-	startSaveThread(path, std::move(copyActions), std::move(Json));
+	int64_t lastTimestamp = -1;
+	for (auto action : data.Actions) {
+		// a little validation just in case
+		if (action.atS < 0.f)
+			continue;
+			
+		int64_t ts = (int64_t)std::round(action.atS*1000.0);
+		// make sure timestamps are unique
+		if(ts != lastTimestamp) { 
+			nlohmann::json actionObj = {
+				{ "at",  ts },
+				{ "pos", Util::Clamp<int32_t>(action.pos, 0, 100) }
+			};
+			jsonActions.emplace_back(std::move(actionObj));
+			lastTimestamp = ts;
+		}
+		else 
+		{
+			LOG_WARN("Action was ignored since it had the same millisecond timestamp as the previous one.");
+		}
+	}
+
+	return jsonFunscript;
 }
 
 int32_t FunscriptEvents::FunscriptActionsChangedEvent = 0;

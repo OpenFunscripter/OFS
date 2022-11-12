@@ -25,7 +25,7 @@ bool FunscriptUndoSystem::Undo() noexcept
 	if (UndoStack.empty()) return false;
 	OFS_PROFILE(__FUNCTION__);
 	SnapshotRedo(UndoStack.back().type); // copy data to redo
-	script->rollback(std::move(UndoStack.back().Data())); // move data
+	script->Rollback(std::move(UndoStack.back().Data())); // move data
 	UndoStack.pop_back(); // pop of the stack
 	return true;
 }
@@ -35,7 +35,7 @@ bool FunscriptUndoSystem::Redo() noexcept
 	if (RedoStack.empty()) return false;
 	OFS_PROFILE(__FUNCTION__);
 	Snapshot(RedoStack.back().type, false); // copy data to undo
-	script->rollback(std::move(RedoStack.back().Data())); // move data
+	script->Rollback(std::move(RedoStack.back().Data())); // move data
 	RedoStack.pop_back(); // pop of the stack
 	return true;
 }

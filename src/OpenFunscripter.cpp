@@ -1572,7 +1572,6 @@ void OpenFunscripter::update() noexcept
     scriptTimeline.Update();
 
     if (LoadedProject->IsValid()) {
-        ActiveFunscript()->update();
         LoadedProject->Update(delta, IdleMode);
     }
 
@@ -2442,7 +2441,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                 }
                 if (ImGui::MenuItem(FMT(ICON_SHARE " %s", TR(EXPORT_ALL)))) {
                     if (LoadedFunscripts().size() == 1) {
-                        auto savePath = Util::PathFromString(ofsState.lastPath) / (ActiveFunscript()->Title + ".funscript");
+                        auto savePath = Util::PathFromString(ofsState.lastPath) / (ActiveFunscript()->Title() + ".funscript");
                         Util::SaveFileDialog(TR(EXPORT_MENU), savePath.u8string(),
                             [this](auto& result) {
                                 if (result.files.size() > 0) {
@@ -2550,7 +2549,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::BeginMenu(TR(REMOVE), !LoadedFunscripts().empty())) {
                 int unloadIndex = -1;
                 for (int i = 0; i < LoadedFunscripts().size(); i++) {
-                    if (ImGui::MenuItem(LoadedFunscripts()[i]->Title.c_str())) {
+                    if (ImGui::MenuItem(LoadedFunscripts()[i]->Title().c_str())) {
                         unloadIndex = i;
                     }
                 }
@@ -2592,7 +2591,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.f);
             ImGui::InputInt("##height", &ofsState.heatmapSettings.defaultHeight);
             if (ImGui::MenuItem(TR(SAVE_HEATMAP))) {
-                std::string filename = ActiveFunscript()->Title + "_Heatmap.png";
+                std::string filename = ActiveFunscript()->Title() + "_Heatmap.png";
                 auto defaultPath = Util::PathFromString(ofsState.heatmapSettings.defaultPath);
                 Util::ConcatPathSafe(defaultPath, filename);
                 Util::SaveFileDialog(

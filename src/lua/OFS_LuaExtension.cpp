@@ -124,7 +124,7 @@ bool OFS_LuaExtension::Load() noexcept
 		auto app = OpenFunscripter::ptr;
 		idx -= 1;
 		if(idx >= 0 && idx < app->LoadedFunscripts().size()) {
-			return app->LoadedFunscripts()[idx]->Title.c_str();
+			return app->LoadedFunscripts()[idx]->Title().c_str();
 		}
 		return nullptr;
 	};

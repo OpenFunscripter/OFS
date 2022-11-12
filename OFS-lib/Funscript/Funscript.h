@@ -60,7 +60,7 @@ public:
 			[](S& s, Funscript& o) {
 				s.container(o.data.Actions, std::numeric_limits<uint32_t>::max());
 				s.text1b(o.currentPathRelative, o.currentPathRelative.max_size());
-				s.text1b(o.Title, o.Title.max_size());
+				s.text1b(o.title, o.title.max_size());
 
 				// this code can be deleted after a couple releases
 				// it just makes sure "Enabled" doesn't get 0 initialized
@@ -78,13 +78,14 @@ public:
 	}
 
 private:
-	nlohmann::json Json;
+	// FIXME: OFS should be able to retain metadata injected by other programs without overwriting it
+	//nlohmann::json JsonOther;
+
 	std::chrono::system_clock::time_point editTime;
 	bool scriptOpened = false;
 	bool funscriptChanged = false; // used to fire only one event every frame a change occurs
 	bool unsavedEdits = false; // used to track if the script has unsaved changes
 	bool selectionChanged = false;
-	SDL_mutex* saveMutex = nullptr;
 	FunscriptData data;
 
 	void checkForInvalidatedActions() noexcept;
@@ -158,64 +159,38 @@ private:
 	void moveAllActionsTime(float timeOffset);
 	void moveActionsPosition(std::vector<FunscriptAction*> moving, int32_t posOffset);
 	inline void sortSelection() noexcept { sortActions(data.Selection); }
-	inline void sortActions(FunscriptArray& actions) noexcept {
-		OFS_PROFILE(__FUNCTION__);
-		std::sort(actions.begin(), actions.end());
-	}
-	inline void addAction(FunscriptArray& actions, FunscriptAction newAction) noexcept {
-		OFS_PROFILE(__FUNCTION__);
-		actions.emplace(newAction);
-		NotifyActionsChanged(true);
-	}
+	inline void sortActions(FunscriptArray& actions) noexcept { std::sort(actions.begin(), actions.end()); }
+	inline void addAction(FunscriptArray& actions, FunscriptAction newAction) noexcept { actions.emplace(newAction); notifyActionsChanged(true); }
+	inline void notifySelectionChanged() noexcept { selectionChanged = true; }
 
-	inline void NotifySelectionChanged() noexcept {
-		selectionChanged = true;
-	}
+	void loadMetadata(const nlohmann::json& metadataObj) noexcept;
+	void saveMetadata(nlohmann::json& outMetadataObj) noexcept;
 
-	void loadMetadata() noexcept;
-	void saveMetadata() noexcept;
-
-	void startSaveThread(const std::string& path, FunscriptArray&& actions, nlohmann::json&& json) noexcept;	
+	void notifyActionsChanged(bool isEdit) noexcept; 
 	std::string currentPathRelative;
+	std::string title;
 public:
 	Funscript() noexcept;
 	~Funscript() noexcept;
 
-	inline void NotifyActionsChanged(bool isEdit) noexcept {
-		funscriptChanged = true;
-		if (isEdit && !unsavedEdits) {
-			unsavedEdits = true;
-			editTime = std::chrono::system_clock::now();
-		}
-	}
-
+	bool Enabled = true;
 	std::unique_ptr<FunscriptUndoSystem> undoSystem;
 
-	std::string Title;
-	bool Enabled = true;
-
-	inline void UpdateRelativePath(const std::string& path) noexcept {
-		currentPathRelative = path;
-		Title = Util::PathFromString(currentPathRelative)
-			.replace_extension("")
-			.filename()
-			.u8string();
-	}
-
+	void UpdateRelativePath(const std::string& path) noexcept;
 	inline void SetSavedFromOutside() noexcept { unsavedEdits = false;	}
-
 	inline const std::string& RelativePath() const noexcept { return currentPathRelative; }
+	inline const std::string& Title() const noexcept { return title; }
 
-	inline void rollback(FunscriptData&& data) noexcept { this->data = std::move(data); NotifyActionsChanged(true); }
-	inline void rollback(const FunscriptData& data) noexcept { this->data = data; NotifyActionsChanged(true); }
-	void update() noexcept;
+	inline void Rollback(FunscriptData&& data) noexcept { this->data = std::move(data); notifyActionsChanged(true); }
+	inline void Rollback(const FunscriptData& data) noexcept { this->data = data; notifyActionsChanged(true); }
+	void Update() noexcept;
 
-	bool Open(const std::string& file) noexcept;
-	void Save(const std::string& path) noexcept;
+	bool Deserialize(const nlohmann::json& json) noexcept;
+	nlohmann::json Serialize() noexcept;
 	
-	const FunscriptData& Data() const noexcept { return data; }
-	const auto& Selection() const noexcept { return data.Selection; }
-	const auto& Actions() const noexcept { return data.Actions; }
+	inline const FunscriptData& Data() const noexcept { return data; }
+	inline const auto& Selection() const noexcept { return data.Selection; }
+	inline const auto& Actions() const noexcept { return data.Actions; }
 
 	inline const FunscriptAction* GetAction(FunscriptAction action) noexcept { return getAction(action); }
 	inline const FunscriptAction* GetActionAtTime(float time, float errorTime) noexcept { return getActionAtTime(data.Actions, time, errorTime); }
@@ -228,7 +203,6 @@ public:
 	inline void AddAction(FunscriptAction newAction) noexcept { addAction(data.Actions, newAction); }
 	void AddMultipleActions(const FunscriptArray& actions) noexcept;
 
-	//void EditActionUnsafe(FunscriptAction* edit, FunscriptAction action) noexcept;
 	bool EditAction(FunscriptAction oldAction, FunscriptAction newAction) noexcept;
 	void AddEditAction(FunscriptAction action, float frameTime) noexcept;
 	void RemoveAction(FunscriptAction action, bool checkInvalidSelection = true) noexcept;

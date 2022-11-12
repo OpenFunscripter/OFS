@@ -128,7 +128,7 @@ const char* LuaFunscript::Name() const noexcept
 {
     auto ref = script.lock();
     if(ref) {
-        return ref->Title.c_str();
+        return ref->Title().c_str();
     }
     return nullptr;
 }

@@ -384,7 +384,7 @@ void BaseOverlay::DrawScriptLabel(const OverlayDrawingCtx& ctx) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     auto& style = ImGui::GetStyle();
-    auto& title = ctx.script->Title;
+    auto& title = ctx.script->Title();
     auto textSize = ImGui::CalcTextSize(title.c_str());
     ctx.drawList->AddText(
         ctx.canvasPos + ctx.canvasSize - style.FramePadding - textSize,

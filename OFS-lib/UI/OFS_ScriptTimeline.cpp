@@ -270,7 +270,7 @@ void ScriptTimeline::ShowScriptPositions(
 		drawingCtx.scriptIdx = i;
 		drawingCtx.canvasPos = ImGui::GetCursorScreenPos();
 		drawingCtx.canvasSize = ImVec2(availSize.x, availSize.y / (float)drawingCtx.drawnScriptCount);
-		const ImGuiID itemID = ImGui::GetID(script->Title.empty() ? "empty script" : script->Title.c_str());
+		const ImGuiID itemID = ImGui::GetID(script->Title().empty() ? "empty script" : script->Title().c_str());
 		ImRect itemBB(drawingCtx.canvasPos, drawingCtx.canvasPos + drawingCtx.canvasSize);
 		ImGui::ItemSize(itemBB);
 		if (!ImGui::ItemAdd(itemBB, itemID)) {
@@ -434,16 +434,16 @@ void ScriptTimeline::ShowScriptPositions(
 
 
 		// right click context menu
-		if (ImGui::BeginPopupContextItem(script->Title.c_str()))
+		if (ImGui::BeginPopupContextItem(script->Title().c_str()))
 		{
 			if (ImGui::BeginMenu(TR_ID("SCRIPTS", Tr::SCRIPTS))) {
 				for (auto& script : scripts) {
-					if(script->Title.empty()) {
+					if(script->Title().empty()) {
 						ImGui::TextDisabled(TR(NONE));
 						continue;
 					}
 					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, drawingCtx.drawnScriptCount == 1 && script->Enabled);
-					if (ImGui::Checkbox(script->Title.c_str(), &script->Enabled) && !script->Enabled) {
+					if (ImGui::Checkbox(script->Title().c_str(), &script->Enabled) && !script->Enabled) {
 						if (i == activeScriptIdx) {
 							// find a enabled script which can be set active
 							for (int i = 0; i < scripts.size(); i++) {

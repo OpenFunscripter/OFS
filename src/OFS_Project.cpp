@@ -172,8 +172,13 @@ bool OFS_Project::ImportFromMedia(const std::string& file) noexcept
 bool OFS_Project::AddFunscript(const std::string& path) noexcept
 {
     bool loadedScript = false;
+
+    bool succ = false;
+    auto jsonText = Util::ReadFileString(path.c_str());
+    auto json = Util::ParseJson(jsonText, &succ);
+
     auto script = std::make_shared<Funscript>();
-    if (script->Open(path)) {
+    if (succ && script->Deserialize(json)) {
         // Add existing script to project
         script = Funscripts.emplace_back(std::move(script));
         script->UpdateRelativePath(MakePathRelative(path));
@@ -190,7 +195,7 @@ bool OFS_Project::AddFunscript(const std::string& path) noexcept
         script->UpdateRelativePath(MakePathRelative(path));
         script = Funscripts.emplace_back(std::move(script));
     }
-    OFS_DynFontAtlas::AddText(script->Title.c_str());
+    OFS_DynFontAtlas::AddText(script->Title().c_str());
     return loadedScript;
 }
 
@@ -231,6 +236,7 @@ void OFS_Project::Update(float delta, bool idleMode) noexcept
         auto& projectState = State();
         projectState.activeTimer += delta;
     }
+    for (auto& script : Funscripts) script->Update();
 }
 
 bool OFS_Project::HasUnsavedEdits() noexcept
@@ -265,7 +271,7 @@ void OFS_Project::ShowProjectWindow(bool* open) noexcept
         ImGui::Spacing();
         ImGui::TextDisabled(TR(SCRIPTS));
         for (auto& script : Funscripts) {
-            if (ImGui::Button(script->Title.c_str(), ImVec2(-1.f, 0.f))) {
+            if (ImGui::Button(script->Title().c_str(), ImVec2(-1.f, 0.f))) {
                 Util::SaveFileDialog(TR(CHANGE_DEFAULT_LOCATION),
                     MakePathAbsolute(script->RelativePath()),
                     [&](auto result) {
@@ -291,7 +297,9 @@ void OFS_Project::ExportFunscripts() noexcept
         FUN_ASSERT(!script->RelativePath().empty(), "path is empty");
         if (!script->RelativePath().empty()) {
             script->LocalMetadata = state.metadata;
-            script->Save(MakePathAbsolute(script->RelativePath()));
+            auto json = script->Serialize();
+            auto jsonText = Util::SerializeJson(json, false);
+            Util::WriteFile(MakePathAbsolute(script->RelativePath()).c_str(), jsonText.data(), jsonText.size());
         }
     }
 }
@@ -301,8 +309,10 @@ void OFS_Project::ExportFunscript(const std::string& outputPath, int32_t idx) no
     FUN_ASSERT(idx >= 0 && idx < Funscripts.size(), "out of bounds");
     auto& state = State();
     Funscripts[idx]->LocalMetadata = state.metadata;
-    Funscripts[idx]->Save(outputPath);
+    auto json = Funscripts[idx]->Serialize();
     Funscripts[idx]->UpdateRelativePath(MakePathRelative(outputPath));
+    auto jsonText = Util::SerializeJson(json, false);
+    Util::WriteFile(outputPath.c_str(), jsonText.data(), jsonText.size());
 }
 
 std::string OFS_Project::MakePathAbsolute(const std::string& relPathStr) const noexcept
@@ -414,7 +424,7 @@ std::unique_ptr<BlockingTaskData> OFS_Project::ExportClips(const std::string& ou
                 stbsp_snprintf(startTimeChar, sizeof(startTimeChar), "%f", startTime);
                 stbsp_snprintf(endTimeChar, sizeof(endTimeChar), "%f", endTime);
 
-                stbsp_snprintf(formatBuffer, sizeof(formatBuffer), "%s_%s.mp4", bookmarkName.c_str(), project->Funscripts[0]->Title.c_str());
+                stbsp_snprintf(formatBuffer, sizeof(formatBuffer), "%s_%s.mp4", bookmarkName.c_str(), project->Funscripts[0]->Title().c_str());
                 auto videoOutputPath = outputPath / formatBuffer;
                 auto videoOutputString = videoOutputPath.u8string();
 
@@ -422,7 +432,7 @@ std::unique_ptr<BlockingTaskData> OFS_Project::ExportClips(const std::string& ou
                 auto newScript = Funscript();
                 newScript.LocalMetadata = projectState.metadata;
                 for (auto& script : project->Funscripts) {
-                    stbsp_snprintf(formatBuffer, sizeof(formatBuffer), "%s_%s.funscript", bookmarkName.c_str(), script->Title.c_str());
+                    stbsp_snprintf(formatBuffer, sizeof(formatBuffer), "%s_%s.funscript", bookmarkName.c_str(), script->Title().c_str());
                     auto scriptOutputPath = outputPath / formatBuffer;
                     auto scriptOutputString = scriptOutputPath.u8string();
 
@@ -434,7 +444,9 @@ std::unique_ptr<BlockingTaskData> OFS_Project::ExportClips(const std::string& ou
                     newScript.AddAction(FunscriptAction(endTime, script->GetPositionAtTime(endTime)));
                     newScript.SelectAll();
                     newScript.MoveSelectionTime(-startTime, 0);
-                    newScript.Save(scriptOutputString);
+                    auto json = newScript.Serialize();
+                    auto jsonText = Util::SerializeJson(json);
+                    Util::WriteFile(scriptOutputString.c_str(), jsonText.data(), jsonText.size());
                 }
 
                 // Slice Video
