@@ -158,25 +158,30 @@ bool ScriptTimeline::handleTimelineClicks(const OverlayDrawingCtx& ctx) noexcept
 {
 	bool moveOrAddPointModifer = KeybindingSystem::PassiveModifier("move_or_add_point_modifier");
 	auto mousePos = ImGui::GetMousePos();
-	auto startIt = ctx.script->Actions().begin() + ctx.actionFromIdx;
-	auto endIt = ctx.script->Actions().begin() + ctx.actionToIdx;
 
 	auto leftMouseClicked = ImGui::IsMouseClicked(ImGuiMouseButton_Left);
-	if(ctx.activeScriptIdx == ctx.scriptIdx && leftMouseClicked) 
+	if(ctx.activeScriptIdx == ctx.scriptIdx && BaseOverlay::PointSize >= 4.f) 
 	{
+		auto startIt = ctx.script->Actions().begin() + ctx.actionFromIdx;
+		auto endIt = ctx.script->Actions().begin() + ctx.actionToIdx;
 		for (; startIt != endIt; ++startIt) 
 		{
 			auto point = BaseOverlay::GetPointForAction(ctx, *startIt);
 			const ImVec2 size(BaseOverlay::PointSize, BaseOverlay::PointSize);
 			ImRect rect(point - size, point + size);
-			bool pointClicked = rect.Contains(mousePos);
+			bool mouseOnPoint = rect.Contains(mousePos);
 			
-			if (!moveOrAddPointModifer && pointClicked) {
+			if(mouseOnPoint)
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+			}
+
+			if (!moveOrAddPointModifer && mouseOnPoint && leftMouseClicked) {
 				ActionClickEventData = *startIt;
 				EventSystem::PushEvent(ScriptTimelineEvents::FunscriptActionClicked, &ActionClickEventData);
 				return true;
 			}
-			else if(moveOrAddPointModifer && IsMovingIdx < 0 && pointClicked)
+			else if(moveOrAddPointModifer && IsMovingIdx < 0 && mouseOnPoint && leftMouseClicked)
 			{
 				// Start dragging action
 				ctx.script->ClearSelection();
