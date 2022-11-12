@@ -44,7 +44,7 @@ std::unique_ptr<LuaFunscript> OFS_ScriptAPI::Script(lua_Integer idx) noexcept
     if(idx < 0 || idx >= app->LoadedFunscripts().size()) {
         return nullptr;
     }
-    return std::make_unique<LuaFunscript>(idx, app->LoadedFunscripts()[idx]);
+    return std::make_unique<LuaFunscript>(static_cast<int32_t>(idx), app->LoadedFunscripts()[idx]);
 }
 
 std::unique_ptr<LuaFunscript> OFS_ScriptAPI::Clipboard() noexcept
@@ -110,10 +110,16 @@ void LuaFunscript::Commit(sol::this_state L) noexcept
 const char* LuaFunscript::Path() const noexcept
 {
     auto app = OpenFunscripter::ptr;
+    auto ptr = script.lock();
     if(scriptIdx > 0 && scriptIdx < app->LoadedFunscripts().size())
     {
-        auto relPath = app->LoadedFunscripts()[scriptIdx]->RelativePath();
-        return app->LoadedProject->MakePathAbsolute(relPath).c_str();
+        // This is a safety measure in case the LuaFunscript outlives the actual Funscript
+        // in which case this shouldn't be equal.
+        if(ptr == app->LoadedFunscripts()[scriptIdx])
+        {
+            auto relPath = app->LoadedFunscripts()[scriptIdx]->RelativePath();
+            return app->LoadedProject->MakePathAbsolute(relPath).c_str();
+        }
     }
     return nullptr;
 }

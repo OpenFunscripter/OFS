@@ -2,6 +2,9 @@
 #include "OFS_Localization.h"
 #include "OFS_ImGui.h"
 #include "OFS_DynamicFontAtlas.h"
+#include "OFS_BlockingTask.h"
+
+#include "subprocess.h"
 
 #include <algorithm>
 
@@ -340,4 +343,149 @@ std::string OFS_Project::MediaPath() const noexcept
 {
     auto& projectState = State();
     return MakePathAbsolute(projectState.relativeMediaPath);
+}
+
+std::unique_ptr<BlockingTaskData> OFS_Project::ExportClips(const std::string& outputDirectory, float totalDuration, float frameTime) noexcept
+{
+    OFS_PROFILE(__FUNCTION__);
+    auto& bookmarkState = Bookmarks();
+
+    // FIXME: this code can probably be simplified
+
+    FUN_ASSERT(!bookmarkState.Bookmarks.empty(), "No bookmarks created");
+    if (bookmarkState.Bookmarks.empty()) {
+        return nullptr;
+    }
+
+    struct ExportTaskData {
+        OFS_Project* self = nullptr;
+        std::filesystem::path outputPath;
+        float totalDuration = 0.f;
+        float frameTime = 0.f;
+    };
+
+    auto blockingTask = [](void* data) -> int {
+        auto bTaskData = (BlockingTaskData*)data;
+        auto exportData = (ExportTaskData*)bTaskData->User;
+        auto project = exportData->self;
+
+        auto& bookmarkState = project->Bookmarks();
+        auto& projectState = project->State();
+
+        bool split;
+        auto& bookmarks = bookmarkState.Bookmarks;
+        auto& outputPath = exportData->outputPath;
+        auto ffmpegPath = Util::FfmpegPath().u8string();
+
+        bTaskData->Progress = 0;
+        bTaskData->MaxProgress = bookmarks.size();
+        char formatBuffer[1024];
+
+        int i = 0;
+        while (i < bookmarks.size()) {
+            split = true;
+            auto& bookmarkName = bookmarks[i].name;
+            auto startTime = bookmarks[i].atS;
+            float endTime;
+
+
+            if (bookmarks[i].type == BookmarkType::EndMarker) {
+                split = false;
+            }
+            else if (bookmarks[i].type == BookmarkType::StartMarker) {
+                endTime = bookmarks[i + 1].atS;
+                i++;
+            }
+            else if (bookmarks[i].type == BookmarkType::Regular) {
+                if (i == bookmarks.size() - 1) {
+                    endTime = exportData->totalDuration;
+                }
+                else {
+                    endTime = bookmarks[i + 1].atS - exportData->frameTime;
+                }
+            }
+
+            bTaskData->Progress = i;
+
+            if (split) {
+                char startTimeChar[16];
+                char endTimeChar[16];
+
+                stbsp_snprintf(startTimeChar, sizeof(startTimeChar), "%f", startTime);
+                stbsp_snprintf(endTimeChar, sizeof(endTimeChar), "%f", endTime);
+
+                stbsp_snprintf(formatBuffer, sizeof(formatBuffer), "%s_%s.mp4", bookmarkName.c_str(), project->Funscripts[0]->Title.c_str());
+                auto videoOutputPath = outputPath / formatBuffer;
+                auto videoOutputString = videoOutputPath.u8string();
+
+                // Slice Funscripts
+                auto newScript = Funscript();
+                newScript.LocalMetadata = projectState.metadata;
+                for (auto& script : project->Funscripts) {
+                    stbsp_snprintf(formatBuffer, sizeof(formatBuffer), "%s_%s.funscript", bookmarkName.c_str(), script->Title.c_str());
+                    auto scriptOutputPath = outputPath / formatBuffer;
+                    auto scriptOutputString = scriptOutputPath.u8string();
+
+                    auto scriptSlice = script->GetSelection(startTime, endTime);
+                    newScript.SetActions(FunscriptArray());
+                    newScript.UpdateRelativePath(project->MakePathRelative(scriptOutputString));
+                    newScript.AddMultipleActions(scriptSlice);
+                    newScript.AddAction(FunscriptAction(startTime, script->GetPositionAtTime(startTime)));
+                    newScript.AddAction(FunscriptAction(endTime, script->GetPositionAtTime(endTime)));
+                    newScript.SelectAll();
+                    newScript.MoveSelectionTime(-startTime, 0);
+                    newScript.Save(scriptOutputString);
+                }
+
+                // Slice Video
+                auto mediaPath = project->MediaPath();
+                std::array<const char*, 17> args = {
+                    ffmpegPath.c_str(),
+                    "-y",
+                    "-ss", startTimeChar,
+                    "-to", endTimeChar,
+                    "-i", mediaPath.c_str(),
+                    "-vcodec", "copy",
+                    "-acodec", "copy",
+                    videoOutputString.c_str(),
+                    nullptr
+                };
+
+                struct subprocess_s proc;
+                if (subprocess_create(args.data(), subprocess_option_no_window, &proc) != 0) {
+                    delete exportData;
+                    return 0;
+                }
+
+                if (proc.stdout_file) {
+                    fclose(proc.stdout_file);
+                    proc.stdout_file = nullptr;
+                }
+
+                if (proc.stderr_file) {
+                    fclose(proc.stderr_file);
+                    proc.stderr_file = nullptr;
+                }
+
+                int return_code;
+                subprocess_join(&proc, &return_code);
+                subprocess_destroy(&proc);
+            }
+            i++;
+        }
+        delete exportData;
+        return 0;
+    };
+
+    auto taskData = new ExportTaskData;
+    taskData->self = this;
+    taskData->outputPath = Util::PathFromString(outputDirectory);
+    taskData->frameTime = frameTime;
+    taskData->totalDuration = totalDuration;
+
+    auto task = std::make_unique<BlockingTaskData>();
+    task->TaskThreadFunc = blockingTask;
+    task->TaskDescription = TR(TASK_EXPORTING_CLIPS);
+    task->User = taskData;
+    return std::move(task);
 }

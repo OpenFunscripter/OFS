@@ -198,4 +198,5 @@ class OFS_StateManager
 
     nlohmann::json SerializeProjectAll() noexcept;
     bool DeserializeProjectAll(const nlohmann::json& project) noexcept;
+    void ClearProjectAll() noexcept;
 };

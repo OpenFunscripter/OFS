@@ -121,3 +121,10 @@ bool OFS_StateManager::DeserializeProjectAll(const nlohmann::json& project) noex
     ProjectState.clear();
     return DeserializeStateCollection(project, ProjectState, ProjectHandleMap);
 }
+
+void OFS_StateManager::ClearProjectAll() noexcept
+{
+    ProjectState.clear();
+    // Initialize with defaults
+    DeserializeStateCollection(nlohmann::json::object(), ProjectState, ProjectHandleMap);
+}
