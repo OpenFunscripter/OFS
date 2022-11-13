@@ -34,7 +34,7 @@ private:
 		void main()	{
 			Frag_UV = UV;
 			Frag_Color = Color;
-			gl_Position = ProjMtx * vec4(Position.xy,0,1);
+			gl_Position = ProjMtx * vec4(Position.xy, 0, 1);
 		}
 	)";
 
@@ -61,7 +61,7 @@ private:
         }
 
 		void main()	{
-            float speed = texture(speedTex, vec2(Frag_UV.x, 0.f));
+            float speed = texture(speedTex, vec2(Frag_UV.x, 0.f)).r;
             vec3 color = RAMP(colors, speed);
             color = mix(vec3(0.f, 0.f, 0.f), color, Frag_UV.y);
             Out_Color = vec4(color, 1.f);

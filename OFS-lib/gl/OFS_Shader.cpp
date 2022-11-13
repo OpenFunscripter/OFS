@@ -30,7 +30,7 @@ ShaderBase::ShaderBase(const char* vtxShader, const char* fragShader) noexcept
 	if (!success)
 	{
 		glGetShaderInfoLog(fragment, 512, NULL, infoLog);
-		LOGF_ERROR("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n%s", infoLog);
+		LOGF_ERROR("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n%s", infoLog);
 	};
 
 	// shader Program
