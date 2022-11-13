@@ -520,7 +520,6 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 	OFS_PROFILE(__FUNCTION__);
 
 	if (ShowAudioWaveform && Wave.data.SampleCount() > 0) {
-		Wave.WaveformViewport = ImGui::GetWindowViewport();
 		auto renderWaveform = [](ScriptTimeline* timeline, const OverlayDrawingCtx& ctx) noexcept
 		{
 			OFS_PROFILE("DrawAudioWaveform::renderWaveform");
@@ -533,20 +532,20 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 				glActiveTexture(GL_TEXTURE1);
 				glBindTexture(GL_TEXTURE_2D, ctx->Wave.WaveformTex);
 				glActiveTexture(GL_TEXTURE0);
-				ctx->Wave.WaveShader->use();
-				auto draw_data = ctx->Wave.WaveformViewport->DrawData;
-				float L = draw_data->DisplayPos.x;
-				float R = draw_data->DisplayPos.x + draw_data->DisplaySize.x;
-				float T = draw_data->DisplayPos.y;
-				float B = draw_data->DisplayPos.y + draw_data->DisplaySize.y;
-				const float ortho_projection[4][4] =
+				ctx->Wave.WaveShader->Use();
+				auto drawData = OFS_ImGui::CurrentlyRenderedViewport->DrawData;
+				float L = drawData->DisplayPos.x;
+				float R = drawData->DisplayPos.x + drawData->DisplaySize.x;
+				float T = drawData->DisplayPos.y;
+				float B = drawData->DisplayPos.y + drawData->DisplaySize.y;
+				const float orthoProjection[4][4] =
 				{
 					{ 2.0f / (R - L), 0.0f, 0.0f, 0.0f },
 					{ 0.0f, 2.0f / (T - B), 0.0f, 0.0f },
 					{ 0.0f, 0.0f, -1.0f, 0.0f },
 					{ (R + L) / (L - R),  (T + B) / (B - T),  0.0f,   1.0f },
 				};
-				ctx->Wave.WaveShader->ProjMtx(&ortho_projection[0][0]);
+				ctx->Wave.WaveShader->ProjMtx(&orthoProjection[0][0]);
 				ctx->Wave.WaveShader->AudioData(1);
 				ctx->Wave.WaveShader->SampleOffset(ctx->Wave.samplingOffset);
 				ctx->Wave.WaveShader->ScaleFactor(ctx->ScaleAudio);

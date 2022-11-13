@@ -22,7 +22,6 @@ public:
 private:
 	class OFS_Videoplayer* player = nullptr;
 	std::unique_ptr<VrShader> vrShader;
-	ImGuiViewport* playerViewport;
 	
 	ImGuiID videoImageId;
 	ImVec2 videoDrawSize;

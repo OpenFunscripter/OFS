@@ -131,3 +131,9 @@ namespace OFS {
 		}
 	}
 }
+
+struct OFS_ImGui
+{
+	// This can be used during rendering callbacks to get the current viewport
+	static ImGuiViewport* CurrentlyRenderedViewport;
+};

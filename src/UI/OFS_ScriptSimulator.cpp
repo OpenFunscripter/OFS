@@ -1,7 +1,6 @@
 #include "OFS_ScriptSimulator.h"
 #include "OFS_ImGui.h"
 #include "imgui.h"
-#include "imgui_internal.h"
 #include "stb_sprintf.h"
 
 #include "OpenFunscripter.h"
@@ -429,8 +428,9 @@ void ScriptSimulator::ShowSimulator(bool* open, bool splineMode)
 
             if (p1Distance <= (state.Width / 2.f)) {
                 OpenFunscripter::SetCursorType(ImGuiMouseCursor_Hand);
-                g->HoveredWindow = window;
-                g->HoveredDockNode = window->DockNode;
+                // FIXME
+                //g->HoveredWindow = window;
+                //g->HoveredDockNode = window->DockNode;
                 if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                     startDragP1 = state.P1;
                     dragging = &state.P1;
@@ -438,8 +438,9 @@ void ScriptSimulator::ShowSimulator(bool* open, bool splineMode)
             }
             else if (p2Distance <= (state.Width/2.f)) {
                 OpenFunscripter::SetCursorType(ImGuiMouseCursor_Hand);
-                g->HoveredWindow = window;
-                g->HoveredDockNode = window->DockNode;
+                // FIXME
+                //g->HoveredWindow = window;
+                //g->HoveredDockNode = window->DockNode;
                 if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                     startDragP1 = state.P2;
                     dragging = &state.P2;
@@ -447,8 +448,9 @@ void ScriptSimulator::ShowSimulator(bool* open, bool splineMode)
             }
             else if (barCenterDistance <= (state.Width / 2.f)) {
                 OpenFunscripter::SetCursorType(ImGuiMouseCursor_ResizeAll);
-                g->HoveredWindow = window;
-                g->HoveredDockNode = window->DockNode;
+                // FIXME
+                //g->HoveredWindow = window;
+                //g->HoveredDockNode = window->DockNode;
                 if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                     startDragP1 = state.P1;
                     startDragP2 = state.P2;

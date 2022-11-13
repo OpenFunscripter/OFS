@@ -99,14 +99,13 @@ void OFS_VideoplayerWindow::drawVrVideo(ImDrawList* draw_list) noexcept
 				/ ImVec2((10000.f * state.vrZoom), (videoDrawSize.y / videoDrawSize.x) * 10000.f * state.vrZoom));
 	}
 
-	playerViewport = ImGui::GetCurrentWindowRead()->Viewport;
 	draw_list->AddCallback(
 		[](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
 			auto& ctx = *(OFS_VideoplayerWindow*)cmd->UserCallbackData;
 			auto& state = VideoPlayerWindowState::State(ctx.stateHandle);
 
-			auto draw_data = ctx.playerViewport->DrawData;
-			ctx.vrShader->use();
+			auto draw_data = OFS_ImGui::CurrentlyRenderedViewport->DrawData;
+			ctx.vrShader->Use();
 
 			float L = draw_data->DisplayPos.x;
 			float R = draw_data->DisplayPos.x + draw_data->DisplaySize.x;
@@ -183,7 +182,6 @@ void OFS_VideoplayerWindow::draw2dVideo(ImDrawList* draw_list) noexcept
 		state.currentTranslation = state.prevTranslation + ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
 	}
 
-	playerViewport = ImGui::GetCurrentWindowRead()->Viewport;
 	OFS::ImageWithId(videoImageId, (void*)(intptr_t)player->FrameTexture(), videoSize, uv0, uv1);
 	videoRightClickMenu();
 }

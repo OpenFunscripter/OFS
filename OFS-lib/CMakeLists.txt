@@ -80,7 +80,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	tinyfiledialogs
 	libserialport
 	glm
-	ImGuizmo
 	bitsery
 	refl-cpp
 )

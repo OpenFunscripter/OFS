@@ -33,7 +33,6 @@ struct OFS_WaveformLOD
 	std::unique_ptr<WaveformShader> WaveShader;
 	ImColor WaveformColor = IM_COL32(227, 66, 52, 255);
 	uint32_t WaveformTex = 0;
-	ImGuiViewport* WaveformViewport = nullptr;
 	float samplingOffset = 0.f;
 
 	float lastCanvasX = 0.f;

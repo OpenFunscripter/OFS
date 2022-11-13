@@ -2,7 +2,6 @@
 #include "OFS_Util.h"
 #include "OFS_Profiling.h"
 #include "OFS_ImGui.h"
-#include "OFS_Simulator3D.h"
 #include "GradientBar.h"
 #include "FunscriptHeatmap.h"
 #include "OFS_DownloadFfmpeg.h"
@@ -24,7 +23,6 @@
 #include "imgui_impl_opengl3.h"
 
 #include "SDL.h"
-#include "ImGuizmo.h"
 #include "asap.h"
 #include "OFS_GL.h"
 
@@ -35,7 +33,7 @@
 // TODO: OFS_ScriptTimeline selections cause alot of unnecessary overdraw
 
 OpenFunscripter* OpenFunscripter::ptr = nullptr;
-static constexpr const char* GlslVersion = "#version 300 es";
+static constexpr const char* GlslVersion = "#version 330 core";
 
 static ImGuiID MainDockspaceID;
 static constexpr const char* StatisticsWindowId = "###STATISTICS";
@@ -169,9 +167,9 @@ bool OpenFunscripter::Init(int argc, char* argv[])
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0 /*| SDL_GL_CONTEXT_DEBUG_FLAG*/);
 #endif
 
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 
     // antialiasing
     // this caused problems in my linux testing
@@ -201,7 +199,7 @@ bool OpenFunscripter::Init(int argc, char* argv[])
     SDL_GL_MakeCurrent(window, glContext);
     SDL_GL_SetSwapInterval(prefState.vsync);
 
-    if (!gladLoadGLES2((GLADloadfunc)SDL_GL_GetProcAddress)) {
+    if (!gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress)) {
         LOG_ERROR("Failed to load glad.");
         return false;
     }
@@ -266,15 +264,13 @@ bool OpenFunscripter::Init(int argc, char* argv[])
     controllerInput->Init(*events);
     simulator.Init();
 
-    sim3D = std::make_unique<Simulator3D>();
-    sim3D->Init();
 
     // callback that renders the simulator right after the video
     playerWindow->OnRenderCallback = [](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
         auto app = OpenFunscripter::ptr;
         auto& ofsState = OpenFunscripterState::State(app->stateHandle);
         if (ofsState.showSimulator3d) {
-            app->sim3D->renderSim();
+            // FIXME
         }
     };
 
@@ -1382,14 +1378,17 @@ void OpenFunscripter::newFrame() noexcept
         OFS_DynFontAtlas::RebuildFont(prefState.defaultFontSize);
     }
     ImGui::NewFrame();
-    ImGuizmo::BeginFrame();
 }
 
 void OpenFunscripter::render() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     ImGui::Render();
+
+    OFS_ImGui::CurrentlyRenderedViewport = ImGui::GetMainViewport();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    OFS_ImGui::CurrentlyRenderedViewport = nullptr;
+    
     // Update and Render additional Platform Windows
     // (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
     //  For this specific demo app we could also call SDL_GL_MakeCurrent(window, gl_context) directly)
@@ -1398,7 +1397,30 @@ void OpenFunscripter::render() noexcept
         SDL_Window* backup_current_window = SDL_GL_GetCurrentWindow();
         SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();
         ImGui::UpdatePlatformWindows();
-        ImGui::RenderPlatformWindowsDefault();
+        {
+            // ImGui::RenderPlatformWindowsDefault();
+            // Skip the main viewport (index 0), which is always fully handled by the application!
+            ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+            for (int i = 1; i < platform_io.Viewports.Size; i++)
+            {
+                ImGuiViewport* viewport = platform_io.Viewports[i];
+                if (viewport->Flags & ImGuiViewportFlags_Minimized)
+                    continue;
+                OFS_ImGui::CurrentlyRenderedViewport = viewport;
+                if (platform_io.Platform_RenderWindow) platform_io.Platform_RenderWindow(viewport, nullptr);
+                if (platform_io.Renderer_RenderWindow) platform_io.Renderer_RenderWindow(viewport, nullptr);
+            }
+            OFS_ImGui::CurrentlyRenderedViewport = nullptr;
+            for (int i = 1; i < platform_io.Viewports.Size; i++)
+            {
+                ImGuiViewport* viewport = platform_io.Viewports[i];
+                if (viewport->Flags & ImGuiViewportFlags_Minimized)
+                    continue;
+                if (platform_io.Platform_SwapBuffers) platform_io.Platform_SwapBuffers(viewport, nullptr);
+                if (platform_io.Renderer_SwapBuffers) platform_io.Renderer_SwapBuffers(viewport, nullptr);
+            }
+        }
+
         SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
     }
     glFlush();
@@ -1695,7 +1717,6 @@ void OpenFunscripter::Step() noexcept
 #endif
 
             auto& overlayState = BaseOverlay::State();
-            sim3D->ShowWindow(&ofsState.showSimulator3d, player->CurrentTime(), overlayState.SplineMode, LoadedProject->Funscripts);
             ShowAboutWindow(&ShowAbout);
 
             specialFunctions->ShowFunctionsWindow(&ofsState.showSpecialFunctions);

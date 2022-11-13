@@ -17,7 +17,6 @@ set(OPEN_FUNSCRIPTER_SOURCES
 
   "event/OFS_Events.cpp"
 
-  "gl/OFS_Simulator3D.cpp"
   "gl/OFS_GPU.cpp"
 
   "state/OpenFunscripterState.cpp"

@@ -2,6 +2,7 @@
 #include "OFS_Util.h"
 #include "OFS_Profiling.h"
 
+#include "OFS_ImGui.h"
 #include "OFS_Shader.h"
 #include "OFS_GL.h"
 
@@ -20,7 +21,7 @@ private:
 	int32_t ProjMtxLoc = 0;
     int32_t SpeedLoc = 0;
 
-	static constexpr const char* vtx_shader = R"(#version 300 es
+	static constexpr const char* vtx_shader = OFS_SHADER_VERSION R"(
 		precision highp float;
 
 		uniform mat4 ProjMtx;
@@ -37,7 +38,7 @@ private:
 		}
 	)";
 
-	static constexpr const char* frag_shader = R"(#version 300 es
+	static constexpr const char* frag_shader = OFS_SHADER_VERSION R"(
 		precision highp float;
         uniform sampler2D speedTex;
 
@@ -219,8 +220,7 @@ void FunscriptHeatmap::DrawHeatmap(ImDrawList* drawList, const ImVec2& min, cons
         glBindTexture(GL_TEXTURE_2D, self->speedTexture);
         glActiveTexture(GL_TEXTURE0);
 
-        // FIXME: this breaks if the heatmap isn't drawn in the main viewport
-        auto drawData = ImGui::GetDrawData();
+        auto drawData = OFS_ImGui::CurrentlyRenderedViewport->DrawData;
         float L = drawData->DisplayPos.x;
         float R = drawData->DisplayPos.x + drawData->DisplaySize.x;
         float T = drawData->DisplayPos.y;
@@ -232,7 +232,7 @@ void FunscriptHeatmap::DrawHeatmap(ImDrawList* drawList, const ImVec2& min, cons
             { 0.0f, 0.0f, -1.0f, 0.0f },
             { (R + L) / (L - R),  (T + B) / (B - T),  0.0f,   1.0f },
         };
-        Shader->use();
+        Shader->Use();
         Shader->ProjMtx(&orthoProjection[0][0]);
         Shader->SpeedTex(1);
 

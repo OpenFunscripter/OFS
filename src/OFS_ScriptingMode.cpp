@@ -8,7 +8,6 @@
 #include "imgui_internal.h"
 
 #include "OFS_ImGui.h"
-#include "OFS_Simulator3D.h"
 
 
 #include "state/ScriptModeState.h"
@@ -359,8 +358,9 @@ inline void RecordingMode::twoAxisRecording() noexcept
     recordingAxisX->AddAction(FunscriptAction(atS, currentPosX));
     recordingAxisY->AddAction(FunscriptAction(atS, currentPosY));
 
-    app->sim3D->RollOverride = currentPosX;
-    app->sim3D->PitchOverride = 100 - currentPosY;
+    // FIXME
+    // app->sim3D->RollOverride = currentPosX;
+    // app->sim3D->PitchOverride = 100 - currentPosY;
 }
 
 // recording
@@ -510,13 +510,14 @@ void RecordingMode::DrawModeSettings() noexcept
         if (!twoAxesMode) {
             recordingAxisX = app->ActiveFunscript();
             app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, recordingAxisX);
-        }
+        } 
         else {
-            int32_t rollIdx = app->sim3D->rollIndex;
-            int32_t pitchIdx = app->sim3D->pitchIndex;
-            recordingAxisX = app->LoadedFunscripts()[rollIdx];
-            recordingAxisY = app->LoadedFunscripts()[pitchIdx];
-            app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, { recordingAxisX, recordingAxisY });
+            // FIXME
+            //int32_t rollIdx = app->sim3D->rollIndex;
+            //int32_t pitchIdx = app->sim3D->pitchIndex;
+            //recordingAxisX = app->LoadedFunscripts()[rollIdx];
+            //recordingAxisY = app->LoadedFunscripts()[pitchIdx];
+            //app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, { recordingAxisX, recordingAxisY });
         }
         recordingActive = true;
     }

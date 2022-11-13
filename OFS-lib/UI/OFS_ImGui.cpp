@@ -5,6 +5,8 @@
 
 #include <cmath>
 
+ImGuiViewport* OFS_ImGui::CurrentlyRenderedViewport = nullptr;
+
 void OFS::ImageWithId(ImGuiID id, ImTextureID user_texture_id, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& border_col) noexcept
 {
     ImGuiWindow* window = ImGui::GetCurrentWindow();

@@ -3,13 +3,13 @@
 
 #include "OFS_GL.h"
 
-ShaderBase::ShaderBase(const char* vtx_shader, const char* frag_shader)
+ShaderBase::ShaderBase(const char* vtxShader, const char* fragShader) noexcept
 {
 	unsigned int vertex, fragment;
 	int success;
 	char infoLog[512];
 	vertex = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertex, 1, &vtx_shader, NULL);
+	glShaderSource(vertex, 1, &vtxShader, NULL);
 	glCompileShader(vertex);
 
 	// print compile errors if any
@@ -22,7 +22,7 @@ ShaderBase::ShaderBase(const char* vtx_shader, const char* frag_shader)
 
 	// similiar for Fragment Shader
 	fragment = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragment, 1, &frag_shader, NULL);
+	glShaderSource(fragment, 1, &fragShader, NULL);
 	glCompileShader(fragment);
 
 	// print compile errors if any
@@ -54,7 +54,12 @@ ShaderBase::ShaderBase(const char* vtx_shader, const char* frag_shader)
 	glDeleteShader(fragment);
 }
 
-void ShaderBase::use() noexcept
+ShaderBase::~ShaderBase() noexcept
+{
+	LOG_WARN("Shader destructor called. Might be a resource leak.");
+}
+
+void ShaderBase::Use() noexcept
 {
 	glUseProgram(program);
 }

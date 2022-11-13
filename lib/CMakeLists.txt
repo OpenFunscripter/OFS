@@ -7,7 +7,7 @@ find_package(OpenGL REQUIRED)
 # ========
 # = GLAD =
 # ========
-add_library(glad2 STATIC "glad2/src/gles2.c")
+add_library(glad2 STATIC "glad2/src/gl.c")
 target_include_directories(glad2 PUBLIC "glad2/include/")
 
 # ==========
@@ -184,16 +184,6 @@ target_include_directories(tracy PUBLIC "tracy/")
 if(OFS_PROFILE)
 target_compile_definitions(tracy PUBLIC "TRACY_ENABLE")
 endif()
-
-# ============
-# = ImGuizmo =
-# ============
-file (GLOB ImGuizmo_SOURCES ImGuizmo/*.cpp)
-file (GLOB ImGuizmo_HEADERS ImGuizmo/*.h)
-add_library(ImGuizmo STATIC ${ImGuizmo_SOURCES} ${ImGuizmo_HEADERS})
-target_include_directories(ImGuizmo PUBLIC "ImGuizmo/")
-target_link_libraries(ImGuizmo PUBLIC imgui)
-target_compile_features(ImGuizmo PRIVATE cxx_std_17)
 
 set(SOL2_LUA_VERSION "5.4" CACHE BOOL "" FORCE)
 set(SOL2_BUILD_LUA OFF CACHE BOOL "" FORCE)

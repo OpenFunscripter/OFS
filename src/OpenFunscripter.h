@@ -13,7 +13,6 @@
 #include "OFS_VideoplayerControls.h"
 #include "OFS_TCode.h"
 #include "OFS_Project.h"
-#include "OFS_Simulator3D.h"
 #include "OFS_BlockingTask.h"
 #include "OFS_DynamicFontAtlas.h"
 #include "OFS_LuaExtensions.h"
@@ -156,7 +155,6 @@ public:
     std::unique_ptr<UndoSystem> undoSystem;
     std::unique_ptr<OFS_LuaExtensions> extensions;
     std::unique_ptr<OFS_FunscriptMetadataEditor> metadataEditor;
-    std::unique_ptr<Simulator3D> sim3D;
 
     std::unique_ptr<OFS_Project> LoadedProject;
 

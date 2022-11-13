@@ -2,8 +2,6 @@
 
 #include "OFS_GL.h"
 #include "imgui.h"
-#include "imgui_internal.h"
-#include "ImGuizmo.h"
 
 #include "glm/gtc/type_ptr.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -103,7 +101,7 @@ void Simulator3D::Reset(bool ignoreState) noexcept
     }
 
     lightPos = glm::vec3(0.f, 0.f, 0.f);
-    ImGuizmo::SetOrthographic(true);
+    //ImGuizmo::SetOrthographic(true);
 }
 
 void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::vector<std::shared_ptr<Funscript>>& scripts) noexcept
@@ -177,19 +175,19 @@ void Simulator3D::ShowWindow(bool* open, float currentTime, bool easing, std::ve
 
             if (TranslateEnabled) {
                 auto drawList = ImGui::GetForegroundDrawList(viewport);
-                ImGuizmo::SetDrawlist(drawList);
-                ImGuizmo::SetRect(viewport->Pos.x, viewport->Pos.y, viewport->Size.x, viewport->Size.y);
-
-                if (ImGuizmo::Manipulate(glm::value_ptr(view),
-                    glm::value_ptr(projection),
-                    ImGuizmo::OPERATION::TRANSLATE,
-                    ImGuizmo::MODE::WORLD,
-                    glm::value_ptr(state.Translation.Value), NULL, NULL)) {
-                    auto g = ImGui::GetCurrentContext();
-                    auto window = ImGui::GetCurrentWindow();
-                    g->HoveredWindow = window;
-                    g->HoveredDockNode = window->DockNode;
-                }
+                // FIXME
+                //ImGuizmo::SetDrawlist(drawList);
+                //ImGuizmo::SetRect(viewport->Pos.x, viewport->Pos.y, viewport->Size.x, viewport->Size.y);
+                //if (ImGuizmo::Manipulate(glm::value_ptr(view),
+                //    glm::value_ptr(projection),
+                //    ImGuizmo::OPERATION::TRANSLATE,
+                //    ImGuizmo::MODE::WORLD,
+                //    glm::value_ptr(state.Translation.Value), NULL, NULL)) {
+                //    auto g = ImGui::GetCurrentContext();
+                //    auto window = ImGui::GetCurrentWindow();
+                //    g->HoveredWindow = window;
+                //    g->HoveredDockNode = window->DockNode;
+                //}
             }
 
             ImGui::SliderFloat(TR(DISTANCE), &state.Distance, 0.1f, MaxZoom);
