@@ -26,6 +26,7 @@ private:
         notValidError += error;
     }
     void loadNecessaryGlyphs() noexcept;
+    void loadMultiAxis(const std::string& rootScript) noexcept;
 public:
     static constexpr auto Extension = OFS_PROJECT_EXT;
 

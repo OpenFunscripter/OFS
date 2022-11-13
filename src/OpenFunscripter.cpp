@@ -1978,13 +1978,6 @@ void OpenFunscripter::openFile(const std::string& file) noexcept
 
             if (LoadedProject->IsValid()) {
                 initProject();
-                auto& ofsState = OpenFunscripterState::State(stateHandle);
-                auto& projectState = LoadedProject->State();
-                auto recentFile = RecentFile{
-                    Util::PathFromString(LoadedProject->Path()).filename().u8string(),
-                    LoadedProject->Path()
-                };
-                ofsState.addRecentFile(recentFile);
             }
             else {
                 Util::MessageBoxAlert("Failed to open file.", LoadedProject->NotValidError());

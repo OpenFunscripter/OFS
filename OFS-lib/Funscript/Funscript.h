@@ -81,7 +81,6 @@ private:
 	//nlohmann::json JsonOther;
 
 	std::chrono::system_clock::time_point editTime;
-	bool scriptOpened = false;
 	bool funscriptChanged = false; // used to fire only one event every frame a change occurs
 	bool unsavedEdits = false; // used to track if the script has unsaved changes
 	bool selectionChanged = false;

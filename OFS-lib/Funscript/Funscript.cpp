@@ -1,6 +1,5 @@
 #include "Funscript.h"
 
-#include "SDL.h"
 #include "OFS_Util.h"
 #include "OFS_Profiling.h"
 
@@ -674,9 +673,8 @@ void Funscript::UpdateRelativePath(const std::string& path) noexcept
 bool Funscript::Deserialize(const nlohmann::json& json) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	scriptOpened = false;
 
-	if (!scriptOpened || !json.is_object() || !json["actions"].is_array()) {
+	if (!json.is_object() || !json["actions"].is_array()) {
 		LOG_ERROR("Failed to load Funscript. No action array found.");
 		return false;
 	}

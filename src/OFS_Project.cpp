@@ -118,6 +118,11 @@ bool OFS_Project::Load(const std::string& path) noexcept
         if (succ) {
             valid = OFS_StateManager::Get()->DeserializeProjectAll(json);
         }
+        else 
+        {
+            valid = false;
+            addError("Failed to parse project.\nIt likely is an old project file not supported in " OFS_LATEST_GIT_TAG);
+        }
     }
 #endif
 
@@ -141,11 +146,11 @@ bool OFS_Project::ImportFromFunscript(const std::string& file) noexcept
 
     if (Util::FileExists(file)) {
         Funscripts.clear();
-        // FIXME: it's missing the automatic multi-axis import
         if (!AddFunscript(file)) {
             addError("Failed to load funscript.");
             return valid;
         }
+        loadMultiAxis(file);
 
         std::string absMediaPath;
         if (FindMedia(file, &absMediaPath)) {
@@ -183,8 +188,8 @@ bool OFS_Project::ImportFromMedia(const std::string& file) noexcept
         auto funscriptPathStr = funscriptPath.replace_extension(".funscript").u8string();
 
         Funscripts.clear();
-        // FIXME: it's missing the automatic multi-axis import
         AddFunscript(funscriptPathStr);
+        loadMultiAxis(funscriptPathStr);
         valid = true;
         loadNecessaryGlyphs();
     }
@@ -335,6 +340,60 @@ void OFS_Project::ExportFunscript(const std::string& outputPath, int32_t idx) no
     Funscripts[idx]->UpdateRelativePath(MakePathRelative(outputPath));
     auto jsonText = Util::SerializeJson(json, false);
     Util::WriteFile(outputPath.c_str(), jsonText.data(), jsonText.size());
+}
+
+void OFS_Project::loadMultiAxis(const std::string& rootScript) noexcept
+{
+    std::vector<std::filesystem::path> relatedFiles;
+    {
+        auto filename = Util::Filename(rootScript) + '.';
+        auto searchDirectory = Util::PathFromString(rootScript);
+        searchDirectory.remove_filename();
+        
+        std::error_code ec;
+        std::filesystem::directory_iterator dirIt(searchDirectory, ec);
+        for (auto&& entry : dirIt) {
+            auto extension = entry.path()
+                .extension()
+                .u8string();
+            auto currentFilename = entry.path()
+                .filename()
+                .replace_extension("")
+                .u8string();
+
+            if (extension == Funscript::Extension
+                && Util::StringStartsWith(currentFilename, filename)
+                && currentFilename != filename) {
+                relatedFiles.emplace_back(entry.path());
+            }
+        }
+    }
+    // reorder for 3d simulator
+    std::array<std::string, 3> desiredOrder{
+        // it's in reverse order
+        ".twist.funscript",
+        ".pitch.funscript",
+        ".roll.funscript"
+    };
+    if (relatedFiles.size() > 1) {
+        for (auto& ending : desiredOrder) {
+            for (int i = 0; i < relatedFiles.size(); i++) {
+                auto& path = relatedFiles[i];
+                if (Util::StringEndsWith(path.u8string(), ending)) {
+                    auto move = std::move(path);
+                    relatedFiles.erase(relatedFiles.begin() + i);
+                    relatedFiles.emplace_back(std::move(move));
+                    break;
+                }
+            }
+        }
+    }
+    // load the related files
+    for (int i = relatedFiles.size() - 1; i >= 0; i -= 1) {
+        auto& file = relatedFiles[i];
+        auto filePathString = file.u8string();
+        AddFunscript(filePathString);
+    }
 }
 
 std::string OFS_Project::MakePathAbsolute(const std::string& relPathStr) const noexcept
