@@ -53,6 +53,10 @@ public:
     bool HasUnsavedEdits() noexcept;
 
 
+    inline void SetActiveIdx(uint32_t activeIdx) noexcept { State().activeScriptIdx = activeIdx; }
+    inline uint32_t ActiveIdx() const noexcept { return State().activeScriptIdx; }
+    inline std::shared_ptr<Funscript>& ActiveScript() noexcept { return Funscripts[ActiveIdx()]; }
+
     inline const std::string& Path() const noexcept { return lastPath; }
     inline bool IsValid() const noexcept { return valid; }
     inline const std::string& NotValidError() const noexcept { return notValidError; }

@@ -34,7 +34,7 @@ OFS_ScriptAPI::OFS_ScriptAPI(sol::usertype<class OFS_ExtensionAPI>& ofs) noexcep
 lua_Integer OFS_ScriptAPI::ActiveIdx() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    return app->ActiveFunscriptIndex() + 1;
+    return app->LoadedProject->ActiveIdx() + 1;
 }
 
 std::unique_ptr<LuaFunscript> OFS_ScriptAPI::Script(lua_Integer idx) noexcept

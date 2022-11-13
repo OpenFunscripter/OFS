@@ -511,11 +511,12 @@ void OpenFunscripter::registerBindings()
             Tr::ACTION_CYCLE_FORWARD_LOADED_SCRIPTS,
             true,
             [&](void*) {
+                auto activeIdx = LoadedProject->ActiveIdx();
                 do {
-                    ActiveFunscriptIdx++;
-                    ActiveFunscriptIdx %= LoadedFunscripts().size();
-                } while (!ActiveFunscript()->Enabled);
-                UpdateNewActiveScript(ActiveFunscriptIdx);
+                    activeIdx++;
+                    activeIdx %= LoadedFunscripts().size();
+                } while (!LoadedFunscripts()[activeIdx]->Enabled);
+                UpdateNewActiveScript(activeIdx);
             });
         cycle_loaded_forward_scripts.key = Keybinding(
             SDLK_PAGEDOWN,
@@ -526,11 +527,12 @@ void OpenFunscripter::registerBindings()
             Tr::ACTION_CYCLE_BACKWARD_LOADED_SCRIPTS,
             true,
             [&](void*) {
+                auto activeIdx = LoadedProject->ActiveIdx();
                 do {
-                    ActiveFunscriptIdx--;
-                    ActiveFunscriptIdx %= LoadedFunscripts().size();
-                } while (!ActiveFunscript()->Enabled);
-                UpdateNewActiveScript(ActiveFunscriptIdx);
+                    activeIdx--;
+                    activeIdx %= LoadedFunscripts().size();
+                } while (!LoadedFunscripts()[activeIdx]->Enabled);
+                UpdateNewActiveScript(activeIdx);
             });
         cycle_loaded_backward_scripts.key = Keybinding(
             SDLK_PAGEUP,
@@ -1819,7 +1821,7 @@ void OpenFunscripter::Step() noexcept
             scriptTimeline.ShowScriptPositions(player.get(),
                 scripting->Overlay().get(),
                 LoadedFunscripts(),
-                ActiveFunscriptIdx);
+                LoadedProject->ActiveIdx());
 
             ShowStatisticsWindow(&ofsState.showStatistics);
 
@@ -2032,9 +2034,9 @@ void OpenFunscripter::initProject() noexcept
     lastBackup = std::chrono::steady_clock::now();
 }
 
-void OpenFunscripter::UpdateNewActiveScript(int32_t activeIndex) noexcept
+void OpenFunscripter::UpdateNewActiveScript(uint32_t activeIndex) noexcept
 {
-    ActiveFunscriptIdx = activeIndex;
+    LoadedProject->SetActiveIdx(activeIndex);
     updateTitle();
     Status = Status | OFS_Status::OFS_GradientNeedsUpdate;
 }
@@ -2095,7 +2097,7 @@ bool OpenFunscripter::closeProject(bool closeWithUnsavedChanges) noexcept
         return false;
     }
     else {
-        ActiveFunscriptIdx = 0;
+        UpdateNewActiveScript(0);
         LoadedProject = std::make_unique<OFS_Project>();
         player->CloseVideo();
         playerControls.videoPreview->closeVideo();
@@ -2316,7 +2318,7 @@ void OpenFunscripter::saveActiveScriptAs()
         LoadedProject->MakePathAbsolute(ActiveFunscript()->RelativePath()),
         [this](auto& result) {
             if (result.files.size() > 0) {
-                LoadedProject->ExportFunscript(result.files[0], ActiveFunscriptIdx);
+                LoadedProject->ExportFunscript(result.files[0], LoadedProject->ActiveIdx());
                 auto dir = Util::PathFromString(result.files[0]);
                 dir.remove_filename();
                 auto& ofsState = OpenFunscripterState::State(stateHandle);
@@ -2402,7 +2404,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         Util::SaveFileDialog(TR(EXPORT_MENU), savePath.u8string(),
                             [this](auto& result) {
                                 if (result.files.size() > 0) {
-                                    LoadedProject->ExportFunscript(result.files[0], ActiveFunscriptIdx);
+                                    LoadedProject->ExportFunscript(result.files[0], LoadedProject->ActiveIdx());
                                     std::filesystem::path dir = Util::PathFromString(result.files[0]);
                                     dir.remove_filename();
                                     auto& ofsState = OpenFunscripterState::State(stateHandle);
@@ -2515,10 +2517,11 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         [this, unloadIndex](Util::YesNoCancel result) {
                             if (result == Util::YesNoCancel::Yes) {
                                 LoadedProject->RemoveFunscript(unloadIndex);
-                                if (ActiveFunscriptIdx > 0) {
-                                    ActiveFunscriptIdx--;
+                                auto activeIdx = LoadedProject->ActiveIdx();
+                                if (activeIdx > 0) {
+                                    activeIdx--;
+                                    UpdateNewActiveScript(activeIdx);
                                 }
-                                UpdateNewActiveScript(ActiveFunscriptIdx);
                             }
                         });
                 }

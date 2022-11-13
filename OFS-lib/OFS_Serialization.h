@@ -20,6 +20,9 @@ namespace OFS {
     struct is_json_compatible<std::string>: std::true_type {
     };
     template<>
+    struct is_json_compatible<double>: std::true_type {
+    };
+    template<>
     struct is_json_compatible<float>: std::true_type {
     };
     template<>
@@ -30,6 +33,18 @@ namespace OFS {
     };
     template<>
     struct is_json_compatible<int32_t>: std::true_type {
+    };
+    template<>
+    struct is_json_compatible<int16_t>: std::true_type {
+    };
+    template<>
+    struct is_json_compatible<int8_t>: std::true_type {
+    };
+    //template<> // This is the same as size_t
+    //struct is_json_compatible<uint64_t>: std::true_type {
+    //};
+    template<>
+    struct is_json_compatible<uint32_t>: std::true_type {
     };
     template<>
     struct is_json_compatible<uint16_t>: std::true_type {

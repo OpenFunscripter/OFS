@@ -39,6 +39,7 @@ struct ProjectState
     std::string relativeMediaPath;
     float activeTimer = 0.f;
     float lastPlayerPosition = 0.f;
+    uint32_t activeScriptIdx = 0;
     bool nudgeMetadata = true;
 
     std::vector<uint8_t> binaryFunscriptData;
@@ -54,6 +55,7 @@ REFL_TYPE(ProjectState)
     REFL_FIELD(relativeMediaPath)
     REFL_FIELD(activeTimer)
     REFL_FIELD(lastPlayerPosition)
+    REFL_FIELD(activeScriptIdx)
     REFL_FIELD(nudgeMetadata)
     REFL_FIELD(binaryFunscriptData)
 REFL_END

@@ -55,7 +55,6 @@ private:
     std::chrono::steady_clock::time_point lastBackup;
 
     char tmpBuf[2][32];
-    int32_t ActiveFunscriptIdx = 0;
 
     void setIdle(bool idle) noexcept;
     void registerBindings();
@@ -168,15 +167,12 @@ public:
         return LoadedProject->Funscripts;
     }
 
-    inline bool ScriptLoaded() const noexcept { return !LoadedFunscripts().empty(); }
     inline std::shared_ptr<Funscript>& ActiveFunscript() noexcept
     {
-        FUN_ASSERT(ScriptLoaded(), "No script loaded");
-        return LoadedProject->Funscripts[ActiveFunscriptIdx];
+        return LoadedProject->ActiveScript();
     }
 
-    void UpdateNewActiveScript(int32_t activeIndex) noexcept;
-    inline int32_t ActiveFunscriptIndex() const { return ActiveFunscriptIdx; }
+    void UpdateNewActiveScript(uint32_t activeIndex) noexcept;
 
     static void SetCursorType(ImGuiMouseCursor id) noexcept;
 
