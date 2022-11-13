@@ -23,14 +23,15 @@ private:
 	static constexpr int32_t PreviewUpdateMs = 1000;
 	uint32_t lastPreviewUpdate = 0;
 	class OFS_Videoplayer* player = nullptr;
-	std::unique_ptr<FunscriptHeatmap> Heatmap;
 
 	void VideoLoaded(SDL_Event& ev) noexcept;
 	bool DrawTimelineWidget(const char* label, float* position, TimelineCustomDrawFunc&& customDraw) noexcept;
 public:
 	static constexpr const char* ControlId = "###CONTROLS";
 	static constexpr const char* TimeId = "###TIME";
+
 	std::unique_ptr<VideoPreview> videoPreview;
+	std::unique_ptr<FunscriptHeatmap> Heatmap;
 
 	OFS_VideoplayerControls() noexcept {}
 	void Init(class OFS_Videoplayer* player) noexcept;

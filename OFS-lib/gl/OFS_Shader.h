@@ -11,8 +11,9 @@ public:
 	ShaderBase(const char* vtxShader, const char* fragShader) noexcept;
 	virtual ~ShaderBase() noexcept;
 	void Use() noexcept;
-};
 
+	unsigned int Handle() const noexcept { return program; }
+};
 
 class VrShader : public ShaderBase {
 private:

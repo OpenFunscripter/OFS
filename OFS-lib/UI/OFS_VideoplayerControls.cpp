@@ -76,7 +76,6 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
     // gradient + shadow
     Heatmap->DrawHeatmap(drawList, frameBB.Min, frameBB.Max);
 
-
     const ImColor timeline_cursor_back = IM_COL32(255, 255, 255, 255);
     const ImColor timeline_cursor_front = IM_COL32(0, 0, 0, 255);
     auto mouse = ImGui::GetMousePos();

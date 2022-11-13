@@ -13,7 +13,7 @@
 ImGradient FunscriptHeatmap::Colors;
 ImGradient FunscriptHeatmap::LineColors;
 
-static constexpr auto SpeedTextureResolution = 4096;
+static constexpr auto SpeedTextureResolution = 2048;
 
 class HeatmapShader : public ShaderBase
 {
@@ -161,7 +161,6 @@ void FunscriptHeatmap::Update(float totalDuration, const FunscriptArray& actions
     float timeStep = totalDuration / SpeedTextureResolution;
 
 
-
     for(uint32_t i = 0, j = 1, size = actions.size(); j < size; i = j++)
     {
         auto prev = actions[i];
@@ -241,8 +240,78 @@ void FunscriptHeatmap::DrawHeatmap(ImDrawList* drawList, const ImVec2& min, cons
     drawList->AddCallback(ImDrawCallback_ResetRenderState, 0);
 }
 
-void FunscriptHeatmap::ShowMenu() noexcept
+#include "imgui_impl/imgui_impl_opengl3.h"
+
+std::vector<uint8_t> FunscriptHeatmap::RenderToBitmap(int16_t width, int16_t height) noexcept
 {
-    ImGui::Begin("HeatmapEdit");
-    ImGui::End();
+    width = Util::Min(width, FunscriptHeatmap::MaxResolution);
+    height = Util::Min(height, FunscriptHeatmap::MaxResolution);
+
+    // Prepare temporary framebuffer
+    uint32_t tmpFramebuffer = 0;
+    uint32_t tmpColorTex = 0;
+
+    glGenFramebuffers(1, &tmpFramebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, tmpFramebuffer);
+
+    glGenTextures(1, &tmpColorTex);
+    glBindTexture(GL_TEXTURE_2D, tmpColorTex);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, OFS_InternalTexFormat, width, height, 0, OFS_TexFormat, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmpColorTex, 0);
+    GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+    glDrawBuffers(1, DrawBuffers);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        LOG_ERROR("Failed to create framebuffer for video!");
+    }
+
+    // Backup out main ImGuiContext
+    auto prevContext = ImGui::GetCurrentContext();
+
+    // Create a temporary ImGuiContext
+    auto tmpContext = ImGui::CreateContext();
+    ImGui::SetCurrentContext(tmpContext);
+    ImGui_ImplOpenGL3_Init(OFS_SHADER_VERSION);
+
+    // Prepare drawing a single image
+    auto& io = ImGui::GetIO();
+    io.DisplaySize.x = width;
+    io.DisplaySize.y = height;
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui::NewFrame();
+
+    // Draw calls
+    {
+        auto drawList = ImGui::GetForegroundDrawList(ImGui::GetMainViewport());
+        DrawHeatmap(drawList, ImVec2(0.f, 0.f), ImVec2(width, height));
+    }
+
+    // Render image
+    ImGui::Render();
+    OFS_ImGui::CurrentlyRenderedViewport = ImGui::GetMainViewport();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    OFS_ImGui::CurrentlyRenderedViewport = nullptr;
+
+
+    // Grab the bitmap
+    std::vector<uint8_t> bitmap;
+    bitmap.resize((size_t)width * (size_t)height * 4);
+    glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, bitmap.data());
+
+    // Destroy everything
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui::DestroyContext(tmpContext);
+
+    glDeleteTextures(1, &tmpColorTex);
+    glDeleteFramebuffers(1, &tmpFramebuffer);
+
+    // Reset to default framebuffer and main ImGuiContext    
+    ImGui::SetCurrentContext(prevContext);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    return bitmap;
 }
