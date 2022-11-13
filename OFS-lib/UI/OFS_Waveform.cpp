@@ -27,8 +27,9 @@ bool OFS_Waveform::LoadFlac(const std::string& output) noexcept
 	while ((sampleCount = drflac_read_pcm_frames_s16(flac, ChunkSamples.size(), ChunkSamples.data())) > 0) {
 		for (int sampleIdx = 0; sampleIdx < sampleCount; sampleIdx += SamplesPerLine) {
 			int samplesInThisLine = std::min(SamplesPerLine, (int)sampleCount - sampleIdx);
-			for (int i = 0; i < samplesInThisLine; i++) {
-				auto sample = ChunkSamples[sampleIdx + i];
+			for (int i = 0; i < samplesInThisLine; i += 1) {
+				drflac_int16 sample = ChunkSamples[sampleIdx + i];
+				sample = std::abs(sample);
 				auto floatSample = sample / 32768.f;
 				avgSample += floatSample;
 			}

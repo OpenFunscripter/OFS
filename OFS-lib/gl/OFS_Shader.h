@@ -176,15 +176,11 @@ private:
 				float scaledSample = unscaledSample * scaleAudio;
 				float padding = (1.f - scaledSample) / 2.f;
 				
-				//float h1 = step(0.f, (scaledSample/2.f) - abs(Frag_UV.y - 0.5f));
-				//float m1 = step(midT, (scaledSample/2.f) - abs(Frag_UV.y - 0.5f));
-				//float l1 = step(lowT, (scaledSample/2.f) - abs(Frag_UV.y - 0.5f));
-				
 				float normPos = (scaledSample/2.f) - abs(Frag_UV.y - 0.5f);
 				float h1 = step(0.f, normPos);
 				float m1 = smoothstep(lowT, midT, normPos);
 				float l1 = smoothstep(0.f, lowT, normPos);
-				float s1 = smoothstep(-0.04f, 0.0f, normPos);
+				float s1 = smoothstep(-0.01f, 0.00f, normPos);
 
 				vec3 highCol = sampleOnATriangle(Color.x + Color.y, Color.x + Color.z);
 				vec3 midCol = sampleOnATriangle(Color.y + Color.z, Color.y + Color.x);

@@ -33,11 +33,9 @@ void OpenFunscripterState::addRecentFile(const RecentFile& recentFile) noexcept
 			return file.projectPath == recentFile.projectPath;
 		});
 	if (it != recentFiles.end()) {
-		*it = recentFile;
+		recentFiles.erase(it);
 	}
-	else {
-		recentFiles.push_back(recentFile);
-	}
+	recentFiles.push_back(recentFile);
 	if (recentFiles.size() > 5) {
 		recentFiles.erase(recentFiles.begin());
 	}
