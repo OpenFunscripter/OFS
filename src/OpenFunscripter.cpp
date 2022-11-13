@@ -2451,8 +2451,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                         Util::OpenDirectoryDialog(TR(EXPORT_MENU), ofsState.lastPath,
                             [this](auto& result) {
                                 if (result.files.size() > 0) {
-                                    // FIXME
-                                    // LoadedProject->ExportFunscripts(result.files[0]);
+                                    LoadedProject->ExportFunscripts(result.files[0]);
                                 }
                             });
                     }

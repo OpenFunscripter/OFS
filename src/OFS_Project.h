@@ -27,6 +27,7 @@ private:
     }
     void loadNecessaryGlyphs() noexcept;
     void loadMultiAxis(const std::string& rootScript) noexcept;
+
 public:
     static constexpr auto Extension = OFS_PROJECT_EXT;
 
@@ -59,6 +60,7 @@ public:
     inline ProjectBookmarkState& Bookmarks() noexcept { return ProjectBookmarkState::State(bookmarkStateHandle); }
 
     void ExportFunscripts() noexcept;
+    void ExportFunscripts(const std::string& outputDir) noexcept;
     void ExportFunscript(const std::string& outputPath, int32_t idx) noexcept;
     std::unique_ptr<struct BlockingTaskData> ExportClips(const std::string& outputDirectory, float totalDuration, float frameTime) noexcept;
 

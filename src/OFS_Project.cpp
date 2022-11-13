@@ -94,7 +94,7 @@ void OFS_Project::loadNecessaryGlyphs() noexcept
     OFS_DynFontAtlas::AddText(metadata.description);
     OFS_DynFontAtlas::AddText(metadata.license);
     OFS_DynFontAtlas::AddText(metadata.notes);
-    for(auto& script : Funscripts) OFS_DynFontAtlas::AddText(script->Title().c_str());
+    for (auto& script : Funscripts) OFS_DynFontAtlas::AddText(script->Title().c_str());
     OFS_DynFontAtlas::AddText(lastPath);
 }
 
@@ -118,8 +118,7 @@ bool OFS_Project::Load(const std::string& path) noexcept
         if (succ) {
             valid = OFS_StateManager::Get()->DeserializeProjectAll(json);
         }
-        else 
-        {
+        else {
             valid = false;
             addError("Failed to parse project.\nIt likely is an old project file not supported in " OFS_LATEST_GIT_TAG);
         }
@@ -331,12 +330,29 @@ void OFS_Project::ExportFunscripts() noexcept
     }
 }
 
+void OFS_Project::ExportFunscripts(const std::string& outputDir) noexcept
+{
+    auto& state = State();
+    for (auto& script : Funscripts) {
+        FUN_ASSERT(!script->RelativePath().empty(), "path is empty");
+        if (!script->RelativePath().empty()) {
+            auto filename = Util::PathFromString(script->RelativePath()).filename();
+            auto outputPath = (Util::PathFromString(outputDir) / filename).u8string();
+            script->LocalMetadata = state.metadata;
+            auto json = script->Serialize();
+            auto jsonText = Util::SerializeJson(json, false);
+            Util::WriteFile(outputPath.c_str(), jsonText.data(), jsonText.size());
+        }
+    }
+}
+
 void OFS_Project::ExportFunscript(const std::string& outputPath, int32_t idx) noexcept
 {
     FUN_ASSERT(idx >= 0 && idx < Funscripts.size(), "out of bounds");
     auto& state = State();
     Funscripts[idx]->LocalMetadata = state.metadata;
     auto json = Funscripts[idx]->Serialize();
+    // Using this function changes the default path
     Funscripts[idx]->UpdateRelativePath(MakePathRelative(outputPath));
     auto jsonText = Util::SerializeJson(json, false);
     Util::WriteFile(outputPath.c_str(), jsonText.data(), jsonText.size());
@@ -349,17 +365,17 @@ void OFS_Project::loadMultiAxis(const std::string& rootScript) noexcept
         auto filename = Util::Filename(rootScript) + '.';
         auto searchDirectory = Util::PathFromString(rootScript);
         searchDirectory.remove_filename();
-        
+
         std::error_code ec;
         std::filesystem::directory_iterator dirIt(searchDirectory, ec);
         for (auto&& entry : dirIt) {
             auto extension = entry.path()
-                .extension()
-                .u8string();
+                                 .extension()
+                                 .u8string();
             auto currentFilename = entry.path()
-                .filename()
-                .replace_extension("")
-                .u8string();
+                                       .filename()
+                                       .replace_extension("")
+                                       .u8string();
 
             if (extension == Funscript::Extension
                 && Util::StringStartsWith(currentFilename, filename)
