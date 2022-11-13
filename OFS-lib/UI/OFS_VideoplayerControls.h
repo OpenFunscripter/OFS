@@ -29,7 +29,7 @@ private:
 public:
 	static constexpr const char* ControlId = "###CONTROLS";
 	static constexpr const char* TimeId = "###TIME";
-	HeatmapGradient Heatmap;
+	FunscriptHeatmap Heatmap;
 	std::unique_ptr<VideoPreview> videoPreview;
 
 	OFS_VideoplayerControls() noexcept {}

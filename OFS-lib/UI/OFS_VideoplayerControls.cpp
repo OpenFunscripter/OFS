@@ -73,7 +73,7 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
     drawList->AddLine(p1 + ImVec2(0.f, h / 3.f), p2 + ImVec2(0.f, h / 3.f), IM_COL32(255, 0, 0, 255), timeline_pos_cursor_w / 2.f);
 
     // gradient + shadow
-    ImGradient::DrawGradientBar(&Heatmap.Gradient, frameBB.Min, frameBB.GetWidth(), frameBB.GetHeight());
+    Heatmap.DrawHeatmap(drawList, frameBB.Min, frameBB.Max);
     drawList->AddRectFilledMultiColor(frameBB.Min, frameBB.Max, 
         IM_COL32(0, 0, 0, 255),
         IM_COL32(0, 0, 0, 255),

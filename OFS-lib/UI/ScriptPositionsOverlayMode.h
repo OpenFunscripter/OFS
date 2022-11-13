@@ -11,7 +11,7 @@
 
 struct OverlayDrawingCtx {
 	Funscript* script;
-
+	
 	int32_t scriptIdx;
 	int32_t drawnScriptCount;
 
@@ -55,7 +55,6 @@ public:
 	static std::vector<ColoredLine> ColoredLines;
 	static float PointSize;
 	
-	static ImGradient speedGradient;
 	static bool ShowLines;
 
 	BaseOverlay(class ScriptTimeline* timeline) noexcept;

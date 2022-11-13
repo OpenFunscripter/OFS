@@ -278,7 +278,7 @@ bool OpenFunscripter::Init(int argc, char* argv[])
         }
     };
 
-    HeatmapGradient::Init();
+    FunscriptHeatmap::Init();
     tcode = std::make_unique<TCodePlayer>();
     tcode->loadSettings(Util::Prefpath("tcode.json"));
     extensions = std::make_unique<OFS_LuaExtensions>();
