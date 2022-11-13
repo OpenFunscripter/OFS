@@ -555,7 +555,6 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 
 			ctx.drawList->AddImage(0, ctx.canvasPos, ctx.canvasPos + ctx.canvasSize);
 			ctx.drawList->AddCallback(ImDrawCallback_ResetRenderState, 0);
-			ctx.drawList->AddCallback([](const ImDrawList* parent_list, const ImDrawCmd* cmd) noexcept { glActiveTexture(GL_TEXTURE0); }, 0);
 		};
 
 		renderWaveform(this, ctx);

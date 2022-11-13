@@ -1687,7 +1687,6 @@ void OpenFunscripter::Step() noexcept
             blockingTask.ShowBlockingTask();
 
             auto& ofsState = OpenFunscripterState::State(stateHandle);
-
 #ifdef WIN32
             if (OFS_DownloadFfmpeg::FfmpegMissing) {
                 ImGui::OpenPopup(OFS_DownloadFfmpeg::ModalId);
@@ -2106,62 +2105,63 @@ void OpenFunscripter::pickDifferentMedia() noexcept
 void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
 {
     OFS_PROFILE(__FUNCTION__);
-    SDL_Surface* surface;
-    Uint32 rmask, gmask, bmask, amask;
-
-    // same order as ImGui U32 colors
-    rmask = 0x000000ff;
-    gmask = 0x0000ff00;
-    bmask = 0x00ff0000;
-    amask = 0xff000000;
-
-    surface = SDL_CreateRGBSurface(0, width, height, 32, rmask, gmask, bmask, amask);
-    if (surface == NULL) {
-        LOGF_ERROR("SDL_CreateRGBSurface() failed: %s", SDL_GetError());
-        return;
-    }
-
-    // not sure if this is always false, on every platform
-    const bool mustLock = SDL_MUSTLOCK(surface);
-    if (mustLock) {
-        SDL_LockSurface(surface);
-    }
-
-    SDL_Rect rect = { 0 };
-    rect.h = height;
-
-    const float relStep = 1.f / width;
-    rect.w = 1;
-    float relPos = 0.f;
-
-    ImColor color;
-    color.Value.w = 1.f;
-    const float shadowStep = 1.f / height;
-    ImColor black = IM_COL32_BLACK;
-
-    for (int x = 0; x < width; x++) {
-        rect.x = std::round(relPos * width);
-        playerControls.Heatmap.Gradient.computeColorAt(relPos, &color.Value.x);
-        black.Value.w = 0.f;
-        for (int y = 0; y < height; y++) {
-            uint32_t* target_pixel = (uint32_t*)((uint8_t*)surface->pixels + y * surface->pitch + x * sizeof(uint32_t));
-            ImColor mix = color;
-            mix.Value.x = mix.Value.x * (1.f - black.Value.w) + black.Value.x * black.Value.w;
-            mix.Value.y = mix.Value.y * (1.f - black.Value.w) + black.Value.y * black.Value.w;
-            mix.Value.z = mix.Value.z * (1.f - black.Value.w) + black.Value.z * black.Value.w;
-
-            *target_pixel = ImGui::ColorConvertFloat4ToU32(mix);
-            black.Value.w += shadowStep;
-        }
-        relPos += relStep;
-    }
-
-    Util::SavePNG(path, surface->pixels, surface->w, surface->h, 4, true);
-
-    if (mustLock) {
-        SDL_UnlockSurface(surface);
-    }
-    SDL_FreeSurface(surface);
+    // FIXME
+    //SDL_Surface* surface;
+    //Uint32 rmask, gmask, bmask, amask;
+//
+    //// same order as ImGui U32 colors
+    //rmask = 0x000000ff;
+    //gmask = 0x0000ff00;
+    //bmask = 0x00ff0000;
+    //amask = 0xff000000;
+//
+    //surface = SDL_CreateRGBSurface(0, width, height, 32, rmask, gmask, bmask, amask);
+    //if (surface == NULL) {
+    //    LOGF_ERROR("SDL_CreateRGBSurface() failed: %s", SDL_GetError());
+    //    return;
+    //}
+//
+    //// not sure if this is always false, on every platform
+    //const bool mustLock = SDL_MUSTLOCK(surface);
+    //if (mustLock) {
+    //    SDL_LockSurface(surface);
+    //}
+//
+    //SDL_Rect rect = { 0 };
+    //rect.h = height;
+//
+    //const float relStep = 1.f / width;
+    //rect.w = 1;
+    //float relPos = 0.f;
+//
+    //ImColor color;
+    //color.Value.w = 1.f;
+    //const float shadowStep = 1.f / height;
+    //ImColor black = IM_COL32_BLACK;
+//
+    //for (int x = 0; x < width; x++) {
+    //    rect.x = std::round(relPos * width);
+    //    playerControls.Heatmap.Gradient.computeColorAt(relPos, &color.Value.x);
+    //    black.Value.w = 0.f;
+    //    for (int y = 0; y < height; y++) {
+    //        uint32_t* target_pixel = (uint32_t*)((uint8_t*)surface->pixels + y * surface->pitch + x * sizeof(uint32_t));
+    //        ImColor mix = color;
+    //        mix.Value.x = mix.Value.x * (1.f - black.Value.w) + black.Value.x * black.Value.w;
+    //        mix.Value.y = mix.Value.y * (1.f - black.Value.w) + black.Value.y * black.Value.w;
+    //        mix.Value.z = mix.Value.z * (1.f - black.Value.w) + black.Value.z * black.Value.w;
+//
+    //        *target_pixel = ImGui::ColorConvertFloat4ToU32(mix);
+    //        black.Value.w += shadowStep;
+    //    }
+    //    relPos += relStep;
+    //}
+//
+    //Util::SavePNG(path, surface->pixels, surface->w, surface->h, 4, true);
+//
+    //if (mustLock) {
+    //    SDL_UnlockSurface(surface);
+    //}
+    //SDL_FreeSurface(surface);
 }
 
 void OpenFunscripter::removeAction(FunscriptAction action) noexcept

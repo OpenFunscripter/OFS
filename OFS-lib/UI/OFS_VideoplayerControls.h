@@ -23,13 +23,13 @@ private:
 	static constexpr int32_t PreviewUpdateMs = 1000;
 	uint32_t lastPreviewUpdate = 0;
 	class OFS_Videoplayer* player = nullptr;
+	std::unique_ptr<FunscriptHeatmap> Heatmap;
 
 	void VideoLoaded(SDL_Event& ev) noexcept;
 	bool DrawTimelineWidget(const char* label, float* position, TimelineCustomDrawFunc&& customDraw) noexcept;
 public:
 	static constexpr const char* ControlId = "###CONTROLS";
 	static constexpr const char* TimeId = "###TIME";
-	FunscriptHeatmap Heatmap;
 	std::unique_ptr<VideoPreview> videoPreview;
 
 	OFS_VideoplayerControls() noexcept {}
@@ -38,7 +38,7 @@ public:
 
 	inline void UpdateHeatmap(float totalDuration, const FunscriptArray& actions) noexcept
 	{
-		Heatmap.Update(totalDuration, actions);
+		Heatmap->Update(totalDuration, actions);
 	}
 
 	void DrawTimeline(bool* open, TimelineCustomDrawFunc&& customDraw = [](ImDrawList*, const ImRect&, bool) {}) noexcept;

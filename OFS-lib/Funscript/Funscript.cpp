@@ -55,7 +55,7 @@ void Funscript::Update() noexcept
 	}
 }
 
-float Funscript::GetPositionAtTime(float time) noexcept
+float Funscript::GetPositionAtTime(float time) const noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	if (data.Actions.size() == 0) {	return 0; } 

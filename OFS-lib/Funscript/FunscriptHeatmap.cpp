@@ -1,10 +1,102 @@
 #include "FunscriptHeatmap.h"
 #include "OFS_Util.h"
 #include "OFS_Profiling.h"
+
+#include "OFS_Shader.h"
+#include "OFS_GL.h"
+
+#include <chrono>
+#include <memory>
 #include <array>
 
 ImGradient FunscriptHeatmap::Colors;
 ImGradient FunscriptHeatmap::LineColors;
+
+static constexpr auto SpeedTextureResolution = 4096;
+
+class HeatmapShader : public ShaderBase
+{
+private:
+	int32_t ProjMtxLoc = 0;
+    int32_t SpeedLoc = 0;
+
+	static constexpr const char* vtx_shader = R"(#version 300 es
+		precision highp float;
+
+		uniform mat4 ProjMtx;
+		in vec2 Position;
+		in vec2 UV;
+		in vec4 Color;
+		out vec2 Frag_UV;
+		out vec4 Frag_Color;
+		
+		void main()	{
+			Frag_UV = UV;
+			Frag_Color = Color;
+			gl_Position = ProjMtx * vec4(Position.xy,0,1);
+		}
+	)";
+
+	static constexpr const char* frag_shader = R"(#version 300 es
+		precision highp float;
+        uniform sampler2D speedTex;
+
+		in vec2 Frag_UV;
+		in vec4 Frag_Color;
+		out vec4 Out_Color;
+
+        const vec3 colors[] = vec3[](
+            vec3(0.f, 0.f, 0.f),
+            vec3(30.f, 144.f, 255.f) / 255.f,
+            vec3(0.f, 255.f, 255.f) / 255.f,
+            vec3(0.f, 255.f, 0.f) / 255.f,
+            vec3(255.f, 255.f, 0.f) / 255.f,
+            vec3(255.f, 0.f, 0.f) / 255.f
+        );
+
+        vec3 RAMP(vec3 cols[6], float x) {
+            x *= float(cols.length() - 1);
+            return mix(cols[int(x)], cols[int(x) + 1], smoothstep(0.0, 1.0, fract(x)));
+        }
+
+		void main()	{
+            float speed = texture(speedTex, vec2(Frag_UV.x, 0.f));
+            vec3 color = RAMP(colors, speed);
+            color = mix(vec3(0.f, 0.f, 0.f), color, Frag_UV.y);
+            Out_Color = vec4(color, 1.f);
+		}
+	)";
+
+	void initUniformLocations() noexcept;
+public:
+	HeatmapShader()
+		: ShaderBase(vtx_shader, frag_shader)
+	{
+		initUniformLocations();
+	}
+
+	void ProjMtx(const float* mat4) noexcept;
+    void SpeedTex(uint32_t unit) noexcept;
+};
+
+static std::unique_ptr<HeatmapShader> Shader;
+
+
+void HeatmapShader::initUniformLocations() noexcept
+{
+	ProjMtxLoc = glGetUniformLocation(program, "ProjMtx");
+    SpeedLoc = glGetUniformLocation(program, "speedTex");
+}
+
+void HeatmapShader::ProjMtx(const float* mat4) noexcept
+{
+	glUniformMatrix4fv(ProjMtxLoc, 1, GL_FALSE, mat4);
+}
+
+void HeatmapShader::SpeedTex(uint32_t unit) noexcept
+{
+    glUniform1i(SpeedLoc, unit);
+}
 
 void FunscriptHeatmap::Init() noexcept
 {
@@ -41,73 +133,116 @@ void FunscriptHeatmap::Init() noexcept
         }
         LineColors.refreshCache();
     }
+    Shader = std::make_unique<HeatmapShader>();
 }
 
 FunscriptHeatmap::FunscriptHeatmap() noexcept
 {
-    Gradient.clear();
-    Gradient.addMark(0.f, IM_COL32(0, 0, 0, 255));
-    Gradient.addMark(1.f, IM_COL32(0, 0, 0, 255));
-    Gradient.refreshCache();
+    glGenTextures(1, &speedTexture);
+    glBindTexture(GL_TEXTURE_2D, speedTexture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, SpeedTextureResolution, 1, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void FunscriptHeatmap::Update(float totalDuration, const FunscriptArray& actions) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    ImColor BackgroundColor(0.f, 0.f, 0.f, 1.f);
+    auto startTime = std::chrono::high_resolution_clock::now();    
+    std::vector<float> speedBuffer; 
+    speedBuffer.resize(SpeedTextureResolution, 0.f);
+    std::vector<uint16_t> sampleCountBuffer;
+    sampleCountBuffer.resize(SpeedTextureResolution, 0);
 
-    Gradient.clear();
-    Gradient.addMark(0.f, BackgroundColor);
-    Gradient.addMark(1.f, BackgroundColor);
-    if (actions.empty()) { Gradient.refreshCache(); return; }
+    float timeStep = totalDuration / SpeedTextureResolution;
 
-    constexpr float GapDuration = 10.f;
-    constexpr float MinSegmentTime = 2.f;
-    constexpr int32_t MaxSegments = 200;
-    int SegmentCount = Util::Clamp((int32_t)std::round(totalDuration / MinSegmentTime), 1, MaxSegments);
-    Speeds.clear(); Speeds.resize(SegmentCount, 0.f);
+
+
+    for(uint32_t i = 0, j = 1, size = actions.size(); j < size; i = j++)
+    {
+        auto prev = actions[i];
+        auto next = actions[j];
+
+        float strokeDuration = next.atS - prev.atS;
+        float speed = std::abs(prev.pos - next.pos) / strokeDuration;
     
-    float SegmentDuration = totalDuration / MaxSegments;
-
-    auto lastAction = actions.front();
-    for (int i = 1; i < actions.size(); ++i) {
-        auto& action = actions[i];
-        float duration = action.atS - lastAction.atS;
-        assert(duration > 0.f);
-        float length = std::abs(action.pos - lastAction.pos);
-        float speed = length / duration; // speed
-        speed = Util::Clamp(speed / MaxSpeedPerSecond, 0.f, 1.f);
-
-        int segmentIdx = Util::Clamp((action.atS + (duration / 2.f)) / totalDuration, 0.f, 1.f) * (Speeds.size()-1);
-        auto& segment = Speeds[segmentIdx];
-        if (segment > 0.f) {
-            segment += speed;
-            segment /= 2.f;
-        } 
-        else {
-            segment = speed;
+        uint32_t prevSampleIdx = prev.atS / timeStep;
+        uint32_t nextSampleIdx = next.atS / timeStep;
+        if(prevSampleIdx == nextSampleIdx)
+        {
+            if(prevSampleIdx < SpeedTextureResolution)
+            {
+                sampleCountBuffer[prevSampleIdx] += 1;
+                speedBuffer[prevSampleIdx] += speed;
+            }
         }
-        lastAction = action;
+        else
+        {
+            if(prevSampleIdx < SpeedTextureResolution)
+            {
+                sampleCountBuffer[prevSampleIdx] += 1;
+                speedBuffer[prevSampleIdx] += speed;
+            }
+
+            if(nextSampleIdx < SpeedTextureResolution)
+            {
+                sampleCountBuffer[nextSampleIdx] += 1;
+                speedBuffer[nextSampleIdx] += speed;
+            }
+        }
     }
 
-    float offset = (1.f/Speeds.size())/2.f;
-    ImColor color(0.f, 0.f, 0.f, 1.f);
-    for (int i = 0; i < Speeds.size(); ++i) {
-        float speed = Speeds[i];
-        Colors.getColorAt(speed, &color.Value.x);
-        float pos = ((float)(i+1)/Speeds.size()) + offset;
-        Gradient.addMark(pos, color);
+    for(uint32_t i=0; i < SpeedTextureResolution; i += 1)
+    {
+        speedBuffer[i] /= (float)sampleCountBuffer[i];
+        speedBuffer[i] /= MaxSpeedPerSecond;
     }
-    Gradient.refreshCache();
-}
 
-void FunscriptHeatmap::GetColorForSpeed(float speed, ImColor* colorOut) const noexcept
-{
-    float relSpeed = Util::Clamp<float>(speed / FunscriptHeatmap::MaxSpeedPerSecond, 0.f, 1.f);
-    Colors.getColorAt(relSpeed, &colorOut->Value.x);
+
+    glBindTexture(GL_TEXTURE_2D, speedTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, SpeedTextureResolution, 1, 0, GL_RED, GL_FLOAT, speedBuffer.data());
+    glBindTexture(GL_TEXTURE_2D, 0);
+    auto endTime = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float> duration = endTime - startTime;
+    LOGF_INFO("Heatmap update took: %f", duration.count());
 }
 
 void FunscriptHeatmap::DrawHeatmap(ImDrawList* drawList, const ImVec2& min, const ImVec2& max) noexcept
 {
-    ImGradient::DrawGradientBar(&Gradient, min, max.x - min.x, max.y - min.y);
+    drawList->AddCallback([](const ImDrawList* parentList, const ImDrawCmd* cmd) noexcept
+    {
+        auto self = (FunscriptHeatmap*)cmd->UserCallbackData;
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, self->speedTexture);
+        glActiveTexture(GL_TEXTURE0);
+
+        // FIXME: this breaks if the heatmap isn't drawn in the main viewport
+        auto drawData = ImGui::GetDrawData();
+        float L = drawData->DisplayPos.x;
+        float R = drawData->DisplayPos.x + drawData->DisplaySize.x;
+        float T = drawData->DisplayPos.y;
+        float B = drawData->DisplayPos.y + drawData->DisplaySize.y;
+        const float orthoProjection[4][4] =
+        {
+            { 2.0f / (R - L), 0.0f, 0.0f, 0.0f },
+            { 0.0f, 2.0f / (T - B), 0.0f, 0.0f },
+            { 0.0f, 0.0f, -1.0f, 0.0f },
+            { (R + L) / (L - R),  (T + B) / (B - T),  0.0f,   1.0f },
+        };
+        Shader->use();
+        Shader->ProjMtx(&orthoProjection[0][0]);
+        Shader->SpeedTex(1);
+
+    }, this);
+    drawList->AddImage(0, min, max);
+    drawList->AddCallback(ImDrawCallback_ResetRenderState, 0);
+}
+
+void FunscriptHeatmap::ShowMenu() noexcept
+{
+    ImGui::Begin("HeatmapEdit");
+    ImGui::End();
 }

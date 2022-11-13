@@ -24,6 +24,7 @@ void OFS_VideoplayerControls::VideoLoaded(SDL_Event& ev) noexcept
 void OFS_VideoplayerControls::Init(OFS_Videoplayer* player) noexcept
 {
     this->player = player;
+    Heatmap = std::make_unique<FunscriptHeatmap>();
     videoPreview = std::make_unique<VideoPreview>();
     videoPreview->setup(false);
     EventSystem::ev().Subscribe(VideoEvents::VideoLoaded, EVENT_SYSTEM_BIND(this, &OFS_VideoplayerControls::VideoLoaded));
@@ -57,11 +58,11 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
     const float offsetProgressH = h / 5.f;
     const float offsetProgressW = currentPosX - frameBB.Min.x;
     drawList->AddRectFilled(
-        frameBB.Min + ImVec2(-1.f, offsetProgressH),
+        frameBB.Min + ImVec2(0.f, offsetProgressH),
         frameBB.Min + ImVec2(offsetProgressW, frameBB.GetHeight()) + ImVec2(0.f, offsetProgressH),
-        ImColor(style.Colors[ImGuiCol_PlotLinesHovered]));
+        ImGui::GetColorU32(ImGuiCol_PlotLinesHovered));
     drawList->AddRectFilled(frameBB.Min + ImVec2(offsetProgressW, offsetProgressH),
-        frameBB.Max + ImVec2(1.f, offsetProgressH),
+        frameBB.Max + ImVec2(0.f, offsetProgressH),
         IM_COL32(150, 150, 150, 255));
 
     customDraw(drawList, frameBB, item_hovered);
@@ -73,12 +74,8 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
     drawList->AddLine(p1 + ImVec2(0.f, h / 3.f), p2 + ImVec2(0.f, h / 3.f), IM_COL32(255, 0, 0, 255), timeline_pos_cursor_w / 2.f);
 
     // gradient + shadow
-    Heatmap.DrawHeatmap(drawList, frameBB.Min, frameBB.Max);
-    drawList->AddRectFilledMultiColor(frameBB.Min, frameBB.Max, 
-        IM_COL32(0, 0, 0, 255),
-        IM_COL32(0, 0, 0, 255),
-        IM_COL32(0, 0, 0, 0),
-        IM_COL32(0, 0, 0, 0));
+    Heatmap->DrawHeatmap(drawList, frameBB.Min, frameBB.Max);
+
 
     const ImColor timeline_cursor_back = IM_COL32(255, 255, 255, 255);
     const ImColor timeline_cursor_front = IM_COL32(0, 0, 0, 255);
@@ -121,28 +118,17 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
     }
 
     if (dragging && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-        auto viewport = ImGui::GetWindowViewport();
         auto mouseDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
-        float timelineY = frameBB.GetCenter().y;
-        float timelineHeight = frameBB.GetHeight();
-        float screenY = viewport->Size.y;
-        float scrubScale = 1.f - ((std::abs(timelineY - mouse.y) - timelineHeight * 1.f) / screenY);
-        scrubScale = Util::Clamp(scrubScale, 0.005f, 1.f);
 
-        if (scrubScale < 1.f) {
-            scrubScale = scrubScale - 0.75f;
-            scrubScale = Util::Clamp(scrubScale, 0.005f, 1.f);
-            ImGui::BeginTooltipEx(ImGuiWindowFlags_None, ImGuiTooltipFlags_None);
-            ImGui::Text("%s: x%0.3f", TR(SPEED), scrubScale);
-            ImGui::EndTooltip();
-        }
-
-        if (std::abs(mouseDelta.x) > 0.f) {
-            float startDragRelPos = (((mouse.x - mouseDelta.x) - frameBB.Min.x) / frameBB.GetWidth());
-            float dragPosDelta = relTimelinePos - startDragRelPos;
-            *position += dragPosDelta * scrubScale;
+        if (mouseDelta.x != 0.f) {
+            if(mouse.x >= frameBB.Min.x && mouse.x <= frameBB.Max.x)
+            {
+                float startDragRelPos = (((mouse.x - mouseDelta.x) - frameBB.Min.x) / frameBB.GetWidth());
+                float dragPosDelta = relTimelinePos - startDragRelPos;
+                *position += dragPosDelta;
+                change = true;
+            }
             ImGui::ResetMouseDragDelta(ImGuiMouseButton_Left);
-            change = true;
         }
     }
     else {

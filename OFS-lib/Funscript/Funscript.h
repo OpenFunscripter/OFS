@@ -196,7 +196,7 @@ public:
 	inline const FunscriptAction* GetPreviousActionBehind(float time) noexcept { return getPreviousActionBehind(time); }
 	inline const FunscriptAction* GetClosestAction(float time) noexcept { return getActionAtTime(data.Actions, time, std::numeric_limits<float>::max()); }
 
-	float GetPositionAtTime(float time) noexcept;
+	float GetPositionAtTime(float time) const noexcept;
 	
 	inline void AddAction(FunscriptAction newAction) noexcept { addAction(data.Actions, newAction); }
 	void AddMultipleActions(const FunscriptArray& actions) noexcept;
