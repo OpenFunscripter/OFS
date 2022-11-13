@@ -12,6 +12,7 @@
 
 #include <sstream>
 
+#include "SDL_timer.h"
 #include "SDL_atomic.h"
 
 enum MpvPropertyGet : uint64_t {
@@ -54,12 +55,15 @@ struct MpvPlayerContext
     mpv_render_context* mpvGL = nullptr;
     uint32_t framebuffer = 0;
     MpvDataCache data = MpvDataCache();
+
     std::array<char, 32> tmpBuf;
     SDL_atomic_t renderUpdate = {0};
     SDL_atomic_t hasEvents = {0};
 
     uint32_t* frameTexture = nullptr;
     float* logicalPosition = nullptr;
+
+    uint64_t smoothTimer = 0;
 };
 
 #define CTX static_cast<MpvPlayerContext*>(ctx)
@@ -298,6 +302,7 @@ inline static void ProcessEvents(MpvPlayerContext* ctx) noexcept
                     {
                         auto newPercentPos = (*(double*)prop->data) / 100.0;
                         ctx->data.percentPos = newPercentPos;
+                        ctx->smoothTimer = SDL_GetTicks64();
                         if(!ctx->data.paused) {
                             *ctx->logicalPosition = newPercentPos;
                         }
@@ -310,8 +315,11 @@ inline static void ProcessEvents(MpvPlayerContext* ctx) noexcept
                     {
                         bool paused = *(int64_t*)prop->data;
                         if (paused) {
-                            *ctx->logicalPosition = ctx->data.percentPos;
+                            float timeSinceLastUpdate = (SDL_GetTicks64() - CTX->smoothTimer) / 1000.f;
+                            float positionOffset = (timeSinceLastUpdate * CTX->data.currentSpeed) / CTX->data.duration;
+                            *ctx->logicalPosition += positionOffset;
                         }
+                        ctx->smoothTimer = SDL_GetTicks64();
                         ctx->data.paused = paused;
                         notifyPaused(ctx->data.paused);
                         break;
@@ -469,8 +477,8 @@ void OFS_Videoplayer::SeekFrames(int32_t offset) noexcept
 void OFS_Videoplayer::SetPaused(bool paused) noexcept
 {
     if (!paused && !VideoLoaded()) return;
-    CTX->data.paused = paused;
-    mpv_set_property_async(CTX->mpv, 0, "pause", MPV_FORMAT_FLAG, &CTX->data.paused);
+    int64_t setPaused = paused;
+    mpv_set_property_async(CTX->mpv, 0, "pause", MPV_FORMAT_FLAG, &setPaused);
 }
 
 void OFS_Videoplayer::CycleSubtitles() noexcept
@@ -566,7 +574,16 @@ float OFS_Videoplayer::CurrentPercentPosition() const noexcept
 
 double OFS_Videoplayer::CurrentTime() const noexcept
 {
-    return logicalPosition * CTX->data.duration;
+    if(CTX->data.paused)
+    {
+        return logicalPosition * CTX->data.duration;
+    }
+    else 
+    {
+        float timeSinceLastUpdate = (SDL_GetTicks64() - CTX->smoothTimer) / 1000.f;
+        float positionOffset = (timeSinceLastUpdate * CTX->data.currentSpeed) / Duration();
+        return (logicalPosition + positionOffset) * CTX->data.duration;
+    }
 }
 
 double OFS_Videoplayer::CurrentPlayerPosition() const noexcept

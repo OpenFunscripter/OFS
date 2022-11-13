@@ -40,9 +40,9 @@ namespace OFS {
     template<>
     struct is_json_compatible<int8_t>: std::true_type {
     };
-    //template<> // This is the same as size_t
-    //struct is_json_compatible<uint64_t>: std::true_type {
-    //};
+    // template<> // This is the same as size_t
+    // struct is_json_compatible<uint64_t>: std::true_type {
+    // };
     template<>
     struct is_json_compatible<uint32_t>: std::true_type {
     };
