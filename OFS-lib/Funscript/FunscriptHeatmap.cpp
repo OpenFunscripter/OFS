@@ -199,8 +199,8 @@ void FunscriptHeatmap::Update(float totalDuration, const FunscriptArray& actions
     {
         speedBuffer[i] /= (float)sampleCountBuffer[i];
         speedBuffer[i] /= MaxSpeedPerSecond;
+        speedBuffer[i] = Util::Clamp(speedBuffer[i], 0.f, 1.f);
     }
-
 
     glBindTexture(GL_TEXTURE_2D, speedTexture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, SpeedTextureResolution, 1, 0, GL_RED, GL_FLOAT, speedBuffer.data());
