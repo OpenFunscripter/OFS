@@ -12,6 +12,7 @@
 #include "OFS_GL.h"
 
 #include "state/states/BaseOverlayState.h"
+#include "state/states/WaveformState.h"
 
 #include "KeybindingSystem.h"
 #include "SDL_events.h"
@@ -73,6 +74,10 @@ void ScriptTimeline::updateSelection(const OverlayDrawingCtx& ctx, bool clear) n
 void ScriptTimeline::FfmpegAudioProcessingFinished(SDL_Event& ev) noexcept
 {
 	ShowAudioWaveform = true;
+	// Update cache
+	auto& waveCache = WaveformState::StaticStateSlow();
+	waveCache.Filename = videoPath;
+	waveCache.SetSamples(Wave.data.Samples);
 	LOG_INFO("Audio processing complete.");
 }
 
@@ -497,8 +502,18 @@ void ScriptTimeline::ShowScriptPositions(
 				else if(ImGui::MenuItem(TR(UPDATE_WAVEFORM), NULL, false, !Wave.data.BusyGenerating() && !videoPath.empty())) {
 					if (!Wave.data.BusyGenerating()) {
 						ShowAudioWaveform = false; // gets switched true after processing
-						auto handle = SDL_CreateThread(updateAudioWaveformThread, "OFS_GenWaveform", this);
-						SDL_DetachThread(handle);
+
+						auto& waveCache = WaveformState::StaticStateSlow();
+						if(waveCache.Filename == videoPath)
+						{
+							Wave.data.Samples = waveCache.GetSamples();
+							ShowAudioWaveform = true;
+						}
+						else 
+						{
+							auto handle = SDL_CreateThread(updateAudioWaveformThread, "OFS_GenWaveform", this);
+							SDL_DetachThread(handle);
+						}
 					}
 				}
 				ImGui::EndMenu();

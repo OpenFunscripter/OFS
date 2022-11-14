@@ -15,7 +15,7 @@ bool OFS_Waveform::LoadFlac(const std::string& output) noexcept
 	if (!flac) return false;
 
 	std::vector<drflac_int16> ChunkSamples; ChunkSamples.resize(48000);
-	constexpr int SamplesPerLine = 60; 
+	constexpr int SamplesPerLine = 300; 
 
 	float minSample = 0.f;
 	float maxSample = 0.f;

@@ -97,7 +97,7 @@ bool OpenFunscripter::imguiSetup() noexcept
 
 static void SaveState() noexcept
 {
-    auto stateJson = OFS_StateManager::Get()->SerializeAppAll();
+    auto stateJson = OFS_StateManager::Get()->SerializeAppAll(true);
     auto stateBin = Util::SerializeCBOR(stateJson);
     auto statePath = Util::Prefpath("state.ofs");
     Util::WriteFile(statePath.c_str(), stateBin.data(), stateBin.size());
@@ -141,7 +141,7 @@ bool OpenFunscripter::Init(int argc, char* argv[])
             bool succ;
             auto cbor = Util::ParseCBOR(fileData, &succ);
             if (succ) {
-                stateMgr->DeserializeAppAll(cbor);
+                stateMgr->DeserializeAppAll(cbor, true);
             }
         }
     }

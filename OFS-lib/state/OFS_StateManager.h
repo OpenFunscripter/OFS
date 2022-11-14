@@ -25,18 +25,18 @@ class OFS_StateMetadata
     std::any Create() const noexcept { return creator(); }
     std::string_view Name() const noexcept { return name; }
     
-    bool Serialize(const std::any& value, nlohmann::json& obj) const noexcept {
-        return serializer(value, obj);
+    bool Serialize(const std::any& value, nlohmann::json& obj, bool enableBinary) const noexcept {
+        return serializer(value, obj, enableBinary);
     }
 
-    bool Deserialize(std::any& value, const nlohmann::json& obj) const noexcept {
-        return deserializer(value, obj);
+    bool Deserialize(std::any& value, const nlohmann::json& obj, bool enableBinary) const noexcept {
+        return deserializer(value, obj, enableBinary);
     }
 
     private:
     using OFS_StateCreator = std::any(*)() noexcept;
-    using OFS_StateSerializer = bool (*)(const std::any&, nlohmann::json&) noexcept;
-    using OFS_StateDeserializer = bool (*)(std::any&, const nlohmann::json&) noexcept;
+    using OFS_StateSerializer = bool (*)(const std::any&, nlohmann::json&, bool) noexcept;
+    using OFS_StateDeserializer = bool (*)(std::any&, const nlohmann::json&, bool) noexcept;
 
     std::string name;
     OFS_StateCreator creator;
@@ -59,17 +59,17 @@ class OFS_StateMetadata
     }
 
     template<typename T>
-    static bool serializeUntyped(const std::any& value, nlohmann::json& obj) noexcept
+    static bool serializeUntyped(const std::any& value, nlohmann::json& obj, bool enableBinary) noexcept
     {
         auto& realValue = std::any_cast<const T&>(value);
-        return OFS::Serializer::Serialize(realValue, obj);
+        return enableBinary ? OFS::Serializer<true>::Serialize(realValue, obj) : OFS::Serializer<false>::Serialize(realValue, obj);
     }
 
     template<typename T>
-    static bool deserializeUntyped(std::any& value, const nlohmann::json& obj) noexcept
+    static bool deserializeUntyped(std::any& value, const nlohmann::json& obj, bool enableBinary) noexcept
     {
         auto& realValue = std::any_cast<T&>(value);
-        return OFS::Serializer::Deserialize(realValue, obj);
+        return enableBinary ? OFS::Serializer<true>::Deserialize(realValue, obj) : OFS::Serializer<false>::Deserialize(realValue, obj);
     }
 };
 
@@ -193,10 +193,10 @@ class OFS_StateManager
         return getState<T>(id, ProjectState);
     }
 
-    nlohmann::json SerializeAppAll() noexcept;
-    bool DeserializeAppAll(const nlohmann::json& state) noexcept;
+    nlohmann::json SerializeAppAll(bool enableBinary) noexcept;
+    bool DeserializeAppAll(const nlohmann::json& state, bool enableBinary) noexcept;
 
-    nlohmann::json SerializeProjectAll() noexcept;
-    bool DeserializeProjectAll(const nlohmann::json& project) noexcept;
+    nlohmann::json SerializeProjectAll(bool enableBinary) noexcept;
+    bool DeserializeProjectAll(const nlohmann::json& project, bool enableBinary) noexcept;
     void ClearProjectAll() noexcept;
 };

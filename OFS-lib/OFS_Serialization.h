@@ -59,10 +59,9 @@ namespace OFS {
     struct is_json_compatible<char>: std::true_type {
     };
 
-    // Enabling this breaks json support because nlohmann::json does not support
+    // Enabling binary optimization breaks json support because nlohmann::json does not support
     // full round trip for nlohmann::json::binary_t when using the json serializer
-    static constexpr bool EnableBinaryOptimization = false;
-
+    template<bool EnableBinaryOptimization>
     class Serializer {
     private:
         template<typename FieldDescriptor, typename ObjectType>
@@ -118,12 +117,12 @@ namespace OFS {
                     if constexpr (refl::descriptor::has_attribute<serializeEnum>(member)) {
                         using EnumType = typename std::underlying_type<MemberType>::type;
                         auto enumValue = static_cast<EnumType>(memberRef);
-                        bool succ = OFS::Serializer::Deserialize(enumValue, currentJson);
+                        bool succ = OFS::Serializer<EnableBinaryOptimization>::Deserialize(enumValue, currentJson);
                         memberRef = static_cast<MemberType>(enumValue);
                         if (!succ) successful = false;
                     }
                     else {
-                        bool succ = OFS::Serializer::Deserialize(memberRef, currentJson);
+                        bool succ = OFS::Serializer<EnableBinaryOptimization>::Deserialize(memberRef, currentJson);
                         if (!succ) successful = false;
                     }
                 }
@@ -147,7 +146,7 @@ namespace OFS {
 
             for (auto& jsonItem : jsonArray) {
                 auto& item = obj.emplace_back();
-                bool succ = OFS::Serializer::Deserialize(item, jsonItem);
+                bool succ = OFS::Serializer<EnableBinaryOptimization>::Deserialize(item, jsonItem);
                 if (!succ) return false;
             }
             return true;
@@ -159,7 +158,7 @@ namespace OFS {
             size_t idx = 0;
             for (auto& jsonItem : jsonArray) {
                 auto& item = obj[idx++];
-                bool succ = OFS::Serializer::Deserialize(item, jsonItem);
+                bool succ = OFS::Serializer<EnableBinaryOptimization>::Deserialize(item, jsonItem);
                 if (!succ) return false;
             }
             return true;
@@ -207,11 +206,11 @@ namespace OFS {
                 if constexpr (refl::descriptor::has_attribute<serializeEnum>(member)) {
                     using EnumType = typename std::underlying_type<MemberType>::type;
                     auto enumValue = static_cast<EnumType>(memberRef);
-                    bool succ = OFS::Serializer::Serialize(enumValue, currentJson);
+                    bool succ = OFS::Serializer<EnableBinaryOptimization>::Serialize(enumValue, currentJson);
                     if (!succ) successful = false;
                 }
                 else {
-                    bool succ = OFS::Serializer::Serialize(memberRef, currentJson);
+                    bool succ = OFS::Serializer<EnableBinaryOptimization>::Serialize(memberRef, currentJson);
                     if (!succ) successful = false;
                 }
             });
@@ -228,7 +227,7 @@ namespace OFS {
             else {
                 for (auto& item : container) {
                     auto& jsonItem = jsonArray.emplace_back();
-                    bool succ = OFS::Serializer::Serialize(item, jsonItem);
+                    bool succ = OFS::Serializer<EnableBinaryOptimization>::Serialize(item, jsonItem);
                     if (!succ) return false;
                 }
             }
@@ -240,7 +239,7 @@ namespace OFS {
         {
             for (auto& item : container) {
                 auto& jsonItem = jsonArray.emplace_back();
-                bool succ = OFS::Serializer::Serialize(item, jsonItem);
+                bool succ = OFS::Serializer<EnableBinaryOptimization>::Serialize(item, jsonItem);
                 if (!succ) return false;
             }
             return true;

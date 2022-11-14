@@ -6,6 +6,7 @@
 #include "bitsery/traits/string.h"
 #include "bitsery/ext/growable.h"
 #include "bitsery/ext/std_smart_ptr.h"
+#include "bitsery/ext/value_range.h"
 
 #include <vector>
 #include <cstdint>
@@ -95,5 +96,14 @@ namespace bitsery {
     void serialize(S& s, ImColor& o)
     {
         s.object(o.Value);
+    }
+
+    template<typename S>
+    void serialize(S& s, std::vector<float>& o)
+    {
+        s.container(o, std::numeric_limits<uint32_t>::max(),
+            [](S& s, float& v) {
+                s.value4b(v);
+            });
     }
 }

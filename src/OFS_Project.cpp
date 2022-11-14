@@ -101,22 +101,22 @@ void OFS_Project::loadNecessaryGlyphs() noexcept
 bool OFS_Project::Load(const std::string& path) noexcept
 {
     FUN_ASSERT(!valid, "Can't import if project is already loaded.");
-#if 0
-	std::vector<uint8_t> projectBin;
-	if(Util::ReadFile(path.c_str(), projectBin) > 0) {
-		bool succ;
-		auto projectState = Util::ParseCBOR(projectBin, &succ);
-		if(succ) {
-			valid = OFS_StateManager::Get()->DeserializeProjectAll(projectState);
-		}
-	}
+#if 1
+    std::vector<uint8_t> projectBin;
+    if (Util::ReadFile(path.c_str(), projectBin) > 0) {
+        bool succ;
+        auto projectState = Util::ParseCBOR(projectBin, &succ);
+        if (succ) {
+            valid = OFS_StateManager::Get()->DeserializeProjectAll(projectState, true);
+        }
+    }
 #else
     std::string projectJson = Util::ReadFileString(path.c_str());
     if (!projectJson.empty()) {
         bool succ;
         auto json = Util::ParseJson(projectJson, &succ);
         if (succ) {
-            valid = OFS_StateManager::Get()->DeserializeProjectAll(json);
+            valid = OFS_StateManager::Get()->DeserializeProjectAll(json, false);
         }
         else {
             valid = false;
@@ -240,12 +240,13 @@ void OFS_Project::Save(const std::string& path, bool clearUnsavedChanges) noexce
         auto size = OFS_Binary::Serialize(projectState.binaryFunscriptData, *this);
         projectState.binaryFunscriptData.resize(size);
     }
-    auto projectState = OFS_StateManager::Get()->SerializeProjectAll();
 
-#if 0
-	auto projectBin = Util::SerializeCBOR(projectState);
-	Util::WriteFile(path.c_str(), projectBin.data(), projectBin.size());
+#if 1
+    auto projectState = OFS_StateManager::Get()->SerializeProjectAll(true);
+    auto projectBin = Util::SerializeCBOR(projectState);
+    Util::WriteFile(path.c_str(), projectBin.data(), projectBin.size());
 #else
+    auto projectState = OFS_StateManager::Get()->SerializeProjectAll(false);
     auto projectJson = Util::SerializeJson(projectState, false);
     Util::WriteFile(path.c_str(), projectJson.data(), projectJson.size());
 #endif

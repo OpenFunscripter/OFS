@@ -4,8 +4,11 @@
 #include <string>
 #include <memory>
 
+#include "OFS_BinarySerialization.h"
 #include "OFS_Shader.h"
 #include "imgui.h"
+
+
 
 // helper class to render audio waves
 class OFS_Waveform

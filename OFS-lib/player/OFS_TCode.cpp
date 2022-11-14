@@ -58,7 +58,7 @@ void TCodePlayer::loadSettings(const std::string& path) noexcept
     auto jsonText = Util::ReadFileString(path.c_str());
     auto json = Util::ParseJson(jsonText, &succ);
     if (succ) {
-        OFS::Serializer::Deserialize(*this, json["tcode_player"]);
+        OFS::Serializer<false>::Deserialize(*this, json["tcode_player"]);
     }
     loadPath = path;
 }
@@ -66,7 +66,7 @@ void TCodePlayer::loadSettings(const std::string& path) noexcept
 void TCodePlayer::save() noexcept
 {
     nlohmann::json json;
-    OFS::Serializer::Serialize(*this, json["tcode_player"]);
+    OFS::Serializer<false>::Serialize(*this, json["tcode_player"]);
     auto jsonText = Util::SerializeJson(json, true);
     Util::WriteFile(loadPath.c_str(), jsonText.data(), jsonText.size());
 }

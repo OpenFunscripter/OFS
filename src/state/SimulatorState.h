@@ -41,8 +41,7 @@ struct SimulatorDefaultConfigState
 
     inline static SimulatorDefaultConfigState& StaticStateSlow() noexcept
     {
-        // This shouldn't be done in hot paths but shouldn't be problem otherwise.
-        // The state in this case acts as a static global.
+        // This shouldn't be done in hot paths but shouldn't be a problem otherwise.
         uint32_t handle = OFS_AppState<SimulatorDefaultConfigState>::Register(StateName);
         return OFS_AppState<SimulatorDefaultConfigState>(handle).Get();
     }

@@ -24,13 +24,13 @@ Funscript::~Funscript() noexcept
 void Funscript::loadMetadata(const nlohmann::json& metadataObj) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	OFS::Serializer::Deserialize(LocalMetadata, metadataObj);
+	OFS::Serializer<false>::Deserialize(LocalMetadata, metadataObj);
 }
 
 void Funscript::saveMetadata(nlohmann::json& outMetadataObj) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	OFS::Serializer::Serialize(LocalMetadata, outMetadataObj);
+	OFS::Serializer<false>::Serialize(LocalMetadata, outMetadataObj);
 }
 
 void Funscript::notifyActionsChanged(bool isEdit) noexcept

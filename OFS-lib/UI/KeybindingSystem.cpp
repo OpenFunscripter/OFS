@@ -176,7 +176,7 @@ bool KeybindingSystem::load(const std::string& path) noexcept
     auto json = Util::ParseJson(jsonText, &succ);
     if (succ) {
         Keybindings bindings;
-        OFS::Serializer::Deserialize(bindings, json["keybindings"]);
+        OFS::Serializer<false>::Deserialize(bindings, json["keybindings"]);
         setBindings(bindings);
     }
     return succ;
@@ -185,7 +185,7 @@ bool KeybindingSystem::load(const std::string& path) noexcept
 void KeybindingSystem::save() noexcept
 {
     nlohmann::json json;
-    OFS::Serializer::Serialize(ActiveBindings, json["keybindings"]);
+    OFS::Serializer<false>::Serialize(ActiveBindings, json["keybindings"]);
     auto jsonText = Util::SerializeJson(json, true);
     Util::WriteFile(keybindingPath.c_str(), jsonText.data(), jsonText.size());
 }

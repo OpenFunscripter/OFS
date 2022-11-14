@@ -2,6 +2,7 @@
 #include "SDL_rwops.h"
 #include "SDL_filesystem.h"
 #include "SDL_thread.h"
+#include "SDL_timer.h"
 #include "nlohmann/json.hpp"
 
 #include <memory>
