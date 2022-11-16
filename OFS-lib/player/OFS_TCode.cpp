@@ -8,7 +8,6 @@
 #include "imgui.h"
 
 #include "libserialport.h"
-#include "libserialport_internal.h"
 
 bool TCodePlayer::openPort(struct sp_port* openthis) noexcept
 {
@@ -18,13 +17,13 @@ bool TCodePlayer::openPort(struct sp_port* openthis) noexcept
         port = nullptr;
     }
 
-    if (sp_get_port_by_name(openthis->name, &port) != SP_OK) {
-        LOGF_ERROR("Failed to get port \"%s\"", openthis->description);
+    if (sp_get_port_by_name(sp_get_port_name(openthis), &port) != SP_OK) {
+        LOGF_ERROR("Failed to get port \"%s\"", sp_get_port_description(openthis));
         return false;
     }
 
     if (sp_open(port, sp_mode::SP_MODE_WRITE) != SP_OK) {
-        LOGF_ERROR("Failed to open port \"%s\"", port->description);
+        LOGF_ERROR("Failed to open port \"%s\"", sp_get_port_description(port));
         sp_free_port(port);
         port = nullptr;
         return false;
@@ -91,8 +90,8 @@ void TCodePlayer::DrawWindow(bool* open, float currentTime) noexcept
 
     ImGui::Begin(TR_ID("T_CODE", Tr::T_CODE), open, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::Combo(TR(PORT), &current_port, [](void* data, int idx, const char** out_text) -> bool {
-        const char** port_list = (const char**)data;
-        *out_text = ((sp_port*)port_list[idx])->description;
+        const struct sp_port** port_list = (const struct sp_port**)data;
+        *out_text =  sp_get_port_description(port_list[idx]);
         return true;
         }, port_list, port_count);
     if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
