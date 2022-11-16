@@ -504,9 +504,10 @@ void ScriptTimeline::ShowScriptPositions(
 						ShowAudioWaveform = false; // gets switched true after processing
 
 						auto& waveCache = WaveformState::StaticStateSlow();
-						if(waveCache.Filename == videoPath)
+						auto samples = waveCache.GetSamples();
+						if(waveCache.Filename == videoPath && !samples.empty())
 						{
-							Wave.data.Samples = waveCache.GetSamples();
+							Wave.data.Samples = std::move(samples);
 							ShowAudioWaveform = true;
 						}
 						else 

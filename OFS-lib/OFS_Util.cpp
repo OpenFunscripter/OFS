@@ -28,6 +28,12 @@
 #include <locale>
 #include <codecvt>
 
+#define SDEFL_IMPLEMENTATION
+#include "sdefl.h"
+
+#define SINFL_IMPLEMENTATION
+#include "sinfl.h"
+
 char Util::FormatBuffer[4096];
 
 static void SanitizeString(std::string& str) noexcept

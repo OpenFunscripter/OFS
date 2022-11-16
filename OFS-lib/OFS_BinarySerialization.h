@@ -106,4 +106,13 @@ namespace bitsery {
                 s.value4b(v);
             });
     }
+
+    template<typename S>
+    void serialize(S& s, std::vector<uint16_t>& o)
+    {
+        s.container(o, std::numeric_limits<uint32_t>::max(),
+            [](S& s, uint16_t& v) {
+                s.value2b(v);
+            });
+    }
 }
