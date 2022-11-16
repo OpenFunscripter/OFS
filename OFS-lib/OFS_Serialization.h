@@ -253,7 +253,7 @@ namespace OFS {
 
             // Handle json primitive types numbers, strings & booleans
             if constexpr (OFS::is_json_compatible<Type>::value) {
-                json = obj;
+                json = static_cast<Type>(obj);
                 return true;
             }
             // Handle objects
