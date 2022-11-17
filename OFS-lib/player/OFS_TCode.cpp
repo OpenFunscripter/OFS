@@ -103,7 +103,7 @@ void TCodePlayer::DrawWindow(bool* open, float currentTime) noexcept
             int x = 0;
             LOG_DEBUG("Available serial ports:\n");
             while (port_list[x] != NULL) {
-                LOGF_DEBUG("%s\n", port_list[x]->description);
+                LOGF_DEBUG("%s\n", sp_get_port_description(port_list[x]));
                 x++;
             }
             port_count = x;
