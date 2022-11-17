@@ -194,3 +194,9 @@ add_subdirectory("sol2/")
 # ============
 add_library(refl-cpp INTERFACE)
 target_include_directories(refl-cpp INTERFACE "refl-cpp/include/")
+
+# ===========
+# = eventpp =
+# ===========
+add_library(eventpp INTERFACE)
+target_include_directories(eventpp INTERFACE "eventpp/include/")

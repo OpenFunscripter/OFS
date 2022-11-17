@@ -25,3 +25,6 @@
 [submodule "lib/refl-cpp"]
 	path = lib/refl-cpp
 	url = https://github.com/veselink1/refl-cpp.git
+[submodule "lib/eventpp"]
+	path = lib/eventpp
+	url = https://github.com/wqking/eventpp.git
