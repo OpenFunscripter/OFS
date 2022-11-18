@@ -8,7 +8,7 @@ The project is based on OpenGL, SDL2, ImGui, libmpv, & all these other great [li
 1. Clone the repository
 2. `cd "OpenFunscripter"`
 3. `git submodule update --init`
-4. `git lfs checkout` (windows only)
+4. `git lfs pull` (windows only)
 5. Run CMake and compile
 
 Known linux dependencies to just compile are `build-essential libmpv-dev libglvnd-dev`.  
