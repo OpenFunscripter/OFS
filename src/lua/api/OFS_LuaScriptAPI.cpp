@@ -103,7 +103,7 @@ void LuaFunscript::Commit(sol::this_state L) noexcept
     }
 }
 
-const char* LuaFunscript::Path() const noexcept
+std::string LuaFunscript::Path() const noexcept
 {
     auto app = OpenFunscripter::ptr;
     auto ptr = script.lock();
@@ -114,10 +114,10 @@ const char* LuaFunscript::Path() const noexcept
         if(ptr == app->LoadedFunscripts()[scriptIdx])
         {
             auto relPath = app->LoadedFunscripts()[scriptIdx]->RelativePath();
-            return app->LoadedProject->MakePathAbsolute(relPath).c_str();
+            return app->LoadedProject->MakePathAbsolute(relPath);
         }
     }
-    return nullptr;
+    return {};
 }
 
 const char* LuaFunscript::Name() const noexcept

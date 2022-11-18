@@ -11,9 +11,10 @@ jobs:
     runs-on: windows-2019
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: 'true'
+        lfs: 'true'
         fetch-depth: 0
     
     - name: Gets latest created release info

@@ -91,7 +91,7 @@ class LuaFunscript
         bool HasSelection() const noexcept;
         std::vector<lua_Integer> SelectedIndices() const noexcept;
 
-        const char* Path() const noexcept;
+        std::string Path() const noexcept;
         const char* Name() const noexcept;
 
         sol::optional<std::tuple<LuaFunscriptAction, lua_Integer>> ClosestAction(lua_Number time) noexcept;
