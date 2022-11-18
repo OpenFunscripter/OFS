@@ -4,8 +4,6 @@
 #include "eventpp/eventqueue.h"
 #include <vector>
 
-using EventPointer = std::shared_ptr<BaseEvent>;
-
 struct OFS_EventPolicy
 {
     static OFS_EventType getEvent(const EventPointer& event) 

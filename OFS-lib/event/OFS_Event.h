@@ -3,6 +3,7 @@
 #include "SDL_events.h"
 #include <cstdint>
 #include <functional>
+#include <memory>
 
 using OFS_EventType = uint32_t;
 
@@ -16,6 +17,8 @@ class BaseEvent
     virtual OFS_EventType Type() const noexcept = 0;
     static OFS_EventType RegisterNewEvent() noexcept;
 };
+
+using EventPointer = std::shared_ptr<BaseEvent>;
 
 template<typename Event>
 class OFS_Event : public BaseEvent
