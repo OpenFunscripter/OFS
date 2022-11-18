@@ -218,8 +218,7 @@ void Util::OpenFileDialog(const std::string& title, const std::string& path, Fil
         }
 
         EV::Enqueue<OFS_DeferEvent>(
-            [resultHandler = std::move(data->handler), dialogResult]()
-            {
+            [resultHandler = std::move(data->handler), dialogResult]() {
                 resultHandler(*dialogResult);
                 delete dialogResult;
             });
@@ -227,7 +226,7 @@ void Util::OpenFileDialog(const std::string& title, const std::string& path, Fil
         return 0;
     };
     auto threadData = new FileDialogThreadData;
-    threadData->handler = std::move(handler); 
+    threadData->handler = std::move(handler);
     threadData->filters = filters;
     threadData->filterText = filterText;
     threadData->multiple = multiple;
@@ -265,8 +264,7 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
         if (result != nullptr) {
             saveDialogResult->files.emplace_back(result);
         }
-        EV::Enqueue<OFS_DeferEvent>([resultHandler = std::move(data->handler), saveDialogResult]()
-        {
+        EV::Enqueue<OFS_DeferEvent>([resultHandler = std::move(data->handler), saveDialogResult]() {
             resultHandler(*saveDialogResult);
             delete saveDialogResult;
         });
@@ -305,8 +303,7 @@ void Util::OpenDirectoryDialog(const std::string& title, const std::string& path
             directoryDialogResult->files.emplace_back(result);
         }
 
-        EV::Enqueue<OFS_DeferEvent>([resultHandler = std::move(data->handler), directoryDialogResult]()
-        {
+        EV::Enqueue<OFS_DeferEvent>([resultHandler = std::move(data->handler), directoryDialogResult]() {
             resultHandler(*directoryDialogResult);
             delete directoryDialogResult;
         });
@@ -343,8 +340,7 @@ void Util::YesNoCancelDialog(const std::string& title, const std::string& messag
                 enumResult = Util::YesNoCancel::No;
                 break;
         }
-        EV::Enqueue<OFS_DeferEvent>([resultHandler = std::move(data->handler), enumResult]()
-        {
+        EV::Enqueue<OFS_DeferEvent>([resultHandler = std::move(data->handler), enumResult]() {
             resultHandler(enumResult);
         });
         delete data;

@@ -365,10 +365,9 @@ inline void RecordingMode::twoAxisRecording() noexcept
 // recording
 RecordingMode::RecordingMode() noexcept
 {
-    eventUnsub = EV::MakeUnsubscibeFn(SDL_CONTROLLERAXISMOTION, 
-        EV::Queue().appendListener(SDL_CONTROLLERAXISMOTION, 
-        OFS_SDL_Event::HandleEvent(EVENT_SYSTEM_BIND(this, &RecordingMode::ControllerAxisMotion))));
-
+    eventUnsub = EV::MakeUnsubscibeFn(SDL_CONTROLLERAXISMOTION,
+        EV::Queue().appendListener(SDL_CONTROLLERAXISMOTION,
+            OFS_SDL_Event::HandleEvent(EVENT_SYSTEM_BIND(this, &RecordingMode::ControllerAxisMotion))));
 }
 
 RecordingMode::~RecordingMode() noexcept

@@ -238,11 +238,11 @@ bool OpenFunscripter::Init(int argc, char* argv[])
     scripting = std::make_unique<ScriptingMode>();
     scripting->Init();
 
-    EV::Queue().appendListener(FunscriptActionsChangedEvent::EventType, 
+    EV::Queue().appendListener(FunscriptActionsChangedEvent::EventType,
         FunscriptActionsChangedEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::FunscriptChanged)));
-    EV::Queue().appendListener(SDL_DROPFILE, 
+    EV::Queue().appendListener(SDL_DROPFILE,
         OFS_SDL_Event::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::DragNDrop)));
-    EV::Queue().appendListener(SDL_CONTROLLERAXISMOTION, 
+    EV::Queue().appendListener(SDL_CONTROLLERAXISMOTION,
         OFS_SDL_Event::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::ControllerAxisPlaybackSpeed)));
     EV::Queue().appendListener(VideoLoadedEvent::EventType,
         VideoLoadedEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::VideoLoaded)));
@@ -252,7 +252,7 @@ bool OpenFunscripter::Init(int argc, char* argv[])
         FunscriptActionShouldMoveEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActionMoved)));
     EV::Queue().appendListener(FunscriptActionClickedEvent::EventType,
         FunscriptActionClickedEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActionClicked)));
-    EV::Queue().appendListener(FunscriptActionShouldCreateEvent::EventType, 
+    EV::Queue().appendListener(FunscriptActionShouldCreateEvent::EventType,
         FunscriptActionShouldCreateEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActionCreated)));
     EV::Queue().appendListener(ShouldSetTimeEvent::EventType,
         ShouldSetTimeEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineDoubleClick)));
@@ -260,7 +260,7 @@ bool OpenFunscripter::Init(int argc, char* argv[])
         FunscriptShouldSelectTimeEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineSelectTime)));
     EV::Queue().appendListener(ShouldChangeActiveScriptEvent::EventType,
         ShouldChangeActiveScriptEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActiveScriptChanged)));
-    
+
     specialFunctions = std::make_unique<SpecialFunctionsWindow>();
     controllerInput = std::make_unique<ControllerInput>();
     controllerInput->Init();
@@ -1518,14 +1518,12 @@ void OpenFunscripter::ScriptTimelineActionCreated(const FunscriptActionShouldCre
 
 void OpenFunscripter::ScriptTimelineActionMoved(const FunscriptActionShouldMoveEvent* ev) noexcept
 {
-    if(ev->moveStarted)
-    {
+    if (ev->moveStarted) {
         UndoContextScripts scripts;
         scripts.assign(LoadedFunscripts().begin(), LoadedFunscripts().end());
         undoSystem->Snapshot(StateType::ACTIONS_MOVED, std::move(scripts));
     }
-    else 
-    {
+    else {
         if (auto script = ev->script.lock()) {
             if (script->SelectionSize() == 1) {
                 script->RemoveSelectedActions();
@@ -1574,8 +1572,7 @@ void OpenFunscripter::VideoLoaded(const VideoLoadedEvent* ev) noexcept
 void OpenFunscripter::PlayPauseChange(const PlayPauseChangeEvent* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if (ev->paused)
-    {
+    if (ev->paused) {
         tcode->stop();
     }
     else {

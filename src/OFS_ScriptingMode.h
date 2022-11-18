@@ -95,6 +95,7 @@ private:
 
     void singleAxisRecording() noexcept;
     void twoAxisRecording() noexcept;
+
 public:
     // Attention: don't change order
     enum RecordingType : int32_t {
