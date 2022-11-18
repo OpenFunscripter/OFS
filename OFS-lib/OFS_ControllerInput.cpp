@@ -2,8 +2,9 @@
 #include "OFS_Util.h"
 #include "KeybindingSystem.h"
 #include "OFS_Profiling.h"
+#include "OFS_EventSystem.h"
 
-#include "SDL.h"
+#include "SDL_gamecontroller.h"
 
 #include "state/states/ControllerState.h"
 
@@ -61,51 +62,57 @@ int ControllerInput::GetControllerIndex(SDL_JoystickID instance) noexcept
     return -1;
 }
 
-void ControllerInput::ControllerButtonDown(SDL_Event& ev) const noexcept
+void ControllerInput::ControllerButtonDown(const OFS_SDL_Event* ev) const noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     constexpr int32_t RepeatDelayMs = 300;
-    auto& cbutton = ev.cbutton;
+    auto& cbutton = ev->sdl.cbutton;
     ButtonsHeldDown[cbutton.button] = (int64_t)SDL_GetTicks() + RepeatDelayMs;
 }
 
-void ControllerInput::ControllerButtonUp(SDL_Event& ev) const noexcept
+void ControllerInput::ControllerButtonUp(const OFS_SDL_Event* ev) const noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    auto& cbutton = ev.cbutton;
+    auto& cbutton = ev->sdl.cbutton;
     ButtonsHeldDown[cbutton.button] = -1;
 }
 
-void ControllerInput::ControllerDeviceAdded(SDL_Event& ev) noexcept
+void ControllerInput::ControllerDeviceAdded(const OFS_SDL_Event* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if (ev.cdevice.which < Controllers.size()) {
-        ControllerInput& jc = Controllers[ev.cdevice.which];
-        jc.OpenController(ev.cdevice.which);
+    auto& cdevice = ev->sdl.cdevice;
+    if (cdevice.which < Controllers.size()) {
+        auto& jc = Controllers[cdevice.which];
+        jc.OpenController(cdevice.which);
         activeControllers += 1;
     }
 }
 
-void ControllerInput::ControllerDeviceRemoved(SDL_Event& ev) noexcept
+void ControllerInput::ControllerDeviceRemoved(const OFS_SDL_Event* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    int cIndex = GetControllerIndex(ev.cdevice.which);
+    int cIndex = GetControllerIndex(ev->sdl.cdevice.which);
     if (cIndex < 0) return; // unknown controller?
-    ControllerInput& jc = Controllers[cIndex];
+    auto& jc = Controllers[cIndex];
     jc.CloseController();
     activeControllers -= 1;
 }
 
-void ControllerInput::Init(EventSystem& events) noexcept
+void ControllerInput::Init() noexcept
 {
     FUN_ASSERT(ControllerInput::stateHandle == 0xFFFF'FFFF, "state already initialized");
     stateHandle = OFS_AppState<ControllerInputState>::Register(ControllerInputState::StateName);
     SDL_JoystickEventState(SDL_ENABLE);
     SDL_GameControllerEventState(SDL_ENABLE);
-    events.Subscribe(SDL_CONTROLLERDEVICEADDED, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerDeviceAdded));
-    events.Subscribe(SDL_CONTROLLERDEVICEREMOVED, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerDeviceRemoved));
-    events.Subscribe(SDL_CONTROLLERBUTTONDOWN, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerButtonDown));
-    events.Subscribe(SDL_CONTROLLERBUTTONUP, EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerButtonUp));
+
+    EV::Queue().appendListener(SDL_CONTROLLERDEVICEADDED,
+        OFS_SDL_Event::HandleEvent(EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerDeviceAdded)));
+    EV::Queue().appendListener(SDL_CONTROLLERDEVICEREMOVED,
+        OFS_SDL_Event::HandleEvent(EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerDeviceRemoved)));
+    EV::Queue().appendListener(SDL_CONTROLLERBUTTONDOWN,
+        OFS_SDL_Event::HandleEvent(EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerButtonDown)));
+    EV::Queue().appendListener(SDL_CONTROLLERBUTTONUP,
+        OFS_SDL_Event::HandleEvent(EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerButtonUp)));
 }
 
 void ControllerInput::Update(uint32_t buttonRepeatIntervalMs) noexcept
@@ -113,10 +120,7 @@ void ControllerInput::Update(uint32_t buttonRepeatIntervalMs) noexcept
     int buttonEnumVal = 0;
     for (auto& button : ButtonsHeldDown) {
         if (button > 0 && ((int64_t)SDL_GetTicks() - button) >= buttonRepeatIntervalMs) {
-            SDL_Event ev;
-            ev.type = KeybindingEvents::ControllerButtonRepeat;
-            ev.cbutton.button = buttonEnumVal;
-            SDL_PushEvent(&ev);
+            EV::Enqueue<ControllerButtonRepeatEvent>(buttonEnumVal);
             button = SDL_GetTicks();
         }
         buttonEnumVal += 1;

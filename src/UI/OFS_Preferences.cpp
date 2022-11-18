@@ -104,25 +104,26 @@ bool OFS_Preferences::ShowPreferenceWindow() noexcept
 					ImGui::SameLine();
 					if (ImGui::Button(TR(CLEAR))) {
 						state.fontOverride = "";
-						EventSystem::SingleShot([](void* ctx) {
+						EV::Enqueue<OFS_DeferEvent>([]()
+						{
 							// fonts can't be updated during a frame
 							// this updates the font during event processing
 							// which is not during the frame
 							auto app = OpenFunscripter::ptr;
 							app->LoadOverrideFont("");
-							}, nullptr);
+						});
 					}
 
 					if (ImGui::InputInt(TR(FONT_SIZE), (int*)&state.defaultFontSize, 1, 1)) {
 						state.defaultFontSize = Util::Clamp(state.defaultFontSize, 8, 64);
-						EventSystem::SingleShot([](void* ctx) {
+						EV::Enqueue<OFS_DeferEvent>([stateHandle = prefStateHandle]() {
 							// fonts can't be updated during a frame
 							// this updates the font during event processing
 							// which is not during the frame
-							auto& state = PreferenceState::State((intptr_t)ctx);
+							auto& state = PreferenceState::State(stateHandle);
 							auto app = OpenFunscripter::ptr;
 							app->LoadOverrideFont(state.fontOverride);
-							}, (void*)(intptr_t)prefStateHandle);
+						});
 						save = true;
 					}
 					if(ImGui::BeginCombo(TR_ID("LANGUAGE", Tr::LANGUAGE), state.languageCsv.empty() ? "English" : state.languageCsv.c_str()))

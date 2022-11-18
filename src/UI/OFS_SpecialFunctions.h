@@ -17,10 +17,11 @@ class FunctionRangeExtender : public FunctionBase
 {
 	int32_t rangeExtend = 0;
 	bool createUndoState = true;
+	UnsubscribeFn eventUnsub;
 public:
 	FunctionRangeExtender() noexcept;
 	virtual ~FunctionRangeExtender() noexcept;
-	void SelectionChanged(union SDL_Event& ev) noexcept;
+	void SelectionChanged(const FunscriptSelectionChangedEvent* ev) noexcept;
 	virtual void DrawUI() noexcept override;
 };
 
@@ -29,10 +30,11 @@ class RamerDouglasPeucker : public FunctionBase
 	float epsilon = 0.0f;
 	float averageDistance = 0.f;
 	bool createUndoState = true;
+	UnsubscribeFn eventUnsub;
 public:
 	RamerDouglasPeucker() noexcept;
 	virtual ~RamerDouglasPeucker() noexcept;
-	void SelectionChanged(union SDL_Event& ev) noexcept;
+	void SelectionChanged(const FunscriptSelectionChangedEvent* ev) noexcept;
 	virtual void DrawUI() noexcept override;
 };
 

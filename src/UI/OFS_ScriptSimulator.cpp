@@ -4,7 +4,6 @@
 #include "stb_sprintf.h"
 
 #include "OpenFunscripter.h"
-#include "EventSystem.h"
 
 #include "state/SimulatorState.h"
 
@@ -28,8 +27,10 @@ inline static uint32_t GetColor(const ImColor& col, float opacity) noexcept
 void ScriptSimulator::Init()
 {
     stateHandle = OFS_ProjectState<SimulatorState>::Register(SimulatorState::StateName);
-    EventSystem::ev().Subscribe(SDL_MOUSEMOTION, EVENT_SYSTEM_BIND(this, &ScriptSimulator::MouseMovement));
-    EventSystem::ev().Subscribe(SDL_MOUSEBUTTONDOWN, EVENT_SYSTEM_BIND(this, &ScriptSimulator::MouseDown));
+    EV::Queue().appendListener(SDL_MOUSEMOTION,
+        OFS_SDL_Event::HandleEvent(EVENT_SYSTEM_BIND(this, &ScriptSimulator::MouseMovement)));
+    EV::Queue().appendListener(SDL_MOUSEMOTION,
+        OFS_SDL_Event::HandleEvent(EVENT_SYSTEM_BIND(this, &ScriptSimulator::MouseDown)));
 }
 
 inline static float CalcBearing(const ImVec2 p1, const ImVec2 p2) noexcept 
@@ -40,11 +41,11 @@ inline static float CalcBearing(const ImVec2 p1, const ImVec2 p2) noexcept
     return theta;
 }
 
-void ScriptSimulator::MouseMovement(SDL_Event& ev)
+void ScriptSimulator::MouseMovement(const OFS_SDL_Event* ev)
 {
     OFS_PROFILE(__FUNCTION__);
     auto& state = SimulatorState::State(stateHandle);
-    auto& motion = ev.motion;
+    auto& motion = ev->sdl.motion;
     const auto& simP1 = state.P1;
     const auto& simP2 = state.P2;
 
@@ -83,10 +84,10 @@ void ScriptSimulator::MouseMovement(SDL_Event& ev)
     mouseValue = mouseValue * 2.f - 1.f;
 }
 
-void ScriptSimulator::MouseDown(SDL_Event& ev)
+void ScriptSimulator::MouseDown(const OFS_SDL_Event* ev)
 {
     OFS_PROFILE(__FUNCTION__);
-    auto& button = ev.button;
+    auto& button = ev->sdl.button;
     bool clickAddMofifer = KeybindingSystem::PassiveModifier("click_add_point_simulator");
     if (clickAddMofifer && button.button == SDL_BUTTON_LEFT) {
         if (MouseOnSimulator) {

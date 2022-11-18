@@ -3,7 +3,7 @@
 #include "OFS_Profiling.h"
 #include "OFS_ImGui.h"
 #include "SDL_timer.h"
-
+#include "OFS_EventSystem.h"
 #include "OFS_Videoplayer.h"
 #include "OFS_VideoplayerEvents.h"
 
@@ -12,13 +12,10 @@
 
 static char tmp_buf[2][32];
 
-void OFS_VideoplayerControls::VideoLoaded(SDL_Event& ev) noexcept
+void OFS_VideoplayerControls::VideoLoaded(const VideoLoadedEvent* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    FUN_ASSERT(ev.user.data1 != nullptr, "data was null");
-    if (ev.user.data1 != nullptr) {
-        videoPreview->previewVideo(*(std::string*)ev.user.data1, 0.f);
-    }
+    videoPreview->previewVideo(ev->videoPath, 0.f);
 }
 
 void OFS_VideoplayerControls::Init(OFS_Videoplayer* player) noexcept
@@ -27,7 +24,9 @@ void OFS_VideoplayerControls::Init(OFS_Videoplayer* player) noexcept
     Heatmap = std::make_unique<FunscriptHeatmap>();
     videoPreview = std::make_unique<VideoPreview>();
     videoPreview->setup(false);
-    EventSystem::ev().Subscribe(VideoEvents::VideoLoaded, EVENT_SYSTEM_BIND(this, &OFS_VideoplayerControls::VideoLoaded));
+
+    EV::Queue().appendListener(VideoLoadedEvent::EventType,
+        VideoLoadedEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OFS_VideoplayerControls::VideoLoaded)));
 }
 
 bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* position, TimelineCustomDrawFunc&& customDraw) noexcept

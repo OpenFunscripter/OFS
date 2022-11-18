@@ -15,16 +15,27 @@
 
 #include "OFS_Profiling.h"
 
+#include "OFS_Event.h"
+
 class FunscriptUndoSystem;
+class Funscript;
 
-class FunscriptEvents
+class FunscriptActionsChangedEvent : public OFS_Event<FunscriptActionsChangedEvent>
 {
-public:
-	static int32_t FunscriptActionsChangedEvent;
-	static int32_t FunscriptSelectionChangedEvent;
-
-	static void RegisterEvents() noexcept;
+	public:
+	const Funscript* Script = nullptr;
+	FunscriptActionsChangedEvent(const Funscript* changedScript) noexcept
+		: Script(changedScript) {}
 };
+
+class FunscriptSelectionChangedEvent : public OFS_Event<FunscriptSelectionChangedEvent>
+{
+	public:
+	const Funscript* Script = nullptr;
+	FunscriptSelectionChangedEvent(const Funscript* changedScript) noexcept
+		: Script(changedScript) {}
+};
+
 
 class Funscript
 {

@@ -24,7 +24,7 @@ private:
 	uint32_t lastPreviewUpdate = 0;
 	class OFS_Videoplayer* player = nullptr;
 
-	void VideoLoaded(SDL_Event& ev) noexcept;
+	void VideoLoaded(const class VideoLoadedEvent* ev) noexcept;
 	bool DrawTimelineWidget(const char* label, float* position, TimelineCustomDrawFunc&& customDraw) noexcept;
 public:
 	static constexpr const char* ControlId = "###CONTROLS";

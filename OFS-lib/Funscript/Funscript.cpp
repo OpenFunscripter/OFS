@@ -3,7 +3,7 @@
 #include "OFS_Util.h"
 #include "OFS_Profiling.h"
 
-#include "EventSystem.h"
+#include "OFS_EventSystem.h"
 #include "OFS_Serialization.h"
 #include "FunscriptUndoSystem.h"
 
@@ -47,11 +47,11 @@ void Funscript::Update() noexcept
 	OFS_PROFILE(__FUNCTION__);
 	if (funscriptChanged) {
 		funscriptChanged = false;
-		EventSystem::PushEvent(FunscriptEvents::FunscriptActionsChangedEvent, this);
+		EV::Enqueue<FunscriptActionsChangedEvent>(this);
 	}
 	if (selectionChanged) {
 		selectionChanged = false;
-		EventSystem::PushEvent(FunscriptEvents::FunscriptSelectionChangedEvent, this);
+		EV::Enqueue<FunscriptSelectionChangedEvent>(this);
 	}
 }
 
@@ -748,13 +748,3 @@ nlohmann::json Funscript::Serialize() noexcept
 
 	return jsonFunscript;
 }
-
-int32_t FunscriptEvents::FunscriptActionsChangedEvent = 0;
-int32_t FunscriptEvents::FunscriptSelectionChangedEvent = 0;
-
-void FunscriptEvents::RegisterEvents() noexcept
-{
-	FunscriptActionsChangedEvent = SDL_RegisterEvents(1);
-	FunscriptSelectionChangedEvent = SDL_RegisterEvents(1);
-}
-

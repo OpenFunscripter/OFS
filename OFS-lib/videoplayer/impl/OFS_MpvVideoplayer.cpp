@@ -1,8 +1,8 @@
 #include "OFS_Videoplayer.h"
 #include "OFS_Util.h"
 
+#include "OFS_EventSystem.h"
 #include "OFS_VideoplayerEvents.h"
-#include "EventSystem.h"
 
 #define OFS_MPV_LOADER_MACROS
 #include "OFS_MpvLoader.h"
@@ -80,12 +80,12 @@ static void OnMpvRenderUpdate(void* ctx) noexcept
 
 inline static void notifyVideoLoaded(MpvPlayerContext* ctx) noexcept
 {
-    EventSystem::PushEvent(VideoEvents::VideoLoaded, (void*)&CTX->data.filePath);
+    EV::Enqueue<VideoLoadedEvent>(CTX->data.filePath);
 }
 
 inline static void notifyPaused(bool paused) noexcept
 {
-    EventSystem::PushEvent(VideoEvents::PlayPauseChanged, (void*)(intptr_t)paused);
+    EV::Enqueue<PlayPauseChangeEvent>(paused);
 }
 
 inline static void updateRenderTexture(MpvPlayerContext* ctx) noexcept

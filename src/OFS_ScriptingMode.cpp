@@ -9,7 +9,6 @@
 
 #include "OFS_ImGui.h"
 
-
 #include "state/ScriptModeState.h"
 
 
@@ -366,51 +365,52 @@ inline void RecordingMode::twoAxisRecording() noexcept
 // recording
 RecordingMode::RecordingMode() noexcept
 {
-    auto app = OpenFunscripter::ptr;
-    app->events->Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &RecordingMode::ControllerAxisMotion));
+    eventUnsub = EV::MakeUnsubscibeFn(SDL_CONTROLLERAXISMOTION, 
+        EV::Queue().appendListener(SDL_CONTROLLERAXISMOTION, 
+        OFS_SDL_Event::HandleEvent(EVENT_SYSTEM_BIND(this, &RecordingMode::ControllerAxisMotion))));
+
 }
 
 RecordingMode::~RecordingMode() noexcept
 {
-    auto app = OpenFunscripter::ptr;
-    app->events->Unsubscribe(SDL_CONTROLLERAXISMOTION, this);
+    eventUnsub();
 }
 
-void RecordingMode::ControllerAxisMotion(SDL_Event& ev) noexcept
+void RecordingMode::ControllerAxisMotion(const OFS_SDL_Event* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     if (activeType != RecordingType::Controller) return;
-    auto& axis = ev.caxis;
+    auto& axis = ev->sdl.caxis;
     const float range = (float)std::numeric_limits<int16_t>::max() - ControllerDeadzone;
+    int16_t axisValue = axis.value;
 
     if (axis.value >= 0 && axis.value < ControllerDeadzone)
-        axis.value = 0;
+        axisValue = 0;
     else if (axis.value < 0 && axis.value > -ControllerDeadzone)
-        axis.value = 0;
+        axisValue = 0;
     else if (axis.value >= ControllerDeadzone)
-        axis.value -= ControllerDeadzone;
+        axisValue -= ControllerDeadzone;
     else if (axis.value <= ControllerDeadzone)
-        axis.value += ControllerDeadzone;
-
+        axisValue += ControllerDeadzone;
 
     switch (axis.axis) {
         case SDL_CONTROLLER_AXIS_LEFTX:
-            leftX = Util::Clamp(axis.value / range, -1.f, 1.f);
+            leftX = Util::Clamp(axisValue / range, -1.f, 1.f);
             break;
         case SDL_CONTROLLER_AXIS_LEFTY:
-            leftY = Util::Clamp(axis.value / range, -1.f, 1.f);
+            leftY = Util::Clamp(axisValue / range, -1.f, 1.f);
             break;
         case SDL_CONTROLLER_AXIS_RIGHTX:
-            rightX = Util::Clamp(axis.value / range, -1.f, 1.f);
+            rightX = Util::Clamp(axisValue / range, -1.f, 1.f);
             break;
         case SDL_CONTROLLER_AXIS_RIGHTY:
-            rightY = Util::Clamp(axis.value / range, -1.f, 1.f);
+            rightY = Util::Clamp(axisValue / range, -1.f, 1.f);
             break;
         case SDL_CONTROLLER_AXIS_TRIGGERLEFT:
-            leftTrigger = Util::Clamp(axis.value / range, -1.f, 1.f);
+            leftTrigger = Util::Clamp(axisValue / range, -1.f, 1.f);
             break;
         case SDL_CONTROLLER_AXIS_TRIGGERRIGHT:
-            rightTrigger = Util::Clamp(axis.value / range, -1.f, 1.f);
+            rightTrigger = Util::Clamp(axisValue / range, -1.f, 1.f);
             break;
     }
 

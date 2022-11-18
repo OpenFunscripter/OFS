@@ -10,33 +10,8 @@
 #include "ScriptPositionsOverlayMode.h"
 #include "OFS_Videoplayer.h"
 
-#include "SDL_events.h"
-
-class ScriptTimelineEvents {
-public:
-	using ActionClickedEventArgs = FunscriptAction;
-	static int32_t FunscriptActionClicked;
-	
-	using ActionMovedEventArgs = std::tuple<FunscriptAction, std::weak_ptr<Funscript>>;
-	static int32_t FunscriptActionMoved;
-	static int32_t FunscriptActionMoveStarted;
-
-	using ActionCreatedEventArgs = FunscriptAction;
-	static int32_t FunscriptActionCreated;
-
-	static int32_t FfmpegAudioProcessingFinished;
-	static int32_t SetTimePosition;
-	static int32_t ActiveScriptChanged;
-
-	struct SelectTime {
-		float startTime;
-		float endTime;
-		bool clear;
-	};
-	static int32_t FunscriptSelectTime;
-
-	static void RegisterEvents() noexcept;
-};
+#include "OFS_Event.h"
+#include "OFS_ScriptTimelineEvents.h"
 
 class ScriptTimeline
 {
@@ -48,21 +23,16 @@ public:
 	bool IsSelecting = false;
 	bool PositionsItemHovered = false;
 	int32_t IsMovingIdx = -1;
-
-	ScriptTimelineEvents::ActionClickedEventArgs ActionClickEventData;
-	ScriptTimelineEvents::ActionMovedEventArgs ActionMovedEventData;
-	ScriptTimelineEvents::SelectTime SelectTimeEventData = {0};
-	ScriptTimelineEvents::ActionCreatedEventArgs ActionCreatedEventData;
 private:
-	void mouseScroll(SDL_Event& ev) noexcept;
-	void videoLoaded(SDL_Event& ev) noexcept;
+	void mouseScroll(const OFS_SDL_Event* ev) noexcept;
+	void videoLoaded(const class VideoLoadedEvent* ev) noexcept;
 
 	void handleSelectionScrolling(const OverlayDrawingCtx& ctx) noexcept;
 	void handleTimelineHover(const OverlayDrawingCtx& ctx) noexcept;
 	bool handleTimelineClicks(const OverlayDrawingCtx& ctx) noexcept;
 
 	void updateSelection(const OverlayDrawingCtx& ctx, bool clear) noexcept;
-	void FfmpegAudioProcessingFinished(SDL_Event& ev) noexcept;
+	void FfmpegAudioProcessingFinished(const WaveformProcessingFinishedEvent* ev) noexcept;
 
 	std::string videoPath;
 	uint32_t visibleTimeUpdate = 0;

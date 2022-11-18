@@ -3,6 +3,7 @@
 #include "imgui.h"
 #include "OFS_Reflection.h"
 #include "OFS_BinarySerialization.h"
+#include "OFS_Event.h"
 
 class ScriptSimulator {
 private:
@@ -19,8 +20,8 @@ public:
 
 	float positionOverride = -1.f;
 
-	void MouseMovement(union SDL_Event& ev);
-	void MouseDown(union SDL_Event& ev);
+	void MouseMovement(const OFS_SDL_Event* ev);
+	void MouseDown(const OFS_SDL_Event* ev);
 
 	inline float getMouseValue() const { return mouseValue; }
 

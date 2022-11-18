@@ -119,7 +119,6 @@ OpenFunscripter::~OpenFunscripter() noexcept
 
     playerWindow.reset();
     player.reset();
-    events.reset();
 }
 
 bool OpenFunscripter::Init(int argc, char* argv[])
@@ -211,15 +210,7 @@ bool OpenFunscripter::Init(int argc, char* argv[])
 
     preferences->SetTheme(static_cast<OFS_Theme>(prefState.currentTheme));
 
-    events = std::make_unique<EventSystem>();
-    events->setup();
-    // register custom events with sdl
-    OFS_Events::RegisterEvents();
-    FunscriptEvents::RegisterEvents();
-    VideoEvents::RegisterEvents();
-    KeybindingEvents::RegisterEvents();
-    ScriptTimelineEvents::RegisterEvents();
-
+    EV::Init();
     LoadedProject = std::make_unique<OFS_Project>();
 
     player = std::make_unique<OFS_Videoplayer>();
@@ -238,7 +229,7 @@ bool OpenFunscripter::Init(int argc, char* argv[])
     playerControls.Init(player.get());
     undoSystem = std::make_unique<UndoSystem>();
 
-    keybinds.setup(*events);
+    keybinds.Init();
     registerBindings(); // needs to happen before setBindings
     keybinds.load(Util::Prefpath("keybinds.json"));
 
@@ -246,22 +237,33 @@ bool OpenFunscripter::Init(int argc, char* argv[])
 
     scripting = std::make_unique<ScriptingMode>();
     scripting->Init();
-    events->Subscribe(FunscriptEvents::FunscriptActionsChangedEvent, EVENT_SYSTEM_BIND(this, &OpenFunscripter::FunscriptChanged));
-    events->Subscribe(SDL_DROPFILE, EVENT_SYSTEM_BIND(this, &OpenFunscripter::DragNDrop));
-    events->Subscribe(VideoEvents::VideoLoaded, EVENT_SYSTEM_BIND(this, &OpenFunscripter::VideoLoaded));
-    events->Subscribe(SDL_CONTROLLERAXISMOTION, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ControllerAxisPlaybackSpeed));
-    events->Subscribe(ScriptTimelineEvents::FunscriptActionMoved, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActionMoved));
-    events->Subscribe(ScriptTimelineEvents::FunscriptActionMoveStarted, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActionMoveStarted));
-    events->Subscribe(ScriptTimelineEvents::FunscriptActionClicked, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActionClicked));
-    events->Subscribe(ScriptTimelineEvents::FunscriptActionCreated, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActionCreated));
-    events->Subscribe(ScriptTimelineEvents::SetTimePosition, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineDoubleClick));
-    events->Subscribe(ScriptTimelineEvents::FunscriptSelectTime, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineSelectTime));
-    events->Subscribe(VideoEvents::PlayPauseChanged, EVENT_SYSTEM_BIND(this, &OpenFunscripter::PlayPauseChange));
-    events->Subscribe(ScriptTimelineEvents::ActiveScriptChanged, EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActiveScriptChanged));
 
+    EV::Queue().appendListener(FunscriptActionsChangedEvent::EventType, 
+        FunscriptActionsChangedEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::FunscriptChanged)));
+    EV::Queue().appendListener(SDL_DROPFILE, 
+        OFS_SDL_Event::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::DragNDrop)));
+    EV::Queue().appendListener(SDL_CONTROLLERAXISMOTION, 
+        OFS_SDL_Event::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::ControllerAxisPlaybackSpeed)));
+    EV::Queue().appendListener(VideoLoadedEvent::EventType,
+        VideoLoadedEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::VideoLoaded)));
+    EV::Queue().appendListener(PlayPauseChangeEvent::EventType,
+        PlayPauseChangeEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::PlayPauseChange)));
+    EV::Queue().appendListener(FunscriptActionShouldMoveEvent::EventType,
+        FunscriptActionShouldMoveEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActionMoved)));
+    EV::Queue().appendListener(FunscriptActionClickedEvent::EventType,
+        FunscriptActionClickedEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActionClicked)));
+    EV::Queue().appendListener(FunscriptActionShouldCreateEvent::EventType, 
+        FunscriptActionShouldCreateEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActionCreated)));
+    EV::Queue().appendListener(ShouldSetTimeEvent::EventType,
+        ShouldSetTimeEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineDoubleClick)));
+    EV::Queue().appendListener(FunscriptShouldSelectTimeEvent::EventType,
+        FunscriptShouldSelectTimeEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineSelectTime)));
+    EV::Queue().appendListener(ShouldChangeActiveScriptEvent::EventType,
+        ShouldChangeActiveScriptEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActiveScriptChanged)));
+    
     specialFunctions = std::make_unique<SpecialFunctionsWindow>();
     controllerInput = std::make_unique<ControllerInput>();
-    controllerInput->Init(*events);
+    controllerInput->Init();
     simulator.Init();
 
 
@@ -1430,7 +1432,8 @@ void OpenFunscripter::render() noexcept
 void OpenFunscripter::processEvents() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    SDL_Event event;
+    auto wrappedEvent = EV::MakeTyped<OFS_SDL_Event>();
+    auto& event = wrappedEvent->sdl;
     bool IsExiting = false;
     while (SDL_PollEvent(&event)) {
         ImGui_ImplSDL2_ProcessEvent(&event);
@@ -1472,16 +1475,20 @@ void OpenFunscripter::processEvents() noexcept
                 setIdle(false);
                 break;
         }
-        events->Propagate(event);
+
+        // This is a slight hack in order to avoid creating a bunch of SDL_Event wrapper classes
+        OFS_SDL_Event::EventType = event.type;
+        EV::Queue().directDispatch(OFS_SDL_Event::EventType, wrappedEvent);
     }
+    EV::Process();
 }
 
-void OpenFunscripter::FunscriptChanged(SDL_Event& ev) noexcept
+void OpenFunscripter::FunscriptChanged(const FunscriptActionsChangedEvent* ev) noexcept
 {
     // the event passes the address of the Funscript
     // by searching for the funscript with the same address
     // the index can be retrieved
-    void* ptr = ev.user.data1;
+    auto ptr = ev->Script;
     for (int i = 0, size = LoadedFunscripts().size(); i < size; i += 1) {
         if (LoadedFunscripts()[i].get() == ptr) {
             extensions->ScriptChanged(i);
@@ -1492,60 +1499,57 @@ void OpenFunscripter::FunscriptChanged(SDL_Event& ev) noexcept
     Status = Status | OFS_Status::OFS_GradientNeedsUpdate;
 }
 
-void OpenFunscripter::ScriptTimelineActionClicked(SDL_Event& ev) noexcept
+void OpenFunscripter::ScriptTimelineActionClicked(const FunscriptActionClickedEvent* ev) noexcept
 {
-    auto action = *((ScriptTimelineEvents::ActionClickedEventArgs*)ev.user.data1);
-
     if (SDL_GetModState() & KMOD_CTRL) {
-        ActiveFunscript()->SelectAction(action);
+        ActiveFunscript()->SelectAction(ev->action);
     }
     else {
-        player->SetPositionExact(action.atS);
+        player->SetPositionExact(ev->action.atS);
     }
 }
 
-void OpenFunscripter::ScriptTimelineActionCreated(SDL_Event& ev) noexcept
+void OpenFunscripter::ScriptTimelineActionCreated(const FunscriptActionShouldCreateEvent* ev) noexcept
 {
     // FIXME: this shouldn't assume the active script
-    auto newAction = *(ScriptTimelineEvents::ActionCreatedEventArgs*)ev.user.data1;
     undoSystem->Snapshot(StateType::ADD_ACTION, ActiveFunscript());
-    ActiveFunscript()->AddAction(newAction);
+    ActiveFunscript()->AddAction(ev->newAction);
 }
 
-void OpenFunscripter::ScriptTimelineActionMoveStarted(SDL_Event& ev) noexcept
+void OpenFunscripter::ScriptTimelineActionMoved(const FunscriptActionShouldMoveEvent* ev) noexcept
 {
-    // FIXME: this needs a script
-    UndoContextScripts scripts;
-    scripts.assign(LoadedFunscripts().begin(), LoadedFunscripts().end());
-    undoSystem->Snapshot(StateType::ACTIONS_MOVED, std::move(scripts));
-}
-
-void OpenFunscripter::ScriptTimelineActionMoved(SDL_Event& ev) noexcept
-{
-    // FIXME: this event is actually useless only the move started event is required to take the snapshot
-    auto [newAction, weak] = *(ScriptTimelineEvents::ActionMovedEventArgs*)ev.user.data1;
-    if (auto script = weak.lock()) {
-        if (script->SelectionSize() == 1) {
-            script->RemoveSelectedActions();
-            script->AddAction(newAction);
-            script->SelectAction(newAction);
+    if(ev->moveStarted)
+    {
+        UndoContextScripts scripts;
+        scripts.assign(LoadedFunscripts().begin(), LoadedFunscripts().end());
+        undoSystem->Snapshot(StateType::ACTIONS_MOVED, std::move(scripts));
+    }
+    else 
+    {
+        if (auto script = ev->script.lock()) {
+            if (script->SelectionSize() == 1) {
+                script->RemoveSelectedActions();
+                script->AddAction(ev->action);
+                script->SelectAction(ev->action);
+            }
         }
     }
 }
 
-void OpenFunscripter::DragNDrop(SDL_Event& ev) noexcept
+void OpenFunscripter::DragNDrop(const OFS_SDL_Event* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
 
-    std::string dragNDropFile = ev.drop.file;
+    std::string dragNDropFile = ev->sdl.drop.file;
     closeWithoutSavingDialog([this, dragNDropFile]() {
         openFile(dragNDropFile);
     });
-
-    SDL_free(ev.drop.file);
+    // NOTE: currently there is just one DragNDrop handler
+    // If another one would be added this SDL_free would be problematic
+    SDL_free(ev->sdl.drop.file);
 }
 
-void OpenFunscripter::VideoLoaded(SDL_Event& ev) noexcept
+void OpenFunscripter::VideoLoaded(const VideoLoadedEvent* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     auto& projectState = LoadedProject->State();
@@ -1555,9 +1559,7 @@ void OpenFunscripter::VideoLoaded(SDL_Event& ev) noexcept
 
     Status |= OFS_Status::OFS_GradientNeedsUpdate;
 
-    FUN_ASSERT(ev.user.data1 != nullptr, "data is null");
-    const std::string& VideoName = *(std::string*)ev.user.data1;
-    if (!VideoName.empty()) {
+    if (!ev->videoPath.empty()) {
         scriptTimeline.ClearAudioWaveform();
     }
 
@@ -1569,10 +1571,10 @@ void OpenFunscripter::VideoLoaded(SDL_Event& ev) noexcept
     }
 }
 
-void OpenFunscripter::PlayPauseChange(SDL_Event& ev) noexcept
+void OpenFunscripter::PlayPauseChange(const PlayPauseChangeEvent* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if ((intptr_t)ev.user.data1) // true == paused
+    if (ev->paused)
     {
         tcode->stop();
     }
@@ -3029,11 +3031,11 @@ void OpenFunscripter::ShowStatisticsWindow(bool* open) noexcept
     ImGui::End();
 }
 
-void OpenFunscripter::ControllerAxisPlaybackSpeed(SDL_Event& ev) noexcept
+void OpenFunscripter::ControllerAxisPlaybackSpeed(const OFS_SDL_Event* ev) noexcept
 {
     static Uint8 lastAxis = 0;
     OFS_PROFILE(__FUNCTION__);
-    auto& caxis = ev.caxis;
+    auto& caxis = ev->sdl.caxis;
     if ((Status & OFS_Status::OFS_GamepadSetPlaybackSpeed) && caxis.axis == lastAxis && caxis.value <= 0) {
         Status &= ~(OFS_Status::OFS_GamepadSetPlaybackSpeed);
         return;
@@ -3058,24 +3060,22 @@ void OpenFunscripter::ControllerAxisPlaybackSpeed(SDL_Event& ev) noexcept
     }
 }
 
-void OpenFunscripter::ScriptTimelineDoubleClick(SDL_Event& ev) noexcept
+void OpenFunscripter::ScriptTimelineDoubleClick(const ShouldSetTimeEvent* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    float seekToTime = *((float*)&ev.user.data1);
-    player->SetPositionExact(seekToTime);
+    player->SetPositionExact(ev->newTime);
 }
 
-void OpenFunscripter::ScriptTimelineSelectTime(SDL_Event& ev) noexcept
+void OpenFunscripter::ScriptTimelineSelectTime(const FunscriptShouldSelectTimeEvent* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    auto& time = *(ScriptTimelineEvents::SelectTime*)ev.user.data1;
-    ActiveFunscript()->SelectTime(time.startTime, time.endTime, time.clear);
+    ActiveFunscript()->SelectTime(ev->startTime, ev->endTime, ev->clearSelection);
 }
 
-void OpenFunscripter::ScriptTimelineActiveScriptChanged(SDL_Event& ev) noexcept
+void OpenFunscripter::ScriptTimelineActiveScriptChanged(const ShouldChangeActiveScriptEvent* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    UpdateNewActiveScript((intptr_t)ev.user.data1);
+    UpdateNewActiveScript(ev->activeIdx);
 }
 
 void OpenFunscripter::selectTopPoints() noexcept

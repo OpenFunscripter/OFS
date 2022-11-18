@@ -1,7 +1,9 @@
 project(OFS_lib)
 
 set(OFS_LIB_SOURCES
-	"event/EventSystem.cpp"
+	"event/OFS_EventSystem.cpp"
+	"event/OFS_Event.cpp"
+
 	"Funscript/Funscript.cpp"
 	"Funscript/FunscriptAction.cpp"
 	"Funscript/FunscriptUndoSystem.cpp"
@@ -19,7 +21,6 @@ set(OFS_LIB_SOURCES
 	
 	"UI/OFS_Waveform.cpp"
 	
-	"videoplayer/OFS_VideoplayerEvents.cpp"
 	"videoplayer/OFS_VideoplayerWindow.cpp"
 	"videoplayer/impl/OFS_MpvVideoplayer.cpp"
 
@@ -82,6 +83,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	glm
 	bitsery
 	refl-cpp
+	eventpp
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)

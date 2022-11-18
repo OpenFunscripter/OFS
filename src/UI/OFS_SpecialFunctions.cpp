@@ -92,17 +92,18 @@ inline Funscript& FunctionBase::ctx() noexcept
 // range extender
 FunctionRangeExtender::FunctionRangeExtender() noexcept
 {
-    auto app = OpenFunscripter::ptr;
-    app->events->Subscribe(FunscriptEvents::FunscriptSelectionChangedEvent, EVENT_SYSTEM_BIND(this, &FunctionRangeExtender::SelectionChanged));
+    //auto app = OpenFunscripter::ptr;
+    eventUnsub = EV::MakeUnsubscibeFn(FunscriptSelectionChangedEvent::EventType,
+        EV::Queue().appendListener(FunscriptSelectionChangedEvent::EventType, 
+           FunscriptSelectionChangedEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &FunctionRangeExtender::SelectionChanged))));
 }
 
 FunctionRangeExtender::~FunctionRangeExtender() noexcept
 {
-    auto app = OpenFunscripter::ptr;
-    app->events->Unsubscribe(FunscriptEvents::FunscriptSelectionChangedEvent, this);
+    eventUnsub();
 }
 
-void FunctionRangeExtender::SelectionChanged(SDL_Event& ev) noexcept
+void FunctionRangeExtender::SelectionChanged(const FunscriptSelectionChangedEvent* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;
@@ -140,15 +141,16 @@ void FunctionRangeExtender::DrawUI() noexcept
 RamerDouglasPeucker::RamerDouglasPeucker() noexcept
 {
     auto app = OpenFunscripter::ptr;
-    EventSystem::ev().Subscribe(FunscriptEvents::FunscriptSelectionChangedEvent, EVENT_SYSTEM_BIND(this, &RamerDouglasPeucker::SelectionChanged));
+    eventUnsub = EV::MakeUnsubscibeFn(FunscriptSelectionChangedEvent::EventType, EV::Queue().appendListener(FunscriptSelectionChangedEvent::EventType,
+        FunscriptSelectionChangedEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &RamerDouglasPeucker::SelectionChanged))));
 }
 
 RamerDouglasPeucker::~RamerDouglasPeucker() noexcept
 {
-    EventSystem::ev().UnsubscribeAll(this);
+    eventUnsub();
 }
 
-void RamerDouglasPeucker::SelectionChanged(SDL_Event& ev) noexcept
+void RamerDouglasPeucker::SelectionChanged(const FunscriptSelectionChangedEvent* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     auto app = OpenFunscripter::ptr;

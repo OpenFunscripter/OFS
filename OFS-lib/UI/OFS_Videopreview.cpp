@@ -4,7 +4,8 @@
 #include "mpv/render_gl.h"
 
 #include "OFS_GL.h"
-#include "EventSystem.h"
+#include "OFS_Util.h"
+#include "OFS_Profiling.h"
 
 #define OFS_MPV_LOADER_MACROS
 #include "OFS_MpvLoader.h"
@@ -24,14 +25,16 @@ static void* get_proc_address_mpv(void* fn_ctx, const char* name)
 	return SDL_GL_GetProcAddress(name);
 }
 
-static void on_mpv_events(void* ctx)
+static void on_mpv_events(void* ctx) noexcept
 {
-	EventSystem::PushEvent(VideoPreviewEvents::PreviewWakeUpMpvEvents, ctx);
+	// FIXME
+	// EventSystem::PushEvent(VideoPreviewEvents::PreviewWakeUpMpvEvents, ctx);
 }
 
-static void on_mpv_render_update(void* ctx)
+static void on_mpv_render_update(void* ctx) noexcept
 {
-	EventSystem::PushEvent(VideoPreviewEvents::PreviewWakeUpMpvRender, ctx);
+	// FIXME
+	//EventSystem::PushEvent(VideoPreviewEvents::PreviewWakeUpMpvRender, ctx);
 }
 
 void VideoPreview::updateRenderTexture() noexcept
@@ -105,7 +108,8 @@ VideoPreview::~VideoPreview()
 {
 	mpv_render_context_free(mpv_gl);
 	mpv_destroy(mpv);
-	EventSystem::ev().UnsubscribeAll(this);
+	// FIXME
+	//EventSystem::ev().UnsubscribeAll(this);
 	
 	glDeleteFramebuffers(1, &framebufferObj);
 	glDeleteTextures(1, &renderTexture);
@@ -114,8 +118,9 @@ VideoPreview::~VideoPreview()
 void VideoPreview::setup(bool autoplay) noexcept
 {
 	VideoPreviewEvents::RegisterEvents();
-	EventSystem::ev().Subscribe(VideoPreviewEvents::PreviewWakeUpMpvEvents, EVENT_SYSTEM_BIND(this, &VideoPreview::MpvEvents));
-	EventSystem::ev().Subscribe(VideoPreviewEvents::PreviewWakeUpMpvRender, EVENT_SYSTEM_BIND(this, &VideoPreview::MpvRenderUpdate));
+	// FIXME
+	//EventSystem::ev().Subscribe(VideoPreviewEvents::PreviewWakeUpMpvEvents, EVENT_SYSTEM_BIND(this, &VideoPreview::MpvEvents));
+	//EventSystem::ev().Subscribe(VideoPreviewEvents::PreviewWakeUpMpvRender, EVENT_SYSTEM_BIND(this, &VideoPreview::MpvRenderUpdate));
 
 	updateRenderTexture();
 	mpv = mpv_create();

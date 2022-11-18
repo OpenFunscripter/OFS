@@ -5,7 +5,7 @@
 #include "ScriptPositionsOverlayMode.h"
 #include "OFS_ScriptPositionsOverlays.h"
 
-#include "SDL_events.h"
+#include "OFS_Event.h"
 
 #include <memory>
 #include <array>
@@ -87,14 +87,14 @@ private:
 
     bool twoAxesMode = false;
 
-
     bool recordingActive = false;
     std::shared_ptr<Funscript> recordingAxisX;
     std::shared_ptr<Funscript> recordingAxisY;
 
+    UnsubscribeFn eventUnsub;
+
     void singleAxisRecording() noexcept;
     void twoAxisRecording() noexcept;
-
 public:
     // Attention: don't change order
     enum RecordingType : int32_t {
@@ -105,7 +105,7 @@ public:
     RecordingMode() noexcept;
     ~RecordingMode() noexcept;
 
-    void ControllerAxisMotion(SDL_Event& ev) noexcept;
+    void ControllerAxisMotion(const OFS_SDL_Event* ev) noexcept;
     void setRecordingMode(RecordingType type) noexcept { activeType = type; }
     virtual void DrawModeSettings() noexcept override;
     virtual void Update() noexcept override;

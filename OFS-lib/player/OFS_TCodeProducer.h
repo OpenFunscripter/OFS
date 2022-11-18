@@ -105,7 +105,7 @@ public:
 		}
 	}
 
-	void FunscriptChanged(union SDL_Event& ev) noexcept
+	void FunscriptChanged(const FunscriptActionsChangedEvent* ev) noexcept
 	{
 		NeedsResync = true;
 	}

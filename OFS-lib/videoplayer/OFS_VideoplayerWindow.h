@@ -37,7 +37,7 @@ private:
 
 	static constexpr float ZoomMulti = 0.05f;
 
-	void mouseScroll(SDL_Event& ev) noexcept;
+	void mouseScroll(const OFS_SDL_Event* ev) noexcept;
 	void drawVrVideo(ImDrawList* draw_list) noexcept;
 	void draw2dVideo(ImDrawList* draw_list) noexcept;
 	void videoRightClickMenu() noexcept;

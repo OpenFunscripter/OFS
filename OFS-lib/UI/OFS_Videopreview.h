@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
+#include <string>
 #include "SDL_events.h"
-#include "EventSystem.h"
 
 struct mpv_handle;
 struct mpv_render_context;

@@ -1,7 +1,6 @@
 #include "KeybindingSystem.h"
 
 #include "OFS_Serialization.h"
-#include "EventSystem.h"
 #include "OFS_Profiling.h"
 #include "OFS_Localization.h"
 
@@ -13,12 +12,7 @@
 
 #include "SDL_timer.h"
 #include "SDL_gamecontroller.h"
-
-int32_t KeybindingEvents::ControllerButtonRepeat = 0;
-void KeybindingEvents::RegisterEvents() noexcept
-{
-    ControllerButtonRepeat = SDL_RegisterEvents(1);
-}
+#include "OFS_EventSystem.h"
 
 KeybindingSystem* KeybindingSystem::ptr = nullptr;
 
@@ -72,9 +66,9 @@ static uint16_t GetModifierState(uint16_t modstate) noexcept
     return modstate;
 }
 
-void KeybindingSystem::handleBindingModification(SDL_Event& ev, uint16_t modstate) noexcept
+void KeybindingSystem::handleBindingModification(const OFS_SDL_Event* ev, uint16_t modstate) noexcept
 {
-    auto& key = ev.key;
+    auto& key = ev->sdl.key;
     if (key.repeat) return;
     OFS_PROFILE(__FUNCTION__);
     if (key.keysym.sym == SDLK_ESCAPE) {
@@ -146,9 +140,9 @@ breaking_out_of_nested_loop_lol:
     currentlyChanging = nullptr;
 }
 
-void KeybindingSystem::handlePassiveBindingModification(SDL_Event& ev, uint16_t modstate) noexcept
+void KeybindingSystem::handlePassiveBindingModification(const OFS_SDL_Event* ev, uint16_t modstate) noexcept
 {
-    auto& key = ev.key;
+    auto& key = ev->sdl.key;
     if (key.repeat) return;
     OFS_PROFILE(__FUNCTION__);
     changeModalText = std::string();
@@ -190,19 +184,23 @@ void KeybindingSystem::save() noexcept
     Util::WriteFile(keybindingPath.c_str(), jsonText.data(), jsonText.size());
 }
 
-void KeybindingSystem::setup(EventSystem& events)
+void KeybindingSystem::Init()
 {
     FUN_ASSERT(ptr == nullptr, "there can only be one instance");
     KeybindingSystem::ptr = this;
-    events.Subscribe(SDL_KEYDOWN, EVENT_SYSTEM_BIND(this, &KeybindingSystem::KeyPressed));
-    events.Subscribe(SDL_CONTROLLERBUTTONDOWN, EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerButtonDown));
-    events.Subscribe(KeybindingEvents::ControllerButtonRepeat, EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerButtonRepeat));
+
+    EV::Queue().appendListener(SDL_KEYDOWN, 
+        OFS_SDL_Event::HandleEvent(EVENT_SYSTEM_BIND(this, &KeybindingSystem::KeyPressed)));
+    EV::Queue().appendListener(SDL_CONTROLLERBUTTONDOWN, 
+        OFS_SDL_Event::HandleEvent(EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerButtonDown)));
+    EV::Queue().appendListener(ControllerButtonRepeatEvent::EventType, 
+        ControllerButtonRepeatEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &KeybindingSystem::ControllerButtonRepeat)));
 }
 
-void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
+void KeybindingSystem::KeyPressed(const OFS_SDL_Event* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    const auto& key = ev.key;
+    const auto& key = ev->sdl.key;
 
     auto modstate = GetModifierState(key.keysym.mod);
     if (currentlyChanging != nullptr) {
@@ -269,17 +267,16 @@ void KeybindingSystem::KeyPressed(SDL_Event& ev) noexcept
     }
 }
 
-void KeybindingSystem::ProcessControllerBindings(SDL_Event& ev, bool repeat) noexcept
+void KeybindingSystem::ProcessControllerBindings(uint8_t cbutton, bool repeat) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    const auto& cbutton = ev.cbutton;
     bool navmodeActive = ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_NavEnableGamepad;
 
     // process dynamic bindings
     for (auto& binding : ActiveBindings.DynamicBindings.bindings) {
         if ((binding.ignoreRepeats && repeat) || binding.controller.button < 0) { continue; }
 
-        if (binding.controller.button == cbutton.button) {
+        if (binding.controller.button == cbutton) {
             if (navmodeActive) {
                 // navmode bindings get processed during navmode
                 // everything else doesn't get processed during navmode
@@ -306,7 +303,7 @@ void KeybindingSystem::ProcessControllerBindings(SDL_Event& ev, bool repeat) noe
     for (auto& group : ActiveBindings.groups) {
         for (auto& binding : group.bindings) {
             if ((binding.ignoreRepeats && repeat) || binding.controller.button < 0) { continue; }
-            if (binding.controller.button == cbutton.button) {
+            if (binding.controller.button == cbutton) {
                 if (navmodeActive) {
                     // navmode bindings get processed during navmode
                     // everything else doesn't get processed during navmode
@@ -322,20 +319,19 @@ void KeybindingSystem::ProcessControllerBindings(SDL_Event& ev, bool repeat) noe
     }
 }
 
-void KeybindingSystem::ControllerButtonRepeat(SDL_Event& ev) noexcept
+void KeybindingSystem::ControllerButtonRepeat(const ControllerButtonRepeatEvent* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     if (currentlyChanging != nullptr) return;
     if (ShowWindow) return;
-    //auto& cbutton = ev.cbutton; // only cbutton.button is set
-    ProcessControllerBindings(ev, true);
+    ProcessControllerBindings(ev->button, true);
 }
 
-void KeybindingSystem::ControllerButtonDown(SDL_Event& ev) noexcept
+void KeybindingSystem::ControllerButtonDown(const OFS_SDL_Event* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     if (currentlyChanging != nullptr) {
-        auto& cbutton = ev.cbutton;
+        auto& cbutton = ev->sdl.cbutton;
         // check duplicate
         for (auto& group : ActiveBindings.groups) {
             for (auto& binding : group.bindings) {
@@ -356,7 +352,7 @@ void KeybindingSystem::ControllerButtonDown(SDL_Event& ev) noexcept
         return;
     }
     if (ShowWindow) return;
-    ProcessControllerBindings(ev, false);
+    ProcessControllerBindings(ev->sdl.cbutton.button, false);
 }
 
 

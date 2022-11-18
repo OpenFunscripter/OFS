@@ -3,21 +3,20 @@
 #include "OFS_Localization.h"
 #include "OFS_Util.h"
 
-#include "EventSystem.h"
-
 #include <string>
 #include <vector>
 #include <functional>
 #include <sstream>
 #include <unordered_map>
 
-#include "SDL_events.h"
+#include "OFS_Event.h"
 
-class KeybindingEvents
+class ControllerButtonRepeatEvent : public OFS_Event<ControllerButtonRepeatEvent>
 {
-public:
-	static int32_t ControllerButtonRepeat;
-	static void RegisterEvents() noexcept;
+	public:
+	uint8_t button = 0;
+	ControllerButtonRepeatEvent(uint8_t button) noexcept
+		: button(button) {}
 };
 
 using BindingAction = std::function<void(void*)>;
@@ -208,13 +207,13 @@ private:
 	void addKeyString(char name) noexcept;
 	std::string loadKeyString(SDL_Keycode key, int mod) noexcept;
 	
-	void ProcessControllerBindings(SDL_Event& ev, bool repeat) noexcept;
-	void handleBindingModification(SDL_Event& ev, uint16_t modstate) noexcept;
-	void handlePassiveBindingModification(SDL_Event& ev, uint16_t modstate) noexcept;
+	void ProcessControllerBindings(uint8_t cbutton, bool repeat) noexcept;
+	void handleBindingModification(const OFS_SDL_Event* ev, uint16_t modstate) noexcept;
+	void handlePassiveBindingModification(const OFS_SDL_Event* ev, uint16_t modstate) noexcept;
 
-	void KeyPressed(SDL_Event& ev) noexcept;
-	void ControllerButtonRepeat(SDL_Event& ev) noexcept;
-	void ControllerButtonDown(SDL_Event& ev) noexcept;
+	void KeyPressed(const OFS_SDL_Event* ev) noexcept;
+	void ControllerButtonRepeat(const ControllerButtonRepeatEvent* ev) noexcept;
+	void ControllerButtonDown(const OFS_SDL_Event* ev) noexcept;
 
 	void addBindingsGroup(KeybindingGroup& group, bool& save, bool deletable = false) noexcept;
 
@@ -228,7 +227,7 @@ public:
 	bool load(const std::string& path) noexcept;
 	void save() noexcept;
 
-	void setup(class EventSystem& events);
+	void Init();
 	const char* getBindingString(const char* binding_id) noexcept;
 	const Keybindings& getBindings() const noexcept { return ActiveBindings; }
 	void setBindings(const Keybindings& bindings) noexcept;

@@ -1,8 +1,6 @@
 #pragma once
+#include "OFS_Event.h"
 
-#include "EventSystem.h"
-
-#include "SDL_events.h"
 #include "SDL_gamecontroller.h"
 #include "SDL_haptic.h"
 #include <array>
@@ -25,15 +23,15 @@ private:
     static int32_t activeControllers;
     static int GetControllerIndex(SDL_JoystickID instance) noexcept;
 
-    void ControllerButtonDown(SDL_Event& ev) const noexcept;
-    void ControllerButtonUp(SDL_Event& ev) const noexcept;
-    void ControllerDeviceAdded(SDL_Event& ev) noexcept;
-    void ControllerDeviceRemoved(SDL_Event& ev) noexcept;
+    void ControllerButtonDown(const OFS_SDL_Event* ev) const noexcept;
+    void ControllerButtonUp(const OFS_SDL_Event* ev) const noexcept;
+    void ControllerDeviceAdded(const OFS_SDL_Event* ev) noexcept;
+    void ControllerDeviceRemoved(const OFS_SDL_Event* ev) noexcept;
 
 public:
     static std::array<ControllerInput, 4> Controllers;
 
-    void Init(EventSystem& events) noexcept;
+    void Init() noexcept;
     void Update(uint32_t buttonRepeatIntervalMs) noexcept;
 
     static void UpdateControllers() noexcept;

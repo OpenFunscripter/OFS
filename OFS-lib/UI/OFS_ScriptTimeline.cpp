@@ -10,6 +10,7 @@
 #include "OFS_ImGui.h"
 #include "OFS_Shader.h"
 #include "OFS_GL.h"
+#include "OFS_EventSystem.h"
 
 #include "state/states/BaseOverlayState.h"
 #include "state/states/WaveformState.h"
@@ -17,15 +18,6 @@
 #include "KeybindingSystem.h"
 #include "SDL_events.h"
 #include "SDL_timer.h"
-
-int32_t ScriptTimelineEvents::FfmpegAudioProcessingFinished = 0;
-int32_t ScriptTimelineEvents::SetTimePosition = 0;
-int32_t ScriptTimelineEvents::FunscriptActionClicked = 0;
-int32_t ScriptTimelineEvents::FunscriptSelectTime = 0;
-int32_t ScriptTimelineEvents::ActiveScriptChanged = 0;
-int32_t ScriptTimelineEvents::FunscriptActionMoved = 0;
-int32_t ScriptTimelineEvents::FunscriptActionMoveStarted = 0;
-int32_t ScriptTimelineEvents::FunscriptActionCreated = 0;
 
 inline static FunscriptAction getActionForPoint(const OverlayDrawingCtx& ctx, ImVec2 point) noexcept
 {
@@ -37,18 +29,6 @@ inline static FunscriptAction getActionForPoint(const OverlayDrawingCtx& ctx, Im
 	return FunscriptAction(atTime, pos);
 }
 
-void ScriptTimelineEvents::RegisterEvents() noexcept
-{
-	FfmpegAudioProcessingFinished = SDL_RegisterEvents(1);
-	FunscriptActionClicked = SDL_RegisterEvents(1);
-	FunscriptSelectTime = SDL_RegisterEvents(1);
-	SetTimePosition = SDL_RegisterEvents(1);
-	ActiveScriptChanged = SDL_RegisterEvents(1);
-	FunscriptActionMoved = SDL_RegisterEvents(1);
-	FunscriptActionMoveStarted = SDL_RegisterEvents(1);
-	FunscriptActionCreated = SDL_RegisterEvents(1);
-}
-
 void ScriptTimeline::updateSelection(const OverlayDrawingCtx& ctx, bool clear) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
@@ -56,22 +36,19 @@ void ScriptTimeline::updateSelection(const OverlayDrawingCtx& ctx, bool clear) n
 	float min = std::min(relSel1, relSel2);
 	float max = std::max(relSel1, relSel2);
 
-	SelectTimeEventData.startTime = ctx.offsetTime + (visibleTime * min);
-	SelectTimeEventData.endTime = ctx.offsetTime + (visibleTime * max);
-	SelectTimeEventData.clear = clear;
+	float startTime = ctx.offsetTime + (visibleTime * min);
+	float endTime = ctx.offsetTime + (visibleTime * max);
 
-	float selectionInterval = SelectTimeEventData.endTime - SelectTimeEventData.startTime;
-
+	float selectionInterval = endTime - startTime;
 	// Tiny selections are ignored this is a bit arbitrary.
 	// It's supposed to prevent accidentally clearing the selection.
 	if(selectionInterval <= 0.008f) // 80ms
 		return;
 	
-
-	EventSystem::PushEvent(ScriptTimelineEvents::FunscriptSelectTime, &SelectTimeEventData);
+	EV::Enqueue<FunscriptShouldSelectTimeEvent>(startTime, endTime, clear);
 }
 
-void ScriptTimeline::FfmpegAudioProcessingFinished(SDL_Event& ev) noexcept
+void ScriptTimeline::FfmpegAudioProcessingFinished(const WaveformProcessingFinishedEvent* ev) noexcept
 {
 	ShowAudioWaveform = true;
 	// Update cache
@@ -85,17 +62,20 @@ void ScriptTimeline::Init()
 {
 	overlayStateHandle = BaseOverlayState::RegisterStatic();
 
-	EventSystem::ev().Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouseScroll));
-	EventSystem::ev().Subscribe(ScriptTimelineEvents::FfmpegAudioProcessingFinished, EVENT_SYSTEM_BIND(this, &ScriptTimeline::FfmpegAudioProcessingFinished));
-	EventSystem::ev().Subscribe(VideoEvents::VideoLoaded, EVENT_SYSTEM_BIND(this, &ScriptTimeline::videoLoaded));
+	EV::Queue().appendListener(SDL_MOUSEWHEEL,
+		OFS_SDL_Event::HandleEvent(EVENT_SYSTEM_BIND(this, &ScriptTimeline::mouseScroll)));
+	EV::Queue().appendListener(WaveformProcessingFinishedEvent::EventType,
+		WaveformProcessingFinishedEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &ScriptTimeline::FfmpegAudioProcessingFinished)));
+	EV::Queue().appendListener(VideoLoadedEvent::EventType,
+		VideoLoadedEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &ScriptTimeline::videoLoaded)));
 
 	Wave.Init();
 }
 
-void ScriptTimeline::mouseScroll(SDL_Event& ev) noexcept
+void ScriptTimeline::mouseScroll(const OFS_SDL_Event* ev) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	auto& wheel = ev.wheel;
+	auto& wheel = ev->sdl.wheel;
 	constexpr float scrollPercent = 0.10f;
 	if (PositionsItemHovered) {
 		previousVisibleTime = visibleTime;
@@ -116,9 +96,9 @@ void ScriptTimeline::Update() noexcept
 	visibleTime = Util::Lerp(previousVisibleTime, nextVisisbleTime, timePassed);
 }
 
-void ScriptTimeline::videoLoaded(SDL_Event& ev) noexcept
+void ScriptTimeline::videoLoaded(const VideoLoadedEvent* ev) noexcept
 {
-	videoPath = *(std::string*)ev.user.data1;
+	videoPath = ev->videoPath;
 }
 
 void ScriptTimeline::handleSelectionScrolling(const OverlayDrawingCtx& ctx) noexcept
@@ -136,7 +116,7 @@ void ScriptTimeline::handleSelectionScrolling(const OverlayDrawingCtx& ctx) noex
 
 		float seek = visibleTime * relSeek; 
 		seekToTime += seek;
-		EventSystem::PushEvent(ScriptTimelineEvents::SetTimePosition, (void*)(*(intptr_t*)&seekToTime));
+		EV::Enqueue<ShouldSetTimeEvent>(seekToTime);
 	}
 }
 
@@ -154,7 +134,7 @@ void ScriptTimeline::handleTimelineHover(const OverlayDrawingCtx& ctx) noexcept
 		auto delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Middle);
 		float timeDelta = (-delta.x / ctx.canvasSize.x) * ctx.visibleTime;
 		float seekToTime = (ctx.offsetTime + (ctx.visibleTime/2.f)) + timeDelta;
-		EventSystem::PushEvent(ScriptTimelineEvents::SetTimePosition, (void*)(*(intptr_t*)&seekToTime));
+		EV::Enqueue<ShouldSetTimeEvent>(seekToTime);
 		ImGui::ResetMouseDragDelta(ImGuiMouseButton_Middle);
 	}
 }
@@ -182,8 +162,7 @@ bool ScriptTimeline::handleTimelineClicks(const OverlayDrawingCtx& ctx) noexcept
 			}
 
 			if (!moveOrAddPointModifer && mouseOnPoint && leftMouseClicked) {
-				ActionClickEventData = *startIt;
-				EventSystem::PushEvent(ScriptTimelineEvents::FunscriptActionClicked, &ActionClickEventData);
+				EV::Enqueue<FunscriptActionClickedEvent>(*startIt);
 				return true;
 			}
 			else if(moveOrAddPointModifer && IsMovingIdx < 0 && mouseOnPoint && leftMouseClicked)
@@ -192,7 +171,7 @@ bool ScriptTimeline::handleTimelineClicks(const OverlayDrawingCtx& ctx) noexcept
 				ctx.script->ClearSelection();
 				ctx.script->SetSelected(*startIt, true);
 				IsMovingIdx = ctx.scriptIdx;
-				EventSystem::PushEvent(ScriptTimelineEvents::FunscriptActionMoveStarted, &ActionMovedEventData);
+				EV::Enqueue<FunscriptActionShouldMoveEvent>(*startIt, std::weak_ptr<Funscript>(), true);
 				return true;
 			}
 		}
@@ -201,8 +180,7 @@ bool ScriptTimeline::handleTimelineClicks(const OverlayDrawingCtx& ctx) noexcept
 	if(moveOrAddPointModifer && leftMouseClicked)
 	{
 		auto newAction = getActionForPoint(ctx, mousePos);
-		ActionCreatedEventData = newAction;
-		EventSystem::PushEvent(ScriptTimelineEvents::FunscriptActionCreated, &ActionCreatedEventData);
+		EV::Enqueue<FunscriptActionShouldCreateEvent>(newAction);
 		return true;
 	}
 	else if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
@@ -210,7 +188,7 @@ bool ScriptTimeline::handleTimelineClicks(const OverlayDrawingCtx& ctx) noexcept
 		auto mousePos = ImGui::GetMousePos();
 		float relX = (mousePos.x - ctx.canvasPos.x) / ctx.canvasSize.x;
 		float seekToTime = ctx.offsetTime + (visibleTime * relX);
-		EventSystem::PushEvent(ScriptTimelineEvents::SetTimePosition, (void*)(*(intptr_t*)&seekToTime));
+		EV::Enqueue<ShouldSetTimeEvent>(seekToTime);
 		return true;
 	}
 	else if(ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
@@ -219,7 +197,7 @@ bool ScriptTimeline::handleTimelineClicks(const OverlayDrawingCtx& ctx) noexcept
 		return true;
 	}
 	else if (ctx.hoveredScriptIdx != ctx.activeScriptIdx && leftMouseClicked) {
-		EventSystem::PushEvent(ScriptTimelineEvents::ActiveScriptChanged, (void*)(intptr_t)ctx.hoveredScriptIdx);
+		EV::Enqueue<ShouldChangeActiveScriptEvent>(ctx.hoveredScriptIdx);
 		return true;
 	}
 	else if(leftMouseClicked)
@@ -414,8 +392,7 @@ void ScriptTimeline::ShowScriptPositions(
 				// Update dragged action
 				auto mousePos = ImGui::GetMousePos();
 				auto newAction = getActionForPoint(drawingCtx, mousePos);
-				ActionMovedEventData = ScriptTimelineEvents::ActionMovedEventArgs{newAction, scripts[i]};
-				EventSystem::PushEvent(ScriptTimelineEvents::FunscriptActionMoved, &ActionMovedEventData);
+				EV::Enqueue<FunscriptActionShouldMoveEvent>(newAction, scripts[i], false);
 			}
 			else
 			{
@@ -451,9 +428,9 @@ void ScriptTimeline::ShowScriptPositions(
 					if (ImGui::Checkbox(script->Title().c_str(), &script->Enabled) && !script->Enabled) {
 						if (i == activeScriptIdx) {
 							// find a enabled script which can be set active
-							for (int i = 0; i < scripts.size(); i++) {
+							for (int i = 0; i < scripts.size(); i += 1) {
 								if (scripts[i]->Enabled) {									
-									EventSystem::PushEvent(ScriptTimelineEvents::ActiveScriptChanged, (void*)(intptr_t)i);
+									EV::Enqueue<ShouldChangeActiveScriptEvent>(i);
 									break;
 								}
 							}
@@ -483,7 +460,7 @@ void ScriptTimeline::ShowScriptPositions(
 				
 				outputPath = (Util::PathFromString(outputPath) / "audio.flac").u8string();
 				bool succ = ctx.Wave.data.GenerateAndLoadFlac(ffmpegPath.u8string(), ctx.videoPath, outputPath);
-				EventSystem::PushEvent(ScriptTimelineEvents::FfmpegAudioProcessingFinished);
+				EV::Enqueue<WaveformProcessingFinishedEvent>();
 				return 0;
 			};
 			if (ImGui::BeginMenu(TR_ID("WAVEFORM", Tr::WAVEFORM))) {

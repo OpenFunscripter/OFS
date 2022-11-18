@@ -1,10 +1,23 @@
 #pragma once
 #include <cstdint>
+#include <string>
 
-class VideoEvents {
-public:
-	static int32_t VideoLoaded;
-	static int32_t PlayPauseChanged;
+#include "OFS_Event.h"
 
-	static void RegisterEvents() noexcept;
+class VideoLoadedEvent : public OFS_Event<VideoLoadedEvent>
+{
+	public:
+	std::string videoPath;
+	VideoLoadedEvent(const char* path) noexcept
+		: videoPath(path) {}
+	VideoLoadedEvent(const std::string& path) noexcept
+		: videoPath(path) {}	
+};
+
+class PlayPauseChangeEvent : public OFS_Event<PlayPauseChangeEvent>
+{
+	public:
+	bool paused = false;
+	PlayPauseChangeEvent(bool pause) noexcept
+		: paused(pause) {}
 };

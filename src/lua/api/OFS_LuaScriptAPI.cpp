@@ -67,10 +67,8 @@ bool OFS_ScriptAPI::Undo() noexcept
 LuaFunscript::LuaFunscript(int32_t scriptIdx, std::weak_ptr<Funscript> script) noexcept
     : script(script), scriptIdx(scriptIdx)
 {
-    EventSystem::RunOnMain([&](void*) {
-        this->TakeSnapshot();
-    }, nullptr)
-    ->Wait();
+    FUN_ASSERT(Util::InMainThread(), "Not in main thread.");
+    this->TakeSnapshot();
 }
 
 LuaFunscript::LuaFunscript(const FunscriptArray& actions) noexcept
@@ -82,29 +80,27 @@ LuaFunscript::LuaFunscript(const FunscriptArray& actions) noexcept
 
 void LuaFunscript::Commit(sol::this_state L) noexcept
 {
-    EventSystem::RunOnMain([&](void*){
-        auto app = OpenFunscripter::ptr;
-        auto ref = script.lock();
-        if(ref) {
-            FunscriptArray commit;
-            FunscriptArray selection;
-            commit.reserve(actions.size());
-            for(auto action : actions) {
-                auto succ = commit.emplace(action.o);
-                if(!succ) {
-                    luaL_error(L.lua_state(), "Tried adding multiple actions with the same timestamp.");
-                    return;
-                }
-                if(action.selected) {
-                    selection.emplace(action.o);
-                }
+    FUN_ASSERT(Util::InMainThread(), "Not in main thread.");
+    auto app = OpenFunscripter::ptr;
+    auto ref = script.lock();
+    if(ref) {
+        FunscriptArray commit;
+        FunscriptArray selection;
+        commit.reserve(actions.size());
+        for(auto action : actions) {
+            auto succ = commit.emplace(action.o);
+            if(!succ) {
+                luaL_error(L.lua_state(), "Tried adding multiple actions with the same timestamp.");
+                return;
             }
-            app->undoSystem->Snapshot(StateType::CUSTOM_LUA, script);
-            ref->SetActions(commit);
-            ref->SetSelection(selection);
+            if(action.selected) {
+                selection.emplace(action.o);
+            }
         }
-    }, nullptr)
-    ->Wait();
+        app->undoSystem->Snapshot(StateType::CUSTOM_LUA, script);
+        ref->SetActions(commit);
+        ref->SetSelection(selection);
+    }
 }
 
 const char* LuaFunscript::Path() const noexcept

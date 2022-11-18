@@ -15,8 +15,6 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "UI/OFS_DownloadFfmpeg.cpp"
   "UI/OFS_FunscriptMetadataEditor.cpp"
 
-  "event/OFS_Events.cpp"
-
   "gl/OFS_GPU.cpp"
 
   "state/OpenFunscripterState.cpp"

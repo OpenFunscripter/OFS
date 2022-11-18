@@ -4,12 +4,11 @@
 #include "OFS_Preferences.h"
 #include "OFS_ScriptTimeline.h"
 #include "OFS_UndoSystem.h"
-#include "EventSystem.h"
+#include "OFS_EventSystem.h"
 #include "OFS_ScriptSimulator.h"
 #include "OFS_ControllerInput.h"
 #include "GradientBar.h"
 #include "OFS_SpecialFunctions.h"
-#include "OFS_Events.h"
 #include "OFS_VideoplayerControls.h"
 #include "OFS_TCode.h"
 #include "OFS_Project.h"
@@ -69,22 +68,21 @@ private:
     bool imguiSetup() noexcept;
     void processEvents() noexcept;
 
-    void FunscriptChanged(SDL_Event& ev) noexcept;
+    void FunscriptChanged(const FunscriptActionsChangedEvent* ev) noexcept;
 
-    void DragNDrop(SDL_Event& ev) noexcept;
+    void DragNDrop(const OFS_SDL_Event* ev) noexcept;
 
-    void VideoLoaded(SDL_Event& ev) noexcept;
-    void PlayPauseChange(SDL_Event& ev) noexcept;
+    void VideoLoaded(const VideoLoadedEvent* ev) noexcept;
+    void PlayPauseChange(const PlayPauseChangeEvent* ev) noexcept;
 
-    void ControllerAxisPlaybackSpeed(SDL_Event& ev) noexcept;
+    void ControllerAxisPlaybackSpeed(const OFS_SDL_Event* ev) noexcept;
 
-    void ScriptTimelineActionCreated(SDL_Event& ev) noexcept;
-    void ScriptTimelineActionMoveStarted(SDL_Event& ev) noexcept;
-    void ScriptTimelineActionMoved(SDL_Event& ev) noexcept;
-    void ScriptTimelineActionClicked(SDL_Event& ev) noexcept;
-    void ScriptTimelineDoubleClick(SDL_Event& ev) noexcept;
-    void ScriptTimelineSelectTime(SDL_Event& ev) noexcept;
-    void ScriptTimelineActiveScriptChanged(SDL_Event& ev) noexcept;
+    void ScriptTimelineActionCreated(const FunscriptActionShouldCreateEvent* ev) noexcept;
+    void ScriptTimelineActionMoved(const FunscriptActionShouldMoveEvent* ev) noexcept;
+    void ScriptTimelineActionClicked(const FunscriptActionClickedEvent* ev) noexcept;
+    void ScriptTimelineDoubleClick(const ShouldSetTimeEvent* ev) noexcept;
+    void ScriptTimelineSelectTime(const FunscriptShouldSelectTimeEvent* ev) noexcept;
+    void ScriptTimelineActiveScriptChanged(const ShouldChangeActiveScriptEvent* ev) noexcept;
 
     void selectTopPoints() noexcept;
     void selectMiddlePoints() noexcept;
@@ -148,7 +146,6 @@ public:
     std::unique_ptr<TCodePlayer> tcode;
     std::unique_ptr<SpecialFunctionsWindow> specialFunctions;
     std::unique_ptr<ScriptingMode> scripting;
-    std::unique_ptr<EventSystem> events;
     std::unique_ptr<ControllerInput> controllerInput;
     std::unique_ptr<OFS_Preferences> preferences;
     std::unique_ptr<UndoSystem> undoSystem;

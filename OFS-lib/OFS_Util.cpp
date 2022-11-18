@@ -1,6 +1,6 @@
 #include "OFS_Util.h"
 #include "OFS_GL.h"
-#include "EventSystem.h"
+#include "OFS_EventSystem.h"
 
 #include <filesystem>
 #include "SDL_rwops.h"
@@ -171,7 +171,7 @@ void Util::OpenFileDialog(const std::string& title, const std::string& path, Fil
         std::string path;
         std::vector<const char*> filters;
         std::string filterText;
-        EventSystem::SingleShotEventHandler handler;
+        FileDialogResultHandler handler;
     };
     auto thread = [](void* ctx) {
         auto data = (FileDialogThreadData*)ctx;
@@ -217,20 +217,17 @@ void Util::OpenFileDialog(const std::string& title, const std::string& path, Fil
             }
         }
 
-        auto eventData = new EventSystem::SingleShotEventData;
-        eventData->ctx = dialogResult;
-        eventData->handler = std::move(data->handler);
-        EventSystem::PushEvent(EventSystem::SingleShotEvent, eventData);
-
+        EV::Enqueue<OFS_DeferEvent>(
+            [resultHandler = std::move(data->handler), dialogResult]()
+            {
+                resultHandler(*dialogResult);
+                delete dialogResult;
+            });
         delete data;
         return 0;
     };
     auto threadData = new FileDialogThreadData;
-    threadData->handler = [handler](void* ctx) {
-        auto result = (FileDialogResult*)ctx;
-        handler(*result);
-        delete result;
-    };
+    threadData->handler = std::move(handler); 
     threadData->filters = filters;
     threadData->filterText = filterText;
     threadData->multiple = multiple;
@@ -247,7 +244,7 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
         std::string path;
         std::vector<const char*> filters;
         std::string filterText;
-        EventSystem::SingleShotEventHandler handler;
+        FileDialogResultHandler handler;
     };
     auto thread = [](void* ctx) -> int32_t {
         auto data = (SaveFileDialogThreadData*)ctx;
@@ -268,7 +265,11 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
         if (result != nullptr) {
             saveDialogResult->files.emplace_back(result);
         }
-        EventSystem::SingleShot(std::move(data->handler), saveDialogResult);
+        EV::Enqueue<OFS_DeferEvent>([resultHandler = std::move(data->handler), saveDialogResult]()
+        {
+            resultHandler(*saveDialogResult);
+            delete saveDialogResult;
+        });
         delete data;
         return 0;
     };
@@ -277,11 +278,7 @@ void Util::SaveFileDialog(const std::string& title, const std::string& path, Fil
     threadData->path = path;
     threadData->filters = filters;
     threadData->filterText = filterText;
-    threadData->handler = [handler](void* ctx) {
-        auto result = (FileDialogResult*)ctx;
-        handler(*result);
-        delete result;
-    };
+    threadData->handler = std::move(handler);
     auto handle = SDL_CreateThread(thread, "SaveFileDialog", threadData);
     SDL_DetachThread(handle);
 }
@@ -291,7 +288,7 @@ void Util::OpenDirectoryDialog(const std::string& title, const std::string& path
     struct OpenDirectoryDialogThreadData {
         std::string title;
         std::string path;
-        EventSystem::SingleShotEventHandler handler;
+        FileDialogResultHandler handler;
     };
     auto thread = [](void* ctx) -> int32_t {
         auto data = (OpenDirectoryDialogThreadData*)ctx;
@@ -308,25 +305,18 @@ void Util::OpenDirectoryDialog(const std::string& title, const std::string& path
             directoryDialogResult->files.emplace_back(result);
         }
 
-        auto eventData = new EventSystem::SingleShotEventData;
-        eventData->ctx = directoryDialogResult;
-        eventData->handler = std::move(data->handler);
-
-        SDL_Event ev{ 0 };
-        ev.type = EventSystem::SingleShotEvent;
-        ev.user.data1 = eventData;
-        SDL_PushEvent(&ev);
+        EV::Enqueue<OFS_DeferEvent>([resultHandler = std::move(data->handler), directoryDialogResult]()
+        {
+            resultHandler(*directoryDialogResult);
+            delete directoryDialogResult;
+        });
         delete data;
         return 0;
     };
     auto threadData = new OpenDirectoryDialogThreadData;
     threadData->title = title;
     threadData->path = path;
-    threadData->handler = [handler](void* ctx) {
-        auto result = (FileDialogResult*)ctx;
-        handler(*result);
-        delete result;
-    };
+    threadData->handler = std::move(handler);
     auto handle = SDL_CreateThread(thread, "SaveFileDialog", threadData);
     SDL_DetachThread(handle);
 }
@@ -336,7 +326,7 @@ void Util::YesNoCancelDialog(const std::string& title, const std::string& messag
     struct YesNoCancelThreadData {
         std::string title;
         std::string message;
-        EventSystem::SingleShotEventHandler handler;
+        YesNoDialogResultHandler handler;
     };
     auto thread = [](void* user) -> int {
         YesNoCancelThreadData* data = (YesNoCancelThreadData*)user;
@@ -353,7 +343,10 @@ void Util::YesNoCancelDialog(const std::string& title, const std::string& messag
                 enumResult = Util::YesNoCancel::No;
                 break;
         }
-        EventSystem::SingleShot(std::move(data->handler), (void*)(intptr_t)enumResult);
+        EV::Enqueue<OFS_DeferEvent>([resultHandler = std::move(data->handler), enumResult]()
+        {
+            resultHandler(enumResult);
+        });
         delete data;
         return 0;
     };
@@ -361,10 +354,7 @@ void Util::YesNoCancelDialog(const std::string& title, const std::string& messag
     auto threadData = new YesNoCancelThreadData;
     threadData->title = title;
     threadData->message = message;
-    threadData->handler = [handler](void* ctx) {
-        auto result = (Util::YesNoCancel)(intptr_t)ctx;
-        handler(result);
-    };
+    threadData->handler = std::move(handler);
     auto handle = SDL_CreateThread(thread, "YesNoCancelDialog", threadData);
     SDL_DetachThread(handle);
 }

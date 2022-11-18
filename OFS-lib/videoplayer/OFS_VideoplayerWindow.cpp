@@ -5,7 +5,7 @@
 #include "OFS_GL.h"
 #include "OFS_Localization.h"
 
-#include "EventSystem.h"
+#include "OFS_EventSystem.h"
 #include "OFS_ImGui.h"
 #include "OFS_Profiling.h"
 #include "OFS_Shader.h"
@@ -20,7 +20,9 @@ bool OFS_VideoplayerWindow::Init(OFS_Videoplayer* player) noexcept
 
 	this->player = player;
 	this->vrShader = std::make_unique<VrShader>();
-	EventSystem::ev().Subscribe(SDL_MOUSEWHEEL, EVENT_SYSTEM_BIND(this, &OFS_VideoplayerWindow::mouseScroll));
+	
+	EV::Queue().appendListener(SDL_MOUSEWHEEL,
+		OFS_SDL_Event::HandleEvent(EVENT_SYSTEM_BIND(this, &OFS_VideoplayerWindow::mouseScroll)));
 	
 	videoImageId = ImGui::GetIDWithSeed("videoImage", 0, rand());
 	return true;
@@ -28,16 +30,15 @@ bool OFS_VideoplayerWindow::Init(OFS_Videoplayer* player) noexcept
 
 OFS_VideoplayerWindow::~OFS_VideoplayerWindow() noexcept
 {
-	EventSystem::ev().UnsubscribeAll(this);
 }
 
-void OFS_VideoplayerWindow::mouseScroll(SDL_Event& ev) noexcept
+void OFS_VideoplayerWindow::mouseScroll(const OFS_SDL_Event* ev) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	auto& state = VideoPlayerWindowState::State(stateHandle);
 	if (state.lockedPosition) return;
 
-	auto& scroll = ev.wheel;
+	auto& scroll = ev->sdl.wheel;
 	if (videoHovered) {
 		auto mousePosInVid = ImGui::GetMousePos() - viewportPos - windowPos - state.videoPos;
 		float zoomPointX = (mousePosInVid.x - (videoDrawSize.x/2.f)) / videoDrawSize.x;
