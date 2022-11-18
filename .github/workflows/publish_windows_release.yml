@@ -17,6 +17,9 @@ jobs:
         lfs: 'true'
         fetch-depth: 0
     
+    - name: Git LFS
+      run: git lfs checkout
+    
     - name: Gets latest created release info
       id: latest_release_info
       uses: jossef/action-latest-release-info@v1.1.0
