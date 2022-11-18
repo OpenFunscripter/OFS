@@ -18,7 +18,7 @@ jobs:
         fetch-depth: 0
     
     - name: Git LFS
-      run: git lfs checkout
+      run: git lfs pull
     
     - name: Gets latest created release info
       id: latest_release_info
