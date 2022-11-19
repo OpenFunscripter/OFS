@@ -19,11 +19,11 @@ class OFS_Videoplayer
     float logicalPosition = 0.f;
     // Helper for Mute/Unmute
     float lastVolume = 0.f;
+    std::string playerName = "None"; 
 
     public:
-    OFS_Videoplayer() noexcept;
+    OFS_Videoplayer(const char* playerName) noexcept;
     ~OFS_Videoplayer() noexcept;
-    public:
 
 	static constexpr float MinPlaybackSpeed = 0.05f;
 	static constexpr float MaxPlaybackSpeed = 3.0f;

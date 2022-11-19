@@ -39,7 +39,7 @@ struct MpvDataCache {
     double abLoopB = 0;
 
     int64_t totalNumFrames = 0;
-    int64_t paused = true;
+    int64_t paused = false;
     int64_t videoWidth = 0;
     int64_t videoHeight = 0;
 
@@ -64,6 +64,7 @@ struct MpvPlayerContext
     float* logicalPosition = nullptr;
 
     uint64_t smoothTimer = 0;
+    std::string playerName;
 };
 
 #define CTX static_cast<MpvPlayerContext*>(ctx)
@@ -80,12 +81,12 @@ static void OnMpvRenderUpdate(void* ctx) noexcept
 
 inline static void notifyVideoLoaded(MpvPlayerContext* ctx) noexcept
 {
-    EV::Enqueue<VideoLoadedEvent>(CTX->data.filePath);
+    EV::Enqueue<VideoLoadedEvent>(CTX->data.filePath, CTX->playerName);
 }
 
-inline static void notifyPaused(bool paused) noexcept
+inline static void notifyPaused(MpvPlayerContext* ctx) noexcept
 {
-    EV::Enqueue<PlayPauseChangeEvent>(paused);
+    EV::Enqueue<PlayPauseChangeEvent>(CTX->data.paused, CTX->playerName);
 }
 
 inline static void updateRenderTexture(MpvPlayerContext* ctx) noexcept
@@ -138,9 +139,11 @@ OFS_Videoplayer::~OFS_Videoplayer() noexcept
     ctx = nullptr;
 }
 
-OFS_Videoplayer::OFS_Videoplayer() noexcept
+OFS_Videoplayer::OFS_Videoplayer(const char* playerName) noexcept
 {
+    this->playerName = playerName;
     ctx = new MpvPlayerContext();
+    CTX->playerName = playerName;
     CTX->frameTexture = &this->frameTexture;
     CTX->logicalPosition = &this->logicalPosition;
 }
@@ -321,7 +324,7 @@ inline static void ProcessEvents(MpvPlayerContext* ctx) noexcept
                         }
                         ctx->smoothTimer = SDL_GetTicks64();
                         ctx->data.paused = paused;
-                        notifyPaused(ctx->data.paused);
+                        notifyPaused(ctx);
                         break;
                     }
                     case MpvFilePath:
@@ -476,7 +479,7 @@ void OFS_Videoplayer::SeekFrames(int32_t offset) noexcept
 
 void OFS_Videoplayer::SetPaused(bool paused) noexcept
 {
-    if (!paused && !VideoLoaded()) return;
+    if ((bool)CTX->data.paused == paused) return;
     int64_t setPaused = paused;
     mpv_set_property_async(CTX->mpv, 0, "pause", MPV_FORMAT_FLAG, &setPaused);
 }

@@ -213,7 +213,7 @@ bool OpenFunscripter::Init(int argc, char* argv[])
     EV::Init();
     LoadedProject = std::make_unique<OFS_Project>();
 
-    player = std::make_unique<OFS_Videoplayer>();
+    player = std::make_unique<OFS_Videoplayer>("MainPlayer");
     if (!player->Init(prefState.forceHwDecoding)) {
         LOG_ERROR("Failed to initialize videoplayer.");
         return false;
@@ -226,7 +226,7 @@ bool OpenFunscripter::Init(int argc, char* argv[])
         return false;
     }
 
-    playerControls.Init(player.get());
+    playerControls.Init(player.get(), prefState.forceHwDecoding);
     undoSystem = std::make_unique<UndoSystem>();
 
     keybinds.Init();
@@ -1513,7 +1513,7 @@ void OpenFunscripter::ScriptTimelineActionCreated(const FunscriptActionShouldCre
 {
     // FIXME: this shouldn't assume the active script
     undoSystem->Snapshot(StateType::ADD_ACTION, ActiveFunscript());
-    ActiveFunscript()->AddAction(ev->newAction);
+    scripting->AddEditAction(ev->newAction);
 }
 
 void OpenFunscripter::ScriptTimelineActionMoved(const FunscriptActionShouldMoveEvent* ev) noexcept
@@ -1588,6 +1588,7 @@ void OpenFunscripter::update() noexcept
     const float delta = ImGui::GetIO().DeltaTime;
     extensions->Update(delta);
     player->Update(delta);
+    playerControls.videoPreview->Update(delta);
     ControllerInput::UpdateControllers();
     scripting->Update();
     scriptTimeline.Update();
@@ -1720,7 +1721,7 @@ void OpenFunscripter::Step() noexcept
 
             specialFunctions->ShowFunctionsWindow(&ofsState.showSpecialFunctions);
             undoSystem->ShowUndoRedoHistory(&ofsState.showHistory);
-            simulator.ShowSimulator(&ofsState.showSimulator, overlayState.SplineMode);
+            simulator.ShowSimulator(&ofsState.showSimulator, ActiveFunscript(), player->CurrentTime(), overlayState.SplineMode);
 
             if (ShowMetadataEditor) {
                 auto& projectState = LoadedProject->State();
@@ -1940,11 +1941,6 @@ void OpenFunscripter::Shutdown() noexcept
     OFS_FileLogger::Shutdown();
 }
 
-void OpenFunscripter::SetCursorType(ImGuiMouseCursor id) noexcept
-{
-    ImGui::SetMouseCursor(id);
-}
-
 void OpenFunscripter::Undo() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
@@ -2099,7 +2095,7 @@ bool OpenFunscripter::closeProject(bool closeWithUnsavedChanges) noexcept
         UpdateNewActiveScript(0);
         LoadedProject = std::make_unique<OFS_Project>();
         player->CloseVideo();
-        playerControls.videoPreview->closeVideo();
+        playerControls.videoPreview->CloseVideo();
         updateTitle();
     }
     return true;

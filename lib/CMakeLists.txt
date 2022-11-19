@@ -174,13 +174,10 @@ add_subdirectory("json/")
 # === tracy ===
 # =============
 set(tracy_SOURCES
-	"tracy/TracyClient.cpp"
+	"tracy/public/TracyClient.cpp"
 )
-set(tracy_HEADERS
-	"tracy/Tracy.hpp"
-)
-add_library(tracy STATIC ${tracy_SOURCES} ${tracy_HEADERS})
-target_include_directories(tracy PUBLIC "tracy/")
+add_library(tracy STATIC ${tracy_SOURCES})
+target_include_directories(tracy PUBLIC "tracy/public/")
 if(OFS_PROFILE)
 target_compile_definitions(tracy PUBLIC "TRACY_ENABLE")
 endif()

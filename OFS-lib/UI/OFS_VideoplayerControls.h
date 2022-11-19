@@ -34,7 +34,7 @@ public:
 	std::unique_ptr<FunscriptHeatmap> Heatmap;
 
 	OFS_VideoplayerControls() noexcept {}
-	void Init(class OFS_Videoplayer* player) noexcept;
+	void Init(class OFS_Videoplayer* player, bool hwAccel) noexcept;
 	inline void Destroy() noexcept { videoPreview.reset(); }
 
 	inline void UpdateHeatmap(float totalDuration, const FunscriptArray& actions) noexcept

@@ -5,6 +5,8 @@
 #include "OFS_BinarySerialization.h"
 #include "OFS_Event.h"
 
+#include <memory>
+
 class ScriptSimulator {
 private:
 	ImVec2 startDragP1;
@@ -20,13 +22,12 @@ public:
 
 	float positionOverride = -1.f;
 
-	void MouseMovement(const OFS_SDL_Event* ev);
-	void MouseDown(const OFS_SDL_Event* ev);
+	void MouseMovement(const OFS_SDL_Event* ev) noexcept;
 
 	inline float getMouseValue() const { return mouseValue; }
 
-	void Init();
-	void CenterSimulator();
-	void ShowSimulator(bool* open, bool splineMode);
+	void Init() noexcept;
+	void CenterSimulator() noexcept;
+	void ShowSimulator(bool* open, std::shared_ptr<class Funscript>& activeScript, float currentTime, bool splineMode) noexcept;
 };
 

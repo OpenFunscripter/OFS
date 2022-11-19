@@ -171,8 +171,6 @@ public:
 
     void UpdateNewActiveScript(uint32_t activeIndex) noexcept;
 
-    static void SetCursorType(ImGuiMouseCursor id) noexcept;
-
     inline const FunscriptArray& FunscriptClipboard() const { return CopiedSelection; }
 
     inline void LoadOverrideFont(const std::string& font) noexcept

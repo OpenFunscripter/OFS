@@ -1,6 +1,6 @@
 #pragma once
 #if OFS_PROFILE_ENABLED == 1
-#include "Tracy.hpp"
+#include "tracy/Tracy.hpp"
 #endif
 
 #if OFS_PROFILE_ENABLED == 1

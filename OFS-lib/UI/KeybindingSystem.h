@@ -60,7 +60,7 @@ REFL_END
 
 struct Binding {
 	std::string identifier;
-	Tr displayName;
+	Tr displayName = Tr::INVALID_TR;
 	Keybinding key;
 	ControllerBinding controller;
 	BindingAction action;

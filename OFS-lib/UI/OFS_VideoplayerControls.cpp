@@ -15,15 +15,18 @@ static char tmp_buf[2][32];
 void OFS_VideoplayerControls::VideoLoaded(const VideoLoadedEvent* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    videoPreview->previewVideo(ev->videoPath, 0.f);
+    if(ev->playerName == "MainPlayer")
+    {
+        videoPreview->PreviewVideo(ev->videoPath, 0.f);
+    }
 }
 
-void OFS_VideoplayerControls::Init(OFS_Videoplayer* player) noexcept
+void OFS_VideoplayerControls::Init(OFS_Videoplayer* player, bool hwAccel) noexcept
 {
     this->player = player;
     Heatmap = std::make_unique<FunscriptHeatmap>();
-    videoPreview = std::make_unique<VideoPreview>();
-    videoPreview->setup(false);
+    videoPreview = std::make_unique<VideoPreview>("PreviewPlayer", hwAccel);
+    videoPreview->Init();
 
     EV::Queue().appendListener(VideoLoadedEvent::EventType,
         VideoLoadedEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OFS_VideoplayerControls::VideoLoaded)));
@@ -96,13 +99,13 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
                 dragging = true;
             }
 
-            videoPreview->update();
             if (SDL_GetTicks() - lastPreviewUpdate >= PreviewUpdateMs) {
-                videoPreview->setPosition(relTimelinePos);
+                videoPreview->Play();
+                videoPreview->SetPosition(relTimelinePos);
                 lastPreviewUpdate = SDL_GetTicks();
             }
             const ImVec2 ImageDim = ImVec2(ImGui::GetFontSize()*7.f * (16.f / 9.f), ImGui::GetFontSize() * 7.f);
-            ImGui::Image((void*)(intptr_t)videoPreview->renderTexture, ImageDim);
+            ImGui::Image((void*)(intptr_t)videoPreview->FrameTex(), ImageDim);
             float timeSeconds = player->Duration() * relTimelinePos;
             float timeDelta = timeSeconds - player->CurrentTime();
             Util::FormatTime(tmp_buf[0], sizeof(tmp_buf[0]), timeSeconds, false);
@@ -113,6 +116,10 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
                 ImGui::Text("%s (-%s)", tmp_buf[0], tmp_buf[1]);
         }
         ImGui::EndTooltip();
+    }
+    else 
+    {
+        videoPreview->Pause();
     }
 
     if (dragging && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
