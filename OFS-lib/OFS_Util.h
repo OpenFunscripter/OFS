@@ -287,8 +287,6 @@ public:
         return exists && !ec;
     }
 
-    static void ForceMinumumWindowSize(class ImGuiWindow* window) noexcept;
-
     // http://www.martinbroadhurst.com/how-to-trim-a-stdstring.html
     static std::string& ltrim(std::string& str, const std::string& chars = "\t\n\v\f\r ") noexcept
     {
@@ -454,9 +452,6 @@ public:
             return Util::Format("%0.2lf GB", bytes / (1024.0 * 1024.0 * 1024.0)); // gigabytes
         }
     }
-
-    static uint32_t Hash(const char* data, size_t size = 0, int32_t seed = 0x42069) noexcept;
-
 
     inline static bool InMainThread() noexcept
     {

@@ -79,7 +79,6 @@ void SpecialFunctionsWindow::ShowFunctionsWindow(bool* open) noexcept
 
 	ImGui::Spacing();
 	function->DrawUI();
-    Util::ForceMinumumWindowSize(ImGui::GetCurrentWindow());
 	ImGui::End();
 }
 

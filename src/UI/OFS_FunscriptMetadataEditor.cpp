@@ -153,7 +153,6 @@ bool OFS_FunscriptMetadataEditor::ShowMetadataEditor(bool* open, Funscript::Meta
             state.defaultMetadata = metadata;
         }
         OFS::Tooltip(TR(SAVE_TEMPLATE_TOOLTIP));
-        Util::ForceMinumumWindowSize(ImGui::GetCurrentWindow());
         ImGui::EndPopup();
     }
     return save;   

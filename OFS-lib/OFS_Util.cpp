@@ -19,7 +19,6 @@
 #include "stb_image_write.h"
 
 #include "imgui.h"
-#include "imgui_internal.h"
 
 #include "tinyfiledialogs.h"
 
@@ -149,18 +148,6 @@ int Util::OpenUrl(const std::string& url)
     stbsp_snprintf(tmp, sizeof(tmp), "xdg-open \"%s\"", url.c_str());
     return std::system(tmp);
 #endif
-}
-
-void Util::ForceMinumumWindowSize(ImGuiWindow* window) noexcept
-{
-    auto& expectedSize = window->ContentSizeIdeal;
-    auto& actualSize = window->Size;
-    if (actualSize.x < expectedSize.x || actualSize.y < expectedSize.y) {
-        ImGui::SetWindowSize(window, expectedSize, ImGuiCond_Once);
-    }
-    else {
-        ImGui::SetWindowSize(window, expectedSize, ImGuiCond_Appearing);
-    }
 }
 
 void Util::OpenFileDialog(const std::string& title, const std::string& path, FileDialogResultHandler&& handler, bool multiple, const std::vector<const char*>& filters, const std::string& filterText) noexcept
@@ -429,10 +416,4 @@ std::filesystem::path Util::FfmpegPath() noexcept
     auto ffmpegPath = std::filesystem::path("ffmpeg");
     return ffmpegPath;
 #endif
-}
-
-uint32_t Util::Hash(const char* data, size_t size, int32_t seed) noexcept
-{
-    static_assert(sizeof(uint32_t) == sizeof(ImGuiID));
-    return ImHashStr(data, size, seed);
 }
