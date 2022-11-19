@@ -8,8 +8,10 @@ class FunscriptActionClickedEvent : public OFS_Event<FunscriptActionClickedEvent
 {
     public:
     FunscriptAction action;
-    FunscriptActionClickedEvent(FunscriptAction action) noexcept
-        : action(action) {}    
+    std::weak_ptr<Funscript> script;
+
+    FunscriptActionClickedEvent(FunscriptAction action, std::weak_ptr<Funscript> script) noexcept
+        : action(action), script(script) {}    
 };
 
 class FunscriptActionShouldMoveEvent : public OFS_Event<FunscriptActionShouldMoveEvent>
@@ -27,8 +29,9 @@ class FunscriptActionShouldCreateEvent : public OFS_Event<FunscriptActionShouldC
 {
     public:
     FunscriptAction newAction;
-    FunscriptActionShouldCreateEvent(FunscriptAction newAction) noexcept
-        : newAction(newAction) {}
+    std::weak_ptr<Funscript> script;
+    FunscriptActionShouldCreateEvent(FunscriptAction newAction, std::weak_ptr<Funscript> script) noexcept
+        : newAction(newAction), script(script) {}
 };
 
 class ShouldSetTimeEvent : public OFS_Event<ShouldSetTimeEvent>
@@ -58,6 +61,7 @@ class FunscriptShouldSelectTimeEvent : public OFS_Event<FunscriptShouldSelectTim
     float startTime;
     float endTime;
     bool clearSelection;
-    FunscriptShouldSelectTimeEvent(float startTime, float endTime, bool clear) noexcept
-        : startTime(startTime), endTime(endTime), clearSelection(clear) {}
+    std::weak_ptr<Funscript> script;
+    FunscriptShouldSelectTimeEvent(float startTime, float endTime, bool clear, std::weak_ptr<Funscript> script) noexcept
+        : startTime(startTime), endTime(endTime), clearSelection(clear), script(script) {}
 };

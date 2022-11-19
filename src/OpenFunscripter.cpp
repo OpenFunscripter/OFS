@@ -1502,7 +1502,9 @@ void OpenFunscripter::FunscriptChanged(const FunscriptActionsChangedEvent* ev) n
 void OpenFunscripter::ScriptTimelineActionClicked(const FunscriptActionClickedEvent* ev) noexcept
 {
     if (SDL_GetModState() & KMOD_CTRL) {
-        ActiveFunscript()->SelectAction(ev->action);
+        if (auto script = ev->script.lock()) {
+            script->SelectAction(ev->action);
+        }
     }
     else {
         player->SetPositionExact(ev->action.atS);
@@ -1511,20 +1513,19 @@ void OpenFunscripter::ScriptTimelineActionClicked(const FunscriptActionClickedEv
 
 void OpenFunscripter::ScriptTimelineActionCreated(const FunscriptActionShouldCreateEvent* ev) noexcept
 {
-    // FIXME: this shouldn't assume the active script
-    undoSystem->Snapshot(StateType::ADD_ACTION, ActiveFunscript());
-    scripting->AddEditAction(ev->newAction);
+    if (auto script = ev->script.lock()) {
+        undoSystem->Snapshot(StateType::ADD_ACTION, script);
+        script->AddEditAction(ev->newAction, scripting->LogicalFrameTime());
+    }
 }
 
 void OpenFunscripter::ScriptTimelineActionMoved(const FunscriptActionShouldMoveEvent* ev) noexcept
 {
-    if (ev->moveStarted) {
-        UndoContextScripts scripts;
-        scripts.assign(LoadedFunscripts().begin(), LoadedFunscripts().end());
-        undoSystem->Snapshot(StateType::ACTIONS_MOVED, std::move(scripts));
-    }
-    else {
-        if (auto script = ev->script.lock()) {
+    if (auto script = ev->script.lock()) {
+        if (ev->moveStarted) {
+            undoSystem->Snapshot(StateType::ACTIONS_MOVED, script);
+        }
+        else {
             if (script->SelectionSize() == 1) {
                 script->RemoveSelectedActions();
                 script->AddAction(ev->action);
@@ -3062,7 +3063,9 @@ void OpenFunscripter::ScriptTimelineDoubleClick(const ShouldSetTimeEvent* ev) no
 void OpenFunscripter::ScriptTimelineSelectTime(const FunscriptShouldSelectTimeEvent* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    ActiveFunscript()->SelectTime(ev->startTime, ev->endTime, ev->clearSelection);
+    if (auto script = ev->script.lock()) {
+        script->SelectTime(ev->startTime, ev->endTime, ev->clearSelection);
+    }
 }
 
 void OpenFunscripter::ScriptTimelineActiveScriptChanged(const ShouldChangeActiveScriptEvent* ev) noexcept

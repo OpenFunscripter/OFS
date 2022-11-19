@@ -101,7 +101,7 @@ void BaseOverlay::drawActionLinesSpline(const OverlayDrawingCtx& ctx, const Base
             return ImVec2(x, y);
         };
         auto putPoint = [getPointForTimePos](auto& ctx, float time) noexcept {
-            float pos = Util::Clamp<float>(ctx.script->Spline(time) * 100.f, 0.f, 100.f);
+            float pos = Util::Clamp<float>(ctx.DrawingScript()->Spline(time) * 100.f, 0.f, 100.f);
             ctx.drawList->PathLineTo(getPointForTimePos(ctx, time, pos));
         };
 
@@ -165,10 +165,10 @@ void BaseOverlay::drawActionLinesSpline(const OverlayDrawingCtx& ctx, const Base
         }
     };
 
-    auto& script = *ctx.script;
+    auto& drawingScript = ctx.DrawingScript();
     {
-        auto startIt = script.Actions().begin() + ctx.actionFromIdx;
-        auto endIt = script.Actions().begin() + ctx.actionToIdx;
+        auto startIt = drawingScript->Actions().begin() + ctx.actionFromIdx;
+        auto endIt = drawingScript->Actions().begin() + ctx.actionToIdx;
 
         const FunscriptAction* prevAction = nullptr;
         for (; startIt != endIt; ++startIt) {
@@ -184,14 +184,13 @@ void BaseOverlay::drawActionLinesSpline(const OverlayDrawingCtx& ctx, const Base
         }
     }
 
-    if(script.HasSelection())
+    if(drawingScript->HasSelection())
     {
-        auto startIt = script.Selection().begin() + ctx.selectionFromIdx;
-        auto endIt = script.Selection().begin() + ctx.selectionToIdx;
+        auto startIt = drawingScript->Selection().begin() + ctx.selectionFromIdx;
+        auto endIt = drawingScript->Selection().begin() + ctx.selectionToIdx;
         const FunscriptAction* prevAction = nullptr;
         for (; startIt != endIt; ++startIt) {
             auto&& action = *startIt;
-            auto point = BaseOverlay::GetPointForAction(ctx, action);
 
             if (prevAction != nullptr) {
                 // draw highlight line
@@ -211,10 +210,10 @@ void BaseOverlay::drawActionLinesLinear(const OverlayDrawingCtx& ctx, const Base
         ColoredLines.emplace_back(std::move(BaseOverlay::ColoredLine{ p1, p2, color }));
     };
 
-    auto& script = *ctx.script;
+    auto& drawingScript = ctx.DrawingScript();
     {
-        auto startIt = script.Actions().begin() + ctx.actionFromIdx;
-        auto endIt = script.Actions().begin() + ctx.actionToIdx;
+        auto startIt = drawingScript->Actions().begin() + ctx.actionFromIdx;
+        auto endIt = drawingScript->Actions().begin() + ctx.actionToIdx;
 
         const FunscriptAction* prevAction = nullptr;
         for (; startIt != endIt; ++startIt) {
@@ -234,10 +233,10 @@ void BaseOverlay::drawActionLinesLinear(const OverlayDrawingCtx& ctx, const Base
         }
     }
 
-    if(script.HasSelection())
+    if(drawingScript->HasSelection())
     {
-        auto startIt = script.Selection().begin() + ctx.selectionFromIdx;
-        auto endIt = script.Selection().begin() + ctx.selectionToIdx;
+        auto startIt = drawingScript->Selection().begin() + ctx.selectionFromIdx;
+        auto endIt = drawingScript->Selection().begin() + ctx.selectionToIdx;
         const FunscriptAction* prevAction = nullptr;
         for (; startIt != endIt; ++startIt) {
             auto&& action = *startIt;
@@ -264,11 +263,11 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
 {
     if (!BaseOverlay::ShowLines) return;
     OFS_PROFILE(__FUNCTION__);
-    auto& script = *ctx.script;
+    auto& drawingScript = ctx.DrawingScript();
     auto& state = BaseOverlayState::State(StateHandle);
 
-    auto startIt = script.Actions().begin() + ctx.actionFromIdx;
-    auto endIt = script.Actions().begin() + ctx.actionToIdx;
+    auto startIt = drawingScript->Actions().begin() + ctx.actionFromIdx;
+    auto endIt = drawingScript->Actions().begin() + ctx.actionToIdx;
     ColoredLines.clear();
     
     if(state.SplineMode)
@@ -305,11 +304,11 @@ void BaseOverlay::DrawActionPoints(const OverlayDrawingCtx& ctx) noexcept
 
     if(opacity >= 0.25f) 
     {
-        auto& script = *ctx.script;
+        auto& drawingScript = ctx.DrawingScript();
         int opcacityInt = 255 * opacity;
         {
-            auto startIt = script.Actions().begin() + ctx.actionFromIdx;
-            auto endIt = script.Actions().begin() + ctx.actionToIdx;
+            auto startIt = drawingScript->Actions().begin() + ctx.actionFromIdx;
+            auto endIt = drawingScript->Actions().begin() + ctx.actionToIdx;
             for (; startIt != endIt; ++startIt) 
             {
                 auto p = BaseOverlay::GetPointForAction(ctx, *startIt);
@@ -318,10 +317,10 @@ void BaseOverlay::DrawActionPoints(const OverlayDrawingCtx& ctx) noexcept
             }
         }
 
-        if(script.HasSelection())
+        if(drawingScript->HasSelection())
         {
-            auto startIt = script.Selection().begin() + ctx.selectionFromIdx;
-            auto endIt = script.Selection().begin() + ctx.selectionToIdx;
+            auto startIt = drawingScript->Selection().begin() + ctx.selectionFromIdx;
+            auto endIt = drawingScript->Selection().begin() + ctx.selectionToIdx;
             for (; startIt != endIt; ++startIt) 
             {
                 auto p = BaseOverlay::GetPointForAction(ctx, *startIt);
@@ -335,7 +334,7 @@ void BaseOverlay::DrawActionPoints(const OverlayDrawingCtx& ctx) noexcept
 void BaseOverlay::DrawSecondsLabel(const OverlayDrawingCtx& ctx) noexcept
 {
     auto& style = ImGui::GetStyle();
-    if (ctx.scriptIdx == ctx.drawnScriptCount - 1) {
+    if (ctx.drawingScriptIdx == ctx.drawnScriptCount - 1) {
         OFS_PROFILE(__FUNCTION__);
         auto tmp = FMT("%.2f %s", ctx.visibleTime, TR(TIMELINE_SECONDS));
         auto textSize = ImGui::CalcTextSize(tmp);
@@ -367,7 +366,7 @@ void BaseOverlay::DrawScriptLabel(const OverlayDrawingCtx& ctx) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     auto& style = ImGui::GetStyle();
-    auto& title = ctx.script->Title();
+    auto& title = ctx.DrawingScript()->Title();
     auto textSize = ImGui::CalcTextSize(title.c_str());
     ctx.drawList->AddText(
         ctx.canvasPos + ctx.canvasSize - style.FramePadding - textSize,

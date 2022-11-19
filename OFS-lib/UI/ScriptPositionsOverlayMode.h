@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 #include <array>
+#include <vector>
+#include <memory>
 
 #include "Funscript.h"
 #include "imgui.h"
@@ -10,9 +12,17 @@
 #include "state/states/BaseOverlayState.h"
 
 struct OverlayDrawingCtx {
-	Funscript* script;
+	const std::vector<std::shared_ptr<Funscript>>* scripts;
 	
-	int32_t scriptIdx;
+	int32_t drawingScriptIdx;
+	inline auto& DrawingScript() const noexcept { return (*scripts)[drawingScriptIdx]; }
+
+	int32_t hoveredScriptIdx;
+	inline auto& HoveredScript() const noexcept { return (*scripts)[hoveredScriptIdx]; }
+
+	int32_t activeScriptIdx;
+	inline auto& ActiveScript() const noexcept { return (*scripts)[activeScriptIdx]; }
+
 	int32_t drawnScriptCount;
 
 	int32_t actionFromIdx;
@@ -28,9 +38,6 @@ struct OverlayDrawingCtx {
 	float visibleTime;
 	float offsetTime;
 	float totalDuration;
-
-	int32_t hoveredScriptIdx;
-	int32_t activeScriptIdx;
 };
 
 class BaseOverlay {

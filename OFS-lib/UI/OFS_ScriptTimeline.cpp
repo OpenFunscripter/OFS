@@ -45,7 +45,7 @@ void ScriptTimeline::updateSelection(const OverlayDrawingCtx& ctx, bool clear) n
 	if(selectionInterval <= 0.008f) // 80ms
 		return;
 	
-	EV::Enqueue<FunscriptShouldSelectTimeEvent>(startTime, endTime, clear);
+	EV::Enqueue<FunscriptShouldSelectTimeEvent>(startTime, endTime, clear, ctx.DrawingScript());
 }
 
 void ScriptTimeline::FfmpegAudioProcessingFinished(const WaveformProcessingFinishedEvent* ev) noexcept
@@ -145,10 +145,10 @@ bool ScriptTimeline::handleTimelineClicks(const OverlayDrawingCtx& ctx) noexcept
 	auto mousePos = ImGui::GetMousePos();
 
 	auto leftMouseClicked = ImGui::IsMouseClicked(ImGuiMouseButton_Left);
-	if(ctx.activeScriptIdx == ctx.scriptIdx && BaseOverlay::PointSize >= 4.f) 
+	if(ctx.activeScriptIdx == ctx.drawingScriptIdx && BaseOverlay::PointSize >= 4.f) 
 	{
-		auto startIt = ctx.script->Actions().begin() + ctx.actionFromIdx;
-		auto endIt = ctx.script->Actions().begin() + ctx.actionToIdx;
+		auto startIt = ctx.DrawingScript()->Actions().begin() + ctx.actionFromIdx;
+		auto endIt = ctx.DrawingScript()->Actions().begin() + ctx.actionToIdx;
 		for (; startIt != endIt; ++startIt) 
 		{
 			auto point = BaseOverlay::GetPointForAction(ctx, *startIt);
@@ -162,16 +162,16 @@ bool ScriptTimeline::handleTimelineClicks(const OverlayDrawingCtx& ctx) noexcept
 			}
 
 			if (!moveOrAddPointModifer && mouseOnPoint && leftMouseClicked) {
-				EV::Enqueue<FunscriptActionClickedEvent>(*startIt);
+				EV::Enqueue<FunscriptActionClickedEvent>(*startIt, ctx.DrawingScript());
 				return true;
 			}
 			else if(moveOrAddPointModifer && IsMovingIdx < 0 && mouseOnPoint && leftMouseClicked)
 			{
 				// Start dragging action
-				ctx.script->ClearSelection();
-				ctx.script->SetSelected(*startIt, true);
-				IsMovingIdx = ctx.scriptIdx;
-				EV::Enqueue<FunscriptActionShouldMoveEvent>(*startIt, std::weak_ptr<Funscript>(), true);
+				ctx.DrawingScript()->ClearSelection();
+				ctx.DrawingScript()->SetSelected(*startIt, true);
+				IsMovingIdx = ctx.drawingScriptIdx;
+				EV::Enqueue<FunscriptActionShouldMoveEvent>(*startIt, ctx.DrawingScript(), true);
 				return true;
 			}
 		}
@@ -180,7 +180,7 @@ bool ScriptTimeline::handleTimelineClicks(const OverlayDrawingCtx& ctx) noexcept
 	if(moveOrAddPointModifer && leftMouseClicked)
 	{
 		auto newAction = getActionForPoint(ctx, mousePos);
-		EV::Enqueue<FunscriptActionShouldCreateEvent>(newAction);
+		EV::Enqueue<FunscriptActionShouldCreateEvent>(newAction, ctx.DrawingScript());
 		return true;
 	}
 	else if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
@@ -193,7 +193,7 @@ bool ScriptTimeline::handleTimelineClicks(const OverlayDrawingCtx& ctx) noexcept
 	}
 	else if(ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
 	{
-		ctx.script->ClearSelection();
+		ctx.DrawingScript()->ClearSelection();
 		return true;
 	}
 	else if (ctx.hoveredScriptIdx != ctx.activeScriptIdx && leftMouseClicked) {
@@ -226,6 +226,7 @@ void ScriptTimeline::ShowScriptPositions(
 	drawingCtx.activeScriptIdx = activeScriptIdx;
 	drawingCtx.visibleTime = visibleTime;
 	drawingCtx.totalDuration = player->Duration();
+	drawingCtx.scripts = &scripts;
 	
 	if (drawingCtx.totalDuration == 0.f) return;
 
@@ -250,7 +251,7 @@ void ScriptTimeline::ShowScriptPositions(
 		auto script = scripts[i].get();
 		if (!script->Enabled) continue;
 		
-		drawingCtx.scriptIdx = i;
+		drawingCtx.drawingScriptIdx = i;
 		drawingCtx.canvasPos = ImGui::GetCursorScreenPos();
 		drawingCtx.canvasSize = ImVec2(availSize.x, availSize.y / (float)drawingCtx.drawnScriptCount);
 		const ImGuiID itemID = ImGui::GetID(script->Title().empty() ? "empty script" : script->Title().c_str());
@@ -305,7 +306,6 @@ void ScriptTimeline::ShowScriptPositions(
 
 		drawingCtx.actionFromIdx = std::distance(script->Actions().begin(), startIt);
 		drawingCtx.actionToIdx = std::distance(script->Actions().begin(), endIt);
-		drawingCtx.script = script;
 
 		if(script->HasSelection())
 		{
@@ -385,7 +385,7 @@ void ScriptTimeline::ShowScriptPositions(
 
 		// Handle action clicks
 		if(ItemIsHovered && handleTimelineClicks(drawingCtx)) { /* click was handled */ }
-		else if(drawingCtx.scriptIdx == IsMovingIdx)
+		else if(drawingCtx.drawingScriptIdx == IsMovingIdx)
 		{
 			if(ImGui::IsMouseDragging(ImGuiMouseButton_Left, 0.f)) 
 			{
