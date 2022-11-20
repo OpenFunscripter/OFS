@@ -14,6 +14,11 @@ template<typename T, typename Comparison = DefaultComparison<T>, typename Alloca
 class vector_set: public std::vector<T, Allocator> {
 private:
 public:
+    inline void sort() noexcept
+    {
+        std::sort(begin(), end());
+    }
+
     template<typename... Args>
     inline bool emplace(Args&&... args) noexcept
     {

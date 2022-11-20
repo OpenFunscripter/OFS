@@ -98,7 +98,10 @@ void ScriptTimeline::Update() noexcept
 
 void ScriptTimeline::videoLoaded(const VideoLoadedEvent* ev) noexcept
 {
-	videoPath = ev->videoPath;
+	if(ev->playerName == "MainPlayer")
+	{
+		videoPath = ev->videoPath;
+	}
 }
 
 void ScriptTimeline::handleSelectionScrolling(const OverlayDrawingCtx& ctx) noexcept

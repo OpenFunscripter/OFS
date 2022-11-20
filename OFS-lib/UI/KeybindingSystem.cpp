@@ -695,7 +695,7 @@ void KeybindingSystem::addBindingsGroup(KeybindingGroup& group, bool& save, bool
 
     for (auto&& binding : group.bindings) {
         if (ControllerOnly && binding.controller.button < 0) { continue; }
-        if (!filterString.empty() && !Util::ContainsInsensitive(TRD(binding.displayName), filterString)) { continue; }
+        if (!filterString.empty() && !Util::ContainsInsensitive(TRD(binding.displayName), filterString.c_str())) { continue; }
         filteredBindings.emplace_back(&binding);
     }
     if (filteredBindings.size() == 0) { return; }

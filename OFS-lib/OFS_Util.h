@@ -308,16 +308,19 @@ public:
     inline static bool StringEqualsInsensitive(const std::string& string1, const std::string string2) noexcept
     {
         if (string1.length() != string2.length()) return false;
-        return ContainsInsensitive(string1, string2);
+        return ContainsInsensitive(string1.c_str(), string2.c_str());
     }
 
-    inline static bool ContainsInsensitive(const std::string& string1, const std::string& string2) noexcept
+    inline static bool ContainsInsensitive(const char* haystack, const char* needle) noexcept
     {
-        auto it = std::search(
-            string1.begin(), string1.end(),
-            string2.begin(), string2.end(),
-            [](char ch1, char ch2) { return std::toupper(ch1) == std::toupper(ch2); });
-        return (it != string1.end());
+        size_t length = SDL_strlen(needle);
+        while (*haystack) {
+            if (SDL_strncasecmp(haystack, needle, length) == 0) {
+                return true;
+            }
+            ++haystack;
+        }
+        return false;
     }
 
     inline static bool StringEndsWith(const std::string& string, const std::string& ending) noexcept

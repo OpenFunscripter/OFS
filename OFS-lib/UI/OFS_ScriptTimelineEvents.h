@@ -1,6 +1,5 @@
 #pragma once
 #include "OFS_Event.h"
-#include "FunscriptAction.h"
 #include "Funscript.h"
 #include <cstdint>
 
