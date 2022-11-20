@@ -22,8 +22,8 @@ bool OFS_Waveform::LoadFlac(const std::string& output) noexcept
 
 	uint32_t sampleCount = 0;
 	float avgSample = 0.f;
-	Samples.clear();
-	Samples.reserve(flac->totalPCMFrameCount / SamplesPerLine);
+	Clear();
+	samples.reserve(flac->totalPCMFrameCount / SamplesPerLine);
 	while ((sampleCount = drflac_read_pcm_frames_s16(flac, ChunkSamples.size(), ChunkSamples.data())) > 0) {
 		for (int sampleIdx = 0; sampleIdx < sampleCount; sampleIdx += SamplesPerLine) {
 			int samplesInThisLine = std::min(SamplesPerLine, (int)sampleCount - sampleIdx);
@@ -36,12 +36,12 @@ bool OFS_Waveform::LoadFlac(const std::string& output) noexcept
 			avgSample /= (float)SamplesPerLine;
 			minSample = Util::Min(minSample, avgSample);
 			maxSample = Util::Max(maxSample, avgSample);
-			Samples.emplace_back(avgSample);
+			samples.emplace_back(avgSample);
 			avgSample = 0.f;
 		}
 	}
 	drflac_close(flac);
-	Samples.shrink_to_fit();
+	samples.shrink_to_fit();
 
 	if(std::abs(minSample) > std::abs(maxSample)) {
 		maxSample = std::abs(minSample);
@@ -50,7 +50,7 @@ bool OFS_Waveform::LoadFlac(const std::string& output) noexcept
 		minSample = -maxSample;
 	}
 
-	for(auto& sample : Samples) {
+	for(auto& sample : samples) {
 		sample = Util::MapRange(sample, minSample, maxSample, -1.f, 1.f);
 	}
 
@@ -121,7 +121,7 @@ void OFS_WaveformLOD::Update(const OverlayDrawingCtx& ctx) noexcept
 	const float relStart = ctx.offsetTime / ctx.totalDuration;
 	const float relDuration = ctx.visibleTime / ctx.totalDuration;
 	
-	const auto& samples = data.Samples;
+	const auto& samples = data.Samples();
 	const float totalSampleCount = samples.size();
 
 	float startIndexF = relStart * totalSampleCount;
@@ -150,7 +150,7 @@ void OFS_WaveformLOD::Update(const OverlayDrawingCtx& ctx) noexcept
 				for(int32_t j=0; j < everyNth; j += 1) {
 					int32_t currentIndex = i + j;
 					if(currentIndex >= 0 && currentIndex < totalSampleCount) {
-						float s = std::abs(data.Samples[currentIndex]);
+						float s = std::abs(samples[currentIndex]);
 						maxSample = Util::Max(maxSample, s);
 					}
 				}
@@ -168,7 +168,7 @@ void OFS_WaveformLOD::Update(const OverlayDrawingCtx& ctx) noexcept
 				for(int32_t j=0; j < everyNth; j += 1) {
 					int32_t currentIndex = i + j;
 					if(currentIndex >= 0 && currentIndex < totalSampleCount) {
-						float s = std::abs(data.Samples[currentIndex]);
+						float s = std::abs(samples[currentIndex]);
 						maxSample = Util::Max(maxSample, s);
 					}
 				}

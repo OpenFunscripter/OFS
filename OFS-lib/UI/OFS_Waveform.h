@@ -14,19 +14,26 @@
 class OFS_Waveform
 {
 	bool generating = false;
+	std::vector<float> samples;
 public:
-	std::vector<float> Samples;
 
 	inline bool BusyGenerating() noexcept { return generating; }
 	bool GenerateAndLoadFlac(const std::string& ffmpegPath, const std::string& videoPath, const std::string& output) noexcept;
 	bool LoadFlac(const std::string& path) noexcept;
 
 	inline void Clear() noexcept {
-		Samples.clear();
+		samples.clear();
 	}
 
+	inline void SetSamples(std::vector<float>&& samples) noexcept
+	{
+		this->samples = std::move(samples);
+	}
+
+	inline const std::vector<float>& Samples() const noexcept { return samples; }
+
 	inline size_t SampleCount() const noexcept {
-		return Samples.size();
+		return samples.size();
 	}
 };
 

@@ -1558,10 +1558,6 @@ void OpenFunscripter::VideoLoaded(const VideoLoadedEvent* ev) noexcept
 
     Status |= OFS_Status::OFS_GradientNeedsUpdate;
 
-    if (!ev->videoPath.empty()) {
-        scriptTimeline.ClearAudioWaveform();
-    }
-
     tcode->reset();
     {
         std::vector<std::shared_ptr<const Funscript>> scripts;

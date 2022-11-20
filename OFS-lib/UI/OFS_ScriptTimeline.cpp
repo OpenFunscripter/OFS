@@ -54,7 +54,7 @@ void ScriptTimeline::FfmpegAudioProcessingFinished(const WaveformProcessingFinis
 	// Update cache
 	auto& waveCache = WaveformState::StaticStateSlow();
 	waveCache.Filename = videoPath;
-	waveCache.SetSamples(Wave.data.Samples);
+	waveCache.SetSamples(Wave.data.Samples());
 	LOG_INFO("Audio processing complete.");
 }
 
@@ -101,6 +101,17 @@ void ScriptTimeline::videoLoaded(const VideoLoadedEvent* ev) noexcept
 	if(ev->playerName == "MainPlayer")
 	{
 		videoPath = ev->videoPath;
+		auto& waveCache = WaveformState::StaticStateSlow();
+		auto samples = waveCache.GetSamples();
+		if(waveCache.Filename == videoPath && !samples.empty())
+		{
+			Wave.data.SetSamples(std::move(samples));
+			ShowAudioWaveform = true;
+		}
+		else 
+		{
+        	ClearAudioWaveform();
+		}
 	}
 }
 
@@ -487,7 +498,7 @@ void ScriptTimeline::ShowScriptPositions(
 						auto samples = waveCache.GetSamples();
 						if(waveCache.Filename == videoPath && !samples.empty())
 						{
-							Wave.data.Samples = std::move(samples);
+							Wave.data.SetSamples(std::move(samples));
 							ShowAudioWaveform = true;
 						}
 						else 
