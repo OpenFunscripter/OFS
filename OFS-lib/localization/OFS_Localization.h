@@ -3,6 +3,7 @@
 #include "OFS_Util.h"
 #include <array>
 #include <vector>
+#include <variant>
 
 class OFS_Translator
 {
@@ -49,3 +50,32 @@ OFS_Translator::ptr->Translation[static_cast<uint32_t>(Tr::str_id)]
 OFS_Translator::ptr->Translation[static_cast<uint32_t>(id)]
 #define TR_ID(id, str_id)\
 FMT("%s###%s", OFS_Translator::ptr->Translation[static_cast<uint32_t>(str_id)], id)
+
+class TrString
+{
+    private:
+    std::variant<Tr, std::string> value = std::string();
+    public:
+    TrString() noexcept {}
+    TrString(const char* str) noexcept
+        : value(std::string(str)) {}
+    TrString(const std::string& str) noexcept
+        : value(str) {}
+    TrString(Tr value) noexcept
+        : value(value) {}
+
+    inline const char* c_str() const noexcept
+    {
+        if(auto string = std::get_if<std::string>(&value))
+        {
+            return string->c_str();
+        }
+        else if(auto tr = std::get_if<Tr>(&value)) 
+        {
+            return TRD(*tr);
+        }
+        
+        FUN_ASSERT(false, "unreachable");
+        return "";
+    }
+};
