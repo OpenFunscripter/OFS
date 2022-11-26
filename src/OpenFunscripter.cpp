@@ -1326,7 +1326,6 @@ void OpenFunscripter::processEvents() noexcept
         EV::Queue().directDispatch(OFS_SDL_Event::EventType, wrappedEvent);
     }
     EV::Process();
-    keys->ProcessKeybindings();
 }
 
 void OpenFunscripter::FunscriptChanged(const FunscriptActionsChangedEvent* ev) noexcept
@@ -1429,6 +1428,7 @@ void OpenFunscripter::update() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     const float delta = ImGui::GetIO().DeltaTime;
+    keys->ProcessKeybindings();
     extensions->Update(delta);
     player->Update(delta);
     playerControls.videoPreview->Update(delta);

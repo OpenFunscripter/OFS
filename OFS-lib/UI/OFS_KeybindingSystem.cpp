@@ -105,7 +105,7 @@ void OFS_KeybindingSystem::ProcessKeybindings() noexcept
     for(int i=0, size = state.Triggers.size(); i < size; i += 1)
     {
         const auto& trigger = state.Triggers[i];
-        if(trigger.Mod != io.KeyMods)
+        if((trigger.Mod & ImGuiMod_Mask_) != io.KeyMods)
             continue;
 
         if(trigger.Key != ImGuiKey_None)
@@ -121,6 +121,16 @@ void OFS_KeybindingSystem::ProcessKeybindings() noexcept
                 continue;
         }
         
+        // Handle mouse scroll direction
+        if(trigger.Key == ImGuiKey_MouseWheelY || trigger.Key == ImGuiKey_MouseWheelX)
+        {
+            bool direction = trigger.Mod & OFS_ActionTriggerFlags::MouseWheelDirection;
+            bool directionMatch = trigger.Key == ImGuiKey_MouseWheelY 
+                ? io.MouseWheel > 0.f == direction
+                : io.MouseWheelH > 0.f == direction;
+            if(!directionMatch) continue;
+        }
+
         // Find action
         auto actionIt = actions.find(trigger.MappedActionId);
         if(actionIt != actions.end())
@@ -263,6 +273,14 @@ void OFS_KeybindingSystem::renderNewTriggerModal() noexcept
                     tmpTrigger.Key = key;
                     tmpTrigger.Mod = (ImGuiKey)io.KeyMods;
                     
+                    if(key == ImGuiKey_MouseWheelY || key == ImGuiKey_MouseWheelX)
+                    {
+                        bool direction = key == ImGuiKey_MouseWheelY
+                            ? io.MouseWheel > 0.f
+                            : io.MouseWheelH > 0.f;
+                        tmpTrigger.SetFlag(OFS_ActionTriggerFlags::MouseWheelDirection, direction);
+                    }
+
                     if(isAllowedTrigger(tmpTrigger)) 
                     {
                         tmpTrigger.MappedActionId = editingActionId;

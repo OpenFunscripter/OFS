@@ -9,6 +9,12 @@
 #include "OFS_VectorSet.h"
 
 
+// The lower 3 bytes of Mod are able to be used
+enum OFS_ActionTriggerFlags
+{
+    MouseWheelDirection = 0x1,
+};
+
 struct OFS_ActionTrigger
 {
     int32_t Mod = ImGuiKey_None;
@@ -22,7 +28,14 @@ struct OFS_ActionTrigger
 
     inline ImGuiKey ImKey() const noexcept
     {
+        static_assert(sizeof(ImGuiKey) == sizeof(Key));
         return static_cast<ImGuiKey>(Key);
+    }
+
+    inline void SetFlag(OFS_ActionTriggerFlags flag, bool value) noexcept
+    {
+        Mod &= ~(flag);
+        if(value) Mod |= flag;
     }
 
     inline bool operator==(const OFS_ActionTrigger& b) const noexcept 

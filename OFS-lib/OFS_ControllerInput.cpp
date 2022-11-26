@@ -110,7 +110,6 @@ void ControllerInput::Init() noexcept
 
 void ControllerInput::Update() noexcept
 {
-
 }
 
 void ControllerInput::UpdateControllers() noexcept
