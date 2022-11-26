@@ -10,7 +10,6 @@
 #include "OFS_Localization.h"
 
 #include "state/OpenFunscripterState.h"
-#include "state/states/ControllerState.h"
 #include "state/states/VideoplayerWindowState.h"
 #include "state/states/BaseOverlayState.h"
 
@@ -114,8 +113,6 @@ OpenFunscripter::~OpenFunscripter() noexcept
     controllerInput.reset();
     specialFunctions.reset();
     LoadedProject.reset();
-
-    keybinds.save();
 
     playerWindow.reset();
     player.reset();
@@ -229,9 +226,8 @@ bool OpenFunscripter::Init(int argc, char* argv[])
     playerControls.Init(player.get(), prefState.forceHwDecoding);
     undoSystem = std::make_unique<UndoSystem>();
 
-    keybinds.Init();
-    registerBindings(); // needs to happen before setBindings
-    keybinds.load(Util::Prefpath("keybinds.json"));
+    keys = std::make_unique<OFS_KeybindingSystem>();
+    registerBindings();
 
     scriptTimeline.Init();
 
@@ -360,496 +356,441 @@ void OpenFunscripter::setupDefaultLayout(bool force) noexcept
 
 void OpenFunscripter::registerBindings()
 {
+    keys->RegisterGroup("Actions", Tr::ACTIONS_BINDING_GROUP);
     {
-        KeybindingGroup group("Actions", Tr::ACTIONS_BINDING_GROUP);
         // DELETE ACTION
-        auto& remove_action = group.bindings.emplace_back(
-            "remove_action",
-            Tr::ACTION_REMOVE_ACTION,
-            true,
-            [&](void*) { removeAction(); });
-        remove_action.key = Keybinding(
-            SDLK_DELETE,
-            0);
-        remove_action.controller = ControllerBinding(
-            SDL_CONTROLLER_BUTTON_B,
-            false);
-
+        keys->RegisterAction(
+            { "remove_action",
+                [this]() { removeAction(); } },
+            Tr::ACTION_REMOVE_ACTION, "Actions",
+            { { ImGuiMod_None, ImGuiKey_Delete },
+                { ImGuiMod_None, ImGuiKey_GamepadFaceRight } });
         // ADD ACTIONS
-        auto& action_0 = group.bindings.emplace_back(
-            "action 0",
-            Tr::ACTION_ACTION_0,
-            true,
-            [&](void*) { addEditAction(0); });
-        action_0.key = Keybinding(
-            SDLK_KP_0,
-            0);
-
-        auto& action_10 = group.bindings.emplace_back(
-            "action 10",
-            Tr::ACTION_ACTION_10,
-            true,
-            [&](void*) { addEditAction(10); });
-        action_10.key = Keybinding(
-            SDLK_KP_1,
-            0);
-
-        auto& action_20 = group.bindings.emplace_back(
-            "action 20",
-            Tr::ACTION_ACTION_20,
-            true,
-            [&](void*) { addEditAction(20); });
-        action_20.key = Keybinding(
-            SDLK_KP_2,
-            0);
-
-        auto& action_30 = group.bindings.emplace_back(
-            "action 30",
-            Tr::ACTION_ACTION_30,
-            true,
-            [&](void*) { addEditAction(30); });
-        action_30.key = Keybinding(
-            SDLK_KP_3,
-            0);
-
-        auto& action_40 = group.bindings.emplace_back(
-            "action 40",
-            Tr::ACTION_ACTION_40,
-            true,
-            [&](void*) { addEditAction(40); });
-        action_40.key = Keybinding(
-            SDLK_KP_4,
-            0);
-
-        auto& action_50 = group.bindings.emplace_back(
-            "action 50",
-            Tr::ACTION_ACTION_50,
-            true,
-            [&](void*) { addEditAction(50); });
-        action_50.key = Keybinding(
-            SDLK_KP_5,
-            0);
-
-        auto& action_60 = group.bindings.emplace_back(
-            "action 60",
-            Tr::ACTION_ACTION_60,
-            true,
-            [&](void*) { addEditAction(60); });
-        action_60.key = Keybinding(
-            SDLK_KP_6,
-            0);
-
-        auto& action_70 = group.bindings.emplace_back(
-            "action 70",
-            Tr::ACTION_ACTION_70,
-            true,
-            [&](void*) { addEditAction(70); });
-        action_70.key = Keybinding(
-            SDLK_KP_7,
-            0);
-
-        auto& action_80 = group.bindings.emplace_back(
-            "action 80",
-            Tr::ACTION_ACTION_80,
-            true,
-            [&](void*) { addEditAction(80); });
-        action_80.key = Keybinding(
-            SDLK_KP_8,
-            0);
-
-        auto& action_90 = group.bindings.emplace_back(
-            "action 90",
-            Tr::ACTION_ACTION_90,
-            true,
-            [&](void*) { addEditAction(90); });
-        action_90.key = Keybinding(
-            SDLK_KP_9,
-            0);
-
-        auto& action_100 = group.bindings.emplace_back(
-            "action 100",
-            Tr::ACTION_ACTION_100,
-            true,
-            [&](void*) { addEditAction(100); });
-        action_100.key = Keybinding(
-            SDLK_KP_DIVIDE,
-            0);
-
-        keybinds.registerBinding(std::move(group));
+        keys->RegisterAction(
+            { "action_0",
+                [this]() { addEditAction(0); } },
+            Tr::ACTION_ACTION_0, "Actions",
+            {
+                { ImGuiMod_None, ImGuiKey_Keypad0 },
+            });
+        keys->RegisterAction(
+            { "action_10",
+                [this]() { addEditAction(10); } },
+            Tr::ACTION_ACTION_10, "Actions",
+            {
+                { ImGuiMod_None, ImGuiKey_Keypad1 },
+            });
+        keys->RegisterAction(
+            { "action_20",
+                [this]() { addEditAction(20); } },
+            Tr::ACTION_ACTION_20, "Actions",
+            {
+                { ImGuiMod_None, ImGuiKey_Keypad2 },
+            });
+        keys->RegisterAction(
+            { "action_30",
+                [this]() { addEditAction(30); } },
+            Tr::ACTION_ACTION_30, "Actions",
+            {
+                { ImGuiMod_None, ImGuiKey_Keypad3 },
+            });
+        keys->RegisterAction(
+            { "action_40",
+                [this]() { addEditAction(40); } },
+            Tr::ACTION_ACTION_40, "Actions",
+            {
+                { ImGuiMod_None, ImGuiKey_Keypad4 },
+            });
+        keys->RegisterAction(
+            { "action_50",
+                [this]() { addEditAction(50); } },
+            Tr::ACTION_ACTION_50, "Actions",
+            {
+                { ImGuiMod_None, ImGuiKey_Keypad5 },
+            });
+        keys->RegisterAction(
+            { "action_60",
+                [this]() { addEditAction(60); } },
+            Tr::ACTION_ACTION_60, "Actions",
+            {
+                { ImGuiMod_None, ImGuiKey_Keypad6 },
+            });
+        keys->RegisterAction(
+            { "action_70",
+                [this]() { addEditAction(70); } },
+            Tr::ACTION_ACTION_70, "Actions",
+            {
+                { ImGuiMod_None, ImGuiKey_Keypad7 },
+            });
+        keys->RegisterAction(
+            { "action_80",
+                [this]() { addEditAction(80); } },
+            Tr::ACTION_ACTION_80, "Actions",
+            {
+                { ImGuiMod_None, ImGuiKey_Keypad8 },
+            });
+        keys->RegisterAction(
+            { "action_90",
+                [this]() { addEditAction(90); } },
+            Tr::ACTION_ACTION_90, "Actions",
+            {
+                { ImGuiMod_None, ImGuiKey_Keypad9 },
+            });
+        keys->RegisterAction(
+            { "action_100",
+                [this]() { addEditAction(100); } },
+            Tr::ACTION_ACTION_100, "Actions",
+            {
+                { ImGuiMod_None, ImGuiKey_KeypadDivide },
+            });
     }
 
+    keys->RegisterGroup("Core", Tr::CORE_BINDING_GROUP);
     {
-        KeybindingGroup group("Core", Tr::CORE_BINDING_GROUP);
         // SAVE
-        auto& save_project = group.bindings.emplace_back(
-            "save_project",
-            Tr::ACTION_SAVE_PROJECT,
-            true,
-            [&](void*) { saveProject(); });
-        save_project.key = Keybinding(
-            SDLK_s,
-            KMOD_CTRL);
-
-        auto& quick_export = group.bindings.emplace_back(
-            "quick_export",
-            Tr::ACTION_QUICK_EXPORT,
-            true,
-            [&](void*) { quickExport(); });
-        quick_export.key = Keybinding(
-            SDLK_s,
-            KMOD_CTRL | KMOD_SHIFT);
-
-        auto& sync_timestamp = group.bindings.emplace_back(
-            "sync_timestamps",
-            Tr::ACTION_SYNC_TIME_WITH_PLAYER,
-            true,
-            [&](void*) { player->SyncWithPlayerTime(); });
-        sync_timestamp.key = Keybinding(
-            SDLK_s,
-            0);
-
-        auto& cycle_loaded_forward_scripts = group.bindings.emplace_back(
-            "cycle_loaded_forward_scripts",
-            Tr::ACTION_CYCLE_FORWARD_LOADED_SCRIPTS,
-            true,
-            [&](void*) {
-                auto activeIdx = LoadedProject->ActiveIdx();
-                do {
-                    activeIdx++;
-                    activeIdx %= LoadedFunscripts().size();
-                } while (!LoadedFunscripts()[activeIdx]->Enabled);
-                UpdateNewActiveScript(activeIdx);
+        keys->RegisterAction(
+            { "save_project",
+                [this]() { saveProject(); } },
+            Tr::ACTION_SAVE_PROJECT, "Core",
+            {
+                { ImGuiMod_Ctrl, ImGuiKey_S },
             });
-        cycle_loaded_forward_scripts.key = Keybinding(
-            SDLK_PAGEDOWN,
-            0);
 
-        auto& cycle_loaded_backward_scripts = group.bindings.emplace_back(
-            "cycle_loaded_backward_scripts",
-            Tr::ACTION_CYCLE_BACKWARD_LOADED_SCRIPTS,
-            true,
-            [&](void*) {
-                auto activeIdx = LoadedProject->ActiveIdx();
-                do {
-                    activeIdx--;
-                    activeIdx %= LoadedFunscripts().size();
-                } while (!LoadedFunscripts()[activeIdx]->Enabled);
-                UpdateNewActiveScript(activeIdx);
+        keys->RegisterAction(
+            { "quick_export",
+                [this]() { quickExport(); } },
+            Tr::ACTION_QUICK_EXPORT, "Core",
+            {
+                { ImGuiMod_Ctrl | ImGuiMod_Shift, ImGuiKey_S },
             });
-        cycle_loaded_backward_scripts.key = Keybinding(
-            SDLK_PAGEUP,
-            0);
 
-        auto& reload_translation = group.bindings.emplace_back(
-            "reload_translation_csv",
-            Tr::ACTION_RELOAD_TRANSLATION,
-            true,
-            [&](void*) {
-                const auto& prefState = PreferenceState::State(preferences->StateHandle());
-                if (!prefState.languageCsv.empty()) {
-                    if (OFS_Translator::ptr->LoadTranslation(prefState.languageCsv.c_str())) {
-                        OFS_DynFontAtlas::AddTranslationText();
+        keys->RegisterAction(
+            { "sync_timestamps",
+                [this]() { player->SyncWithPlayerTime(); } },
+            Tr::ACTION_SYNC_TIME_WITH_PLAYER, "Core",
+            {
+                { ImGuiMod_None, ImGuiKey_S },
+            });
+
+        keys->RegisterAction(
+            { "cycle_loaded_forward_scripts",
+                [this]() { 
+                    auto activeIdx = LoadedProject->ActiveIdx();
+                    do {
+                        activeIdx++;
+                        activeIdx %= LoadedFunscripts().size();
+                    } while (!LoadedFunscripts()[activeIdx]->Enabled);
+                    UpdateNewActiveScript(activeIdx); } },
+            Tr::ACTION_CYCLE_FORWARD_LOADED_SCRIPTS, "Core",
+            {
+                { ImGuiMod_None, ImGuiKey_PageDown },
+            });
+
+        keys->RegisterAction(
+            { "cycle_loaded_backward_scripts",
+                [this]() {
+                    auto activeIdx = LoadedProject->ActiveIdx();
+                    do {
+                        activeIdx--;
+                        activeIdx %= LoadedFunscripts().size();
+                    } while (!LoadedFunscripts()[activeIdx]->Enabled);
+                    UpdateNewActiveScript(activeIdx);
+                } },
+            Tr::ACTION_CYCLE_BACKWARD_LOADED_SCRIPTS, "Core",
+            {
+                { ImGuiMod_None, ImGuiKey_PageUp },
+            });
+
+        keys->RegisterAction(
+            { "reload_translation_csv",
+                [this]() {
+                    const auto& prefState = PreferenceState::State(preferences->StateHandle());
+                    if (!prefState.languageCsv.empty()) {
+                        if (OFS_Translator::ptr->LoadTranslation(prefState.languageCsv.c_str())) {
+                            OFS_DynFontAtlas::AddTranslationText();
+                        }
                     }
-                }
-            });
-
-        keybinds.registerBinding(std::move(group));
+                } },
+            Tr::ACTION_RELOAD_TRANSLATION, "Core");
     }
+
+    keys->RegisterGroup("Navigation", Tr::NAVIGATION_BINDING_GROUP);
     {
-        KeybindingGroup group("Navigation", Tr::NAVIGATION_BINDING_GROUP);
         // JUMP BETWEEN ACTIONS
-        auto& prev_action = group.bindings.emplace_back(
-            "prev_action",
-            Tr::ACTION_PREVIOUS_ACTION,
-            false,
-            [&](void*) {
-                auto action = ActiveFunscript()->GetPreviousActionBehind(player->CurrentTime() - 0.001f);
-                if (action != nullptr) player->SetPositionExact(action->atS);
-            });
-        prev_action.key = Keybinding(
-            SDLK_DOWN,
-            0);
-        prev_action.controller = ControllerBinding(
-            SDL_CONTROLLER_BUTTON_DPAD_DOWN,
-            false);
+        keys->RegisterAction(
+            { "prev_action",
+                [this]() {
+                    auto action = ActiveFunscript()->GetPreviousActionBehind(player->CurrentTime() - 0.001f);
+                    if (action != nullptr) player->SetPositionExact(action->atS);
+                },
+                false },
+            Tr::ACTION_PREVIOUS_ACTION, "Navigation",
+            { { ImGuiKey_None, ImGuiKey_DownArrow, true },
+                { ImGuiKey_None, ImGuiKey_GamepadDpadDown, true } });
 
-        auto& next_action = group.bindings.emplace_back(
-            "next_action",
-            Tr::ACTION_NEXT_ACTION,
-            false,
-            [&](void*) {
-                auto action = ActiveFunscript()->GetNextActionAhead(player->CurrentTime() + 0.001f);
-                if (action != nullptr) player->SetPositionExact(action->atS);
-            });
-        next_action.key = Keybinding(
-            SDLK_UP,
-            0);
-        next_action.controller = ControllerBinding(
-            SDL_CONTROLLER_BUTTON_DPAD_UP,
-            false);
+        keys->RegisterAction(
+            { "next_action",
+                [this]() {
+                    auto action = ActiveFunscript()->GetNextActionAhead(player->CurrentTime() + 0.001f);
+                    if (action != nullptr) player->SetPositionExact(action->atS);
+                },
+                false },
+            Tr::ACTION_NEXT_ACTION, "Navigation",
+            { { ImGuiKey_None, ImGuiKey_UpArrow, true },
+                { ImGuiKey_None, ImGuiKey_GamepadDpadUp, true } });
 
-        auto& prev_action_multi = group.bindings.emplace_back(
-            "prev_action_multi",
-            Tr::ACTION_PREVIOUS_ACTION_MULTI,
-            false,
-            [&](void*) {
-                bool foundAction = false;
-                float closestTime = std::numeric_limits<float>::max();
-                float currentTime = player->CurrentTime();
+        keys->RegisterAction(
+            { "prev_action_multi",
+                [this]() {
+                    bool foundAction = false;
+                    float closestTime = std::numeric_limits<float>::max();
+                    float currentTime = player->CurrentTime();
 
-                for (int i = 0; i < LoadedFunscripts().size(); i++) {
-                    auto& script = LoadedFunscripts()[i];
-                    auto action = script->GetPreviousActionBehind(currentTime - 0.001f);
-                    if (action != nullptr) {
-                        if (std::abs(currentTime - action->atS) < std::abs(currentTime - closestTime)) {
-                            foundAction = true;
-                            closestTime = action->atS;
+                    for (int i = 0; i < LoadedFunscripts().size(); i++) {
+                        auto& script = LoadedFunscripts()[i];
+                        auto action = script->GetPreviousActionBehind(currentTime - 0.001f);
+                        if (action != nullptr) {
+                            if (std::abs(currentTime - action->atS) < std::abs(currentTime - closestTime)) {
+                                foundAction = true;
+                                closestTime = action->atS;
+                            }
                         }
                     }
-                }
-                if (foundAction) {
-                    player->SetPositionExact(closestTime);
-                }
+                    if (foundAction) {
+                        player->SetPositionExact(closestTime);
+                    }
+                },
+                false },
+            Tr::ACTION_PREVIOUS_ACTION_MULTI, "Navigation",
+            {
+                { ImGuiMod_Ctrl, ImGuiKey_DownArrow, true },
             });
-        prev_action_multi.key = Keybinding(
-            SDLK_DOWN,
-            KMOD_CTRL);
 
-        auto& next_action_multi = group.bindings.emplace_back(
-            "next_action_multi",
-            Tr::ACTION_NEXT_ACTION_MULTI,
-            false,
-            [&](void*) {
-                bool foundAction = false;
-                float closestTime = std::numeric_limits<float>::max();
-                float currentTime = player->CurrentTime();
-                for (int i = 0; i < LoadedFunscripts().size(); i++) {
-                    auto& script = LoadedFunscripts()[i];
-                    auto action = script->GetNextActionAhead(currentTime + 0.001f);
-                    if (action != nullptr) {
-                        if (std::abs(currentTime - action->atS) < std::abs(currentTime - closestTime)) {
-                            foundAction = true;
-                            closestTime = action->atS;
+        keys->RegisterAction(
+            { "next_action_multi",
+                [this]() {
+                    bool foundAction = false;
+                    float closestTime = std::numeric_limits<float>::max();
+                    float currentTime = player->CurrentTime();
+                    for (int i = 0; i < LoadedFunscripts().size(); i++) {
+                        auto& script = LoadedFunscripts()[i];
+                        auto action = script->GetNextActionAhead(currentTime + 0.001f);
+                        if (action != nullptr) {
+                            if (std::abs(currentTime - action->atS) < std::abs(currentTime - closestTime)) {
+                                foundAction = true;
+                                closestTime = action->atS;
+                            }
                         }
                     }
-                }
-                if (foundAction) {
-                    player->SetPositionExact(closestTime);
-                }
+                    if (foundAction) {
+                        player->SetPositionExact(closestTime);
+                    }
+                },
+                false },
+            Tr::ACTION_NEXT_ACTION_MULTI, "Navigation",
+            {
+                { ImGuiMod_Ctrl, ImGuiKey_UpArrow, true },
             });
-        next_action_multi.key = Keybinding(
-            SDLK_UP,
-            KMOD_CTRL);
 
         // FRAME CONTROL
-        auto& prev_frame = group.bindings.emplace_back(
-            "prev_frame",
-            Tr::ACTION_PREV_FRAME,
-            false,
-            [&](void*) {
-                if (player->IsPaused()) {
-                    scripting->PreviousFrame();
-                }
+        keys->RegisterAction(
+            { "prev_frame",
+                [this]() {
+                    if (player->IsPaused()) {
+                        scripting->PreviousFrame();
+                    }
+                },
+                false },
+            Tr::ACTION_PREV_FRAME, "Navigation",
+            {
+                { ImGuiMod_None, ImGuiKey_LeftArrow, true },
+                { ImGuiMod_None, ImGuiKey_GamepadDpadLeft, true },
             });
-        prev_frame.key = Keybinding(
-            SDLK_LEFT,
-            0);
-        prev_frame.controller = ControllerBinding(
-            SDL_CONTROLLER_BUTTON_DPAD_LEFT,
-            false);
 
-        auto& next_frame = group.bindings.emplace_back(
-            "next_frame",
-            Tr::ACTION_NEXT_FRAME,
-            false,
-            [&](void*) {
-                if (player->IsPaused()) {
-                    scripting->NextFrame();
-                }
+        keys->RegisterAction(
+            { "next_frame",
+                [this]() {
+                    if (player->IsPaused()) {
+                        scripting->NextFrame();
+                    }
+                },
+                false },
+            Tr::ACTION_NEXT_FRAME, "Navigation",
+            {
+                { ImGuiMod_None, ImGuiKey_RightArrow, true },
+                { ImGuiMod_None, ImGuiKey_GamepadDpadRight, true },
             });
-        next_frame.key = Keybinding(
-            SDLK_RIGHT,
-            0);
-        next_frame.controller = ControllerBinding(
-            SDL_CONTROLLER_BUTTON_DPAD_RIGHT,
-            false);
 
+        keys->RegisterAction(
+            { "fast_step",
+                [this]() {
+                    const auto& prefState = PreferenceState::State(preferences->StateHandle());
+                    player->SeekFrames(prefState.fastStepAmount);
+                },
+                false },
+            Tr::ACTION_FAST_STEP, "Navigation",
+            { { ImGuiMod_Ctrl, ImGuiKey_RightArrow, true } });
 
-        auto& fast_step = group.bindings.emplace_back(
-            "fast_step",
-            Tr::ACTION_FAST_STEP,
-            false,
-            [&](void*) {
-                const auto& prefState = PreferenceState::State(preferences->StateHandle());
-                player->SeekFrames(prefState.fastStepAmount);
-            });
-        fast_step.key = Keybinding(
-            SDLK_RIGHT,
-            KMOD_CTRL);
-
-        auto& fast_backstep = group.bindings.emplace_back(
-            "fast_backstep",
-            Tr::ACTION_FAST_BACKSTEP,
-            false,
-            [&](void*) {
-                const auto& prefState = PreferenceState::State(preferences->StateHandle());
-                player->SeekFrames(-prefState.fastStepAmount);
-            });
-        fast_backstep.key = Keybinding(
-            SDLK_LEFT,
-            KMOD_CTRL);
-        keybinds.registerBinding(std::move(group));
+        keys->RegisterAction(
+            { "fast_backstep",
+                [this]() {
+                    const auto& prefState = PreferenceState::State(preferences->StateHandle());
+                    player->SeekFrames(-prefState.fastStepAmount);
+                },
+                false },
+            Tr::ACTION_FAST_BACKSTEP, "Navigation",
+            { { ImGuiMod_Ctrl, ImGuiKey_LeftArrow, true } });
     }
 
+    keys->RegisterGroup("Utility", Tr::UTILITY_BINDING_GROUP);
     {
-        KeybindingGroup group("Utility", Tr::UTILITY_BINDING_GROUP);
         // UNDO / REDO
-        auto& undo = group.bindings.emplace_back(
-            "undo",
-            Tr::ACTION_UNDO,
-            false,
-            [&](void*) {
-                this->Undo();
-            });
-        undo.key = Keybinding(
-            SDLK_z,
-            KMOD_CTRL);
+        keys->RegisterAction(
+            { "undo",
+                [this]() {
+                    Undo();
+                },
+                false },
+            Tr::ACTION_UNDO, "Utility",
+            { { ImGuiMod_Ctrl, ImGuiKey_Z, true } });
 
-        auto& redo = group.bindings.emplace_back(
-            "redo",
-            Tr::ACTION_REDO,
-            false,
-            [&](void*) {
-                this->Redo();
-            });
-        redo.key = Keybinding(
-            SDLK_y,
-            KMOD_CTRL);
+        keys->RegisterAction(
+            { "redo",
+                [this]() {
+                    Redo();
+                },
+                false },
+            Tr::ACTION_REDO, "Utility",
+            { { ImGuiMod_Ctrl, ImGuiKey_Y, true } });
 
         // COPY / PASTE
-        auto& copy = group.bindings.emplace_back(
-            "copy",
-            Tr::ACTION_COPY,
-            true,
-            [&](void*) { copySelection(); });
-        copy.key = Keybinding(
-            SDLK_c,
-            KMOD_CTRL);
+        keys->RegisterAction(
+            { "copy",
+                [this]() {
+                    copySelection();
+                },
+                false },
+            Tr::ACTION_COPY, "Utility",
+            { { ImGuiMod_Ctrl, ImGuiKey_C } });
 
-        auto& paste = group.bindings.emplace_back(
-            "paste",
-            Tr::ACTION_PASTE,
-            true,
-            [&](void*) { pasteSelection(); });
-        paste.key = Keybinding(
-            SDLK_v,
-            KMOD_CTRL);
+        keys->RegisterAction(
+            { "paste",
+                [this]() {
+                    pasteSelection();
+                },
+                false },
+            Tr::ACTION_PASTE, "Utility",
+            { { ImGuiMod_Ctrl, ImGuiKey_V } });
 
-        auto& paste_exact = group.bindings.emplace_back(
-            "paste_exact",
-            Tr::ACTION_PASTE_EXACT,
-            true,
-            [&](void*) { pasteSelectionExact(); });
-        paste_exact.key = Keybinding(
-            SDLK_v,
-            KMOD_CTRL | KMOD_SHIFT);
+        keys->RegisterAction(
+            { "paste_exact",
+                [this]() {
+                    pasteSelectionExact();
+                },
+                false },
+            Tr::ACTION_PASTE_EXACT, "Utility",
+            { { ImGuiMod_Ctrl | ImGuiMod_Shift, ImGuiKey_V } });
 
-        auto& cut = group.bindings.emplace_back(
-            "cut",
-            Tr::ACTION_CUT,
-            true,
-            [&](void*) { cutSelection(); });
-        cut.key = Keybinding(
-            SDLK_x,
-            KMOD_CTRL);
+        keys->RegisterAction(
+            { "cut",
+                [this]() {
+                    cutSelection();
+                },
+                false },
+            Tr::ACTION_CUT, "Utility",
+            { { ImGuiMod_Ctrl, ImGuiKey_X } });
 
-        auto& select_all = group.bindings.emplace_back(
-            "select_all",
-            Tr::ACTION_SELECT_ALL,
-            true,
-            [&](void*) { ActiveFunscript()->SelectAll(); });
-        select_all.key = Keybinding(
-            SDLK_a,
-            KMOD_CTRL);
+        keys->RegisterAction(
+            { "select_all",
+                [this]() {
+                    ActiveFunscript()->SelectAll();
+                },
+                false },
+            Tr::ACTION_SELECT_ALL, "Utility",
+            { { ImGuiMod_Ctrl, ImGuiKey_A } });
 
-        auto& deselect_all = group.bindings.emplace_back(
-            "deselect_all",
-            Tr::ACTION_DESELECT_ALL,
-            true,
-            [&](void*) { ActiveFunscript()->ClearSelection(); });
-        deselect_all.key = Keybinding(
-            SDLK_d,
-            KMOD_CTRL);
+        keys->RegisterAction(
+            { "deselect_all",
+                [this]() {
+                    ActiveFunscript()->ClearSelection();
+                },
+                false },
+            Tr::ACTION_DESELECT_ALL, "Utility",
+            { { ImGuiMod_Ctrl, ImGuiKey_D } });
 
-        auto& select_all_left = group.bindings.emplace_back(
-            "select_all_left",
-            Tr::ACTION_SELECT_ALL_LEFT,
-            true,
-            [&](void*) { ActiveFunscript()->SelectTime(0, player->CurrentTime()); });
-        select_all_left.key = Keybinding(
-            SDLK_LEFT,
-            KMOD_CTRL | KMOD_ALT);
+        keys->RegisterAction(
+            { "select_all_left",
+                [this]() {
+                    ActiveFunscript()->SelectTime(0, player->CurrentTime());
+                },
+                false },
+            Tr::ACTION_SELECT_ALL_LEFT, "Utility",
+            { { ImGuiMod_Ctrl | ImGuiMod_Alt, ImGuiKey_LeftArrow } });
 
-        auto& select_all_right = group.bindings.emplace_back(
-            "select_all_right",
-            Tr::ACTION_SELECT_ALL_RIGHT,
-            true,
-            [&](void*) { ActiveFunscript()->SelectTime(player->CurrentTime(), player->Duration()); });
-        select_all_right.key = Keybinding(
-            SDLK_RIGHT,
-            KMOD_CTRL | KMOD_ALT);
+        keys->RegisterAction(
+            { "select_all_right",
+                [this]() {
+                    ActiveFunscript()->SelectTime(player->CurrentTime(), player->Duration());
+                },
+                false },
+            Tr::ACTION_SELECT_ALL_RIGHT, "Utility",
+            { { ImGuiMod_Ctrl | ImGuiMod_Alt, ImGuiKey_RightArrow } });
 
-        auto& select_top_points = group.bindings.emplace_back(
-            "select_top_points",
-            Tr::ACTION_SELECT_TOP,
-            true,
-            [&](void*) { selectTopPoints(); });
+        keys->RegisterAction(
+            { "select_top_points",
+                [this]() {
+                    selectTopPoints();
+                },
+                false },
+            Tr::ACTION_SELECT_TOP, "Utility");
 
-        auto& select_middle_points = group.bindings.emplace_back(
-            "select_middle_points",
-            Tr::ACTION_SELECT_MID,
-            true,
-            [&](void*) { selectMiddlePoints(); });
+        keys->RegisterAction(
+            { "select_middle_points",
+                [this]() {
+                    selectMiddlePoints();
+                },
+                false },
+            Tr::ACTION_SELECT_MID, "Utility");
 
-        auto& select_bottom_points = group.bindings.emplace_back(
-            "select_bottom_points",
-            Tr::ACTION_SELECT_BOTTOM,
-            true,
-            [&](void*) { selectBottomPoints(); });
+        keys->RegisterAction(
+            { "select_bottom_points",
+                [this]() {
+                    selectBottomPoints();
+                },
+                false },
+            Tr::ACTION_SELECT_BOTTOM, "Utility");
 
         // SCREENSHOT VIDEO
-        auto& save_frame_as_image = group.bindings.emplace_back(
-            "save_frame_as_image",
-            Tr::ACTION_SAVE_FRAME,
-            true,
-            [&](void*) {
-                auto screenshotDir = Util::Prefpath("screenshot");
-                player->SaveFrameToImage(screenshotDir);
-            });
-        save_frame_as_image.key = Keybinding(
-            SDLK_F2,
-            0);
+        keys->RegisterAction(
+            { "save_frame_as_image",
+                [this]() {
+                    auto screenshotDir = Util::Prefpath("screenshot");
+                    player->SaveFrameToImage(screenshotDir);
+                },
+                false },
+            Tr::ACTION_SAVE_FRAME, "Utility",
+            { { ImGuiMod_None, ImGuiKey_F2 } });
 
         // CHANGE SUBTITLES
-        auto& cycle_subtitles = group.bindings.emplace_back(
-            "cycle_subtitles",
-            Tr::ACTION_CYCLE_SUBTITLES,
-            true,
-            [&](void*) { player->CycleSubtitles(); });
-        cycle_subtitles.key = Keybinding(
-            SDLK_j,
-            0);
+        keys->RegisterAction(
+            { "cycle_subtitles",
+                [this]() {
+                    player->CycleSubtitles();
+                },
+                false },
+            Tr::ACTION_CYCLE_SUBTITLES, "Utility",
+            { { ImGuiMod_None, ImGuiKey_J } });
 
         // FULLSCREEN
-        auto& fullscreen_toggle = group.bindings.emplace_back(
-            "fullscreen_toggle",
-            Tr::ACTION_TOGGLE_FULLSCREEN,
-            true,
-            [&](void*) { Status ^= OFS_Status::OFS_Fullscreen; SetFullscreen(Status & OFS_Status::OFS_Fullscreen); });
-        fullscreen_toggle.key = Keybinding(
-            SDLK_F10,
-            0);
-        keybinds.registerBinding(std::move(group));
+        keys->RegisterAction(
+            { "fullscreen_toggle",
+                [this]() {
+                    Status ^= OFS_Status::OFS_Fullscreen;
+                    SetFullscreen(Status & OFS_Status::OFS_Fullscreen);
+                },
+                false },
+            Tr::ACTION_TOGGLE_FULLSCREEN, "Utility",
+            { { ImGuiMod_None, ImGuiKey_F10 } });
     }
 
     // MOVE LEFT/RIGHT
@@ -920,449 +861,353 @@ void OpenFunscripter::registerBindings()
             }
         }
     };
+
+    keys->RegisterGroup("Moving", Tr::MOVING_BINDING_GROUP);
     {
-        KeybindingGroup group("Moving", Tr::MOVING_BINDING_GROUP);
-        auto& move_actions_up_ten = group.bindings.emplace_back(
-            "move_actions_up_ten",
-            Tr::ACTION_MOVE_UP_10,
-            false,
-            [&](void*) {
-                if (ActiveFunscript()->HasSelection()) {
-                    undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
-                    ActiveFunscript()->MoveSelectionPosition(10);
-                }
-                else {
-                    auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
-                    if (closest != nullptr) {
+        keys->RegisterAction(
+            { "move_actions_up_ten",
+                [this]() {
+                    if (ActiveFunscript()->HasSelection()) {
                         undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
-                        ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->atS, Util::Clamp<int32_t>(closest->pos + 10, 0, 100)));
+                        ActiveFunscript()->MoveSelectionPosition(10);
                     }
-                }
-            });
+                    else {
+                        auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
+                        if (closest != nullptr) {
+                            undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
+                            ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->atS, Util::Clamp<int32_t>(closest->pos + 10, 0, 100)));
+                        }
+                    }
+                },
+                false },
+            Tr::ACTION_MOVE_UP_10, "Moving");
 
-        auto& move_actions_down_ten = group.bindings.emplace_back(
-            "move_actions_down_ten",
-            Tr::ACTION_MOVE_DOWN_10,
-            false,
-            [&](void*) {
-                if (ActiveFunscript()->HasSelection()) {
-                    undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
-                    ActiveFunscript()->MoveSelectionPosition(-10);
-                }
-                else {
-                    auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
-                    if (closest != nullptr) {
+        keys->RegisterAction(
+            { "move_actions_down_ten",
+                [this]() {
+                    if (ActiveFunscript()->HasSelection()) {
                         undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
-                        ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->atS, Util::Clamp<int32_t>(closest->pos - 10, 0, 100)));
+                        ActiveFunscript()->MoveSelectionPosition(-10);
                     }
-                }
-            });
+                    else {
+                        auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
+                        if (closest != nullptr) {
+                            undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
+                            ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->atS, Util::Clamp<int32_t>(closest->pos - 10, 0, 100)));
+                        }
+                    }
+                },
+                false },
+            Tr::ACTION_MOVE_DOWN_10, "Moving");
 
-
-        auto& move_actions_up_five = group.bindings.emplace_back(
-            "move_actions_up_five",
-            Tr::ACTION_MOVE_UP_5,
-            false,
-            [&](void*) {
-                if (ActiveFunscript()->HasSelection()) {
-                    undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
-                    ActiveFunscript()->MoveSelectionPosition(5);
-                }
-                else {
-                    auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
-                    if (closest != nullptr) {
+        keys->RegisterAction(
+            { "move_actions_up_five",
+                [this]() {
+                    if (ActiveFunscript()->HasSelection()) {
                         undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
-                        ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->atS, Util::Clamp<int32_t>(closest->pos + 5, 0, 100)));
+                        ActiveFunscript()->MoveSelectionPosition(5);
                     }
-                }
-            });
+                    else {
+                        auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
+                        if (closest != nullptr) {
+                            undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
+                            ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->atS, Util::Clamp<int32_t>(closest->pos + 5, 0, 100)));
+                        }
+                    }
+                },
+                false },
+            Tr::ACTION_MOVE_UP_5, "Moving");
 
-        auto& move_actions_down_five = group.bindings.emplace_back(
-            "move_actions_down_five",
-            Tr::ACTION_MOVE_DOWN_5,
-            false,
-            [&](void*) {
-                if (ActiveFunscript()->HasSelection()) {
-                    undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
-                    ActiveFunscript()->MoveSelectionPosition(-5);
-                }
-                else {
-                    auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
-                    if (closest != nullptr) {
+        keys->RegisterAction(
+            { "move_actions_down_five",
+                [this]() {
+                    if (ActiveFunscript()->HasSelection()) {
                         undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
-                        ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->atS, Util::Clamp<int32_t>(closest->pos - 5, 0, 100)));
+                        ActiveFunscript()->MoveSelectionPosition(-5);
                     }
-                }
-            });
+                    else {
+                        auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
+                        if (closest != nullptr) {
+                            undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
+                            ActiveFunscript()->EditAction(*closest, FunscriptAction(closest->atS, Util::Clamp<int32_t>(closest->pos - 5, 0, 100)));
+                        }
+                    }
+                },
+                false },
+            Tr::ACTION_MOVE_DOWN_5, "Moving");
 
+        keys->RegisterAction(
+            { "move_actions_left_snapped",
+                [move_actions_horizontal_with_video]() {
+                    move_actions_horizontal_with_video(false);
+                },
+                false },
+            Tr::ACTION_MOVE_ACTIONS_LEFT_SNAP, "Moving",
+            { { ImGuiMod_Ctrl | ImGuiMod_Shift, ImGuiKey_LeftArrow, true } });
 
-        auto& move_actions_left_snapped = group.bindings.emplace_back(
-            "move_actions_left_snapped",
-            Tr::ACTION_MOVE_ACTIONS_LEFT_SNAP,
-            false,
-            [&](void*) {
-                move_actions_horizontal_with_video(false);
-            });
-        move_actions_left_snapped.key = Keybinding(
-            SDLK_LEFT,
-            KMOD_CTRL | KMOD_SHIFT);
+        keys->RegisterAction(
+            { "move_actions_right_snapped",
+                [move_actions_horizontal_with_video]() {
+                    move_actions_horizontal_with_video(true);
+                },
+                false },
+            Tr::ACTION_MOVE_ACTIONS_RIGHT_SNAP, "Moving",
+            { { ImGuiMod_Ctrl | ImGuiMod_Shift, ImGuiKey_RightArrow, true } });
 
-        auto& move_actions_right_snapped = group.bindings.emplace_back(
-            "move_actions_right_snapped",
-            Tr::ACTION_MOVE_ACTIONS_RIGHT_SNAP,
-            false,
-            [&](void*) {
-                move_actions_horizontal_with_video(true);
-            });
-        move_actions_right_snapped.key = Keybinding(
-            SDLK_RIGHT,
-            KMOD_CTRL | KMOD_SHIFT);
+        keys->RegisterAction(
+            { "move_actions_left",
+                [move_actions_horizontal]() {
+                    move_actions_horizontal(false);
+                },
+                false },
+            Tr::ACTION_MOVE_ACTIONS_LEFT, "Moving",
+            { { ImGuiMod_Shift, ImGuiKey_LeftArrow, true } });
 
-        auto& move_actions_left = group.bindings.emplace_back(
-            "move_actions_left",
-            Tr::ACTION_MOVE_ACTIONS_LEFT,
-            false,
-            [&](void*) {
-                move_actions_horizontal(false);
-            });
-        move_actions_left.key = Keybinding(
-            SDLK_LEFT,
-            KMOD_SHIFT);
-
-        auto& move_actions_right = group.bindings.emplace_back(
-            "move_actions_right",
-            Tr::ACTION_MOVE_ACTIONS_RIGHT,
-            false,
-            [&](void*) {
-                move_actions_horizontal(true);
-            });
-        move_actions_right.key = Keybinding(
-            SDLK_RIGHT,
-            KMOD_SHIFT);
+        keys->RegisterAction(
+            { "move_actions_right",
+                [move_actions_horizontal]() {
+                    move_actions_horizontal(true);
+                },
+                false },
+            Tr::ACTION_MOVE_ACTIONS_RIGHT, "Moving",
+            { { ImGuiMod_Shift, ImGuiKey_RightArrow, true } });
 
         // MOVE SELECTION UP/DOWN
-        auto& move_actions_up = group.bindings.emplace_back(
-            "move_actions_up",
-            Tr::ACTION_MOVE_ACTIONS_UP,
-            false,
-            [&](void*) {
-                if (ActiveFunscript()->HasSelection()) {
-                    undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
-                    ActiveFunscript()->MoveSelectionPosition(1);
-                }
-                else {
-                    auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
-                    if (closest != nullptr) {
-                        FunscriptAction moved(closest->atS, closest->pos + 1);
-                        if (moved.pos <= 100 && moved.pos >= 0) {
-                            undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
-                            ActiveFunscript()->EditAction(*closest, moved);
+        keys->RegisterAction(
+            { "move_actions_up",
+                [this]() {
+                    if (ActiveFunscript()->HasSelection()) {
+                        undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
+                        ActiveFunscript()->MoveSelectionPosition(1);
+                    }
+                    else {
+                        auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
+                        if (closest != nullptr) {
+                            FunscriptAction moved(closest->atS, closest->pos + 1);
+                            if (moved.pos <= 100 && moved.pos >= 0) {
+                                undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
+                                ActiveFunscript()->EditAction(*closest, moved);
+                            }
                         }
                     }
-                }
-            });
-        move_actions_up.key = Keybinding(
-            SDLK_UP,
-            KMOD_SHIFT);
-        auto& move_actions_down = group.bindings.emplace_back(
-            "move_actions_down",
-            Tr::ACTION_MOVE_ACTIONS_DOWN,
-            false,
-            [&](void*) {
-                if (ActiveFunscript()->HasSelection()) {
-                    undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
-                    ActiveFunscript()->MoveSelectionPosition(-1);
-                }
-                else {
-                    auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
-                    if (closest != nullptr) {
-                        FunscriptAction moved(closest->atS, closest->pos - 1);
-                        if (moved.pos <= 100 && moved.pos >= 0) {
-                            undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
-                            ActiveFunscript()->EditAction(*closest, moved);
+                },
+                false },
+            Tr::ACTION_MOVE_ACTIONS_UP, "Moving",
+            { { ImGuiMod_Shift, ImGuiKey_UpArrow, true } });
+
+        keys->RegisterAction(
+            { "move_actions_down",
+                [this]() {
+                    if (ActiveFunscript()->HasSelection()) {
+                        undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
+                        ActiveFunscript()->MoveSelectionPosition(-1);
+                    }
+                    else {
+                        auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
+                        if (closest != nullptr) {
+                            FunscriptAction moved(closest->atS, closest->pos - 1);
+                            if (moved.pos <= 100 && moved.pos >= 0) {
+                                undoSystem->Snapshot(StateType::ACTIONS_MOVED, ActiveFunscript());
+                                ActiveFunscript()->EditAction(*closest, moved);
+                            }
                         }
                     }
-                }
-            });
-        move_actions_down.key = Keybinding(
-            SDLK_DOWN,
-            KMOD_SHIFT);
+                },
+                false },
+            Tr::ACTION_MOVE_ACTIONS_DOWN, "Moving",
+            { { ImGuiMod_Shift, ImGuiKey_DownArrow, true } });
 
-        auto& move_action_to_current_pos = group.bindings.emplace_back(
-            "move_action_to_current_pos",
-            Tr::ACTION_MOVE_TO_CURRENT_POSITION,
-            true,
-            [&](void*) {
-                auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
-                if (closest != nullptr) {
-                    undoSystem->Snapshot(StateType::MOVE_ACTION_TO_CURRENT_POS, ActiveFunscript());
-                    ActiveFunscript()->EditAction(*closest, FunscriptAction(player->CurrentTime(), closest->pos));
-                }
-            });
-        move_action_to_current_pos.key = Keybinding(
-            SDLK_END,
-            0);
-
-        keybinds.registerBinding(std::move(group));
+        keys->RegisterAction(
+            { "move_action_to_current_pos",
+                [this]() {
+                    auto closest = ActiveFunscript()->GetClosestAction(player->CurrentTime());
+                    if (closest != nullptr) {
+                        undoSystem->Snapshot(StateType::MOVE_ACTION_TO_CURRENT_POS, ActiveFunscript());
+                        ActiveFunscript()->EditAction(*closest, FunscriptAction(player->CurrentTime(), closest->pos));
+                    }
+                },
+                false },
+            Tr::ACTION_MOVE_TO_CURRENT_POSITION, "Moving",
+            { { ImGuiMod_None, ImGuiKey_End } });
     }
     // FUNCTIONS
+    keys->RegisterGroup("Special", Tr::SPECIAL_BINDING_GROUP);
     {
-        KeybindingGroup group("Special", Tr::SPECIAL_BINDING_GROUP);
-        auto& equalize = group.bindings.emplace_back(
-            "equalize_actions",
-            Tr::ACTION_EQUALIZE_ACTIONS,
-            true,
-            [&](void*) { equalizeSelection(); });
-        equalize.key = Keybinding(
-            SDLK_e,
-            0);
+        keys->RegisterAction(
+            { "equalize_actions",
+                [this]() {
+                    equalizeSelection();
+                },
+                false },
+            Tr::ACTION_EQUALIZE_ACTIONS, "Special",
+            { { ImGuiMod_None, ImGuiKey_E } });
 
-        auto& invert = group.bindings.emplace_back(
-            "invert_actions",
-            Tr::ACTION_INVERT_ACTIONS,
-            true,
-            [&](void*) { invertSelection(); });
-        invert.key = Keybinding(
-            SDLK_i,
-            0);
-        auto& isolate = group.bindings.emplace_back(
-            "isolate_action",
-            Tr::ACTION_ISOLATE_ACTION,
-            true,
-            [&](void*) { isolateAction(); });
-        isolate.key = Keybinding(
-            SDLK_r,
-            0);
+        keys->RegisterAction(
+            { "invert_actions",
+                [this]() {
+                    invertSelection();
+                },
+                false },
+            Tr::ACTION_INVERT_ACTIONS, "Special",
+            { { ImGuiMod_None, ImGuiKey_I } });
 
-        auto& repeat_stroke = group.bindings.emplace_back(
-            "repeat_stroke",
-            Tr::ACTION_REPEAT_STROKE,
-            true,
-            [&](void*) { repeatLastStroke(); });
-        repeat_stroke.key = Keybinding(
-            SDLK_HOME,
-            0);
+        keys->RegisterAction(
+            { "isolate_action",
+                [this]() {
+                    isolateAction();
+                },
+                false },
+            Tr::ACTION_ISOLATE_ACTION, "Special",
+            { { ImGuiMod_None, ImGuiKey_R } });
 
-        keybinds.registerBinding(std::move(group));
+        keys->RegisterAction(
+            { "repeat_stroke",
+                [this]() {
+                    repeatLastStroke();
+                },
+                false },
+            Tr::ACTION_REPEAT_STROKE, "Special",
+            { { ImGuiMod_None, ImGuiKey_Home } });
     }
 
     // VIDEO CONTROL
+    keys->RegisterGroup("Videoplayer", Tr::VIDEOPLAYER_BINDING_GROUP);
     {
-        KeybindingGroup group("Videoplayer", Tr::VIDEOPLAYER_BINDING_GROUP);
-        // PLAY / PAUSE
-        auto& toggle_play = group.bindings.emplace_back(
-            "toggle_play",
-            Tr::ACTION_TOGGLE_PLAY,
-            true,
-            [&](void*) { player->TogglePlay(); });
-        toggle_play.key = Keybinding(
-            SDLK_SPACE,
-            0);
-        toggle_play.controller = ControllerBinding(
-            SDL_CONTROLLER_BUTTON_START,
-            false);
+        keys->RegisterAction(
+            { "toggle_play",
+                [this]() { player->TogglePlay(); },
+                false },
+            Tr::ACTION_TOGGLE_PLAY, "Videoplayer",
+            { { ImGuiKey_None, ImGuiKey_Space },
+                { ImGuiKey_None, ImGuiKey_GamepadStart } });
+
         // PLAYBACK SPEED
-        auto& decrement_speed = group.bindings.emplace_back(
-            "decrement_speed",
-            Tr::ACTION_REDUCE_PLAYBACK_SPEED,
-            true,
-            [&](void*) { player->AddSpeed(-0.10); });
-        decrement_speed.key = Keybinding(
-            SDLK_KP_MINUS,
-            0);
-        auto& increment_speed = group.bindings.emplace_back(
-            "increment_speed",
-            Tr::ACTION_INCREASE_PLAYBACK_SPEED,
-            true,
-            [&](void*) { player->AddSpeed(0.10); });
-        increment_speed.key = Keybinding(
-            SDLK_KP_PLUS,
-            0);
-
-        auto& goto_start = group.bindings.emplace_back(
-            "goto_start",
-            Tr::ACTION_GO_TO_START,
-            true,
-            [&](void*) {
-                player->SetPositionPercent(0.f, false);
+        keys->RegisterAction(
+            { "decrement_speed",
+                [this]() { player->AddSpeed(-0.10); },
+                false },
+            Tr::ACTION_REDUCE_PLAYBACK_SPEED, "Videoplayer",
+            {
+                { ImGuiKey_None, ImGuiKey_KeypadSubtract },
             });
-        goto_start.key = Keybinding(
-            0,
-            0);
 
-        auto& goto_end = group.bindings.emplace_back(
-            "goto_end",
-            Tr::ACTION_GO_TO_END,
-            true,
-            [&](void*) {
-                player->SetPositionPercent(1.f, false);
+        keys->RegisterAction(
+            { "increment_speed",
+                [this]() { player->AddSpeed(0.10); },
+                false },
+            Tr::ACTION_INCREASE_PLAYBACK_SPEED, "Videoplayer",
+            {
+                { ImGuiKey_None, ImGuiKey_KeypadAdd },
             });
-        goto_end.key = Keybinding(
-            0,
-            0);
 
-        keybinds.registerBinding(std::move(group));
+        keys->RegisterAction(
+            { "goto_start",
+                [this]() { player->SetPositionPercent(0.f, false); },
+                false },
+            Tr::ACTION_GO_TO_START, "Videoplayer");
+
+        keys->RegisterAction(
+            { "goto_end",
+                [this]() { player->SetPositionPercent(1.f, false); },
+                false },
+            Tr::ACTION_GO_TO_END, "Videoplayer");
     }
 
+    keys->RegisterGroup("Extensions", Tr::EXTENSIONS_BINDING_GROUP);
     {
-        KeybindingGroup group("Extensions", Tr::EXTENSIONS_BINDING_GROUP);
-        auto& reload_enabled_extensions = group.bindings.emplace_back(
-            "reload_enabled_extensions",
-            Tr::ACTION_RELOAD_ENABLED_EXTENSIONS,
-            true,
-            [&](void*) {
-                extensions->ReloadEnabledExtensions();
-            });
-        keybinds.registerBinding(std::move(group));
+        keys->RegisterAction(
+            { "reload_enabled_extensions",
+                [this]() { extensions->ReloadEnabledExtensions(); },
+                false },
+            Tr::ACTION_RELOAD_ENABLED_EXTENSIONS, "Extensions");
     }
 
+    keys->RegisterGroup("Controller", Tr::CONTROLLER_BINDING_GROUP);
     {
-        KeybindingGroup group("Controller", Tr::CONTROLLER_BINDING_GROUP);
-        auto& toggle_nav_mode = group.bindings.emplace_back(
-            "toggle_controller_navmode",
-            Tr::ACTION_TOGGLE_CONTROLLER_NAV,
-            true,
-            [&](void*) {
-                auto& io = ImGui::GetIO();
-                io.ConfigFlags ^= ImGuiConfigFlags_NavEnableGamepad;
-            });
-        toggle_nav_mode.controller = ControllerBinding(
-            SDL_CONTROLLER_BUTTON_LEFTSTICK,
-            true);
+        keys->RegisterAction(
+            { "toggle_controller_navmode",
+                [this]() {
+                    auto& io = ImGui::GetIO();
+                    io.ConfigFlags ^= ImGuiConfigFlags_NavEnableGamepad;
+                },
+                false },
+            Tr::ACTION_TOGGLE_CONTROLLER_NAV, "Controller",
+            { { ImGuiMod_None, ImGuiKey_GamepadL3 } });
 
-        auto& seek_forward_second = group.bindings.emplace_back(
-            "seek_forward_second",
-            Tr::ACTION_SEEK_FORWARD_1,
-            false,
-            [&](void*) { player->SeekRelative(1); });
-        seek_forward_second.controller = ControllerBinding(
-            SDL_CONTROLLER_BUTTON_RIGHTSHOULDER,
-            false);
+        keys->RegisterAction(
+            { "seek_forward_second",
+                [this]() {
+                    player->SeekRelative(1);
+                },
+                false },
+            Tr::ACTION_SEEK_FORWARD_1, "Controller",
+            { { ImGuiMod_None, ImGuiKey_GamepadR1 } });
 
-        auto& seek_backward_second = group.bindings.emplace_back(
-            "seek_backward_second",
-            Tr::ACTION_SEEK_BACKWARD_1,
-            false,
-            [&](void*) { player->SeekRelative(-1); });
-        seek_backward_second.controller = ControllerBinding(
-            SDL_CONTROLLER_BUTTON_LEFTSHOULDER,
-            false);
+        keys->RegisterAction(
+            { "seek_backward_second",
+                [this]() {
+                    player->SeekRelative(-1);
+                },
+                false },
+            Tr::ACTION_SEEK_BACKWARD_1, "Controller",
+            { { ImGuiMod_None, ImGuiKey_GamepadL1 } });
 
-        auto& add_action_controller = group.bindings.emplace_back(
-            "add_action_controller",
-            Tr::ACTION_ADD_ACTION_CONTROLLER,
-            true,
-            [&](void*) { addEditAction(100); });
-        add_action_controller.controller = ControllerBinding(
-            SDL_CONTROLLER_BUTTON_A,
-            false);
+        keys->RegisterAction(
+            { "add_action_controller",
+                [this]() {
+                    addEditAction(100);
+                },
+                false },
+            Tr::ACTION_ADD_ACTION_CONTROLLER, "Controller",
+            { { ImGuiMod_None, ImGuiKey_GamepadFaceDown } });
 
-        auto& toggle_recording_mode = group.bindings.emplace_back(
-            "toggle_recording_mode",
-            Tr::ACTION_TOGGLE_RECORDING_MODE,
-            true,
-            [&](void*) {
-                static ScriptingModeEnum prevMode = ScriptingModeEnum::RECORDING;
-                if (scripting->ActiveMode() != ScriptingModeEnum::RECORDING) {
-                    prevMode = scripting->ActiveMode();
-                    scripting->SetMode(ScriptingModeEnum::RECORDING);
-                    ScriptingModeBase* mode = scripting->Mode().get();
-                    static_cast<RecordingMode*>(mode)->setRecordingMode(RecordingMode::RecordingType::Controller);
-                }
-                else {
-                    scripting->SetMode(prevMode);
-                }
-            });
-        toggle_recording_mode.controller = ControllerBinding(
-            SDL_CONTROLLER_BUTTON_BACK,
-            false);
+        keys->RegisterAction(
+            { "toggle_recording_mode",
+                [this]() {
+                    static ScriptingModeEnum prevMode = ScriptingModeEnum::RECORDING;
+                    if (scripting->ActiveMode() != ScriptingModeEnum::RECORDING) {
+                        prevMode = scripting->ActiveMode();
+                        scripting->SetMode(ScriptingModeEnum::RECORDING);
+                        ScriptingModeBase* mode = scripting->Mode().get();
+                        static_cast<RecordingMode*>(mode)->setRecordingMode(RecordingMode::RecordingType::Controller);
+                    }
+                    else {
+                        scripting->SetMode(prevMode);
+                    }
+                },
+                false },
+            Tr::ACTION_TOGGLE_RECORDING_MODE, "Controller");
 
-        auto& controller_select = group.bindings.emplace_back(
-            "set_selection_controller",
-            Tr::ACTION_CONTROLLER_SELECT,
-            true,
-            [&](void*) {
-                if (scriptTimeline.selectionStart() < 0) {
-                    scriptTimeline.setStartSelection(player->CurrentTime());
-                }
-                else {
-                    auto tmp = player->CurrentTime();
-                    auto [min, max] = std::minmax<float>(scriptTimeline.selectionStart(), tmp);
-                    ActiveFunscript()->SelectTime(min, max);
-                    scriptTimeline.setStartSelection(-1);
-                }
-            });
-        controller_select.controller = ControllerBinding(
-            SDL_CONTROLLER_BUTTON_RIGHTSTICK,
-            false);
+        keys->RegisterAction(
+            { "set_selection_controller",
+                [this]() {
+                    if (scriptTimeline.selectionStart() < 0) {
+                        scriptTimeline.setStartSelection(player->CurrentTime());
+                    }
+                    else {
+                        auto tmp = player->CurrentTime();
+                        auto [min, max] = std::minmax<float>(scriptTimeline.selectionStart(), tmp);
+                        ActiveFunscript()->SelectTime(min, max);
+                        scriptTimeline.setStartSelection(-1);
+                    }
+                },
+                false },
+            Tr::ACTION_CONTROLLER_SELECT, "Controller",
+            { { ImGuiMod_None, ImGuiKey_GamepadR3 } });
 
-        auto& set_playbackspeed_controller = group.bindings.emplace_back(
-            "set_current_playbackspeed_controller",
-            Tr::ACTION_SET_PLAYBACK_SPEED,
-            true,
-            [&](void*) {
-                Status |= OFS_Status::OFS_GamepadSetPlaybackSpeed;
-            });
-        set_playbackspeed_controller.controller = ControllerBinding(
-            SDL_CONTROLLER_BUTTON_X,
-            false);
-        keybinds.registerBinding(std::move(group));
+        keys->RegisterAction(
+            { "set_current_playbackspeed_controller",
+                [this]() {
+                    Status |= OFS_Status::OFS_GamepadSetPlaybackSpeed;
+                },
+                false },
+            Tr::ACTION_SET_PLAYBACK_SPEED, "Controller",
+            { { ImGuiMod_None, ImGuiKey_GamepadFaceLeft } });
     }
 
-    // passive modifiers
-    {
-        PassiveBindingGroup group("Point timeline", Tr::PASSIVE_GROUP_TIMELINE);
-        auto& move_or_add_point_modifier = group.bindings.emplace_back(
-            "move_or_add_point_modifier",
-            Tr::MOD_MOVE_OR_ADD_POINT);
-        move_or_add_point_modifier.key = Keybinding(
-            0,
-            KMOD_SHIFT);
-
-        // auto& select_top_points_modifier = group.bindings.emplace_back(
-        //     "select_top_points_modifier",
-        //     "Select top points",
-        //     false
-        //);
-        // select_top_points_modifier.key = Keybinding(
-        //     0,
-        //     KMOD_ALT
-        //);
-        //
-        // auto& select_bottom_points_modifier = group.bindings.emplace_back(
-        //     "select_bottom_points_modifier",
-        //     "Select bottom points",
-        //     false
-        //);
-        // select_bottom_points_modifier.key = Keybinding(
-        //     0,
-        //     KMOD_ALT
-        //);
-        //
-        // auto& select_middle_points_modifier = group.bindings.emplace_back(
-        //     "select_middle_points_modifier",
-        //     "Select middle points",
-        //     false
-        //);
-        // select_middle_points_modifier.key = Keybinding(
-        //     0,
-        //     KMOD_ALT
-        //);
-
-        keybinds.registerPassiveBindingGroup(std::move(group));
-    }
-
-    {
-        PassiveBindingGroup group("Simulator", Tr::PASSIVE_GROUP_SIMULATOR);
-        auto& click_add_point_simulator = group.bindings.emplace_back(
-            "click_add_point_simulator",
-            Tr::MOD_CLICK_SIM_ADD_PONT);
-        click_add_point_simulator.key = Keybinding(
-            0,
-            KMOD_SHIFT);
-
-        keybinds.registerPassiveBindingGroup(std::move(group));
-    }
+    // Group where all dynamic actions are placed.
+    // Lua functions for example.
+    keys->RegisterGroup("Dynamic", Tr::DYNAMIC_BINDING_GROUP);
 }
 
 
@@ -1481,6 +1326,7 @@ void OpenFunscripter::processEvents() noexcept
         EV::Queue().directDispatch(OFS_SDL_Event::EventType, wrappedEvent);
     }
     EV::Process();
+    keys->ProcessKeybindings();
 }
 
 void OpenFunscripter::FunscriptChanged(const FunscriptActionsChangedEvent* ev) noexcept
@@ -1735,9 +1581,7 @@ void OpenFunscripter::Step() noexcept
 
             OFS_FileLogger::DrawLogWindow(&ofsState.showDebugLog);
 
-            if (keybinds.ShowBindingWindow()) {
-                keybinds.save();
-            }
+            keys->RenderKeybindingWindow();
 
             if (preferences->ShowPreferenceWindow()) {}
 
@@ -2322,7 +2166,7 @@ void OpenFunscripter::saveActiveScriptAs()
 
 void OpenFunscripter::ShowMainMenuBar() noexcept
 {
-#define BINDING_STRING(binding) keybinds.getBindingString(binding)
+#define BINDING_STRING(binding) nullptr // TODO: keybinds.getBindingString(binding)
     OFS_PROFILE(__FUNCTION__);
     ImColor alertCol = ImGui::GetStyleColorVec4(ImGuiCol_MenuBarBg);
     std::chrono::duration<float> saveDuration;
@@ -2798,7 +2642,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
         }
         if (ImGui::BeginMenu(TR(OPTIONS))) {
             if (ImGui::MenuItem(TR(KEYS))) {
-                keybinds.ShowWindow = true;
+                keys->ShowModal();
             }
             bool fullscreenTmp = Status & OFS_Status::OFS_Fullscreen;
             if (ImGui::MenuItem(TR(FULLSCREEN), BINDING_STRING("fullscreen_toggle"), &fullscreenTmp)) {
@@ -2808,25 +2652,10 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     : Status ^ OFS_Status::OFS_Fullscreen;
             }
             if (ImGui::MenuItem(TR(PREFERENCES), nullptr, &preferences->ShowWindow)) {}
-            if (ControllerInput::AnythingConnected()) {
-                if (ImGui::BeginMenu(TR(CONTROLLER))) {
-                    ImGui::TextColored(ImColor(IM_COL32(0, 255, 0, 255)), "%s", TR(CONTROLLER_CONNECTED));
-                    auto& controllerState = ControllerInputState::State(ControllerInput::StateHandle());
-                    ImGui::DragInt(TR(REPEAT_RATE), &controllerState.buttonRepeatIntervalMs, 1, 25, 500, "%d", ImGuiSliderFlags_AlwaysClamp);
-                    static int32_t selectedController = 0;
-                    std::vector<const char*> padStrings;
-                    for (int i = 0; i < ControllerInput::Controllers.size(); i++) {
-                        auto& controller = ControllerInput::Controllers[i];
-                        if (controller.Connected()) {
-                            padStrings.push_back(controller.GetName());
-                        }
-                        // else {
-                        //     padStrings.push_back("--");
-                        // }
-                    }
-                    ImGui::Combo("##ActiveControllers", &selectedController, padStrings.data(), (int32_t)padStrings.size());
-                    ImGui::EndMenu();
-                }
+            if (ImGui::BeginMenu(TR(CONTROLLER), ControllerInput::AnythingConnected())) {
+                ImGui::TextColored(ImColor(IM_COL32(0, 255, 0, 255)), "%s", TR(CONTROLLER_CONNECTED));
+                ImGui::TextUnformatted(ControllerInput::Controllers[0].GetName());
+                ImGui::EndMenu();
             }
             ImGui::EndMenu();
         }

@@ -591,8 +591,8 @@ static void ImGui_ImplSDL2_UpdateMouseCursor()
 static void ImGui_ImplSDL2_UpdateGamepads()
 {
     ImGuiIO& io = ImGui::GetIO();
-    if ((io.ConfigFlags & ImGuiConfigFlags_NavEnableGamepad) == 0) // FIXME: Technically feeding gamepad shouldn't depend on this now that they are regular inputs.
-        return;
+    //if ((io.ConfigFlags & ImGuiConfigFlags_NavEnableGamepad) == 0) // FIXME: Technically feeding gamepad shouldn't depend on this now that they are regular inputs.
+    //    return;
 
     // Get gamepad
     io.BackendFlags &= ~ImGuiBackendFlags_HasGamepad;

@@ -1,6 +1,6 @@
 #pragma once
 #include "OFS_ScriptingMode.h"
-#include "KeybindingSystem.h"
+#include "OFS_KeybindingSystem.h"
 #include "OFS_Preferences.h"
 #include "OFS_ScriptTimeline.h"
 #include "OFS_UndoSystem.h"
@@ -134,7 +134,6 @@ public:
 
     ~OpenFunscripter() noexcept;
 
-    KeybindingSystem keybinds;
     ScriptTimeline scriptTimeline;
     OFS_VideoplayerControls playerControls;
     ScriptSimulator simulator;
@@ -142,7 +141,7 @@ public:
 
     std::unique_ptr<OFS_Videoplayer> player;
     std::unique_ptr<OFS_VideoplayerWindow> playerWindow;
-
+    std::unique_ptr<OFS_KeybindingSystem> keys;
     std::unique_ptr<TCodePlayer> tcode;
     std::unique_ptr<SpecialFunctionsWindow> specialFunctions;
     std::unique_ptr<ScriptingMode> scripting;

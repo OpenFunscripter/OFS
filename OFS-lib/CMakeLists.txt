@@ -4,6 +4,8 @@ set(OFS_LIB_SOURCES
 	"event/OFS_EventSystem.cpp"
 	"event/OFS_Event.cpp"
 
+	"state/states/KeybindingState.cpp"
+
 	"Funscript/Funscript.cpp"
 	"Funscript/FunscriptAction.cpp"
 	"Funscript/FunscriptUndoSystem.cpp"
@@ -11,14 +13,13 @@ set(OFS_LIB_SOURCES
 
 	"UI/GradientBar.cpp"
 	"UI/OFS_ImGui.cpp"
-	"UI/KeybindingSystem.cpp"
 	"UI/OFS_VideoplayerControls.cpp"
 	"UI/OFS_Videopreview.cpp"
 	"UI/OFS_BlockingTask.cpp"
 	
 	"UI/OFS_ScriptTimeline.cpp"
 	"UI/ScriptPositionsOverlayMode.cpp"
-	
+	"UI/OFS_KeybindingSystem.cpp"
 	"UI/OFS_Waveform.cpp"
 	
 	"videoplayer/OFS_VideoplayerWindow.cpp"

@@ -15,7 +15,6 @@
 #include "state/states/BaseOverlayState.h"
 #include "state/states/WaveformState.h"
 
-#include "KeybindingSystem.h"
 #include "SDL_events.h"
 #include "SDL_timer.h"
 
@@ -155,7 +154,7 @@ void ScriptTimeline::handleTimelineHover(const OverlayDrawingCtx& ctx) noexcept
 
 bool ScriptTimeline::handleTimelineClicks(const OverlayDrawingCtx& ctx) noexcept
 {
-	bool moveOrAddPointModifer = KeybindingSystem::PassiveModifier("move_or_add_point_modifier");
+	bool moveOrAddPointModifer = ImGui::IsKeyDown(ImGuiMod_Shift);
 	auto mousePos = ImGui::GetMousePos();
 
 	auto leftMouseClicked = ImGui::IsMouseClicked(ImGuiMouseButton_Left);

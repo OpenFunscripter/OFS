@@ -22,11 +22,6 @@ OFS_LuaExtensions::OFS_LuaExtensions() noexcept
 	UpdateExtensionList();
 	
 	OFS_CoreExtension::setup();
-
-	auto app = OpenFunscripter::ptr;
-	app->keybinds.registerDynamicHandler(OFS_LuaExtensions::DynamicBindingHandler, 
-		[this](Binding* b) { HandleBinding(b); }
-	);
 }
 
 OFS_LuaExtensions::~OFS_LuaExtensions() noexcept
@@ -54,20 +49,6 @@ void OFS_LuaExtensions::load(const std::string& path) noexcept
 	if (succ) {
 		OFS::Serializer<false>::Deserialize(*this, json);
 		removeNonExisting();		
-	}
-}
-
-void OFS_LuaExtensions::HandleBinding(Binding* b) noexcept
-{
-	auto it = Bindings.find(b->identifier);
-	if(it != Bindings.end()) {
-		for(auto& ext : Extensions) {
-			if(!ext.Active) continue;
-			if(ext.NameId == it->second.ExtensionId) {
-				ext.Execute(it->second.Name);
-				break;
-			}
-		}
 	}
 }
 
@@ -153,12 +134,21 @@ void OFS_LuaExtensions::AddBinding(const std::string& extId, const std::string& 
 	Bindings.emplace(std::make_pair(uniqueId, std::move(LuaBinding)));
 
 	auto app = OpenFunscripter::ptr;
-	Binding binding(
-		uniqueId,
-		uniqueId,
-		true,
-		[](void* user) {} // this gets handled by OFS_LuaExtensions::HandleBinding
+
+	OFS_Action luaAction(uniqueId.c_str(), 
+		[this, uniqueId]() {
+			auto it = Bindings.find(uniqueId);
+			if(it != Bindings.end()) {
+				for(auto& ext : Extensions) {
+					if(!ext.Active) continue;
+					if(ext.NameId == it->second.ExtensionId) {
+						ext.Execute(it->second.Name);
+						break;
+					}
+				}
+			}
+		},
+		true
 	);
-	binding.dynamicHandlerId = OFS_LuaExtensions::DynamicBindingHandler;
-	app->keybinds.addDynamicBinding(std::move(binding));
+	app->keys->RegisterAction(std::move(luaAction), uniqueId, "Dynamic");
 }

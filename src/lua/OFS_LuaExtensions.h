@@ -4,7 +4,6 @@
 
 #include "OFS_Lua.h"
 #include "OFS_LuaExtension.h"
-#include "KeybindingSystem.h"
 #include "OFS_ImGui.h"
 
 #include <unordered_map>
@@ -54,7 +53,6 @@ class OFS_LuaExtensions
         void Update(float delta) noexcept;
         void ShowExtensions() noexcept;
         void ReloadEnabledExtensions() noexcept;
-        void HandleBinding(Binding* b) noexcept;
         void ScriptChanged(uint32_t scriptIdx) noexcept;
         
         void AddBinding(const std::string& extId, const std::string& uniqueId, const std::string& name) noexcept;

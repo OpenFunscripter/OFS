@@ -1,18 +1,13 @@
 #include "OFS_ControllerInput.h"
 #include "OFS_Util.h"
-#include "KeybindingSystem.h"
 #include "OFS_Profiling.h"
 #include "OFS_EventSystem.h"
 
 #include "SDL_gamecontroller.h"
 
-#include "state/states/ControllerState.h"
-
 std::array<int64_t, SDL_CONTROLLER_BUTTON_MAX> ButtonsHeldDown = { -1 };
 std::array<ControllerInput, 4> ControllerInput::Controllers;
 int32_t ControllerInput::activeControllers = 0;
-
-uint32_t ControllerInput::stateHandle = 0xFFFF'FFFF;
 
 void ControllerInput::OpenController(int device) noexcept
 {
@@ -100,8 +95,6 @@ void ControllerInput::ControllerDeviceRemoved(const OFS_SDL_Event* ev) noexcept
 
 void ControllerInput::Init() noexcept
 {
-    FUN_ASSERT(ControllerInput::stateHandle == 0xFFFF'FFFF, "state already initialized");
-    stateHandle = OFS_AppState<ControllerInputState>::Register(ControllerInputState::StateName);
     SDL_JoystickEventState(SDL_ENABLE);
     SDL_GameControllerEventState(SDL_ENABLE);
 
@@ -115,24 +108,16 @@ void ControllerInput::Init() noexcept
         OFS_SDL_Event::HandleEvent(EVENT_SYSTEM_BIND(this, &ControllerInput::ControllerButtonUp)));
 }
 
-void ControllerInput::Update(uint32_t buttonRepeatIntervalMs) noexcept
+void ControllerInput::Update() noexcept
 {
-    int buttonEnumVal = 0;
-    for (auto& button : ButtonsHeldDown) {
-        if (button > 0 && ((int64_t)SDL_GetTicks() - button) >= buttonRepeatIntervalMs) {
-            EV::Enqueue<ControllerButtonRepeatEvent>(buttonEnumVal);
-            button = SDL_GetTicks();
-        }
-        buttonEnumVal += 1;
-    }
+
 }
 
 void ControllerInput::UpdateControllers() noexcept
 {
-    auto& state = ControllerInputState::State(ControllerInput::StateHandle());
     for (auto& controller : Controllers) {
         if (controller.Connected()) {
-            controller.Update(state.buttonRepeatIntervalMs);
+            controller.Update();
         }
     }
 }

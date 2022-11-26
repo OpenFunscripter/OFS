@@ -67,8 +67,8 @@ ACTIVE,Active,Active
 KEY_NOT_SET,- Not set -,- Not set -
 CHANGE_KEY,Change key,Change key
 CHANGE_KEY_MSG,"Press any key...
-Escape to clear.","Press any key...
-Escape to clear."
+Escape to exit.","Press any key...
+Escape to exit."
 PASSIVE_BINDING_TXT1,Here modifiers can be configured which change certain behaviour.,Here modifiers can be configured which change certain behaviour.
 PASSIVE_BINDING_TXT2,"You can only use Shift, Ctrl & Alt.","You can only use Shift, Ctrl & Alt."
 KEYS,Keys,Keys
@@ -511,3 +511,9 @@ TIME_SPENT,Time spent,Time spent
 SHOW_ACTION_LINES,Show lines,Show lines
 CLEAR_RECENT_FILES,Clear recent files,Clear recent files
 GENERIC_OPEN,Open...,Open...
+ADD_EDIT_TRIGGER,Add/Edit trigger,Add/Edit trigger
+VALIDATE,Validate,Validate
+OK_RESULT,ok,ok
+ORPHAN_TRIGGER_MESSAGE,The following triggers have no corresponding actions.,The following triggers have no corresponding actions.
+DELETE,Delete,Delete
+REPEAT,Repeat,Repeat

@@ -6,16 +6,11 @@
 #include <array>
 
 class ControllerInput {
-public:
-    inline static uint32_t StateHandle() noexcept { return ControllerInput::stateHandle; }
-
 private:
     SDL_GameController* gamepad;
     SDL_Haptic* haptic;
     SDL_JoystickID instance_id;
     bool isConnected = false;
-
-    static uint32_t stateHandle;
 
     void OpenController(int device) noexcept;
     void CloseController() noexcept;
@@ -32,7 +27,7 @@ public:
     static std::array<ControllerInput, 4> Controllers;
 
     void Init() noexcept;
-    void Update(uint32_t buttonRepeatIntervalMs) noexcept;
+    void Update() noexcept;
 
     static void UpdateControllers() noexcept;
 
