@@ -16,7 +16,7 @@ private:
 public:
     inline void sort() noexcept
     {
-        std::sort(begin(), end());
+        std::sort(this->begin(), this->end());
     }
 
     template<typename... Args>
