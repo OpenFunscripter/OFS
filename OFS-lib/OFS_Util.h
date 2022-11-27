@@ -86,8 +86,6 @@
 
 class Util {
 public:
-    static bool LoadTextureFromFile(const char* filename, unsigned int* out_texture, int* out_width, int* out_height) noexcept;
-    static bool LoadTextureFromBuffer(const char* buffer, size_t buffsize, unsigned int* out_texture, int* out_width, int* out_height) noexcept;
 
     template<typename T>
     inline static T Clamp(T v, T mn, T mx) noexcept
