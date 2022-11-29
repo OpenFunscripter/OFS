@@ -1,11 +1,18 @@
 #pragma once
-
 #include "state/ProjectState.h"
 #include "Funscript.h"
+#include "OFS_Event.h"
+
 #include <vector>
 #include <memory>
 #include <cstdint>
 #include <string>
+
+class ProjectLoadedEvent : public OFS_Event<ProjectLoadedEvent>
+{
+    public:
+    ProjectLoadedEvent() noexcept {}
+};
 
 #define OFS_PROJECT_EXT ".ofsp"
 

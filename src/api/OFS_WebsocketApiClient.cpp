@@ -64,6 +64,14 @@ OFS_WebsocketClient::OFS_WebsocketClient() noexcept
         )
     );
 
+    eventUnsubs.emplace_back(
+        EV::MakeUnsubscibeFn(WsProjectChange::EventType, 
+            EV::Queue().appendListener(WsProjectChange::EventType, WsProjectChange::HandleEvent(
+                EVENT_SYSTEM_BIND(this, &OFS_WebsocketClient::handleProjectChange)
+            ))
+        )
+    );
+
     eventUnsub = [eventUnsubs = std::move(eventUnsubs)]()
     {
         for(auto& unsub : eventUnsubs) {
@@ -99,6 +107,7 @@ void OFS_WebsocketClient::handlePlayChange(const WsPlayChange* ev) noexcept
 void OFS_WebsocketClient::handleTimeChange(const WsTimeChange* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
+    // PERFORMANCE: This could be replaced by a simple format string.
     nlohmann::json json = *ev;
     auto jsonText = Util::SerializeJson(json);
     sendMessage(jsonText);
@@ -140,6 +149,11 @@ void OFS_WebsocketClient::handleFunscriptChange(const WsFunscriptChange* ev) noe
     sendMessage(jsonText);
 }
 
+void OFS_WebsocketClient::handleProjectChange(const WsProjectChange* ev) noexcept
+{
+    UpdateAll();
+}
+
 void OFS_WebsocketClient::UpdateAll() noexcept
 {
     // Update everything
@@ -175,10 +189,15 @@ void OFS_WebsocketClient::InitializeConnection(mg_connection* conn) noexcept
 void OFS_WebsocketClient::ReceiveText(char* data, size_t dataLen) noexcept
 {
     bool succ;
-    std::string dataText(data, dataLen);
-    auto json = Util::ParseJson(dataText, &succ);
-    if(succ)
+    std::string_view dataView(data, dataLen);
+    auto json = nlohmann::json::parse(dataView, nullptr, false, true);
+    if(!json.is_discarded())
     {
-        
+        // Valid json
+        auto& commandJson = json["command"];
+        if(commandJson.is_string())
+        {
+            auto& command = commandJson.get_ref<std::string&>();
+        }
     }
 }

@@ -58,6 +58,12 @@ class WsFunscriptChange : public OFS_Event<WsFunscriptChange>
         : changedScript(changedScript) {}
 };
 
+class WsProjectChange : public OFS_Event<WsProjectChange>
+{
+    public:
+    WsProjectChange() noexcept {}
+};
+
 void to_json(nlohmann::json& j, const WsPlayChange& p);
 void to_json(nlohmann::json& j, const WsTimeChange& p);
 void to_json(nlohmann::json& j, const WsDurationChange& p);

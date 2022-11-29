@@ -14,6 +14,7 @@ class OFS_WebsocketClient
     void handleMediaChange(const WsMediaChange* ev) noexcept;
     void handlePlaybackSpeedChange(const WsPlaybackSpeedChange* ev) noexcept;
     void handleFunscriptChange(const WsFunscriptChange* ev) noexcept;
+    void handleProjectChange(const WsProjectChange* ev) noexcept;
     
     void sendMessage(const std::string& msg) noexcept;
     public:

@@ -1858,6 +1858,7 @@ void OpenFunscripter::initProject() noexcept
     ofsState.lastPath = lastPath.u8string();
 
     lastBackup = std::chrono::steady_clock::now();
+    EV::Enqueue<ProjectLoadedEvent>();
 }
 
 void OpenFunscripter::UpdateNewActiveScript(uint32_t activeIndex) noexcept

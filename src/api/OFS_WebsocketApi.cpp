@@ -184,6 +184,16 @@ OFS_WebsocketApi::OFS_WebsocketApi() noexcept
 		}
 	));
 
+	EV::Queue().appendListener(ProjectLoadedEvent::EventType, ProjectLoadedEvent::HandleEvent(
+		[this](const ProjectLoadedEvent* ev) noexcept
+		{
+			if(ClientsConnected() > 0) 
+			{
+				EV::Queue().directDispatch(WsProjectChange::EventType, EV::Make<WsProjectChange>());
+			}
+		}
+	));
+
 	EV::Queue().appendListener(FunscriptActionsChangedEvent::EventType, FunscriptActionsChangedEvent::HandleEvent(
 		[this](const FunscriptActionsChangedEvent* ev) noexcept
 		{
