@@ -252,7 +252,7 @@ void OFS_Project::Save(const std::string& path, bool clearUnsavedChanges) noexce
 #endif
     if (clearUnsavedChanges) {
         for (auto& script : Funscripts) {
-            script->SetSavedFromOutside();
+            script->ClearUnsavedEdits();
         }
     }
 }
@@ -325,6 +325,7 @@ void OFS_Project::ExportFunscripts() noexcept
         if (!script->RelativePath().empty()) {
             script->LocalMetadata = state.metadata;
             auto json = script->Serialize();
+            script->ClearUnsavedEdits();
             auto jsonText = Util::SerializeJson(json, false);
             Util::WriteFile(MakePathAbsolute(script->RelativePath()).c_str(), jsonText.data(), jsonText.size());
         }
@@ -341,6 +342,7 @@ void OFS_Project::ExportFunscripts(const std::string& outputDir) noexcept
             auto outputPath = (Util::PathFromString(outputDir) / filename).u8string();
             script->LocalMetadata = state.metadata;
             auto json = script->Serialize();
+            script->ClearUnsavedEdits();
             auto jsonText = Util::SerializeJson(json, false);
             Util::WriteFile(outputPath.c_str(), jsonText.data(), jsonText.size());
         }
@@ -353,6 +355,7 @@ void OFS_Project::ExportFunscript(const std::string& outputPath, int32_t idx) no
     auto& state = State();
     Funscripts[idx]->LocalMetadata = state.metadata;
     auto json = Funscripts[idx]->Serialize();
+    Funscripts[idx]->ClearUnsavedEdits();
     // Using this function changes the default path
     Funscripts[idx]->UpdateRelativePath(MakePathRelative(outputPath));
     auto jsonText = Util::SerializeJson(json, false);

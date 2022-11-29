@@ -197,3 +197,12 @@ target_include_directories(refl-cpp INTERFACE "refl-cpp/include/")
 # ===========
 add_library(eventpp INTERFACE)
 target_include_directories(eventpp INTERFACE "eventpp/include/")
+
+
+set (civetweb_SRC
+	"civetweb/src/civetweb.c"
+)
+add_library(civetweb STATIC ${civetweb_SRC})
+target_include_directories(civetweb PUBLIC "civetweb/include/")
+target_compile_definitions(civetweb PRIVATE "NO_SSL=1"
+											"USE_WEBSOCKET=1")

@@ -3,10 +3,7 @@
 #include <cstdint>
 #include <string>
 
-#pragma once
-
-#include <cstdint>
-#include <string>
+#include "OFS_VideoplayerEvents.h"
 
 class OFS_Videoplayer
 {
@@ -19,10 +16,10 @@ class OFS_Videoplayer
     float logicalPosition = 0.f;
     // Helper for Mute/Unmute
     float lastVolume = 0.f;
-    std::string playerName = "None"; 
-
+    VideoplayerType playerType;
+    
     public:
-    OFS_Videoplayer(const char* playerName) noexcept;
+    OFS_Videoplayer(VideoplayerType playerType) noexcept;
     ~OFS_Videoplayer() noexcept;
 
 	static constexpr float MinPlaybackSpeed = 0.05f;

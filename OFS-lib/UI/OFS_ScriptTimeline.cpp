@@ -97,20 +97,18 @@ void ScriptTimeline::Update() noexcept
 
 void ScriptTimeline::videoLoaded(const VideoLoadedEvent* ev) noexcept
 {
-	if(ev->playerName == "MainPlayer")
+	if(ev->playerType != VideoplayerType::Main) return;
+	videoPath = ev->videoPath;
+	auto& waveCache = WaveformState::StaticStateSlow();
+	auto samples = waveCache.GetSamples();
+	if(waveCache.Filename == videoPath && !samples.empty())
 	{
-		videoPath = ev->videoPath;
-		auto& waveCache = WaveformState::StaticStateSlow();
-		auto samples = waveCache.GetSamples();
-		if(waveCache.Filename == videoPath && !samples.empty())
-		{
-			Wave.data.SetSamples(std::move(samples));
-			ShowAudioWaveform = true;
-		}
-		else 
-		{
-        	ClearAudioWaveform();
-		}
+		Wave.data.SetSamples(std::move(samples));
+		ShowAudioWaveform = true;
+	}
+	else 
+	{
+		ClearAudioWaveform();
 	}
 }
 

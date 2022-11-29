@@ -21,6 +21,7 @@
 
 #include "OFS_Videoplayer.h"
 #include "OFS_VideoplayerWindow.h"
+#include "OFS_WebsocketApi.h"
 
 #include <memory>
 #include <chrono>
@@ -72,6 +73,7 @@ private:
 
     void DragNDrop(const OFS_SDL_Event* ev) noexcept;
 
+    void VideoDuration(const DurationChangeEvent* ev) noexcept;
     void VideoLoaded(const VideoLoadedEvent* ev) noexcept;
     void PlayPauseChange(const PlayPauseChangeEvent* ev) noexcept;
 
@@ -150,6 +152,7 @@ public:
     std::unique_ptr<UndoSystem> undoSystem;
     std::unique_ptr<OFS_LuaExtensions> extensions;
     std::unique_ptr<OFS_FunscriptMetadataEditor> metadataEditor;
+    std::unique_ptr<OFS_WebsocketApi> webApi;
 
     std::unique_ptr<OFS_Project> LoadedProject;
 

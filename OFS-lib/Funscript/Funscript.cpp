@@ -27,7 +27,7 @@ void Funscript::loadMetadata(const nlohmann::json& metadataObj) noexcept
 	OFS::Serializer<false>::Deserialize(LocalMetadata, metadataObj);
 }
 
-void Funscript::saveMetadata(nlohmann::json& outMetadataObj) noexcept
+void Funscript::saveMetadata(nlohmann::json& outMetadataObj) const noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	OFS::Serializer<false>::Serialize(LocalMetadata, outMetadataObj);
@@ -704,10 +704,9 @@ bool Funscript::Deserialize(const nlohmann::json& json) noexcept
 	return true;
 }
 
-nlohmann::json Funscript::Serialize() noexcept
+nlohmann::json Funscript::Serialize(bool noMetadata) const noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	unsavedEdits = false;
 
 	nlohmann::json jsonFunscript;
 	jsonFunscript["actions"] = nlohmann::json::array();
@@ -716,13 +715,13 @@ nlohmann::json Funscript::Serialize() noexcept
 	jsonFunscript["inverted"] = false;
 	jsonFunscript["range"] = 100;
 
-	saveMetadata(jsonFunscript["metadata"]);
+	if(!noMetadata)
+	{
+		saveMetadata(jsonFunscript["metadata"]);
+	}
 
 	auto& jsonActions = jsonFunscript["actions"];
 	jsonActions.clear();
-
-	// make sure actions are sorted
-	sortActions(data.Actions);
 
 	int64_t lastTimestamp = -1;
 	for (auto action : data.Actions) {

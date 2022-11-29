@@ -28,3 +28,6 @@
 [submodule "lib/eventpp"]
 	path = lib/eventpp
 	url = https://github.com/wqking/eventpp.git
+[submodule "lib/civetweb"]
+	path = lib/civetweb
+	url = https://github.com/civetweb/civetweb.git

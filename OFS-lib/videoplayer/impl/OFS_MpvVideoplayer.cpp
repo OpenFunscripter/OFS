@@ -64,7 +64,7 @@ struct MpvPlayerContext
     float* logicalPosition = nullptr;
 
     uint64_t smoothTimer = 0;
-    std::string playerName;
+    VideoplayerType playerType;
 };
 
 #define CTX static_cast<MpvPlayerContext*>(ctx)
@@ -81,12 +81,27 @@ static void OnMpvRenderUpdate(void* ctx) noexcept
 
 inline static void notifyVideoLoaded(MpvPlayerContext* ctx) noexcept
 {
-    EV::Enqueue<VideoLoadedEvent>(CTX->data.filePath, CTX->playerName);
+    EV::Enqueue<VideoLoadedEvent>(CTX->data.filePath, CTX->playerType);
 }
 
 inline static void notifyPaused(MpvPlayerContext* ctx) noexcept
 {
-    EV::Enqueue<PlayPauseChangeEvent>(CTX->data.paused, CTX->playerName);
+    EV::Enqueue<PlayPauseChangeEvent>(CTX->data.paused, CTX->playerType);
+}
+
+inline static void notifyTime(MpvPlayerContext* ctx) noexcept
+{
+    EV::Enqueue<TimeChangeEvent>((float)(CTX->data.duration * CTX->data.percentPos), CTX->playerType);
+}
+
+inline static void notifyDuration(MpvPlayerContext* ctx) noexcept
+{
+    EV::Enqueue<DurationChangeEvent>((float)CTX->data.duration, CTX->playerType);   
+}
+
+inline static void notifyPlaybackSpeed(MpvPlayerContext* ctx) noexcept
+{
+    EV::Enqueue<PlaybackSpeedChangeEvent>((float)CTX->data.currentSpeed, CTX->playerType);
 }
 
 inline static void updateRenderTexture(MpvPlayerContext* ctx) noexcept
@@ -139,11 +154,11 @@ OFS_Videoplayer::~OFS_Videoplayer() noexcept
     ctx = nullptr;
 }
 
-OFS_Videoplayer::OFS_Videoplayer(const char* playerName) noexcept
+OFS_Videoplayer::OFS_Videoplayer(VideoplayerType playerType) noexcept
 {
-    this->playerName = playerName;
+    this->playerType = playerType;
     ctx = new MpvPlayerContext();
-    CTX->playerName = playerName;
+    CTX->playerType = playerType;
     CTX->frameTexture = &this->frameTexture;
     CTX->logicalPosition = &this->logicalPosition;
 }
@@ -296,7 +311,7 @@ inline static void ProcessEvents(MpvPlayerContext* ctx) noexcept
                         break;
                     case MpvDuration:
                         ctx->data.duration = *(double*)prop->data;
-                        notifyVideoLoaded(ctx);
+                        notifyDuration(ctx);
                         break;
                     case MpvTotalFrames:
                         ctx->data.totalNumFrames = *(int64_t*)prop->data;
@@ -309,10 +324,12 @@ inline static void ProcessEvents(MpvPlayerContext* ctx) noexcept
                         if(!ctx->data.paused) {
                             *ctx->logicalPosition = newPercentPos;
                         }
+                        notifyTime(ctx);
                         break;
                     }
                     case MpvSpeed:
                         ctx->data.currentSpeed = *(double*)prop->data;
+                        notifyPlaybackSpeed(ctx);
                         break;
                     case MpvPauseState:
                     {

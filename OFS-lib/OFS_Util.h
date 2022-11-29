@@ -86,7 +86,6 @@
 
 class Util {
 public:
-
     template<typename T>
     inline static T Clamp(T v, T mn, T mx) noexcept
     {
@@ -187,17 +186,30 @@ public:
         nlohmann::json json;
         *success = false;
         if (!jsonText.empty()) {
-            json = nlohmann::json::parse(jsonText, nullptr, false, true);
-            *success = !json.is_discarded();
+            try {
+                json = nlohmann::json::parse(jsonText, nullptr, false, true);
+                *success = !json.is_discarded();
+            }
+            catch (const std::exception& e) {
+                *success = false;
+                LOGF_ERROR("%s", e.what());
+            }
         }
         return json;
     }
 
     inline static nlohmann::json ParseCBOR(const std::vector<uint8_t>& data, bool* success) noexcept
     {
-        auto json = nlohmann::json::from_cbor(data);
-        *success = !json.is_discarded();
-        return json;
+        try {
+            auto json = nlohmann::json::from_cbor(data);
+            *success = !json.is_discarded();
+            return json;
+        }
+        catch (const std::exception& e) {
+            *success = false;
+            LOGF_ERROR("%s", e.what());
+        }
+        return {};
     }
 
     inline static std::string SerializeJson(const nlohmann::json& json, bool pretty = false) noexcept

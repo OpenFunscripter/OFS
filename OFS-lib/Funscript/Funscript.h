@@ -23,6 +23,7 @@ class Funscript;
 class FunscriptActionsChangedEvent : public OFS_Event<FunscriptActionsChangedEvent>
 {
 	public:
+	// FIXME: get rid of this raw pointer
 	const Funscript* Script = nullptr;
 	FunscriptActionsChangedEvent(const Funscript* changedScript) noexcept
 		: Script(changedScript) {}
@@ -31,6 +32,7 @@ class FunscriptActionsChangedEvent : public OFS_Event<FunscriptActionsChangedEve
 class FunscriptSelectionChangedEvent : public OFS_Event<FunscriptSelectionChangedEvent>
 {
 	public:
+	// FIXME: get rid of this raw pointer
 	const Funscript* Script = nullptr;
 	FunscriptSelectionChangedEvent(const Funscript* changedScript) noexcept
 		: Script(changedScript) {}
@@ -173,7 +175,7 @@ private:
 	inline void notifySelectionChanged() noexcept { selectionChanged = true; }
 
 	void loadMetadata(const nlohmann::json& metadataObj) noexcept;
-	void saveMetadata(nlohmann::json& outMetadataObj) noexcept;
+	void saveMetadata(nlohmann::json& outMetadataObj) const noexcept;
 
 	void notifyActionsChanged(bool isEdit) noexcept; 
 	std::string currentPathRelative;
@@ -186,7 +188,7 @@ public:
 	std::unique_ptr<FunscriptUndoSystem> undoSystem;
 
 	void UpdateRelativePath(const std::string& path) noexcept;
-	inline void SetSavedFromOutside() noexcept { unsavedEdits = false;	}
+	inline void ClearUnsavedEdits() noexcept { unsavedEdits = false;	}
 	inline const std::string& RelativePath() const noexcept { return currentPathRelative; }
 	inline const std::string& Title() const noexcept { return title; }
 
@@ -195,7 +197,7 @@ public:
 	void Update() noexcept;
 
 	bool Deserialize(const nlohmann::json& json) noexcept;
-	nlohmann::json Serialize() noexcept;
+	nlohmann::json Serialize(bool noMetadata = false) const noexcept;
 	
 	inline const FunscriptData& Data() const noexcept { return data; }
 	inline const auto& Selection() const noexcept { return data.Selection; }

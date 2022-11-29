@@ -2,9 +2,9 @@
 
 #include "OFS_Profiling.h"
 
-VideoPreview::VideoPreview(const char* playerName, bool hwAccel) noexcept
+VideoPreview::VideoPreview(bool hwAccel) noexcept
 {
-	player = std::make_unique<OFS_Videoplayer>(playerName);
+	player = std::make_unique<OFS_Videoplayer>(VideoplayerType::Preview);
 	player->Init(hwAccel);
 }
 

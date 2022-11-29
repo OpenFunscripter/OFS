@@ -15,6 +15,10 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "UI/OFS_DownloadFfmpeg.cpp"
   "UI/OFS_FunscriptMetadataEditor.cpp"
 
+  "api/OFS_WebsocketApi.cpp"
+  "api/OFS_WebsocketApiClient.cpp"
+  "api/OFS_WebsocketApiEvents.cpp"
+
   "gl/OFS_GPU.cpp"
 
   "state/OpenFunscripterState.cpp"
@@ -60,6 +64,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   lua
   sol2
   OFS_lib
+  civetweb
 )
 
 if(WIN32)
@@ -71,7 +76,6 @@ if(WIN32)
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
-	"JSON_NOEXCEPTION"
 	"_CRT_SECURE_NO_WARNINGS"
 )
 
@@ -82,6 +86,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	"${PROJECT_SOURCE_DIR}/gl/"
 	"${PROJECT_SOURCE_DIR}/event/"
 	"${PROJECT_SOURCE_DIR}/lua/"
+	"${PROJECT_SOURCE_DIR}/api/"
 )
 
 # c++17

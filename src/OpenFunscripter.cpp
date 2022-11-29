@@ -210,7 +210,7 @@ bool OpenFunscripter::Init(int argc, char* argv[])
     EV::Init();
     LoadedProject = std::make_unique<OFS_Project>();
 
-    player = std::make_unique<OFS_Videoplayer>("MainPlayer");
+    player = std::make_unique<OFS_Videoplayer>(VideoplayerType::Main);
     if (!player->Init(prefState.forceHwDecoding)) {
         LOG_ERROR("Failed to initialize videoplayer.");
         return false;
@@ -242,6 +242,8 @@ bool OpenFunscripter::Init(int argc, char* argv[])
         OFS_SDL_Event::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::ControllerAxisPlaybackSpeed)));
     EV::Queue().appendListener(VideoLoadedEvent::EventType,
         VideoLoadedEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::VideoLoaded)));
+    EV::Queue().appendListener(DurationChangeEvent::EventType,
+        DurationChangeEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::VideoDuration)));
     EV::Queue().appendListener(PlayPauseChangeEvent::EventType,
         PlayPauseChangeEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::PlayPauseChange)));
     EV::Queue().appendListener(FunscriptActionShouldMoveEvent::EventType,
@@ -299,6 +301,9 @@ bool OpenFunscripter::Init(int argc, char* argv[])
     for (auto& recentFile : ofsState.recentFiles) {
         OFS_DynFontAtlas::AddText(recentFile.name.c_str());
     }
+
+    webApi = std::make_unique<OFS_WebsocketApi>();
+    webApi->Init();
 
     SDL_ShowWindow(window);
     return true;
@@ -1393,14 +1398,16 @@ void OpenFunscripter::DragNDrop(const OFS_SDL_Event* ev) noexcept
     SDL_free(ev->sdl.drop.file);
 }
 
+void OpenFunscripter::VideoDuration(const DurationChangeEvent* ev) noexcept
+{
+    auto& projectState = LoadedProject->State();
+    projectState.metadata.duration = player->Duration();
+    player->SetPositionExact(projectState.lastPlayerPosition);
+}
+
 void OpenFunscripter::VideoLoaded(const VideoLoadedEvent* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    auto& projectState = LoadedProject->State();
-    projectState.metadata.duration = player->Duration();
-
-    player->SetPositionExact(projectState.lastPlayerPosition);
-
     Status |= OFS_Status::OFS_GradientNeedsUpdate;
 
     tcode->reset();
@@ -1445,6 +1452,7 @@ void OpenFunscripter::update() noexcept
     }
 
     tcode->sync(player->CurrentTime(), player->CurrentSpeed());
+    webApi->Update();
 }
 
 void OpenFunscripter::autoBackup() noexcept
@@ -1764,6 +1772,7 @@ int OpenFunscripter::Run() noexcept
 
 void OpenFunscripter::Shutdown() noexcept
 {
+    webApi->Shutdown();
     OFS_DynFontAtlas::Shutdown();
     OFS_Translator::Shutdown();
 

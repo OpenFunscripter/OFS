@@ -15,17 +15,15 @@ static char tmp_buf[2][32];
 void OFS_VideoplayerControls::VideoLoaded(const VideoLoadedEvent* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if(ev->playerName == "MainPlayer")
-    {
-        videoPreview->PreviewVideo(ev->videoPath, 0.f);
-    }
+    if(ev->playerType != VideoplayerType::Main) return;
+    videoPreview->PreviewVideo(ev->videoPath, 0.f);
 }
 
 void OFS_VideoplayerControls::Init(OFS_Videoplayer* player, bool hwAccel) noexcept
 {
     this->player = player;
     Heatmap = std::make_unique<FunscriptHeatmap>();
-    videoPreview = std::make_unique<VideoPreview>("PreviewPlayer", hwAccel);
+    videoPreview = std::make_unique<VideoPreview>(hwAccel);
     videoPreview->Init();
 
     EV::Queue().appendListener(VideoLoadedEvent::EventType,

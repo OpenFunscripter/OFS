@@ -9,7 +9,7 @@ class VideoPreview {
 private:
 	std::unique_ptr<OFS_Videoplayer> player;
 public:
-	VideoPreview(const char* playerName, bool hwAccel) noexcept;
+	VideoPreview(bool hwAccel) noexcept;
 	~VideoPreview() noexcept;
 
 	void Init() noexcept;
