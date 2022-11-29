@@ -1562,6 +1562,7 @@ void OpenFunscripter::Step() noexcept
                 }
             }
 
+            webApi->ShowWindow(&ofsState.showWsApi);
             scripting->DrawScriptingMode(NULL);
             LoadedProject->ShowProjectWindow(&ShowProjectEditor);
 
@@ -2572,7 +2573,8 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem(TR(METADATA), NULL, &ShowMetadataEditor)) {}
             if (ImGui::MenuItem(TR(ACTION_EDITOR), NULL, &ofsState.showActionEditor)) {}
             if (ImGui::MenuItem(TR(SPECIAL_FUNCTIONS), NULL, &ofsState.showSpecialFunctions)) {}
-            if (ImGui::MenuItem(TR(T_CODE), NULL, &ofsState.showTCode)) {}
+            if (ImGui::MenuItem(TR(WEBSOCKET_API), NULL, &ofsState.showWsApi)) {}
+            
 
             ImGui::Separator();
 

@@ -13,6 +13,7 @@
 
 OFS_WebsocketClient::OFS_WebsocketClient() noexcept
 {
+    LOG_DEBUG("Created new websocket client.");
     // FIXME: this is a lot of ugly code just to be able to unsubscribe from events
     std::vector<UnsubscribeFn> eventUnsubs;
     eventUnsubs.emplace_back(
@@ -73,6 +74,7 @@ OFS_WebsocketClient::OFS_WebsocketClient() noexcept
 
 OFS_WebsocketClient::~OFS_WebsocketClient() noexcept
 {
+    LOG_DEBUG("Destroying websocket client.");
     eventUnsub();   
 }
 
@@ -168,4 +170,15 @@ void OFS_WebsocketClient::InitializeConnection(mg_connection* conn) noexcept
 	const char* hello = "{\"connected\":\"OFS " OFS_LATEST_GIT_TAG "@" OFS_LATEST_GIT_HASH "\"}";
 	mg_websocket_write(conn, MG_WEBSOCKET_OPCODE_TEXT, hello, strlen(hello));
     UpdateAll();
+}
+
+void OFS_WebsocketClient::ReceiveText(char* data, size_t dataLen) noexcept
+{
+    bool succ;
+    std::string dataText(data, dataLen);
+    auto json = Util::ParseJson(dataText, &succ);
+    if(succ)
+    {
+        
+    }
 }

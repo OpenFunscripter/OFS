@@ -517,3 +517,6 @@ OK_RESULT,ok,ok
 ORPHAN_TRIGGER_MESSAGE,The following triggers have no corresponding actions.,The following triggers have no corresponding actions.
 DELETE,Delete,Delete
 REPEAT,Repeat,Repeat
+WEBSOCKET_API,Websocket API,Websocket API
+SERVER_ACTIVE,Server active,Server active
+CLIENT_COUNT,Clients connected,Clients connected

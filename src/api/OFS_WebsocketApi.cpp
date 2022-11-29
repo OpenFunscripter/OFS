@@ -6,7 +6,12 @@
 #include "OpenFunscripter.h"
 #include "OFS_VideoplayerEvents.h"
 #include "OFS_WebsocketApiEvents.h"
+#include "state/WebsocketApiState.h"
+
 #include "civetweb.h"
+
+#include "imgui.h"
+#include "imgui_stdlib.h"
 
 #include "SDL_atomic.h"
 
@@ -83,6 +88,7 @@ static int ws_data_handler(struct mg_connection *conn,
 	switch (opcode & 0xf) {
 	case MG_WEBSOCKET_OPCODE_TEXT:
 		messageType = "text";
+		clientCtx->ReceiveText(data, datasize);
 		break;
 	case MG_WEBSOCKET_OPCODE_BINARY:
 		messageType = "binary";
@@ -97,7 +103,7 @@ static int ws_data_handler(struct mg_connection *conn,
 		messageType = "pong";
 		break;
 	}
-	LOGF_INFO("Websocket received %lu bytes of %s data from client\n",
+	LOGF_DEBUG("Websocket received %lu bytes of %s data from client\n",
 	       (unsigned long)datasize,
 	       messageType);
 
@@ -121,6 +127,8 @@ static void ws_close_handler(const struct mg_connection *conn, void *ctx) noexce
 
 OFS_WebsocketApi::OFS_WebsocketApi() noexcept
 {
+	stateHandle = OFS_AppState<WebsocketApiState>::Register(WebsocketApiState::StateName);
+
 	EV::Queue().appendListener(VideoLoadedEvent::EventType, VideoLoadedEvent::HandleEvent(
 		[this](const VideoLoadedEvent* ev) noexcept
 		{
@@ -211,7 +219,18 @@ bool OFS_WebsocketApi::Init() noexcept
     if(mg_init_library(0) != 0)
         return false;
 
-	const char* options[] = {"listening_ports", "8081", "num_threads", "4", NULL, NULL};
+	auto& state = WebsocketApiState::State(stateHandle);
+	if(state.serverActive) StartServer();
+
+    return true;
+}
+
+bool OFS_WebsocketApi::StartServer() noexcept
+{
+	if(CTX->web) return true;
+	auto& state = WebsocketApiState::State(stateHandle);
+
+	const char* options[] = {"listening_ports", state.port.c_str(), "num_threads", "4", NULL, NULL};
 
     /* Start the server using the advanced API. */
 	struct mg_callbacks callbacks = {0};
@@ -238,9 +257,16 @@ bool OFS_WebsocketApi::Init() noexcept
 	                                           ws_data_handler,
 	                                           ws_close_handler,
 	                                           ctx);
+	return true;
+}
 
-    LOG_INFO("Websocket api started.");
-    return true;
+void OFS_WebsocketApi::StopServer() noexcept
+{
+	if(CTX->web)
+	{
+		mg_stop(CTX->web);
+		CTX->web = nullptr;
+	}
 }
 
 void OFS_WebsocketApi::Update() noexcept
@@ -268,8 +294,51 @@ void OFS_WebsocketApi::Update() noexcept
 
 void OFS_WebsocketApi::Shutdown() noexcept
 {
-    mg_stop(CTX->web);
+	StopServer();
     mg_exit_library();
     delete CTX;
     ctx = nullptr;
+}
+
+void OFS_WebsocketApi::ShowWindow(bool* open) noexcept
+{
+	if(!*open) return;
+	auto& state = WebsocketApiState::State(stateHandle);
+
+	ImGui::Begin(TR_ID("WebsocketApi", Tr::WEBSOCKET_API), open, ImGuiWindowFlags_AlwaysAutoResize);
+	bool serverRunning = CTX->web != nullptr;
+	if(ImGui::Checkbox(TR(SERVER_ACTIVE), &serverRunning))
+	{
+		if(serverRunning) StartServer();
+		else StopServer();
+		state.serverActive = serverRunning;
+	}
+
+	if(serverRunning)
+	{
+		mg_server_port ports;
+		mg_get_server_ports(CTX->web, 1, &ports);
+		
+		ImGui::TextColored(ImVec4(0.f, 1.f, 0.f, 1.f), "ws://0.0.0.0:%d%s", ports.port, WS_URL);
+		auto clientCount = ClientsConnected();
+		ImGui::Text("%s: %d", TR(CLIENT_COUNT), clientCount);
+	}
+
+	auto textChanged = ImGui::InputText(TR(PORT), &state.port, ImGuiInputTextFlags_CallbackCharFilter | ImGuiInputTextFlags_CharsDecimal,
+		[](ImGuiInputTextCallbackData* data)
+		{
+			if(data->EventChar >= '0' && data->EventChar <= '9')
+				return 0;
+			return 1;
+		});
+	if(textChanged)
+	{
+		int port = SDL_atoi(state.port.c_str());
+		if(port < 0 || port > std::numeric_limits<uint16_t>::max())
+		{
+			state.port = "8080";
+		}
+	}
+
+	ImGui::End();
 }

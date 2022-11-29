@@ -25,4 +25,6 @@ class OFS_WebsocketClient
 
     void InitializeConnection(struct mg_connection* conn) noexcept;
     void UpdateAll() noexcept;
+
+    void ReceiveText(char* data, size_t dateLen) noexcept;
 };

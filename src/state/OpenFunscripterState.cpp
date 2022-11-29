@@ -1,22 +1,22 @@
 #include "OpenFunscripterState.h"
 #include "ScriptModeState.h"
-#include "Simulator3dState.h"
 #include "MetadataEditorState.h"
 #include "PreferenceState.h"
 #include "SimulatorState.h"
 #include "ProjectState.h"
 #include "SpecialFunctionsState.h"
+#include "WebsocketApiState.h"
 
 void OpenFunscripterState::RegisterAll() noexcept
 {
 	// App state
 	OFS_REGISTER_STATE(OpenFunscripterState);
 	OFS_REGISTER_STATE(ScriptingModeState);
-	OFS_REGISTER_STATE(Simulator3dState);
 	OFS_REGISTER_STATE(FunscriptMetadataState);
 	OFS_REGISTER_STATE(PreferenceState);
 	OFS_REGISTER_STATE(SimulatorDefaultConfigState);
 	OFS_REGISTER_STATE(SpecialFunctionState);
+	OFS_REGISTER_STATE(WebsocketApiState);
 
 	// Project state
 	OFS_REGISTER_STATE(TempoOverlayState);

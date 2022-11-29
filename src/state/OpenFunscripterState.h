@@ -40,7 +40,7 @@ struct OpenFunscripterState
     bool showSimulator = true;
     bool showSimulator3d = false;
     bool showSpecialFunctions = false;
-    bool showTCode = false;
+    bool showWsApi = false;
 
     inline static OpenFunscripterState& State(uint32_t stateHandle) noexcept
     {
@@ -68,5 +68,5 @@ REFL_TYPE(OpenFunscripterState)
     REFL_FIELD(showSimulator)
     REFL_FIELD(showSimulator3d)
     REFL_FIELD(showSpecialFunctions)
-    REFL_FIELD(showTCode)
+    REFL_FIELD(showWsApi)
 REFL_END
