@@ -105,7 +105,6 @@ static void SaveState() noexcept
 OpenFunscripter::~OpenFunscripter() noexcept
 {
     SaveState();
-    tcode->save();
 
     // needs a certain destruction order
     playerControls.Destroy();
@@ -275,8 +274,6 @@ bool OpenFunscripter::Init(int argc, char* argv[])
     };
 
     FunscriptHeatmap::Init();
-    tcode = std::make_unique<TCodePlayer>();
-    tcode->loadSettings(Util::Prefpath("tcode.json"));
     extensions = std::make_unique<OFS_LuaExtensions>();
     extensions->Init();
     metadataEditor = std::make_unique<OFS_FunscriptMetadataEditor>();
@@ -1409,26 +1406,11 @@ void OpenFunscripter::VideoLoaded(const VideoLoadedEvent* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     Status |= OFS_Status::OFS_GradientNeedsUpdate;
-
-    tcode->reset();
-    {
-        std::vector<std::shared_ptr<const Funscript>> scripts;
-        scripts.assign(LoadedFunscripts().begin(), LoadedFunscripts().end());
-        tcode->setScripts(std::move(scripts));
-    }
 }
 
 void OpenFunscripter::PlayPauseChange(const PlayPauseChangeEvent* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    if (ev->paused) {
-        tcode->stop();
-    }
-    else {
-        std::vector<std::shared_ptr<const Funscript>> scripts;
-        scripts.assign(LoadedFunscripts().begin(), LoadedFunscripts().end());
-        tcode->play(player->CurrentTime(), std::move(scripts));
-    }
 }
 
 void OpenFunscripter::update() noexcept
@@ -1451,7 +1433,6 @@ void OpenFunscripter::update() noexcept
         autoBackup();
     }
 
-    tcode->sync(player->CurrentTime(), player->CurrentSpeed());
     webApi->Update();
 }
 
@@ -1585,7 +1566,6 @@ void OpenFunscripter::Step() noexcept
             LoadedProject->ShowProjectWindow(&ShowProjectEditor);
 
             extensions->ShowExtensions();
-            tcode->DrawWindow(&ofsState.showTCode, player->CurrentTime());
 
             OFS_FileLogger::DrawLogWindow(&ofsState.showDebugLog);
 
@@ -2314,10 +2294,9 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     }
                 };
                 if (ImGui::BeginMenu(TR(ADD_SHORTCUTS))) {
-                    for (int i = 1; i < TCodeChannels::Aliases.size() - 1; i++) {
-                        addNewShortcut(TCodeChannels::Aliases[i][2]);
+                    for(auto axis : Funscript::AxisNames) {
+                        addNewShortcut(axis);
                     }
-                    addNewShortcut("raw");
                     ImGui::EndMenu();
                 }
                 if (ImGui::MenuItem(TR(ADD_NEW))) {

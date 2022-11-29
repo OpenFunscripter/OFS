@@ -33,10 +33,6 @@ set(OFS_LIB_SOURCES
 
 	"gl/OFS_Shader.cpp"
 
-	"player/OFS_TCode.cpp"
-	"player/OFS_TCodeChannel.cpp"
-	"player/OFS_TCodeProducer.cpp"
-
 	"OFS_ControllerInput.cpp"
 
 	"OFS_Serialization.cpp"
@@ -79,7 +75,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	imgui
 	imgui_stdlib
 	tinyfiledialogs
-	libserialport
 	glm
 	bitsery
 	refl-cpp
@@ -128,13 +123,6 @@ if(WIN32)
 	target_include_directories(${PROJECT_NAME} PUBLIC 
 		"../lib/libmpv/include"
 	)
-	#target_link_directories(${PROJECT_NAME} PUBLIC 
-	#	"../lib/libmpv/"
-	#)
-	#target_link_libraries(${PROJECT_NAME} PUBLIC
-	#	# linking of libmpv can be improved but this works...
-	#	mpv.lib
-	#)
 	target_compile_definitions(${PROJECT_NAME} PUBLIC
 		"NOMINMAX"
 	)
@@ -162,7 +150,4 @@ elseif(APPLE)
 	target_include_directories(${PROJECT_NAME} PUBLIC
 		"${MPV_INCLUDE}"
 	)
-	#target_link_libraries(${PROJECT_NAME} PUBLIC
-	#	"${MPV_LIB}/libmpv.dylib"
-	#)
 endif()

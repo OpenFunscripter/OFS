@@ -10,6 +10,19 @@
 #include <algorithm>
 #include <limits>
 
+std::array<const char*, 9> Funscript::AxisNames = 
+{
+	"surge",
+	"sway",
+	"suck",
+	"twist",
+	"roll",
+	"pitch",
+	"vib",
+	"pump",
+	"raw"
+};
+
 Funscript::Funscript() noexcept
 {
 	notifyActionsChanged(false);

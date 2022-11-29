@@ -22,50 +22,6 @@ add_subdirectory("glm")
 #target_include_directories(bitsery INTERFACE "bitsery/include")
 add_subdirectory("bitsery/")
 
-# ====================
-# == libserialport ===
-# ====================
-set(LIBSERIALPORT_SOURCES
-	"libserialport/serialport.c"
-	"libserialport/timing.c"
-)
-set(LIBSERIALPORT_HEADERS 
-	"libserialport/libserialport.h"
-	"libserialport/libserialport_internal.h"
-)
-if(WIN32)
-set(LIBSERIALPORT_SOURCES
-	${LIBSERIALPORT_SOURCES}
-	"libserialport/windows.c"
-)
-elseif(UNIX AND NOT APPLE)
-set(LIBSERIALPORT_SOURCES
-	${LIBSERIALPORT_SOURCES}
-	"libserialport/linux.c"
-	"libserialport/linux_termios.c"
-)
-set(LIBSERIALPORT_HEADERS 
-	${LIBSERIALPORT_HEADERS}
-	"libserialport/linux_termios.h"
-)
-elseif(APPLE)
-set(LIBSERIALPORT_SOURCES
-	${LIBSERIALPORT_SOURCES}
-	"libserialport/macosx.c"
-)
-endif()
-add_library(libserialport STATIC ${LIBSERIALPORT_SOURCES} ${LIBSERIALPORT_HEADERS})
-target_include_directories(libserialport PUBLIC "libserialport/")
-
-if(WIN32)
-target_compile_definitions(libserialport PUBLIC LIBSERIALPORT_MSBUILD)
-else()
-target_compile_definitions(libserialport PUBLIC 
-	"LIBSERIALPORT_ATBUILD"
-	"SP_PRIV="
-	"SP_API=")
-endif()
-
 # ==========
 # == LUA ===
 # ==========

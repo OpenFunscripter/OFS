@@ -184,6 +184,8 @@ public:
 	Funscript() noexcept;
 	~Funscript() noexcept;
 
+	static std::array<const char*, 9> AxisNames;
+
 	bool Enabled = true;
 	std::unique_ptr<FunscriptUndoSystem> undoSystem;
 

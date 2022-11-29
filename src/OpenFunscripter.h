@@ -10,7 +10,6 @@
 #include "GradientBar.h"
 #include "OFS_SpecialFunctions.h"
 #include "OFS_VideoplayerControls.h"
-#include "OFS_TCode.h"
 #include "OFS_Project.h"
 #include "OFS_BlockingTask.h"
 #include "OFS_DynamicFontAtlas.h"
@@ -144,7 +143,6 @@ public:
     std::unique_ptr<OFS_Videoplayer> player;
     std::unique_ptr<OFS_VideoplayerWindow> playerWindow;
     std::unique_ptr<OFS_KeybindingSystem> keys;
-    std::unique_ptr<TCodePlayer> tcode;
     std::unique_ptr<SpecialFunctionsWindow> specialFunctions;
     std::unique_ptr<ScriptingMode> scripting;
     std::unique_ptr<ControllerInput> controllerInput;
