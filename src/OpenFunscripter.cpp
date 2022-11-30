@@ -1761,15 +1761,16 @@ void OpenFunscripter::Shutdown() noexcept
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
 
-    SDL_GL_DeleteContext(glContext);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
-
-    // these players need to be freed before unloading mpv
+    // These players need to be freed before unloading mpv
+    // NOTE: Do not free the GL context before these players
     player.reset();
     playerControls.videoPreview.reset();
     OFS_MpvLoader::Unload();
     OFS_FileLogger::Shutdown();
+
+    SDL_GL_DeleteContext(glContext);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
 }
 
 void OpenFunscripter::Undo() noexcept
