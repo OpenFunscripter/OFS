@@ -197,7 +197,7 @@ void FunscriptHeatmap::Update(float totalDuration, const FunscriptArray& actions
 
     for(uint32_t i=0; i < SpeedTextureResolution; i += 1)
     {
-        speedBuffer[i] /= (float)sampleCountBuffer[i];
+        speedBuffer[i] /= sampleCountBuffer[i] > 0 ? (float)sampleCountBuffer[i] : 1.f;
         speedBuffer[i] /= MaxSpeedPerSecond;
         speedBuffer[i] = Util::Clamp(speedBuffer[i], 0.f, 1.f);
     }
