@@ -210,7 +210,6 @@ OFS_WebsocketApi::OFS_WebsocketApi() noexcept
 						scriptUpdateCooldown.resize(scriptIdx + 1, 0);
 					}
 					scriptUpdateCooldown[scriptIdx] = SDL_GetTicks();
-					LOGF_DEBUG("Cooldown reset for %d", scriptIdx);
 				}
 			}
 		}
@@ -292,7 +291,6 @@ void OFS_WebsocketApi::Update() noexcept
 			auto app = OpenFunscripter::ptr;
 			if(i >= 0 && i < app->LoadedFunscripts().size())
 			{
-				LOGF_DEBUG("Cooldown end for %d", i);
 				auto script = app->LoadedFunscripts()[i].get();
 				EV::Queue().directDispatch(WsFunscriptChange::EventType,
 					EV::Make<WsFunscriptChange>(script));

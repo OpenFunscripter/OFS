@@ -158,6 +158,11 @@ void OFS_WebsocketClient::UpdateAll() noexcept
 {
     // Update everything
     auto app = OpenFunscripter::ptr;
+    {
+        nlohmann::json json = WsProjectChange();
+        auto jsonText = Util::SerializeJson(json);
+        sendMessage(jsonText);
+    }
     WsMediaChange media(app->player->VideoPath());
     handleMediaChange(&media);
     WsPlaybackSpeedChange speed(app->player->CurrentSpeed());

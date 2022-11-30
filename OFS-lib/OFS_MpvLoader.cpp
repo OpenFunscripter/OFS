@@ -23,6 +23,7 @@ mpv_set_property_async_FUNC OFS_MpvLoader::mpv_set_property_async_REAL = NULL;
 mpv_render_context_free_FUNC OFS_MpvLoader::mpv_render_context_free_REAL = NULL;
 mpv_destroy_FUNC OFS_MpvLoader::mpv_destroy_REAL = NULL;
 mpv_render_context_report_swap_FUNC OFS_MpvLoader::mpv_render_context_report_swap_REAL = NULL;
+mpv_terminate_destroy_FUNC OFS_MpvLoader::mpv_terminate_destroy_REAL = NULL;
 
 #define LOAD_FUNCTION(name) \
     name##_REAL = (name##_FUNC)SDL_LoadFunction(mpvHandle, #name); \
@@ -68,6 +69,7 @@ bool OFS_MpvLoader::Load() noexcept
     LOAD_FUNCTION(mpv_set_property_async);
     LOAD_FUNCTION(mpv_render_context_free);
     LOAD_FUNCTION(mpv_destroy);
+    LOAD_FUNCTION(mpv_terminate_destroy);
     LOAD_FUNCTION(mpv_render_context_report_swap);
 
     return true;
@@ -96,5 +98,6 @@ void OFS_MpvLoader::Unload() noexcept
     SET_NULL(mpv_set_property_async);
     SET_NULL(mpv_render_context_free);
     SET_NULL(mpv_destroy);
+    SET_NULL(mpv_terminate_destroy);
     SET_NULL(mpv_render_context_report_swap);
 }

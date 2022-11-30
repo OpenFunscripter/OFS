@@ -32,6 +32,7 @@ typedef void (*mpv_render_context_free_FUNC)(mpv_render_context *ctx);
 typedef void (*mpv_detach_destroy_FUNC)(mpv_handle *ctx);
 typedef void (*mpv_destroy_FUNC)(mpv_handle *ctx);
 typedef void (*mpv_render_context_report_swap_FUNC)(mpv_render_context *ctx);
+typedef void (*mpv_terminate_destroy_FUNC)(mpv_handle *ctx);;
 
 struct OFS_MpvLoader {
     static mpv_create_FUNC mpv_create_REAL;
@@ -51,6 +52,7 @@ struct OFS_MpvLoader {
     static mpv_render_context_free_FUNC mpv_render_context_free_REAL;
     static mpv_destroy_FUNC mpv_destroy_REAL;
     static mpv_render_context_report_swap_FUNC mpv_render_context_report_swap_REAL;
+    static mpv_terminate_destroy_FUNC mpv_terminate_destroy_REAL;
 
     static bool Load() noexcept;
     static void Unload() noexcept;
@@ -73,6 +75,7 @@ struct OFS_MpvLoader {
 #define mpv_set_property_async(ctx, reply_userdata, name, format, data) OFS_MpvLoader::mpv_set_property_async_REAL(ctx, reply_userdata, name, format, data)
 #define mpv_render_context_free(ctx) OFS_MpvLoader::mpv_render_context_free_REAL(ctx)
 #define mpv_destroy(ctx) OFS_MpvLoader::mpv_destroy_REAL(ctx)
+#define mpv_terminate_destroy(ctx) OFS_MpvLoader::mpv_terminate_destroy_REAL(ctx)
 #define mpv_render_context_report_swap(ctx) OFS_MpvLoader::mpv_render_context_report_swap_REAL(ctx)
 #endif // OFS_MPV_LOADER_NO_MACROS
 

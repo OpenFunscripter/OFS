@@ -24,3 +24,8 @@ void to_json(nlohmann::json& j, const WsPlaybackSpeedChange& p)
 {
     j = nlohmann::json{ {"type", "playbackspeed_change"}, {"speed", p.speed } };
 }
+
+void to_json(nlohmann::json& j, const WsProjectChange& p)
+{
+    j = nlohmann::json{ { "type", "project_change" } };
+}

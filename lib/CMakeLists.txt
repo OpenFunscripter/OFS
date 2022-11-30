@@ -156,8 +156,9 @@ target_include_directories(eventpp INTERFACE "eventpp/include/")
 
 
 set (civetweb_SRC
-	"civetweb/src/civetweb.c"
+	"civetweb/src/civetweb.c" 
 )
+set_source_files_properties("civetweb/src/civetweb.c" PROPERTIES LANGUAGE CXX )
 add_library(civetweb STATIC ${civetweb_SRC})
 target_include_directories(civetweb PUBLIC "civetweb/include/")
 target_compile_definitions(civetweb PRIVATE "NO_SSL=1"
