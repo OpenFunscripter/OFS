@@ -1753,7 +1753,6 @@ int OpenFunscripter::Run() noexcept
 
 void OpenFunscripter::Shutdown() noexcept
 {
-    webApi->Shutdown();
     OFS_DynFontAtlas::Shutdown();
     OFS_Translator::Shutdown();
 
@@ -1767,6 +1766,7 @@ void OpenFunscripter::Shutdown() noexcept
     playerControls.videoPreview.reset();
     OFS_MpvLoader::Unload();
     OFS_FileLogger::Shutdown();
+    webApi->Shutdown();
 
     SDL_GL_DeleteContext(glContext);
     SDL_DestroyWindow(window);

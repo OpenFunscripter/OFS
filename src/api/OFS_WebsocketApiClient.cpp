@@ -141,7 +141,8 @@ void OFS_WebsocketClient::handleFunscriptChange(const WsFunscriptChange* ev) noe
 {
     OFS_PROFILE(__FUNCTION__);
     nlohmann::json json = { 
-        {"type", "funscript_change"},
+        {"type", "event"},
+        {"ev", "funscript_change"},
         {"name", ev->changedScript->Title()},
         {"funscript", ev->changedScript->Serialize(true)}
     };
