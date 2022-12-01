@@ -255,17 +255,17 @@ void ScriptTimeline::ShowScriptPositions(
 	const float verticalSpacingBetweenScripts = style.ItemSpacing.y*2.f;
 	const auto availSize = ImGui::GetContentRegionAvail() - ImVec2(0.f , verticalSpacingBetweenScripts*((float)drawingCtx.drawnScriptCount-1));
 	const auto startCursor = ImGui::GetCursorScreenPos();
+	auto currentCursor = startCursor;
 
-	ImGui::SetCursorScreenPos(startCursor);
 	for(int i=0; i < scripts.size(); i += 1) 
 	{
 		auto script = scripts[i].get();
 		if (!script->Enabled) continue;
 		
 		drawingCtx.drawingScriptIdx = i;
-		drawingCtx.canvasPos = ImGui::GetCursorScreenPos();
+		drawingCtx.canvasPos = currentCursor;
 		drawingCtx.canvasSize = ImVec2(availSize.x, availSize.y / (float)drawingCtx.drawnScriptCount);
-		const ImGuiID itemID = ImGui::GetID(script->Title().empty() ? "empty script" : script->Title().c_str());
+		const auto itemID = ImGui::GetID(script->Title().empty() ? "empty script" : script->Title().c_str());
 		ImRect itemBB(drawingCtx.canvasPos, drawingCtx.canvasPos + drawingCtx.canvasSize);
 		ImGui::ItemSize(itemBB);
 		if (!ImGui::ItemAdd(itemBB, itemID)) {
@@ -382,7 +382,6 @@ void ScriptTimeline::ShowScriptPositions(
 			drawingCtx.drawList->AddLine(drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel2, 0), drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel2, drawingCtx.canvasSize.y), selectColor, 3.0f);
 		}
 
-		// TODO: refactor this
 		// selectionStart currently used for controller select
 		if (startSelectionTime >= 0.f) {
 			float startSelectRel = (startSelectionTime - drawingCtx.offsetTime) / visibleTime;
@@ -392,7 +391,6 @@ void ScriptTimeline::ShowScriptPositions(
 				selectColor, 3.0f
 			);
 		}
-
 
 		// Handle action clicks
 		if(ItemIsHovered && handleTimelineClicks(drawingCtx)) { /* click was handled */ }
@@ -423,8 +421,7 @@ void ScriptTimeline::ShowScriptPositions(
 		}
 
 		ImVec2 newCursor(drawingCtx.canvasPos.x, drawingCtx.canvasPos.y + drawingCtx.canvasSize.y + verticalSpacingBetweenScripts);
-		if (newCursor.y < (startCursor.y + availSize.y)) { ImGui::SetCursorScreenPos(newCursor); }
-
+		if (newCursor.y < (startCursor.y + availSize.y)) { currentCursor = newCursor; }
 
 		// right click context menu
 		if (ImGui::BeginPopupContextItem(script->Title().c_str()))

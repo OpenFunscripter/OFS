@@ -356,10 +356,6 @@ inline void RecordingMode::twoAxisRecording() noexcept
     float atS = app->player->CurrentTime();
     recordingAxisX->AddAction(FunscriptAction(atS, currentPosX));
     recordingAxisY->AddAction(FunscriptAction(atS, currentPosY));
-
-    // FIXME
-    // app->sim3D->RollOverride = currentPosX;
-    // app->sim3D->PitchOverride = 100 - currentPosY;
 }
 
 // recording
