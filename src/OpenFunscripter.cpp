@@ -263,16 +263,6 @@ bool OpenFunscripter::Init(int argc, char* argv[])
     controllerInput->Init();
     simulator.Init();
 
-
-    // callback that renders the simulator right after the video
-    playerWindow->OnRenderCallback = [](const ImDrawList* parent_list, const ImDrawCmd* cmd) {
-        auto app = OpenFunscripter::ptr;
-        auto& ofsState = OpenFunscripterState::State(app->stateHandle);
-        if (ofsState.showSimulator3d) {
-            // FIXME
-        }
-    };
-
     FunscriptHeatmap::Init();
     extensions = std::make_unique<OFS_LuaExtensions>();
     extensions->Init();

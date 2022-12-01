@@ -218,7 +218,6 @@ void OFS_VideoplayerWindow::DrawVideoPlayer(bool* open, bool* drawVideo) noexcep
 		else {
 			drawVrVideo(drawList);
 		}
-		if (OnRenderCallback != nullptr) { drawList->AddCallback(OnRenderCallback, this); }
 		drawList->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
 	
 		videoHovered = ImGui::IsItemHovered() && ImGui::IsWindowHovered();

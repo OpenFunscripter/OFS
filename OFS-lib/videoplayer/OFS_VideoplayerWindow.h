@@ -1,7 +1,5 @@
 #pragma once
-
 #include "imgui.h"
-#include "imgui_internal.h"
 
 #include "OFS_Reflection.h"
 #include "OFS_BinarySerialization.h"
@@ -12,7 +10,6 @@
 
 #include <string>
 #include "SDL_events.h"
-
 
 class OFS_VideoplayerWindow
 {
@@ -43,8 +40,6 @@ private:
 	void videoRightClickMenu() noexcept;
 public:
 	static constexpr const char* WindowId = "###VIDEOPLAYER";
-	ImDrawCallback OnRenderCallback = nullptr;
-
 	bool Init(OFS_Videoplayer* player) noexcept;
 	void DrawVideoPlayer(bool* open, bool* drawVideo) noexcept;
 

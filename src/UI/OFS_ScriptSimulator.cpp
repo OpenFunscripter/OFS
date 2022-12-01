@@ -214,6 +214,7 @@ void ScriptSimulator::ShowSimulator(bool* open, std::shared_ptr<Funscript>& acti
     }
 
     auto simId = ImGui::GetID("ActualSimulator");
+    ImGui::KeepAliveID(simId);
     auto offset = ImGui::GetWindowViewport()->Pos; 
     
     ImVec2 direction = state.P1 - state.P2;
@@ -413,33 +414,43 @@ void ScriptSimulator::ShowSimulator(bool* open, std::shared_ptr<Funscript>& acti
         float p2Distance = Distance(mouse, barP2);
         float barCenterDistance = Distance(mouse, barCenter);
 
+        bool isDraggingSim = false;
+
         if (p1Distance <= (state.Width / 2.f)) {
             ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-            ImGui::SetActiveID(simId, ImGui::GetCurrentWindowRead());
-            ImGui::SetHoveredID(simId);
+            ImGui::SetHoveredID(ImGui::GetCurrentWindowRead()->ID);
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                ImGui::SetActiveID(simId, ImGui::GetCurrentWindowRead());
                 startDragP1 = state.P1;
                 dragging = &state.P1;
+                isDraggingSim = true;
             }
         }
         else if (p2Distance <= (state.Width/2.f)) {
             ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-            ImGui::SetActiveID(simId, ImGui::GetCurrentWindowRead());
-            ImGui::SetHoveredID(simId);
+            ImGui::SetHoveredID(ImGui::GetCurrentWindowRead()->ID);
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                ImGui::SetActiveID(simId, ImGui::GetCurrentWindowRead());
                 startDragP1 = state.P2;
                 dragging = &state.P2;
+                isDraggingSim = true;
             }
         }
         else if (barCenterDistance <= (state.Width / 2.f)) {
             ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
-            ImGui::SetActiveID(simId, ImGui::GetCurrentWindowRead());
-            ImGui::SetHoveredID(simId);
+            ImGui::SetHoveredID(ImGui::GetCurrentWindowRead()->ID);
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                ImGui::SetActiveID(simId, ImGui::GetCurrentWindowRead());
                 startDragP1 = state.P1;
                 startDragP2 = state.P2;
                 IsMovingSimulator = true;
+                isDraggingSim = true;
             }
+        }
+        
+        if(!isDraggingSim && ImGui::GetActiveID() == simId)
+        {
+            ImGui::ClearActiveID();
         }
 
         if (dragging != nullptr) {
