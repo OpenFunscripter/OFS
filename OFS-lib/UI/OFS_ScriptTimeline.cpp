@@ -232,12 +232,13 @@ void ScriptTimeline::ShowScriptPositions(
 	OFS_PROFILE(__FUNCTION__);
 
 	auto& style = ImGui::GetStyle();
-	OverlayDrawingCtx drawingCtx;
+	OverlayDrawingCtx drawingCtx = {0};
 	drawingCtx.offsetTime = player->CurrentTime() - (visibleTime / 2.0);
 	drawingCtx.activeScriptIdx = activeScriptIdx;
 	drawingCtx.visibleTime = visibleTime;
 	drawingCtx.totalDuration = player->Duration();
 	drawingCtx.scripts = &scripts;
+	drawingCtx.hoveredScriptIdx = -1;
 	
 	if (drawingCtx.totalDuration == 0.f) return;
 

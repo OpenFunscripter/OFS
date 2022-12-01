@@ -13,7 +13,7 @@
 inline static float Distance(const ImVec2& p1, const ImVec2& p2) noexcept
 {
     ImVec2 diff = p1 - p2;
-    return std::sqrt(diff.x * diff.x + diff.y * diff.y);
+    return SDL_sqrtf(diff.x * diff.x + diff.y * diff.y);
 }
 
 inline static ImVec2 Normalize(const ImVec2& p) noexcept
@@ -132,12 +132,10 @@ void ScriptSimulator::ShowSimulator(bool* open, std::shared_ptr<Funscript>& acti
     ImGui::Begin(TR_ID(WindowId, Tr::SIMULATOR), open, ImGuiWindowFlags_None);
     char tmp[4];
     auto frontDraw = ImGui::GetForegroundDrawList();
-    ImGuiContext* g = ImGui::GetCurrentContext();
-    ImGuiWindow* window = ImGui::GetCurrentWindow();
     ImVec2 canvasPos = ImGui::GetCursorScreenPos();
     ImVec2 canvasSize = ImGui::GetContentRegionAvail();
+
     auto& style = ImGui::GetStyle();
-    
     auto& state = SimulatorState::State(stateHandle);
 
     ImGui::Checkbox(FMT("%s %s", TR(LOCK), state.LockedPosition ? ICON_LINK : ICON_UNLINK), &state.LockedPosition);
@@ -215,7 +213,8 @@ void ScriptSimulator::ShowSimulator(bool* open, std::shared_ptr<Funscript>& acti
         return;
     }
 
-    auto offset = window->ViewportPos; 
+    auto simId = ImGui::GetID("ActualSimulator");
+    auto offset = ImGui::GetWindowViewport()->Pos; 
     
     ImVec2 direction = state.P1 - state.P2;
     direction = Normalize(direction);
@@ -416,9 +415,8 @@ void ScriptSimulator::ShowSimulator(bool* open, std::shared_ptr<Funscript>& acti
 
         if (p1Distance <= (state.Width / 2.f)) {
             ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-            // FIXME
-            //g->HoveredWindow = window;
-            //g->HoveredDockNode = window->DockNode;
+            ImGui::SetActiveID(simId, ImGui::GetCurrentWindowRead());
+            ImGui::SetHoveredID(simId);
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                 startDragP1 = state.P1;
                 dragging = &state.P1;
@@ -426,9 +424,8 @@ void ScriptSimulator::ShowSimulator(bool* open, std::shared_ptr<Funscript>& acti
         }
         else if (p2Distance <= (state.Width/2.f)) {
             ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-            // FIXME
-            //g->HoveredWindow = window;
-            //g->HoveredDockNode = window->DockNode;
+            ImGui::SetActiveID(simId, ImGui::GetCurrentWindowRead());
+            ImGui::SetHoveredID(simId);
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                 startDragP1 = state.P2;
                 dragging = &state.P2;
@@ -436,9 +433,8 @@ void ScriptSimulator::ShowSimulator(bool* open, std::shared_ptr<Funscript>& acti
         }
         else if (barCenterDistance <= (state.Width / 2.f)) {
             ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
-            // FIXME
-            //g->HoveredWindow = window;
-            //g->HoveredDockNode = window->DockNode;
+            ImGui::SetActiveID(simId, ImGui::GetCurrentWindowRead());
+            ImGui::SetHoveredID(simId);
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                 startDragP1 = state.P1;
                 startDragP2 = state.P2;
