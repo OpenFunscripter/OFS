@@ -152,14 +152,12 @@ FunscriptHeatmap::FunscriptHeatmap() noexcept
 void FunscriptHeatmap::Update(float totalDuration, const FunscriptArray& actions) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    auto startTime = std::chrono::high_resolution_clock::now();    
     std::vector<float> speedBuffer; 
     speedBuffer.resize(SpeedTextureResolution, 0.f);
     std::vector<uint16_t> sampleCountBuffer;
     sampleCountBuffer.resize(SpeedTextureResolution, 0);
 
     float timeStep = totalDuration / SpeedTextureResolution;
-
 
     for(uint32_t i = 0, j = 1, size = actions.size(); j < size; i = j++)
     {
@@ -181,16 +179,13 @@ void FunscriptHeatmap::Update(float totalDuration, const FunscriptArray& actions
         }
         else
         {
-            if(prevSampleIdx < SpeedTextureResolution)
+            if(prevSampleIdx < SpeedTextureResolution && nextSampleIdx < SpeedTextureResolution)
             {
-                sampleCountBuffer[prevSampleIdx] += 1;
-                speedBuffer[prevSampleIdx] += speed;
-            }
-
-            if(nextSampleIdx < SpeedTextureResolution)
-            {
-                sampleCountBuffer[nextSampleIdx] += 1;
-                speedBuffer[nextSampleIdx] += speed;
+                for(int x = prevSampleIdx; x < nextSampleIdx; x += 1)
+                {
+                    sampleCountBuffer[x] += 1;
+                    speedBuffer[x] += speed;
+                }
             }
         }
     }
@@ -205,9 +200,6 @@ void FunscriptHeatmap::Update(float totalDuration, const FunscriptArray& actions
     glBindTexture(GL_TEXTURE_2D, speedTexture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, SpeedTextureResolution, 1, 0, GL_RED, GL_FLOAT, speedBuffer.data());
     glBindTexture(GL_TEXTURE_2D, 0);
-    auto endTime = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<float> duration = endTime - startTime;
-    LOGF_INFO("Heatmap update took: %f", duration.count());
 }
 
 void FunscriptHeatmap::DrawHeatmap(ImDrawList* drawList, const ImVec2& min, const ImVec2& max) noexcept

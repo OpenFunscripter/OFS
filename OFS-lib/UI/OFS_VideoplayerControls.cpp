@@ -40,8 +40,8 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
     if(ImGui::GetCurrentWindowRead()->SkipItems)
         return false;
 
-    const ImGuiStyle& style = ImGui::GetStyle();
-    const ImGuiID id = ImGui::GetID(label);
+    const auto& style = ImGui::GetStyle();
+    const auto id = ImGui::GetID(label);
     const float w = ImGui::GetContentRegionAvail().x;
     const float h = ImGui::GetFontSize() * 1.5f;
 
@@ -70,24 +70,23 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
     // position highlighX
     ImVec2 p1(currentPosX, frameBB.Min.y);
     ImVec2 p2(currentPosX, frameBB.Max.y);
-    constexpr float timeline_pos_cursor_w = 4.f;
-    drawList->AddLine(p1 + ImVec2(0.f, h / 3.f), p2 + ImVec2(0.f, h / 3.f), IM_COL32(255, 0, 0, 255), timeline_pos_cursor_w / 2.f);
+    constexpr float timelinePosCursorW = 2.f;
+    drawList->AddLine(p1 + ImVec2(0.f, h / 3.f), p2 + ImVec2(0.f, h / 3.f), IM_COL32(255, 0, 0, 255), timelinePosCursorW / 2.f);
 
-    // gradient + shadow
     Heatmap->DrawHeatmap(drawList, frameBB.Min, frameBB.Max);
 
-    const ImColor timeline_cursor_back = IM_COL32(255, 255, 255, 255);
-    const ImColor timeline_cursor_front = IM_COL32(0, 0, 0, 255);
+    const uint32_t timelineCursorBackColor = IM_COL32(255, 255, 255, 255);
+    const uint32_t timelineCursorFrontColor = IM_COL32(0, 0, 0, 255);
     auto mouse = ImGui::GetMousePos();
     float relTimelinePos = ((mouse.x - frameBB.Min.x) / frameBB.GetWidth());
 
     if (item_hovered) {
         drawList->AddLine(ImVec2(mouse.x, frameBB.Min.y),
             ImVec2(mouse.x, frameBB.Max.y),
-            timeline_cursor_back, timeline_pos_cursor_w);
+            timelineCursorBackColor, timelinePosCursorW);
         drawList->AddLine(ImVec2(mouse.x, frameBB.Min.y),
             ImVec2(mouse.x, frameBB.Max.y),
-            timeline_cursor_front, timeline_pos_cursor_w / 2.f);
+            timelineCursorFrontColor, timelinePosCursorW / 2.f);
 
         ImGui::BeginTooltipEx(ImGuiWindowFlags_None, ImGuiTooltipFlags_None);
         {
@@ -138,8 +137,8 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
         dragging = false;
     }
 
-    drawList->AddLine(p1, p2, timeline_cursor_back, timeline_pos_cursor_w);
-    drawList->AddLine(p1, p2, timeline_cursor_front, timeline_pos_cursor_w / 2.f);
+    drawList->AddLine(p1, p2, timelineCursorBackColor, timelinePosCursorW);
+    drawList->AddLine(p1, p2, timelineCursorFrontColor, timelinePosCursorW / 2.f);
 
     constexpr float min_val = 0.f;
     constexpr float max_val = 1.f;
