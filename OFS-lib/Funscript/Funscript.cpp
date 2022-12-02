@@ -677,6 +677,11 @@ void Funscript::InvertSelection() noexcept
 void Funscript::UpdateRelativePath(const std::string& path) noexcept
 {
 	currentPathRelative = path;
+
+	if(!title.empty())
+	{
+		EV::Enqueue<FunscriptNameChangedEvent>(this, title);
+	}
 	title = Util::PathFromString(currentPathRelative)
 		.replace_extension("")
 		.filename()

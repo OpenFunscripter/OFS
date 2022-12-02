@@ -38,6 +38,23 @@ class FunscriptSelectionChangedEvent : public OFS_Event<FunscriptSelectionChange
 		: Script(changedScript) {}
 };
 
+class FunscriptNameChangedEvent : public OFS_Event<FunscriptNameChangedEvent>
+{
+	public:
+	// FIXME: get rid of this raw pointer
+	const Funscript* Script = nullptr;
+	std::string oldName;
+	FunscriptNameChangedEvent(const Funscript* changedScript, const std::string& oldName) noexcept
+		: Script(changedScript), oldName(oldName) {}
+};
+
+class FunscriptRemovedEvent : public OFS_Event<FunscriptRemovedEvent>
+{
+	public:
+	std::string name;
+	FunscriptRemovedEvent(const std::string& name) noexcept
+		: name(name) {}
+};
 
 class Funscript
 {

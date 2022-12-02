@@ -8,7 +8,6 @@
 #include "nlohmann/json.hpp"
 
 #include "civetweb.h"
-
 #include "OpenFunscripter.h"
 
 OFS_WebsocketClient::OFS_WebsocketClient() noexcept
@@ -68,6 +67,14 @@ OFS_WebsocketClient::OFS_WebsocketClient() noexcept
         EV::MakeUnsubscibeFn(WsProjectChange::EventType, 
             EV::Queue().appendListener(WsProjectChange::EventType, WsProjectChange::HandleEvent(
                 EVENT_SYSTEM_BIND(this, &OFS_WebsocketClient::handleProjectChange)
+            ))
+        )
+    );
+
+    eventUnsubs.emplace_back(
+        EV::MakeUnsubscibeFn(WsFunscriptRemove::EventType, 
+            EV::Queue().appendListener(WsFunscriptRemove::EventType, WsFunscriptRemove::HandleEvent(
+                EVENT_SYSTEM_BIND(this, &OFS_WebsocketClient::handleFunscriptRemove)
             ))
         )
     );
@@ -140,12 +147,15 @@ void OFS_WebsocketClient::handlePlaybackSpeedChange(const WsPlaybackSpeedChange*
 void OFS_WebsocketClient::handleFunscriptChange(const WsFunscriptChange* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    nlohmann::json json = { 
-        {"type", "event"},
-        {"ev", "funscript_change"},
-        {"name", ev->changedScript->Title()},
-        {"funscript", ev->changedScript->Serialize(true)}
-    };
+    nlohmann::json json = *ev;
+    auto jsonText = Util::SerializeJson(json);
+    sendMessage(jsonText);
+}
+
+void OFS_WebsocketClient::handleFunscriptRemove(const WsFunscriptRemove* ev) noexcept
+{
+    OFS_PROFILE(__FUNCTION__);
+    nlohmann::json json = *ev;
     auto jsonText = Util::SerializeJson(json);
     sendMessage(jsonText);
 }

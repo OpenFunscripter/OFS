@@ -194,6 +194,28 @@ OFS_WebsocketApi::OFS_WebsocketApi() noexcept
 		}
 	));
 
+	EV::Queue().appendListener(FunscriptNameChangedEvent::EventType, FunscriptNameChangedEvent::HandleEvent(
+		[this](const FunscriptNameChangedEvent* ev) noexcept
+		{
+			if(ClientsConnected() > 0)
+			{
+				// Funscript name changes are handled as the old name being removed and the new one added
+				EV::Queue().directDispatch(WsFunscriptRemove::EventType, EV::Make<WsFunscriptRemove>(ev->oldName));
+				EV::Queue().directDispatch(WsFunscriptChange::EventType, EV::Make<WsFunscriptChange>(ev->Script));
+			}
+		}
+	));
+
+	EV::Queue().appendListener(FunscriptRemovedEvent::EventType, FunscriptRemovedEvent::HandleEvent(
+		[this](const FunscriptRemovedEvent* ev) noexcept
+		{
+			if(ClientsConnected() > 0)
+			{
+				EV::Queue().directDispatch(WsFunscriptRemove::EventType, EV::Make<WsFunscriptRemove>(ev->name));
+			}
+		}
+	));
+
 	EV::Queue().appendListener(FunscriptActionsChangedEvent::EventType, FunscriptActionsChangedEvent::HandleEvent(
 		[this](const FunscriptActionsChangedEvent* ev) noexcept
 		{

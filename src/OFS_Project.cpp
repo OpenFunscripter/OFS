@@ -3,6 +3,7 @@
 #include "OFS_ImGui.h"
 #include "OFS_DynamicFontAtlas.h"
 #include "OFS_BlockingTask.h"
+#include "OFS_EventSystem.h"
 
 #include "subprocess.h"
 
@@ -228,6 +229,7 @@ bool OFS_Project::AddFunscript(const std::string& path) noexcept
 void OFS_Project::RemoveFunscript(int32_t idx) noexcept
 {
     if (idx >= 0 && idx < Funscripts.size()) {
+        EV::Enqueue<FunscriptRemovedEvent>(Funscripts[idx]->Title());
         Funscripts.erase(Funscripts.begin() + idx);
     }
 }

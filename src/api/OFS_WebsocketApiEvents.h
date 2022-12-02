@@ -64,9 +64,19 @@ class WsProjectChange : public OFS_Event<WsProjectChange>
     WsProjectChange() noexcept {}
 };
 
+class WsFunscriptRemove : public OFS_Event<WsFunscriptRemove>
+{
+    public:
+    std::string name;
+    WsFunscriptRemove(const std::string& name) noexcept
+        : name(name) {}
+};
+
 void to_json(nlohmann::json& j, const WsProjectChange& p);
 void to_json(nlohmann::json& j, const WsPlayChange& p);
 void to_json(nlohmann::json& j, const WsTimeChange& p);
 void to_json(nlohmann::json& j, const WsDurationChange& p);
 void to_json(nlohmann::json& j, const WsMediaChange& p);
 void to_json(nlohmann::json& j, const WsPlaybackSpeedChange& p);
+void to_json(nlohmann::json& j, const WsFunscriptChange& p);
+void to_json(nlohmann::json& j, const WsFunscriptRemove& p);
