@@ -41,7 +41,7 @@ struct OFS_LogThread {
     }
 };
 
-OFS_LogThread Thread;
+static OFS_LogThread Thread;
 
 static int LogThreadFunction(void* threadData) noexcept
 {

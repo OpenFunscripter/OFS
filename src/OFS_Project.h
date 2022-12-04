@@ -8,9 +8,8 @@
 #include <cstdint>
 #include <string>
 
-class ProjectLoadedEvent : public OFS_Event<ProjectLoadedEvent>
-{
-    public:
+class ProjectLoadedEvent: public OFS_Event<ProjectLoadedEvent> {
+public:
     ProjectLoadedEvent() noexcept {}
 };
 

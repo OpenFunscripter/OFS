@@ -34,16 +34,16 @@ Funscript::~Funscript() noexcept
 {
 }
 
-void Funscript::loadMetadata(const nlohmann::json& metadataObj) noexcept
+void Funscript::loadMetadata(const nlohmann::json& metadataObj, Funscript::Metadata& outMetadata) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	OFS::Serializer<false>::Deserialize(LocalMetadata, metadataObj);
+	OFS::Serializer<false>::Deserialize(outMetadata, metadataObj);
 }
 
-void Funscript::saveMetadata(nlohmann::json& outMetadataObj) const noexcept
+void Funscript::saveMetadata(nlohmann::json& outMetadataObj, const Funscript::Metadata& inMetadata) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
-	OFS::Serializer<false>::Serialize(LocalMetadata, outMetadataObj);
+	OFS::Serializer<false>::Serialize(inMetadata, outMetadataObj);
 }
 
 void Funscript::notifyActionsChanged(bool isEdit) noexcept
@@ -688,7 +688,7 @@ void Funscript::UpdateRelativePath(const std::string& path) noexcept
 		.u8string();
 }
 
-bool Funscript::Deserialize(const nlohmann::json& json) noexcept
+bool Funscript::Deserialize(const nlohmann::json& json, Funscript::Metadata* outMetadata) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 
@@ -709,40 +709,39 @@ bool Funscript::Deserialize(const nlohmann::json& json) noexcept
 		}
 	}
 
-	if(json.contains("metadata"))
+	if(outMetadata)
 	{
-		loadMetadata(json["metadata"]);
-	}
-	else
-	{
-		LocalMetadata = Funscript::Metadata();
+		if(json.contains("metadata"))
+		{
+			loadMetadata(json["metadata"], *outMetadata);
+		}
+		else
+		{
+			*outMetadata = Funscript::Metadata();
+		}
 	}
 
 	notifyActionsChanged(false);
 	return true;
 }
 
-nlohmann::json Funscript::Serialize(bool noMetadata) const noexcept
+void Funscript::Serialize(nlohmann::json& json, const FunscriptData& funscriptData, const Funscript::Metadata& metadata) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
+	json = nlohmann::json::object();
+	json["actions"] = nlohmann::json::array();
+	json["metadata"] = nlohmann::json::object();
+	json["version"] = "1.0";
+	json["inverted"] = false;
+	json["range"] = 100;
 
-	nlohmann::json jsonFunscript;
-	jsonFunscript["actions"] = nlohmann::json::array();
-	jsonFunscript["metadata"] = nlohmann::json::object();
-	jsonFunscript["version"] = "1.0";
-	jsonFunscript["inverted"] = false;
-	jsonFunscript["range"] = 100;
+	OFS::Serializer<false>::Serialize(metadata, json["metadata"]);
 
-	if(!noMetadata)
-	{
-		saveMetadata(jsonFunscript["metadata"]);
-	}
-
-	auto& jsonActions = jsonFunscript["actions"];
+	auto& jsonActions = json["actions"];
 	jsonActions.clear();
 
 	int64_t lastTimestamp = -1;
-	for (auto action : data.Actions) {
+	for (auto action : funscriptData.Actions) {
 		// a little validation just in case
 		if (action.atS < 0.f)
 			continue;
@@ -762,6 +761,4 @@ nlohmann::json Funscript::Serialize(bool noMetadata) const noexcept
 			LOG_WARN("Action was ignored since it had the same millisecond timestamp as the previous one.");
 		}
 	}
-
-	return jsonFunscript;
 }

@@ -13,52 +13,11 @@
 OFS_WebsocketClient::OFS_WebsocketClient() noexcept
 {
     LOG_DEBUG("Created new websocket client.");
-    // FIXME: this is a lot of ugly code just to be able to unsubscribe from events
     std::vector<UnsubscribeFn> eventUnsubs;
     eventUnsubs.emplace_back(
-        EV::MakeUnsubscibeFn(WsPlayChange::EventType, 
-            EV::Queue().appendListener(WsPlayChange::EventType, WsPlayChange::HandleEvent(
-                EVENT_SYSTEM_BIND(this, &OFS_WebsocketClient::handlePlayChange)
-            ))
-        )
-    );
-
-    eventUnsubs.emplace_back(
-        EV::MakeUnsubscibeFn(WsTimeChange::EventType, 
-            EV::Queue().appendListener(WsTimeChange::EventType, WsTimeChange::HandleEvent(
-                EVENT_SYSTEM_BIND(this, &OFS_WebsocketClient::handleTimeChange)
-            ))
-        )
-    );
-
-    eventUnsubs.emplace_back(
-        EV::MakeUnsubscibeFn(WsDurationChange::EventType, 
-            EV::Queue().appendListener(WsDurationChange::EventType, WsDurationChange::HandleEvent(
-                EVENT_SYSTEM_BIND(this, &OFS_WebsocketClient::handleDurationChange)
-            ))
-        )
-    );
-
-    eventUnsubs.emplace_back(
-        EV::MakeUnsubscibeFn(WsMediaChange::EventType, 
-            EV::Queue().appendListener(WsMediaChange::EventType, WsMediaChange::HandleEvent(
-                EVENT_SYSTEM_BIND(this, &OFS_WebsocketClient::handleMediaChange)
-            ))
-        )
-    );
-
-    eventUnsubs.emplace_back(
-        EV::MakeUnsubscibeFn(WsPlaybackSpeedChange::EventType, 
-            EV::Queue().appendListener(WsPlaybackSpeedChange::EventType, WsPlaybackSpeedChange::HandleEvent(
-                EVENT_SYSTEM_BIND(this, &OFS_WebsocketClient::handlePlaybackSpeedChange)
-            ))
-        )
-    );
-
-    eventUnsubs.emplace_back(
-        EV::MakeUnsubscibeFn(WsFunscriptChange::EventType, 
-            EV::Queue().appendListener(WsFunscriptChange::EventType, WsFunscriptChange::HandleEvent(
-                EVENT_SYSTEM_BIND(this, &OFS_WebsocketClient::handleFunscriptChange)
+        EV::MakeUnsubscibeFn(WsSerializedEvent::EventType, 
+            EV::Queue().appendListener(WsSerializedEvent::EventType, WsSerializedEvent::HandleEvent(
+                EVENT_SYSTEM_BIND(this, &OFS_WebsocketClient::handleSerializedEvent)
             ))
         )
     );
@@ -67,14 +26,6 @@ OFS_WebsocketClient::OFS_WebsocketClient() noexcept
         EV::MakeUnsubscibeFn(WsProjectChange::EventType, 
             EV::Queue().appendListener(WsProjectChange::EventType, WsProjectChange::HandleEvent(
                 EVENT_SYSTEM_BIND(this, &OFS_WebsocketClient::handleProjectChange)
-            ))
-        )
-    );
-
-    eventUnsubs.emplace_back(
-        EV::MakeUnsubscibeFn(WsFunscriptRemove::EventType, 
-            EV::Queue().appendListener(WsFunscriptRemove::EventType, WsFunscriptRemove::HandleEvent(
-                EVENT_SYSTEM_BIND(this, &OFS_WebsocketClient::handleFunscriptRemove)
             ))
         )
     );
@@ -103,65 +54,16 @@ void OFS_WebsocketClient::sendMessage(const std::string& msg) noexcept
     }
 }
 
-void OFS_WebsocketClient::handlePlayChange(const WsPlayChange* ev) noexcept
+void OFS_WebsocketClient::handleSerializedEvent(const WsSerializedEvent* ev) noexcept
 {
+    // NOTE: this is not called by the main thread
     OFS_PROFILE(__FUNCTION__);
-    nlohmann::json json = *ev;
-    auto jsonText = Util::SerializeJson(json);
-    sendMessage(jsonText);
-}
-
-void OFS_WebsocketClient::handleTimeChange(const WsTimeChange* ev) noexcept
-{
-    OFS_PROFILE(__FUNCTION__);
-    // PERFORMANCE: This could be replaced by a simple format string.
-    nlohmann::json json = *ev;
-    auto jsonText = Util::SerializeJson(json);
-    sendMessage(jsonText);
-}
-
-void OFS_WebsocketClient::handleDurationChange(const WsDurationChange* ev) noexcept
-{
-    OFS_PROFILE(__FUNCTION__);
-    nlohmann::json json = *ev;
-    auto jsonText = Util::SerializeJson(json);
-    sendMessage(jsonText);
-}
-
-void OFS_WebsocketClient::handleMediaChange(const WsMediaChange* ev) noexcept
-{
-    OFS_PROFILE(__FUNCTION__);
-    nlohmann::json json = *ev;
-    auto jsonText = Util::SerializeJson(json);
-    sendMessage(jsonText);
-}
-
-void OFS_WebsocketClient::handlePlaybackSpeedChange(const WsPlaybackSpeedChange* ev) noexcept
-{
-    OFS_PROFILE(__FUNCTION__);
-    nlohmann::json json = *ev;
-    auto jsonText = Util::SerializeJson(json);
-    sendMessage(jsonText);
-}
-
-void OFS_WebsocketClient::handleFunscriptChange(const WsFunscriptChange* ev) noexcept
-{
-    OFS_PROFILE(__FUNCTION__);
-    nlohmann::json json = *ev;
-    auto jsonText = Util::SerializeJson(json);
-    sendMessage(jsonText);
-}
-
-void OFS_WebsocketClient::handleFunscriptRemove(const WsFunscriptRemove* ev) noexcept
-{
-    OFS_PROFILE(__FUNCTION__);
-    nlohmann::json json = *ev;
-    auto jsonText = Util::SerializeJson(json);
-    sendMessage(jsonText);
+    sendMessage(ev->serializedEvent);
 }
 
 void OFS_WebsocketClient::handleProjectChange(const WsProjectChange* ev) noexcept
 {
+    // NOTE: this is called by the main thread
     UpdateAll();
 }
 
@@ -169,26 +71,25 @@ void OFS_WebsocketClient::UpdateAll() noexcept
 {
     // Update everything
     auto app = OpenFunscripter::ptr;
+
+    auto serializeSend = [this](auto&& event) noexcept
     {
-        nlohmann::json json = WsProjectChange();
+        nlohmann::json json = event;
         auto jsonText = Util::SerializeJson(json);
         sendMessage(jsonText);
-    }
-    WsMediaChange media(app->player->VideoPath());
-    handleMediaChange(&media);
-    WsPlaybackSpeedChange speed(app->player->CurrentSpeed());
-    handlePlaybackSpeedChange(&speed);
-    WsPlayChange playing(!app->player->IsPaused());
-    handlePlayChange(&playing);
-    WsDurationChange duration(app->player->Duration());
-    handleDurationChange(&duration);
-    WsTimeChange time(app->player->CurrentPlayerTime());
-    handleTimeChange(&time);
+    };
 
+    serializeSend(std::move(WsProjectChange()));
+    serializeSend(std::move(WsMediaChange(app->player->VideoPath())));
+    serializeSend(std::move(WsPlaybackSpeedChange(app->player->CurrentSpeed())));
+    serializeSend(std::move(WsPlayChange(!app->player->IsPaused())));
+    serializeSend(std::move(WsDurationChange(app->player->Duration())));
+    serializeSend(std::move(WsTimeChange(app->player->CurrentPlayerTime())));
+
+    auto& projectState = app->LoadedProject->State();
     for(auto& script : app->LoadedFunscripts())
     {
-        WsFunscriptChange scriptChange(script.get());
-        handleFunscriptChange(&scriptChange);
+        serializeSend(std::move(WsFunscriptChange(script->Title(), script->Data(), projectState.metadata)));
     }
 }
 
@@ -204,6 +105,7 @@ void OFS_WebsocketClient::InitializeConnection(mg_connection* conn) noexcept
 
 void OFS_WebsocketClient::ReceiveText(char* data, size_t dataLen) noexcept
 {
+    // NOTE: Assume this function isn't called on the main thread.
     bool succ;
     std::string_view dataView(data, dataLen);
     auto json = nlohmann::json::parse(dataView, nullptr, false, true);

@@ -13,6 +13,7 @@
 #include "imgui.h"
 #include "imgui_stdlib.h"
 
+#include "SDL_thread.h"
 #include "SDL_atomic.h"
 
 struct CivetwebContext
@@ -61,8 +62,7 @@ static void ws_ready_handler(struct mg_connection *conn, void *user_data) noexce
 	auto clientCtx = (OFS_WebsocketClient*)mg_get_user_connection_data(conn);
 	clientCtx->InitializeConnection(conn);
 
-	const struct mg_request_info *ri = mg_get_request_info(conn);
-	(void)ri;
+	// const struct mg_request_info *ri = mg_get_request_info(conn);
 
 	/* DEBUG: New client ready to receive data. */
 	LOG_INFO("Client ready to receive data\n");
@@ -80,10 +80,8 @@ static int ws_data_handler(struct mg_connection *conn,
 
 	/* Get websocket client context information. */
 	auto clientCtx = (OFS_WebsocketClient*)mg_get_user_connection_data(conn);
-	const struct mg_request_info *ri = mg_get_request_info(conn);
-	(void)ri; /* in this example, we do not need the request_info */
+	// const struct mg_request_info *ri = mg_get_request_info(conn);
 
-	/* DEBUG: Print data received from client. */
 	const char *messageType = "";
 	switch (opcode & 0xf) {
 	case MG_WEBSOCKET_OPCODE_TEXT:
@@ -106,7 +104,6 @@ static int ws_data_handler(struct mg_connection *conn,
 	LOGF_DEBUG("Websocket received %lu bytes of %s data from client\n",
 	       (unsigned long)datasize,
 	       messageType);
-
 	return 1;
 }
 
@@ -125,17 +122,49 @@ static void ws_close_handler(const struct mg_connection *conn, void *ctx) noexce
     delete clientCtx;
 }
 
+static int EventSerializationThread(void* user) noexcept
+{
+	auto ctx = static_cast<EventSerializationContext*>(user);
+	auto waitMut = SDL_CreateMutex();
+	SDL_LockMutex(waitMut);
+	while(!ctx->shouldExit)
+	{
+		if(SDL_CondWait(ctx->processCond, waitMut) == 0)
+		{
+			SDL_AtomicLock(&ctx->eventLock);
+			for(auto& ev : ctx->events)
+			{
+				auto toJson = dynamic_cast<ToJsonInterface*>(ev.get());
+				nlohmann::json json;
+				toJson->Serialize(json);
+				auto jsonText = Util::SerializeJson(json);
+				EV::Queue().directDispatch(WsSerializedEvent::EventType, 
+					std::move(EV::Make<WsSerializedEvent>(std::move(jsonText))));
+			}
+			ctx->events.clear();
+			SDL_AtomicUnlock(&ctx->eventLock);
+		}
+	}
+	SDL_DestroyMutex(waitMut);
+	ctx->hasExited = true;
+	return 0;
+}
+
 OFS_WebsocketApi::OFS_WebsocketApi() noexcept
 {
 	stateHandle = OFS_AppState<WebsocketApiState>::Register(WebsocketApiState::StateName);
+	eventSerializationCtx = std::make_unique<EventSerializationContext>();
+
+	auto serializationThread = SDL_CreateThread(
+		EventSerializationThread, "WebsocketEventSerialization", eventSerializationCtx.get());
+	SDL_DetachThread(serializationThread);
 
 	EV::Queue().appendListener(VideoLoadedEvent::EventType, VideoLoadedEvent::HandleEvent(
 		[this](const VideoLoadedEvent* ev) noexcept
 		{
 			if(ClientsConnected() > 0 && ev->playerType == VideoplayerType::Main)
 			{
-				EV::Queue().directDispatch(WsMediaChange::EventType,
-					EV::Make<WsMediaChange>(ev->videoPath));
+				eventSerializationCtx->Push<WsMediaChange>(ev->videoPath);
 			}
 		}
 	));
@@ -145,8 +174,7 @@ OFS_WebsocketApi::OFS_WebsocketApi() noexcept
 		{
 			if(ClientsConnected() > 0 && ev->playerType == VideoplayerType::Main)
 			{
-				EV::Queue().directDispatch(WsDurationChange::EventType,
-					EV::Make<WsDurationChange>(ev->duration));
+				eventSerializationCtx->Push<WsDurationChange>(ev->duration);
 			}
 		}
 	));
@@ -156,8 +184,7 @@ OFS_WebsocketApi::OFS_WebsocketApi() noexcept
 		{
 			if(ClientsConnected() > 0 && ev->playerType == VideoplayerType::Main)
 			{
-				EV::Queue().directDispatch(WsPlaybackSpeedChange::EventType,
-					EV::Make<WsPlaybackSpeedChange>(ev->playbackSpeed));
+				eventSerializationCtx->Push<WsPlaybackSpeedChange>(ev->playbackSpeed);
 			}
 		}
 	));
@@ -167,8 +194,7 @@ OFS_WebsocketApi::OFS_WebsocketApi() noexcept
 		{
 			if(ClientsConnected() > 0 && ev->playerType == VideoplayerType::Main)
 			{
-				EV::Queue().directDispatch(WsPlayChange::EventType,
-					EV::Make<WsPlayChange>(!ev->paused));
+				eventSerializationCtx->Push<WsPlayChange>(!ev->paused);
 			}
 		}
 	));
@@ -178,8 +204,7 @@ OFS_WebsocketApi::OFS_WebsocketApi() noexcept
 		{
 			if(ClientsConnected() > 0 && ev->playerType == VideoplayerType::Main)
 			{
-				EV::Queue().directDispatch(WsTimeChange::EventType,
-					EV::Make<WsTimeChange>(ev->time));
+				eventSerializationCtx->Push<WsTimeChange>(ev->time);
 			}
 		}
 	));
@@ -189,6 +214,8 @@ OFS_WebsocketApi::OFS_WebsocketApi() noexcept
 		{
 			if(ClientsConnected() > 0) 
 			{
+				// WsProjectChange remains handled by each internal client 
+				// this makes this event really expensive depending on the number of connected clients
 				EV::Queue().directDispatch(WsProjectChange::EventType, EV::Make<WsProjectChange>());
 			}
 		}
@@ -200,8 +227,10 @@ OFS_WebsocketApi::OFS_WebsocketApi() noexcept
 			if(ClientsConnected() > 0)
 			{
 				// Funscript name changes are handled as the old name being removed and the new one added
-				EV::Queue().directDispatch(WsFunscriptRemove::EventType, EV::Make<WsFunscriptRemove>(ev->oldName));
-				EV::Queue().directDispatch(WsFunscriptChange::EventType, EV::Make<WsFunscriptChange>(ev->Script));
+				auto app = OpenFunscripter::ptr;
+				auto& projectState = app->LoadedProject->State();
+				eventSerializationCtx->Push<WsFunscriptRemove>(ev->oldName);
+				eventSerializationCtx->Push<WsFunscriptChange>(ev->Script->Title(), ev->Script->Data(), projectState.metadata);
 			}
 		}
 	));
@@ -211,7 +240,7 @@ OFS_WebsocketApi::OFS_WebsocketApi() noexcept
 		{
 			if(ClientsConnected() > 0)
 			{
-				EV::Queue().directDispatch(WsFunscriptRemove::EventType, EV::Make<WsFunscriptRemove>(ev->name));
+				eventSerializationCtx->Push<WsFunscriptRemove>(ev->name);
 			}
 		}
 	));
@@ -303,7 +332,8 @@ void OFS_WebsocketApi::StopServer() noexcept
 void OFS_WebsocketApi::Update() noexcept
 {
 	if(ClientsConnected() <= 0) return;
-	
+
+
 	for(int i=0, size=scriptUpdateCooldown.size(); i < size; i += 1)
 	{
 		auto& cd = scriptUpdateCooldown[i];
@@ -313,17 +343,23 @@ void OFS_WebsocketApi::Update() noexcept
 			auto app = OpenFunscripter::ptr;
 			if(i >= 0 && i < app->LoadedFunscripts().size())
 			{
-				auto script = app->LoadedFunscripts()[i].get();
-				EV::Queue().directDispatch(WsFunscriptChange::EventType,
-					EV::Make<WsFunscriptChange>(script));
+				auto& projectState = app->LoadedProject->State();
+				auto& script = app->LoadedFunscripts()[i];
+				eventSerializationCtx->Push<WsFunscriptChange>(script->Title(), script->Data(), projectState.metadata);
 			}
 			cd = 0;
 		}
+	}
+
+	if(!eventSerializationCtx->EventsEmpty())
+	{
+		eventSerializationCtx->StartProcessing();
 	}
 }
 
 void OFS_WebsocketApi::Shutdown() noexcept
 {
+	eventSerializationCtx->Shutdown();
 	StopServer();
     mg_exit_library();
     delete CTX;

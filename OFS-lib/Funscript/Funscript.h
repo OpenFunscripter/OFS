@@ -79,8 +79,6 @@ public:
 		std::string notes;
 		int64_t duration = 0;
 	};
-	// this is used when loading from json or serializing to json
-	Funscript::Metadata LocalMetadata;
 
 	template<typename S>
 	void serialize(S& s)
@@ -90,19 +88,7 @@ public:
 				s.container(o.data.Actions, std::numeric_limits<uint32_t>::max());
 				s.text1b(o.currentPathRelative, o.currentPathRelative.max_size());
 				s.text1b(o.title, o.title.max_size());
-
-				// this code can be deleted after a couple releases
-				// it just makes sure "Enabled" doesn't get 0 initialized
-				// when the project is from an older OFS version
-				if constexpr (std::is_same<S, ContextDeserializer>::value) {
-					auto& a = s.adapter();
-					if (a.currentReadEndPos() != a.currentReadPos()) {
-						s.boolValue(o.Enabled);
-					}
-				}
-				else {
-					s.boolValue(o.Enabled);
-				}
+				s.boolValue(o.Enabled);
 			});
 	}
 
@@ -191,8 +177,8 @@ private:
 	inline void addAction(FunscriptArray& actions, FunscriptAction newAction) noexcept { actions.emplace(newAction); notifyActionsChanged(true); }
 	inline void notifySelectionChanged() noexcept { selectionChanged = true; }
 
-	void loadMetadata(const nlohmann::json& metadataObj) noexcept;
-	void saveMetadata(nlohmann::json& outMetadataObj) const noexcept;
+	static void loadMetadata(const nlohmann::json& metadataObj, Funscript::Metadata& outMetadata) noexcept;
+	static void saveMetadata(nlohmann::json& outMetadataObj, const Funscript::Metadata& inMetadata) noexcept;
 
 	void notifyActionsChanged(bool isEdit) noexcept; 
 	std::string currentPathRelative;
@@ -215,8 +201,14 @@ public:
 	inline void Rollback(const FunscriptData& data) noexcept { this->data = data; notifyActionsChanged(true); }
 	void Update() noexcept;
 
-	bool Deserialize(const nlohmann::json& json) noexcept;
-	nlohmann::json Serialize(bool noMetadata = false) const noexcept;
+	bool Deserialize(const nlohmann::json& json, Funscript::Metadata* outMetadata) noexcept;
+	nlohmann::json Serialize(const Funscript::Metadata& metadata) const noexcept 
+	{ 
+		nlohmann::json json;
+		Serialize(json, data, metadata); 
+		return json;
+	}
+	static void Serialize(nlohmann::json& json, const FunscriptData& funscriptData, const Funscript::Metadata& metadata) noexcept;
 	
 	inline const FunscriptData& Data() const noexcept { return data; }
 	inline const auto& Selection() const noexcept { return data.Selection; }

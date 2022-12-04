@@ -206,14 +206,16 @@ bool OFS_Project::AddFunscript(const std::string& path) noexcept
     auto json = Util::ParseJson(jsonText, &succ);
 
     auto script = std::make_shared<Funscript>();
-    if (succ && script->Deserialize(json)) {
+    auto metadata = Funscript::Metadata();
+
+    if (succ && script->Deserialize(json, &metadata)) {
         // Add existing script to project
         script = Funscripts.emplace_back(std::move(script));
         script->UpdateRelativePath(MakePathRelative(path));
         if (Funscripts.size() == 1) {
             // Initialize project metadata using the first funscript
             auto& projectState = State();
-            projectState.metadata = script->LocalMetadata;
+            projectState.metadata = metadata;
         }
         loadedScript = true;
     }
@@ -325,8 +327,7 @@ void OFS_Project::ExportFunscripts() noexcept
     for (auto& script : Funscripts) {
         FUN_ASSERT(!script->RelativePath().empty(), "path is empty");
         if (!script->RelativePath().empty()) {
-            script->LocalMetadata = state.metadata;
-            auto json = script->Serialize();
+            auto json = script->Serialize(state.metadata);
             script->ClearUnsavedEdits();
             auto jsonText = Util::SerializeJson(json, false);
             Util::WriteFile(MakePathAbsolute(script->RelativePath()).c_str(), jsonText.data(), jsonText.size());
@@ -342,8 +343,7 @@ void OFS_Project::ExportFunscripts(const std::string& outputDir) noexcept
         if (!script->RelativePath().empty()) {
             auto filename = Util::PathFromString(script->RelativePath()).filename();
             auto outputPath = (Util::PathFromString(outputDir) / filename).u8string();
-            script->LocalMetadata = state.metadata;
-            auto json = script->Serialize();
+            auto json = script->Serialize(state.metadata);
             script->ClearUnsavedEdits();
             auto jsonText = Util::SerializeJson(json, false);
             Util::WriteFile(outputPath.c_str(), jsonText.data(), jsonText.size());
@@ -355,8 +355,7 @@ void OFS_Project::ExportFunscript(const std::string& outputPath, int32_t idx) no
 {
     FUN_ASSERT(idx >= 0 && idx < Funscripts.size(), "out of bounds");
     auto& state = State();
-    Funscripts[idx]->LocalMetadata = state.metadata;
-    auto json = Funscripts[idx]->Serialize();
+    auto json = Funscripts[idx]->Serialize(state.metadata);
     Funscripts[idx]->ClearUnsavedEdits();
     // Using this function changes the default path
     Funscripts[idx]->UpdateRelativePath(MakePathRelative(outputPath));
@@ -533,7 +532,6 @@ std::unique_ptr<BlockingTaskData> OFS_Project::ExportClips(const std::string& ou
 
                 // Slice Funscripts
                 auto newScript = Funscript();
-                newScript.LocalMetadata = projectState.metadata;
                 for (auto& script : project->Funscripts) {
                     stbsp_snprintf(formatBuffer, sizeof(formatBuffer), "%s_%s.funscript", bookmarkName.c_str(), script->Title().c_str());
                     auto scriptOutputPath = outputPath / formatBuffer;
@@ -547,7 +545,7 @@ std::unique_ptr<BlockingTaskData> OFS_Project::ExportClips(const std::string& ou
                     newScript.AddAction(FunscriptAction(endTime, script->GetPositionAtTime(endTime)));
                     newScript.SelectAll();
                     newScript.MoveSelectionTime(-startTime, 0);
-                    auto json = newScript.Serialize();
+                    auto json = newScript.Serialize(projectState.metadata);
                     auto jsonText = Util::SerializeJson(json);
                     Util::WriteFile(scriptOutputString.c_str(), jsonText.data(), jsonText.size());
                 }
