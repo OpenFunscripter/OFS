@@ -32,7 +32,8 @@ typedef void (*mpv_render_context_free_FUNC)(mpv_render_context *ctx);
 typedef void (*mpv_detach_destroy_FUNC)(mpv_handle *ctx);
 typedef void (*mpv_destroy_FUNC)(mpv_handle *ctx);
 typedef void (*mpv_render_context_report_swap_FUNC)(mpv_render_context *ctx);
-typedef void (*mpv_terminate_destroy_FUNC)(mpv_handle *ctx);;
+typedef void (*mpv_terminate_destroy_FUNC)(mpv_handle *ctx);
+
 
 struct OFS_MpvLoader {
     static mpv_create_FUNC mpv_create_REAL;

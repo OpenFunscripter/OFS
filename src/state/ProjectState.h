@@ -2,14 +2,9 @@
 
 #include "OFS_StateHandle.h"
 #include "Funscript.h"
-#include "ProjectBookmarkState.h"
 
 #include <vector>
 #include <string>
-
-/*
-    This file contains all 'state' which is serialized into project files.
-*/
 
 struct TempoOverlayState
 {

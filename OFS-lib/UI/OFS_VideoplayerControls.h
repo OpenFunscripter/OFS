@@ -4,16 +4,13 @@
 #include "OFS_Videopreview.h"
 #include "FunscriptHeatmap.h"
 
-#include <functional>
-
-// ImDrawList* draw_list, const ImRect& frame_bb, bool item_hovered
-using TimelineCustomDrawFunc = std::function<void(ImDrawList*, const struct ImRect&, bool)>;
-
 class OFS_VideoplayerControls
 {
 private:
 	float actualPlaybackSpeed = 1.f;
 	float lastPlayerPosition = 0.0f;
+
+	uint32_t chapterStateHandle = 0xFFFF'FFFF;
 
 	uint32_t measureStartTime = 0;
 	bool mute = false;
@@ -24,8 +21,12 @@ private:
 	uint32_t lastPreviewUpdate = 0;
 	class OFS_Videoplayer* player = nullptr;
 
+	bool DrawChapter(const ImRect& frameBB, class Chapter& chapter, ImDrawFlags drawFlags) noexcept;
+	bool DrawBookmark(const ImRect& frameBB, class Bookmark& bookmark) noexcept;
+	void DrawChapterWidget() noexcept;
+
 	void VideoLoaded(const class VideoLoadedEvent* ev) noexcept;
-	bool DrawTimelineWidget(const char* label, float* position, TimelineCustomDrawFunc&& customDraw) noexcept;
+	bool DrawTimelineWidget(const char* label, float* position) noexcept;
 public:
 	static constexpr const char* ControlId = "###CONTROLS";
 	static constexpr const char* TimeId = "###TIME";
@@ -33,15 +34,13 @@ public:
 	std::unique_ptr<VideoPreview> videoPreview;
 	std::unique_ptr<FunscriptHeatmap> Heatmap;
 
-	OFS_VideoplayerControls() noexcept {}
 	void Init(class OFS_Videoplayer* player, bool hwAccel) noexcept;
-	inline void Destroy() noexcept { videoPreview.reset(); }
 
 	inline void UpdateHeatmap(float totalDuration, const FunscriptArray& actions) noexcept
 	{
 		Heatmap->Update(totalDuration, actions);
 	}
 
-	void DrawTimeline(bool* open, TimelineCustomDrawFunc&& customDraw = [](ImDrawList*, const ImRect&, bool) {}) noexcept;
-	void DrawControls(bool* open) noexcept;
+	void DrawTimeline() noexcept;
+	void DrawControls() noexcept;
 };

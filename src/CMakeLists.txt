@@ -14,6 +14,7 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "UI/OFS_ScriptPositionsOverlays.cpp"
   "UI/OFS_DownloadFfmpeg.cpp"
   "UI/OFS_FunscriptMetadataEditor.cpp"
+  "UI/OFS_ChapterManager.cpp"
 
   "api/OFS_WebsocketApi.cpp"
   "api/OFS_WebsocketApiClient.cpp"
@@ -22,7 +23,6 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "gl/OFS_GPU.cpp"
 
   "state/OpenFunscripterState.cpp"
-  "state/ProjectBookmarkState.cpp"
 
   "lua/OFS_LuaExtensions.cpp"
   "lua/OFS_LuaExtension.cpp"

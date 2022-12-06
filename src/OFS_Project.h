@@ -67,7 +67,6 @@ public:
     inline bool IsValid() const noexcept { return valid; }
     inline const std::string& NotValidError() const noexcept { return notValidError; }
     inline ProjectState& State() const noexcept { return ProjectState::State(stateHandle); }
-    inline ProjectBookmarkState& Bookmarks() noexcept { return ProjectBookmarkState::State(bookmarkStateHandle); }
 
     void ExportFunscripts() noexcept;
     void ExportFunscripts(const std::string& outputDir) noexcept;

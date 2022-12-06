@@ -474,8 +474,9 @@ void ScriptTimeline::ShowScriptPositions(
 			};
 			if (ImGui::BeginMenu(TR_ID("WAVEFORM", Tr::WAVEFORM))) {
 				if(ImGui::BeginMenu(TR_ID("SETTINGS", Tr::SETTINGS))) {
+					ImGui::SetNextItemWidth(ImGui::GetFontSize()*5.f);
 					ImGui::DragFloat(TR(SCALE), &ScaleAudio, 0.01f, 0.01f, 10.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-					ImGui::ColorEdit3(TR(COLOR), &Wave.WaveformColor.Value.x, ImGuiColorEditFlags_None);
+					ImGui::ColorEdit3(TR(COLOR), &Wave.WaveformColor.Value.x, ImGuiColorEditFlags_NoInputs);
 					ImGui::EndMenu();
 				}
 				if (ImGui::MenuItem(TR(ENABLE_WAVEFORM), NULL, &ShowAudioWaveform, !Wave.data.BusyGenerating())) {}

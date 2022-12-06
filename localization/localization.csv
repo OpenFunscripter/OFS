@@ -342,8 +342,7 @@ TOP_POINTS_ONLY,Top points only,Top points only
 MID_POINTS_ONLY,Mid points only,Mid points only
 BOTTOM_POINTS_ONLY,Bottom points only,Bottom points only
 BOOKMARKS,Bookmarks,Bookmarks
-EXPORT_CLIPS,Export clips,Export clips
-EXPORT_CLIPS_TOOLTIP,Export smaller clips based on bookmarks.,Export smaller clips based on bookmarks.
+EXPORT_CLIP,Export clip,Export clip
 NAME,Name,Name
 ADD_BOOKMARK,Add bookmark,Add bookmark
 CREATE_INTERVAL_FOR_FMT,"Create interval for ""%s""","Create interval for ""%s"""
@@ -520,3 +519,13 @@ REPEAT,Repeat,Repeat
 WEBSOCKET_API,Websocket API,Websocket API
 SERVER_ACTIVE,Server active,Server active
 CLIENT_COUNT,Clients connected,Clients connected
+START,Start,Start
+END,End,End
+TOTAL,Total,Total
+REMOVE_CHAPTER,Remove chapter,Remove chapter
+REMOVE_CHAPTER_MSG,Do you want to remove the chapter?,Do you want to remove the chapter?
+REMOVE_BOOKMARK,Remove bookmark,Remove bookmark
+REMOVE_BOOKMARK_MSG,Do you want to remove the bookmark?,Do you want to remove the bookmark?
+ADD_NEW_CHAPTER,Add chapter,Add chapter
+ADD_NEW_BOOKMARK,Add bookmark,Add bookmark
+SET_CHAPTER_SIZE,Set size,Set size

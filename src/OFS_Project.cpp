@@ -72,7 +72,6 @@ inline bool FindMedia(const std::string& pathStr, std::string* outMedia) noexcep
 OFS_Project::OFS_Project() noexcept
 {
     stateHandle = OFS_ProjectState<ProjectState>::Register(ProjectState::StateName);
-    bookmarkStateHandle = OFS_ProjectState<ProjectBookmarkState>::Register(ProjectBookmarkState::StateName);
     Funscripts.emplace_back(std::move(std::make_shared<Funscript>()));
 }
 
@@ -460,6 +459,8 @@ std::string OFS_Project::MediaPath() const noexcept
 std::unique_ptr<BlockingTaskData> OFS_Project::ExportClips(const std::string& outputDirectory, float totalDuration, float frameTime) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
+// FIXME
+#if 0
     auto& bookmarkState = Bookmarks();
 
     // FIXME: this code can probably be simplified
@@ -601,4 +602,6 @@ std::unique_ptr<BlockingTaskData> OFS_Project::ExportClips(const std::string& ou
     task->TaskDescription = TR(TASK_EXPORTING_CLIPS);
     task->User = taskData;
     return std::move(task);
+#endif
+    return nullptr;
 }

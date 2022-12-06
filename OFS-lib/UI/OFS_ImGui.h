@@ -121,7 +121,7 @@ namespace OFS {
 
 	inline void Tooltip(const char* tip) noexcept
 	{
-		if (ImGui::IsItemHovered()) {
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort)) {
 			ImGui::BeginTooltip();
 			ImGui::TextUnformatted(tip);
 			ImGui::EndTooltip();

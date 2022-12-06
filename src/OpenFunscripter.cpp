@@ -104,17 +104,12 @@ static void SaveState() noexcept
 
 OpenFunscripter::~OpenFunscripter() noexcept
 {
-    SaveState();
-
     // needs a certain destruction order
-    playerControls.Destroy();
     scripting.reset();
     controllerInput.reset();
     specialFunctions.reset();
     LoadedProject.reset();
-
     playerWindow.reset();
-    player.reset();
 }
 
 bool OpenFunscripter::Init(int argc, char* argv[])
@@ -268,6 +263,10 @@ bool OpenFunscripter::Init(int argc, char* argv[])
     extensions->Init();
     metadataEditor = std::make_unique<OFS_FunscriptMetadataEditor>();
 
+    webApi = std::make_unique<OFS_WebsocketApi>();
+    webApi->Init();
+
+    chapterMgr = std::make_unique<OFS_ChapterManager>();
 #ifdef WIN32
     OFS_DownloadFfmpeg::FfmpegMissing = !Util::FileExists(Util::FfmpegPath().u8string());
 #endif
@@ -288,9 +287,6 @@ bool OpenFunscripter::Init(int argc, char* argv[])
     for (auto& recentFile : ofsState.recentFiles) {
         OFS_DynFontAtlas::AddText(recentFile.name.c_str());
     }
-
-    webApi = std::make_unique<OFS_WebsocketApi>();
-    webApi->Init();
 
     SDL_ShowWindow(window);
     return true;
@@ -1390,12 +1386,12 @@ void OpenFunscripter::VideoDuration(const DurationChangeEvent* ev) noexcept
     auto& projectState = LoadedProject->State();
     projectState.metadata.duration = player->Duration();
     player->SetPositionExact(projectState.lastPlayerPosition);
+    Status |= OFS_Status::OFS_GradientNeedsUpdate;
 }
 
 void OpenFunscripter::VideoLoaded(const VideoLoadedEvent* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
-    Status |= OFS_Status::OFS_GradientNeedsUpdate;
 }
 
 void OpenFunscripter::PlayPauseChange(const PlayPauseChangeEvent* ev) noexcept
@@ -1564,79 +1560,14 @@ void OpenFunscripter::Step() noexcept
 
             if (preferences->ShowPreferenceWindow()) {}
 
-            playerControls.DrawControls(NULL);
+            playerControls.DrawControls();
 
             if (Status & OFS_GradientNeedsUpdate) {
                 Status &= ~(OFS_GradientNeedsUpdate);
                 playerControls.UpdateHeatmap(player->Duration(), ActiveFunscript()->Actions());
             }
 
-            auto drawBookmarks = [this](ImDrawList* drawList, const ImRect& frameBB, bool itemHovered) noexcept {
-                OFS_PROFILE("DrawBookmarks");
-
-                auto& style = ImGui::GetStyle();
-                auto& ofsState = OpenFunscripterState::State(stateHandle);
-                bool showText = itemHovered || ofsState.alwaysShowBookmarkLabels;
-
-                // bookmarks
-                auto& bookmarkState = LoadedProject->Bookmarks();
-                for (int i = 0; i < bookmarkState.Bookmarks.size(); i += 1) {
-                    auto& bookmark = bookmarkState.Bookmarks[i];
-                    auto nextBookmarkPtr = i + 1 < bookmarkState.Bookmarks.size() ? &bookmarkState.Bookmarks[i + 1] : nullptr;
-
-                    constexpr float rectWidth = 7.f;
-                    const float fontSize = ImGui::GetFontSize();
-                    const uint32_t textColor = ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]);
-
-                    // if an end_marker appears before a start marker we render it as if was a regular bookmark
-                    if (bookmark.type == BookmarkType::StartMarker) {
-                        if (i + 1 < bookmarkState.Bookmarks.size()
-                            && nextBookmarkPtr != nullptr && nextBookmarkPtr->type == BookmarkType::EndMarker) {
-                            ImVec2 p1((frameBB.Min.x + (frameBB.GetWidth() * (bookmark.atS / player->Duration()))) - (rectWidth / 2.f), frameBB.Min.y);
-                            ImVec2 p2(p1.x + rectWidth, frameBB.Min.y + frameBB.GetHeight() + (style.ItemSpacing.y * 3.0f));
-
-                            ImVec2 nextP1((frameBB.Min.x + (frameBB.GetWidth() * (nextBookmarkPtr->atS / player->Duration()))) - (rectWidth / 2.f), frameBB.Min.y);
-                            ImVec2 nextP2(nextP1.x + rectWidth, frameBB.Min.y + frameBB.GetHeight() + (style.ItemSpacing.y * 3.0f));
-
-                            if (showText) {
-                                drawList->AddRectFilled(
-                                    p1 + ImVec2(rectWidth / 2.f, 0),
-                                    nextP2 - ImVec2(rectWidth / 2.f, -fontSize),
-                                    IM_COL32(255, 0, 0, 100),
-                                    8.f);
-                            }
-
-                            drawList->AddRectFilled(p1, p2, textColor, 8.f);
-                            drawList->AddRectFilled(nextP1, nextP2, textColor, 8.f);
-
-                            if (showText) {
-                                auto size = ImGui::CalcTextSize(bookmark.name.c_str());
-                                size.x /= 2.f;
-                                size.y += 4.f;
-                                float offset = (nextP2.x - p1.x) / 2.f;
-                                drawList->AddText(nextP2 - ImVec2(offset, -fontSize) - size, textColor, bookmark.name.c_str());
-                            }
-
-                            i += 1; // skip end marker
-                            continue;
-                        }
-                    }
-
-                    ImVec2 p1((frameBB.Min.x + (frameBB.GetWidth() * (bookmark.atS / player->Duration()))) - (rectWidth / 2.f), frameBB.Min.y);
-                    ImVec2 p2(p1.x + rectWidth, frameBB.Min.y + frameBB.GetHeight() + (style.ItemSpacing.y * 3.0f));
-
-                    drawList->AddRectFilled(p1, p2, ImGui::GetColorU32(ImGuiCol_Text), 8.f);
-
-                    if (showText) {
-                        auto size = ImGui::CalcTextSize(bookmark.name.c_str());
-                        size.x /= 2.f;
-                        size.y /= 8.f;
-                        drawList->AddText(p2 - size, textColor, bookmark.name.c_str());
-                    }
-                }
-            };
-
-            playerControls.DrawTimeline(NULL, drawBookmarks);
+            playerControls.DrawTimeline();
 
             scriptTimeline.ShowScriptPositions(player.get(),
                 scripting->Overlay().get(),
@@ -1743,6 +1674,8 @@ int OpenFunscripter::Run() noexcept
 
 void OpenFunscripter::Shutdown() noexcept
 {
+    SaveState();
+
     OFS_DynFontAtlas::Shutdown();
     OFS_Translator::Shutdown();
 
@@ -2287,7 +2220,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                     }
                 };
                 if (ImGui::BeginMenu(TR(ADD_SHORTCUTS))) {
-                    for(auto axis : Funscript::AxisNames) {
+                    for (auto axis : Funscript::AxisNames) {
                         addNewShortcut(axis);
                     }
                     ImGui::EndMenu();
@@ -2469,87 +2402,6 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             }
             ImGui::EndMenu();
         }
-        if (ImGui::BeginMenu(TR(BOOKMARKS), LoadedProject->IsValid())) {
-            auto& bookmarkState = LoadedProject->Bookmarks();
-            if (ImGui::MenuItem(TR(EXPORT_CLIPS), NULL, false, !bookmarkState.Bookmarks.empty())) {
-                exportClips();
-            }
-            OFS::Tooltip(TR(EXPORT_CLIPS_TOOLTIP));
-            ImGui::Separator();
-            static std::string bookmarkName;
-            float currentTime = player->CurrentTime();
-            auto editBookmark = std::find_if(bookmarkState.Bookmarks.begin(), bookmarkState.Bookmarks.end(),
-                [=](auto& mark) {
-                    constexpr float thresholdTime = 1.f;
-                    return std::abs(mark.atS - currentTime) <= thresholdTime;
-                });
-            if (editBookmark != bookmarkState.Bookmarks.end()) {
-                int bookmarkIdx = std::distance(bookmarkState.Bookmarks.begin(), editBookmark);
-                ImGui::PushID(bookmarkIdx);
-                if (ImGui::InputText(TR(NAME), &(*editBookmark).name)) {
-                    editBookmark->UpdateType();
-                }
-                if (ImGui::MenuItem(TR(REMOVE))) {
-                    bookmarkState.Bookmarks.erase(editBookmark);
-                }
-                ImGui::PopID();
-            }
-            else {
-                if (ImGui::InputText(TR(NAME), &bookmarkName, ImGuiInputTextFlags_EnterReturnsTrue)
-                    || ImGui::MenuItem(TR(ADD_BOOKMARK))) {
-                    if (bookmarkName.empty()) {
-                        bookmarkName = Util::Format("%d#", bookmarkState.Bookmarks.size() + 1);
-                    }
-
-                    Bookmark bookmark(std::move(bookmarkName), currentTime);
-                    bookmarkState.AddBookmark(std::move(bookmark));
-                }
-
-                auto it = std::find_if(bookmarkState.Bookmarks.rbegin(), bookmarkState.Bookmarks.rend(),
-                    [&](auto& mark) {
-                        return mark.atS < player->CurrentTime();
-                    });
-                if (it != bookmarkState.Bookmarks.rend() && it->type != BookmarkType::EndMarker) {
-                    const char* item = Util::Format(TR(CREATE_INTERVAL_FOR_FMT), it->name.c_str());
-                    if (ImGui::MenuItem(item)) {
-                        Bookmark bookmark(it->name + "_end", currentTime);
-                        bookmarkState.AddBookmark(std::move(bookmark));
-                    }
-                }
-            }
-
-            static float LastPositionTime = -1.f;
-            if (ImGui::BeginMenu(TR(GO_TO_MENU))) {
-                if (bookmarkState.Bookmarks.size() == 0) {
-                    ImGui::TextDisabled(TR(NO_BOOKMARKS));
-                }
-                else {
-                    for (auto& mark : bookmarkState.Bookmarks) {
-                        if (ImGui::MenuItem(mark.name.c_str())) {
-                            player->SetPositionExact(mark.atS);
-                            LastPositionTime = -1.f;
-                        }
-                        if (ImGui::IsItemHovered()) {
-                            if (LastPositionTime < 0.f) LastPositionTime = currentTime;
-                            player->SetPositionExact(mark.atS);
-                        }
-                    }
-                }
-                ImGui::EndMenu();
-            }
-            else if (LastPositionTime > 0.f) {
-                player->SetPositionExact(LastPositionTime);
-                LastPositionTime = -1.f;
-            }
-
-            if (ImGui::Checkbox(TR(ALWAYS_SHOW_LABELS), &ofsState.alwaysShowBookmarkLabels)) {}
-
-            if (ImGui::MenuItem(TR(DELETE_ALL_BOOKMARKS))) {
-                bookmarkState.Bookmarks.clear();
-            }
-
-            ImGui::EndMenu();
-        }
         if (ImGui::BeginMenu(TR_ID("VIEW_MENU", Tr::VIEW_MENU))) {
 #ifndef NDEBUG
             // this breaks the layout after restarting for some reason
@@ -2566,7 +2418,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem(TR(ACTION_EDITOR), NULL, &ofsState.showActionEditor)) {}
             if (ImGui::MenuItem(TR(SPECIAL_FUNCTIONS), NULL, &ofsState.showSpecialFunctions)) {}
             if (ImGui::MenuItem(TR(WEBSOCKET_API), NULL, &ofsState.showWsApi)) {}
-            
+
 
             ImGui::Separator();
 

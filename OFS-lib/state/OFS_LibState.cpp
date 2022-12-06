@@ -3,11 +3,16 @@
 #include "state/states/BaseOverlayState.h"
 #include "state/states/WaveformState.h"
 #include "state/states/KeybindingState.h"
+#include "state/states/ChapterState.h"
 
 void OFS_LibState::RegisterAll() noexcept
 {
-    OFS_REGISTER_STATE(VideoPlayerWindowState);
-    OFS_REGISTER_STATE(BaseOverlayState);
-    OFS_REGISTER_STATE(WaveformState);
+    // App state
     OFS_REGISTER_STATE(OFS_KeybindingState);
+    OFS_REGISTER_STATE(BaseOverlayState);
+
+    // Project state
+    OFS_REGISTER_STATE(VideoPlayerWindowState);
+    OFS_REGISTER_STATE(WaveformState);
+    OFS_REGISTER_STATE(ChapterState);
 }

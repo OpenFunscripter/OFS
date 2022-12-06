@@ -21,7 +21,6 @@ void OpenFunscripterState::RegisterAll() noexcept
 	// Project state
 	OFS_REGISTER_STATE(TempoOverlayState);
 	OFS_REGISTER_STATE(ProjectState);
-	OFS_REGISTER_STATE(ProjectBookmarkState);
 	OFS_REGISTER_STATE(SimulatorState);
 }
 

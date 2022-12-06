@@ -5,6 +5,7 @@ set(OFS_LIB_SOURCES
 	"event/OFS_Event.cpp"
 
 	"state/states/KeybindingState.cpp"
+	"state/states/ChapterState.cpp"
 
 	"Funscript/Funscript.cpp"
 	"Funscript/FunscriptAction.cpp"
@@ -27,6 +28,7 @@ set(OFS_LIB_SOURCES
 
 	"state/OFS_StateManager.cpp"
 	"state/OFS_LibState.cpp"
+
 
 	"imgui_impl/imgui_impl_opengl3.cpp"
 	"imgui_impl/imgui_impl_sdl.cpp" 

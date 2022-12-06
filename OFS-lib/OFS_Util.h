@@ -12,10 +12,12 @@
 #include <functional>
 #include <vector>
 #include <sstream>
+#include <chrono>
 
 #include "stb_sprintf.h"
 #include "stb_image.h"
 
+#include "OFS_Profiling.h"
 #include "OFS_FileLogging.h"
 
 #include "emmintrin.h" // for _mm_pause
@@ -224,30 +226,31 @@ public:
         return data;
     }
 
-    inline static nlohmann::json LoadCBOR(const std::vector<uint8_t>& data, bool* success) noexcept
+    inline static int FormatTime(char* buf, const int bufLen, float timeSeconds, bool withMs) noexcept
     {
-        nlohmann::json json;
-        *success = false;
-        if (!data.empty()) {
-            json = nlohmann::json::from_cbor(data);
-            *success = !json.is_discarded();
+        OFS_PROFILE(__FUNCTION__);
+        namespace chrono = std::chrono;
+        FUN_ASSERT(bufLen >= 0, "wat");
+        if (std::isinf(timeSeconds) || std::isnan(timeSeconds))
+            timeSeconds = 0.f;
+
+        auto duration = chrono::duration<float>(timeSeconds);
+
+        int hours = chrono::duration_cast<chrono::hours>(duration).count();
+        auto timeConsumed = chrono::duration<float>(60.f * 60.f) * hours;
+
+        int minutes = chrono::duration_cast<chrono::minutes>(duration - timeConsumed).count();
+        timeConsumed += chrono::duration<float>(60.f) * minutes;
+
+        int seconds = chrono::duration_cast<chrono::seconds>(duration - timeConsumed).count();
+
+        if (withMs) {
+            timeConsumed += chrono::duration<float>(1.f) * seconds;
+            int ms = chrono::duration_cast<chrono::milliseconds>(duration - timeConsumed).count();
+            return stbsp_snprintf(buf, bufLen, "%02d:%02d:%02d.%03d", hours, minutes, seconds, ms);
         }
-        return json;
-    }
-
-    static inline size_t FormatTime(char* buffer, size_t buf_size, float time_seconds, bool with_ms) noexcept
-    {
-        if (std::isinf(time_seconds) || std::isnan(time_seconds)) time_seconds = 0.f;
-        auto duration = std::chrono::duration<float>(time_seconds);
-        std::time_t t = duration.count();
-        std::tm& timestamp = *std::gmtime(&t);
-
-        size_t size = std::strftime(buffer, buf_size, "%H:%M:%S", &timestamp);
-        if (!with_ms)
-            return size;
         else {
-            int32_t ms = (time_seconds - (int)time_seconds) * 1000.f;
-            return stbsp_snprintf(buffer, buf_size, "%s.%03i", buffer, ms);
+            return stbsp_snprintf(buf, bufLen, "%02d:%02d:%02d", hours, minutes, seconds);
         }
     }
 
