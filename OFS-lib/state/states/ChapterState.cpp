@@ -128,3 +128,24 @@ Bookmark* ChapterState::AddBookmark(float time) noexcept
     newBookmark.time = time;
     return &newBookmark;
 }
+
+std::string Chapter::StartTimeToString() const noexcept
+{
+    char tmpBuf[16];
+    int size = Util::FormatTime(tmpBuf, sizeof(tmpBuf), startTime, true);
+    return std::string(tmpBuf, size);
+}
+
+std::string Chapter::EndTimeToString() const noexcept
+{
+    char tmpBuf[16];
+    int size = Util::FormatTime(tmpBuf, sizeof(tmpBuf), endTime, true);
+    return std::string(tmpBuf, size);    
+}
+
+std::string Bookmark::TimeToString() const noexcept
+{
+    char tmpBuf[16];
+    int size = Util::FormatTime(tmpBuf, sizeof(tmpBuf), time, true);
+    return std::string(tmpBuf, size);
+}

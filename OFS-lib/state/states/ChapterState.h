@@ -10,12 +10,17 @@ struct Chapter
     float endTime = 0.f;
     std::string name;
     ImColor color = IM_COL32(123, 56, 87, 255);
+
+    std::string StartTimeToString() const noexcept;
+    std::string EndTimeToString() const noexcept;
 };
 
 struct Bookmark
 {
     float time = 0.f;
     std::string name;
+
+    std::string TimeToString() const noexcept;
 };
 
 struct ChapterState

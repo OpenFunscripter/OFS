@@ -207,11 +207,12 @@ bool OFS_Project::AddFunscript(const std::string& path) noexcept
     auto script = std::make_shared<Funscript>();
     auto metadata = Funscript::Metadata();
 
-    if (succ && script->Deserialize(json, &metadata)) {
+    bool isFirstFunscript = Funscripts.size() == 0;
+    if (succ && script->Deserialize(json, &metadata, isFirstFunscript)) {
         // Add existing script to project
         script = Funscripts.emplace_back(std::move(script));
         script->UpdateRelativePath(MakePathRelative(path));
-        if (Funscripts.size() == 1) {
+        if (isFirstFunscript) {
             // Initialize project metadata using the first funscript
             auto& projectState = State();
             projectState.metadata = metadata;
@@ -326,7 +327,7 @@ void OFS_Project::ExportFunscripts() noexcept
     for (auto& script : Funscripts) {
         FUN_ASSERT(!script->RelativePath().empty(), "path is empty");
         if (!script->RelativePath().empty()) {
-            auto json = script->Serialize(state.metadata);
+            auto json = script->Serialize(state.metadata, true);
             script->ClearUnsavedEdits();
             auto jsonText = Util::SerializeJson(json, false);
             Util::WriteFile(MakePathAbsolute(script->RelativePath()).c_str(), jsonText.data(), jsonText.size());
@@ -342,7 +343,7 @@ void OFS_Project::ExportFunscripts(const std::string& outputDir) noexcept
         if (!script->RelativePath().empty()) {
             auto filename = Util::PathFromString(script->RelativePath()).filename();
             auto outputPath = (Util::PathFromString(outputDir) / filename).u8string();
-            auto json = script->Serialize(state.metadata);
+            auto json = script->Serialize(state.metadata, true);
             script->ClearUnsavedEdits();
             auto jsonText = Util::SerializeJson(json, false);
             Util::WriteFile(outputPath.c_str(), jsonText.data(), jsonText.size());
@@ -354,7 +355,7 @@ void OFS_Project::ExportFunscript(const std::string& outputPath, int32_t idx) no
 {
     FUN_ASSERT(idx >= 0 && idx < Funscripts.size(), "out of bounds");
     auto& state = State();
-    auto json = Funscripts[idx]->Serialize(state.metadata);
+    auto json = Funscripts[idx]->Serialize(state.metadata, true);
     Funscripts[idx]->ClearUnsavedEdits();
     // Using this function changes the default path
     Funscripts[idx]->UpdateRelativePath(MakePathRelative(outputPath));

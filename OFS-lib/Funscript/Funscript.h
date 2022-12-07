@@ -201,14 +201,14 @@ public:
 	inline void Rollback(const FunscriptData& data) noexcept { this->data = data; notifyActionsChanged(true); }
 	void Update() noexcept;
 
-	bool Deserialize(const nlohmann::json& json, Funscript::Metadata* outMetadata) noexcept;
-	nlohmann::json Serialize(const Funscript::Metadata& metadata) const noexcept 
+	bool Deserialize(const nlohmann::json& json, Funscript::Metadata* outMetadata, bool loadChapters) noexcept;
+	inline nlohmann::json Serialize(const Funscript::Metadata& metadata, bool includeChapters) const noexcept 
 	{ 
 		nlohmann::json json;
-		Serialize(json, data, metadata); 
+		Serialize(json, data, metadata, includeChapters); 
 		return json;
 	}
-	static void Serialize(nlohmann::json& json, const FunscriptData& funscriptData, const Funscript::Metadata& metadata) noexcept;
+	static void Serialize(nlohmann::json& json, const FunscriptData& funscriptData, const Funscript::Metadata& metadata, bool includeChapters) noexcept;
 	
 	inline const FunscriptData& Data() const noexcept { return data; }
 	inline const auto& Selection() const noexcept { return data.Selection; }

@@ -7,6 +7,8 @@
 #include "OFS_Serialization.h"
 #include "FunscriptUndoSystem.h"
 
+#include "state/states/ChapterState.h"
+
 #include <algorithm>
 #include <limits>
 
@@ -688,7 +690,7 @@ void Funscript::UpdateRelativePath(const std::string& path) noexcept
 		.u8string();
 }
 
-bool Funscript::Deserialize(const nlohmann::json& json, Funscript::Metadata* outMetadata) noexcept
+bool Funscript::Deserialize(const nlohmann::json& json, Funscript::Metadata* outMetadata, bool loadChapters) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 
@@ -721,11 +723,87 @@ bool Funscript::Deserialize(const nlohmann::json& json, Funscript::Metadata* out
 		}
 	}
 
+	if(loadChapters && json.contains("metadata"))
+	{
+		auto& chapterState = ChapterState::StaticStateSlow();
+		auto& jsonMetadata = json["metadata"];
+		auto& jsonBookmarks = jsonMetadata["bookmarks"];
+		auto& jsonChapters = jsonMetadata["chapters"];
+
+		if(jsonBookmarks.is_array())
+		{
+			for(auto& jsonBookmark : jsonBookmarks)
+			{
+				if(!jsonBookmark.contains("name") || !jsonBookmark.contains("time"))
+					continue;
+				if(!jsonBookmark["name"].is_string() || !jsonBookmark["time"].is_string())
+					continue;
+
+				auto name = std::move(jsonBookmark["name"].get<std::string>());
+				auto timeStr = std::move(jsonBookmark["time"].get<std::string>());
+
+				bool succ = false;
+				float time = Util::ParseTime(timeStr.c_str(), &succ);
+				if(!succ) 
+				{
+					LOGF_ERROR("Failed to parse \"%s\" to time", timeStr.c_str());
+					continue;
+				}
+
+				if(auto bookmark = chapterState.AddBookmark(time)) 
+				{
+					bookmark->name = std::move(name);
+				}
+			}
+		}
+		if(jsonChapters.is_array())
+		{
+			for(auto& jsonChapter : jsonChapters)
+			{
+				if(!jsonChapter.contains("name") || !jsonChapter.contains("startTime") || !jsonChapter.contains("endTime"))
+					continue;
+				if(!jsonChapter["name"].is_string() || !jsonChapter["startTime"].is_string() || !jsonChapter["endTime"].is_string())
+					continue;
+				
+				auto name = std::move(jsonChapter["name"].get<std::string>());
+				auto startTimeStr = std::move(jsonChapter["startTime"].get<std::string>());
+				auto endTimeStr = std::move(jsonChapter["endTime"].get<std::string>());
+
+				bool succ = false;
+				float startTime = Util::ParseTime(startTimeStr.c_str(), &succ);
+				if(!succ) 
+				{
+					LOGF_ERROR("Failed to parse \"%s\" to time", startTimeStr.c_str());
+					continue;
+				}
+				float endTime = Util::ParseTime(endTimeStr.c_str(), &succ);
+				if(!succ)
+				{
+					LOGF_ERROR("Failed to parse \"%s\" to time", endTimeStr.c_str());
+					continue;
+				}
+
+				if(startTime > endTime)
+					continue;
+
+				// Insert chapter at the middle point				
+				float middlePoint = startTime + ((endTime - startTime)/2.f);
+				if(auto chapter = chapterState.AddChapter(middlePoint, 1.f))
+				{
+					chapter->name = std::move(name);
+					// Set size is used to safely resize the chapter to the correct size
+					chapterState.SetChapterSize(*chapter, startTime);
+					chapterState.SetChapterSize(*chapter, endTime);
+				}
+			}
+		}
+	}
+
 	notifyActionsChanged(false);
 	return true;
 }
 
-void Funscript::Serialize(nlohmann::json& json, const FunscriptData& funscriptData, const Funscript::Metadata& metadata) noexcept
+void Funscript::Serialize(nlohmann::json& json, const FunscriptData& funscriptData, const Funscript::Metadata& metadata, bool includeChapters) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 	json = nlohmann::json::object();
@@ -735,7 +813,39 @@ void Funscript::Serialize(nlohmann::json& json, const FunscriptData& funscriptDa
 	json["inverted"] = false;
 	json["range"] = 100;
 
-	OFS::Serializer<false>::Serialize(metadata, json["metadata"]);
+	auto& jsonMetadata = json["metadata"];
+	OFS::Serializer<false>::Serialize(metadata, jsonMetadata);
+	if(includeChapters)
+	{
+		auto& chapters = ChapterState::StaticStateSlow();
+		{
+			auto jsonBookmarks = nlohmann::json::array();
+			for(auto& bookmark : chapters.bookmarks)
+			{
+				nlohmann::json jsonBookmark = 
+				{
+					{"name", bookmark.name },
+					{"time", std::move(bookmark.TimeToString()) }
+				};
+				jsonBookmarks.emplace_back(std::move(jsonBookmark));
+			}
+			jsonMetadata["bookmarks"] = std::move(jsonBookmarks);
+		}
+		{
+			auto jsonChapters = nlohmann::json::array();
+			for(auto& chapter : chapters.chapters)
+			{
+				nlohmann::json jsonChapter = 
+				{
+					{"name", chapter.name },
+					{"startTime", std::move(chapter.StartTimeToString()) },
+					{"endTime", std::move(chapter.EndTimeToString()) },
+				};
+				jsonChapters.emplace_back(std::move(jsonChapter));
+			}
+			jsonMetadata["chapters"] = std::move(jsonChapters);
+		}
+	}
 
 	auto& jsonActions = json["actions"];
 	jsonActions.clear();

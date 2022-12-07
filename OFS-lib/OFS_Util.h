@@ -226,6 +226,33 @@ public:
         return data;
     }
 
+    inline static float ParseTime(const char* timeStr, bool* succ) noexcept
+    {
+        int hours = 0;
+        int minutes = 0;
+        int seconds = 0;
+        int milliseconds = 0;
+        *succ = false;
+
+        if (sscanf(timeStr, "%d:%d:%d.%d", &hours, &minutes, &seconds, &milliseconds) < 3) {
+            return NAN;
+        }
+
+        if (hours >= 0
+            && minutes >= 0 && minutes <= 59
+            && seconds >= 0 && seconds <= 59
+            && milliseconds >= 0 && milliseconds <= 999) {
+            float time = 0.f;
+            time += (float)hours * 60.f * 60.f;
+            time += (float)minutes * 60.f;
+            time += (float)seconds;
+            time += (float)milliseconds / 1000.f;
+            *succ = true;
+            return time;
+        }
+        return NAN;
+    }
+
     inline static int FormatTime(char* buf, const int bufLen, float timeSeconds, bool withMs) noexcept
     {
         OFS_PROFILE(__FUNCTION__);

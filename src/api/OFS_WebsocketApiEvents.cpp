@@ -45,7 +45,7 @@ void to_json(nlohmann::json& j, const WsFunscriptChange& p)
 {
     initializeEvent(j, "funscript_change");
     nlohmann::json funscript;
-    Funscript::Serialize(funscript, p.funscriptData, p.funscriptMetadata);
+    Funscript::Serialize(funscript, p.funscriptData, p.funscriptMetadata, true);
     j["data"] = { { "name", p.name }, { "funscript",  std::move(funscript) } };
 }
 
