@@ -71,8 +71,7 @@ public:
     void ExportFunscripts() noexcept;
     void ExportFunscripts(const std::string& outputDir) noexcept;
     void ExportFunscript(const std::string& outputPath, int32_t idx) noexcept;
-    std::unique_ptr<struct BlockingTaskData> ExportClips(const std::string& outputDirectory, float totalDuration, float frameTime) noexcept;
-
+    
     std::string MakePathAbsolute(const std::string& relPath) const noexcept;
     std::string MakePathRelative(const std::string& absPath) const noexcept;
     std::string MediaPath() const noexcept;

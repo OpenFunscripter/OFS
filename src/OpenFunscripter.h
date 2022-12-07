@@ -69,8 +69,9 @@ private:
     bool imguiSetup() noexcept;
     void processEvents() noexcept;
 
-    void FunscriptChanged(const FunscriptActionsChangedEvent* ev) noexcept;
+    void ExportClip(const class ExportClipForChapter* ev) noexcept;
 
+    void FunscriptChanged(const FunscriptActionsChangedEvent* ev) noexcept;
     void DragNDrop(const OFS_SDL_Event* ev) noexcept;
 
     void VideoDuration(const DurationChangeEvent* ev) noexcept;
@@ -101,7 +102,6 @@ private:
 
     void saveProject() noexcept;
     void quickExport() noexcept;
-    void exportClips() noexcept;
     void pickDifferentMedia() noexcept;
 
     void saveHeatmap(const char* path, int width, int height);

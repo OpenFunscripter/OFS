@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 
 class OFS_ChapterManager
 {
@@ -12,4 +13,6 @@ class OFS_ChapterManager
     OFS_ChapterManager(const OFS_ChapterManager&) = delete;
     OFS_ChapterManager(OFS_ChapterManager&&) = delete;
     ~OFS_ChapterManager() noexcept;
+
+    static bool ExportClip(const class Chapter& chapter, const std::string& outputDirStr) noexcept;
 };

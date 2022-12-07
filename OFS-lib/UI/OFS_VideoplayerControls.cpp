@@ -305,7 +305,7 @@ bool OFS_VideoplayerControls::DrawChapter(const ImRect& frameBB, Chapter& chapte
 
         if(ImGui::MenuItem(TR(EXPORT_CLIP)))
         {
-            // FIXME: add this functionality
+            EV::Enqueue<ExportClipForChapter>(chapter);
         }
 
         ImGui::ColorEdit3(TR(COLOR), &chapter.color.Value.x, ImGuiColorEditFlags_NoInputs);

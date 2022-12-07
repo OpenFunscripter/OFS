@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 
+#include "OFS_Event.h"
+
 struct Chapter
 {
     float startTime = 0.f;
@@ -61,3 +63,12 @@ REFL_TYPE(ChapterState)
     REFL_FIELD(chapters)
     REFL_FIELD(bookmarks)
 REFL_END
+
+
+class ExportClipForChapter : public OFS_Event<ExportClipForChapter>
+{
+    public:
+    Chapter chapter;
+    ExportClipForChapter(const Chapter& chapter) noexcept
+        : chapter(chapter) {}
+};

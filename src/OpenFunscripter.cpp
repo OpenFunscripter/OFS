@@ -12,6 +12,7 @@
 #include "state/OpenFunscripterState.h"
 #include "state/states/VideoplayerWindowState.h"
 #include "state/states/BaseOverlayState.h"
+#include "state/states/ChapterState.h"
 
 #include <filesystem>
 
@@ -252,6 +253,8 @@ bool OpenFunscripter::Init(int argc, char* argv[])
         FunscriptShouldSelectTimeEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineSelectTime)));
     EV::Queue().appendListener(ShouldChangeActiveScriptEvent::EventType,
         ShouldChangeActiveScriptEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActiveScriptChanged)));
+    EV::Queue().appendListener(ExportClipForChapter::EventType, 
+        ExportClipForChapter::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::ExportClip)));
 
     specialFunctions = std::make_unique<SpecialFunctionsWindow>();
     controllerInput = std::make_unique<ControllerInput>();
@@ -1316,6 +1319,18 @@ void OpenFunscripter::processEvents() noexcept
     EV::Process();
 }
 
+void OpenFunscripter::ExportClip(const ExportClipForChapter* ev) noexcept
+{
+    const auto& ofsState = OpenFunscripterState::State(stateHandle);
+    Util::OpenDirectoryDialog(TR(CHOOSE_OUTPUT_DIR), ofsState.lastPath,
+        [chapter = ev->chapter](auto& result) {
+            if (!result.files.empty()) 
+            {
+                OFS_ChapterManager::ExportClip(chapter, result.files[0]);
+            }
+        });
+}
+
 void OpenFunscripter::FunscriptChanged(const FunscriptActionsChangedEvent* ev) noexcept
 {
     // the event passes the address of the Funscript
@@ -1825,19 +1840,6 @@ void OpenFunscripter::quickExport() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     LoadedProject->ExportFunscripts();
-}
-
-void OpenFunscripter::exportClips() noexcept
-{
-    OFS_PROFILE(__FUNCTION__);
-    const auto& ofsState = OpenFunscripterState::State(stateHandle);
-    Util::OpenDirectoryDialog(TR(CHOOSE_OUTPUT_DIR), ofsState.lastPath,
-        [&](auto& result) {
-            if (result.files.size() > 0) {
-                auto task = LoadedProject->ExportClips(result.files[0], player->Duration(), player->FrameTime());
-                blockingTask.DoTask(std::move(task));
-            }
-        });
 }
 
 bool OpenFunscripter::closeProject(bool closeWithUnsavedChanges) noexcept
