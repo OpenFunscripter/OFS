@@ -253,7 +253,7 @@ bool OpenFunscripter::Init(int argc, char* argv[])
         FunscriptShouldSelectTimeEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineSelectTime)));
     EV::Queue().appendListener(ShouldChangeActiveScriptEvent::EventType,
         ShouldChangeActiveScriptEvent::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::ScriptTimelineActiveScriptChanged)));
-    EV::Queue().appendListener(ExportClipForChapter::EventType, 
+    EV::Queue().appendListener(ExportClipForChapter::EventType,
         ExportClipForChapter::HandleEvent(EVENT_SYSTEM_BIND(this, &OpenFunscripter::ExportClip)));
 
     specialFunctions = std::make_unique<SpecialFunctionsWindow>();
@@ -1324,8 +1324,7 @@ void OpenFunscripter::ExportClip(const ExportClipForChapter* ev) noexcept
     const auto& ofsState = OpenFunscripterState::State(stateHandle);
     Util::OpenDirectoryDialog(TR(CHOOSE_OUTPUT_DIR), ofsState.lastPath,
         [chapter = ev->chapter](auto& result) {
-            if (!result.files.empty()) 
-            {
+            if (!result.files.empty()) {
                 OFS_ChapterManager::ExportClip(chapter, result.files[0]);
             }
         });

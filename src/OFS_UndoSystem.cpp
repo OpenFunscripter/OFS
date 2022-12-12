@@ -41,6 +41,8 @@ static std::array<Tr, (int32_t)StateType::TOTAL_UNDOSTATE_TYPES> stateTranslatio
     Tr::LUA_SCRIPT
 };
 
+// FIXME: UndoStack and RedoStack should be filtered when scripts are removed / projects change
+
 const char* ScriptState::Description() const noexcept
 {
     uint32_t typeIdx = (uint32_t)type;

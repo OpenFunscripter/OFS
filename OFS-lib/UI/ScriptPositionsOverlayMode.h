@@ -63,6 +63,7 @@ public:
 	static float PointSize;
 	
 	static bool ShowLines;
+	static bool ShowPoints;
 
 	BaseOverlay(class ScriptTimeline* timeline) noexcept;
 	virtual ~BaseOverlay() noexcept {}

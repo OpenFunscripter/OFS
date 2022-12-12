@@ -14,7 +14,9 @@ constexpr float MaxPointSize = 8.f;
 float BaseOverlay::PointSize = MaxPointSize;
 
 uint32_t BaseOverlay::StateHandle = 0xFFFF'FFFF;
+
 bool BaseOverlay::ShowLines = true;
+bool BaseOverlay::ShowPoints = true;
 
 static constexpr auto SelectedLineColor = IM_COL32(3, 194, 252, 255);
 
@@ -287,6 +289,7 @@ void BaseOverlay::DrawActionLines(const OverlayDrawingCtx& ctx) noexcept
 
 void BaseOverlay::DrawActionPoints(const OverlayDrawingCtx& ctx) noexcept
 {
+    if (!BaseOverlay::ShowPoints) return;
     OFS_PROFILE(__FUNCTION__);
 	auto applyEasing = [](float t) noexcept -> float {
 		return t * t; 

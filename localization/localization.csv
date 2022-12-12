@@ -508,6 +508,7 @@ ENABLE_MAX_SPEED_HIGHLIGHT,Max speed highlight,Max speed highlight
 FPS_OVERRIDE,FPS override,FPS override
 TIME_SPENT,Time spent,Time spent
 SHOW_ACTION_LINES,Show lines,Show lines
+SHOW_ACTION_POINTS,Show points,Show points
 CLEAR_RECENT_FILES,Clear recent files,Clear recent files
 GENERIC_OPEN,Open...,Open...
 ADD_EDIT_TRIGGER,Add/Edit trigger,Add/Edit trigger

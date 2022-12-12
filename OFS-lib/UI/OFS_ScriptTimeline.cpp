@@ -452,6 +452,7 @@ void ScriptTimeline::ShowScriptPositions(
 			if (ImGui::BeginMenu(TR_ID("RENDERING", Tr::RENDERING))) {
 				auto& overlayState = BaseOverlayState::State(overlayStateHandle);
 				ImGui::MenuItem(TR(SHOW_ACTION_LINES), 0, &BaseOverlay::ShowLines);
+				ImGui::MenuItem(TR(SHOW_ACTION_POINTS), 0, &BaseOverlay::ShowPoints);
 				ImGui::MenuItem(TR(SPLINE_MODE), 0, &overlayState.SplineMode);
 				ImGui::MenuItem(TR(SHOW_VIDEO_POSITION), 0, &overlayState.SyncLineEnable);
 				OFS::Tooltip(TR(SHOW_VIDEO_POSITION_TOOLTIP));
@@ -522,7 +523,7 @@ void ScriptTimeline::DrawAudioWaveform(const OverlayDrawingCtx& ctx) noexcept
 {
 	OFS_PROFILE(__FUNCTION__);
 
-	if (ShowAudioWaveform && Wave.data.SampleCount() > 0) {
+	if (ShowAudioWaveform && Wave.data.SampleCount() > 0 && ctx.totalDuration > 1.f) {
 		auto renderWaveform = [](ScriptTimeline* timeline, const OverlayDrawingCtx& ctx) noexcept
 		{
 			OFS_PROFILE("DrawAudioWaveform::renderWaveform");
