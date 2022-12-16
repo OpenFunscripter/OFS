@@ -38,7 +38,6 @@ struct OpenFunscripterState
     bool alwaysShowBookmarkLabels = false;
     bool showHistory = true;
     bool showSimulator = true;
-    bool showSimulator3d = false;
     bool showSpecialFunctions = false;
     bool showWsApi = false;
 
@@ -66,7 +65,6 @@ REFL_TYPE(OpenFunscripterState)
     REFL_FIELD(alwaysShowBookmarkLabels)
     REFL_FIELD(showHistory)
     REFL_FIELD(showSimulator)
-    REFL_FIELD(showSimulator3d)
     REFL_FIELD(showSpecialFunctions)
     REFL_FIELD(showWsApi)
 REFL_END

@@ -181,9 +181,7 @@ DEADZONE,Deadzone,Deadzone
 CENTER,Center,Center
 TWO_AXES,Two axes,Two axes
 TWO_AXES_TOOLTIP,"Recording pitch & roll at once.
-Using Simulator 3D settings.
 Only works with a controller.","Recording pitch & roll at once.
-Using Simulator 3D settings.
 Only works with a controller."
 RECORD_ON_PLAY,Record on play,Record on play
 TWO_AXES_AXES,X / Y,X / Y
@@ -351,7 +349,6 @@ NO_BOOKMARKS,No bookmarks,No bookmarks
 ALWAYS_SHOW_LABELS,Always show labels,Always show labels
 DELETE_ALL_BOOKMARKS,Delete all bookmarks,Delete all bookmarks
 VIEW_MENU,View,View
-SIMULATOR_3D,Simulator 3D,Simulator 3D
 METADATA,Metadata,Metadata
 DRAW_VIDEO,Draw video,Draw video
 RESET_VIDEO_POS,Reset video position,Reset video position

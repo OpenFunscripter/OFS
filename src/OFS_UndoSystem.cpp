@@ -128,8 +128,12 @@ bool UndoSystem::Undo() noexcept
             undidSomething = script->undoSystem->Undo() || undidSomething;
         }
         else {
-            FUN_ASSERT(false, "Stale undo.");
+            LOG_DEBUG("Stale undo.");
         }
+    }
+
+    if (!undidSomething && !UndoStack.empty()) {
+        return Undo();
     }
 
     RedoStack.emplace_back(std::move(context));
@@ -149,10 +153,13 @@ bool UndoSystem::Redo() noexcept
             redidSomething = script->undoSystem->Redo() || redidSomething;
         }
         else {
-            FUN_ASSERT(false, "Stale redo.");
+            LOG_DEBUG("Stale redo.");
         }
     }
 
+    if (!redidSomething && !RedoStack.empty()) {
+        return Redo();
+    }
 
     UndoStack.emplace_back(std::move(context));
     return redidSomething;

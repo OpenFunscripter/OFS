@@ -505,16 +505,28 @@ void RecordingMode::DrawModeSettings() noexcept
         if (!twoAxesMode) {
             recordingAxisX = app->ActiveFunscript();
             app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, recordingAxisX);
+            recordingActive = true;
         }
         else {
-            // FIXME
-            // int32_t rollIdx = app->sim3D->rollIndex;
-            // int32_t pitchIdx = app->sim3D->pitchIndex;
-            // recordingAxisX = app->LoadedFunscripts()[rollIdx];
-            // recordingAxisY = app->LoadedFunscripts()[pitchIdx];
-            // app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, { recordingAxisX, recordingAxisY });
+            recordingAxisX = nullptr;
+            recordingAxisY = nullptr;
+            for (auto& script : app->LoadedFunscripts()) {
+                if (Util::ContainsInsensitive(script->Title().c_str(), ".roll")) {
+                    recordingAxisX = script;
+                }
+                else if (Util::ContainsInsensitive(script->Title().c_str(), ".pitch")) {
+                    recordingAxisY = script;
+                }
+            }
+
+            if (recordingAxisX == nullptr || recordingAxisY == nullptr) {
+                twoAxesMode = false;
+            }
+            else {
+                app->undoSystem->Snapshot(StateType::GENERATE_ACTIONS, { recordingAxisX, recordingAxisY });
+                recordingActive = true;
+            }
         }
-        recordingActive = true;
     }
     else if (!playing && recordingActive) {
         recordingAxisX = nullptr;

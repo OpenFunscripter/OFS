@@ -41,10 +41,10 @@ void ScriptTimeline::updateSelection(const OverlayDrawingCtx& ctx, bool clear) n
 	float selectionInterval = endTime - startTime;
 	// Tiny selections are ignored this is a bit arbitrary.
 	// It's supposed to prevent accidentally clearing the selection.
-	if(selectionInterval <= 0.008f) // 80ms
+	if(selectionInterval <= 0.008f) // 8ms
 		return;
 	
-	EV::Enqueue<FunscriptShouldSelectTimeEvent>(startTime, endTime, clear, ctx.DrawingScript());
+	EV::Enqueue<FunscriptShouldSelectTimeEvent>(startTime, endTime, clear, ctx.ActiveScript());
 }
 
 void ScriptTimeline::FfmpegAudioProcessingFinished(const WaveformProcessingFinishedEvent* ev) noexcept

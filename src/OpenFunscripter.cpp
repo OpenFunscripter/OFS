@@ -2414,7 +2414,6 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem(TR(STATISTICS), NULL, &ofsState.showStatistics)) {}
             if (ImGui::MenuItem(TR(UNDO_REDO_HISTORY), NULL, &ofsState.showHistory)) {}
             if (ImGui::MenuItem(TR(SIMULATOR), NULL, &ofsState.showSimulator)) {}
-            if (ImGui::MenuItem(TR(SIMULATOR_3D), NULL, &ofsState.showSimulator3d)) {}
             if (ImGui::MenuItem(TR(METADATA), NULL, &ShowMetadataEditor)) {}
             if (ImGui::MenuItem(TR(ACTION_EDITOR), NULL, &ofsState.showActionEditor)) {}
             if (ImGui::MenuItem(TR(SPECIAL_FUNCTIONS), NULL, &ofsState.showSpecialFunctions)) {}
