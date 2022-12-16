@@ -19,6 +19,7 @@ set(OPEN_FUNSCRIPTER_SOURCES
   "api/OFS_WebsocketApi.cpp"
   "api/OFS_WebsocketApiClient.cpp"
   "api/OFS_WebsocketApiEvents.cpp"
+  "api/OFS_WebsocketApiCommands.cpp"
 
   "gl/OFS_GPU.cpp"
 

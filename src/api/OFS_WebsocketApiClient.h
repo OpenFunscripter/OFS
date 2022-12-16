@@ -1,6 +1,7 @@
 #pragma once
 #include "OFS_EventSystem.h"
 #include "OFS_WebsocketApiEvents.h"
+#include "OFS_WebsocketApiCommands.h"
 
 #include <string>
 
@@ -22,8 +23,10 @@ class OFS_WebsocketClient
     void handleSerializedEvent(const WsSerializedEvent* ev) noexcept;
     void handleProjectChange(const WsProjectChange* ev) noexcept;
     void sendMessage(const std::string& msg) noexcept;
-
+    
     public:
+    static WsCommandBuffer CommandBuffer;
+
     OFS_WebsocketClient() noexcept;
     OFS_WebsocketClient(const OFS_WebsocketClient&) = delete;
     OFS_WebsocketClient(OFS_WebsocketClient&&) = delete;

@@ -10,6 +10,8 @@
 #include "civetweb.h"
 #include "OpenFunscripter.h"
 
+WsCommandBuffer OFS_WebsocketClient::CommandBuffer = WsCommandBuffer();
+
 OFS_WebsocketClient::OFS_WebsocketClient() noexcept
 {
     LOG_DEBUG("Created new websocket client.");
@@ -112,10 +114,9 @@ void OFS_WebsocketClient::ReceiveText(char* data, size_t dataLen) noexcept
     if(!json.is_discarded())
     {
         // Valid json
-        auto& commandJson = json["command"];
-        if(commandJson.is_string())
+        if(CommandBuffer.AddCmd(json))
         {
-            auto& command = commandJson.get_ref<std::string&>();
+            // Success
         }
     }
 }

@@ -1295,6 +1295,7 @@ void OpenFunscripter::processEvents() noexcept
                 break;
             }
         }
+
         switch (event.type) {
             case SDL_CONTROLLERAXISMOTION:
                 if (std::abs(event.caxis.value) < 2000) break;
@@ -1411,6 +1412,10 @@ void OpenFunscripter::VideoLoaded(const VideoLoadedEvent* ev) noexcept
 void OpenFunscripter::PlayPauseChange(const PlayPauseChangeEvent* ev) noexcept
 {
     OFS_PROFILE(__FUNCTION__);
+    if (!ev->paused) {
+        IdleTimer = SDL_GetTicks();
+        setIdle(false);
+    }
 }
 
 void OpenFunscripter::update() noexcept

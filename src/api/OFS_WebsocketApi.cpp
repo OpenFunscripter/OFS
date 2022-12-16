@@ -333,7 +333,6 @@ void OFS_WebsocketApi::Update() noexcept
 {
 	if(ClientsConnected() <= 0) return;
 
-
 	for(int i=0, size=scriptUpdateCooldown.size(); i < size; i += 1)
 	{
 		auto& cd = scriptUpdateCooldown[i];
@@ -355,6 +354,8 @@ void OFS_WebsocketApi::Update() noexcept
 	{
 		eventSerializationCtx->StartProcessing();
 	}
+	
+	OFS_WebsocketClient::CommandBuffer.ProcessCommands();
 }
 
 void OFS_WebsocketApi::Shutdown() noexcept
