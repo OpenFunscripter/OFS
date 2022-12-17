@@ -152,7 +152,9 @@ default_font_end:
 
         // Upload texture to graphics system
         if (!fontTexture) {
-            glGenTextures(1, &fontTexture);
+            // If the font texture is not set it will be created by ImGui_ImplOpenGL3_CreateFontsTexture
+            // in the imgui_impl_opengl3.cpp
+            return;
         }
         glBindTexture(GL_TEXTURE_2D, fontTexture);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -161,7 +163,7 @@ default_font_end:
         glTexImage2D(GL_TEXTURE_2D, 0, OFS_InternalTexFormat, width, height, 0, OFS_TexFormat, GL_UNSIGNED_BYTE, pixels);
 
         io.Fonts->ClearTexData();
-        io.Fonts->TexID = (void*)(intptr_t)fontTexture;
+        io.Fonts->SetTexID((void*)(intptr_t)fontTexture);
 
         LOGF_INFO("Font atlas was rebuilt. Took %0.3lf seconds.", fontBuildDuration);
         LOGF_INFO("New font atlas size: %dx%d", width, height);

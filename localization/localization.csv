@@ -527,3 +527,4 @@ REMOVE_BOOKMARK_MSG,Do you want to remove the bookmark?,Do you want to remove th
 ADD_NEW_CHAPTER,Add chapter,Add chapter
 ADD_NEW_BOOKMARK,Add bookmark,Add bookmark
 SET_CHAPTER_SIZE,Set size,Set size
+SAVE_HEATMAP_WITH_CHAPTERS,Save heatmap with chapters,Save heatmap with chapters

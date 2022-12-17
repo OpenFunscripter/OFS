@@ -104,7 +104,7 @@ private:
     void quickExport() noexcept;
     void pickDifferentMedia() noexcept;
 
-    void saveHeatmap(const char* path, int width, int height);
+    void saveHeatmap(const char* path, int width, int height, bool withChapters);
     void updateTitle() noexcept;
 
     void removeAction(FunscriptAction action) noexcept;

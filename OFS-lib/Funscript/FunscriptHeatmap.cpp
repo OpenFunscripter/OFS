@@ -259,7 +259,8 @@ std::vector<uint8_t> FunscriptHeatmap::RenderToBitmap(int16_t width, int16_t hei
     GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
     glDrawBuffers(1, DrawBuffers);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        LOG_ERROR("Failed to create framebuffer for video!");
+        // FIXME: leaking memory
+        return {};
     }
 
     // Backup out main ImGuiContext

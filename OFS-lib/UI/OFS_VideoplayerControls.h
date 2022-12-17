@@ -21,9 +21,9 @@ private:
 	uint32_t lastPreviewUpdate = 0;
 	class OFS_Videoplayer* player = nullptr;
 
-	bool DrawChapter(const ImRect& frameBB, class Chapter& chapter, ImDrawFlags drawFlags) noexcept;
-	bool DrawBookmark(const ImRect& frameBB, class Bookmark& bookmark) noexcept;
-	void DrawChapterWidget() noexcept;
+	bool DrawChapter(ImDrawList* drawList, const ImRect& frameBB, class Chapter& chapter, ImDrawFlags drawFlags, float currentTime) noexcept;
+	bool DrawBookmark(ImDrawList* drawList, const ImRect& frameBB, class Bookmark& bookmark) noexcept;
+	void DrawChapterWidget(ImDrawList* drawList, float currentTime) noexcept;
 
 	void VideoLoaded(const class VideoLoadedEvent* ev) noexcept;
 	bool DrawTimelineWidget(const char* label, float* position) noexcept;
@@ -43,4 +43,6 @@ public:
 
 	void DrawTimeline() noexcept;
 	void DrawControls() noexcept;
+
+	std::vector<uint8_t> RenderHeatmapToBitmapWithChapters(int16_t width, int16_t height, int16_t chapterHeight) noexcept;
 };

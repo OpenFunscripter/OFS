@@ -7,11 +7,14 @@
 #include "OFS_Videoplayer.h"
 #include "OFS_VideoplayerEvents.h"
 #include "OFS_Localization.h"
+#include "OFS_DynamicFontAtlas.h"
 
 #include "state/states/ChapterState.h"
 
 #include "imgui.h"
 #include "imgui_stdlib.h"
+
+#include "OFS_GL.h"
 
 void OFS_VideoplayerControls::VideoLoaded(const VideoLoadedEvent* ev) noexcept
 {
@@ -180,12 +183,10 @@ bool OFS_VideoplayerControls::DrawTimelineWidget(const char* label, float* posit
     return change;
 }
 
-bool OFS_VideoplayerControls::DrawChapter(const ImRect& frameBB, Chapter& chapter, ImDrawFlags drawFlags) noexcept
+bool OFS_VideoplayerControls::DrawChapter(ImDrawList* drawList, const ImRect& frameBB, Chapter& chapter, ImDrawFlags drawFlags, float currentTime) noexcept
 {
-    auto drawList = ImGui::GetWindowDrawList();
     auto renderColor = ImGui::ColorConvertFloat4ToU32(chapter.color);
 
-    const float currentTime = player->CurrentTime();
     const float totalDuration = player->Duration();
 
     const float bookmarkSize = ImGui::GetFontSize()/3.f;
@@ -240,7 +241,6 @@ bool OFS_VideoplayerControls::DrawChapter(const ImRect& frameBB, Chapter& chapte
     {
         if(ImGui::IsMouseClicked(ImGuiMouseButton_Left))
         {
-            auto currentTime = player->CurrentTime();
             // When at the startTime go to endTime
             if(std::abs(currentTime - chapter.startTime) <= 0.01f)
             {
@@ -294,13 +294,13 @@ bool OFS_VideoplayerControls::DrawChapter(const ImRect& frameBB, Chapter& chapte
         if(ImGui::MenuItem(TR(SET_CHAPTER_SIZE))) 
         {
             auto& chapterState = ChapterState::State(chapterStateHandle);
-            chapterState.SetChapterSize(chapter, player->CurrentTime());
+            chapterState.SetChapterSize(chapter, currentTime);
         }
 
         if(ImGui::MenuItem(TR(ADD_NEW_BOOKMARK)))
         {
             auto& chapterState = ChapterState::State(chapterStateHandle);
-            if(auto bookmark = chapterState.AddBookmark(player->CurrentTime())) {}
+            if(auto bookmark = chapterState.AddBookmark(currentTime)) {}
         }
 
         if(ImGui::MenuItem(TR(EXPORT_CLIP)))
@@ -331,10 +331,8 @@ bool OFS_VideoplayerControls::DrawChapter(const ImRect& frameBB, Chapter& chapte
     return contextMenuOpen;
 }
 
-bool OFS_VideoplayerControls::DrawBookmark(const ImRect& frameBB, Bookmark& bookmark) noexcept
+bool OFS_VideoplayerControls::DrawBookmark(ImDrawList* drawList, const ImRect& frameBB, Bookmark& bookmark) noexcept
 {
-    auto drawList = ImGui::GetWindowDrawList();
-
     const float bookmarkSize = ImGui::GetFontSize()/3.f;
     auto totalDuration = player->Duration();
 
@@ -403,12 +401,11 @@ bool OFS_VideoplayerControls::DrawBookmark(const ImRect& frameBB, Bookmark& book
     return contextMenuOpen;
 }
 
-void OFS_VideoplayerControls::DrawChapterWidget() noexcept
+void OFS_VideoplayerControls::DrawChapterWidget(ImDrawList* drawList, float currentTime) noexcept
 {
     if(ImGui::GetCurrentWindowRead()->SkipItems)
         return;
 
-    auto drawList = ImGui::GetWindowDrawList();
     const auto& style = ImGui::GetStyle();
     const auto id = ImGui::GetID("ChapterWidget");
 
@@ -431,7 +428,7 @@ void OFS_VideoplayerControls::DrawChapterWidget() noexcept
         // First chapter
         auto& chapter = state.chapters.front();
         ImGui::PushID(0);
-        contextMenu |= DrawChapter(frameBB, chapter, ImDrawFlags_RoundCornersLeft | ImDrawFlags_RoundCornersTop);
+        contextMenu |= DrawChapter(drawList, frameBB, chapter, ImDrawFlags_RoundCornersLeft | ImDrawFlags_RoundCornersTop, currentTime);
         ImGui::PopID();
     }
 
@@ -439,7 +436,7 @@ void OFS_VideoplayerControls::DrawChapterWidget() noexcept
     {
         auto& chapter = state.chapters[i];
         ImGui::PushID(i);
-        contextMenu |= DrawChapter(frameBB, chapter, ImDrawFlags_RoundCornersTop);
+        contextMenu |= DrawChapter(drawList, frameBB, chapter, ImDrawFlags_RoundCornersTop, currentTime);
         ImGui::PopID();
     }
     
@@ -448,7 +445,7 @@ void OFS_VideoplayerControls::DrawChapterWidget() noexcept
         // Last chapter
         auto& chapter = state.chapters.back();
         ImGui::PushID(state.chapters.size());
-        contextMenu |= DrawChapter(frameBB, chapter, ImDrawFlags_RoundCornersRight | ImDrawFlags_RoundCornersTop);
+        contextMenu |= DrawChapter(drawList, frameBB, chapter, ImDrawFlags_RoundCornersRight | ImDrawFlags_RoundCornersTop, currentTime);
         ImGui::PopID();
     }
 
@@ -458,7 +455,7 @@ void OFS_VideoplayerControls::DrawChapterWidget() noexcept
     {
         auto& bookmark = state.bookmarks[i];
         ImGui::PushID(i + idOffset);
-        contextMenu |= DrawBookmark(frameBB, bookmark);
+        contextMenu |= DrawBookmark(drawList, frameBB, bookmark);
         ImGui::PopID();
     }
 
@@ -472,12 +469,12 @@ void OFS_VideoplayerControls::DrawChapterWidget() noexcept
         if(ImGui::MenuItem(TR(ADD_NEW_CHAPTER)))
         {
             auto& state = ChapterState::State(chapterStateHandle);
-            if(auto chapter = state.AddChapter(player->CurrentTime(), player->Duration())) {}
+            if(auto chapter = state.AddChapter(currentTime, player->Duration())) {}
         }
         if(ImGui::MenuItem(TR(ADD_NEW_BOOKMARK)))
         {
             auto& state = ChapterState::State(chapterStateHandle);
-            if(auto bookmark = state.AddBookmark(player->CurrentTime())) {}
+            if(auto bookmark = state.AddBookmark(currentTime)) {}
         }
         ImGui::EndPopup();
     }
@@ -569,7 +566,7 @@ void OFS_VideoplayerControls::DrawTimeline() noexcept
     // Spacing
     ImGui::Dummy(ImVec2(0.f, ImGui::GetFontSize()/2.f));
 
-    DrawChapterWidget();
+    DrawChapterWidget(ImGui::GetWindowDrawList(), player->CurrentTime());
 
     ImGui::End();
 }
@@ -634,4 +631,104 @@ void OFS_VideoplayerControls::DrawControls() noexcept
     }
     ImGui::NextColumn();
     ImGui::End();
+}
+
+#include "OFS_Shader.h"
+#include "imgui_impl/imgui_impl_opengl3.h"
+
+std::vector<uint8_t> OFS_VideoplayerControls::RenderHeatmapToBitmapWithChapters(int16_t width, int16_t height, int16_t chapterHeight) noexcept
+{
+    width = Util::Clamp<int16_t>(width, 32, FunscriptHeatmap::MaxResolution);
+    height = Util::Clamp<int16_t>(height + chapterHeight, 32, FunscriptHeatmap::MaxResolution);
+
+    // Prepare temporary framebuffer
+    uint32_t tmpFramebuffer = 0;
+    uint32_t tmpColorTex = 0;
+
+    glGenFramebuffers(1, &tmpFramebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, tmpFramebuffer);
+
+    glGenTextures(1, &tmpColorTex);
+    glBindTexture(GL_TEXTURE_2D, tmpColorTex);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, OFS_InternalTexFormat, width, height, 0, OFS_TexFormat, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmpColorTex, 0);
+    GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+    glDrawBuffers(1, DrawBuffers);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        // FIXME: leaking memory
+        return {};
+    }
+
+    // Backup out main ImGuiContext
+    auto prevContext = ImGui::GetCurrentContext();
+
+    // Create a temporary ImGuiContext
+    auto tmpContext = ImGui::CreateContext();
+    ImGui::SetCurrentContext(tmpContext);
+    ImGui_ImplOpenGL3_Init(OFS_SHADER_VERSION);
+
+    // Prepare drawing a single image
+    auto& io = ImGui::GetIO();
+    io.DisplaySize.x = width;
+    io.DisplaySize.y = height;
+
+    // This may be bad
+    OFS_DynFontAtlas::ptr->forceRebuild = true;
+    OFS_DynFontAtlas::RebuildFont(prevContext->FontSize);
+
+    // windows don't render on the first frame which is why we do multiple runs
+    for(int i=0; i < 2; i += 1)
+    {
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui::NewFrame();
+
+        // Draw calls
+        {
+            auto& style = ImGui::GetStyle();
+
+            ImGui::Begin("##heatmapRenderChapters", 0, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBackground);
+            ImGui::SetWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+            ImGui::SetWindowSize(io.DisplaySize, ImGuiCond_Always);
+            auto drawList = ImGui::GetWindowDrawList();
+            auto availWidth = io.DisplaySize.x - style.FramePadding.x - style.ItemSpacing.x;
+            Heatmap->DrawHeatmap(drawList, ImVec2(style.FramePadding.x + style.ItemSpacing.x, 0.f), ImVec2(availWidth, height - chapterHeight));
+
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+            ImGui::Dummy(ImVec2(0, height - chapterHeight));
+            DrawChapterWidget(ImGui::GetWindowDrawList(), -1.f);
+            ImGui::PopStyleVar();
+            ImGui::End();
+        }
+
+        // Render image
+        ImGui::Render();
+        OFS_ImGui::CurrentlyRenderedViewport = ImGui::GetMainViewport();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        OFS_ImGui::CurrentlyRenderedViewport = nullptr;
+    }
+
+
+    // Grab the bitmap
+    std::vector<uint8_t> bitmap;
+    bitmap.resize((size_t)io.DisplaySize.x * (size_t)(io.DisplaySize.y) * (size_t)4, 0);
+    glReadPixels(0, 0, io.DisplaySize.x, io.DisplaySize.y, GL_RGBA, GL_UNSIGNED_BYTE, bitmap.data());
+
+    // Destroy everything
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui::DestroyContext(tmpContext);
+
+    glDeleteTextures(1, &tmpColorTex);
+    glDeleteFramebuffers(1, &tmpFramebuffer);
+
+    // Reset to default framebuffer and main ImGuiContext    
+    ImGui::SetCurrentContext(prevContext);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    return bitmap;
 }

@@ -1880,11 +1880,17 @@ void OpenFunscripter::pickDifferentMedia() noexcept
     }
 }
 
-void OpenFunscripter::saveHeatmap(const char* path, int width, int height)
+void OpenFunscripter::saveHeatmap(const char* path, int width, int height, bool withChapters)
 {
     OFS_PROFILE(__FUNCTION__);
-    auto bitmap = playerControls.Heatmap->RenderToBitmap(width, height);
-    Util::SavePNG(path, bitmap.data(), width, height, 4);
+    if (withChapters) {
+        auto bitmap = playerControls.RenderHeatmapToBitmapWithChapters(width, height, height);
+        Util::SavePNG(path, bitmap.data(), width, height + height, 4);
+    }
+    else {
+        auto bitmap = playerControls.Heatmap->RenderToBitmap(width, height);
+        Util::SavePNG(path, bitmap.data(), width, height, 4);
+    }
 }
 
 void OpenFunscripter::removeAction(FunscriptAction action) noexcept
@@ -2316,7 +2322,26 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
                             auto savePath = Util::PathFromString(result.files.front());
                             if (savePath.has_filename()) {
                                 auto& ofsState = OpenFunscripterState::State(stateHandle);
-                                saveHeatmap(result.files.front().c_str(), ofsState.heatmapSettings.defaultWidth, ofsState.heatmapSettings.defaultHeight);
+                                saveHeatmap(result.files.front().c_str(), ofsState.heatmapSettings.defaultWidth, ofsState.heatmapSettings.defaultHeight, false);
+                                savePath.remove_filename();
+                                ofsState.heatmapSettings.defaultPath = savePath.u8string();
+                            }
+                        }
+                    },
+                    { "*.png" }, "PNG");
+            }
+            if (ImGui::MenuItem(TR(SAVE_HEATMAP_WITH_CHAPTERS))) {
+                std::string filename = ActiveFunscript()->Title() + "_Heatmap.png";
+                auto defaultPath = Util::PathFromString(ofsState.heatmapSettings.defaultPath);
+                Util::ConcatPathSafe(defaultPath, filename);
+                Util::SaveFileDialog(
+                    TR(SAVE_HEATMAP), defaultPath.u8string(),
+                    [this](auto& result) {
+                        if (result.files.size() > 0) {
+                            auto savePath = Util::PathFromString(result.files.front());
+                            if (savePath.has_filename()) {
+                                auto& ofsState = OpenFunscripterState::State(stateHandle);
+                                saveHeatmap(result.files.front().c_str(), ofsState.heatmapSettings.defaultWidth, ofsState.heatmapSettings.defaultHeight, true);
                                 savePath.remove_filename();
                                 ofsState.heatmapSettings.defaultPath = savePath.u8string();
                             }
