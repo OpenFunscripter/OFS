@@ -7,6 +7,7 @@
 #include "OFS_VideoplayerEvents.h"
 #include "OFS_WebsocketApiEvents.h"
 #include "state/WebsocketApiState.h"
+#include "state/states/ChapterState.h"
 
 #include "civetweb.h"
 
@@ -235,6 +236,38 @@ OFS_WebsocketApi::OFS_WebsocketApi() noexcept
 		}
 	));
 
+	EV::Queue().appendListener(MetadataChanged::EventType, 
+		MetadataChanged::HandleEvent(
+			[this](const MetadataChanged* ev) noexcept
+			{
+				auto app = OpenFunscripter::ptr;				
+				for(int i=0, size=app->LoadedFunscripts().size(); i < size; i += 1)
+				{
+					auto scriptIdx = i;
+					if(scriptIdx + 1 > this->scriptUpdateCooldown.size()) {
+						scriptUpdateCooldown.resize(scriptIdx + 1, 0);
+					}
+					scriptUpdateCooldown[scriptIdx] = SDL_GetTicks();
+				}
+			}
+		));
+	
+	EV::Queue().appendListener(ChapterStateChanged::EventType, 
+		ChapterStateChanged::HandleEvent(
+			[this](const ChapterStateChanged* ev) noexcept
+			{
+				auto app = OpenFunscripter::ptr;				
+				for(int i=0, size=app->LoadedFunscripts().size(); i < size; i += 1)
+				{
+					auto scriptIdx = i;
+					if(scriptIdx + 1 > this->scriptUpdateCooldown.size()) {
+						scriptUpdateCooldown.resize(scriptIdx + 1, 0);
+					}
+					scriptUpdateCooldown[scriptIdx] = SDL_GetTicks();
+				}
+			}
+		));
+
 	EV::Queue().appendListener(FunscriptRemovedEvent::EventType, FunscriptRemovedEvent::HandleEvent(
 		[this](const FunscriptRemovedEvent* ev) noexcept
 		{
@@ -345,6 +378,7 @@ void OFS_WebsocketApi::Update() noexcept
 				auto& projectState = app->LoadedProject->State();
 				auto& script = app->LoadedFunscripts()[i];
 				eventSerializationCtx->Push<WsFunscriptChange>(script->Title(), script->Data(), projectState.metadata);
+				LOGF_DEBUG("[WsFunscriptChange]: ScriptIdx: %d", i);
 			}
 			cd = 0;
 		}

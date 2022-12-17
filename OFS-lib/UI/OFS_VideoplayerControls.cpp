@@ -294,7 +294,10 @@ bool OFS_VideoplayerControls::DrawChapter(ImDrawList* drawList, const ImRect& fr
         if(ImGui::MenuItem(TR(SET_CHAPTER_SIZE))) 
         {
             auto& chapterState = ChapterState::State(chapterStateHandle);
-            chapterState.SetChapterSize(chapter, currentTime);
+            if(chapterState.SetChapterSize(chapter, currentTime))
+            {
+                EV::Enqueue<ChapterStateChanged>();
+            }
         }
 
         if(ImGui::MenuItem(TR(ADD_NEW_BOOKMARK)))
@@ -469,12 +472,16 @@ void OFS_VideoplayerControls::DrawChapterWidget(ImDrawList* drawList, float curr
         if(ImGui::MenuItem(TR(ADD_NEW_CHAPTER)))
         {
             auto& state = ChapterState::State(chapterStateHandle);
-            if(auto chapter = state.AddChapter(currentTime, player->Duration())) {}
+            if(auto chapter = state.AddChapter(currentTime, player->Duration())) {
+                EV::Enqueue<ChapterStateChanged>();
+            }
         }
         if(ImGui::MenuItem(TR(ADD_NEW_BOOKMARK)))
         {
             auto& state = ChapterState::State(chapterStateHandle);
-            if(auto bookmark = state.AddBookmark(currentTime)) {}
+            if(auto bookmark = state.AddBookmark(currentTime)) {
+                EV::Enqueue<ChapterStateChanged>();
+            }
         }
         ImGui::EndPopup();
     }

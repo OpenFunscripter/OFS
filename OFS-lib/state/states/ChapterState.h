@@ -65,6 +65,12 @@ REFL_TYPE(ChapterState)
 REFL_END
 
 
+class ChapterStateChanged : public OFS_Event<ChapterStateChanged>
+{
+    public:
+    ChapterStateChanged() noexcept {}
+};
+
 class ExportClipForChapter : public OFS_Event<ExportClipForChapter>
 {
     public:

@@ -1564,6 +1564,7 @@ void OpenFunscripter::Step() noexcept
                 auto& projectState = LoadedProject->State();
                 projectState.metadata.duration = player->Duration();
                 if (metadataEditor->ShowMetadataEditor(&ShowMetadataEditor, projectState.metadata)) {
+                    EV::Enqueue<MetadataChanged>();
                 }
             }
 

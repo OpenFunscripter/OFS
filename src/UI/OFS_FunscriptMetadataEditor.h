@@ -6,6 +6,14 @@
 
 #include "Funscript.h"
 
+#include "OFS_Event.h"
+
+class MetadataChanged : public OFS_Event<MetadataChanged>
+{
+    public:
+    MetadataChanged() noexcept {}
+};
+
 class OFS_FunscriptMetadataEditor
 {
 public:

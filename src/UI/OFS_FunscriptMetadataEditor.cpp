@@ -17,18 +17,18 @@ bool OFS_FunscriptMetadataEditor::ShowMetadataEditor(bool* open, Funscript::Meta
 {
     if(*open) ImGui::OpenPopup(TR_ID("METADATA_EDITOR", Tr::METADATA_EDITOR));
     OFS_PROFILE(__FUNCTION__);
-    bool save = false;
+    bool metaDataChanged = false;
 
     if (ImGui::BeginPopupModal(TR_ID("METADATA_EDITOR", Tr::METADATA_EDITOR), open, ImGuiWindowFlags_NoDocking)) {
-        ImGui::InputText(TR(TITLE), &metadata.title);
+        metaDataChanged |= ImGui::InputText(TR(TITLE), &metadata.title);
         Util::FormatTime(Util::FormatBuffer, sizeof(Util::FormatBuffer), (float)metadata.duration, false);
         ImGui::LabelText(TR(DURATION), "%s", Util::FormatBuffer);
 
-        ImGui::InputText(TR(CREATOR), &metadata.creator);
-        ImGui::InputText(TR(URL), &metadata.script_url);
-        ImGui::InputText(TR(VIDEO_URL), &metadata.video_url);
-        ImGui::InputTextMultiline(TR(DESCRIPTION), &metadata.description, ImVec2(0.f, ImGui::GetFontSize()*3.f));
-        ImGui::InputTextMultiline(TR(NOTES), &metadata.notes, ImVec2(0.f, ImGui::GetFontSize() * 3.f));
+        metaDataChanged |= ImGui::InputText(TR(CREATOR), &metadata.creator);
+        metaDataChanged |= ImGui::InputText(TR(URL), &metadata.script_url);
+        metaDataChanged |= ImGui::InputText(TR(VIDEO_URL), &metadata.video_url);
+        metaDataChanged |= ImGui::InputTextMultiline(TR(DESCRIPTION), &metadata.description, ImVec2(0.f, ImGui::GetFontSize()*3.f));
+        metaDataChanged |= ImGui::InputTextMultiline(TR(NOTES), &metadata.notes, ImVec2(0.f, ImGui::GetFontSize() * 3.f));
 
         {
             enum class LicenseType : int32_t {
@@ -55,16 +55,19 @@ bool OFS_FunscriptMetadataEditor::ShowMetadataEditor(bool* open, Funscript::Meta
                 {
                     metadata.license = "";
                     currentLicense = LicenseType::None;
+                    metaDataChanged = true;
                 }
                 if(ImGui::Selectable(TR(FREE), currentLicense == LicenseType::Free))
                 {
                     metadata.license = "Free";
                     currentLicense = LicenseType::Free;
+                    metaDataChanged = true;
                 }
                 if(ImGui::Selectable(TR(PAID), currentLicense == LicenseType::Paid))
                 {
                     metadata.license = "Paid";
                     currentLicense = LicenseType::Paid;
+                    metaDataChanged = true;
                 }
                 ImGui::EndCombo();
             }
@@ -74,7 +77,7 @@ bool OFS_FunscriptMetadataEditor::ShowMetadataEditor(bool* open, Funscript::Meta
             }
         }
     
-        auto renderTagButtons = [](std::vector<std::string>& tags) {
+        auto renderTagButtons = [&metaDataChanged](std::vector<std::string>& tags) {
             auto availableWidth = ImGui::GetContentRegionAvail().x;
             int removeIndex = -1;
             for (int i = 0; i < tags.size(); i++) {
@@ -94,18 +97,20 @@ bool OFS_FunscriptMetadataEditor::ShowMetadataEditor(bool* open, Funscript::Meta
             }
             if (removeIndex != -1) {
                 tags.erase(tags.begin() + removeIndex);
+                metaDataChanged = true;
             }
         };
 
         constexpr const char* tagIdString = "##Tag";
         ImGui::TextUnformatted(TR(TAGS));
         static std::string newTag;
-        auto addTag = [&metadata, tagIdString](std::string& newTag) {
+        auto addTag = [&metadata, &metaDataChanged, tagIdString](std::string& newTag) {
             Util::trim(newTag);
             if (!newTag.empty()) {
                 metadata.tags.emplace_back(newTag); newTag.clear();
             }
             ImGui::ActivateItem(ImGui::GetID(tagIdString));
+            metaDataChanged = true;
         };
 
         if (ImGui::InputText(tagIdString, &newTag, ImGuiInputTextFlags_EnterReturnsTrue)) {
@@ -124,13 +129,14 @@ bool OFS_FunscriptMetadataEditor::ShowMetadataEditor(bool* open, Funscript::Meta
         constexpr const char* performerIdString = "##Performer";
         ImGui::TextUnformatted(TR(PERFORMERS));
         static std::string newPerformer;
-        auto addPerformer = [&metadata, performerIdString](std::string& newPerformer) {
+        auto addPerformer = [&metadata, &metaDataChanged, performerIdString](std::string& newPerformer) {
             Util::trim(newPerformer);
             if (!newPerformer.empty()) {
                 metadata.performers.emplace_back(newPerformer); newPerformer.clear(); 
             }
             auto performerID = ImGui::GetID(performerIdString);
             ImGui::ActivateItem(performerID);
+            metaDataChanged = true;
         };
         if (ImGui::InputText(performerIdString, &newPerformer, ImGuiInputTextFlags_EnterReturnsTrue)) {
             addPerformer(newPerformer);
@@ -140,14 +146,10 @@ bool OFS_FunscriptMetadataEditor::ShowMetadataEditor(bool* open, Funscript::Meta
             addPerformer(newPerformer);
         }
 
-
         renderTagButtons(metadata.performers);
         ImGui::NewLine();
         ImGui::Separator();
-        float availWidth = ImGui::GetContentRegionAvail().x - style.ItemSpacing.x;
-        availWidth /= 2.f;
-        if (ImGui::Button(TR(SAVE), ImVec2(availWidth, 0.f))) { save = true; }
-        ImGui::SameLine();
+        float availWidth = ImGui::GetContentRegionAvail().x;
         if (ImGui::Button(FMT("%s " ICON_COPY, TR(SAVE_TEMPLATE)), ImVec2(availWidth, 0.f))) {
             auto& state = FunscriptMetadataState::State(stateHandle);
             state.defaultMetadata = metadata;
@@ -155,5 +157,5 @@ bool OFS_FunscriptMetadataEditor::ShowMetadataEditor(bool* open, Funscript::Meta
         OFS::Tooltip(TR(SAVE_TEMPLATE_TOOLTIP));
         ImGui::EndPopup();
     }
-    return save;   
+    return metaDataChanged;   
 }
