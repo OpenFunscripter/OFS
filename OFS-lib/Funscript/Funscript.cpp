@@ -727,73 +727,80 @@ bool Funscript::Deserialize(const nlohmann::json& json, Funscript::Metadata* out
 	{
 		auto& chapterState = ChapterState::StaticStateSlow();
 		auto& jsonMetadata = json["metadata"];
-		auto& jsonBookmarks = jsonMetadata["bookmarks"];
-		auto& jsonChapters = jsonMetadata["chapters"];
 
-		if(jsonBookmarks.is_array())
+		if(jsonMetadata.contains("bookmarks"))
 		{
-			for(auto& jsonBookmark : jsonBookmarks)
+			auto& jsonBookmarks = jsonMetadata["bookmarks"];
+			if(jsonBookmarks.is_array())
 			{
-				if(!jsonBookmark.contains("name") || !jsonBookmark.contains("time"))
-					continue;
-				if(!jsonBookmark["name"].is_string() || !jsonBookmark["time"].is_string())
-					continue;
-
-				auto name = std::move(jsonBookmark["name"].get<std::string>());
-				auto timeStr = std::move(jsonBookmark["time"].get<std::string>());
-
-				bool succ = false;
-				float time = Util::ParseTime(timeStr.c_str(), &succ);
-				if(!succ) 
+				for(auto& jsonBookmark : jsonBookmarks)
 				{
-					LOGF_ERROR("Failed to parse \"%s\" to time", timeStr.c_str());
-					continue;
-				}
+					if(!jsonBookmark.contains("name") || !jsonBookmark.contains("time"))
+						continue;
+					if(!jsonBookmark["name"].is_string() || !jsonBookmark["time"].is_string())
+						continue;
 
-				if(auto bookmark = chapterState.AddBookmark(time)) 
-				{
-					bookmark->name = std::move(name);
+					auto name = std::move(jsonBookmark["name"].get<std::string>());
+					auto timeStr = std::move(jsonBookmark["time"].get<std::string>());
+
+					bool succ = false;
+					float time = Util::ParseTime(timeStr.c_str(), &succ);
+					if(!succ) 
+					{
+						LOGF_ERROR("Failed to parse \"%s\" to time", timeStr.c_str());
+						continue;
+					}
+
+					if(auto bookmark = chapterState.AddBookmark(time)) 
+					{
+						bookmark->name = std::move(name);
+					}
 				}
 			}
 		}
-		if(jsonChapters.is_array())
+
+		if(jsonMetadata.contains("chapters"))
 		{
-			for(auto& jsonChapter : jsonChapters)
+			auto& jsonChapters = jsonMetadata["chapters"];
+			if(jsonChapters.is_array())
 			{
-				if(!jsonChapter.contains("name") || !jsonChapter.contains("startTime") || !jsonChapter.contains("endTime"))
-					continue;
-				if(!jsonChapter["name"].is_string() || !jsonChapter["startTime"].is_string() || !jsonChapter["endTime"].is_string())
-					continue;
-				
-				auto name = std::move(jsonChapter["name"].get<std::string>());
-				auto startTimeStr = std::move(jsonChapter["startTime"].get<std::string>());
-				auto endTimeStr = std::move(jsonChapter["endTime"].get<std::string>());
-
-				bool succ = false;
-				float startTime = Util::ParseTime(startTimeStr.c_str(), &succ);
-				if(!succ) 
+				for(auto& jsonChapter : jsonChapters)
 				{
-					LOGF_ERROR("Failed to parse \"%s\" to time", startTimeStr.c_str());
-					continue;
-				}
-				float endTime = Util::ParseTime(endTimeStr.c_str(), &succ);
-				if(!succ)
-				{
-					LOGF_ERROR("Failed to parse \"%s\" to time", endTimeStr.c_str());
-					continue;
-				}
+					if(!jsonChapter.contains("name") || !jsonChapter.contains("startTime") || !jsonChapter.contains("endTime"))
+						continue;
+					if(!jsonChapter["name"].is_string() || !jsonChapter["startTime"].is_string() || !jsonChapter["endTime"].is_string())
+						continue;
+					
+					auto name = std::move(jsonChapter["name"].get<std::string>());
+					auto startTimeStr = std::move(jsonChapter["startTime"].get<std::string>());
+					auto endTimeStr = std::move(jsonChapter["endTime"].get<std::string>());
 
-				if(startTime > endTime)
-					continue;
+					bool succ = false;
+					float startTime = Util::ParseTime(startTimeStr.c_str(), &succ);
+					if(!succ) 
+					{
+						LOGF_ERROR("Failed to parse \"%s\" to time", startTimeStr.c_str());
+						continue;
+					}
+					float endTime = Util::ParseTime(endTimeStr.c_str(), &succ);
+					if(!succ)
+					{
+						LOGF_ERROR("Failed to parse \"%s\" to time", endTimeStr.c_str());
+						continue;
+					}
 
-				// Insert chapter at the middle point				
-				float middlePoint = startTime + ((endTime - startTime)/2.f);
-				if(auto chapter = chapterState.AddChapter(middlePoint, 1.f))
-				{
-					chapter->name = std::move(name);
-					// Set size is used to safely resize the chapter to the correct size
-					chapterState.SetChapterSize(*chapter, startTime);
-					chapterState.SetChapterSize(*chapter, endTime);
+					if(startTime > endTime)
+						continue;
+
+					// Insert chapter at the middle point				
+					float middlePoint = startTime + ((endTime - startTime)/2.f);
+					if(auto chapter = chapterState.AddChapter(middlePoint, 1.f))
+					{
+						chapter->name = std::move(name);
+						// Set size is used to safely resize the chapter to the correct size
+						chapterState.SetChapterSize(*chapter, startTime);
+						chapterState.SetChapterSize(*chapter, endTime);
+					}
 				}
 			}
 		}
