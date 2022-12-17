@@ -33,6 +33,9 @@
 #define SINFL_IMPLEMENTATION
 #include "sinfl.h"
 
+#define RND_IMPLEMENTATION
+#include "rnd.h"
+
 char Util::FormatBuffer[4096];
 
 static void SanitizeString(std::string& str) noexcept
@@ -357,4 +360,31 @@ std::filesystem::path Util::FfmpegPath() noexcept
     auto ffmpegPath = std::filesystem::path("ffmpeg");
     return ffmpegPath;
 #endif
+}
+
+static rnd_pcg_t pcg;
+void Util::InitRandom() noexcept
+{
+    time_t t = time(0);
+    rnd_pcg_seed(&pcg, t);
+}
+
+float Util::NextFloat() noexcept
+{
+    return rnd_pcg_nextf(&pcg);
+}
+
+uint32_t Util::RandomColor(float s, float v, float alpha) noexcept
+{
+    // This is cool :^)
+    // https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/
+    constexpr float goldenRatioConjugate = 0.618033988749895f;
+    static float H = NextFloat();
+    
+    H += goldenRatioConjugate;
+    H = SDL_fmodf(H, 1.f);
+
+    ImColor color;
+    color.SetHSV(H, s, v, alpha);
+    return ImGui::ColorConvertFloat4ToU32(color);
 }

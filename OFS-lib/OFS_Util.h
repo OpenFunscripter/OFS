@@ -511,6 +511,10 @@ public:
                 return (*pf)(decltype(args)(args)...);
             };
     }
+
+    static void InitRandom() noexcept;
+    static float NextFloat() noexcept;
+    static uint32_t RandomColor(float s, float v, float alpha = 1.f) noexcept;
 };
 
 #define FMT(fmt, ...) Util::Format(fmt, __VA_ARGS__)

@@ -89,6 +89,7 @@ Chapter* ChapterState::AddChapter(float time, float duration) noexcept
     Chapter newChapter = {0};
     newChapter.startTime = startTime;
     newChapter.endTime = endTime;
+    newChapter.color = Util::RandomColor(0.65f, 0.90f);
 
     if(chapters.empty())
     {
