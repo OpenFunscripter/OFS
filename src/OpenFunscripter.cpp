@@ -1713,6 +1713,7 @@ void OpenFunscripter::Shutdown() noexcept
     OFS_FileLogger::Shutdown();
     webApi->Shutdown();
 
+    controllerInput->Shutdown();
     SDL_GL_DeleteContext(glContext);
     SDL_DestroyWindow(window);
     SDL_Quit();

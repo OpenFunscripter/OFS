@@ -40,10 +40,10 @@ void ControllerInput::CloseController() noexcept
         isConnected = false;
         if (haptic) {
             SDL_HapticClose(haptic);
-            haptic = 0;
+            haptic = nullptr;
         }
         SDL_GameControllerClose(gamepad);
-        gamepad = 0;
+        gamepad = nullptr;
     }
 }
 
@@ -118,5 +118,12 @@ void ControllerInput::UpdateControllers() noexcept
         if (controller.Connected()) {
             controller.Update();
         }
+    }
+}
+
+void ControllerInput::Shutdown() noexcept
+{
+    for (auto& controller : Controllers) {
+        controller.CloseController();
     }
 }

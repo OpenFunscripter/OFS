@@ -28,6 +28,7 @@ public:
 
     void Init() noexcept;
     void Update() noexcept;
+    void Shutdown() noexcept;
 
     static void UpdateControllers() noexcept;
 
