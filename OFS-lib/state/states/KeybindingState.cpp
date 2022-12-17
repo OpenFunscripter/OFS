@@ -95,7 +95,7 @@ enum OFS_KeyMod : int32_t
     OFS_KeyMod_Shift = 1 << 13,
     OFS_KeyMod_Alt   = 1 << 14,
     OFS_KeyMod_Super = 1 << 15,
-    OFS_KeyMod_Mask_ = 0xF000,
+    OFS_KeyMod_Mask_ = 0xF800,
 };
 
 static std::unordered_map<OFS_Key, ImGuiKey> GetOfsToImGuiMap() noexcept

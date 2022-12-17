@@ -138,7 +138,7 @@ if(OFS_PROFILE)
 target_compile_definitions(tracy PUBLIC "TRACY_ENABLE")
 endif()
 
-set(SOL2_LUA_VERSION "5.4" CACHE BOOL "" FORCE)
+set(SOL2_LUA_VERSION "5.4.4" CACHE BOOL "" FORCE)
 set(SOL2_BUILD_LUA OFF CACHE BOOL "" FORCE)
 add_subdirectory("sol2/")
 
