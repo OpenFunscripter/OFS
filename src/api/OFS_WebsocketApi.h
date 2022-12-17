@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <vector>
+#include <atomic>
 
 #include "SDL_thread.h"
 #include "SDL_atomic.h"
@@ -14,8 +15,9 @@
 struct EventSerializationContext
 {
     SDL_cond* processCond = nullptr;
-    volatile bool shouldExit = false;
-    volatile bool hasExited = false;
+    
+    std::atomic<bool> shouldExit = false;
+    std::atomic<bool> hasExited = false;
 
     SDL_SpinLock eventLock = {0};
     std::vector<EventPointer> events;

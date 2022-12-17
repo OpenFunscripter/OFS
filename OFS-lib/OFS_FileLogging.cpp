@@ -12,6 +12,8 @@
 #include "stb_sprintf.h"
 #include <vector>
 
+#include <atomic>
+
 static OFS::AppLog OFS_MainLog;
 
 SDL_RWops* OFS_FileLogger::LogFileHandle = nullptr;
@@ -21,8 +23,8 @@ struct OFS_LogThread {
     SDL_cond* WaitFlush = nullptr;
     std::vector<char> LogMsgBuffer;
 
-    volatile bool ShouldExit = false;
-    volatile bool Exited = false;
+    std::atomic<bool> ShouldExit = false;
+    std::atomic<bool> Exited = false;
 
     void Init() noexcept
     {
