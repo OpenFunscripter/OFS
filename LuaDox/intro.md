@@ -12,7 +12,7 @@ An extension must have it's own directory with a `main.lua` in it.
 By default there is a `Core` extension which serves as a demo.
 
 ```
-OFS2_data
+OFS3_data
 |-- extensions
    |-- Core
       |-- main.lua
