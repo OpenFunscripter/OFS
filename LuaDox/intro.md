@@ -7,7 +7,7 @@
 
 # Extension Structure
 
-Extension live in the `%appdata%/OFS2_data/extensions/` directory.  
+Extension live in the `%appdata%/OFS3_data/extensions/` directory.  
 An extension must have it's own directory with a `main.lua` in it.  
 By default there is a `Core` extension which serves as a demo.
 
