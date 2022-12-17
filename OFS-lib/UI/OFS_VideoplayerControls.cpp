@@ -203,7 +203,8 @@ bool OFS_VideoplayerControls::DrawChapter(ImDrawList* drawList, const ImRect& fr
     if(ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem))
     {
         auto hoverRect = chapterRect;
-        hoverRect.Expand(ImVec2(0.f, -(bookmarkSize)));
+        hoverRect.Max.y -= bookmarkSize;
+
         if(hoverRect.Contains(mousePos))
         {
             renderColor = ImColor(
@@ -215,6 +216,7 @@ bool OFS_VideoplayerControls::DrawChapter(ImDrawList* drawList, const ImRect& fr
         }
     }
     drawList->AddRectFilled(chapterRect.Min, chapterRect.Max, renderColor, 10.f, drawFlags);
+
     if(currentTime >= chapter.startTime && currentTime <= chapter.endTime)
     {
         drawList->AddRect(chapterRect.Min, chapterRect.Max, IM_COL32(255, 255, 255, 200), 10.f, drawFlags, 3.f);
