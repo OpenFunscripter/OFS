@@ -118,7 +118,7 @@ bool OpenFunscripter::Init(int argc, char* argv[])
     OFS_FileLogger::Init();
     Util::InMainThread();
     Util::InitRandom();
-    
+
     FUN_ASSERT(!ptr, "there can only be one instance");
     ptr = this;
 
@@ -1713,7 +1713,7 @@ void OpenFunscripter::Shutdown() noexcept
     OFS_FileLogger::Shutdown();
     webApi->Shutdown();
     controllerInput->Shutdown();
-    
+
     SDL_GL_DeleteContext(glContext);
     SDL_DestroyWindow(window);
     SDL_Quit();

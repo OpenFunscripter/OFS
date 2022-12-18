@@ -380,7 +380,7 @@ uint32_t Util::RandomColor(float s, float v, float alpha) noexcept
     // https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/
     constexpr float goldenRatioConjugate = 0.618033988749895f;
     static float H = NextFloat();
-    
+
     H += goldenRatioConjugate;
     H = SDL_fmodf(H, 1.f);
 

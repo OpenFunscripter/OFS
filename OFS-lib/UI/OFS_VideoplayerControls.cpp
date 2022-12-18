@@ -289,7 +289,7 @@ bool OFS_VideoplayerControls::DrawChapter(ImDrawList* drawList, const ImRect& fr
 
         ImGui::Text("%s - %s", timeBuf1, timeBuf2);
         ImGui::SetNextItemWidth(ImGui::GetItemRectSize().x);
-        ImGui::InputTextWithHint("##ChapterName", TR(NAME), &chapter.name);
+        bool chapterChange = ImGui::InputTextWithHint("##ChapterName", TR(NAME), &chapter.name);
         
         ImGui::Separator();
 
@@ -305,7 +305,10 @@ bool OFS_VideoplayerControls::DrawChapter(ImDrawList* drawList, const ImRect& fr
         if(ImGui::MenuItem(TR(ADD_NEW_BOOKMARK)))
         {
             auto& chapterState = ChapterState::State(chapterStateHandle);
-            if(auto bookmark = chapterState.AddBookmark(currentTime)) {}
+            if(auto bookmark = chapterState.AddBookmark(currentTime)) 
+            {
+                EV::Enqueue<ChapterStateChanged>();
+            }
         }
 
         if(ImGui::MenuItem(TR(EXPORT_CLIP)))
@@ -326,10 +329,16 @@ bool OFS_VideoplayerControls::DrawChapter(ImDrawList* drawList, const ImRect& fr
                         auto& state = ChapterState::State(stateHandle);
                         auto it = std::find_if(state.chapters.begin(), state.chapters.end(),
                             [chapterPtr](auto& chapter) { return chapterPtr == &chapter; });
-                        if(it != state.chapters.end())
+                        if(it != state.chapters.end()) {
                             state.chapters.erase(it);
+                            EV::Enqueue<ChapterStateChanged>();
+                        }
                     }
                 });
+        }
+        if(chapterChange)
+        {
+            EV::Enqueue<ChapterStateChanged>();
         }
         ImGui::EndPopup();
     }
@@ -383,7 +392,7 @@ bool OFS_VideoplayerControls::DrawBookmark(ImDrawList* drawList, const ImRect& f
         Util::FormatTime(timeBuf, sizeof(timeBuf), bookmark.time, true);
         ImGui::TextUnformatted(timeBuf);
         ImGui::SetNextItemWidth(ImGui::GetItemRectSize().x);
-        ImGui::InputTextWithHint("##bookmarkName", TR(NAME), &bookmark.name);
+        bool bookmarkChange = ImGui::InputTextWithHint("##bookmarkName", TR(NAME), &bookmark.name);
         
         if(ImGui::MenuItem(TR(REMOVE)))
         {
@@ -396,10 +405,16 @@ bool OFS_VideoplayerControls::DrawBookmark(ImDrawList* drawList, const ImRect& f
                         auto& state = ChapterState::State(stateHandle);
                         auto it = std::find_if(state.bookmarks.begin(), state.bookmarks.end(),
                             [bookmarkPtr](auto& bookmark) { return bookmarkPtr == &bookmark; });
-                        if(it != state.bookmarks.end())
+                        if(it != state.bookmarks.end()) {
                             state.bookmarks.erase(it);
+                            EV::Enqueue<ChapterStateChanged>();
+                        }
                     }
                 });
+        }
+        if(bookmarkChange)
+        {
+            EV::Enqueue<ChapterStateChanged>();
         }
         ImGui::EndPopup();
     }
