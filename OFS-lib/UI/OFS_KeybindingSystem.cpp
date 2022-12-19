@@ -170,23 +170,30 @@ void OFS_KeybindingSystem::RegisterAction(OFS_Action&& action, TrString name, co
     FUN_ASSERT(group, "Couldn't find group.");
 
     auto it = actions.emplace(std::move(std::make_pair(action.Id, std::move(action))));
-    FUN_ASSERT(it.second, "action.Id not unique");
 
-    uint32_t uiIdx = actionUI.size();
-    auto& ui = actionUI.emplace_back();
-    ui.ActionId = it.first->second.Id;
-    ui.Name = std::move(name);
-    group->actionUiIndices.emplace_back(uiIdx);
-
-    for(auto& trigger : defaultTriggers)
+    if(it.second)
     {
-        auto it = state.Triggers.find(trigger);
-        if(it == state.Triggers.end())
+        uint32_t uiIdx = actionUI.size();
+        auto& ui = actionUI.emplace_back();
+        ui.ActionId = it.first->second.Id;
+        ui.Name = std::move(name);
+        group->actionUiIndices.emplace_back(uiIdx);
+
+        for(auto& trigger : defaultTriggers)
         {
-            auto newTrigger = trigger;
-            newTrigger.MappedActionId = ui.ActionId;
-            state.Triggers.emplace(newTrigger);
+            auto it = state.Triggers.find(trigger);
+            if(it == state.Triggers.end())
+            {
+                auto newTrigger = trigger;
+                newTrigger.MappedActionId = ui.ActionId;
+                state.Triggers.emplace(newTrigger);
+            }
         }
+    }
+    else 
+    {
+        FUN_ASSERT(it.first->second.Dynamic, "This shouldn't happen for static actions.");
+        LOGF_DEBUG("Action \"%s\" already exists", it.first->second.Id.c_str());
     }
 }
 

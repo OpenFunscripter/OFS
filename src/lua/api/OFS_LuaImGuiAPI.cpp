@@ -43,6 +43,7 @@ OFS_ImGuiAPI::OFS_ImGuiAPI(sol::usertype<class OFS_ExtensionAPI>& ofs) noexcept
     ofs["Separator"] = OFS_ImGuiAPI::Separator;
     ofs["NewLine"] = OFS_ImGuiAPI::NewLine;
     ofs["Tooltip"] = OFS_ImGuiAPI::Tooltip;
+    ofs["CollapsingHeader"] = OFS_ImGuiAPI::CollapsingHeader;
     ofs["BeginDisabled"] = [this](bool disabled) noexcept {return this->BeginDisabled(disabled); };
     ofs["EndDisabled"] = [this]() noexcept {return this->EndDisabled(); };
 }
@@ -193,4 +194,9 @@ void OFS_ImGuiAPI::Tooltip(const char* txt) noexcept
         ImGui::TextUnformatted(txt);
         ImGui::EndTooltip();
     }
+}
+
+bool OFS_ImGuiAPI::CollapsingHeader(const char* txt) noexcept
+{
+    return ImGui::CollapsingHeader(txt, ImGuiTreeNodeFlags_None);
 }

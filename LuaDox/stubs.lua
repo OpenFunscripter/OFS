@@ -153,6 +153,17 @@ function ofs.Checkbox(txt, checked) end
 -- @treturn bool selectionChanged
 function ofs.Combo(txt, currentIdx, items) end
 
+--- Create a collapsable header
+-- @example
+--   function gui()
+--     if ofs.CollapsingHeader("abc") then
+--        ofs.Text("This text is only visible when the header is opened")
+--     end
+--   end
+-- @tparam string txt
+-- @treturn bool headerOpened
+function ofs.CollapsingHeader(txt) end
+
 --- Put next control on the same line as the previous
 -- @example
 --   ofs.Button("Button 1")
