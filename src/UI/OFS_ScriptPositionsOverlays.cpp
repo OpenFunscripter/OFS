@@ -156,8 +156,6 @@ void TempoOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
     auto& tempo = TempoOverlayState::State(stateHandle);
     BaseOverlay::DrawHeightLines(ctx);
     timeline->DrawAudioWaveform(ctx);
-    BaseOverlay::DrawActionLines(ctx);
-    BaseOverlay::DrawActionPoints(ctx);
     BaseOverlay::DrawSecondsLabel(ctx);
     BaseOverlay::DrawScriptLabel(ctx);
 
@@ -174,13 +172,11 @@ void TempoOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
 #endif
 
     float offset = -std::fmod(ctx.offsetTime, beatTime) + tempo.beatOffsetSeconds;
-
     const int lineCount = visibleBeats + 2;
-    auto& style = ImGui::GetStyle();
     char tmp[32];
 
     int32_t lineOffset = tempo.beatOffsetSeconds / beatTime;
-    for (int i = -lineOffset; i < lineCount - lineOffset; i++) {
+    for (int i = -lineOffset; i < lineCount - lineOffset; i += 1) {
         int32_t beatIdx = invisiblePreviousBeats + i;
         const int32_t thing = (int32_t)(1.f / ((beatMultiples[tempo.measureIndex] / 4.f)));
         const bool isWholeMeasure = beatIdx % thing == 0;
@@ -194,15 +190,17 @@ void TempoOverlay::DrawScriptPositionContent(const OverlayDrawingCtx& ctx) noexc
 
         if (isWholeMeasure) {
             stbsp_snprintf(tmp, sizeof(tmp), "%d", thing == 0 ? beatIdx : beatIdx / thing);
-            const auto& prefState = PreferenceState::State(app->preferences->StateHandle());
-            const float textOffsetX = prefState.defaultFontSize / 2.f;
-            ctx.drawList->AddText(OFS_DynFontAtlas::DefaultFont2, prefState.defaultFontSize * 2.f,
+            const float textOffsetX = ImGui::GetFontSize() / 2.f;
+            ctx.drawList->AddText(OFS_DynFontAtlas::DefaultFont2, ImGui::GetFontSize() * 2.f,
                 ctx.canvasPos + ImVec2((((offset + (i * beatTime)) / ctx.visibleTime) * ctx.canvasSize.x) + textOffsetX, 0.f),
-                ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]),
+                ImGui::GetColorU32(ImGuiCol_Text),
                 tmp
             );
         }
     }
+
+    BaseOverlay::DrawActionLines(ctx);
+    BaseOverlay::DrawActionPoints(ctx);
 }
 
 static float GetNextPosition(float beatTime, float currentTime, float beatOffset) noexcept
