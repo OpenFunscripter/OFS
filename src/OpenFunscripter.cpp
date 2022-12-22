@@ -1198,6 +1198,33 @@ void OpenFunscripter::registerBindings()
             { { ImGuiMod_None, ImGuiKey_GamepadFaceLeft } });
     }
 
+    keys->RegisterGroup("Chapters", Tr::CHAPTER_BINDING_GROUP);
+    {
+        keys->RegisterAction(
+            { "create_chapter",
+                [this]() {
+                    auto& chapterState = chapterMgr->State();
+                    if (auto chapter = chapterState.AddChapter(player->CurrentTime(), player->Duration())) {
+                        EV::Enqueue<ChapterStateChanged>();
+                    }
+                },
+                false },
+            Tr::ACTION_CREATE_CHAPTER, "Chapters",
+            {});
+
+        keys->RegisterAction(
+            { "create_bookmark",
+                [this]() {
+                    auto& chapterState = chapterMgr->State();
+                    if (auto bookmark = chapterState.AddBookmark(player->CurrentTime())) {
+                        EV::Enqueue<ChapterStateChanged>();
+                    }
+                },
+                false },
+            Tr::ACTION_CREATE_BOOKMARK, "Chapters",
+            {});
+    }
+
     // Group where all dynamic actions are placed.
     // Lua functions for example.
     keys->RegisterGroup("Dynamic", Tr::DYNAMIC_BINDING_GROUP);

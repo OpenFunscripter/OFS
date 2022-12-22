@@ -531,3 +531,6 @@ SAVE_HEATMAP_WITH_CHAPTERS,Save heatmap with chapters,Save heatmap with chapters
 CHAPTERS,Chapters,Chapters
 CHAPTER,Chapter,Chapter
 BEGIN,Begin,Begin
+CHAPTER_BINDING_GROUP,Chapters,Chapters
+ACTION_CREATE_BOOKMARK,Create bookmark,Create bookmark
+ACTION_CREATE_CHAPTER,Create chapter,Create chapter

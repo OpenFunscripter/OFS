@@ -19,6 +19,11 @@ OFS_ChapterManager::~OFS_ChapterManager() noexcept
 
 }
 
+ChapterState& OFS_ChapterManager::State() noexcept
+{
+    return ChapterState::State(stateHandle);
+}
+
 void OFS_ChapterManager::ShowWindow(bool* open) noexcept
 {
     if(!*open) return;
