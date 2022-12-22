@@ -33,6 +33,7 @@ void OFS_ChapterManager::ShowWindow(bool* open) noexcept
         ImGui::TableSetupColumn("##controls", ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableHeadersRow();
 
+        bool chapterStateChange = false;
         int deleteIdx = -1;
         char timeBuf[16];
         for(int i=0, size=chapterState.chapters.size(); i < size; i += 1)
@@ -44,7 +45,7 @@ void OFS_ChapterManager::ShowWindow(bool* open) noexcept
             ImGui::TableSetColumnIndex(0);
             ImGui::ColorEdit3("##chapterColorPicker", &chapter.color.Value.x, ImGuiColorEditFlags_NoInputs);
             ImGui::SameLine();
-            ImGui::InputText("##chapterName", &chapter.name);
+            chapterStateChange |= ImGui::InputText("##chapterName", &chapter.name);
             ImGui::TableNextColumn();
 
             Util::FormatTime(timeBuf, sizeof(timeBuf), chapter.startTime, true);
@@ -58,6 +59,7 @@ void OFS_ChapterManager::ShowWindow(bool* open) noexcept
             if (ImGui::Button(TR(DELETE))) 
             {
                 deleteIdx = i;
+                chapterStateChange = true;
             }
             ImGui::PopID();
         }
@@ -66,8 +68,10 @@ void OFS_ChapterManager::ShowWindow(bool* open) noexcept
         {
             auto it = chapterState.chapters.begin() + deleteIdx;
             chapterState.chapters.erase(it);
-            EV::Enqueue<ChapterStateChanged>();
         }
+        
+        if(chapterStateChange)
+            EV::Enqueue<ChapterStateChanged>();
 
         ImGui::EndTable();
     }
