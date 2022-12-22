@@ -202,7 +202,7 @@ bool ScriptTimeline::handleTimelineClicks(const OverlayDrawingCtx& ctx) noexcept
 		EV::Enqueue<ShouldSetTimeEvent>(seekToTime);
 		return true;
 	}
-	else if(ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
+	else if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Middle))
 	{
 		ctx.DrawingScript()->ClearSelection();
 		return true;
