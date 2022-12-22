@@ -1575,10 +1575,9 @@ void OpenFunscripter::Step() noexcept
             LoadedProject->ShowProjectWindow(&ShowProjectEditor);
 
             extensions->ShowExtensions();
-
             OFS_FileLogger::DrawLogWindow(&ofsState.showDebugLog);
-
             keys->RenderKeybindingWindow();
+            chapterMgr->ShowWindow(&ofsState.showChapterManager);
 
             if (preferences->ShowPreferenceWindow()) {}
 
@@ -2452,6 +2451,7 @@ void OpenFunscripter::ShowMainMenuBar() noexcept
             if (ImGui::MenuItem(TR(ACTION_EDITOR), NULL, &ofsState.showActionEditor)) {}
             if (ImGui::MenuItem(TR(SPECIAL_FUNCTIONS), NULL, &ofsState.showSpecialFunctions)) {}
             if (ImGui::MenuItem(TR(WEBSOCKET_API), NULL, &ofsState.showWsApi)) {}
+            if (ImGui::MenuItem(TR(CHAPTERS), NULL, &ofsState.showChapterManager)) {}
 
 
             ImGui::Separator();

@@ -15,4 +15,6 @@ class OFS_ChapterManager
     ~OFS_ChapterManager() noexcept;
 
     static bool ExportClip(const class Chapter& chapter, const std::string& outputDirStr) noexcept;
+
+    void ShowWindow(bool* open) noexcept;
 };

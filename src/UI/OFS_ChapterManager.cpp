@@ -4,75 +4,75 @@
 #include "OpenFunscripter.h"
 #include "OFS_EventSystem.h"
 #include "OFS_VideoplayerEvents.h"
+#include "OFS_Localization.h"
 
-inline float randf() noexcept
-{
-    return (float)rand() / (float)RAND_MAX;
-}
+#include "imgui.h"
+#include "imgui_stdlib.h"
 
 OFS_ChapterManager::OFS_ChapterManager() noexcept
 {
     stateHandle = OFS_ProjectState<ChapterState>::Register(ChapterState::StateName);
-    EV::Queue().appendListener(DurationChangeEvent::EventType, 
-        DurationChangeEvent::HandleEvent(
-            [this](const DurationChangeEvent* ev) noexcept
-            {
-                auto& state = ChapterState::State(stateHandle);
-                #if 0
-
-                // Generate random chapters
-                float duration = ev->duration;
-                state.chapters.clear();
-                state.bookmarks.clear();
-
-
-                srand(SDL_GetTicks());
-
-                float minChapterLen = duration * 0.01f;
-                float maxChapterLen = duration * 0.05f;
-
-                float currentTime = 0.f;
-
-                while(currentTime < duration)
-                {
-                    float newChapterLen = minChapterLen + ((maxChapterLen - minChapterLen) * randf());
-
-                    if(currentTime + newChapterLen > duration)
-                    {
-                        newChapterLen -=  (currentTime + newChapterLen) - duration;
-                    }
-
-                    Chapter newChapter
-                    {
-                        currentTime,
-                        currentTime + newChapterLen,
-                        FMT("%.1f", newChapterLen)
-                    };
-                    state.chapters.emplace_back(std::move(newChapter));
-                    currentTime += newChapterLen;
-                }
-                
-                for(int i=0; i < 10; i += 1)
-                {
-                    float bookmarkTime = duration * randf();
-                    Bookmark bookmark
-                    {
-                        bookmarkTime,
-                        FMT("%.1f", bookmarkTime)
-                    };
-                    state.bookmarks.emplace_back(std::move(bookmark));
-                }
-
-                LOGF_DEBUG("Generated %lld random chapters", state.chapters.size());
-                #endif
-            }
-        )
-    );
 }
 
 OFS_ChapterManager::~OFS_ChapterManager() noexcept
 {
 
+}
+
+void OFS_ChapterManager::ShowWindow(bool* open) noexcept
+{
+    if(!*open) return;
+    auto& chapterState = ChapterState::State(stateHandle);
+    ImGui::Begin(TR_ID("ChapterManager", Tr::CHAPTERS), open);
+
+    if(ImGui::BeginTable("##chapterTable", 4, ImGuiTableFlags_Resizable))
+    {
+        ImGui::TableSetupColumn(TR(CHAPTER), ImGuiTableColumnFlags_None);
+        ImGui::TableSetupColumn(TR(BEGIN), ImGuiTableColumnFlags_None);
+        ImGui::TableSetupColumn(TR(END), ImGuiTableColumnFlags_None);
+        ImGui::TableSetupColumn("##controls", ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableHeadersRow();
+
+        int deleteIdx = -1;
+        char timeBuf[16];
+        for(int i=0, size=chapterState.chapters.size(); i < size; i += 1)
+        {
+            auto& chapter = chapterState.chapters[i];
+            ImGui::PushID(i);
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::ColorEdit3("##chapterColorPicker", &chapter.color.Value.x, ImGuiColorEditFlags_NoInputs);
+            ImGui::SameLine();
+            ImGui::InputText("##chapterName", &chapter.name);
+            ImGui::TableNextColumn();
+
+            Util::FormatTime(timeBuf, sizeof(timeBuf), chapter.startTime, true);
+            ImGui::TextUnformatted(timeBuf);
+
+            ImGui::TableNextColumn();
+            Util::FormatTime(timeBuf, sizeof(timeBuf), chapter.endTime, true);
+            ImGui::TextUnformatted(timeBuf);
+
+            ImGui::TableNextColumn();
+            if (ImGui::Button(TR(DELETE))) 
+            {
+                deleteIdx = i;
+            }
+            ImGui::PopID();
+        }
+
+        if(deleteIdx >= 0 && deleteIdx < chapterState.chapters.size())
+        {
+            auto it = chapterState.chapters.begin() + deleteIdx;
+            chapterState.chapters.erase(it);
+            EV::Enqueue<ChapterStateChanged>();
+        }
+
+        ImGui::EndTable();
+    }
+
+    ImGui::End();
 }
 
 bool OFS_ChapterManager::ExportClip(const Chapter& chapter, const std::string& outputDirStr) noexcept
