@@ -50,6 +50,7 @@ void OFS_ChapterManager::ShowWindow(bool* open) noexcept
             ImGui::TableSetColumnIndex(0);
             ImGui::ColorEdit3("##chapterColorPicker", &chapter.color.Value.x, ImGuiColorEditFlags_NoInputs);
             ImGui::SameLine();
+            ImGui::SetNextItemWidth(-1.f);
             chapterStateChange |= ImGui::InputText("##chapterName", &chapter.name);
             ImGui::TableNextColumn();
 
