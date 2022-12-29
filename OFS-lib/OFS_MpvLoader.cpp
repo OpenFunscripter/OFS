@@ -37,18 +37,18 @@ mpv_terminate_destroy_FUNC OFS_MpvLoader::mpv_terminate_destroy_REAL = NULL;
 bool OFS_MpvLoader::Load() noexcept
 {
     if (mpvHandle) return true;
-    const char* lib = nullptr;
 #if defined(WIN32)
-    lib = "mpv-2.dll";
+    mpvHandle = SDL_LoadObject("mpv-2.dll");
 #elif defined(__APPLE__)
-    lib = "libmpv.dylib";
+    mpvHandle = SDL_LoadObject("libmpv.dylib");
 #else // linux
-    lib = "libmpv.so.1";
+    mpvHandle = SDL_LoadObject("libmpv.so.2");
+    if (!mpvHandle) {
+        mpvHandle = SDL_LoadObject("libmpv.so.1");
+    }
 #endif
 
-    mpvHandle = SDL_LoadObject(lib);
     if (!mpvHandle) {
-        LOGF_ERROR("Failed to load \"%s\"", lib);
         LOGF_ERROR("%s", SDL_GetError());
         return false;
     }
